@@ -15,6 +15,7 @@ Run the program, and you'll be greeted with a black screen and a console window.
 * Super fast load times (even faster than Lönn), thanks to multithreaded lazy loading.
 * Renders all of 9D (at least the entities that have plugins :p) in ~1.5 seconds on my pc
 * Colorful debug logs!
+* Doesn't lock mod zips forever :p
 * yea, that's about it, just use lönn lol
 
 
