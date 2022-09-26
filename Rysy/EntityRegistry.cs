@@ -53,7 +53,8 @@ public static class EntityRegistry
         }
         else
         {
-            Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
+            if (Settings.Instance.LogMissingEntities)
+                Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
             e = new UnknownEntity();
         }
 

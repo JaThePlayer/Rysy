@@ -13,7 +13,10 @@ public sealed class Settings
     public string CelesteDirectory { get; set; } = "";
     public string LastEditedMap { get; set; } = "";
 
-    public string ModsDirectory => $"{CelesteDirectory}/Mods";
+    public bool LogMissingEntities { get; set; } = false;
+    public bool LogTextureLoadTimes { get; set; } = false;
+
+    public string ModsDirectory => $"{CelesteDirectory}/Mods-9d";
 
     public static Settings Load()
     {

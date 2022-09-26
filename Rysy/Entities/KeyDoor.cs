@@ -11,7 +11,7 @@ public sealed class KeyDoor : SpriteEntity
     {
         "temple_a" => "objects/door/lockdoorTempleA00",
         "temple_b" => "objects/door/lockdoorTempleB00",
-        "moon" => "objects/door/moondoor00",
+        "moon" => "objects/door/moonDoor11",
         "wood" or _ => "objects/door/lockdoor00",
     };
 
