@@ -16,7 +16,7 @@ public sealed class Settings
     public bool LogMissingEntities { get; set; } = false;
     public bool LogTextureLoadTimes { get; set; } = false;
 
-    public string ModsDirectory => $"{CelesteDirectory}/Mods-9d";
+    public string ModsDirectory => $"{CelesteDirectory}/Mods";
 
     public static Settings Load()
     {
