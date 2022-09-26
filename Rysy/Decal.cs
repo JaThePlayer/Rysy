@@ -3,10 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Decal : IPackable
+public sealed class Decal : IPackable
 {
-    [RegexGenerator("\\d+$|\\.png")]
-    public static partial Regex NumberTrimEnd();
+    //[RegexGenerator("\\d+$|\\.png")]
+    public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
 
     public Vector2 Pos;
     public Vector2 Scale;
@@ -31,7 +31,7 @@ public sealed partial class Decal : IPackable
     {
         Pos = new(from.Float("x"), from.Float("y"));
         Scale = new(from.Float("scaleX", 1), from.Float("scaleY", 1));
-        Texture = "decals/" + from.Attr("texture", "").RegexReplace(NumberTrimEnd(), string.Empty).Unbackslash();
+        Texture = "decals/" + from.Attr("texture", "").RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
     }
 
     public Sprite GetSprite(bool fg)
