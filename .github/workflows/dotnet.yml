@@ -27,10 +27,10 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         name: main
-        path: bin/Release/net7.0-windows
+        path: Rysy/bin/Release/net7.0-windows
     
     - name: Upload universal artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: main
-        path: bin/Release/net7.0
+        path: Rysy/bin/Release/net7.0
