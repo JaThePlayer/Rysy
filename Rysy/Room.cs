@@ -146,8 +146,8 @@ public sealed class Room : IPackable
             .OrderByDescending(x => x.Depth)
             .ToList();
 
-            StartTextureLoadAwaiter();
-            //CachedSprites.Sort(ISprite.DepthDescendingComparer);
+            if (Settings.Instance.LogTextureLoadTimes)
+                StartTextureLoadTimer();
         }
 
         foreach (var item in CachedSprites)
@@ -158,7 +158,7 @@ public sealed class Room : IPackable
         GFX.Batch.End();
     }
 
-    private void StartTextureLoadAwaiter()
+    private void StartTextureLoadTimer()
     {
         Task.Run(async () =>
         {
