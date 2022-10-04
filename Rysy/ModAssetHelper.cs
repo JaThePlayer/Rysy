@@ -1,5 +1,4 @@
-﻿using Rysy.Graphics.TextureTypes;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 
 namespace Rysy;
 
@@ -15,7 +14,9 @@ public static class ModAssetHelper
         {
             var path = $"{dir}/{relativePath}";
             if (File.Exists(path))
+            {
                 return File.OpenRead(path);
+            }
         }
 
         foreach (var zip in Directory.EnumerateFiles(Settings.Instance.ModsDirectory, "*.zip"))

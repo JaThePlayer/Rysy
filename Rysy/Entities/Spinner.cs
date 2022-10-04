@@ -17,10 +17,10 @@ public sealed class Spinner : Entity
 
     private static string ColorToTexturePath(string color) => color switch
     {
-        "red"     or "Red"     => "danger/crystal/fg_red00",
         "purple"  or "Purple"  => "danger/crystal/fg_purple00",
         "rainbow" or "Rainbow" => "danger/crystal/fg_white00",
-        _ => "danger/crystal/fg_blue00"
+        "blue"    or "Blue"    => "danger/crystal/fg_blue00",
+        _ => "danger/crystal/fg_red00",
     };
 
     public override IEnumerable<ISprite> GetSprites()

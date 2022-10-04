@@ -15,7 +15,7 @@ public sealed class Autotiler
         public Point[] Center = null!;
         public Point[] Padding = null!;
 
-        public HashSet<char>? Ignores;
+        public char[]? Ignores;
 
         public bool IgnoreAll;
 
@@ -129,6 +129,25 @@ public sealed class Autotiler
         {
             var tl = tileData.Length;
             var sl = mask.Length;
+
+            // handle the common case of a 3x3 mask
+            if (sl == 9 && tl == 9)
+            {
+                // for an explanation, see comment in the below for loop
+                if (mask[0] + Unsafe.As<bool, byte>(ref tileData[0]) == '1') return false;
+                if (mask[1] + Unsafe.As<bool, byte>(ref tileData[1]) == '1') return false;
+                if (mask[2] + Unsafe.As<bool, byte>(ref tileData[2]) == '1') return false;
+                if (mask[3] + Unsafe.As<bool, byte>(ref tileData[3]) == '1') return false;
+                // skip mask[4] - that's the tile we're in!
+                if (mask[5] + Unsafe.As<bool, byte>(ref tileData[5]) == '1') return false;
+                if (mask[6] + Unsafe.As<bool, byte>(ref tileData[6]) == '1') return false;
+                if (mask[7] + Unsafe.As<bool, byte>(ref tileData[7]) == '1') return false;
+                if (mask[8] + Unsafe.As<bool, byte>(ref tileData[8]) == '1') return false;
+
+                return true;
+            }
+
+            // matches a mask of any size
             for (int i = 0; i < tl && i < sl; i++)
             {
                 //if ((mask[i], tileData[i]) is ('0', true) or ('1', false))
@@ -139,12 +158,11 @@ public sealed class Autotiler
                 // '1', false
                 // since '0' + (byte)true == '1', and '1' + (byte)false == '1',
                 // we can simply add the two values together and check against '1'
-                // instead of all checking 4 conditions
+                // instead of checking all 4 conditions
                 var r = mask[i] + Unsafe.As<bool, byte>(ref tileData[i]);
                 if (r == '1')
                     return false;
             }
-
 
             return true;
         }
@@ -167,7 +185,7 @@ public sealed class Autotiler
                 var id = tileset.Attributes?["id"]?.InnerText[0] ?? throw new Exception($"<Tileset> node missing id");
                 var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
 
-                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t[0])?.ToHashSet();
+                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t[0])?.ToArray();
 
                 AutotilerData autotilerData = new();
                 autotilerData.Texture = GFX.Atlas[$"tilesets/{path}"];
@@ -237,7 +255,6 @@ public sealed class Autotiler
         {
             for (int y = 0; y < h; y++)
             {
-
                 if (!data.GetFirstMatch(x, y, w, h, out var tiles))
                 {
                     yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Red);
@@ -255,6 +272,7 @@ public sealed class Autotiler
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Random random)
     {
+        List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
         var h = tileGrid.GetLength(1);
 
@@ -268,7 +286,13 @@ public sealed class Autotiler
 
                 if (!Tilesets.TryGetValue(c, out var data))
                 {
-                    LogUnknownTileset(x, y, c);
+                    unknownTilesetsUsed ??= new();
+                    if (!unknownTilesetsUsed.Contains(c))
+                    {
+                        unknownTilesetsUsed.Add(c);
+                        LogUnknownTileset(x, y, c);
+                    }
+
                     yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Pink);
                     continue;
                 }
@@ -287,6 +311,6 @@ public sealed class Autotiler
 
     private static void LogUnknownTileset(int x, int y, char c)
     {
-        Logger.Write("Autotiler", LogLevel.Error, $"Unknown tileset {c} ({(int)c}) at {{{x},{y}}}");
+        Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int)c}) at {{{x},{y}}} (and possibly more)");
     }
 }

@@ -29,7 +29,7 @@ public record struct Sprite : ISprite
     public float Rotation = 0f;
     public Vector2 Origin = Vector2.Zero;
     public Vector2 Scale = Vector2.One;
-    public SpriteEffects Flip = SpriteEffects.None;
+    //public SpriteEffects Flip = SpriteEffects.None;
 
     public Vector2 DrawOffset;
     public int Width;
@@ -54,7 +54,7 @@ public record struct Sprite : ISprite
                 Height = Texture.Height;
             }
 
-            var flip = Flip;
+            var flip = SpriteEffects.None;
             var scale = Scale;
             var origin = (Origin * new Vector2(Width, Height)) + DrawOffset;
             // Monogame doesn't like negative scales...
@@ -97,7 +97,6 @@ public record struct Sprite : ISprite
         return this;
     }
 
-    //TODO: Handle vanilla textures, which need to use DrawOffset to avoid OOB texture access
     public Sprite CreateSubtexture(int x, int y, int w, int h)
     {
         return this with

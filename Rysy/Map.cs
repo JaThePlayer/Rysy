@@ -33,9 +33,6 @@ public sealed class Map : IPackable
 
     public void Unpack(BinaryPacker.Element from)
     {
-        //var bgAutotilerPath = $"{Settings.Instance.CelesteDirectory}/Content/Graphics/BackgroundTiles.xml";
-        //var fgAutotilerPath = $"{Settings.Instance.CelesteDirectory}/Content/Graphics/ForegroundTiles.xml";
-
         foreach (var child in from.Children)
         {
             switch (child.Name)
@@ -99,13 +96,6 @@ public sealed class Map : IPackable
             using var stream = File.OpenRead($"{Settings.Instance.CelesteDirectory}/Content/Graphics/ForegroundTiles.xml");
             FGAutotiler.ReadFromXml(stream);
         }
-
-        /*
-#warning HARDCODED PATH
-        using var bgStream = File.OpenRead(bgAutotilerPath);
-        BGAutotiler.ReadFromXml(bgStream);
-        using var fgStream = File.OpenRead(fgAutotilerPath);
-        FGAutotiler.ReadFromXml(fgStream);*/
     }
 
 

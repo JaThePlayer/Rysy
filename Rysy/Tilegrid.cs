@@ -70,15 +70,9 @@ public class Tilegrid
         return g;
     }
 
-
-
-    public IEnumerable<ISprite> GetSprites()
+    public IEnumerable<ISprite> GetSprites(Random random)
     {
-        return Autotiler?.GetSprites(Vector2.Zero, Tiles, RysyEngine.Scene switch
-        {
-            EditorScene editor => editor.CurrentRoom.Random,
-            _ => Random.Shared
-        }).Select(s => {
+        return Autotiler?.GetSprites(Vector2.Zero, Tiles, random).Select(s => {
             s.Depth = Depth;
             return s;
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");

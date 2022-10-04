@@ -141,8 +141,8 @@ public sealed class Room : IPackable
             }).SelectMany(x => x)
             .Concat(BgDecals.Select<Decal, ISprite>(d => d.GetSprite(false)))
             .Concat(FgDecals.Select<Decal, ISprite>(d => d.GetSprite(true)))
-            .Concat(FG.GetSprites())
-            .Concat(BG.GetSprites())
+            .Concat(FG.GetSprites(Random))
+            .Concat(BG.GetSprites(Random))
             .OrderByDescending(x => x.Depth)
             .ToList();
 

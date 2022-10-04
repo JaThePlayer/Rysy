@@ -11,8 +11,8 @@ public sealed class ScopedStopwatch : IDisposable
 
     public ScopedStopwatch(string msg)
     {
-        Watch = Stopwatch.StartNew();
         Message = msg;
+        Watch = Stopwatch.StartNew();
     }
 
     public void Dispose()
@@ -20,7 +20,5 @@ public sealed class ScopedStopwatch : IDisposable
         Watch.Stop();
 
         Logger.Write("ScopedStopwatch", LogLevel.Debug, $"{Message}: {Watch.Elapsed.TotalMilliseconds}ms");
-
-        Watch = null!;
     }
 }
