@@ -21,32 +21,35 @@ public abstract class LoopingSpriteSliceEntity : SpriteEntity
         if (w > 0)
         {
             var count = w / tileSize;
-            return Enumerable.Range(0, count).Select<int, ISprite>(i =>
-            baseSprite.CreateSubtexture(
-                GetSubtextStartPos(ref baseSprite, mode, i, tileSize, count, false), 
-                0, tileSize, tileSize
-            ) with {
-                Pos = Pos.AddX(i * tileSize),
-                Origin = new(),
-            });
+
+            for (int i = 0; i < count; i++)
+            {
+                yield return baseSprite.CreateSubtexture(
+                    GetSubtextStartPos(ref baseSprite, mode, i, tileSize, count, false),
+                    0, tileSize, tileSize) with
+                    {
+                        Pos = Pos.AddX(i * tileSize),
+                        Origin = new(),
+                    };
+            }
         }
 
         var h = Height;
         if (h > 0)
         {
             var count = h / tileSize;
-            return Enumerable.Range(0, count).Select<int, ISprite>(i =>
-            baseSprite.CreateSubtexture(
-                0,
-                GetSubtextStartPos(ref baseSprite, mode, i, tileSize, count, true),
-                tileSize, tileSize
-            ) with {
-                Pos = Pos.AddY(i * tileSize),
-                Origin = new(),
-            });
-        }
 
-        return new List<ISprite>();
+            for (int i = 0; i < count; i++)
+            {
+                yield return baseSprite.CreateSubtexture(
+                    0, GetSubtextStartPos(ref baseSprite, mode, i, tileSize, count, true),
+                    tileSize, tileSize) with
+                    {
+                        Pos = Pos.AddY(i * tileSize),
+                        Origin = new(),
+                    };
+            }
+        }
     }
 
     private int GetSubtextStartPos(ref Sprite baseSprite, LoopingMode mode, int i, int tileSize, int count, bool vertical)

@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using Microsoft.Xna.Framework.Graphics;
+using Rysy.Graphics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -107,9 +109,19 @@ public static class Extensions
         }
     }
 
+    public static IEnumerable<T> Do<T>(this IEnumerable<T> self, Action action)
+    {
+        action();
+        foreach (var item in self)
+        {
+            yield return item;
+        }
+    }
+
     public static float Angle(Vector2 from, Vector2 to)
         => float.Atan2(to.Y - from.Y, to.X - from.X);
 
     public static Vector2 AngleToVector(float angleRadians, float length)
         => new(float.Cos(angleRadians) * length, float.Sin(angleRadians) * length);
+
 }

@@ -1,5 +1,8 @@
 ﻿namespace Rysy.Graphics;
 
+/// <summary>
+/// Interface which represents anything that can be rendered by Rysy's sprite rendering system.
+/// </summary>
 public interface ISprite
 {
     public int? Depth { get; set; }
@@ -13,6 +16,12 @@ public interface ISprite
     public void Render();
 
     public static ISpriteDepthComparer DepthDescendingComparer = new();
+
+    public static Sprite FromTexture(string texturePath)
+    => new(GFX.Atlas[texturePath])
+    {
+        Color = Color.White,
+    };
 
     public static Sprite FromTexture(Vector2 pos, string texturePath)
     => new(GFX.Atlas[texturePath])
@@ -66,7 +75,19 @@ public interface ISprite
         };
     }
 
-    public static IEnumerable<ISprite> GetNineSliceSprites(Sprite baseSprite, Vector2 pos, int w, int h, int tileSize)
+    /// <summary>
+    /// Returns a sprite which renders a circle. The arguments mean the exact same thing as Draw.Circle in Monocle
+    /// </summary>
+    public static CircleSprite Circle(Vector2 center, float radius, Color color, int resolution)
+    => new()
+    {
+        Pos = center,
+        Radius = radius,
+        Color = color,
+        Resulution = resolution,
+    };
+
+    public static IEnumerable<Sprite> GetNineSliceSprites(Sprite baseSprite, Vector2 pos, int w, int h, int tileSize)
     {
         for (int x = 0; x < w; x++)
         {

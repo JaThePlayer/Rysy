@@ -1,9 +1,12 @@
 ﻿using Rysy.Graphics;
+using System.Runtime.CompilerServices;
 
 namespace Rysy.Helpers;
 
 public static class NodeHelper
 {
+    private static DefaultNodeSpriteProvider defaultNodeSpriteProvider = new();
+
     /// <summary>
     /// Returns all sprites needed to render nodes for a given entity.
     /// This will take into account interfaces implemented on the entity type.
@@ -28,13 +31,23 @@ public static class NodeHelper
                 }
                 break;
 
-            case INodeSpriteProvider nodeProvider:
-                foreach (var item in GetNodeConnectors(entity))
+            default:
+                INodeSpriteProvider provider = entity switch
+                {
+                    INodeSpriteProvider p => p,
+                    _ => defaultNodeSpriteProvider.For(entity)
+                };
+
+                if (GetNodeConnectors(entity) is { } connectors)
+                foreach (var item in connectors)
+                {
+                    item.Depth = depth + 1;
                     yield return item;
+                }
 
                 for (int i = 0; i < entity.Nodes.Length; i++)
                 {
-                    foreach (var item in nodeProvider.GetNodeSprites(i))
+                    foreach (var item in provider.GetNodeSprites(i))
                     {
                         item.Depth ??= depth;
 
@@ -42,53 +55,61 @@ public static class NodeHelper
                     }
                 }
                 break;
-
-            default:
-                // no custom node implementation, do it ourselves
-                foreach (var item in GetNodeConnectors(entity))
-                    yield return item;
-
-                foreach (var node in entity.Nodes)
-                {
-                    var oldPos = entity.Pos;
-                    entity.Pos = node;
-                    try
-                    {
-                        var spr = entity.GetSprites();
-                        foreach (var item in spr)
-                        {
-                            item.Alpha *= .5f;
-                            item.Depth ??= depth;
-                            yield return item;
-                        }
-                    }
-                    finally
-                    {
-                        entity.Pos = oldPos;
-                    }
-                }
-                break;
         }
-
-
     }
 
-    private static IEnumerable<LineSprite> GetNodeConnectors(Entity entity)
+    private static IEnumerable<ISprite>? GetNodeConnectors(Entity entity)
     {
-        // TODO: Alternative options
-
-        var start = entity.Center;
         if (entity.Nodes is { } nodes)
         {
-            for (int i = 0; i < nodes.Length; i++)
+            return entity switch
             {
-                var end = entity.GetNodeCentered(i);
+                INodePathProvider p => p.NodePathSprites,
+                _ => NodePathTypes.Fan(entity),
+            };
+        } else
+        {
+            return null;
+        }
+    }
 
-                yield return ISprite.Line(start, end, Color.White * .5f) with
+
+    private sealed class DefaultNodeSpriteProvider : INodeSpriteProvider
+    {
+        private Entity _entity;
+
+        /// <summary>
+        /// Swaps this instance of the provider to use this entity. 
+        /// Make sure to call GetNodeSprites before calling this again so that the enumerable can grab the reference to the entity!
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public INodeSpriteProvider For(Entity entity)
+        {
+            _entity = entity;
+            return this;
+        }
+
+        public IEnumerable<ISprite> GetNodeSprites(int nodeIndex)
+        {
+            var entity = _entity;
+            var node = entity.Nodes![nodeIndex];
+            var oldPos = entity.Pos;
+            entity.Pos = node;
+            try
+            {
+                var spr = entity.GetSprites();
+                foreach (var item in spr)
                 {
-                    Depth = entity.Depth + 1
-                };
+                    item.Alpha *= .5f;
+                    yield return item;
+                }
+            }
+            finally
+            {
+                entity.Pos = oldPos;
             }
         }
     }
+
 }
