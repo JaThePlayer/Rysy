@@ -31,6 +31,9 @@ public abstract class Entity
         set => EntityData["height"] = value;
     }
 
+    /// <summary>
+    /// Gets the center of this entity. Used for centering node paths, for example, but can be used in your own plugins as well.
+    /// </summary>
     public virtual Vector2 Center { 
         get {
             var x = Pos.X;
@@ -41,6 +44,21 @@ public abstract class Entity
 
             return new(x, y);
         } 
+    }
+
+
+    /// <summary>
+    /// Gets the rectangle that this entity occupies. This makes use of the <see cref="Width"/> and <see cref="Height"/> properties, defaulting them to 8 if they're equal to 0.
+    /// </summary>
+    public Rectangle Rectangle
+    {
+        get
+        {
+            var bw = Width;
+            var bh = Height;
+            Rectangle bRect = new((int)Pos.X, (int)Pos.Y, bw == 0 ? 8 : bw, bh == 0 ? 8 : bh);
+            return bRect;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

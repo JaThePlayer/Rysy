@@ -15,5 +15,5 @@ public class Wire : Entity, ICustomNodeHandler
     }
 
     public override IEnumerable<ISprite> GetSprites()
-        => ISprite.Curve(Pos, Nodes![0], new(0f, 24f), Color, 16);
+        => ISprite.GetCurveSprites(Pos, Nodes![0], new(0f, 24f), Color, 16);
 }

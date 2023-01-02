@@ -139,4 +139,36 @@ public class VirtTexture : IDisposable
 
     protected virtual bool TryPreloadClipRect() { return false; }
 
+
+    /// <summary>
+    /// Forcefully loads the texture and waits for it to finish loading before returning it
+    /// </summary>
+    /// <returns></returns>
+    public async ValueTask<Texture2D> ForceGetTexture()
+    {
+        
+        switch (state)
+        {
+            case State.Loaded:
+                return texture!;
+            case State.Unloaded:
+                StartLoadingIfNeeded();
+                goto loading;
+            case State.Loading:
+                loading:
+
+                if (LoadTask is { } && (!LoadTask.IsCompleted))
+                    await LoadTask;
+
+                return texture!;
+        }
+        throw new Exception($"Unknown state: {state}");
+        
+        while (Texture is not { } texture)
+        {
+        //    Task.Delay(100).Wait();
+        }
+
+        return texture!;
+    }
 }

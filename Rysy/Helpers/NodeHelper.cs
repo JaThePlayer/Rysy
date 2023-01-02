@@ -65,7 +65,7 @@ public static class NodeHelper
             return entity switch
             {
                 INodePathProvider p => p.NodePathSprites,
-                _ => NodePathTypes.Fan(entity),
+                _ => NodePathTypes.Line(entity),
             };
         } else
         {

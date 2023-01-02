@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("cassetteBlock")]
-public class CassetteBlock : Entity
+public class CassetteBlock : Entity, ISolid
 {
     public override int Depth => Depths.Solids;
 

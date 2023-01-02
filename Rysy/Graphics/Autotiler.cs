@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using Microsoft.Xna.Framework.Graphics;
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -276,6 +277,7 @@ public sealed class Autotiler
         var w = tileGrid.GetLength(0);
         var h = tileGrid.GetLength(1);
 
+        /*
         for (int x = 0; x < w; x++)
         {
             for (int y = 0; y < h; y++)
@@ -306,11 +308,109 @@ public sealed class Autotiler
                 var tile = tiles[random.Next(0, tiles.Length)];
                 yield return ISprite.FromTexture(position + new Vector2(x * 8, y * 8), data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
             }
+        }*/
+
+        AutotiledSpriteList l = new()
+        {
+            Sprites = new AutotiledSpriteList.AutotiledSprite[w,h],
+            Pos = position,
+        };
+
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                var c = tileGrid[x, y];
+                if (c == '0')
+                    continue;
+
+                if (!Tilesets.TryGetValue(c, out var data))
+                {
+                    unknownTilesetsUsed ??= new();
+                    if (!unknownTilesetsUsed.Contains(c))
+                    {
+                        unknownTilesetsUsed.Add(c);
+                        LogUnknownTileset(x, y, c);
+                    }
+
+                    yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Pink);
+                    continue;
+                }
+
+                if (!data.GetFirstMatch(tileGrid, x, y, w, h, out var tiles))
+                {
+                    yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Red);
+                    continue;
+                }
+
+                var tile = tiles[random.Next(0, tiles.Length)];
+                l.Sprites[x, y] = new()
+                {
+                    T = data.Texture,
+                    Subtext = ISprite.FromTexture(default, data.Texture).GetSubtextureRect(tile.X, tile.Y, 8, 8)
+                };
+            }
         }
+
+        yield return l;
     }
 
     private static void LogUnknownTileset(int x, int y, char c)
     {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int)c}) at {{{x},{y}}} (and possibly more)");
     }
+
+    internal struct AutotiledSpriteList : ISprite
+    {
+        public int? Depth { get; set; }
+        public Color Color { get; set; } = Color.White;
+        public float Alpha { get; set; }
+
+        public bool IsLoaded => Sprites.Cast<AutotiledSprite>().All(s => s.T.Texture is { });
+
+        public AutotiledSprite[,] Sprites;
+
+        public Vector2 Pos;
+
+        public AutotiledSpriteList()
+        {
+        }
+
+        public void Render(Camera? cam, Vector2 offset)
+        {
+            var b = GFX.Batch;
+            var sprites = Sprites;
+
+            var scrPos = cam.Pos - offset;
+            var left = Math.Max(0, (int)scrPos.X / 8);
+            var right = Math.Min(sprites.GetLength(0), left + cam.Viewport.Width / cam.Scale / 8 + 1);
+            var top = Math.Max(0, (int)scrPos.Y / 8);
+            var bot = Math.Min(sprites.GetLength(1), top + cam.Viewport.Height / cam.Scale / 8 + 1);
+
+            for (int x = left; x < right; x++)
+            {
+                for (int y = top; y < bot; y++)
+                {
+                    var s = sprites[x, y];
+
+                    if (s.T?.Texture is { } t)
+                        b.Draw(t, new Vector2(Pos.X + x*8, Pos.Y + y*8), s.Subtext, Color);
+                }
+            }
+        }
+
+        public void Render()
+        {
+#warning MAKE CAMERA, VECTOR2 THE OVERLOAD FOR ISPRITE.RENDER!!!!
+            Render(null, default);
+        }
+
+        public struct AutotiledSprite {
+            public VirtTexture T;
+            //public Vector2 Pos;
+            public Rectangle? Subtext;
+        }
+
+    }
+
 }

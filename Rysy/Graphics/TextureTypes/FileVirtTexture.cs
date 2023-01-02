@@ -15,9 +15,18 @@ internal sealed class FileVirtTexture : VirtTexture
     {
         return Task.Run(() =>
         {
-            texture = Texture2D.FromFile(RysyEngine.GDM.GraphicsDevice, Filename);
-            ClipRect = new(0, 0, texture.Width, texture.Height);
-            state = State.Loaded;
+            try
+            {
+                texture = Texture2D.FromFile(RysyEngine.GDM.GraphicsDevice, Filename);
+                ClipRect = new(0, 0, texture.Width, texture.Height);
+                state = State.Loaded;
+            }
+            catch (Exception e)
+            {
+                Logger.Write("FileVirtTexture", LogLevel.Error, $"Failed loading file texture {this}, {e}");
+                throw;
+            }
+
         });
     }
 

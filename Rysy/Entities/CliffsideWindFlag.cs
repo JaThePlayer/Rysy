@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.Entities;
 
@@ -10,4 +11,16 @@ public class CliffsideWindFlag : SpriteEntity
     public override Vector2 Origin => new();
 
     public override int Depth => 8999;
+
+    public override IEnumerable<ISprite> GetSprites()
+    {
+        var spr = GetSprite();
+        
+        var end = Pos + new Vector2(spr.ForceGetWidth(), 0f);
+        return new SimpleCurve() { 
+            Start = Pos,
+            End = end,
+            Control = (Pos + end) / 2 + new Vector2(0f, 6f)
+        }.GetSpritesForFloatySprite(spr);
+    }
 }

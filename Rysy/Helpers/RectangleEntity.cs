@@ -4,7 +4,7 @@ namespace Rysy.Helpers;
 
 public abstract class RectangleEntity : Entity
 {
-    public abstract Color Color { get; }
+    public abstract Color FillColor { get; }
     public abstract Color OutlineColor { get; }
 
     public override IEnumerable<ISprite> GetSprites()
@@ -21,6 +21,6 @@ public abstract class RectangleEntity : Entity
         };
         var rect = new Rectangle((int)Pos.X, (int)Pos.Y, w, h);
 
-        yield return ISprite.HollowRect(rect, Color, OutlineColor);
+        yield return ISprite.OutlinedRect(rect, FillColor, OutlineColor);
     }
 }
