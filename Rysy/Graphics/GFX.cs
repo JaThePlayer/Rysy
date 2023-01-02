@@ -6,7 +6,7 @@ namespace Rysy.Graphics;
 
 public static class GFX
 {
-    public static Atlas Atlas { get; private set; } = null!;
+    public static IAtlas Atlas { get; private set; } = null!;
 
     public static SpriteBatch Batch { get; private set; } = null!;
 
@@ -15,7 +15,7 @@ public static class GFX
 
     internal static void Load(RysyEngine eng)
     {
-        Atlas = new();
+        Atlas = new Atlas();//new DynamicAtlas(4098, 4098);
         using (ScopedStopwatch watch = new("Scanning vanilla atlas"))
             LoadVanillaAtlas();
 

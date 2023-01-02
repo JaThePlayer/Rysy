@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Graphics.TextureTypes;
+using Rysy.Scenes;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
@@ -14,12 +15,12 @@ public record struct Sprite : ISprite
     public Rectangle? ClipRect;
 
     public Color Color { get; set; } = Color.White;
-    public float Alpha { 
-        get => Color.A / 255f; 
+    public float Alpha {
+        get => Color.A / 255f;
         set {
             //Color = new Color(Color, value);
             Color = Color * value;
-        } 
+        }
     }
 
     public bool IsLoaded => Texture.Texture is { };
@@ -41,7 +42,39 @@ public record struct Sprite : ISprite
         DrawOffset = text.DrawOffset;
     }
 
-    public void Render()
+    /// <summary>
+    /// Forcefully gets the width of this sprite. If this uses a modded texture, it'll likely cause preloading.
+    /// </summary>
+    public int ForceGetWidth()
+    {
+        if (Width == 0)
+        {
+            LoadSizeFromTexture();
+        }
+
+        return Width;
+    }
+
+    /// <summary>
+    /// Forcefully gets the height of this sprite. If this uses a modded texture, it'll likely cause preloading.
+    /// </summary>
+    public int ForceGetHeight()
+    {
+        if (Height == 0)
+        {
+            LoadSizeFromTexture();
+        }
+
+        return Height;
+    }
+
+    private void LoadSizeFromTexture()
+    {
+        Width = Texture.Width;
+        Height = Texture.Height;
+    }
+
+    public void Render(Camera? cam, Vector2 offset)
     {
         if (Texture.Texture is { } texture)
         {
@@ -50,8 +83,7 @@ public record struct Sprite : ISprite
             ClipRect ??= Texture.ClipRect;
             if (Width == 0)
             {
-                Width = Texture.Width;
-                Height = Texture.Height;
+                LoadSizeFromTexture();
             }
 
             var flip = SpriteEffects.None;
@@ -71,6 +103,9 @@ public record struct Sprite : ISprite
                 origin.Y = ClipRect!.Value.Height - origin.Y;
             }
 
+            if (cam is { } && !cam.IsRectVisible(new((Pos + offset - origin).ToPoint(), new((int)(Width), (int)(Height)))))
+                return;
+
             if (OutlineColor != default)
             {
                 var color = OutlineColor;
@@ -83,6 +118,11 @@ public record struct Sprite : ISprite
 
             Render(texture, Pos, Color, scale, flip, origin);
         }
+    }
+
+    public void Render()
+    {
+        Render(null, default);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

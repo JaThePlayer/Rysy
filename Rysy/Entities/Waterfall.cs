@@ -35,7 +35,7 @@ public class Waterfall : Entity
         {
             if (e is IWaterfallBlocker { BlockWaterfalls: true })
             {
-                Rectangle bRect = EntityHelper.GetEntityRectangle(e);
+                Rectangle bRect = e.Rectangle;
 
                 if (bRect.Intersects(rect))
                 {

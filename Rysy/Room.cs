@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.Scenes;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Rysy;
 
@@ -129,7 +131,7 @@ public sealed class Room : IPackable
         }
 
         GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
-        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * .3f).Render();
+        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * .5f).Render();
 
         if (CachedSprites is null)
         {
@@ -152,8 +154,18 @@ public sealed class Room : IPackable
 
         foreach (var item in CachedSprites)
         {
-            item.Render();
+            if (item is Sprite s)
+            {
+                s.Render(camera, new(X, Y));
+            }
+            else if(item is Autotiler.AutotiledSpriteList s2)
+            {
+                s2.Render(camera, new(X, Y));
+            }
+            else
+                item.Render();
         }
+
 
         GFX.Batch.End();
     }
@@ -162,7 +174,7 @@ public sealed class Room : IPackable
     {
         Task.Run(async () =>
         {
-            using (var w = new ScopedStopwatch($"Loading textures for {Name}"))
+            using (var w = new ScopedStopwatch($"Loading {CachedSprites!.Count} textures for {Name}"))
                 while (!CachedSprites!.All(s => s.IsLoaded))
                 {
                     await Task.Delay(100);
@@ -190,7 +202,7 @@ public sealed class Room : IPackable
 
         foreach (var e in Entities[typeof(ISolid)])
         {
-            Rectangle bRect = EntityHelper.GetEntityRectangle(e);
+            Rectangle bRect = e.Rectangle;
 
             if (bRect.Contains(pos))
             {

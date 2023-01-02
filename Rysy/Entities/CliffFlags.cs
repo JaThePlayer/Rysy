@@ -70,16 +70,9 @@ public class CliffFlags : Entity, ICustomNodeHandler
                     Control = (pos + nextPos) / 2 + new Vector2(0f, cloth.Length * droopAmount * 2.4f)
                 };
 
-                var clothStart = pos;
-                for (float i = 1f; i <= cloth.Length; i++)
+                foreach (var item in clothCurve.GetSpritesForFloatyRectangle(new((int)pos.X, (int)pos.Y, cloth.Length, cloth.Height), color))
                 {
-                    var clothSliceEnd = clothCurve.GetPointAt(i / cloth.Length);
-                    clothSliceEnd.Floor();
-                    if (clothStart.X < clothSliceEnd.X)
-                    {
-                        yield return ISprite.Rect(clothStart, (int)(clothSliceEnd.X - clothStart.X + 1f), cloth.Height, color);
-                        clothStart = clothSliceEnd;
-                    }
+                    yield return item;
                 }
 
                 // highlights

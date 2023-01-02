@@ -15,7 +15,5 @@ public class Cloud : SpriteEntity
 
     public override Vector2 Origin => new(.5f, 0f);
 
-    //public override Vector2 Offset => new(0f, 8f); // because clouds use hardcoded 8 as origin... check if this is equivalent?
-
     public override int Depth => 0;
 }

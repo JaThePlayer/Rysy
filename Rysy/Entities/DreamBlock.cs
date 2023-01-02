@@ -5,7 +5,7 @@ namespace Rysy.Entities;
 [CustomEntity("dreamBlock")]
 public class DreamBlock : RectangleEntity, ISolid
 {
-    public override Color Color => Color.Black;
+    public override Color FillColor => Color.Black;
 
     public override Color OutlineColor => Color.White;
 

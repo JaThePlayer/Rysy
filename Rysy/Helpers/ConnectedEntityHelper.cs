@@ -30,6 +30,8 @@ public static class ConnectedEntityHelper
                 {
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, x, 0f);
                 }
+                else
+                    yield return GetTexture(NineSliceLocation.Middle, x, 0f);
             }
 
 
@@ -47,6 +49,8 @@ public static class ConnectedEntityHelper
                 {
                     yield return GetTexture(NineSliceLocation.InnerCorner_DownLeft, x, h - 8f);
                 }
+                else
+                    yield return GetTexture(NineSliceLocation.Middle, x, h - 8f);
             }
         }
 
@@ -63,6 +67,8 @@ public static class ConnectedEntityHelper
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, 0f, y);
                 else if (Open(self, others, -8f, y + 8))
                     yield return GetTexture(NineSliceLocation.InnerCorner_DownLeft, 0f, y);
+                else
+                    yield return GetTexture(NineSliceLocation.Middle, 0f, y);
             }
 
 
@@ -76,6 +82,8 @@ public static class ConnectedEntityHelper
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpRight, w - 8f, y);
                 else if (Open(self, others, w + 8, y + 8))
                     yield return GetTexture(NineSliceLocation.InnerCorner_DownRight, w - 8f, y);
+                else
+                    yield return GetTexture(NineSliceLocation.Middle, w - 8f, y);
             }
         }
 
@@ -169,7 +177,7 @@ public static class ConnectedEntityHelper
                 continue;
             }
 
-            if (selfRect.Intersects(EntityHelper.GetEntityRectangle(other)))
+            if (selfRect.Intersects(other.Rectangle))
             {
                 return false;
             }

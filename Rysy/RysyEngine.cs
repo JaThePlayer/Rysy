@@ -2,6 +2,7 @@
 using Rysy;
 using Rysy.Graphics;
 using Rysy.Scenes;
+using System.Text.Json;
 
 public sealed class RysyEngine : Game
 {
@@ -18,20 +19,24 @@ public sealed class RysyEngine : Game
 
     private static SmartFramerate smartFramerate = new(5);
 
+    /// <summary>
+    /// Action that will be called on the UI thread once this frame ends.
+    /// Afterwards, this will be set to null.
+    /// </summary>
+    public static event Action? OnFrameEnd = null;
+
     public RysyEngine()
     {
         Instance = this;
 
         GDM = new GraphicsDeviceManager(this);
-
+        
         Window.AllowUserResizing = true;
         IsMouseVisible = true;
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
-        //GDM.SynchronizeWithVerticalRetrace = false;
-        //TargetElapsedTime = TimeSpan.FromMilliseconds(0.1);
 
-        IsFixedTimeStep = false;
+        IsFixedTimeStep = true;
     }
 
     public static Action<Viewport>? OnViewportChanged;
@@ -39,15 +44,28 @@ public sealed class RysyEngine : Game
     private void Window_ClientSizeChanged(object? sender, EventArgs e)
     {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
+
+#warning TODO: save resize to settings
     }
 
     protected override void Initialize()
     {
         base.Initialize();
 
+        Reload();
+
+        ResizeWindow(Settings.Instance.StartingWindowWidth, Settings.Instance.StartingWindowHeight);
+    }
+
+    public void Reload()
+    {
+        using var reloadTimer = new ScopedStopwatch("Loading");
+
+        Scene = new BlankScene();
+
         try
         {
-            Settings.Instance = Settings.Load();
+            Settings.Instance = SettingsHelper.Load();
         }
         catch
         {
@@ -56,18 +74,21 @@ public sealed class RysyEngine : Game
 
         if (Settings.Instance.CelesteDirectory is null or "")
         {
-            Logger.Write("Engine", LogLevel.Error, $"CelesteDirectory is {"empty"}! For now, please go to {Settings.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
+            Logger.Write("Engine", LogLevel.Error, $"CelesteDirectory is {"empty"}! For now, please go to {SettingsHelper.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
             return;
         }
         if (Settings.Instance.LastEditedMap is null or "")
         {
-            Logger.Write("Engine", LogLevel.Error, $"LastEditedMap is {"empty"}! For now, please go to {Settings.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
+            Logger.Write("Engine", LogLevel.Error, $"LastEditedMap is {"empty"}! For now, please go to {SettingsHelper.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
             return;
         }
 
         GFX.Load(this);
 
         EntityRegistry.Register();
+
+        //Scene = new DynamicAtlasTestScene();
+        //return;
 
         try
         {
@@ -83,6 +104,18 @@ public sealed class RysyEngine : Game
         }
     }
 
+    private void ResizeWindow(int w, int y)
+    {
+        OnFrameEnd += () =>
+        {
+            GDM.PreferredBackBufferWidth = w;
+            GDM.PreferredBackBufferHeight = y;
+            GDM.ApplyChanges();
+            Window.Position = new Point(0, Window.Position.Y);
+            Window_ClientSizeChanged(null, new());
+        };
+    }
+
     protected override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
@@ -92,6 +125,9 @@ public sealed class RysyEngine : Game
             Input.Update(gameTime);
 
             Scene.Update();
+
+            OnFrameEnd?.Invoke();
+            OnFrameEnd = null;
         }
 
     }
@@ -117,7 +153,8 @@ public sealed class RysyEngine : Game
             {
                 printedfps = true;
                 //var framerate = (1 / gameTime.ElapsedGameTime.TotalSeconds);
-                //Console.WriteLine(smartFramerate.framerate);
+                Console.WriteLine(smartFramerate.framerate);
+                Console.WriteLine(JsonSerializer.Serialize(GraphicsDevice.Metrics));
             }
 
         }

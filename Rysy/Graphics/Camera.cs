@@ -8,7 +8,7 @@ public class Camera
     public Vector2 Pos => _pos;
     public float Scale = 1f;
 
-    private Viewport Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+    public Viewport Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
 
     public Camera()
     {
@@ -109,5 +109,26 @@ public class Camera
         var h = rect.Height * Scale;
 
         return Viewport.Bounds.Intersects(new Rectangle((int)x, (int)y, (int)w, (int)h));
+    }
+
+    public void HandleMouseMovement()
+    {
+        // Right click drag - move camera
+        if (Input.Mouse.Right.Held() && Input.Mouse.PositionDelta != default)
+        {
+            Move(-Input.Mouse.PositionDelta.ToVector2() / Scale);
+        }
+
+        if (Input.Mouse.MouseX1.Clicked())
+        {
+            CenterOnMousePos();
+        }
+
+        // Scrolled - zoom camera
+        switch (Input.Mouse.ScrollDelta)
+        {
+            case > 0: ZoomIn(); break;
+            case < 0: ZoomOut(); break;
+        }
     }
 }

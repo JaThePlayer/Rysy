@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 [CustomEntity("strawberry")]
 [CustomEntity("goldenBerry")]
 [CustomEntity("memorialTextController")]
-public class Strawberry : SpriteEntity, INodeSpriteProvider
+public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider
 {
     public override string TexturePath => 
           Moon ? "collectables/moonBerry/normal00"
@@ -16,8 +16,10 @@ public class Strawberry : SpriteEntity, INodeSpriteProvider
     public override int Depth => Depths.Top;
 
     public bool Winged => Bool("winged") || EntityData.Name == "memorialTextController";
-    public bool Golden => EntityData.Name == "memorialTextController" || EntityData.Name == "goldenBerry";
+    public bool Golden => EntityData.Name is "memorialTextController" or "goldenBerry";
     public bool Moon => Bool("moon");
+
+    public IEnumerable<ISprite> NodePathSprites => NodePathTypes.Fan(this);
 
     public IEnumerable<ISprite> GetNodeSprites(int nodeIndex)
     {

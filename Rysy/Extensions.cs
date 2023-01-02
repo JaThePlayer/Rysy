@@ -121,7 +121,12 @@ public static class Extensions
     public static float Angle(Vector2 from, Vector2 to)
         => float.Atan2(to.Y - from.Y, to.X - from.X);
 
-    public static Vector2 AngleToVector(float angleRadians, float length)
+    public static Vector2 AngleToVector(this float angleRadians, float length)
         => new(float.Cos(angleRadians) * length, float.Sin(angleRadians) * length);
 
+    public static float ToRad(this float angle) => angle / 180f * MathF.PI;
+
+    public static Vector2 Floored(this Vector2 v) => Vector2.Floor(v);
+    public static Vector2 Rounded(this Vector2 v) => Vector2.Round(v);
+    public static Vector2 Normalized(this Vector2 v) => Vector2.Normalize(v);
 }

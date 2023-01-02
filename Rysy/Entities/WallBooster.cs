@@ -32,7 +32,7 @@ public class WallBooster : Entity
         {
             yield return ISprite.FromTexture(GetSprite(ice, GetSliceLocation(i, h))) with
             {
-                Pos = Pos + new Vector2(left ? 0 : 4, i),
+                Pos = Pos + new Vector2(left ? 0 : 8, i),
                 Scale = new(left ? 1f : -1f, 1f)
             };
         }

@@ -48,23 +48,7 @@ public sealed class EditorScene : Scene
     {
         base.Update();
 
-        // Right click drag - move camera
-        if (Input.Mouse.Right.Held() && Input.Mouse.PositionDelta != default)
-        {
-            Camera.Move(-Input.Mouse.PositionDelta.ToVector2() / Camera.Scale);
-        }
-
-        if (Input.Mouse.MouseX1.Clicked())
-        {
-            Camera.CenterOnMousePos();
-        }
-
-        // Scrolled - zoom camera
-        switch (Input.Mouse.ScrollDelta)
-        {
-            case > 0: Camera.ZoomIn(); break;
-            case < 0: Camera.ZoomOut(); break;
-        }
+        Camera.HandleMouseMovement();
     }
 
     private static RenderTarget2D __temp = new(RysyEngine.GDM.GraphicsDevice, 1920, 1080, false, SurfaceFormat.Color, DepthFormat.None);
@@ -77,7 +61,6 @@ public sealed class EditorScene : Scene
 
         GFX.Batch.GraphicsDevice.SetRenderTarget(__temp);
 
-        //CurrentRoom.Render(Camera);
         foreach (var item in Map.Rooms)
         {
             item.Value.Render(Camera);
@@ -101,33 +84,42 @@ public sealed class EditorScene : Scene
             Logger.Write("DebugHotkey", LogLevel.Debug, $"Switching to room {CurrentRoom.Name}");
         }
 
-        // clear render cache
-        if (Input.Keyboard.IsKeyClicked(Keys.F4))
+        if (Input.Keyboard.Ctrl())
         {
-            foreach (var item in Map.Rooms)
-                item.Value.ClearRenderCache();
-        }
+            // Reload everything
+            if (Input.Keyboard.IsKeyClicked(Keys.F5))
+            {
+                Task.Run(() =>
+                {
+                    RysyEngine.Instance.Reload();
+                    GC.Collect(3);
+                });
+            }
+        } else
+        {
+            // clear render cache
+            if (Input.Keyboard.IsKeyClicked(Keys.F4))
+            {
+                foreach (var item in Map.Rooms)
+                    item.Value.ClearRenderCache();
+            }
 
-        // Reload textures
-        if (Input.Keyboard.IsKeyClicked(Keys.F5))
-        {
-            GFX.Atlas.DisposeTextures();
-            foreach (var item in Map.Rooms)
-                item.Value.ClearRenderCache();
-            GC.Collect(3);
-        }
+            // Reload textures
+            if (Input.Keyboard.IsKeyClicked(Keys.F5))
+            {
+                GFX.Atlas.DisposeTextures();
+                foreach (var item in Map.Rooms)
+                    item.Value.ClearRenderCache();
+                GC.Collect(3);
+            }
 
-        // Re-register entities
-        if (Input.Keyboard.IsKeyClicked(Keys.F6))
-        {
-            EntityRegistry.Register();
-            CurrentRoom.ClearRenderCache();
-            GC.Collect(3);
+            // Re-register entities
+            if (Input.Keyboard.IsKeyClicked(Keys.F6))
+            {
+                EntityRegistry.Register();
+                CurrentRoom.ClearRenderCache();
+                GC.Collect(3);
+            }
         }
-        /*
-        foreach (var item in Map.Rooms)
-        {
-            item.Value.Render(Camera);
-        }*/
     }
 }

@@ -1,59 +1,36 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.Entities;
 
 [CustomEntity("spikesUp")]
-public class SpikesUp : LoopingSpriteEntity
+public sealed class SpikesUp : Entity
 {
-    public override string TexturePath => $"danger/spikes/{Attr("type", "default")}_up00";
-
     public override int Depth => -1;
 
-    public override Vector2 Origin => new(0.5f, 1f);
-
-    public override Vector2 Offset => new(4f, 1f);
-
-    public override int? SpriteSpacingOverride => 8;
+    public override IEnumerable<ISprite> GetSprites() => SpikeHelper.GetSprites(this, SpikeHelper.Direction.Up, Attr("type", "default"));
 }
 
 [CustomEntity("spikesDown")]
-public class SpikesDown : LoopingSpriteEntity
+public sealed class SpikesDown : Entity
 {
-    public override string TexturePath => $"danger/spikes/{Attr("type", "default")}_down00";
-
     public override int Depth => -1;
 
-    public override Vector2 Origin => new(0.5f, 0f);
-
-    public override Vector2 Offset => new(4f, -1f);
-
-    public override int? SpriteSpacingOverride => 8;
+    public override IEnumerable<ISprite> GetSprites() => SpikeHelper.GetSprites(this, SpikeHelper.Direction.Down, Attr("type", "default"));
 }
 
 [CustomEntity("spikesRight")]
-public class SpikesRight : LoopingSpriteEntity
+public sealed class SpikesRight : Entity
 {
-    public override string TexturePath => $"danger/spikes/{Attr("type", "default")}_right00";
-
     public override int Depth => -1;
 
-    public override Vector2 Origin => new(0f, 0.5f);
-
-    public override Vector2 Offset => new(-1f, 4f);
-
-    public override int? SpriteSpacingOverride => 8;
+    public override IEnumerable<ISprite> GetSprites() => SpikeHelper.GetSprites(this, SpikeHelper.Direction.Right, Attr("type", "default"));
 }
 
 [CustomEntity("spikesLeft")]
-public class SpikesLeft : LoopingSpriteEntity
+public sealed class SpikesLeft : Entity
 {
-    public override string TexturePath => $"danger/spikes/{Attr("type", "default")}_left00";
-
     public override int Depth => -1;
 
-    public override Vector2 Origin => new(1f, 0.5f);
-
-    public override Vector2 Offset => new(1f, 4f);
-
-    public override int? SpriteSpacingOverride => 8;
+    public override IEnumerable<ISprite> GetSprites() => SpikeHelper.GetSprites(this, SpikeHelper.Direction.Left, Attr("type", "default"));
 }

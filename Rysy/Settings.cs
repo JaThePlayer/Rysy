@@ -4,23 +4,13 @@ using System.Text.Json;
 
 namespace Rysy;
 
-public sealed class Settings
+public static class SettingsHelper
 {
     public static string SettingsFileLocation = $"{RysyPlatform.Current.GetSaveLocation()}/settings.json";
 
-    public static Settings Instance { get; internal set; } = null!;
-
-    public string CelesteDirectory { get; set; } = "";
-    public string LastEditedMap { get; set; } = "";
-
-    public bool LogMissingEntities { get; set; } = false;
-    public bool LogTextureLoadTimes { get; set; } = false;
-
-    public string ModsDirectory => $"{CelesteDirectory}/Mods";
-
     public static Settings Load()
     {
-        var settingsFile = SettingsFileLocation;
+        var settingsFile = SettingsHelper.SettingsFileLocation;
         string saveLocation = RysyPlatform.Current.GetSaveLocation();
 
         Settings? settings = null;
@@ -36,7 +26,8 @@ public sealed class Settings
             {
                 using var stream = File.OpenRead(settingsFile);
                 settings = JsonSerializer.Deserialize<Settings>(stream, JsonSerializerHelper.DefaultOptions);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading settings! {e}");
                 throw;
@@ -57,4 +48,24 @@ public sealed class Settings
 
         return settings;
     }
+
+
+}
+
+public sealed class Settings
+{
+    public static Settings Instance { get; internal set; } = null!;
+
+    #region Serialized
+    public string CelesteDirectory { get; set; } = "";
+    public string LastEditedMap { get; set; } = "";
+
+    public bool LogMissingEntities { get; set; } = false;
+    public bool LogTextureLoadTimes { get; set; } = false;
+
+    public int StartingWindowWidth { get; set; } = 800;
+    public int StartingWindowHeight { get; set; } = 480;
+    #endregion
+
+    public string ModsDirectory => $"{CelesteDirectory}/Mods";
 }
