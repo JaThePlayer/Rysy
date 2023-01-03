@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Graphics.TextureTypes;
-using Rysy.Scenes;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
@@ -15,9 +14,11 @@ public record struct Sprite : ISprite
     public Rectangle? ClipRect;
 
     public Color Color { get; set; } = Color.White;
-    public float Alpha {
+    public float Alpha
+    {
         get => Color.A / 255f;
-        set {
+        set
+        {
             //Color = new Color(Color, value);
             Color = Color * value;
         }
@@ -30,7 +31,7 @@ public record struct Sprite : ISprite
     public float Rotation = 0f;
     public Vector2 Origin = Vector2.Zero;
     public Vector2 Scale = Vector2.One;
-    //public SpriteEffects Flip = SpriteEffects.None;
+    private SpriteEffects Flip = SpriteEffects.None;
 
     public Vector2 DrawOffset;
     public int Width;
@@ -84,28 +85,38 @@ public record struct Sprite : ISprite
             if (Width == 0)
             {
                 LoadSizeFromTexture();
+
+                // Fixup properties now, at this point nothing should try to get stuff from the sprite...
+                Flip = SpriteEffects.None;
+                Origin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+                // Monogame doesn't like negative scales...
+                if (Scale.X < 0)
+                {
+                    Scale.X = -Scale.X;
+                    Flip ^= SpriteEffects.FlipHorizontally;
+                    Origin.X = ClipRect!.Value.Width - Origin.X;
+                }
+                if (Scale.Y < 0)
+                {
+                    Scale.Y = -Scale.Y;
+                    Flip ^= SpriteEffects.FlipVertically;
+                    Origin.Y = ClipRect!.Value.Height - Origin.Y;
+                }
             }
 
-            var flip = SpriteEffects.None;
             var scale = Scale;
-            var origin = (Origin * new Vector2(Width, Height)) + DrawOffset;
-            // Monogame doesn't like negative scales...
-            if (scale.X < 0)
+
+            if (cam is { })
             {
-                scale.X = -scale.X;
-                flip ^= SpriteEffects.FlipHorizontally;
-                origin.X = ClipRect!.Value.Width - origin.X;
-            }
-            if (scale.Y < 0)
-            {
-                scale.Y = -scale.Y;
-                flip ^= SpriteEffects.FlipVertically;
-                origin.Y = ClipRect!.Value.Height - origin.Y;
+                var size = new Vector2(Width * scale.X, Height * scale.Y);
+                var pos = Pos - Origin * scale;
+                //ISprite.HollowRect(pos, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
+                if (!cam.IsRectVisible(pos + offset, (int)size.X, (int)size.Y))
+                    return;
             }
 
-            if (cam is { } && !cam.IsRectVisible(new((Pos + offset - origin).ToPoint(), new((int)(Width), (int)(Height)))))
-                return;
-
+            var flip = Flip;
+            var origin = Origin;
             if (OutlineColor != default)
             {
                 var color = OutlineColor;
@@ -115,7 +126,6 @@ public record struct Sprite : ISprite
                 Render(texture, Pos + new Vector2(0f, 1f), color, scale, flip, origin);
                 Render(texture, Pos + new Vector2(0f, -1f), color, scale, flip, origin);
             }
-
             Render(texture, Pos, Color, scale, flip, origin);
         }
     }
@@ -143,7 +153,8 @@ public record struct Sprite : ISprite
         {
             ClipRect = GetSubtextureRect(x, y, w, h),
             DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)),
-            Width = w, Height = h
+            Width = w,
+            Height = h
         };
     }
 

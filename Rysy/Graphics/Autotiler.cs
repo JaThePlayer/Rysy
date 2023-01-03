@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -84,7 +84,7 @@ public sealed class Autotiler
             Span<bool> mask = stackalloc bool[9];
             char middleTile = t[x, y];
             mask[0] = IsTileAt(x - 1, y - 1);
-            mask[1] = IsTileAt(x    , y - 1);
+            mask[1] = IsTileAt(x, y - 1);
             mask[2] = IsTileAt(x + 1, y - 1);
 
             mask[3] = IsTileAt(x - 1, y);
@@ -92,7 +92,7 @@ public sealed class Autotiler
             mask[5] = IsTileAt(x + 1, y);
 
             mask[6] = IsTileAt(x - 1, y + 1);
-            mask[7] = IsTileAt(x    , y + 1);
+            mask[7] = IsTileAt(x, y + 1);
             mask[8] = IsTileAt(x + 1, y + 1);
 
 
@@ -107,7 +107,8 @@ public sealed class Autotiler
              || !IsTileAt(x, y + 2))
             {
                 tiles = Padding;
-            } else
+            }
+            else
             {
                 tiles = Center;
             }
@@ -210,14 +211,14 @@ public sealed class Autotiler
 
                     switch (mask)
                     {
-                        case "padding":
-                            autotilerData.Padding = ParseTiles(tiles);
-                            return (null!, null!);
-                        case "center":
-                            autotilerData.Center = ParseTiles(tiles);
-                            return (null!, null!);
-                        default:
-                            return (mask.Replace("-", ""), ParseTiles(tiles));
+                    case "padding":
+                        autotilerData.Padding = ParseTiles(tiles);
+                        return (null!, null!);
+                    case "center":
+                        autotilerData.Center = ParseTiles(tiles);
+                        return (null!, null!);
+                    default:
+                        return (mask.Replace("-", ""), ParseTiles(tiles));
                     }
                 }).Where(x => x.Item1 is { }).ToList();
 
@@ -262,8 +263,9 @@ public sealed class Autotiler
                     continue;
                 }
 
-                var tile = tiles[random.Next(0, tiles.Length)];
-                yield return ISprite.FromTexture(position + new Vector2(x * 8, y * 8), data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
+                var pos = position + new Vector2(x * 8, y * 8);
+                var tile = tiles[RandomExt.SeededRandom(x, y) % (uint)tiles.Length];
+                yield return ISprite.FromTexture(pos, data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
             }
         }
     }
@@ -312,7 +314,7 @@ public sealed class Autotiler
 
         AutotiledSpriteList l = new()
         {
-            Sprites = new AutotiledSpriteList.AutotiledSprite[w,h],
+            Sprites = new AutotiledSpriteList.AutotiledSprite[w, h],
             Pos = position,
         };
 
@@ -343,7 +345,10 @@ public sealed class Autotiler
                     continue;
                 }
 
-                var tile = tiles[random.Next(0, tiles.Length)];
+
+                //var tile = tiles[random.Next(0, tiles.Length)];
+                var tile = tiles[RandomExt.SeededRandom(x, y) % (uint)tiles.Length];
+
                 l.Sprites[x, y] = new()
                 {
                     T = data.Texture,
@@ -351,7 +356,6 @@ public sealed class Autotiler
                 };
             }
         }
-
         yield return l;
     }
 
@@ -394,7 +398,7 @@ public sealed class Autotiler
                     var s = sprites[x, y];
 
                     if (s.T?.Texture is { } t)
-                        b.Draw(t, new Vector2(Pos.X + x*8, Pos.Y + y*8), s.Subtext, Color);
+                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtext, Color);
                 }
             }
         }
@@ -405,7 +409,8 @@ public sealed class Autotiler
             Render(null, default);
         }
 
-        public struct AutotiledSprite {
+        public struct AutotiledSprite
+        {
             public VirtTexture T;
             //public Vector2 Pos;
             public Rectangle? Subtext;

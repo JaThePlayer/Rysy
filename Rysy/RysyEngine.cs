@@ -25,6 +25,10 @@ public sealed class RysyEngine : Game
     /// </summary>
     public static event Action? OnFrameEnd = null;
 
+    public static double Framerate;
+
+    public static float ForceActiveTimer = 0.0f;
+
     public RysyEngine()
     {
         Instance = this;
@@ -35,8 +39,18 @@ public sealed class RysyEngine : Game
         IsMouseVisible = true;
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
+        Window.FileDrop += Window_FileDrop;
 
+        TargetElapsedTime = TimeSpan.FromSeconds(1d / 120d);
+        GDM.SynchronizeWithVerticalRetrace = false;
         IsFixedTimeStep = true;
+    }
+
+    private void Window_FileDrop(object? sender, FileDropEventArgs e)
+    {
+        Console.WriteLine(string.Join(' ', e.Files));
+
+        Scene?.OnFileDrop(e);
     }
 
     public static Action<Viewport>? OnViewportChanged;
@@ -45,73 +59,96 @@ public sealed class RysyEngine : Game
     {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
 
-#warning TODO: save resize to settings
+        if (Persistence.Instance is { }) {
+            Persistence.Instance.Set("StartingWindowWidth", GDM.GraphicsDevice.Viewport.Width);
+            Persistence.Instance.Set("StartingWindowHeight", GDM.GraphicsDevice.Viewport.Height);
+            Persistence.Instance.Set("StartingWindowX", Window.Position.X);
+            Persistence.Instance.Set("StartingWindowY", Window.Position.Y);
+            Persistence.Save(Persistence.Instance);
+        }
     }
 
-    protected override void Initialize()
+    protected override async void Initialize()
     {
         base.Initialize();
 
-        Reload();
-
-        ResizeWindow(Settings.Instance.StartingWindowWidth, Settings.Instance.StartingWindowHeight);
+        await ReloadAsync();
     }
 
-    public void Reload()
+    public async ValueTask ReloadAsync()
     {
+        
         using var reloadTimer = new ScopedStopwatch("Loading");
+        GFX.LoadEssencials(this);
+        LoadingScene loading = new() { Text = "Loading settings" };
+        Scene = loading;
 
-        Scene = new BlankScene();
+        try {
+            Profile.CurrentProfile = SettingsHelper.Load<Profile>("profile.json");
+        } catch {
+            Profile.CurrentProfile = SettingsHelper.Save<Profile>(new(), "profile.json");
+        }
 
         try
         {
-            Settings.Instance = SettingsHelper.Load();
+            Settings.Instance = Settings.Load();
         }
         catch
         {
             return; // No point in loading any further. Error is already logged by .Load()
         }
 
-        if (Settings.Instance.CelesteDirectory is null or "")
-        {
-            Logger.Write("Engine", LogLevel.Error, $"CelesteDirectory is {"empty"}! For now, please go to {SettingsHelper.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
-            return;
-        }
-        if (Settings.Instance.LastEditedMap is null or "")
-        {
-            Logger.Write("Engine", LogLevel.Error, $"LastEditedMap is {"empty"}! For now, please go to {SettingsHelper.SettingsFileLocation.CorrectSlashes()} and edit it manually.");
-            return;
-        }
-
-        GFX.Load(this);
-
-        EntityRegistry.Register();
-
-        //Scene = new DynamicAtlasTestScene();
-        //return;
-
         try
         {
-            var mapBin = BinaryPacker.FromBinary(Settings.Instance.LastEditedMap);
-            var map = Map.FromBinaryPackage(mapBin);
-            Scene = new EditorScene(map);
+            Persistence.Instance = Persistence.Load();
         }
-        catch (Exception e)
+        catch
         {
-            Logger.Write("Engine", LogLevel.Error, $"Failed to load last edited map: {Settings.Instance.LastEditedMap.CorrectSlashes()} {e}");
-            // TODO: Better handling
-            return;
+            // persistence will be `new()`'d up. Oh well.
+            Persistence.Instance = Persistence.Save(new());
         }
+
+        //ResizeWindow(Settings.Instance.StartingWindowWidth, Settings.Instance.StartingWindowHeight);
+        ResizeWindow(
+            Persistence.Instance.Get("StartingWindowWidth", 800),
+            Persistence.Instance.Get("StartingWindowHeight", 480),
+            Persistence.Instance.Get("StartingWindowX", Window.Position.X),
+            Persistence.Instance.Get("StartingWindowY", Window.Position.Y)
+        );
+
+        /*
+#if DEBUG
+        Time.TimeScale = 0f;
+        while (!Input.Mouse.Right.Clicked())
+        {
+            await Task.Delay(10);
+        }
+        Time.TimeScale = 1f;
+#endif
+*/
+
+        if (Settings.Instance.CelesteDirectory is null or "")
+        {
+            var picker = new PickCelesteInstallScene(Scene);
+            Scene = picker;
+            await picker.AwaitInstallPickedAsync();
+        }
+
+        await GFX.LoadAsync();
+
+        await EntityRegistry.RegisterAsync();
+
+        Scene = new EditorScene();
     }
 
-    private void ResizeWindow(int w, int y)
+    private void ResizeWindow(int w, int h, int x, int y)
     {
         OnFrameEnd += () =>
         {
             GDM.PreferredBackBufferWidth = w;
-            GDM.PreferredBackBufferHeight = y;
+            GDM.PreferredBackBufferHeight = h;
             GDM.ApplyChanges();
-            Window.Position = new Point(0, Window.Position.Y);
+            Window.Position = new(x, Math.Max(32, y));
             Window_ClientSizeChanged(null, new());
         };
     }
@@ -122,6 +159,7 @@ public sealed class RysyEngine : Game
 
         if (IsActive)
         {
+            Time.Update(gameTime);
             Input.Update(gameTime);
 
             Scene.Update();
@@ -132,38 +170,21 @@ public sealed class RysyEngine : Game
 
     }
 
-    bool printedfps = false;
     protected override void Draw(GameTime gameTime)
     {
-        if (IsActive)
+        if (IsActive || ForceActiveTimer > 0f)
         {
+            ForceActiveTimer -= Time.Delta;
             base.Draw(gameTime);
-
 
             GraphicsDevice.Clear(Color.Black);
 
             Scene.Render();
+
+            smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
+
+            Framerate = smartFramerate.framerate;
         }
-
-
-        smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
-        if (gameTime.TotalGameTime.Seconds % 2 == 0)
-        {
-            if (!printedfps)
-            {
-                printedfps = true;
-                //var framerate = (1 / gameTime.ElapsedGameTime.TotalSeconds);
-                Console.WriteLine(smartFramerate.framerate);
-                Console.WriteLine(JsonSerializer.Serialize(GraphicsDevice.Metrics));
-            }
-
-        }
-        else
-        {
-            printedfps = false;
-        }
-
-
     }
 
     //https://stackoverflow.com/a/44689035

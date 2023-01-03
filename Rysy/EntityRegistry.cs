@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using Rysy.Entities;
+using Rysy.Scenes;
+using Rysy.Triggers;
 
 namespace Rysy;
 
@@ -7,19 +9,21 @@ public static class EntityRegistry
 {
     public static Dictionary<string, Type> SIDToType = new();
 
-    public static void Register()
+    public static async ValueTask RegisterAsync()
     {
         SIDToType.Clear();
 
+        var loadingScene = RysyEngine.Scene as LoadingScene;
+        loadingScene?.SetText("Registering entities");
         using (var watch = new ScopedStopwatch("Registering entities"))
         {
-            AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom).AwaitAll();
+            await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
     }
 
     public static void RegisterFrom(Assembly asm)
     {
-        foreach (var t in asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity)))
+        foreach (var t in asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity) && t != typeof(Trigger)))
         {
             var sids = t.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToArray();
 
@@ -38,7 +42,7 @@ public static class EntityRegistry
         }
     }
 
-    public static Entity Create(BinaryPacker.Element from, Room room)
+    public static Entity Create(BinaryPacker.Element from, Room room, bool trigger)
     {
         var sid = from.Name ?? throw new Exception($"Entity SID is null in entity element???");
 
@@ -55,7 +59,7 @@ public static class EntityRegistry
         {
             if (Settings.Instance.LogMissingEntities)
                 Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
-            e = new UnknownEntity();
+            e = trigger ? new Trigger() : new UnknownEntity();
         }
 
         e.ID = from.Int("id");
