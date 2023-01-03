@@ -22,9 +22,9 @@ internal class DynamicAtlasTestScene : Scene
             // Reload everything
             if (Input.Keyboard.IsKeyClicked(Keys.F5))
             {
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
-                    RysyEngine.Instance.Reload();
+                    await RysyEngine.Instance.ReloadAsync();
                     GC.Collect(3);
                 });
             }

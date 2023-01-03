@@ -1,14 +1,19 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Graphics;
 using Rysy.Helpers;
-using Rysy.Scenes;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using Rysy.Triggers;
 
 namespace Rysy;
 
 public sealed class Room : IPackable
 {
+    public Room()
+    {
+        RenderCacheToken = new(ClearRenderCache);
+    }
+
+    public CacheToken RenderCacheToken;
+
     private Map _map = null!;
     public Map Map
     {
@@ -24,6 +29,7 @@ public sealed class Room : IPackable
     public Rectangle Bounds => new(X, Y, Width, Height);
 
     public TypeTrackedList<Entity> Entities = new();
+    public TypeTrackedList<Entity> Triggers = new();
 
     public List<Decal> BgDecals = new();
     public List<Decal> FgDecals = new();
@@ -79,36 +85,40 @@ public sealed class Room : IPackable
         {
             switch (child.Name)
             {
-                case "bgdecals":
-                    BgDecals = child.Children.Select(Decal.Create).ToList();
-                    break;
-                case "fgdecals":
-                    FgDecals = child.Children.Select(Decal.Create).ToList();
-                    break;
-                case "entities":
-                    foreach (var entity in child.Children)
-                    {
-                        Entities.Add(EntityRegistry.Create(entity, this));
-                    }
+            case "bgdecals":
+                BgDecals = child.Children.Select(Decal.Create).ToList();
+                break;
+            case "fgdecals":
+                FgDecals = child.Children.Select(Decal.Create).ToList();
+                break;
+            case "entities":
+                foreach (var entity in child.Children)
+                {
+                    Entities.Add(EntityRegistry.Create(entity, this, trigger: false));
+                }
 
-                    break;
-                case "triggers":
-                    Logger.Write("Room.Unpack", LogLevel.Error, "todo: triggers");
-
-                    break;
-                case "objtiles":
-                    Logger.Write("Room.Unpack", LogLevel.Error, "todo: objtiles");
-                    break;
-                case "solids":
-                    FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    FG.Depth = Depths.FGTerrain;
-                    FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
-                    break;
-                case "bg":
-                    BG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    BG.Depth = Depths.BGTerrain;
-                    BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
-                    break;
+                break;
+            case "triggers":
+                foreach (var entity in child.Children)
+                {
+                    Triggers.Add(EntityRegistry.Create(entity, this, trigger: true));
+                }
+                break;
+            case "objtiles":
+                Logger.Write("Room.Unpack", LogLevel.Error, "todo: objtiles");
+                break;
+            case "solids":
+                FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                FG.Depth = Depths.FGTerrain;
+                FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
+                FG.CacheToken = RenderCacheToken;
+                break;
+            case "bg":
+                BG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                BG.Depth = Depths.BGTerrain;
+                BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
+                BG.CacheToken = RenderCacheToken;
+                break;
             }
         }
 
@@ -122,7 +132,15 @@ public sealed class Room : IPackable
         throw new NotImplementedException();
     }
 
-    public void Render(Camera camera)
+    public Vector2 WorldToRoomPos(Camera camera, Vector2 world)
+        => camera.ScreenToReal(world) - new Vector2(X, Y);
+
+    internal void StartBatch(Camera camera)
+    {
+        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
+    }
+
+    public void Render(Camera camera, bool selected)
     {
         if (!camera.IsRectVisible(Bounds))
         {
@@ -130,8 +148,8 @@ public sealed class Room : IPackable
             return;
         }
 
-        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
-        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * .5f).Render();
+        StartBatch(camera);
+        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * (selected ? .5f : .2f)).Render();
 
         if (CachedSprites is null)
         {
@@ -145,8 +163,14 @@ public sealed class Room : IPackable
             .Concat(FgDecals.Select<Decal, ISprite>(d => d.GetSprite(true)))
             .Concat(FG.GetSprites(Random))
             .Concat(BG.GetSprites(Random))
+            .Concat(Triggers.Select(e =>
+            {
+                return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
+            }).SelectMany(x => x))
             .OrderByDescending(x => x.Depth)
             .ToList();
+
+            RenderCacheToken.Reset();
 
             if (Settings.Instance.LogTextureLoadTimes)
                 StartTextureLoadTimer();
@@ -158,13 +182,17 @@ public sealed class Room : IPackable
             {
                 s.Render(camera, new(X, Y));
             }
-            else if(item is Autotiler.AutotiledSpriteList s2)
+            else if (item is Autotiler.AutotiledSpriteList s2)
             {
                 s2.Render(camera, new(X, Y));
             }
             else
                 item.Render();
         }
+
+        // Darken the room if it's not selected
+        if (!selected)
+            ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
 
 
         GFX.Batch.End();
@@ -187,24 +215,24 @@ public sealed class Room : IPackable
         CachedSprites = null;
     }
 
-    public bool IsTileAt(Vector2 pos)
+    public bool IsTileAt(Vector2 roomPos)
     {
-        int x = (int)pos.X / 8;
-        int y = (int)pos.Y / 8;
+        int x = (int)roomPos.X / 8;
+        int y = (int)roomPos.Y / 8;
 
         return FG.SafeTileAt(x, y) != '0';
     }
 
-    public bool IsSolidAt(Vector2 pos)
+    public bool IsSolidAt(Vector2 roomPos)
     {
-        if (IsTileAt(pos))
+        if (IsTileAt(roomPos))
             return true;
 
         foreach (var e in Entities[typeof(ISolid)])
         {
             Rectangle bRect = e.Rectangle;
 
-            if (bRect.Contains(pos))
+            if (bRect.Contains(roomPos))
             {
                 return true;
             }
@@ -212,4 +240,7 @@ public sealed class Room : IPackable
 
         return false;
     }
+
+    public bool IsInBounds(Vector2 roomPos) 
+        => new Rectangle(0, 0, Width, Height).Contains(roomPos);
 }

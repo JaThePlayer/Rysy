@@ -11,7 +11,7 @@ public static class SpriteBatchExtensions
 
     public static void DrawLine(this SpriteBatch b, Vector2 start, Vector2 end, Color color)
     {
-        var angle = Extensions.Angle(start, end);
+        var angle = VectorExt.Angle(start, end);
 
         var len = Vector2.Distance(start, end);
         b.DrawLine(start, angle, len, color);

@@ -31,6 +31,11 @@ public abstract class Entity
         set => EntityData["height"] = value;
     }
 
+    public int EditorLayer {
+        get => EntityData.Int("_editorLayer");
+        set => EntityData["_editorLayer"] = value;
+    }
+
     /// <summary>
     /// Gets the center of this entity. Used for centering node paths, for example, but can be used in your own plugins as well.
     /// </summary>
@@ -66,8 +71,6 @@ public abstract class Entity
     {
         return Nodes![index] + new Vector2(Width / 2, Height / 2);
     }
-
-   
 
     public virtual IEnumerable<ISprite> GetSprites()
     {

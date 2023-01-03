@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Rysy;
 
@@ -90,7 +91,7 @@ internal static class FancyTextHelper
 }
 
 [InterpolatedStringHandler]
-public ref struct FancyInterpolatedStringHandler
+public ref partial struct FancyInterpolatedStringHandler
 {
     readonly StringBuilder builder;
     int colorId = 0;
@@ -119,4 +120,7 @@ public ref struct FancyInterpolatedStringHandler
     }
 
     internal string GetFormattedText() => builder.ToString();
+    internal string GetUnformattedText() => builder.ToString().RegexReplace(UnformatRegex(), "");
+    [GeneratedRegex("\u001b\\[.{1,2}m")]
+    private static partial Regex UnformatRegex();
 }

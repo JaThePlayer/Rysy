@@ -1,11 +1,18 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+﻿using Microsoft.Xna.Framework.Input;
 using Rysy.Graphics;
+using Rysy.History;
+using Rysy.Tools;
+using System.Runtime.CompilerServices;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Rysy.Scenes;
 
 public sealed class EditorScene : Scene
 {
+    public ToolHandler ToolHandler;
+
+    public HistoryHandler HistoryHandler;
+
     private Map _map = null!;
     public Map Map
     {
@@ -15,6 +22,7 @@ public sealed class EditorScene : Scene
             _map = value;
             Camera = new();
             CurrentRoom = _map.Rooms.First().Value;
+            Camera.CenterOnRealPos(CurrentRoom.Bounds.Center.ToVector2());
 
             GC.Collect(3);
         }
@@ -27,13 +35,22 @@ public sealed class EditorScene : Scene
         set
         {
             _currentRoom = value;
-            Camera.CenterOnRealPos(CurrentRoom.Bounds.Center.ToVector2());
+            RysyEngine.ForceActiveTimer = 0.25f;
         }
     }
 
     public Camera Camera { get; set; } = null!; // will be set in Map.set
 
-    public EditorScene(Map map)
+    public EditorScene() {
+        HistoryHandler = new();
+        ToolHandler = new(HistoryHandler);
+
+        // Try to load the last edited map.
+        if (!string.IsNullOrWhiteSpace(Settings.Instance?.LastEditedMap))
+            LoadMapFromBin(Settings.Instance.LastEditedMap);
+    }
+
+    public EditorScene(Map map) : this()
     {
         Map = map;
     }
@@ -44,34 +61,120 @@ public sealed class EditorScene : Scene
         set => CurrentRoom = Map.Rooms[value];
     }
 
+    public override void OnFileDrop(FileDropEventArgs args)
+    {
+        base.OnFileDrop(args);
+
+        var file = args.Files[0];
+        if (File.Exists(file) && Path.GetExtension(file) == ".bin")
+        {
+            LoadMapFromBin(file);
+        }
+    }
+
+    private void LoadMapFromBin(string file)
+    {
+        try
+        {
+            var mapBin = BinaryPacker.FromBinary(file);
+            var map = Map.FromBinaryPackage(mapBin);
+            Map = map;
+            Settings.Instance.LastEditedMap = file;
+            Settings.Save(Settings.Instance);
+        }
+        catch
+        {
+
+        }
+    }
+
     public override void Update()
     {
         base.Update();
 
-        Camera.HandleMouseMovement();
+        if (Map is { }) {
+            Camera.HandleMouseMovement();
+
+            HandleRoomSwapInputs();
+            HandleHistoryInput();
+
+            ToolHandler.Update(Camera, CurrentRoom);
+        }
     }
 
-    private static RenderTarget2D __temp = new(RysyEngine.GDM.GraphicsDevice, 1920, 1080, false, SurfaceFormat.Color, DepthFormat.None);
+    private void HandleRoomSwapInputs()
+    {
+        if (Input.Mouse.Left.Clicked())
+        {
+            var mousePos = Input.Mouse.Pos.ToVector2();
+            foreach (var (_, room) in Map.Rooms)
+            {
+                if (room == CurrentRoom)
+                    continue;
+
+                var pos = room.WorldToRoomPos(Camera, mousePos);
+                if (room.IsInBounds(pos))
+                {
+                    CurrentRoom = room;
+
+                    Input.Mouse.ConsumeLeft();
+                    break;
+                }
+            }
+        }
+    }
+
+    private double _smoothUndoNextInterval;
+    private void HandleHistoryInput()
+    {
+        if (Input.Mouse.X1HoldTime > 0.2f && OnInterval(_smoothUndoNextInterval)
+            || Input.Mouse.MouseX1 is MouseInputState.Clicked)
+        {
+            HistoryHandler.Undo();
+            _smoothUndoNextInterval = NextInterval(Input.Mouse.X1HoldTime);
+        }
+        else if (Input.Mouse.X2HoldTime > 0.2f && OnInterval(_smoothUndoNextInterval) ||
+            Input.Mouse.MouseX2 is MouseInputState.Clicked)
+        {
+            HistoryHandler.Redo();
+            _smoothUndoNextInterval = NextInterval(Input.Mouse.X2HoldTime);
+        }
+        else
+        {
+            _smoothUndoNextInterval = 0;
+        }
+
+        double NextInterval(float holdTime) => 0.50 - (holdTime / 2.5f);
+    }
 
     //TODO REMOVE
     public override void Render()
     {
         base.Render();
 
+        if (Map is not { }) {
+            var windowSize = RysyEngine.Instance.Window.ClientBounds.Size;
+            var height = 4 * 6;
+            var center = windowSize.Y / 2;
 
-        GFX.Batch.GraphicsDevice.SetRenderTarget(__temp);
-
-        foreach (var item in Map.Rooms)
-        {
-            item.Value.Render(Camera);
+            GFX.BeginBatch();
+            PicoFont.Print("No map loaded.", new Rectangle(0, center - 32, windowSize.X, height), Color.LightSkyBlue, 4f);
+            PicoFont.Print("Please drop a .bin", new Rectangle(0, center, windowSize.X, height), Color.White, 4f);
+            PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, 4f);
+            GFX.EndBatch();
+            return;
         }
 
+        foreach (var (_, room) in Map.Rooms)
+        {
+            room.Render(Camera, room == CurrentRoom);
+        }
 
-        GFX.Batch.GraphicsDevice.SetRenderTarget(null);
-        GFX.Batch.Begin();
-        GFX.Batch.Draw(__temp, Vector2.Zero, Color.White);
-        GFX.Batch.End();
+        ToolHandler.Render(Camera, CurrentRoom);
 
+        GFX.BeginBatch();
+        PicoFont.Print(RysyEngine.Framerate.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
+        GFX.EndBatch();
 
         if (Input.Keyboard.IsKeyClicked(Keys.Up))
         {
@@ -89,13 +192,14 @@ public sealed class EditorScene : Scene
             // Reload everything
             if (Input.Keyboard.IsKeyClicked(Keys.F5))
             {
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
-                    RysyEngine.Instance.Reload();
+                    await RysyEngine.Instance.ReloadAsync();
                     GC.Collect(3);
                 });
             }
-        } else
+        }
+        else
         {
             // clear render cache
             if (Input.Keyboard.IsKeyClicked(Keys.F4))
@@ -116,7 +220,7 @@ public sealed class EditorScene : Scene
             // Re-register entities
             if (Input.Keyboard.IsKeyClicked(Keys.F6))
             {
-                EntityRegistry.Register();
+                EntityRegistry.RegisterAsync().AsTask().Wait();
                 CurrentRoom.ClearRenderCache();
                 GC.Collect(3);
             }

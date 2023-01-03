@@ -22,14 +22,25 @@ public interface IAtlas
 
 public static class IAtlasExt
 {
-    public static void LoadFromDirectory(this IAtlas self, string dir, string prefix = "")
+    public static async Task LoadFromDirectoryAsync(this IAtlas self, string dir, string prefix = "")
     {
-        foreach (var item in Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories))
-        {
-            var virtPath = item.Replace(dir, "").ToVirtPath(prefix);
-            var texture = VirtTexture.FromFile(item);
-            self.AddTexture(virtPath, texture);
-        }
+        /*
+            foreach (var item in Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories))
+            {
+                var virtPath = item.Replace(dir, "").ToVirtPath(prefix);
+                var texture = VirtTexture.FromFile(item);
+                self.AddTexture(virtPath, texture);
+            }*/
+        await Task.WhenAll(
+                Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories)
+                .Select(item => Task.Run(() => {
+                    var virtPath = item.Replace(dir, "").ToVirtPath(prefix);
+                    var texture = VirtTexture.FromFile(item);
+                    lock (self)
+                    {
+                        self.AddTexture(virtPath, texture);
+                    }
+                })));
     }
 
     public static void LoadFromZip(this IAtlas self, string zipName, ZipArchive zip)
@@ -49,9 +60,9 @@ public static class IAtlasExt
     /// <summary>
     /// Implements the Packer format
     /// </summary>
-    public static void LoadFromPackerAtlas(this IAtlas self, string path)
+    public static async Task LoadFromPackerAtlasAsync(this IAtlas self, string path)
     {
-
+        await Task.CompletedTask;
         using var metaStream = File.OpenRead($"{path}.meta");
         using var metaReader = new BinaryReader(metaStream);
 

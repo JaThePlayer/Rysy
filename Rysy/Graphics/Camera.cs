@@ -111,17 +111,24 @@ public class Camera
         return Viewport.Bounds.Intersects(new Rectangle((int)x, (int)y, (int)w, (int)h));
     }
 
+    /// <summary>
+    /// Checks whether the given rectangle is visible inside of the camera at a given camera position
+    /// </summary>
+    public bool IsRectVisible(Vector2 pos, int width, int height)
+    {
+        var (x, y) = RealToScreen(pos);
+        var w = width * Scale;
+        var h = height * Scale;
+
+        return Viewport.Bounds.Intersects(new Rectangle((int)x, (int)y, (int)w, (int)h));
+    }
+
     public void HandleMouseMovement()
     {
         // Right click drag - move camera
         if (Input.Mouse.Right.Held() && Input.Mouse.PositionDelta != default)
         {
             Move(-Input.Mouse.PositionDelta.ToVector2() / Scale);
-        }
-
-        if (Input.Mouse.MouseX1.Clicked())
-        {
-            CenterOnMousePos();
         }
 
         // Scrolled - zoom camera
