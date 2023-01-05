@@ -3,25 +3,21 @@ using Rysy.Helpers;
 
 namespace Rysy.Triggers;
 
-public class Trigger : Entity, INodeSpriteProvider
-{
+public class Trigger : Entity, INodeSpriteProvider {
     public virtual Color Color => Color.LightSkyBlue;
 
     public override int Depth => Depths.Top;
 
-    public IEnumerable<ISprite> GetNodeSprites(int nodeIndex)
-    {
+    public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var node = Nodes![nodeIndex];
-        var rect = new Rectangle((int)node.X, (int)node.Y, Width, Height);
+        var rect = new Rectangle((int) node.X, (int) node.Y, Width, Height);
         yield return ISprite.OutlinedRect(rect, Color * 0.35f, Color);
     }
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
-        var rect = new Rectangle((int)Pos.X, (int)Pos.Y, Width, Height);
+    public override IEnumerable<ISprite> GetSprites() {
+        var rect = new Rectangle((int) Pos.X, (int) Pos.Y, Width, Height);
         yield return ISprite.OutlinedRect(rect, Color * 0.35f, Color);
-        yield return new PicoTextRectSprite()
-        {
+        yield return new PicoTextRectSprite() {
             Text = TriggerHelpers.Humanize(EntityData.Name),
             Pos = rect,
             Color = Color.White,

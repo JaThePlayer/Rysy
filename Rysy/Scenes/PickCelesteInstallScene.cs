@@ -2,8 +2,7 @@
 
 namespace Rysy.Scenes;
 
-public class PickCelesteInstallScene : Scene
-{
+public class PickCelesteInstallScene : Scene {
     private Scene NextScene;
     public PickCelesteInstallScene(Scene nextScene) {
         NextScene = nextScene;
@@ -11,8 +10,7 @@ public class PickCelesteInstallScene : Scene
 
     public const string Text = "Please drop the Celeste.exe file onto this window.";
 
-    public override void OnFileDrop(FileDropEventArgs args)
-    {
+    public override void OnFileDrop(FileDropEventArgs args) {
         base.OnFileDrop(args);
 
         var file = args.Files[0];
@@ -26,14 +24,12 @@ public class PickCelesteInstallScene : Scene
     }
 
     public async ValueTask AwaitInstallPickedAsync() {
-        while (string.IsNullOrWhiteSpace(Settings.Instance.CelesteDirectory))
-        {
+        while (string.IsNullOrWhiteSpace(Settings.Instance.CelesteDirectory)) {
             await Task.Delay(100);
         }
     }
 
-    public override void Render()
-    {
+    public override void Render() {
         base.Render();
 
         GFX.BeginBatch();

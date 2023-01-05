@@ -1,3 +1,1 @@
-﻿using Rysy;
-
-new RysyEngine().Run();
+﻿new RysyEngine().Run();

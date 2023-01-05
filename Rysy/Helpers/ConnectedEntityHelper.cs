@@ -2,67 +2,46 @@
 
 namespace Rysy.Helpers;
 
-public static class ConnectedEntityHelper
-{
+public static class ConnectedEntityHelper {
     public delegate Sprite ConnectedEntityHelperSpriteGetter(NineSliceLocation loc);
 
-    public static IEnumerable<ISprite> GetSprites(Entity self, IEnumerable<Entity> otherEntities, ConnectedEntityHelperSpriteGetter getTexture, bool ignoreMiddle = false, bool handleInnerCorners = false)
-    {
+    public static IEnumerable<ISprite> GetSprites(Entity self, IEnumerable<Entity> otherEntities, ConnectedEntityHelperSpriteGetter getTexture, bool ignoreMiddle = false, bool handleInnerCorners = false) {
         var w = self.Width;
         var h = self.Height;
 
         var others = otherEntities.ToList();
 
         // topmiddle and botmiddle
-        for (int x = 8; x < w - 8; x += 8)
-        {
-            if (Open(self, others, x, -8f))
-            {
+        for (int x = 8; x < w - 8; x += 8) {
+            if (Open(self, others, x, -8f)) {
                 yield return GetTexture(NineSliceLocation.TopMiddle, x, 0f);
-            }
-            else if (handleInnerCorners)
-            {
-                if (Open(self, others, x + 8, -8f))
-                {
+            } else if (handleInnerCorners) {
+                if (Open(self, others, x + 8, -8f)) {
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpRight, x, 0f);
-                }
-                else if (Open(self, others, x - 8, -8f))
-                {
+                } else if (Open(self, others, x - 8, -8f)) {
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, x, 0f);
-                }
-                else
+                } else
                     yield return GetTexture(NineSliceLocation.Middle, x, 0f);
             }
 
 
-            if (Open(self, others, x, h))
-            {
+            if (Open(self, others, x, h)) {
                 yield return GetTexture(NineSliceLocation.BottomMiddle, x, h - 8f);
-            }
-            else if (handleInnerCorners)
-            {
-                if (Open(self, others, x+8, h))
-                {
+            } else if (handleInnerCorners) {
+                if (Open(self, others, x + 8, h)) {
                     yield return GetTexture(NineSliceLocation.InnerCorner_DownRight, x, h - 8f);
-                }
-                else if (Open(self, others, x - 8, h))
-                {
+                } else if (Open(self, others, x - 8, h)) {
                     yield return GetTexture(NineSliceLocation.InnerCorner_DownLeft, x, h - 8f);
-                }
-                else
+                } else
                     yield return GetTexture(NineSliceLocation.Middle, x, h - 8f);
             }
         }
 
         // leftmid, rightmid
-        for (int y = 8; y < h - 8; y += 8)
-        {
-            if (Open(self, others, -8f, y))
-            {
+        for (int y = 8; y < h - 8; y += 8) {
+            if (Open(self, others, -8f, y)) {
                 yield return GetTexture(NineSliceLocation.Left, 0f, y);
-            }
-            else if (handleInnerCorners)
-            {
+            } else if (handleInnerCorners) {
                 if (Open(self, others, -8f, y - 8))
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, 0f, y);
                 else if (Open(self, others, -8f, y + 8))
@@ -72,12 +51,9 @@ public static class ConnectedEntityHelper
             }
 
 
-            if (Open(self, others, w, y))
-            {
+            if (Open(self, others, w, y)) {
                 yield return GetTexture(NineSliceLocation.Right, w - 8f, y);
-            }
-            else if (handleInnerCorners)
-            {
+            } else if (handleInnerCorners) {
                 if (Open(self, others, w + 8, y - 8))
                     yield return GetTexture(NineSliceLocation.InnerCorner_UpRight, w - 8f, y);
                 else if (Open(self, others, w + 8, y + 8))
@@ -87,12 +63,9 @@ public static class ConnectedEntityHelper
             }
         }
 
-        if (!ignoreMiddle)
-        {
-            for (int x = 8; x < w - 8; x++)
-            {
-                for (int y = 8; y < h - 8; y++)
-                {
+        if (!ignoreMiddle) {
+            for (int x = 8; x < w - 8; x++) {
+                for (int y = 8; y < h - 8; y++) {
                     yield return GetTexture(NineSliceLocation.Middle, x, y);
                 }
             }
@@ -105,8 +78,7 @@ public static class ConnectedEntityHelper
             var top = Open(self, others, 0, -8f);
             var left = Open(self, others, -8, 0f);
 
-            yield return GetTexture((top, left) switch
-            {
+            yield return GetTexture((top, left) switch {
                 (true, true) => NineSliceLocation.TopLeft,
                 (true, false) => NineSliceLocation.TopMiddle,
                 (false, true) => NineSliceLocation.Left,
@@ -119,7 +91,7 @@ public static class ConnectedEntityHelper
             var top = Open(self, others, w - 8, -8f);
             var right = Open(self, others, w, 0f);
 
-            yield return GetTexture((top, right) switch { 
+            yield return GetTexture((top, right) switch {
                 (true, true) => NineSliceLocation.TopRight,
                 (true, false) => NineSliceLocation.TopMiddle,
                 (false, true) => NineSliceLocation.Right,
@@ -132,8 +104,7 @@ public static class ConnectedEntityHelper
             var bot = Open(self, others, 0, h + 8f);
             var left = Open(self, others, -8, h - 8);
 
-            yield return GetTexture((bot, left) switch
-            {
+            yield return GetTexture((bot, left) switch {
                 (true, true) => NineSliceLocation.BottomLeft,
                 (true, false) => NineSliceLocation.BottomMiddle,
                 (false, true) => NineSliceLocation.Left,
@@ -146,8 +117,7 @@ public static class ConnectedEntityHelper
             var bot = Open(self, others, w - 8, h + 8f);
             var right = Open(self, others, w, h - 8);
 
-            yield return GetTexture((bot, right) switch
-            {
+            yield return GetTexture((bot, right) switch {
                 (true, true) => NineSliceLocation.BottomRight,
                 (true, false) => NineSliceLocation.BottomMiddle,
                 (false, true) => NineSliceLocation.Right,
@@ -156,29 +126,23 @@ public static class ConnectedEntityHelper
         }
 
 
-        Sprite GetTexture(NineSliceLocation loc, float offX, float offY)
-        {
+        Sprite GetTexture(NineSliceLocation loc, float offX, float offY) {
             var s = getTexture(loc);
-            return s with
-            {
+            return s with {
                 Pos = self.Pos + s.Pos + new Vector2(offX, offY)
             };
         }
     }
 
-    private static bool Open(Entity self, List<Entity> blocks, float offX, float offY)
-    {
-        var selfRect = new Rectangle((int)(self.Pos.X + offX + 4f), (int)(self.Pos.Y + offY + 4f), 1, 1);
+    private static bool Open(Entity self, List<Entity> blocks, float offX, float offY) {
+        var selfRect = new Rectangle((int) (self.Pos.X + offX + 4f), (int) (self.Pos.Y + offY + 4f), 1, 1);
 
-        foreach (var other in blocks)
-        {
-            if (other == self)
-            {
+        foreach (var other in blocks) {
+            if (other == self) {
                 continue;
             }
 
-            if (selfRect.Intersects(other.Rectangle))
-            {
+            if (selfRect.Intersects(other.Rectangle)) {
                 return false;
             }
         }

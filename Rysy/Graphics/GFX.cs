@@ -1,12 +1,10 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Scenes;
 using System.IO.Compression;
 
 namespace Rysy.Graphics;
 
-public static class GFX
-{
+public static class GFX {
     public static IAtlas Atlas { get; private set; } = null!;
 
     public static SpriteBatch Batch { get; private set; } = null!;
@@ -32,8 +30,7 @@ public static class GFX
     /// Loads all textures, including those from mods.
     /// </summary>
     /// <returns></returns>
-    internal static async ValueTask LoadAsync()
-    {
+    internal static async ValueTask LoadAsync() {
         LoadingScene? scene = RysyEngine.Scene as LoadingScene;
 
         scene?.SetText("Loading");
@@ -49,51 +46,44 @@ public static class GFX
             await Atlas.LoadFromDirectoryAsync("Assets", "Rysy");
 
         scene?.SetText("Scanning mod dirs");
-        using (ScopedStopwatch watch = new("Scanning mod dirs"))
-        {
+        using (ScopedStopwatch watch = new("Scanning mod dirs")) {
             await Task.WhenAll(
                 Directory.GetDirectories(Settings.Instance.ModsDirectory)
                 .Select(item => LoadModFromDirAsync(item).AsTask()));
         }
 
         scene?.SetText("Scanning mod .zips");
-        using (ScopedStopwatch watch = new("Scanning mod .zips"))
-        {
+        using (ScopedStopwatch watch = new("Scanning mod .zips")) {
             await Task.WhenAll(
                 Directory.EnumerateFiles(Settings.Instance.ModsDirectory, "*.zip")
                 .Select(item => Task.Run(() => LoadModFromZip(item))));
         }
     }
 
-    internal static async ValueTask LoadVanillaAtlasAsync()
-    {
+    internal static async ValueTask LoadVanillaAtlasAsync() {
         var path = $"{Settings.Instance.CelesteDirectory}/Content/Graphics/Atlases/Gameplay";
         await Atlas.LoadFromPackerAtlasAsync(path);
     }
 
     // TODO: MOVE
-    internal static async ValueTask LoadModFromDirAsync(string modDir)
-    {
+    internal static async ValueTask LoadModFromDirAsync(string modDir) {
         modDir = modDir.Replace('\\', '/').TrimEnd('/');
 
         var gameplayAtlasPath = $"{modDir}/Graphics/Atlases/Gameplay";
-        if (Directory.Exists(gameplayAtlasPath))
-        {
+        if (Directory.Exists(gameplayAtlasPath)) {
             await Atlas.LoadFromDirectoryAsync(gameplayAtlasPath);
         }
     }
 
-    internal static void LoadModFromZip(string modZipPath)
-    {
+    internal static void LoadModFromZip(string modZipPath) {
         var stream = File.OpenRead(modZipPath);
         var zip = new ZipArchive(stream, ZipArchiveMode.Read, false);
 
         Atlas.LoadFromZip(modZipPath, zip);
     }
 
-    public static string ToVirtPath(this string val, string prefix = "")
-    {
-        var ext = Path.GetExtension(val) switch { 
+    public static string ToVirtPath(this string val, string prefix = "") {
+        var ext = Path.GetExtension(val) switch {
             "" or null => ".png",
             var other => other,
         };

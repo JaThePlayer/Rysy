@@ -1,7 +1,6 @@
 ﻿namespace Rysy;
 
-public static class VectorExt
-{
+public static class VectorExt {
     public static Vector2 XY(this Rectangle r) => new(r.X, r.Y);
 
     /// <summary>

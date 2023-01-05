@@ -5,32 +5,26 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public static class Logger
-{
-    public static void Write(string tag, LogLevel logLevel, string msg)
-    {
+public static class Logger {
+    public static void Write(string tag, LogLevel logLevel, string msg) {
         Console.WriteLine($"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg}");
     }
 
-    public static void Write(string tag, LogLevel logLevel, FancyInterpolatedStringHandler msg)
-    {
+    public static void Write(string tag, LogLevel logLevel, FancyInterpolatedStringHandler msg) {
         Console.WriteLine($"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg.GetFormattedText()}");
     }
 }
 
-public enum LogLevel
-{
+public enum LogLevel {
     Debug,
     Info,
     Warning,
     Error,
 }
 
-public static class LogLevelExtensions
-{
+public static class LogLevelExtensions {
     public static string FastToString(this LogLevel logLevel)
-        => logLevel switch
-        {
+        => logLevel switch {
             LogLevel.Debug => "Debug",
             LogLevel.Info => "Info",
             LogLevel.Warning => "Warning",
@@ -39,8 +33,7 @@ public static class LogLevelExtensions
         };
 
     public static string ToColoredString(this LogLevel logLevel)
-        => logLevel switch
-        {
+        => logLevel switch {
             LogLevel.Debug => "Debug",
             LogLevel.Info => "\u001b[96mInfo\u001b[0m",
             LogLevel.Warning => "\u001b[93mWarning\u001b[0m",
@@ -49,12 +42,10 @@ public static class LogLevelExtensions
         };
 }
 
-internal static class FancyTextHelper
-{
+internal static class FancyTextHelper {
     public const string RESET_COLOR = "\u001b[0m";
 
-    public static readonly JsonSerializerOptions JsonSerializerOptions = new()
-    {
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new() {
         WriteIndented = true,
         IncludeFields = true,
         //IgnoreReadOnlyProperties = true,
@@ -77,13 +68,11 @@ internal static class FancyTextHelper
 
     public static string GetColorCode(int i) => Colors[i % Colors.Length];
 
-    public static string GetColoredString(string from, int colorId)
-    {
+    public static string GetColoredString(string from, int colorId) {
         return $"{GetColorCode(colorId++)}{from}{RESET_COLOR}";
     }
 
-    public static void AppendFancyText(StringBuilder builder, string? text, int colorId)
-    {
+    public static void AppendFancyText(StringBuilder builder, string? text, int colorId) {
         builder.Append(GetColorCode(colorId++));
         builder.Append(text ?? "null");
         builder.Append(RESET_COLOR);
@@ -91,8 +80,7 @@ internal static class FancyTextHelper
 }
 
 [InterpolatedStringHandler]
-public ref partial struct FancyInterpolatedStringHandler
-{
+public ref partial struct FancyInterpolatedStringHandler {
     readonly StringBuilder builder;
     int colorId = 0;
 
@@ -101,19 +89,15 @@ public ref partial struct FancyInterpolatedStringHandler
 
     public void AppendLiteral(string s) => builder.Append(s);
 
-    public void AppendFormatted<T>(T t)
-    {
+    public void AppendFormatted<T>(T t) {
         FancyTextHelper.AppendFancyText(builder, t?.ToString(), colorId++);
     }
 
-    public void AppendFormatted<T>(T t, string? format)
-    {
+    public void AppendFormatted<T>(T t, string? format) {
         string? text;
-        if (t is IFormattable)
-        {
-            text = ((IFormattable)t).ToString(format, /*_provider*/ null); // constrained call to avoid boxing value types
-        } else
-        {
+        if (t is IFormattable) {
+            text = ((IFormattable) t).ToString(format, /*_provider*/ null); // constrained call to avoid boxing value types
+        } else {
             text = t?.ToString();
         }
         FancyTextHelper.AppendFancyText(builder, text, colorId++);

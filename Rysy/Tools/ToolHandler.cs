@@ -3,8 +3,7 @@ using Rysy.History;
 
 namespace Rysy.Tools;
 
-public class ToolHandler
-{
+public class ToolHandler {
     public readonly HistoryHandler History;
 
     public ToolHandler(HistoryHandler history) {
@@ -21,13 +20,11 @@ public class ToolHandler
     public Tool CurrentTool => Tools[ToolIndex];
     public int ToolIndex { get; set; } = 1;
 
-    public void Update(Camera camera, Room currentRoom)
-    {
+    public void Update(Camera camera, Room currentRoom) {
         CurrentTool.Update(camera, currentRoom);
     }
 
-    public void Render(Camera camera, Room currentRoom)
-    {
+    public void Render(Camera camera, Room currentRoom) {
         currentRoom.StartBatch(camera);
 
         CurrentTool.Render(camera, currentRoom);

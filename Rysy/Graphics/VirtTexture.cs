@@ -4,22 +4,17 @@ using System.IO.Compression;
 
 namespace Rysy.Graphics;
 
-public class VirtTexture : IDisposable
-{
-    public static VirtTexture FromFile(string filename)
-    {
+public class VirtTexture : IDisposable {
+    public static VirtTexture FromFile(string filename) {
         return new FileVirtTexture(filename);
     }
 
-    public static VirtTexture FromFile(string archiveName, ZipArchiveEntry zip)
-    {
+    public static VirtTexture FromFile(string archiveName, ZipArchiveEntry zip) {
         return new ZipVirtTexture(archiveName, zip);
     }
 
-    public static VirtTexture FromTexture(Texture2D text)
-    {
-        return new UndisposableVirtTexture()
-        {
+    public static VirtTexture FromTexture(Texture2D text) {
+        return new UndisposableVirtTexture() {
             texture = text,
             state = State.Loaded,
             ClipRect = new(0, 0, text.Width, text.Height)
@@ -29,10 +24,8 @@ public class VirtTexture : IDisposable
     /// <summary>
     /// TODO: Something that's a bit cleaner for creating subtextures of VirtTextures
     /// </summary>
-    internal static VirtTexture FromAtlasSubtexture(Texture2D parent, Rectangle clipRect, int width, int height)
-    {
-        return new VanillaTexture()
-        {
+    internal static VirtTexture FromAtlasSubtexture(Texture2D parent, Rectangle clipRect, int width, int height) {
+        return new VanillaTexture() {
             texture = parent,
             state = State.Loaded,
             ClipRect = clipRect,
@@ -51,24 +44,19 @@ public class VirtTexture : IDisposable
     /// Gets the ClipRect used for this texture. If the texture is not loaded yet, this will trigger preloading to get the width/height, which will result in additional IO on the main thread.
     /// If only X,Y are needed, use <see cref="ClipRectPos"/> instead to avoid unneeded preloading.
     /// </summary>
-    public Rectangle ClipRect
-    {
-        get
-        {
-            if (_clipRect.HasValue)
-            {
+    public Rectangle ClipRect {
+        get {
+            if (_clipRect.HasValue) {
                 return _clipRect.Value;
             }
 
             Logger.Write("VirtTexture.Preload", LogLevel.Info, $"Requested ClipRect, preloading {this}");
-            if (TryPreloadClipRect())
-            {
+            if (TryPreloadClipRect()) {
                 return _clipRect!.Value;
             }
 
             StartLoadingIfNeeded();
-            if (LoadTask is { })
-            {
+            if (LoadTask is { }) {
                 LoadTask.Wait();
                 return _clipRect!.Value;
             }
@@ -76,8 +64,7 @@ public class VirtTexture : IDisposable
             Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"Returning null clip rect for {this}!");
             return default;
         }
-        protected set
-        {
+        protected set {
             _clipRect = value;
         }
     }
@@ -100,18 +87,15 @@ public class VirtTexture : IDisposable
 
     public Vector2 DrawOffset;
 
-    public Texture2D? Texture => state switch
-    {
+    public Texture2D? Texture => state switch {
         State.Unloaded => StartLoadingIfNeeded(),
         State.Loaded => texture!,
         State.Loading => null,
         _ => null,
     };
 
-    private Texture2D? StartLoadingIfNeeded()
-    {
-        if (state == State.Unloaded)
-        {
+    private Texture2D? StartLoadingIfNeeded() {
+        if (state == State.Unloaded) {
             state = State.Loading;
             LoadTask = QueueLoad()?.ContinueWith((old) => LoadTask = null);
         }
@@ -119,20 +103,17 @@ public class VirtTexture : IDisposable
         return null;
     }
 
-    protected enum State
-    {
+    protected enum State {
         Unloaded,
         Loading,
         Loaded
     }
 
-    protected virtual Task? QueueLoad()
-    {
+    protected virtual Task? QueueLoad() {
         throw new NotImplementedException();
     }
 
-    public virtual void Dispose()
-    {
+    public virtual void Dispose() {
         state = State.Unloaded;
         texture?.Dispose();
     }
@@ -144,18 +125,16 @@ public class VirtTexture : IDisposable
     /// Forcefully loads the texture and waits for it to finish loading before returning it
     /// </summary>
     /// <returns></returns>
-    public async ValueTask<Texture2D> ForceGetTexture()
-    {
-        
-        switch (state)
-        {
+    public async ValueTask<Texture2D> ForceGetTexture() {
+
+        switch (state) {
             case State.Loaded:
                 return texture!;
             case State.Unloaded:
                 StartLoadingIfNeeded();
                 goto loading;
             case State.Loading:
-                loading:
+            loading:
 
                 if (LoadTask is { } && (!LoadTask.IsCompleted))
                     await LoadTask;
@@ -163,10 +142,9 @@ public class VirtTexture : IDisposable
                 return texture!;
         }
         throw new Exception($"Unknown state: {state}");
-        
-        while (Texture is not { } texture)
-        {
-        //    Task.Delay(100).Wait();
+
+        while (Texture is not { } texture) {
+            //    Task.Delay(100).Wait();
         }
 
         return texture!;

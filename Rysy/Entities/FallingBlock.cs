@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("fallingBlock")]
-public class FallingBlock : TileEntity, ISolid
-{
+public class FallingBlock : TileEntity, ISolid {
     public override int Depth => Depths.Solids;
 
     public override char Tiletype => Char("tiletype", '3');

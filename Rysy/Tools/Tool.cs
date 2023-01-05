@@ -3,8 +3,7 @@ using Rysy.History;
 
 namespace Rysy.Tools;
 
-public abstract class Tool
-{
+public abstract class Tool {
     public HistoryHandler History;
 
     public abstract string Layer { get; set; }

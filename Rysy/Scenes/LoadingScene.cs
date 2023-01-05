@@ -2,17 +2,14 @@
 
 namespace Rysy.Scenes;
 
-public class LoadingScene : Scene
-{
+public class LoadingScene : Scene {
     public string Text;
 
-    public void SetText(string text)
-    {
+    public void SetText(string text) {
         Text = text;
     }
 
-    public override void Render()
-    {
+    public override void Render() {
         base.Render();
 
         var windowSize = RysyEngine.Instance.Window.ClientBounds.Size;

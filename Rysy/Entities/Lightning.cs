@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("lightning")]
-public class Lightning : RectangleEntity
-{
+public class Lightning : RectangleEntity {
     private static readonly Color outlineColor = "fcf579".FromRGB();
     private static readonly Color color = outlineColor * .3f;
 

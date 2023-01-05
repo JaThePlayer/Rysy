@@ -4,14 +4,12 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("infiniteStar")]
-public class Feather : SpriteEntity
-{
+public class Feather : SpriteEntity {
     public override string TexturePath => "objects/flyFeather/idle00";
 
     public override int Depth => 0;
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         yield return GetSprite();
 
         if (Bool("shielded", false))

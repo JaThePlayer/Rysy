@@ -3,8 +3,7 @@
 /// <summary>
 /// A token wrapping over a function that gets called when the cache gets invalidated.
 /// </summary>
-public class CacheToken
-{
+public class CacheToken {
     public bool Valid { get; private set; }
 
     public Action OnInvalidate;

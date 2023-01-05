@@ -4,8 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("hanginglamp")]
-public class HangingLamp : LoopingSpriteSliceEntity
-{
+public class HangingLamp : LoopingSpriteSliceEntity {
     public override int TileSize => 8;
 
     public override string TexturePath => "objects/hanginglamp";
@@ -16,11 +15,9 @@ public class HangingLamp : LoopingSpriteSliceEntity
 
     // Hanging lamps are a bit special, and the topmost subtexture doesn't contain the chain
     // because of this, we need to add it in ourselves
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         // add the chain at the base of the lamp
-        yield return GetSprite().CreateSubtexture(0, 8, 8, 8) with
-        {
+        yield return GetSprite().CreateSubtexture(0, 8, 8, 8) with {
             Origin = new(),
         };
 

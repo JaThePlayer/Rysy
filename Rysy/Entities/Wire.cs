@@ -3,14 +3,12 @@
 namespace Rysy.Entities;
 
 [CustomEntity("wire")]
-public class Wire : Entity, ICustomNodeHandler
-{
+public class Wire : Entity, ICustomNodeHandler {
     public override int Depth => Bool("above") ? -8500 : 2000;
 
     public Color Color => RGB("color", "595866");
 
-    public IEnumerable<ISprite> GetNodeSprites()
-    {
+    public IEnumerable<ISprite> GetNodeSprites() {
         yield break;
     }
 

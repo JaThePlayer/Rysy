@@ -3,17 +3,14 @@
 namespace Rysy.Entities;
 
 [CustomEntity("blockField")]
-public sealed class StrawberryBlockfield : Entity
-{
+public sealed class StrawberryBlockfield : Entity {
     public override int Depth => 0;
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         yield return ISprite.OutlinedRect(Rectangle, Color.LightSkyBlue * 0.45f, Color.LightSkyBlue * 0.75f);
 
         var center = Center;
-        yield return ISprite.FromTexture(center, "collectables/ghostberry/idle00").Centered() with
-        {
+        yield return ISprite.FromTexture(center, "collectables/ghostberry/idle00").Centered() with {
             Color = Color.White * 0.5f
         };
 

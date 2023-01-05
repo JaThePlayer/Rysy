@@ -4,8 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("starJumpBlock")]
-public class StarJumpBlock : Entity
-{
+public class StarJumpBlock : Entity {
     public override int Depth => Depths.Solids;
 
     private int Rng(int max) => Room.Random.Next(max);
@@ -14,10 +13,8 @@ public class StarJumpBlock : Entity
     public string EdgeV => $"objects/starjumpBlock/edgeV{Rng(3):d2}";
     public string Corner => $"objects/starjumpBlock/corner{Rng(3):d2}";
 
-    private Sprite GetSprite(NineSliceLocation loc)
-    {
-        var (texture, sx, sy) = loc switch
-        {
+    private Sprite GetSprite(NineSliceLocation loc) {
+        var (texture, sx, sy) = loc switch {
             NineSliceLocation.TopLeft => (Corner, -1f, 1f),
             NineSliceLocation.TopMiddle => (EdgeH, 1f, 1f),
             NineSliceLocation.TopRight => (Corner, 1f, 1f),
@@ -30,16 +27,14 @@ public class StarJumpBlock : Entity
             _ => throw new NotImplementedException(),
         };
 
-        return ISprite.FromTexture(texture ?? "") with
-        {
+        return ISprite.FromTexture(texture ?? "") with {
             Scale = new(sx, sy),
             Origin = new(.5f, .5f),
             Pos = new(4f)
         };
     }
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         return ConnectedEntityHelper.GetSprites(this, Room.Entities[typeof(StarJumpBlock)], GetSprite, ignoreMiddle: true, handleInnerCorners: false);
     }
 }

@@ -6,9 +6,8 @@ namespace Rysy.Entities;
 [CustomEntity("strawberry")]
 [CustomEntity("goldenBerry")]
 [CustomEntity("memorialTextController")]
-public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider
-{
-    public override string TexturePath => 
+public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider {
+    public override string TexturePath =>
           Moon ? "collectables/moonBerry/normal00"
         : Golden ? $"collectables/goldberry/{(Winged ? "wings" : "idle")}00"
         : $"collectables/strawberry/{(Winged ? "wings" : "normal")}00";
@@ -21,10 +20,8 @@ public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider
 
     public IEnumerable<ISprite> NodePathSprites => NodePathTypes.Fan(this);
 
-    public IEnumerable<ISprite> GetNodeSprites(int nodeIndex)
-    {
-        yield return GetSprite("collectables/strawberry/seed00") with
-        {
+    public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
+        yield return GetSprite("collectables/strawberry/seed00") with {
             Pos = Nodes![nodeIndex]
         };
     }

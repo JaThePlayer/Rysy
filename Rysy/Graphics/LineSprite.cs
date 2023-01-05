@@ -1,16 +1,11 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿namespace Rysy.Graphics;
 
-namespace Rysy.Graphics;
-
-public record struct LineSprite : ISprite
-{
+public record struct LineSprite : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; }
-    public float Alpha
-    {
+    public float Alpha {
         get => Color.A / 255f;
-        set
-        {
+        set {
             Color = new Color(Color, value);
         }
     }
@@ -21,17 +16,14 @@ public record struct LineSprite : ISprite
 
     public int Thickness = 1;
 
-    public LineSprite(Vector2[] positions)
-    {
+    public LineSprite(Vector2[] positions) {
         Positions = positions;
     }
 
-    public void Render()
-    {
+    public void Render() {
         var b = GFX.Batch;
         var c = Color;
-        for (int i = 0; i < Positions.Length - 1; i++)
-        {
+        for (int i = 0; i < Positions.Length - 1; i++) {
             var start = Positions[i];
             var end = Positions[i + 1];
             b.DrawLine(start, end, c);

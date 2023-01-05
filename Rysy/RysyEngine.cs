@@ -2,17 +2,14 @@
 using Rysy;
 using Rysy.Graphics;
 using Rysy.Scenes;
-using System.Text.Json;
 
-public sealed class RysyEngine : Game
-{
+public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
 
     public static GraphicsDeviceManager GDM { get; private set; } = null!;
 
     private static Scene _scene = new BlankScene();
-    public static Scene Scene
-    {
+    public static Scene Scene {
         get => _scene;
         set => _scene = value;
     }
@@ -32,12 +29,11 @@ public sealed class RysyEngine : Game
 
     public static float ForceActiveTimer = 0.0f;
 
-    public RysyEngine()
-    {
+    public RysyEngine() {
         Instance = this;
 
         GDM = new GraphicsDeviceManager(this);
-        
+
         Window.AllowUserResizing = true;
         IsMouseVisible = true;
 
@@ -49,8 +45,7 @@ public sealed class RysyEngine : Game
         IsFixedTimeStep = true;
     }
 
-    private void Window_FileDrop(object? sender, FileDropEventArgs e)
-    {
+    private void Window_FileDrop(object? sender, FileDropEventArgs e) {
         Console.WriteLine(string.Join(' ', e.Files));
 
         Scene?.OnFileDrop(e);
@@ -58,8 +53,7 @@ public sealed class RysyEngine : Game
 
     public static Action<Viewport>? OnViewportChanged;
 
-    private void Window_ClientSizeChanged(object? sender, EventArgs e)
-    {
+    private void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
 
         if (Persistence.Instance is { }) {
@@ -71,16 +65,14 @@ public sealed class RysyEngine : Game
         }
     }
 
-    protected override async void Initialize()
-    {
+    protected override async void Initialize() {
         base.Initialize();
 
         await ReloadAsync();
     }
 
-    public async ValueTask ReloadAsync()
-    {
-        
+    public async ValueTask ReloadAsync() {
+
         using var reloadTimer = new ScopedStopwatch("Loading");
         GFX.LoadEssencials(this);
         LoadingScene loading = new() { Text = "Loading settings" };
@@ -92,21 +84,15 @@ public sealed class RysyEngine : Game
             Profile.CurrentProfile = SettingsHelper.Save<Profile>(new(), "profile.json");
         }
 
-        try
-        {
+        try {
             Settings.Instance = Settings.Load();
-        }
-        catch
-        {
+        } catch {
             return; // No point in loading any further. Error is already logged by .Load()
         }
 
-        try
-        {
+        try {
             Persistence.Instance = Persistence.Load();
-        }
-        catch
-        {
+        } catch {
             // persistence will be `new()`'d up. Oh well.
             Persistence.Instance = Persistence.Save(new());
         }
@@ -130,8 +116,7 @@ public sealed class RysyEngine : Game
 #endif
 */
 
-        if (Settings.Instance.CelesteDirectory is null or "")
-        {
+        if (Settings.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);
             Scene = picker;
             await picker.AwaitInstallPickedAsync();
@@ -144,10 +129,8 @@ public sealed class RysyEngine : Game
         Scene = new EditorScene();
     }
 
-    private void ResizeWindow(int w, int h, int x, int y)
-    {
-        OnFrameEnd += () =>
-        {
+    private void ResizeWindow(int w, int h, int x, int y) {
+        OnFrameEnd += () => {
             GDM.PreferredBackBufferWidth = w;
             GDM.PreferredBackBufferHeight = h;
             GDM.ApplyChanges();
@@ -156,17 +139,14 @@ public sealed class RysyEngine : Game
         };
     }
 
-    protected override void Update(GameTime gameTime)
-    {
+    protected override void Update(GameTime gameTime) {
         base.Update(gameTime);
 
-        if (_lastActive != IsActive)
-        {
+        if (_lastActive != IsActive) {
             OnLoseFocus?.Invoke();
         }
 
-        if (IsActive)
-        {
+        if (IsActive) {
             Time.Update(gameTime);
             Input.Update(gameTime);
 
@@ -179,10 +159,8 @@ public sealed class RysyEngine : Game
         _lastActive = IsActive;
     }
 
-    protected override void Draw(GameTime gameTime)
-    {
-        if (IsActive || ForceActiveTimer > 0f)
-        {
+    protected override void Draw(GameTime gameTime) {
+        if (IsActive || ForceActiveTimer > 0f) {
             ForceActiveTimer -= Time.Delta;
             base.Draw(gameTime);
 
@@ -197,22 +175,19 @@ public sealed class RysyEngine : Game
     }
 
     //https://stackoverflow.com/a/44689035
-    class SmartFramerate
-    {
+    class SmartFramerate {
         double currentFrametimes;
         double weight;
         int numerator;
 
         public double framerate => (numerator / currentFrametimes);
 
-        public SmartFramerate(int oldFrameWeight)
-        {
+        public SmartFramerate(int oldFrameWeight) {
             numerator = oldFrameWeight;
-            weight = (double)oldFrameWeight / ((double)oldFrameWeight - 1d);
+            weight = (double) oldFrameWeight / ((double) oldFrameWeight - 1d);
         }
 
-        public void Update(double timeSinceLastFrame)
-        {
+        public void Update(double timeSinceLastFrame) {
             currentFrametimes /= weight;
             currentFrametimes += timeSinceLastFrame;
         }

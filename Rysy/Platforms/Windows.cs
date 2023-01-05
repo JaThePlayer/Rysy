@@ -1,7 +1,6 @@
 ﻿namespace Rysy.Platforms;
 
-public class Windows : RysyPlatform
-{
+public class Windows : RysyPlatform {
     private static string SaveLocation = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Rysy"
