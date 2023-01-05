@@ -28,11 +28,22 @@ public class Tilegrid
     /// </summary>
     public bool SafeSetTile(char tile, int x, int y)
     {
-        if (x < 0 || y < 0 || x >= Width || y >= Height)
+        return SafeReplaceTile(tile, x, y, out _);
+    }
+
+    /// <summary>
+    /// Safely sets a tile at (x,y). If this caused a change, returns true, false otherwise. Sets the previous tile at this location to <paramref name="oldTile"/>
+    /// </summary>
+    public bool SafeReplaceTile(char tile, int x, int y, out char oldTile) {
+        if (x < 0 || y < 0 || x >= Width || y >= Height) {
+            oldTile = '0';
             return false;
+        }
 
         ref var currentTile = ref Tiles[x, y];
-        if (currentTile == tile) {
+        oldTile = currentTile;
+        if (currentTile == tile)
+        {
             return false;
         }
         currentTile = tile;

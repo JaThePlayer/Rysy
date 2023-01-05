@@ -25,6 +25,6 @@ public static class VectorExt
 
     public static Vector2 Snap(this Vector2 v, int gridSize) => (v / gridSize).Floored() * gridSize;
 
-    public static Point GridPos(this Vector2 v, int gridSize) => (v / gridSize).Floored().ToPoint();
-
+    public static Point GridPosFloor(this Vector2 v, int gridSize) => (v / gridSize).Floored().ToPoint();
+    public static Point GridPosRound(this Vector2 v, int gridSize) => (v / gridSize).Rounded().ToPoint();
 }

@@ -81,11 +81,13 @@ public sealed class Settings
     public string CelesteDirectory { get; set; } = "";
     public string LastEditedMap { get; set; } = "";
 
+    public string? ModDirectoryOverride { get; set; } = null;
+
     public bool LogMissingEntities { get; set; } = false;
     public bool LogTextureLoadTimes { get; set; } = false;
 
     public HotkeySettings Keybinds { get; set; } = new();
     #endregion
 
-    public string ModsDirectory => $"{CelesteDirectory}/Mods";
+    public string ModsDirectory => ModDirectoryOverride ?? $"{CelesteDirectory}/Mods";
 }

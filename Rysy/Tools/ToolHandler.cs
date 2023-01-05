@@ -11,14 +11,15 @@ public class ToolHandler
         History = history;
         Tools = new() {
         // TODO: autogen
-            new BrushTool() { History = History } 
+            new BrushTool() { History = History },
+            new TileRectTool() { History = History }
         };
     }
 
     public List<Tool> Tools;
 
     public Tool CurrentTool => Tools[ToolIndex];
-    public int ToolIndex { get; set; }
+    public int ToolIndex { get; set; } = 1;
 
     public void Update(Camera camera, Room currentRoom)
     {
