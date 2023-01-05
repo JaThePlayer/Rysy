@@ -67,12 +67,15 @@ public static class Input
             mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
             var delta = deltaSeconds;
 
+            var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+            var canInput = viewport.Bounds.Contains(new Point(mouseState.X, mouseState.Y));
+
             // Easiest route is to 'or' the click with the current state
-            ButtonState leftButton = mouseState.LeftButton;
-            ButtonState rightButton = mouseState.RightButton;
-            ButtonState middleButton = mouseState.MiddleButton;
-            ButtonState x1Button = mouseState.XButton1;
-            ButtonState x2Button = mouseState.XButton2;
+            ButtonState leftButton = canInput ? mouseState.LeftButton : ButtonState.Released;
+            ButtonState rightButton = canInput ? mouseState.RightButton : ButtonState.Released;
+            ButtonState middleButton = canInput ? mouseState.MiddleButton : ButtonState.Released;
+            ButtonState x1Button = canInput ? mouseState.XButton1 : ButtonState.Released;
+            ButtonState x2Button = canInput ? mouseState.XButton2 : ButtonState.Released;
 
             Left = GetCorrectState(leftButton, mousePrevState.LeftButton, 0, delta);
             Right = GetCorrectState(rightButton, mousePrevState.RightButton, 1, delta);

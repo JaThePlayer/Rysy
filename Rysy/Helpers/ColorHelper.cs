@@ -81,6 +81,104 @@ public static class ColorHelper
         };
     }
 
+    /*
+// https://web.archive.org/web/20190422181017/http://chilliant.blogspot.com/2014/04/rgbhsv-in-hlsl-5.html
+public static Color HsvToColor(float h, float s, float v) {
+    float R = MathF.Abs(h * 6 - 3) - 1;
+    float G = 2 - MathF.Abs(h * 6 - 2);
+    float B = 2 - MathF.Abs(h * 6 - 4);
+    return new Color((Saturate(new Vector3(R, G, B)) - Vector3.One) * s + Vector3.One) * v;
+}*/
+
+    //https://www.splinter.com.au/converting-hsv-to-rgb-colour-using-c/
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="h">The hue value (0-360)</param>
+    /// <param name="s">The saturation value (0-1)</param>
+    /// <param name="v">The v value (0-1)</param>
+    /// <returns></returns>
+    public static Color HSVToColor(float h, float s, float v)
+    {
+        float H = h;
+        while (H < 0) { H += 360; };
+        while (H >= 360) { H -= 360; };
+        float R, G, B;
+        if (v <= 0) { R = G = B = 0; }
+        else if (s <= 0)
+        {
+            R = G = B = v;
+        }
+        else
+        {
+            float hf = H / 60.0f;
+            int i = (int)Math.Floor(hf);
+            float f = hf - i;
+            float pv = v * (1 - s);
+            float qv = v * (1 - s * f);
+            float tv = v * (1 - s * (1 - f));
+            switch (i)
+            {
+            // Red is the dominant color
+            case 0:
+                R = v;
+                G = tv;
+                B = pv;
+                break;
+
+            // Green is the dominant color
+            case 1:
+                R = qv;
+                G = v;
+                B = pv;
+                break;
+            case 2:
+                R = pv;
+                G = v;
+                B = tv;
+                break;
+
+            // Blue is the dominant color
+            case 3:
+                R = pv;
+                G = qv;
+                B = v;
+                break;
+            case 4:
+                R = tv;
+                G = pv;
+                B = v;
+                break;
+
+            // Red is the dominant color
+            case 5:
+                R = v;
+                G = pv;
+                B = qv;
+                break;
+
+            // Just in case we overshoot on our math by a little, we put these here. Since its a switch it won't slow us down at all to put these here.
+            case 6:
+                R = v;
+                G = tv;
+                B = pv;
+                break;
+            case -1:
+                R = v;
+                G = pv;
+                B = qv;
+                break;
+
+            // The color is not defined, we should throw an error.
+            default:
+                R = G = B = v; // Just pretend its black/white
+                break;
+            }
+        }
+
+        return new Color(R, G, B);
+    }
+
     private static uint GetPacked(ReadOnlySpan<char> s)
         => uint.Parse(s, System.Globalization.NumberStyles.HexNumber);
 

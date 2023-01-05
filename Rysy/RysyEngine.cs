@@ -25,6 +25,9 @@ public sealed class RysyEngine : Game
     /// </summary>
     public static event Action? OnFrameEnd = null;
 
+    private static bool _lastActive;
+    public static event Action? OnLoseFocus = null;
+
     public static double Framerate;
 
     public static float ForceActiveTimer = 0.0f;
@@ -157,6 +160,11 @@ public sealed class RysyEngine : Game
     {
         base.Update(gameTime);
 
+        if (_lastActive != IsActive)
+        {
+            OnLoseFocus?.Invoke();
+        }
+
         if (IsActive)
         {
             Time.Update(gameTime);
@@ -168,6 +176,7 @@ public sealed class RysyEngine : Game
             OnFrameEnd = null;
         }
 
+        _lastActive = IsActive;
     }
 
     protected override void Draw(GameTime gameTime)
@@ -204,7 +213,7 @@ public sealed class RysyEngine : Game
 
         public void Update(double timeSinceLastFrame)
         {
-            currentFrametimes = currentFrametimes / weight;
+            currentFrametimes /= weight;
             currentFrametimes += timeSinceLastFrame;
         }
     }
