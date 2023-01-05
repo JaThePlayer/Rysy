@@ -1,7 +1,6 @@
 ﻿namespace Rysy;
 
-public static class RectangleExt
-{
+public static class RectangleExt {
     //https://stackoverflow.com/questions/45259380/convert-2-vector2-points-to-a-rectangle-in-xna-monogame
     public static Rectangle FromPoints(Point a, Point b) {
         //we need to figure out the top left and bottom right coordinates
@@ -23,8 +22,7 @@ public static class RectangleExt
         return new(r.X, r.Y, r.Width * mult, r.Height * mult);
     }
 
-    public static Rectangle Mult(this Rectangle r, int mult)
-    {
+    public static Rectangle Mult(this Rectangle r, int mult) {
         return new(r.X * mult, r.Y * mult, r.Width * mult, r.Height * mult);
     }
 

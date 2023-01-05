@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("refill")]
-public class Refill : SpriteEntity
-{
+public class Refill : SpriteEntity {
     public override int Depth => -100;
 
     public override Color OutlineColor => Color.Black;

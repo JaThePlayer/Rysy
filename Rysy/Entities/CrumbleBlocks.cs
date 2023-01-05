@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("crumbleBlock")]
-public class CrumbleBlocks : LoopingSpriteSliceEntity, ISolid
-{
+public class CrumbleBlocks : LoopingSpriteSliceEntity, ISolid {
     public override int Depth => Depths.Solids;
     public override string TexturePath => $"objects/crumbleBlock/{Attr("texture", "default")}";
     public override int TileSize => 8;

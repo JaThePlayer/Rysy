@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("crumbleWallOnRumble")]
-public class CrumbleWallOnRumble : TileEntity, ISolid
-{
+public class CrumbleWallOnRumble : TileEntity, ISolid {
     public override int Depth => Depths.Solids;
 
     public override char Tiletype => Char("tiletype", 'm');

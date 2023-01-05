@@ -2,8 +2,7 @@
 
 namespace Rysy.Helpers;
 
-public abstract class SpriteEntity : Entity
-{
+public abstract class SpriteEntity : Entity {
     /// <summary>
     /// The color to use to tint the sprite. Leave as <see cref="Color.White"/> to not apply any tinting.
     /// </summary>
@@ -34,20 +33,17 @@ public abstract class SpriteEntity : Entity
     /// </summary>
     public virtual Vector2 Offset => default;
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         yield return GetSprite();
     }
 
     /// <summary>
     /// Gets the <see cref="Sprite"/> used to render this entity. If <paramref name="texturePath"/> is provided, it'll be used instead of the <see cref="TexturePath"/> property.
     /// </summary>
-    public Sprite GetSprite(string? texturePath = null)
-    {
+    public Sprite GetSprite(string? texturePath = null) {
         texturePath ??= TexturePath;
 
-        return ISprite.FromTexture(Pos + Offset, texturePath) with
-        {
+        return ISprite.FromTexture(Pos + Offset, texturePath) with {
             Origin = Origin,
             OutlineColor = OutlineColor,
             Color = Color,

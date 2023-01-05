@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("cliffflag")]
-public class CliffFlags : Entity, ICustomNodeHandler
-{
+public class CliffFlags : Entity, ICustomNodeHandler {
     public static Color LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f);
     public static Color[] Colors = new Color[]
     {
@@ -16,11 +15,9 @@ public class CliffFlags : Entity, ICustomNodeHandler
 
     public static Color[] HighlightColors;
 
-    static CliffFlags()
-    {
+    static CliffFlags() {
         HighlightColors = new Color[Colors.Length];
-        for (int i = 0; i < Colors.Length; i++)
-        {
+        for (int i = 0; i < Colors.Length; i++) {
             HighlightColors[i] = Color.Lerp(Colors[i], Color.White, 0.3f);
         }
     }
@@ -30,8 +27,7 @@ public class CliffFlags : Entity, ICustomNodeHandler
     public IEnumerable<ISprite> GetNodeSprites() => NodePathTypes.None;
 
     // TODO: Move to helper
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         var (p1, p2) = (Pos, Nodes![0]);
         var (start, end) = p1.X < p2.X ? (p1, p2) : (p2, p1);
 
@@ -39,30 +35,26 @@ public class CliffFlags : Entity, ICustomNodeHandler
 
         var len = (start - end).Length();
 
-        var wireCurve = new SimpleCurve()
-        {
+        var wireCurve = new SimpleCurve() {
             Start = start,
             End = end,
             Control = (end + start) / 2 + new Vector2(0, len / 8f * 1.5f)
         };
 
-        foreach (var item in wireCurve.GetSprites(LineColor, 16))
-        {
+        foreach (var item in wireCurve.GetSprites(LineColor, 16)) {
             yield return item;
         }
 
         float p = 0f;
         var pos = start;
         bool skip = true;
-        while (p < 1f)
-        {
+        while (p < 1f) {
             var cloth = NextCloth(10, 10, 10, 10, 2, 8);
             p += (skip ? cloth.Step : cloth.Length) / len;
             p = Math.Min(p, 1f);
             var nextPos = wireCurve.GetPointAt(p);
 
-            if (!skip && p < 1f)
-            {
+            if (!skip && p < 1f) {
                 var color = Colors[cloth.Color];
                 var clothCurve = new SimpleCurve() {
                     Start = pos,
@@ -70,8 +62,7 @@ public class CliffFlags : Entity, ICustomNodeHandler
                     Control = (pos + nextPos) / 2 + new Vector2(0f, cloth.Length * droopAmount * 2.4f)
                 };
 
-                foreach (var item in clothCurve.GetSpritesForFloatyRectangle(new((int)pos.X, (int)pos.Y, cloth.Length, cloth.Height), color))
-                {
+                foreach (var item in clothCurve.GetSpritesForFloatyRectangle(new((int) pos.X, (int) pos.Y, cloth.Length, cloth.Height), color)) {
                     yield return item;
                 }
 
@@ -90,16 +81,14 @@ public class CliffFlags : Entity, ICustomNodeHandler
         }
     }
 
-    private Cloth NextCloth(int minFlagHeight, int maxFlagHeight, int minFlagLength, int maxFlagLength, int minSpace, int maxSpace) => new Cloth
-    {
+    private Cloth NextCloth(int minFlagHeight, int maxFlagHeight, int minFlagLength, int maxFlagLength, int minSpace, int maxSpace) => new Cloth {
         Color = Room.Random.Next(Colors.Length),
         Height = Room.Random.Next(minFlagHeight, maxFlagHeight),
         Length = Room.Random.Next(minFlagLength, maxFlagLength),
         Step = Room.Random.Next(minSpace, maxSpace)
     };
 
-    private struct Cloth
-    {
+    private struct Cloth {
         public int Color;
 
         public int Height;

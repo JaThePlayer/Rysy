@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("darkChaser")]
-public class BadelineChaser : SpriteEntity
-{
+public class BadelineChaser : SpriteEntity {
     public override string TexturePath => "characters/badeline/sleep00";
 
     public override int Depth => 0;

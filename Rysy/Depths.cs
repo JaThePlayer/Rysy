@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Rysy;
 
-namespace Rysy;
-
-public static class Depths
-{
+public static class Depths {
     public const int BGTerrain = 10000;
 
     public const int BGMirrors = 9500;

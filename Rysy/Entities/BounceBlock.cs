@@ -4,31 +4,26 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("bounceBlock")]
-public class BounceBlock : Entity, ISolid
-{
+public class BounceBlock : Entity, ISolid {
     const int SpriteSize = 64;
     const int Tiles = SpriteSize / 8 - 2;
 
     public override int Depth => Depths.SolidsBelow;
 
-    private static Sprite GetSpriteHot(NineSliceLocation loc, int tx, int ty)
-    {
+    private static Sprite GetSpriteHot(NineSliceLocation loc, int tx, int ty) {
         GetSubtexturePos(loc, tx, ty, out int x, out int y);
         return ISprite.FromTexture("objects/BumpBlockNew/fire00").CreateSubtexture(x, y, 8, 8);
     }
 
-    private static Sprite GetSpriteCold(NineSliceLocation loc, int tx, int ty)
-    {
+    private static Sprite GetSpriteCold(NineSliceLocation loc, int tx, int ty) {
         GetSubtexturePos(loc, tx, ty, out int x, out int y);
         return ISprite.FromTexture("objects/BumpBlockNew/ice00").CreateSubtexture(x, y, 8, 8);
     }
 
-    private static void GetSubtexturePos(NineSliceLocation loc, int tx, int ty, out int x, out int y)
-    {
+    private static void GetSubtexturePos(NineSliceLocation loc, int tx, int ty, out int x, out int y) {
         tx -= 1;
         ty -= 1;
-        (x, y) = loc switch
-        {
+        (x, y) = loc switch {
             NineSliceLocation.TopLeft => (0, 0),
             NineSliceLocation.TopMiddle => (tx % Tiles * 8 + 8, 0),
             NineSliceLocation.TopRight => (SpriteSize - 8, 0),
@@ -44,12 +39,10 @@ public class BounceBlock : Entity, ISolid
         };
     }
 
-    public override IEnumerable<ISprite> GetSprites()
-    {
+    public override IEnumerable<ISprite> GetSprites() {
         var isIce = Bool("notCoreMode", false);
 
-        foreach (var item in NineSliceHelper.GetSprites(this, isIce ? GetSpriteCold : GetSpriteHot))
-        {
+        foreach (var item in NineSliceHelper.GetSprites(this, isIce ? GetSpriteCold : GetSpriteHot)) {
             yield return item;
         }
 

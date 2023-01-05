@@ -3,10 +3,8 @@
 namespace Rysy.Entities;
 
 [CustomEntity("door")]
-public class Door : SpriteEntity
-{
-    public override string TexturePath => Attr("type", "wood") switch
-    {
+public class Door : SpriteEntity {
+    public override string TexturePath => Attr("type", "wood") switch {
         "wood" => "objects/door/door00",
         "metal" or _ => "objects/door/metaldoor00",
     };

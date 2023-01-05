@@ -4,29 +4,23 @@ using System.IO.Compression;
 
 namespace Rysy.Graphics.TextureTypes;
 
-public sealed class ZipVirtTexture : VirtTexture
-{
+public sealed class ZipVirtTexture : VirtTexture {
     private string archivePath;
     private string entryName;
 
-    public ZipVirtTexture(string archivePath, ZipArchiveEntry entry)
-    {
+    public ZipVirtTexture(string archivePath, ZipArchiveEntry entry) {
         entryName = entry.FullName;
         this.archivePath = archivePath;
     }
 
-    protected override Task? QueueLoad()
-    {
-        return Task.Run(() =>
-        {
-            try
-            {
+    protected override Task? QueueLoad() {
+        return Task.Run(() => {
+            try {
 
                 var arch = SharedZipArchive.Get(archivePath);
 #if DirectX
                 // DirectX is super fast at loading textures it seems, so this is more performant than reading to an intermediate buffer
-                lock (arch)
-                {
+                lock (arch) {
                     using var stream = arch.GetEntry(entryName)!.Open();
                     texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
                     SharedZipArchive.Release(archivePath);
@@ -48,9 +42,7 @@ public sealed class ZipVirtTexture : VirtTexture
                 using var memStr = new MemoryStream(buffer);
                 texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
 #endif
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 Logger.Write("ZipVirtTexture", LogLevel.Error, $"Failed loading zip texture {this}, {e}");
                 throw;
             }
@@ -61,20 +53,15 @@ public sealed class ZipVirtTexture : VirtTexture
         );
     }
 
-    protected override bool TryPreloadClipRect()
-    {
+    protected override bool TryPreloadClipRect() {
         var arch = SharedZipArchive.Get(archivePath);
-        lock (arch)
-        {
+        lock (arch) {
             using var stream = arch.GetEntry(entryName)!.Open();
-            if (FileVirtTexture.PreloadSizeFromPNG(stream, entryName, out int w, out int h))
-            {
+            if (FileVirtTexture.PreloadSizeFromPNG(stream, entryName, out int w, out int h)) {
                 ClipRect = new(0, 0, w, h);
                 SharedZipArchive.Release(archivePath);
                 return true;
-            }
-            else
-            {
+            } else {
                 SharedZipArchive.Release(archivePath);
                 throw new Exception($"Invalid PNG for {entryName}");
             }
@@ -90,10 +77,8 @@ public sealed class ZipVirtTexture : VirtTexture
 /// This is useful for lazy loaded zip assets, as constant closing and reopening of ZipArchives is really slow,
 /// but keeping them open forever blocks mod updates.
 /// </summary>
-internal static class SharedZipArchive
-{
-    class SharedZip
-    {
+internal static class SharedZipArchive {
+    class SharedZip {
         public long UseCount;
         public ZipArchive Zip = null!;
     }
@@ -107,12 +92,9 @@ internal static class SharedZipArchive
     /// </summary>
     /// <param name="archPath"></param>
     /// <returns></returns>
-    public static ZipArchive Get(string archPath)
-    {
-        lock (Zips)
-        {
-            if (Zips.TryGetValue(archPath, out var shared))
-            {
+    public static ZipArchive Get(string archPath) {
+        lock (Zips) {
+            if (Zips.TryGetValue(archPath, out var shared)) {
                 shared.UseCount++;
                 return shared.Zip;
             }
@@ -120,8 +102,7 @@ internal static class SharedZipArchive
             var stream = File.OpenRead(archPath);
             var arch = new ZipArchive(stream, ZipArchiveMode.Read, false);
 
-            Zips[archPath] = new()
-            {
+            Zips[archPath] = new() {
                 Zip = arch,
                 UseCount = 1,
             };
@@ -135,16 +116,12 @@ internal static class SharedZipArchive
     /// Marks the archive as no longer needed. Once all users of this zip call this function, the zip will get disposed automatically.
     /// </summary>
     /// <param name="archPath"></param>
-    public static void Release(string archPath)
-    {
-        lock (Zips)
-        {
-            if (Zips.TryGetValue(archPath, out var z))
-            {
+    public static void Release(string archPath) {
+        lock (Zips) {
+            if (Zips.TryGetValue(archPath, out var z)) {
                 z.UseCount--;
 
-                if (z.UseCount == 0)
-                {
+                if (z.UseCount == 0) {
                     Zips.Remove(archPath, out _);
                     z.Zip.Dispose();
                 }

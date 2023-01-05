@@ -3,15 +3,12 @@
 /// <summary>
 /// Allows rendering PICO-8 text, centered into a rectangle.
 /// </summary>
-public record struct PicoTextRectSprite : ISprite
-{
+public record struct PicoTextRectSprite : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; }
-    public float Alpha
-    {
+    public float Alpha {
         get => Color.A / 255f;
-        set
-        {
+        set {
             Color = new Color(Color, value);
         }
     }
@@ -22,13 +19,11 @@ public record struct PicoTextRectSprite : ISprite
     public Rectangle Pos;
     public float Scale;
 
-    public PicoTextRectSprite(string text)
-    {
+    public PicoTextRectSprite(string text) {
         Text = text;
     }
 
-    public void Render()
-    {
+    public void Render() {
         PicoFont.Print(Text, Pos, Color, Scale);
     }
 }

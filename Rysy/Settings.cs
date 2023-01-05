@@ -4,9 +4,8 @@ using System.Text.Json;
 
 namespace Rysy;
 
-public static class SettingsHelper
-{
-    public static string GetFullPath(string settingFileName) => Profile.CurrentProfile is { } 
+public static class SettingsHelper {
+    public static string GetFullPath(string settingFileName) => Profile.CurrentProfile is { }
     ? $"{RysyPlatform.Current.GetSaveLocation()}/{Profile.CurrentProfile.Name}/{settingFileName}"
     : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
 
@@ -18,27 +17,21 @@ public static class SettingsHelper
 
         T? settings = null;
 
-        if (!Directory.Exists(saveLocation))
-        {
+        if (!Directory.Exists(saveLocation)) {
             Directory.CreateDirectory(saveLocation!);
         }
 
-        if (File.Exists(settingsFile))
-        {
-            try
-            {
+        if (File.Exists(settingsFile)) {
+            try {
                 using var stream = File.OpenRead(settingsFile);
                 settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.DefaultOptions);
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading settings! {e}");
                 throw;
             }
         }
 
-        return settings ?? Save<T>(new()
-        {
+        return settings ?? Save<T>(new() {
             // there's no UI yet, so no way to change this in-game
             // there's also no automatic instal detection, so you'll have to edit it manually. Oh well
         }, filename);
@@ -47,8 +40,8 @@ public static class SettingsHelper
     public static T Save<T>(T settings, string filename) {
         var settingsFile = GetFullPath(filename);
 
-        
-        using var stream = File.Exists(settingsFile) 
+
+        using var stream = File.Exists(settingsFile)
             ? File.Open(settingsFile, FileMode.Truncate)
             : File.Open(settingsFile, FileMode.CreateNew);
         JsonSerializer.Serialize(stream, settings, typeof(T), JsonSerializerHelper.DefaultOptions);
@@ -57,22 +50,19 @@ public static class SettingsHelper
     }
 }
 
-public sealed class Settings
-{
+public sealed class Settings {
     public static string SettingsFileLocation = $"settings.json";
 
-    public static Settings Load()
-    {
+    public static Settings Load() {
         return SettingsHelper.Load<Settings>(SettingsFileLocation);
     }
 
-    public static Settings Save(Settings settings)
-    {
+    public static Settings Save(Settings settings) {
         return SettingsHelper.Save<Settings>(settings, SettingsFileLocation);
     }
 
     public sealed class HotkeySettings {
-        
+
     }
 
     public static Settings Instance { get; internal set; } = null!;

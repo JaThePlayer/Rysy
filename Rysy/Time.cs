@@ -1,18 +1,15 @@
 ﻿namespace Rysy;
 
-public static class Time
-{
+public static class Time {
     public static float Delta { get; private set; }
 
     /// <summary>
     /// Time delta, unscaled by TimeScale
     /// </summary>
     public static float RawDelta { get; private set; }
-    public static float TimeScale
-    {
+    public static float TimeScale {
         get => _timeScale;
-        set
-        {
+        set {
             Delta = RawDelta * value;
             _timeScale = value;
         }
@@ -27,9 +24,8 @@ public static class Time
 
     public static float RawElapsed { get; private set; } = 0f;
 
-    internal static void Update(GameTime gameTime)
-    {
-        RawDelta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+    internal static void Update(GameTime gameTime) {
+        RawDelta = (float) gameTime.ElapsedGameTime.TotalSeconds;
         Delta = RawDelta * TimeScale;
         Elapsed += Delta;
         RawElapsed += RawDelta;

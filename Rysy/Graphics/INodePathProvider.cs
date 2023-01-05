@@ -5,7 +5,6 @@
 /// Typically, you should simply call one of the static functions available in the <see cref="NodePathTypes"/> class.
 /// If not implemented, Rysy will default to calling <see cref="NodePathTypes.Line(Rysy.Entity)"/>.
 /// </summary>
-public interface INodePathProvider
-{
+public interface INodePathProvider {
     public IEnumerable<ISprite> NodePathSprites { get; }
 }

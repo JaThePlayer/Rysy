@@ -2,8 +2,7 @@
 
 namespace Rysy;
 
-public static partial class StringExt
-{
+public static partial class StringExt {
     [GeneratedRegex("[a-z][A-Z]")]
     public static partial Regex PascalCaseRegex();
 
@@ -13,10 +12,8 @@ public static partial class StringExt
     /// <summary>
     /// Splits the string on [a-z][A-Z] patterns, inserting a space between them.
     /// </summary>
-    public static string SplitPascalCase(this string pascalCase)
-    {
-        return PascalCaseRegex().Replace(pascalCase, (Match match) =>
-        {
+    public static string SplitPascalCase(this string pascalCase) {
+        return PascalCaseRegex().Replace(pascalCase, (Match match) => {
             return $"{match.ValueSpan[0]} {match.ValueSpan[1]}";
         });
     }
@@ -25,8 +22,7 @@ public static partial class StringExt
     /// <summary>
     /// Trims a piece of text from the end of the string
     /// </summary>
-    public static string TrimEnd(this string from, string elem, StringComparison comp = StringComparison.InvariantCulture)
-    {
+    public static string TrimEnd(this string from, string elem, StringComparison comp = StringComparison.InvariantCulture) {
         if (from.EndsWith(elem, comp))
             return from[..^elem.Length];
         return from;
@@ -35,8 +31,7 @@ public static partial class StringExt
     /// <summary>
     /// Trims a piece of text from the start of the string
     /// </summary>
-    public static string TrimStart(this string from, string elem)
-    {
+    public static string TrimStart(this string from, string elem) {
         if (from.StartsWith(elem))
             return from[elem.Length..];
         return from;
@@ -53,8 +48,7 @@ public static partial class StringExt
     /// Since all OS'es seem to support forward slashes, only use this for printing!
     /// </summary>
     public static string CorrectSlashes(this string path)
-        => path switch
-        {
+        => path switch {
             null => "",
             _ => path.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar),
         };

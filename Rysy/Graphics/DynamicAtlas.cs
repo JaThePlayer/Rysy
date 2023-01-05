@@ -2,8 +2,7 @@
 
 namespace Rysy.Graphics;
 
-public class DynamicAtlas : IAtlas
-{
+public class DynamicAtlas : IAtlas {
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.InvariantCultureIgnoreCase);
 
     protected RenderTarget2D? _packed;
@@ -12,14 +11,12 @@ public class DynamicAtlas : IAtlas
 
     private List<Rectangle> Areas = new();
 
-    public DynamicAtlas(int width, int height)
-    {
+    public DynamicAtlas(int width, int height) {
         (Width, Height) = (width, height);
         Areas.Add(new Rectangle(0, 0, Width, Height));
     }
 
-    internal async ValueTask<bool> PackTexture(string key, VirtTexture texture)
-    {
+    internal async ValueTask<bool> PackTexture(string key, VirtTexture texture) {
         var needsClear = false;
         var rTexture = await texture.ForceGetTexture();
 
@@ -27,29 +24,21 @@ public class DynamicAtlas : IAtlas
         var h = texture.Height;
         Point? pos = default;
 
-        lock (Areas)
-        {
-            foreach (var area in Areas)
-            {
+        lock (Areas) {
+            foreach (var area in Areas) {
                 var aw = area.Width;
                 var ah = area.Height;
-                if (w <= aw && h <= ah)
-                {
+                if (w <= aw && h <= ah) {
                     pos = area.Location;
                     Areas.Remove(area);
                     // cut up the area
-                    if (w == aw)
-                    {
+                    if (w == aw) {
                         // took up all horizontal space, so we only need 1 vertical area
                         Areas.Add(new Rectangle(area.Location.X, area.Location.Y + h, aw, ah - h));
-                    }
-                    else if (h == ah)
-                    {
+                    } else if (h == ah) {
                         // took up all vertical space, so we only need 1 horizontal area
                         Areas.Add(new Rectangle(area.Location.X + w, area.Location.Y, aw - w, ah));
-                    }
-                    else
-                    {
+                    } else {
                         Areas.Add(new Rectangle(area.Location.X + w, area.Location.Y, aw - w, h));
                         Areas.Add(new Rectangle(area.Location.X, area.Location.Y + h, aw, ah - h));
                     }
@@ -59,16 +48,14 @@ public class DynamicAtlas : IAtlas
                 }
             }
 
-            if (pos is null)
-            {
+            if (pos is null) {
                 Console.WriteLine("NOT ENOUGH SPACE");
                 return false;
             }
 
             Areas = Areas.OrderBy(r => r.Width * r.Height).ToList();
 
-            if (_packed is null)
-            {
+            if (_packed is null) {
                 _packed = new(RysyEngine.GDM.GraphicsDevice, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
                 needsClear = true;
             }
@@ -81,16 +68,13 @@ public class DynamicAtlas : IAtlas
         return true;
     }
 
-    private void PackTextureCallback(VirtTexture texture, Vector2 pos, bool needsClear)
-    {
+    private void PackTextureCallback(VirtTexture texture, Vector2 pos, bool needsClear) {
         var b = GFX.Batch;
         var gd = RysyEngine.GDM.GraphicsDevice;
 
-        lock (_packed)
-        {
+        lock (_packed) {
             gd.SetRenderTarget(_packed);
-            if (needsClear)
-            {
+            if (needsClear) {
                 gd.Clear(Color.Transparent);
             }
             b.Begin();
@@ -105,12 +89,9 @@ public class DynamicAtlas : IAtlas
 
     }
 
-    public VirtTexture this[string key]
-    {
-        get
-        {
-            if (Textures.TryGetValue(key, out var texture))
-            {
+    public VirtTexture this[string key] {
+        get {
+            if (Textures.TryGetValue(key, out var texture)) {
                 return texture;
             }
 
@@ -119,31 +100,26 @@ public class DynamicAtlas : IAtlas
         }
     }
 
-    public void DisposeTextures()
-    {
+    public void DisposeTextures() {
         _packed?.Dispose();
         _packed = null;
     }
 
-    internal void DebugRender()
-    {
-        if (_packed is null)
-        {
+    internal void DebugRender() {
+        if (_packed is null) {
             return;
         }
-        
+
         var pos = Vector2.Zero;
         ISprite.Rect(pos, _packed.Width, _packed.Height, Color.Gray * 0.8f).Render();
         GFX.Batch.Draw(_packed, pos, Color.White);
 
-        foreach (var item in Areas)
-        {
+        foreach (var item in Areas) {
             ISprite.HollowRect(item.Location.ToVector2(), item.Width, item.Height, Color.White, Color.Pink * 0.8f).Render();
         }
     }
 
-    public void AddTexture(string virtPath, VirtTexture texture)
-    {
+    public void AddTexture(string virtPath, VirtTexture texture) {
         PackTexture(virtPath, texture);
     }
 

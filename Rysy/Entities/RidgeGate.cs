@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("ridgeGate")]
-public class RidgeGate : SpriteEntity
-{
+public class RidgeGate : SpriteEntity {
     public override string TexturePath => Attr("texture", null!) ?? (Bool("ridge", true) ? "objects/ridgeGate" : "objects/farewellGate");
 
     public override Vector2 Origin => new();

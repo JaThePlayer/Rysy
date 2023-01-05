@@ -3,8 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("flutterbird")]
-public class Flutterbird : SpriteEntity
-{
+public class Flutterbird : SpriteEntity {
     private static readonly Color[] Colors = {
         "89FBFF".FromRGB(),
         "F0FC6C".FromRGB(),
