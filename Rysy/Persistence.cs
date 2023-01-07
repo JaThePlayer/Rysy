@@ -9,11 +9,11 @@ public class Persistence {
     public static string SettingsFileLocation = $"persistence.json";
 
     public static Persistence Load() {
-        return SettingsHelper.Load<Persistence>(SettingsFileLocation);
+        return SettingsHelper.Load<Persistence>(SettingsFileLocation, perProfile: true);
     }
 
     public static Persistence Save(Persistence settings) {
-        return SettingsHelper.Save<Persistence>(settings, SettingsFileLocation);
+        return SettingsHelper.Save<Persistence>(settings, SettingsFileLocation, perProfile: true);
     }
 
     public T Get<T>(string key, T defaultValue) {
@@ -34,9 +34,31 @@ public class Persistence {
 #warning TODO: Don't save immediately, only once in a while
         Save(this);
     }
+
+    public void PushRecentMap(Map map) {
+        if (map.Filename is null)
+            return;
+        var entry = new RecentMap() {
+            Package = map.Package ?? map.Filename,
+            Filename = map.Filename,
+        };
+        RecentMaps.Remove(entry);
+        RecentMaps.Insert(0, entry);
+
+#warning TODO: Don't save immediately, only once in a while
+        Save(this);
+    }
     #endregion
 
+    public string? LastEditedMap => RecentMaps.FirstOrDefault(default(RecentMap)).Filename;
+
     #region Serialized
+    public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
     #endregion
+
+    public struct RecentMap {
+        public string Package { get; set; }
+        public string Filename { get; set; }
+    }
 }

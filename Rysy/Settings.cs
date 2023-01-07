@@ -1,18 +1,19 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.Platforms;
 using System.Text.Json;
 
 namespace Rysy;
 
 public static class SettingsHelper {
-    public static string GetFullPath(string settingFileName) => Profile.CurrentProfile is { }
-    ? $"{RysyPlatform.Current.GetSaveLocation()}/{Profile.CurrentProfile.Name}/{settingFileName}"
+    public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
+    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{Settings.Instance.Profile}/{settingFileName}"
     : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
 
-    public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
+    //public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
 
-    public static T Load<T>(string filename) where T : class, new() {
-        var settingsFile = GetFullPath(filename);
+    public static T Load<T>(string filename, bool perProfile = false) where T : class, new() {
+        var settingsFile = GetFullPath(filename, perProfile);
         var saveLocation = Path.GetDirectoryName(settingsFile);
 
         T? settings = null;
@@ -26,7 +27,7 @@ public static class SettingsHelper {
                 using var stream = File.OpenRead(settingsFile);
                 settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.DefaultOptions);
             } catch (Exception e) {
-                Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading settings! {e}");
+                Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
                 throw;
             }
         }
@@ -34,12 +35,16 @@ public static class SettingsHelper {
         return settings ?? Save<T>(new() {
             // there's no UI yet, so no way to change this in-game
             // there's also no automatic instal detection, so you'll have to edit it manually. Oh well
-        }, filename);
+        }, filename, perProfile);
     }
 
-    public static T Save<T>(T settings, string filename) {
-        var settingsFile = GetFullPath(filename);
+    public static T Save<T>(T settings, string filename, bool perProfile = false) {
+        var settingsFile = GetFullPath(filename, perProfile);
+        var saveLocation = Path.GetDirectoryName(settingsFile);
 
+        if (!Directory.Exists(saveLocation)) {
+            Directory.CreateDirectory(saveLocation!);
+        }
 
         using var stream = File.Exists(settingsFile)
             ? File.Open(settingsFile, FileMode.Truncate)
@@ -61,6 +66,10 @@ public sealed class Settings {
         return SettingsHelper.Save<Settings>(settings, SettingsFileLocation);
     }
 
+    public Settings Save() {
+        return Save(Instance);
+    }
+
     public sealed class HotkeySettings {
 
     }
@@ -68,16 +77,30 @@ public sealed class Settings {
     public static Settings Instance { get; internal set; } = null!;
 
     #region Serialized
-    public string CelesteDirectory { get; set; } = "";
-    public string LastEditedMap { get; set; } = "";
-
-    public string? ModDirectoryOverride { get; set; } = null;
+    public string Profile { get; set; } = "Default";
 
     public bool LogMissingEntities { get; set; } = false;
     public bool LogTextureLoadTimes { get; set; } = false;
 
+    private string _theme = "dark";
+    public string Theme {
+        get => _theme;
+        set {
+            _theme = value;
+            ImGuiThemer.LoadTheme(value);
+        }
+    }
+
+    private int _fontSize = 16;
+    public int FontSize {
+        get => _fontSize;
+        set {
+            _fontSize = value;
+            RysyEngine.OnFrameEnd += () => ImGuiThemer.SetFontSize(value);
+        }
+    }
+
+
     public HotkeySettings Keybinds { get; set; } = new();
     #endregion
-
-    public string ModsDirectory => ModDirectoryOverride ?? $"{CelesteDirectory}/Mods";
 }

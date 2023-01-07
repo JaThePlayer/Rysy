@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace Rysy;
 
@@ -41,5 +43,13 @@ public static class Extensions {
         foreach (var item in self) {
             yield return item;
         }
+    }
+
+    /// <summary>
+    /// If this is true, then performs the action
+    /// </summary>
+    public static void IfTrue(this bool val, Action act) {
+        if (val)
+            act();
     }
 }

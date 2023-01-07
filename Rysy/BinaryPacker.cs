@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Data;
+using System.Text;
 
 namespace Rysy;
 
@@ -7,6 +8,10 @@ public sealed class BinaryPacker {
     string PackageName = null!;
 
     BinaryReader Reader = null!;
+    BinaryWriter Writer = null!;
+
+    short nextLookupId = 0;
+    Dictionary<string, short> WritingLookup = new();
 
     internal BinaryPacker() { }
 
@@ -40,11 +45,120 @@ public sealed class BinaryPacker {
 
         return new() {
             Name = packer.PackageName,
-            Data = element
+            Data = element,
+            Filename = filename,
         };
     }
 
+    public static void SaveToFile(Package package, string filename) {
+        var packer = new BinaryPacker();
+        using var stream = File.Open(filename, FileMode.Create);
+        using var mainWriter = new BinaryWriter(stream);
+
+        using var memStream = new MemoryStream();
+        using var mapWriter = new BinaryWriter(memStream);
+
+        mainWriter.Write("CELESTE MAP");
+        mainWriter.Write(package.Name);
+
+        packer.Writer = mapWriter;
+        // Write the map to a different writer, as we now need the lookup table.
+        packer.WriteElement(package.Data);
+
+        // write lookup table
+        mainWriter.Write((short)packer.WritingLookup.Count);
+        foreach (var item in packer.WritingLookup.OrderBy(k => k.Value)) {
+            mainWriter.Write(item.Key);
+        }
+
+        mainWriter.Write(memStream.ToArray());
+    }
+    
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
+
+    internal void WriteElement(Element el) {
+        var writer = Writer;
+
+        WriteLookup(el.Name ?? "");
+
+        var attrs = el.Attributes ?? new();
+        writer.Write((byte) attrs.Count);
+        foreach (var (name, val) in attrs) {
+            WriteLookup(name);
+            WriteValue(val);
+        }
+
+        var children = el.Children ?? Array.Empty<Element>();
+        writer.Write((short) children.Length);
+        foreach (var item in children) {
+            WriteElement(item);
+        }
+    }
+
+    internal void WriteLookup(string str) {
+        if (!WritingLookup.TryGetValue(str, out short id)) {
+            id = nextLookupId;
+            WritingLookup[str] = nextLookupId++;
+        }
+        Writer.Write(id);
+    }
+
+    internal void WriteValue(object val) {
+        switch (val) {
+            case bool b:
+                Writer.Write((byte)0);
+                Writer.Write(b);
+                break;
+            case byte b:
+                Writer.Write((byte) 1);
+                Writer.Write(b);
+                break;
+            case short b:
+                WriteNumber((uint) b);
+                break;
+            case int b:
+                WriteNumber((uint)b);
+                break;
+            case float b:
+                if (float.IsEvenInteger(b)) {
+                    WriteNumber((uint) b);
+                } else {
+                    Writer.Write((byte) 4);
+                    Writer.Write(b);
+                }
+                break;
+            case string b:
+                var rleEncode = TryEncodeRLE(b);
+                if (rleEncode is { }) {
+                    Writer.Write((byte) 7);
+                    Writer.Write((short) rleEncode.Length);
+                    Writer.Write(rleEncode);
+                } else {
+                    Writer.Write((byte) 5);
+                    WriteLookup(b);
+                }
+                break;
+            default:
+                break;
+        }
+
+        void WriteNumber(uint num) {
+            switch (num) {
+                case <= byte.MaxValue:
+                    Writer.Write((byte) 1);
+                    Writer.Write((byte) num);
+                    break;
+                case <= (uint)short.MaxValue:
+                    Writer.Write((byte) 2);
+                    Writer.Write((short) num);
+                    break;
+                default:
+                    Writer.Write((byte) 3);
+                    Writer.Write(num);
+                    break;
+            }
+        }
+    }
 
     internal Element ReadElement() {
         var reader = Reader;
@@ -91,9 +205,46 @@ public sealed class BinaryPacker {
         return builder.ToString();
     }
 
+    internal static byte[]? TryEncodeRLE(string str) {
+        if (str.Length < 128 || str.Length * 2 > Math.Pow(2, 15)) {
+            //Console.WriteLine($"Can't encode RLE: {str} - too short!");
+            return null;
+        }
+
+        Span<byte> rle = stackalloc byte[str.Length * 2];
+        int bufferIdx = 0;
+
+        for (int i = 0; i < str.Length; i++) {
+            byte repeatCount = 1;
+            char c = str[i];
+            if (!char.IsAscii(c)) {
+                Console.WriteLine($"Can't encode RLE: {str} - {c} is non ascii!");
+                return null;
+            }
+
+            while (i + 1 < str.Length && str[i + 1] == c && repeatCount < 255) {
+                repeatCount += 1;
+                i++;
+            }
+
+            if (bufferIdx + 1 < rle.Length) {
+                rle[bufferIdx++] = repeatCount;
+                rle[bufferIdx++] = (byte) c;
+            } else {
+                return null;
+            }
+        }
+        return rle[0..bufferIdx].ToArray();
+    }
+
     public class Package {
         public string Name { get; init; } = "";
         public Element Data { get; init; } = null!;
+
+        /// <summary>
+        /// The file this package comes from
+        /// </summary>
+        public string? Filename { get; init; } = null;
     }
 
     public class Element {
@@ -108,6 +259,14 @@ public sealed class BinaryPacker {
         public int Int(string attrName, int def = 0) {
             if (Attributes.TryGetValue(attrName, out var obj)) {
                 return Convert.ToInt32(obj);
+            }
+
+            return def;
+        }
+
+        public bool Bool(string attrName, bool def = false) {
+            if (Attributes.TryGetValue(attrName, out var obj)) {
+                return Convert.ToBoolean(obj);
             }
 
             return def;

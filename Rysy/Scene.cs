@@ -1,6 +1,14 @@
 ﻿namespace Rysy;
 
 public abstract class Scene {
+    private List<Gui.Window> Windows = new();
+
+    public Scene() {
+        RemoveWindow = (w) => {
+            Windows.Remove(w);
+        };
+    }
+
     public float TimeActive { get; private set; }
 
     public virtual void Update() {
@@ -11,8 +19,26 @@ public abstract class Scene {
 
     }
 
+    public virtual void RenderImGui() {
+        // Loop in reverse because windows might get removed during the loop.
+        for (int i = Windows.Count - 1; i >= 0; i--) {
+            Windows[i].RenderGui();
+        }
+    }
+
+    private Action<Gui.Window> RemoveWindow;
+
+    /// <summary>
+    /// Adds a window to this scene.
+    /// </summary>
+    public void AddWindow(Gui.Window wind) {
+        wind.SetRemoveAction(RemoveWindow);
+        Windows.Add(wind);
+    }
+
     public virtual void OnFileDrop(FileDropEventArgs args) {
-        RysyEngine.ForceActiveTimer = 0.75f;
+        // Rysy is most likely not focused, but visible rn. Force the window to be active for a bit, to update the UI.
+        RysyEngine.ForceActiveTimer = 1f;
     }
 
     public bool OnInterval(double interval) {

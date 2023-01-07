@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.Helpers;
+using System.Text;
 
 namespace Rysy;
 
@@ -94,5 +95,42 @@ public class Tilegrid {
             s.Depth = Depth;
             return s;
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
+    }
+
+    private string GetSaveString() {
+        StringBuilder saveString = new();
+
+        // stores 1 line of text + the newline character, to reduce heap allocations
+        Span<char> line = stackalloc char[Width + 1];
+        for (int y = 0; y < Height; y++) {
+            line.Clear();
+            for (int x = 0; x < Width; x++) {
+                var tile = Tiles[x, y];
+                line[x] = tile;
+            }
+
+            var endIdx = Width;
+
+            // Trim the line if it ends in air tiles
+            while (endIdx > 0 && line[endIdx - 1] == '0') {
+                endIdx--;
+            }
+
+            line[endIdx] = '\n';
+            var slice = line[0..(endIdx + 1)];
+            saveString.Append(slice);
+        }
+
+        return saveString.ToString();
+    }
+
+    public BinaryPacker.Element Pack(string name) {
+        var saveString = GetSaveString();
+
+        return new(name) {
+            Attributes = new() {
+                ["innerText"] = saveString,
+            }
+        };
     }
 }

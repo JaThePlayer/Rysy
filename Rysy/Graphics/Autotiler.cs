@@ -7,6 +7,7 @@ namespace Rysy.Graphics;
 
 public sealed class Autotiler {
     public sealed class AutotilerData {
+        public string Filename;
         public VirtTexture Texture = null!;
         public List<(string mask, Point[] tiles)> Tiles = new();
 
@@ -173,6 +174,7 @@ public sealed class Autotiler {
                 var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t[0])?.ToArray();
 
                 AutotilerData autotilerData = new();
+                autotilerData.Filename = path;
                 autotilerData.Texture = GFX.Atlas[$"tilesets/{path}"];
                 autotilerData.Ignores = ignores;
                 autotilerData.IgnoreAll = ignores?.Contains('*') ?? false;
@@ -219,7 +221,7 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a rectangular tile grid fully made up of a specified id
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int w, int h, Random random) {
+    public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int w, int h) {
         if (id == '0')
             yield break;
 
@@ -237,7 +239,7 @@ public sealed class Autotiler {
                 }
 
                 var pos = position + new Vector2(x * 8, y * 8);
-                var tile = tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
+                var tile = tiles[RandomExt.SeededRandom(pos) % (uint) tiles.Length];
                 yield return ISprite.FromTexture(pos, data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
             }
         }

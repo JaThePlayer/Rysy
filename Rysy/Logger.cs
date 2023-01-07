@@ -1,17 +1,90 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Rysy.Platforms;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace Rysy;
 
 public static class Logger {
-    public static void Write(string tag, LogLevel logLevel, string msg) {
-        Console.WriteLine($"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg}");
+    private static string LogFile = $"{RysyPlatform.Current.GetSaveLocation()}/log.txt";
+    private static string LastLogFile = $"{RysyPlatform.Current.GetSaveLocation()}/prev-log.txt";
+
+    /// <summary>
+    /// The path where Rysy was compiled from. Unlike most paths, it's not unbackslashed, to be able to call .TrimStart with it directly.
+    /// </summary>
+    private static string CompilePath;
+
+    public static void Init([CallerFilePath] string filePath = "") {
+        CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
+
+        if (File.Exists(LogFile)) {
+            File.Copy(LogFile, LastLogFile, true);
+            File.Delete(LogFile);
+        }
     }
 
-    public static void Write(string tag, LogLevel logLevel, FancyInterpolatedStringHandler msg) {
-        Console.WriteLine($"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg.GetFormattedText()}");
+    private static string PrependLocation(string txt, string callerMethod, string callerFile, int lineNumber)
+        => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.RESET_COLOR}] {txt}";
+
+    public static void Write(string tag, LogLevel logLevel, string msg, 
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg}\n";
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+        WriteImpl(txt);
+    }
+
+    public static void Write(string tag, LogLevel logLevel, FancyInterpolatedStringHandler msg, 
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg.GetFormattedText()}\n";
+
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+
+        WriteImpl(txt);
+    }
+
+    /// <summary>
+    /// Writes this object to the log as JSON.
+    /// </summary>
+    public static void LogAsJson<T>(this T? obj, string tag = "LogAsJson", [CallerArgumentExpression(nameof(obj))] string caller = "", 
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        if (obj is null) {
+#if DEBUG
+            Write(tag, LogLevel.Debug, "null", callerMethod, callerFile, lineNumber);
+#else
+            Write(tag, LogLevel.Debug, "null");
+#endif
+            return;
+        }
+
+        FancyInterpolatedStringHandler txt = $"{caller} = {JsonSerializer.Serialize(obj, JsonSerializerOptions)}";
+#if DEBUG
+        Write(tag, LogLevel.Debug, txt, callerMethod, callerFile, lineNumber);
+#else
+        Write(tag, LogLevel.Debug, txt);
+#endif
+    }
+
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new() {
+        WriteIndented = true,
+        IncludeFields = true,
+    };
+
+    private static void WriteImpl(string str) {
+        Console.Write(str);
+        File.AppendAllText(LogFile, str.UnformatColors());
     }
 }
 
@@ -45,12 +118,6 @@ public static class LogLevelExtensions {
 internal static class FancyTextHelper {
     public const string RESET_COLOR = "\u001b[0m";
 
-    public static readonly JsonSerializerOptions JsonSerializerOptions = new() {
-        WriteIndented = true,
-        IncludeFields = true,
-        //IgnoreReadOnlyProperties = true,
-    };
-
     public static readonly string[] Colors = new[] {
         "\u001b[96m", // bright cyan
         "\u001b[92m", // bright green
@@ -65,6 +132,8 @@ internal static class FancyTextHelper {
         "\u001b[35m", // magenta
         "\u001b[36m", // cyan
     };
+
+    public const string Gray = "\u001b[90m";
 
     public static string GetColorCode(int i) => Colors[i % Colors.Length];
 
@@ -104,7 +173,5 @@ public ref partial struct FancyInterpolatedStringHandler {
     }
 
     internal string GetFormattedText() => builder.ToString();
-    internal string GetUnformattedText() => builder.ToString().RegexReplace(UnformatRegex(), "");
-    [GeneratedRegex("\u001b\\[.{1,2}m")]
-    private static partial Regex UnformatRegex();
+
 }

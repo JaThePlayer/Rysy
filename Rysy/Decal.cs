@@ -3,22 +3,27 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Decal : IPackable {
-    //[RegexGenerator("\\d+$|\\.png")]
+public sealed partial class Decal : IPackable {
+    //[GeneratedRegex("\\d+$|\\.png")]
     public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
 
     public Vector2 Pos;
     public Vector2 Scale;
     public string Texture = "";
 
+    /// <summary>
+    /// The original texture, as stored in map data. Needed to be able to differenciate between decals ending with 00 and not.
+    /// </summary>
+    private string OrigTexture;
+
     public BinaryPacker.Element Pack() {
-        return new() {
+        return new("decal") {
             Attributes = new() {
                 ["x"] = Pos.X,
                 ["y"] = Pos.Y,
                 ["scaleX"] = Scale.X,
                 ["scaleY"] = Scale.Y,
-                ["texture"] = Texture.TrimStart("decals/"),
+                ["texture"] = OrigTexture,
             },
         };
     }
@@ -26,7 +31,8 @@ public sealed class Decal : IPackable {
     public void Unpack(BinaryPacker.Element from) {
         Pos = new(from.Float("x"), from.Float("y"));
         Scale = new(from.Float("scaleX", 1), from.Float("scaleY", 1));
-        Texture = "decals/" + from.Attr("texture", "").RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
+        OrigTexture = from.Attr("texture", "");
+        Texture = "decals/" + OrigTexture.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
     }
 
     public Sprite GetSprite(bool fg)
