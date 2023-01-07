@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using ImGuiNET;
+using Microsoft.Xna.Framework.Input;
 using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.History;
 using Rysy.Tools;
 
@@ -13,11 +15,16 @@ public sealed class EditorScene : Scene {
     private Map _map = null!;
     public Map Map {
         get => _map;
-        private set {
+        set {
             _map = value;
             Camera = new();
-            CurrentRoom = _map.Rooms.First().Value;
-            Camera.CenterOnRealPos(CurrentRoom.Bounds.Center.ToVector2());
+
+            if (_map.Rooms.Count > 0) {
+                CurrentRoom = _map.Rooms.First().Value;
+                CenterCameraOnRoom(CurrentRoom);
+            }
+
+            Persistence.Instance.PushRecentMap(value);
 
             GC.Collect(3);
         }
@@ -39,8 +46,8 @@ public sealed class EditorScene : Scene {
         ToolHandler = new(HistoryHandler);
 
         // Try to load the last edited map.
-        if (!string.IsNullOrWhiteSpace(Settings.Instance?.LastEditedMap))
-            LoadMapFromBin(Settings.Instance.LastEditedMap);
+        if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
+            LoadMapFromBin(Persistence.Instance.LastEditedMap);
     }
 
     public EditorScene(Map map) : this() {
@@ -61,25 +68,53 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    private void LoadMapFromBin(string file) {
-        try {
-            var mapBin = BinaryPacker.FromBinary(file);
-            var map = Map.FromBinaryPackage(mapBin);
-            Map = map;
-            Settings.Instance.LastEditedMap = file;
-            Settings.Save(Settings.Instance);
-        } catch {
+    public void LoadMapFromBin(string file) {
+        if (!File.Exists(file))
+            return;
 
-        }
+        RysyEngine.OnFrameEnd += async () => {
+            //try {
+                if (RysyEngine.Scene is not LoadingScene loadingScreen) {
+                    loadingScreen = new LoadingScene();
+                    RysyEngine.Scene = loadingScreen;
+                }
+                loadingScreen.SetText($"Loading map {file.TryCensor()}");
+                
+                // Just to make this run async, so we can see the loading screen.
+                await Task.Delay(1);
+
+                var mapBin = BinaryPacker.FromBinary(file);
+
+                var map = Map.FromBinaryPackage(mapBin);
+                Map = map;
+
+                RysyEngine.Scene = this;
+            //} catch {
+            //
+            //}
+        };
+    }
+
+    public void LoadNewMap(string packageName) {
+        Map = new() {
+            Package = packageName,
+        };
     }
 
     public override void Update() {
         base.Update();
 
-        if (Map is { }) {
+        ImGuiIOPtr io = ImGui.GetIO();
+        // Intentionally don't check for capturing keyboard, works weirdly with search bar, and can result in seemingly eaten inputs.
+        if (io.WantCaptureMouse /*|| io.WantCaptureKeyboard*/) {
+            return;
+        }
+
+        if (Map is { } && CurrentRoom is { }) {
             Camera.HandleMouseMovement();
 
             HandleRoomSwapInputs();
+
             HandleHistoryInput();
 
             ToolHandler.Update(Camera, CurrentRoom);
@@ -138,6 +173,9 @@ public sealed class EditorScene : Scene {
             return;
         }
 
+        if (CurrentRoom is null)
+            return;
+
         foreach (var (_, room) in Map.Rooms) {
             room.Render(Camera, room == CurrentRoom);
         }
@@ -187,5 +225,17 @@ public sealed class EditorScene : Scene {
                 GC.Collect(3);
             }
         }
+    }
+
+    public override void RenderImGui() {
+        base.RenderImGui();
+
+        Menubar.Render(this);
+        RoomList.Render(this);
+        ToolHandler.RenderGui(this);
+    }
+
+    public void CenterCameraOnRoom(Room room) {
+        Camera.CenterOnRealPos(room.Bounds.Center.ToVector2());
     }
 }

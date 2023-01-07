@@ -1,6 +1,9 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using ImGuiNET;
+using Microsoft.Xna.Framework.Graphics;
 using Rysy;
 using Rysy.Graphics;
+using Rysy.Gui;
+using Rysy.Platforms;
 using Rysy.Scenes;
 
 public sealed class RysyEngine : Game {
@@ -51,7 +54,7 @@ public sealed class RysyEngine : Game {
         Scene?.OnFileDrop(e);
     }
 
-    public static Action<Viewport>? OnViewportChanged;
+    public static event Action<Viewport>? OnViewportChanged;
 
     private void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
@@ -68,6 +71,10 @@ public sealed class RysyEngine : Game {
     protected override async void Initialize() {
         base.Initialize();
 
+        RysyPlatform.Current.Init();
+        Logger.Init();
+        ImGuiManager.Load(this);
+
         await ReloadAsync();
     }
 
@@ -79,15 +86,15 @@ public sealed class RysyEngine : Game {
         Scene = loading;
 
         try {
-            Profile.CurrentProfile = SettingsHelper.Load<Profile>("profile.json");
-        } catch {
-            Profile.CurrentProfile = SettingsHelper.Save<Profile>(new(), "profile.json");
-        }
-
-        try {
             Settings.Instance = Settings.Load();
         } catch {
             return; // No point in loading any further. Error is already logged by .Load()
+        }
+
+        try {
+            Profile.Instance = Profile.Load();
+        } catch {
+            Profile.Instance = new Profile().Save();
         }
 
         try {
@@ -116,7 +123,7 @@ public sealed class RysyEngine : Game {
 #endif
 */
 
-        if (Settings.Instance.CelesteDirectory is null or "") {
+        if (Profile.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);
             Scene = picker;
             await picker.AwaitInstallPickedAsync();
@@ -159,14 +166,19 @@ public sealed class RysyEngine : Game {
         _lastActive = IsActive;
     }
 
-    protected override void Draw(GameTime gameTime) {
+    protected override unsafe void Draw(GameTime gameTime) {
         if (IsActive || ForceActiveTimer > 0f) {
             ForceActiveTimer -= Time.Delta;
             base.Draw(gameTime);
 
             GraphicsDevice.Clear(Color.Black);
 
+            ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
+
+            Scene.RenderImGui();
             Scene.Render();
+
+            ImGuiManager.GuiRenderer.AfterLayout();
 
             smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
 

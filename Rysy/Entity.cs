@@ -89,6 +89,22 @@ public abstract class Entity {
     public Color ARGB(string attrName, string def = "ffffff") => EntityData.ARGB(attrName, def);
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum => EntityData.Enum(attrName, def);
+
+    public BinaryPacker.Element Pack() {
+        var el = new BinaryPacker.Element(EntityData.Name);
+        el.Attributes = new Dictionary<string, object>(EntityData.Inner);
+        el.Attributes["x"] = Pos.X;
+        el.Attributes["y"] = Pos.Y;
+        el.Attributes["id"] = ID;
+
+        el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") { 
+            Attributes = new() {
+                ["x"] = n.X,
+                ["y"] = n.Y,
+            }
+        }).ToArray() : null!;
+        return el;
+    }
 }
 
 public class EntityData : IDictionary<string, object> {
@@ -108,7 +124,7 @@ public class EntityData : IDictionary<string, object> {
             }
         }
 
-        if (e.Children.Length > 0) {
+        if (e.Children is { Length: > 0 }) {
             var nodes = Nodes = new Vector2[e.Children.Length];
 
             for (int i = 0; i < e.Children.Length; i++) {
@@ -118,7 +134,7 @@ public class EntityData : IDictionary<string, object> {
         }
     }
 
-    private Dictionary<string, object> Inner = new();
+    internal Dictionary<string, object> Inner = new();
 
     public object this[string key] { get => Inner[key]; set => Inner[key] = value; }
 

@@ -4,13 +4,15 @@ using Rysy.History;
 namespace Rysy.Tools;
 
 internal class TileRectTool : TileTool {
+    public override string Name => "Rectangle";
+
     private Point? startPos = null;
 
     public TileRectTool() {
-        RysyEngine.OnLoseFocus += RysyEngine_OnLoseFocus;
+        RysyEngine.OnLoseFocus += OnLoseFocus;
     }
 
-    private void RysyEngine_OnLoseFocus() {
+    private void OnLoseFocus() {
         // After alt-tabbing and such, we should cancel the selection or we'll end up with accidental placements
         CancelDrag();
     }
@@ -26,13 +28,15 @@ internal class TileRectTool : TileTool {
     public override void Render(Camera camera, Room room) {
         var mousePos = GetMouseTilePos(camera, room);
         var rect = SelectionRect(startPos ?? mousePos, mousePos).Mult(8);
+
+        RenderTiles(rect.Location.ToVector2(), rect.Width / 8, rect.Height / 8);
+
         if (startPos is { } start) {
             var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).Cap(70f), 1f, 1f);
             ISprite.OutlinedRect(rect, c * 0.3f, c).Render();
         } else {
             ISprite.OutlinedRect(rect, Color.Transparent, DefaultColor).Render();
         }
-
     }
 
     public override void Update(Camera camera, Room room) {

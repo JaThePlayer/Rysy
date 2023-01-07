@@ -21,6 +21,8 @@ public sealed class Room : IPackable {
 
     public int X, Y, Width, Height;
 
+    public RoomAttributes Attributes;
+
     public Rectangle Bounds => new(X, Y, Width, Height);
 
     public TypeTrackedList<Entity> Entities = new();
@@ -31,6 +33,11 @@ public sealed class Room : IPackable {
 
     public Tilegrid FG = null!;
     public Tilegrid BG = null!;
+
+    /// <summary>
+    /// Currently unparsed
+    /// </summary>
+    public BinaryPacker.Element ObjTiles;
 
     private string _name = "";
     public string Name {
@@ -52,12 +59,31 @@ public sealed class Room : IPackable {
     }
 
     public void Unpack(BinaryPacker.Element from) {
+        Attributes = new();
         Name = from.Attr("name");
         X = from.Int("x");
         Y = from.Int("y");
         Width = from.Int("width");
         Height = from.Int("height");
 
+        Attributes.AltMusic = from.Attr("altMusic", "");
+        Attributes.AmbienceProgress = from.Attr("ambienceProgress", "");
+        Attributes.C = from.Int("c", 0);
+        Attributes.CameraOffsetX = from.Int("cameraOffsetX", 0);
+        Attributes.CameraOffsetY = from.Int("cameraOffsetY", 0);
+        Attributes.Dark = from.Bool("dark", false);
+        Attributes.DelayAltMusicFade = from.Bool("delayAltMusicFade", false);
+        Attributes.DisableDownTransition = from.Bool("disableDownTransition", false);
+        Attributes.Music = from.Attr("music", "");
+        Attributes.MusicLayer1 = from.Bool("musicLayer1", false);
+        Attributes.MusicLayer2 = from.Bool("musicLayer2", false);
+        Attributes.MusicLayer3 = from.Bool("musicLayer3", false);
+        Attributes.MusicLayer4 = from.Bool("musicLayer4", false);
+        Attributes.MusicProgress = from.Attr("musicProgress", "");
+        Attributes.Space = from.Bool("space", false);
+        Attributes.Underwater = from.Bool("underwater", false);
+        Attributes.Whisper = from.Bool("whisper", false);
+        Attributes.WindPattern = from.Attr("windPattern", "");
 
         // Normalize room size to be an increment of a whole tile.
         if (Width % 8 != 0) {
@@ -90,7 +116,7 @@ public sealed class Room : IPackable {
                     }
                     break;
                 case "objtiles":
-                    Logger.Write("Room.Unpack", LogLevel.Error, "todo: objtiles");
+                    ObjTiles = child;
                     break;
                 case "solids":
                     FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
@@ -113,7 +139,73 @@ public sealed class Room : IPackable {
     }
 
     public BinaryPacker.Element Pack() {
-        throw new NotImplementedException();
+        BinaryPacker.Element el = new("level");
+        var attr = Attributes;
+        el.Attributes = new() {
+            ["x"] = X,
+            ["y"] = Y,
+            ["width"] = Width,
+            ["height"] = Height,
+            ["name"] = Name,
+            ["altMusic"] = attr.AltMusic,
+            ["ambienceProgress"] = attr.AmbienceProgress,
+            ["c"] = attr.C,
+            ["cameraOffsetX"] = attr.CameraOffsetX,
+            ["cameraOffsetY"] = attr.CameraOffsetY,
+            ["dark"] = attr.Dark,
+            ["delayAltMusicFade"] = attr.DelayAltMusicFade,
+            ["disableDownTransition"] = attr.DisableDownTransition,
+            ["music"] = attr.Music,
+            ["musicLayer1"] = attr.MusicLayer1,
+            ["musicLayer2"] = attr.MusicLayer2,
+            ["musicLayer3"] = attr.MusicLayer3,
+            ["musicLayer4"] = attr.MusicLayer4,
+            ["musicProgress"] = attr.MusicProgress,
+            ["space"] = attr.Space,
+            ["underwater"] = attr.Underwater,
+            ["whisper"] = attr.Whisper,
+            ["windPattern"] = attr.WindPattern,
+        };
+
+        var children = new List<BinaryPacker.Element>();
+
+        children.Add(FG.Pack("solids"));
+        children.Add(BG.Pack("bg"));
+        children.Add(ObjTiles);
+        children.Add(new("fgtiles") {
+            Attributes = new() {
+                ["tileset"] = "Scenery",
+            },
+        });
+        children.Add(new("bgtiles") {
+            Attributes = new() {
+                ["tileset"] = "Scenery",
+            },
+        });
+
+        children.Add(new("entities") {
+            Children = Entities.Select(e => e.Pack()).ToArray(),
+        });
+
+        children.Add(new("triggers") {
+            Children = Triggers.Select(e => e.Pack()).ToArray(),
+        });
+        children.Add(new("fgdecals") {
+            Attributes = new() {
+                ["tileset"] = "Scenery",
+            },
+            Children = FgDecals.Select(d => d.Pack()).ToArray(),
+        });
+        children.Add(new("bgdecals") {
+            Attributes = new() {
+                ["tileset"] = "Scenery",
+            },
+            Children = BgDecals.Select(d => d.Pack()).ToArray(),
+        });
+
+        el.Children = children.Where(child => child is { }).ToArray();
+
+        return el;
     }
 
     public Vector2 WorldToRoomPos(Camera camera, Vector2 world)

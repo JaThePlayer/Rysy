@@ -16,15 +16,15 @@ public class PickCelesteInstallScene : Scene {
         var file = args.Files[0];
 
         if (Path.GetFileName(file) == "Celeste.exe") {
-            Settings.Instance.CelesteDirectory = Path.GetDirectoryName(file)!;
-            Settings.Save(Settings.Instance);
+            Profile.Instance.CelesteDirectory = Path.GetDirectoryName(file)!;
+            Profile.Instance.Save();
 
             RysyEngine.Scene = NextScene;
         }
     }
 
     public async ValueTask AwaitInstallPickedAsync() {
-        while (string.IsNullOrWhiteSpace(Settings.Instance.CelesteDirectory)) {
+        while (string.IsNullOrWhiteSpace(Profile.Instance.CelesteDirectory)) {
             await Task.Delay(100);
         }
     }

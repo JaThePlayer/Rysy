@@ -1,4 +1,6 @@
 ﻿using Rysy.Graphics;
+using Rysy.Scenes;
+using System.Runtime.CompilerServices;
 
 namespace Rysy.Tools;
 
@@ -9,14 +11,61 @@ public abstract class TileTool : Tool {
     public const string LAYER_BG = "BG";
     public const string LAYER_BOTH = "Both";
 
-    public override string Layer {
-        get => Persistence.Instance.Get("TileTool.Layer", "FG");
-        set => Persistence.Instance.Set("TileTool.Layer", value);
+    private static List<string> _ValidLayers = new() { LAYER_FG, LAYER_BG, LAYER_BOTH };
+
+    public override List<string> ValidLayers => _ValidLayers;
+
+    public override string PersistenceGroup => "TileTool";
+
+    public override IEnumerable<object>? GetMaterials(string layer) {
+        return GetAutotiler(layer)?.Tilesets.Keys.Where(k => k is not 'z' or 'y').Select(k => (object) k) ?? null;
+    }
+
+    private static Dictionary<string, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
+
+    public override string MaterialToDisplayName(string layer, object material) {
+        if (!MaterialToDisplayCache.TryGetValue(layer, out var cache)) {
+            MaterialToDisplayCache[layer] = cache = new();
+        }
+
+        if (material is char c) {
+            var cAsString = c.ToString();
+            if (!cache.TryGetValue(cAsString, out var name)) {
+                if (GetAutotiler(layer)?.Tilesets.TryGetValue(c, out var tileset) ?? false) {
+                    name = tileset.Filename.Split('/').Last().TrimStart("bg").Humanize();
+                } else {
+                    name = cAsString;
+                }
+
+                cache.Add(cAsString, name);
+            }
+
+            return name;
+        }
+
+        return material.ToString()!;
     }
 
     public char Tile {
-        get => Persistence.Instance.Get("TileTool.Tile", 'g');
-        set => Persistence.Instance.Set("TileTool.Tile", value);
+        get => Material is char c ? c : '0';
+        set => Material = value;
+    }
+
+    public Autotiler? GetAutotiler(string layer) {
+        if (RysyEngine.Scene is EditorScene { Map: { } map }) {
+            return layer switch {
+                LAYER_FG => map.FGAutotiler,
+                LAYER_BG => map.BGAutotiler,
+                _ => null,
+            };
+        }
+        return null;
+    }
+
+    public void RenderTiles(Vector2 loc, int w, int h) {
+        foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h) ?? Array.Empty<ISprite>()) {
+            item.Render();
+        }
     }
 
     public override void Update(Camera camera, Room room) {

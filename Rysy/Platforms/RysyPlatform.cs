@@ -13,4 +13,11 @@ public abstract class RysyPlatform {
     /// Gets the location in which Rysy should save its settings
     /// </summary>
     public abstract string GetSaveLocation();
+
+    /// <summary>
+    /// Initializes some things needed to properly run Rysy on this platform.
+    /// </summary>
+    public virtual void Init() {
+        
+    }
 }

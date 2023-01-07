@@ -4,10 +4,13 @@ using Rysy.History;
 namespace Rysy.Tools;
 
 public class BrushTool : TileTool {
+    public override string Name => "Brush";
+
     public override void Render(Camera camera, Room currentRoom) {
         var mouse = currentRoom.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
 
-        ISprite.OutlinedRect(new Rectangle(mouse, new Vector2(8f, 8f).ToPoint()), Color.Transparent, DefaultColor).Render();
+        RenderTiles(mouse.ToVector2(), 1, 1);
+        ISprite.OutlinedRect(new Rectangle(mouse, new Point(8, 8)), Color.Transparent, DefaultColor).Render();
     }
 
     public override void Update(Camera camera, Room room) {

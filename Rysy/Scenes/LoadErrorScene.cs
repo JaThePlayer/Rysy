@@ -6,7 +6,7 @@ public class LoadErrorScene : Scene {
     public string Text;
 
     public LoadErrorScene(FancyInterpolatedStringHandler text) {
-        Text = text.GetUnformattedText().TryCensor();
+        Text = text.GetFormattedText().UnformatColors();
         Logger.Write("Engine", LogLevel.Error, text);
     }
 

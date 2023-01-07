@@ -48,20 +48,20 @@ public static class GFX {
         scene?.SetText("Scanning mod dirs");
         using (ScopedStopwatch watch = new("Scanning mod dirs")) {
             await Task.WhenAll(
-                Directory.GetDirectories(Settings.Instance.ModsDirectory)
+                Directory.GetDirectories(Profile.Instance.ModsDirectory)
                 .Select(item => LoadModFromDirAsync(item).AsTask()));
         }
 
         scene?.SetText("Scanning mod .zips");
         using (ScopedStopwatch watch = new("Scanning mod .zips")) {
             await Task.WhenAll(
-                Directory.EnumerateFiles(Settings.Instance.ModsDirectory, "*.zip")
+                Directory.EnumerateFiles(Profile.Instance.ModsDirectory, "*.zip")
                 .Select(item => Task.Run(() => LoadModFromZip(item))));
         }
     }
 
     internal static async ValueTask LoadVanillaAtlasAsync() {
-        var path = $"{Settings.Instance.CelesteDirectory}/Content/Graphics/Atlases/Gameplay";
+        var path = $"{Profile.Instance.CelesteDirectory}/Content/Graphics/Atlases/Gameplay";
         await Atlas.LoadFromPackerAtlasAsync(path);
     }
 
