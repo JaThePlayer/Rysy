@@ -3,15 +3,25 @@
 public abstract class Scene {
     private List<Gui.Window> Windows = new();
 
+    public HotkeyHandler Hotkeys { get; private set; } = new();
+
     public Scene() {
         RemoveWindow = (w) => {
             Windows.Remove(w);
         };
+
+        SetupHotkeys();
     }
 
     public float TimeActive { get; private set; }
 
+    public virtual void SetupHotkeys() {
+        Hotkeys = new();
+    }
+
     public virtual void Update() {
+        Hotkeys.Update();
+
         TimeActive += Time.Delta;
     }
 

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace Rysy;
 
@@ -10,29 +11,36 @@ public abstract class Entity {
 
     // set by EntityRegistry:
     public EntityData EntityData = null!;
+
+    [JsonIgnore]
     public Room Room { get; set; } = null!;
 
     public int ID;
 
     public Vector2 Pos;
 
+    [JsonIgnore]
     public Vector2[]? Nodes => EntityData.Nodes;
 
+    [JsonIgnore]
     public int Width {
         get => EntityData.Int("width");
         set => EntityData["width"] = value;
     }
 
+    [JsonIgnore]
     public int Height {
         get => EntityData.Int("height");
         set => EntityData["height"] = value;
     }
 
+    [JsonIgnore]
     public int EditorLayer {
         get => EntityData.Int("_editorLayer");
         set => EntityData["_editorLayer"] = value;
     }
 
+    [JsonIgnore]
     /// <summary>
     /// Gets the center of this entity. Used for centering node paths, for example, but can be used in your own plugins as well.
     /// </summary>
@@ -48,7 +56,7 @@ public abstract class Entity {
         }
     }
 
-
+    [JsonIgnore]
     /// <summary>
     /// Gets the rectangle that this entity occupies. This makes use of the <see cref="Width"/> and <see cref="Height"/> properties, defaulting them to 8 if they're equal to 0.
     /// </summary>
@@ -59,6 +67,20 @@ public abstract class Entity {
             Rectangle bRect = new((int) Pos.X, (int) Pos.Y, bw == 0 ? 8 : bw, bh == 0 ? 8 : bh);
             return bRect;
         }
+    }
+
+    public virtual Selection GetSelection() {
+        if (Width > 0 || Height > 0) {
+            return Selection.FromRect(Rectangle);
+        }
+
+        var sprites = GetSprites().FirstOrDefault();
+
+        if (sprites is Sprite s) {
+            return Selection.FromSprite(s);
+        }
+
+        return Selection.FromRect(Rectangle);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,10 +114,11 @@ public abstract class Entity {
 
     public BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.Name);
-        el.Attributes = new Dictionary<string, object>(EntityData.Inner);
-        el.Attributes["x"] = Pos.X;
-        el.Attributes["y"] = Pos.Y;
-        el.Attributes["id"] = ID;
+        el.Attributes = new Dictionary<string, object>(EntityData.Inner) {
+            ["x"] = Pos.X,
+            ["y"] = Pos.Y,
+            ["id"] = ID
+        };
 
         el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") { 
             Attributes = new() {
@@ -116,7 +139,7 @@ public class EntityData : IDictionary<string, object> {
         Name = sid;
 
         var dict = e.Attributes;
-        Inner = new(dict.Count - 3);
+        Inner = new(Math.Max(0, dict.Count - 3));
 
         foreach (var item in dict) {
             if (item.Key is not "x" and not "y" and not "id") {
@@ -132,6 +155,12 @@ public class EntityData : IDictionary<string, object> {
                 nodes[i] = new(child.Float("x"), child.Float("y"));
             }
         }
+    }
+
+    public EntityData(string sid, Dictionary<string, object> attributes, Vector2[]? nodes = null) {
+        Name = sid;
+        Nodes = nodes?.ShallowClone();
+        Inner = new(attributes);
     }
 
     internal Dictionary<string, object> Inner = new();

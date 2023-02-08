@@ -68,6 +68,22 @@ public static partial class StringExt {
     }
 
     /// <summary>
+    /// Calls <see cref="Path.GetDirectoryName(string?)"/> on this string
+    /// </summary>
+    public static string? Directory(this string? path) {
+        return Path.GetDirectoryName(path);
+    }
+
+    /// <summary>
+    /// Calls <see cref="Path.GetFileNameWithoutExtension(string?)"/> on this string
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public static string? FilenameNoExt(this string? path) {
+        return Path.GetFileNameWithoutExtension(path);
+    }
+
+    /// <summary>
     /// Calls <see cref="Regex.Replace(string, string)"/> with the provided regex with the given strings
     /// </summary>
     public static string RegexReplace(this string from, Regex regex, string with)

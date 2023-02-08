@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Rysy.Entities;
 using Rysy.Graphics;
 using Rysy.Helpers;
 
@@ -7,6 +7,22 @@ namespace Rysy;
 public sealed class Room : IPackable {
     public Room() {
         RenderCacheToken = new(ClearRenderCache);
+
+        Entities.OnChanged += RenderCacheToken.Invalidate;
+        Triggers.OnChanged += RenderCacheToken.Invalidate;
+    }
+
+    public Room(Map map, int width, int height) : this() {
+        Map = map;
+
+        Width = width;
+        Height = height;
+
+        FG = new(width, height);
+        BG = new(width, height);
+
+        SetupFGTilegrid();
+        SetupBGTilegrid();
     }
 
     public CacheToken RenderCacheToken;
@@ -19,9 +35,32 @@ public sealed class Room : IPackable {
         }
     }
 
-    public int X, Y, Width, Height;
+    public int X {
+        get => Attributes.X;
+        set => Attributes.X = value;
+    }
+    public int Y {
+        get => Attributes.Y;
+        set => Attributes.Y = value;
+    }
+    public int Width {
+        get => Attributes.Width;
+        private set => Attributes.Width = value;
+    }
+    public int Height {
+        get => Attributes.Height;
+        private set => Attributes.Height = value;
+    }
 
-    public RoomAttributes Attributes;
+    private RoomAttributes _attributes = new();
+
+    public RoomAttributes Attributes {
+        get => _attributes;
+        internal set {
+            _attributes = value;
+            ClearRenderCache();
+        }
+    }
 
     public Rectangle Bounds => new(X, Y, Width, Height);
 
@@ -39,23 +78,40 @@ public sealed class Room : IPackable {
     /// </summary>
     public BinaryPacker.Element ObjTiles;
 
-    private string _name = "";
     public string Name {
-        get => _name;
+        get => Attributes.Name;
         set {
-            _name = value;
-            ResetRandom();
+            var old = Attributes.Name;
+            if (old != value) {
+                Attributes.Name = value;
+                ResetRandom();
+                OnNameChanged?.Invoke(old, value);
+            }
+
         }
     }
 
+    /// <summary>
+    /// Called with (oldName, newName) whenever this room's <see cref="Name"/> gets changed.
+    /// </summary>
+    public event Action<string, string>? OnNameChanged;
+
     private List<ISprite>? CachedSprites;
 
-    public int RandomSeed => Name.Sum(c => (int) c);
+    //public int RandomSeed => Name.Sum(c => (int) c);
 
-    public Random Random { get; private set; } = null!;
+    //public Random Random { get; private set; } = null!;
+
+    /// <summary>
+    /// Gets an entity ID that's not yet used in this room.
+    /// </summary>
+    /// <returns></returns>
+    public int NextEntityID() {
+        return Entities.Concat(Triggers).Max(e => e.ID) + 1;
+    }
 
     private void ResetRandom() {
-        Random = new(RandomSeed);
+        //Random = new(RandomSeed);
     }
 
     public void Unpack(BinaryPacker.Element from) {
@@ -83,7 +139,7 @@ public sealed class Room : IPackable {
         Attributes.Space = from.Bool("space", false);
         Attributes.Underwater = from.Bool("underwater", false);
         Attributes.Whisper = from.Bool("whisper", false);
-        Attributes.WindPattern = from.Attr("windPattern", "");
+        Attributes.WindPattern = from.Enum("windPattern", WindPatterns.None);
 
         // Normalize room size to be an increment of a whole tile.
         if (Width % 8 != 0) {
@@ -120,22 +176,32 @@ public sealed class Room : IPackable {
                     break;
                 case "solids":
                     FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    FG.Depth = Depths.FGTerrain;
-                    FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
-                    FG.CacheToken = RenderCacheToken;
+                    SetupFGTilegrid();
                     break;
                 case "bg":
                     BG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    BG.Depth = Depths.BGTerrain;
-                    BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
-                    BG.CacheToken = RenderCacheToken;
+                    SetupBGTilegrid();
                     break;
             }
         }
 
+        Attributes.Checkpoint = Entities[typeof(Checkpoint)].Count > 0;
+
         // It should be noted that there are two additional child elements - bgtiles and fgtiles.
         // These appear to follow the same format as the objtiles element and likely have a similar function.
         // However, they aren't parsed here simply because they are so rarely needed and object tiles work fine.
+    }
+
+    private void SetupBGTilegrid() {
+        BG.Depth = Depths.BGTerrain;
+        BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
+        BG.RenderCacheToken = RenderCacheToken;
+    }
+
+    private void SetupFGTilegrid() {
+        FG.Depth = Depths.FGTerrain;
+        FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
+        FG.RenderCacheToken = RenderCacheToken;
     }
 
     public BinaryPacker.Element Pack() {
@@ -227,18 +293,32 @@ public sealed class Room : IPackable {
         if (CachedSprites is null) {
             ResetRandom();
             //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
-            CachedSprites = Entities.Select(e => {
-                return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
-            }).SelectMany(x => x)
-            .Concat(BgDecals.Select<Decal, ISprite>(d => d.GetSprite(false)))
-            .Concat(FgDecals.Select<Decal, ISprite>(d => d.GetSprite(true)))
-            .Concat(FG.GetSprites(Random))
-            .Concat(BG.GetSprites(Random))
-            .Concat(Triggers.Select(e => {
-                return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
-            }).SelectMany(x => x))
-            .OrderByDescending(x => x.Depth)
-            .ToList();
+            IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
+            var p = Persistence.Instance;
+            if (p.EntitiesVisible) {
+                sprites = sprites.Concat(Entities.Select(e => {
+                    return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
+                }).SelectMany(x => x));
+            }
+            if (p.TriggersVisible) {
+                sprites = sprites.Concat(Triggers.Select(e => {
+                    return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
+                }).SelectMany(x => x));
+            }
+            if (p.FGTilesVisible) {
+                sprites = sprites.Concat(FG.GetSprites());
+            }
+            if (p.BGTilesVisible) {
+                sprites = sprites.Concat(BG.GetSprites());
+            }
+            if (p.FGDecalsVisible) {
+                sprites = sprites.Concat(FgDecals.Select<Decal, ISprite>(d => d.GetSprite(true)));
+            }
+            if (p.BGDecalsVisible) {
+                sprites = sprites.Concat(BgDecals.Select<Decal, ISprite>(d => d.GetSprite(false)));
+            }
+
+            CachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
 
             RenderCacheToken.Reset();
 
@@ -254,6 +334,10 @@ public sealed class Room : IPackable {
             } else
                 item.Render();
         }
+
+        //foreach (var item in Entities) {
+        //    item.GetSelection().Main?.Render(Color.Red);
+        //}
 
         // Darken the room if it's not selected
         if (!selected)

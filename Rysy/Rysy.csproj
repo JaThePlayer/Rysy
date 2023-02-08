@@ -23,6 +23,7 @@
     
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.89.2" />
+    <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
   </ItemGroup>
 
   <ItemGroup>

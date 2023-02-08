@@ -12,9 +12,8 @@ public static class ClutterBlockHelper {
 
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
-                yield return ISprite.FromTexture(pos, $"{texturePath}_0{ent.Room.Random.Next(0, 5)}") with {
-                    Pos = pos + new Vector2(x * 8, y * 8),
-                };
+                var newPos = pos + new Vector2(x * 8, y * 8);
+                yield return ISprite.FromTexture(newPos, $"{texturePath}_0{newPos.SeededRandomInclusive(0, 5)}");
             }
         }
     }

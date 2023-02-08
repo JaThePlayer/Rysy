@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using Rysy.Helpers;
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -161,7 +162,29 @@ public sealed class Autotiler {
 
     public bool IsLoaded() => Tilesets.Count > 0;
 
+    public CacheToken TilesetDataCacheToken = new();
+
+    public void UseCache(Cache<Stream?> cache) {
+        cache.Token.OnInvalidate += () => {
+            using var str = cache.Value;
+            if (str is { }) { // Stream can be null if the file gets locked forever for some reason
+                ReadFromXml(str);
+
+                cache.Token.Reset();
+
+                TilesetDataCacheToken.Invalidate();
+                TilesetDataCacheToken.Reset();
+            } else {
+                Logger.Write("[Autotiler]", LogLevel.Error, $"Failed to reload tileset, most likely because the xml file got locked by another process.");
+            }
+        };
+
+        cache.Token.Invalidate();
+    }
+
     public void ReadFromXml(Stream stream) {
+        Tilesets.Clear();
+
         var xml = new XmlDocument();
         xml.Load(stream);
 
@@ -248,43 +271,10 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a tile grid
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Random random) {
+    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid) {
         List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
         var h = tileGrid.GetLength(1);
-
-        /*
-        for (int x = 0; x < w; x++)
-        {
-            for (int y = 0; y < h; y++)
-            {
-                var c = tileGrid[x, y];
-                if (c == '0')
-                    continue;
-
-                if (!Tilesets.TryGetValue(c, out var data))
-                {
-                    unknownTilesetsUsed ??= new();
-                    if (!unknownTilesetsUsed.Contains(c))
-                    {
-                        unknownTilesetsUsed.Add(c);
-                        LogUnknownTileset(x, y, c);
-                    }
-
-                    yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Pink);
-                    continue;
-                }
-
-                if (!data.GetFirstMatch(tileGrid, x, y, w, h, out var tiles))
-                {
-                    yield return ISprite.Rect(new((int)position.X + x * 8, (int)position.Y + y * 8, 8, 8), Color.Red);
-                    continue;
-                }
-
-                var tile = tiles[random.Next(0, tiles.Length)];
-                yield return ISprite.FromTexture(position + new Vector2(x * 8, y * 8), data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
-            }
-        }*/
 
         AutotiledSpriteList l = new() {
             Sprites = new AutotiledSpriteList.AutotiledSprite[w, h],

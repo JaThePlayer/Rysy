@@ -5,7 +5,7 @@ namespace Rysy.Entities;
 [CustomEntity("spring")]
 [CustomEntity("wallSpringLeft")]
 [CustomEntity("wallSpringRight")]
-public sealed class Spring : SpriteEntity {
+public sealed class Spring : SpriteEntity, IPlaceable {
     public override string TexturePath => "objects/spring/00";
 
     public override int Depth => -8501;
@@ -26,6 +26,12 @@ public sealed class Spring : SpriteEntity {
         "wallSpringLeft" => Orientations.WallLeft,
         "wallSpringRight" => Orientations.WallRight,
         var other => throw new NotImplementedException($"Unknown spring entity {other}")
+    };
+
+    public static List<Placement>? GetPlacements() => new() {
+        new Placement("Spring (Up)").ForSID("spring"),
+        new Placement("Spring (Left)").ForSID("wallSpringLeft"),
+        new Placement("Spring (Right)").ForSID("wallSpringRight"),
     };
 
     public enum Orientations {

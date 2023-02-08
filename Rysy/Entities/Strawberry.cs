@@ -18,7 +18,7 @@ public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider {
     public bool Golden => EntityData.Name is "memorialTextController" or "goldenBerry";
     public bool Moon => Bool("moon");
 
-    public IEnumerable<ISprite> NodePathSprites => NodePathTypes.Fan(this);
+    public IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Fan(this);
 
     public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         yield return GetSprite("collectables/strawberry/seed00") with {

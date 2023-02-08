@@ -3,15 +3,15 @@
 namespace Rysy.Entities;
 
 [CustomEntity("spinner")]
-public sealed class Spinner : Entity {
+public sealed class Spinner : Entity, IPlaceable {
     public override int Depth => -8500;
 
-    private static string[] SpinnerColors = {
-        "blue",
-        "red",
-        "purple",
-        "core",
-        "rainbow"
+    private static Dictionary<string, string> SpinnerColors = new(StringComparer.OrdinalIgnoreCase) {
+        ["blue"] = "Blue",
+        ["red"] = "Red",
+        ["purple"] = "Purple",
+        ["core"] = "Core",
+        ["rainbow"] = "Rainbow"
     };
 
     private static string ColorToTexturePath(string color) => color switch {
@@ -38,4 +38,12 @@ public sealed class Spinner : Entity {
             Depth = Depth + 1,
         };
     }
+
+    public static FieldList GetFields() => new() {
+        ["color"] = Fields.Dropdown("blue", SpinnerColors),
+    };
+
+    public static List<Placement>? GetPlacements() => new() {
+        new("Spinner")
+    };
 }

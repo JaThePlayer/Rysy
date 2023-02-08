@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-
-namespace Rysy.Graphics;
+﻿namespace Rysy.Graphics;
 
 public class DynamicAtlas : IAtlas {
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.InvariantCultureIgnoreCase);
@@ -10,6 +8,9 @@ public class DynamicAtlas : IAtlas {
     public int Width, Height;
 
     private List<Rectangle> Areas = new();
+
+    public event Action<string> OnTextureLoad;
+    public event Action OnUnload;
 
     public DynamicAtlas(int width, int height) {
         (Width, Height) = (width, height);
@@ -103,6 +104,8 @@ public class DynamicAtlas : IAtlas {
     public void DisposeTextures() {
         _packed?.Dispose();
         _packed = null;
+
+        OnUnload?.Invoke();
     }
 
     internal void DebugRender() {
@@ -121,6 +124,8 @@ public class DynamicAtlas : IAtlas {
 
     public void AddTexture(string virtPath, VirtTexture texture) {
         PackTexture(virtPath, texture);
+
+        OnTextureLoad?.Invoke(virtPath);
     }
 
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures() => Textures.Select(t => (t.Key, t.Value));

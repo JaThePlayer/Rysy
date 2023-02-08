@@ -70,8 +70,17 @@ public sealed class Settings {
         return Save(Instance);
     }
 
-    public sealed class HotkeySettings {
+    public string GetHotkey(string name, string? defaultHotkey = null) {
+        if (!Hotkeys.TryGetValue(name, out var hotkey)) {
+            if (defaultHotkey is { }) {
+                Hotkeys[name] = defaultHotkey;
+                Save();
+            }
 
+            return defaultHotkey ?? "";
+        }
+
+        return hotkey;
     }
 
     public static Settings Instance { get; internal set; } = null!;
@@ -100,7 +109,8 @@ public sealed class Settings {
         }
     }
 
+    public Dictionary<string, string> Hotkeys { get; set; } = new();
 
-    public HotkeySettings Keybinds { get; set; } = new();
+    public int MaxBackups { get; set; } = 25;
     #endregion
 }

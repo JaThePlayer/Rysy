@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 
 namespace Rysy;
 
@@ -10,6 +11,11 @@ public class TypeTrackedList<T> : IList<T> {
     private List<T> Inner = new();
 
     private Dictionary<Type, List<T>> ByType = new();
+
+    /// <summary>
+    /// Will be called whenever the contents of the list get changed (Elements get added/removed)
+    /// </summary>
+    public Action? OnChanged;
 
     public T this[int index] {
         get => Inner[index];
@@ -54,12 +60,16 @@ public class TypeTrackedList<T> : IList<T> {
         Inner.Add(item);
 
         TrackNewItem(item);
+
+        OnChanged?.Invoke();
     }
 
 
     public void Clear() {
         Inner.Clear();
         ByType.Clear();
+
+        OnChanged?.Invoke();
     }
 
     public bool Contains(T item) {
@@ -86,16 +96,24 @@ public class TypeTrackedList<T> : IList<T> {
         Inner.Insert(index, item);
 
         TrackNewItem(item);
+
+        OnChanged?.Invoke();
     }
 
     public bool Remove(T item) {
         UntrackItem(item);
-        return Inner.Remove(item);
+        var ret = Inner.Remove(item);
+        if (ret) {
+            OnChanged?.Invoke();
+        }
+        return ret;
     }
 
     public void RemoveAt(int index) {
         UntrackItem(Inner[index]);
         Inner.RemoveAt(index);
+
+        OnChanged?.Invoke();
     }
 
     IEnumerator IEnumerable.GetEnumerator() {

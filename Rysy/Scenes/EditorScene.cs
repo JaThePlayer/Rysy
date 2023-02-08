@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Input;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Tools;
 
@@ -17,10 +18,11 @@ public sealed class EditorScene : Scene {
         get => _map;
         set {
             _map = value;
+            HistoryHandler.Clear();
             Camera = new();
 
             if (_map.Rooms.Count > 0) {
-                CurrentRoom = _map.Rooms.First().Value;
+                CurrentRoom = _map.Rooms.First();
                 CenterCameraOnRoom(CurrentRoom);
             }
 
@@ -41,22 +43,40 @@ public sealed class EditorScene : Scene {
 
     public Camera Camera { get; set; } = null!; // will be set in Map.set
 
-    public EditorScene() {
+    public EditorScene(bool loadFromPersistence = true) {
         HistoryHandler = new();
         ToolHandler = new(HistoryHandler);
 
         // Try to load the last edited map.
-        if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
+        if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
             LoadMapFromBin(Persistence.Instance.LastEditedMap);
     }
 
-    public EditorScene(Map map) : this() {
+    public EditorScene(Map map) : this(false) {
         Map = map;
     }
 
-    public string CurrentRoomName {
-        get => CurrentRoom.Name;
-        set => CurrentRoom = Map.Rooms[value];
+    public override void SetupHotkeys() {
+        base.SetupHotkeys();
+
+        // not trusting rysy enough rn
+        //AddHotkey("saveMap", "ctrl+s", () => Save());
+        AddHotkey("openMap", "ctrl+o", Open);
+        AddHotkey("newMap", "ctrl+shift+n", () => LoadNewMap());
+
+        AddHotkey("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
+        AddHotkey("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
+
+        AddHotkey("newRoom", "ctrl+n", AddNewRoom);
+
+        AddHotkey("moveRoomDown", "alt+down", () => MoveCurrentRoom(0, 1), HotkeyModes.OnHoldSmoothInterval);
+        AddHotkey("moveRoomUp", "alt+up", () => MoveCurrentRoom(0, -1), HotkeyModes.OnHoldSmoothInterval);
+        AddHotkey("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
+        AddHotkey("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
+    }
+
+    public void AddHotkey(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
+        Hotkeys.AddHotkey(Settings.Instance.GetHotkey(name, defaultKeybind), onPress, mode);
     }
 
     public override void OnFileDrop(FileDropEventArgs args) {
@@ -83,6 +103,7 @@ public sealed class EditorScene : Scene {
                 // Just to make this run async, so we can see the loading screen.
                 await Task.Delay(1);
 
+
                 var mapBin = BinaryPacker.FromBinary(file);
 
                 var map = Map.FromBinaryPackage(mapBin);
@@ -95,11 +116,81 @@ public sealed class EditorScene : Scene {
         };
     }
 
-    public void LoadNewMap(string packageName) {
-        Map = new() {
-            Package = packageName,
-        };
+    public void LoadNewMap(string? packageName = null) {
+        if (packageName is null) {
+            AddNewMapWindow();
+            return;
+        }
+
+        Map = Map.NewMap(packageName);
     }
+
+    private void AddNewMapWindow() {
+        var window = new Window<string>("New map", (w) => {
+            ImGui.TextWrapped("Please enter the Package Name for your map.");
+            ImGui.TextWrapped("This name is only used internally, and is not visible in-game.");
+            ImGui.InputText("Package Name", ref w.Data, 512);
+
+            ImGuiManager.BeginWindowBottomBar(!string.IsNullOrWhiteSpace(w.Data));
+            if (ImGui.Button("Create Map")) {
+                LoadNewMap(w.Data);
+                w.RemoveSelf();
+            }
+            ImGuiManager.EndWindowBottomBar();
+        }, new(350, ImGui.GetTextLineHeightWithSpacing() * 8));
+        window.Data = "";
+
+        AddWindow(window);
+    }
+
+    public void Save(bool saveAs = false) {
+        if (saveAs || string.IsNullOrWhiteSpace(Map.Filepath)) {
+            if (!FileDialogHelper.TrySave("bin", out var filepath)) {
+                return;
+            }
+
+            Map.Filepath = filepath;
+            Persistence.Instance.PushRecentMap(Map);
+        }
+
+        BackupHandler.Backup(Map);
+
+        using var watch = new ScopedStopwatch("Saving");
+        var pack = Map.IntoBinary();
+        BinaryPacker.SaveToFile(pack, pack.Filename!);
+    }
+
+    public void Open() {
+        if (FileDialogHelper.TryOpen("bin", out var path)) {
+            LoadMapFromBin(path);
+        }
+    }
+
+    public void AddNewRoom() {
+        var current = CurrentRoom;
+        var room = new Room(Map, current?.Width ?? 40 * 8, current?.Height ?? 23 * 8);
+        if (current is { }) {
+            room.X = current.X;
+            room.Y = current.Y;
+            room.Name = current.Name;
+        }
+
+        room.Entities.Add(EntityRegistry.Create(new("player") {
+            Attributes = new() {
+                ["x"] = 20 * 8,
+                ["y"] = 12 * 8,
+            },
+        }, room, false));
+        AddWindow(new RoomEditWindow(room, newRoom: true));
+    }
+
+    public void MoveCurrentRoom(int tilesX, int tilesY) {
+        if (CurrentRoom is { } room)
+            HistoryHandler.ApplyNewAction(new RoomMoveAction(room, tilesX, tilesY));
+    }
+
+    public void Undo() => HistoryHandler.Undo();
+    public void Redo() => HistoryHandler.Redo();
 
     public override void Update() {
         base.Update();
@@ -115,8 +206,6 @@ public sealed class EditorScene : Scene {
 
             HandleRoomSwapInputs();
 
-            HandleHistoryInput();
-
             ToolHandler.Update(Camera, CurrentRoom);
         }
     }
@@ -124,7 +213,7 @@ public sealed class EditorScene : Scene {
     private void HandleRoomSwapInputs() {
         if (Input.Mouse.Left.Clicked()) {
             var mousePos = Input.Mouse.Pos.ToVector2();
-            foreach (var (_, room) in Map.Rooms) {
+            foreach (var room in Map.Rooms) {
                 if (room == CurrentRoom)
                     continue;
 
@@ -139,24 +228,6 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    private double _smoothUndoNextInterval;
-    private void HandleHistoryInput() {
-        if (Input.Mouse.X1HoldTime > 0.2f && OnInterval(_smoothUndoNextInterval)
-            || Input.Mouse.MouseX1 is MouseInputState.Clicked) {
-            HistoryHandler.Undo();
-            _smoothUndoNextInterval = NextInterval(Input.Mouse.X1HoldTime);
-        } else if (Input.Mouse.X2HoldTime > 0.2f && OnInterval(_smoothUndoNextInterval) ||
-              Input.Mouse.MouseX2 is MouseInputState.Clicked) {
-            HistoryHandler.Redo();
-            _smoothUndoNextInterval = NextInterval(Input.Mouse.X2HoldTime);
-        } else {
-            _smoothUndoNextInterval = 0;
-        }
-
-        double NextInterval(float holdTime) => 0.50 - (holdTime / 2.5f);
-    }
-
-    //TODO REMOVE
     public override void Render() {
         base.Render();
 
@@ -176,7 +247,7 @@ public sealed class EditorScene : Scene {
         if (CurrentRoom is null)
             return;
 
-        foreach (var (_, room) in Map.Rooms) {
+        foreach (var room in Map.Rooms) {
             room.Render(Camera, room == CurrentRoom);
         }
 
@@ -185,15 +256,6 @@ public sealed class EditorScene : Scene {
         GFX.BeginBatch();
         PicoFont.Print(RysyEngine.Framerate.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
         GFX.EndBatch();
-
-        if (Input.Keyboard.IsKeyClicked(Keys.Up)) {
-            CurrentRoom = Map.Rooms.ElementAt(Map.Rooms.Values.ToList().IndexOf(CurrentRoom) + 1).Value;
-            Logger.Write("DebugHotkey", LogLevel.Debug, $"Switching to room {CurrentRoom.Name}");
-        }
-        if (Input.Keyboard.IsKeyClicked(Keys.Down)) {
-            CurrentRoom = Map.Rooms.ElementAt(Map.Rooms.Values.ToList().IndexOf(CurrentRoom) - 1).Value;
-            Logger.Write("DebugHotkey", LogLevel.Debug, $"Switching to room {CurrentRoom.Name}");
-        }
 
         if (Input.Keyboard.Ctrl()) {
             // Reload everything
@@ -206,15 +268,15 @@ public sealed class EditorScene : Scene {
         } else {
             // clear render cache
             if (Input.Keyboard.IsKeyClicked(Keys.F4)) {
-                foreach (var item in Map.Rooms)
-                    item.Value.ClearRenderCache();
+                foreach (var room in Map.Rooms)
+                    room.ClearRenderCache();
             }
 
             // Reload textures
             if (Input.Keyboard.IsKeyClicked(Keys.F5)) {
                 GFX.Atlas.DisposeTextures();
-                foreach (var item in Map.Rooms)
-                    item.Value.ClearRenderCache();
+                foreach (var room in Map.Rooms)
+                    room.ClearRenderCache();
                 GC.Collect(3);
             }
 

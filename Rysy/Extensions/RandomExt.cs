@@ -15,6 +15,21 @@ public static class RandomExt {
     /// </summary>
     public static ulong SeededRandom(this Vector2 pos) => SeededRandom(pos.X, pos.Y);
 
+    /// <summary>
+    /// Creates a random int out of this Vector2
+    /// </summary>
+    public static int SeededRandomExclusive(this Vector2 pos, int max) => (int)(SeededRandom(pos.X, pos.Y) % (ulong)(max));
+
+    /// <summary>
+    /// Creates a random int out of this Vector2, between min and max (inclusive)
+    /// </summary>
+    public static int SeededRandomInclusive(this Vector2 pos, int min, int max) => min + (int) (SeededRandom(pos.X, pos.Y) % (ulong) (max - min + 1));
+
+    /// <summary>
+    /// Creates a random float out of this Vector2, between min and max (inclusive)
+    /// </summary>
+    public static float SeededRandomInclusive(this Vector2 pos, float min, float max) => min + (int) (SeededRandom(pos.X, pos.Y) % (max - min + 1));
+
     #region Splitmix64
     /*  Written in 2015 by Sebastiano Vigna (vigna@acm.org)
 
