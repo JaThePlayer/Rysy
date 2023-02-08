@@ -65,8 +65,7 @@ public abstract class Tool {
             favorites.Remove(name);
         }
         Persistence.Save(Persistence.Instance);
-
-        favorites.LogAsJson();
+        CachedSearch = null;
     }
 
     public abstract void Update(Camera camera, Room currentRoom);
@@ -92,15 +91,20 @@ public abstract class Tool {
 
     public abstract IEnumerable<object>? GetMaterials(string layer);
 
-    public abstract string MaterialToDisplayName(string layer, object material);
+    public abstract string GetMaterialDisplayName(string layer, object material);
+
+    public abstract string? GetMaterialTooltip(string layer, object material);
 
     private bool IsEqual(string layer, object? currentMaterial, string name) {
-        return currentMaterial is { } && MaterialToDisplayName(layer, currentMaterial) == name;
+        return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
     }
 
     public virtual void RenderGui(EditorScene editor, bool firstGui) {
         RenderMaterialList(editor, firstGui);
     }
+
+    private string? CachedLayer;
+    private List<(object mat, string)>? CachedSearch;
 
     private void RenderMaterialList(EditorScene editor, bool firstGui) {
         var currentLayer = Layer;
@@ -128,17 +132,46 @@ public abstract class Tool {
 
         ImGui.BeginListBox("##ToolMaterialBox", new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3));
 
-        foreach (var (mat, name) in materials.Select(mat => (mat, MaterialToDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites)) {
-            var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-
-            if (ImGui.Selectable(displayName, IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick).WithTooltip(mat?.ToString() ?? "")) {
-                Material = mat;
-
-                if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
-                    ToggleFavorite(name);
-                }
-            }
+        if (currentLayer != CachedLayer) {
+            CachedSearch = null;
+            CachedLayer = currentLayer;
         }
+
+        var cachedSearch = CachedSearch ??= materials.Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
+        var rendered = 0;
+
+        
+        var skip = (ImGui.GetScrollY()) / ImGui.GetTextLineHeightWithSpacing() - 1;
+        //ImGui.BeginChildFrame(2, new(0, (skip) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        //ImGui.EndChildFrame();
+        //skip = 0;
+
+        foreach (var (mat, name) in cachedSearch) {
+            // todo: calculate that 60!!!
+            if (rendered < 60 && skip <= 0) {
+                rendered++;
+                var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
+                if (ImGui.Selectable(displayName, IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick).WithTooltip(GetMaterialTooltip(currentLayer, mat))) {
+                    Material = mat;
+
+                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
+                        ToggleFavorite(name);
+                    }
+                }
+            } else {
+                //if (skip <= 0)
+                    ImGui.NewLine(); // better performance than selectable
+                //else
+                    //break;
+            }
+                
+
+            skip--;
+        }
+
+        //var left = cachedSearch.Count - rendered;
+        //ImGui.BeginChildFrame(1, new(0, (cachedSearch.Count - 60) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        //ImGui.EndChildFrame();
 
         ImGui.EndListBox();
 
@@ -148,6 +181,7 @@ public abstract class Tool {
         // your search would persist to the different layer/tool
         if (ImGui.InputText($"##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
             Search = search;
+            CachedSearch = null;
         }
 
         ImGui.End();

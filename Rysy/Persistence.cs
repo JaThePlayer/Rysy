@@ -36,14 +36,19 @@ public class Persistence {
     }
 
     public void PushRecentMap(Map map) {
-        if (map.Filename is null)
+        if (map.Filepath is null)
             return;
         var entry = new RecentMap() {
-            Package = map.Package ?? map.Filename,
-            Filename = map.Filename,
+            Name = Path.GetRelativePath(Profile.Instance.ModsDirectory, map.Filepath),
+            Filename = map.Filepath,
         };
+        // remove duplicate entries
         RecentMaps.Remove(entry);
         RecentMaps.Insert(0, entry);
+
+        if (RecentMaps.Count > 10) {
+            RecentMaps.RemoveAt(10);
+        }
 
 #warning TODO: Don't save immediately, only once in a while
         Save(this);
@@ -55,10 +60,17 @@ public class Persistence {
     #region Serialized
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
+
+    public bool FGTilesVisible { get; set; } = true;
+    public bool BGTilesVisible { get; set; } = true;
+    public bool FGDecalsVisible { get; set; } = true;
+    public bool BGDecalsVisible { get; set; } = true;
+    public bool EntitiesVisible { get; set; } = true;
+    public bool TriggersVisible { get; set; } = true;
     #endregion
 
     public struct RecentMap {
-        public string Package { get; set; }
         public string Filename { get; set; }
+        public string Name { get; set; }
     }
 }

@@ -15,7 +15,7 @@ public class Flutterbird : SpriteEntity {
 
     public override string TexturePath => "scenery/flutterbird/idle00";
 
-    public override Color Color => Colors[Room.Random.Next(0, Colors.Length)];
+    public override Color Color => Colors[Pos.SeededRandomExclusive(Colors.Length)];
 
     public override Vector2 Origin => new(0.5f, 1.0f);
 }

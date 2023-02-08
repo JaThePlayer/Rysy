@@ -8,8 +8,8 @@ public static class ImGuiExt {
     /// <summary>
     /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
     /// </summary>
-    public static bool WithTooltip(this bool val, string tooltip) {
-        if (ImGui.IsItemHovered()) {
+    public static bool WithTooltip(this bool val, string? tooltip) {
+        if (tooltip is { } && ImGui.IsItemHovered()) {
             ImGui.SetTooltip(tooltip);
         }
 

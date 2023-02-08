@@ -1,8 +1,8 @@
 ﻿namespace Rysy.History;
 
 public class HistoryHandler {
-    public List<IHistoryAction> Actions { get; set; } = new();
-    public List<IHistoryAction> UndoneActions { get; set; } = new();
+    private List<IHistoryAction> Actions { get; set; } = new();
+    private List<IHistoryAction> UndoneActions { get; set; } = new();
 
     public void ApplyNewAction(IHistoryAction action) {
         if (action.Apply()) {
@@ -33,5 +33,10 @@ public class HistoryHandler {
         from.RemoveAt(from.Count - 1);
 
         return last;
+    }
+
+    public void Clear() {
+        Actions.Clear();
+        UndoneActions.Clear();
     }
 }

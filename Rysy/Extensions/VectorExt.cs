@@ -1,4 +1,6 @@
-﻿namespace Rysy;
+﻿using System;
+
+namespace Rysy;
 
 public static class VectorExt {
     public static Vector2 XY(this Rectangle r) => new(r.X, r.Y);
@@ -26,4 +28,15 @@ public static class VectorExt {
 
     public static Point GridPosFloor(this Vector2 v, int gridSize) => (v / gridSize).Floored().ToPoint();
     public static Point GridPosRound(this Vector2 v, int gridSize) => (v / gridSize).Rounded().ToPoint();
+
+    public static Vector2 Rotate(this Vector2 v, float rad) {
+        float sin = MathF.Sin(rad);
+        float cos = MathF.Cos(rad);
+
+        float tx = v.X;
+        float ty = v.Y;
+        v.X = (cos * tx) - (sin * ty);
+        v.Y = (sin * tx) + (cos * ty);
+        return v;
+    }
 }

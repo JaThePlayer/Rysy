@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Scenes;
 using System.Runtime.CompilerServices;
 
@@ -7,11 +8,7 @@ namespace Rysy.Tools;
 public abstract class TileTool : Tool {
     public Color DefaultColor = ColorHelper.HSVToColor(0f, 1f, 1f);
 
-    public const string LAYER_FG = "FG";
-    public const string LAYER_BG = "BG";
-    public const string LAYER_BOTH = "Both";
-
-    private static List<string> _ValidLayers = new() { LAYER_FG, LAYER_BG, LAYER_BOTH };
+    private static List<string> _ValidLayers = new() { LayerNames.FG, LayerNames.BG, LayerNames.BOTH };
 
     public override List<string> ValidLayers => _ValidLayers;
 
@@ -23,7 +20,7 @@ public abstract class TileTool : Tool {
 
     private static Dictionary<string, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
 
-    public override string MaterialToDisplayName(string layer, object material) {
+    public override string GetMaterialDisplayName(string layer, object material) {
         if (!MaterialToDisplayCache.TryGetValue(layer, out var cache)) {
             MaterialToDisplayCache[layer] = cache = new();
         }
@@ -46,6 +43,10 @@ public abstract class TileTool : Tool {
         return material.ToString()!;
     }
 
+    public override string? GetMaterialTooltip(string layer, object material) {
+        return material?.ToString();
+    }
+
     public char Tile {
         get => Material is char c ? c : '0';
         set => Material = value;
@@ -54,8 +55,8 @@ public abstract class TileTool : Tool {
     public Autotiler? GetAutotiler(string layer) {
         if (RysyEngine.Scene is EditorScene { Map: { } map }) {
             return layer switch {
-                LAYER_FG => map.FGAutotiler,
-                LAYER_BG => map.BGAutotiler,
+                LayerNames.FG => map.FGAutotiler,
+                LayerNames.BG => map.BGAutotiler,
                 _ => null,
             };
         }
@@ -64,6 +65,7 @@ public abstract class TileTool : Tool {
 
     public void RenderTiles(Vector2 loc, int w, int h) {
         foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h) ?? Array.Empty<ISprite>()) {
+            item.Alpha = 0.3f;
             item.Render();
         }
     }
@@ -79,13 +81,13 @@ public abstract class TileTool : Tool {
     }
 
     protected Tilegrid GetGrid(Room room, string? layer = null) => (layer ?? Layer) switch {
-        LAYER_FG or LAYER_BOTH => room.FG,
-        LAYER_BG => room.BG,
+        LayerNames.FG or LayerNames.BOTH => room.FG,
+        LayerNames.BG => room.BG,
         _ => throw new NotImplementedException(Layer)
     };
 
     protected Tilegrid? GetSecondGrid(Room room) => Layer switch {
-        LAYER_BOTH => room.BG,
+        LayerNames.BOTH => room.BG,
         _ => null,
     };
 
@@ -105,9 +107,9 @@ public abstract class TileTool : Tool {
             var bg = currentRoom.BG.SafeTileAt(tx, ty);
 
             (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (LAYER_BOTH, bg), // if both tiles are air, switch to the "Both" layer.
-                ('0', not '0') => (LAYER_BG, bg), // fg is air, but bg isn't. Switch to BG.
-                (not '0', _) => (LAYER_FG, fg), // fg tile exists, swap to that.
+                ('0', '0') => (LayerNames.BOTH, bg), // if both tiles are air, switch to the "Both" layer.
+                ('0', not '0') => (LayerNames.BG, bg), // fg is air, but bg isn't. Switch to BG.
+                (not '0', _) => (LayerNames.FG, fg), // fg tile exists, swap to that.
             };
         }
     }

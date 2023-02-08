@@ -81,12 +81,16 @@ public class CliffFlags : Entity, ICustomNodeHandler {
         }
     }
 
-    private Cloth NextCloth(int minFlagHeight, int maxFlagHeight, int minFlagLength, int maxFlagLength, int minSpace, int maxSpace) => new Cloth {
-        Color = Room.Random.Next(Colors.Length),
-        Height = Room.Random.Next(minFlagHeight, maxFlagHeight),
-        Length = Room.Random.Next(minFlagLength, maxFlagLength),
-        Step = Room.Random.Next(minSpace, maxSpace)
-    };
+    private Cloth NextCloth(int minFlagHeight, int maxFlagHeight, int minFlagLength, int maxFlagLength, int minSpace, int maxSpace) {
+        var c = new Cloth {
+            Color = Pos.SeededRandomExclusive(Colors.Length),
+            Height = Pos.SeededRandomInclusive(minFlagHeight, maxFlagHeight),
+            Length = Pos.SeededRandomInclusive(minFlagLength, maxFlagLength),
+            Step = Pos.SeededRandomInclusive(minSpace, maxSpace)
+        };
+
+        return c;
+    }
 
     private struct Cloth {
         public int Color;

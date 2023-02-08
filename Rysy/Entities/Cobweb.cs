@@ -17,7 +17,7 @@ public class Cobweb : Entity, ICustomNodeHandler {
 
             if (offshoots) {
                 for (int i = 1; i < nodes.Length; i++) {
-                    foreach (var s in GetCobwebSprites(nodes[i], curve.GetPointAt((float) Room.Random.NextDouble() * .4f).Rounded(), 4, false)) {
+                    foreach (var s in GetCobwebSprites(nodes[i], curve.GetPointAt((float) Pos.SeededRandom() * .4f).Rounded(), 4, false)) {
                         yield return s;
                     }
                 }

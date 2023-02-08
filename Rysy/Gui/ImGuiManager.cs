@@ -43,17 +43,81 @@ public static class ImGuiManager {
     }
 
     /// <summary>
+    /// Calls <see cref="PushInvalidStyle"/> if <paramref name="condition"/> is true.
+    /// Returns <paramref name="condition"/>
+    /// </summary>
+    public static bool PushInvalidStyleIf(bool condition) {
+        if (condition)
+            PushInvalidStyle();
+
+        return condition;
+    }
+
+    private static bool _invalidStyleEnabled;
+    public static void PushInvalidStyle() {
+        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(255, 0, 0, 255));
+        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(255, 0, 0, 255));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
+        _invalidStyleEnabled = true;
+    }
+
+    public static void PopInvalidStyle() {
+        if (_invalidStyleEnabled) {
+            ImGui.PopStyleColor(2);
+            ImGui.PopStyleVar(2);
+        }
+    }
+
+    /// <summary>
     /// Creates a menu with <see cref="ImGui.BeginMenu(string)"/> using elements from the <paramref name="source"/>.
     /// </summary>
     public static void DropdownMenu<T>(string name, IEnumerable<T> source, Func<T, string> itemNameGetter, Action<T> onClick) {
         if (ImGui.BeginMenu(name)) {
             foreach (var item in source) {
-                if (ImGui.MenuItem(itemNameGetter(item))) {
+                if (ImGui.MenuItem(itemNameGetter(item) ?? "[null]")) {
                     onClick(item);
                 }
             }
             ImGui.EndMenu();
         }
+    }
+
+    public static void DropdownMenu<T>(string name, Action<T> onClick) where T : struct, Enum {
+        var values = Enum.GetValues<T>();
+
+        if (ImGui.BeginMenu(name)) {
+            foreach (var item in values) {
+                if (ImGui.MenuItem(item.ToString())) {
+                    onClick(item);
+                }
+            }
+            ImGui.EndMenu();
+        }
+    }
+
+    public static void Combo<T>(string name, ref T value) where T : struct, Enum {
+        var values = Enum.GetValues<T>();
+
+        if (ImGui.BeginCombo(name, value.ToString())) {
+            foreach (var item in values) {
+                if (ImGui.MenuItem(item.ToString())) {
+                    value = item;
+                }
+            }
+            ImGui.EndCombo();
+        }
+    }
+
+    public static void BeginWindowBottomBar(bool valid) {
+        ImGui.SetCursorPosY(ImGui.GetWindowHeight() - ImGui.GetFrameHeightWithSpacing() + ImGui.GetScrollY());
+        ImGui.Separator();
+
+        ImGui.BeginDisabled(!valid);
+    }
+
+    public static void EndWindowBottomBar() {
+        ImGui.EndDisabled();
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
@@ -186,9 +250,13 @@ public static class ImGuiManager {
             }*/
 
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => {
+                const char VOLUME_UP = (char) 128;
+                const char VOLUME_DOWN = (char) 129;
+
                 var c = e.Character;
-                if (c == '\t')
+                if (c is '\t' or VOLUME_UP or VOLUME_DOWN)
                     return;
+
                 io.AddInputCharacter(c);
             };
 

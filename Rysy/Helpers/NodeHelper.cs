@@ -51,7 +51,7 @@ public static class NodeHelper {
     private static IEnumerable<ISprite>? GetNodeConnectors(Entity entity) {
         if (entity.Nodes is { } nodes) {
             return entity switch {
-                INodePathProvider p => p.NodePathSprites,
+                INodePathProvider p => p.GetNodePathSprites(),
                 _ => NodePathTypes.Line(entity),
             };
         } else {

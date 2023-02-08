@@ -19,15 +19,6 @@ public static class Extensions {
     public static T Abs<T>(this T num) where T : INumber<T>
         => T.Abs(num);
 
-    /// <summary>
-    /// Fills the given 2d array with the specified value
-    /// </summary>
-    public static unsafe void Fill<T>(this T[,] tiles, T value) where T : unmanaged {
-        fixed (T* tile = &tiles[0, 0]) {
-            new Span<T>(tile, tiles.Length).Fill(value);
-        }
-    }
-
     public static bool Contains<T>(this T[] tiles, T value) where T : unmanaged {
         return Array.IndexOf(tiles, value) >= 0;
     }
@@ -52,4 +43,10 @@ public static class Extensions {
         if (val)
             act();
     }
+
+    public static int AsInt(this bool b) => Unsafe.As<bool, byte>(ref b);
+
+    public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
+
+    public static T[] ShallowClone<T>(this T[] array) => (T[])array.Clone();
 }

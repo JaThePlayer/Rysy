@@ -10,7 +10,7 @@ public class Trigger : Entity, INodeSpriteProvider {
 
     public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var node = Nodes![nodeIndex];
-        var rect = new Rectangle((int) node.X, (int) node.Y, Width, Height);
+        var rect = new Rectangle((int) node.X - 2, (int) node.Y - 2, 4, 4);
         yield return ISprite.OutlinedRect(rect, Color * 0.35f, Color);
     }
 

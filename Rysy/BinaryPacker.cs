@@ -16,6 +16,7 @@ public sealed class BinaryPacker {
     internal BinaryPacker() { }
 
     public static Package FromBinary(string filename) {
+        using var watch = new ScopedStopwatch("FromBinary");
         if (filename == null)
             throw new ArgumentNullException(nameof(filename));
         if (!File.Exists(filename))
@@ -51,27 +52,32 @@ public sealed class BinaryPacker {
     }
 
     public static void SaveToFile(Package package, string filename) {
+        // contains the map header and lookup table
+        using var headerStream = new MemoryStream();
+        using var headerWriter = new BinaryWriter(headerStream);
+
+        // contains the rest of the map (needed because the lookup table occurs before the map, and we don't know how long that lookup will be)
+        using var contentStream = new MemoryStream();
+        using var contentWriter = new BinaryWriter(contentStream);
+
+        headerWriter.Write("CELESTE MAP");
+        headerWriter.Write(package.Name);
+
         var packer = new BinaryPacker();
-        using var stream = File.Open(filename, FileMode.Create);
-        using var mainWriter = new BinaryWriter(stream);
-
-        using var memStream = new MemoryStream();
-        using var mapWriter = new BinaryWriter(memStream);
-
-        mainWriter.Write("CELESTE MAP");
-        mainWriter.Write(package.Name);
-
-        packer.Writer = mapWriter;
+        packer.Writer = contentWriter;
         // Write the map to a different writer, as we now need the lookup table.
         packer.WriteElement(package.Data);
 
         // write lookup table
-        mainWriter.Write((short)packer.WritingLookup.Count);
+        headerWriter.Write((short)packer.WritingLookup.Count);
         foreach (var item in packer.WritingLookup.OrderBy(k => k.Value)) {
-            mainWriter.Write(item.Key);
+            headerWriter.Write(item.Key);
         }
 
-        mainWriter.Write(memStream.ToArray());
+        // Write the map into the file
+        using var fileStream = File.Open(filename, FileMode.Create);
+        fileStream.Write(headerStream.ToArray());
+        fileStream.Write(contentStream.ToArray());
     }
     
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
@@ -127,18 +133,14 @@ public sealed class BinaryPacker {
                     Writer.Write(b);
                 }
                 break;
+            case Enum e:
+                EncodeString(e.ToString());
+                break;
             case string b:
-                var rleEncode = TryEncodeRLE(b);
-                if (rleEncode is { }) {
-                    Writer.Write((byte) 7);
-                    Writer.Write((short) rleEncode.Length);
-                    Writer.Write(rleEncode);
-                } else {
-                    Writer.Write((byte) 5);
-                    WriteLookup(b);
-                }
+                EncodeString(b);
                 break;
             default:
+                Console.WriteLine($"UKNOWN OBJECT: {val}, {val.GetType()}");
                 break;
         }
 
@@ -157,6 +159,18 @@ public sealed class BinaryPacker {
                     Writer.Write(num);
                     break;
             }
+        }
+    }
+
+    private void EncodeString(string b) {
+        var rleEncode = TryEncodeRLE(b);
+        if (rleEncode is { }) {
+            Writer.Write((byte) 7);
+            Writer.Write((short) rleEncode.Length);
+            Writer.Write(rleEncode);
+        } else {
+            Writer.Write((byte) 5);
+            WriteLookup(b);
         }
     }
 
@@ -211,14 +225,14 @@ public sealed class BinaryPacker {
             return null;
         }
 
-        Span<byte> rle = stackalloc byte[str.Length * 2];
+        Span<byte> rle = str.Length < 4198 ? stackalloc byte[str.Length * 2] : new byte[str.Length * 2];
         int bufferIdx = 0;
 
         for (int i = 0; i < str.Length; i++) {
             byte repeatCount = 1;
             char c = str[i];
             if (!char.IsAscii(c)) {
-                Console.WriteLine($"Can't encode RLE: {str} - {c} is non ascii!");
+                //Console.WriteLine($"Can't encode RLE: {str} - {c} is non ascii!");
                 return null;
             }
 
@@ -283,6 +297,14 @@ public sealed class BinaryPacker {
         public float Float(string attrName, float def = 0f) {
             if (Attributes.TryGetValue(attrName, out var obj)) {
                 return Convert.ToSingle(obj);
+            }
+
+            return def;
+        }
+
+        public T Enum<T>(string attrName, T def) where T : struct, Enum {
+            if (Attributes.TryGetValue(attrName, out var obj)) {
+                return System.Enum.Parse<T>(obj.ToString()!);
             }
 
             return def;

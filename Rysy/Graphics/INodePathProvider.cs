@@ -6,5 +6,5 @@
 /// If not implemented, Rysy will default to calling <see cref="NodePathTypes.Line(Rysy.Entity)"/>.
 /// </summary>
 public interface INodePathProvider {
-    public IEnumerable<ISprite> NodePathSprites { get; }
+    public IEnumerable<ISprite> GetNodePathSprites();
 }

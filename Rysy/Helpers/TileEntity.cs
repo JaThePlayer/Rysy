@@ -16,7 +16,7 @@ public abstract class TileEntity : Entity {
             _ => throw new Exception($"Unknown TileLayer: {Layer}")
         };
 
-        return tileGrid.Autotiler.GetSprites(Pos, Tiletype, Width / 8, Height / 8).Select(s => {
+        return tileGrid.Autotiler!.GetSprites(Pos, Tiletype, Width / 8, Height / 8).Select(s => {
             if (s.Color == Color.White)
                 s.Color = color;
             return s;

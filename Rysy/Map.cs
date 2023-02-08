@@ -1,5 +1,4 @@
 ﻿using Rysy.Graphics;
-using System.Text.Json;
 
 namespace Rysy;
 
@@ -11,9 +10,10 @@ public sealed class Map : IPackable {
     /// <summary>
     /// The filename of the file this map comes from, if it came from a file.
     /// </summary>
-    public string? Filename;
+    public string? Filepath;
 
-    public Dictionary<string, Room> Rooms = new();
+    //public Dictionary<string, Room> Rooms { get; set; } = new();
+    public List<Room> Rooms { get; set; } = new();
 
     public MapMetadata Meta = new();
 
@@ -29,27 +29,36 @@ public sealed class Map : IPackable {
     /// </summary>
     public BinaryPacker.Element Filler;
 
-    public Map() {
+    private Map() {
 
+    }
+
+    public static Map NewMap(string packageName) {
+        var map = new Map() {
+            Package = packageName,
+        };
+        map.UseVanillaTilesetsIfNeeded();
+        map.InitStyleAndFillerIfNeeded();
+
+        return map;
     }
 
     public static Map FromBinaryPackage(BinaryPacker.Package from) {
         var map = new Map();
         map.Unpack(from.Data);
         map.Package = from.Name;
-        map.Filename = from.Filename;
+        map.Filepath = from.Filename;
 
         return map;
     }
 
     public BinaryPacker.Element Pack() {
-#warning TODO: check if there's other stuff
         BinaryPacker.Element el = new("Map");
 
         el.Children = new BinaryPacker.Element[4];
 
         var levels = new BinaryPacker.Element("levels");
-        levels.Children = Rooms.Values.Select(r => r.Pack()).ToArray();
+        levels.Children = Rooms.Select(r => r.Pack()).ToArray();
 
 
         el.Children[0] = levels;
@@ -60,10 +69,10 @@ public sealed class Map : IPackable {
         return el;
     }
 
-    public BinaryPacker.Package PackFully() {
+    public BinaryPacker.Package IntoBinary() {
         BinaryPacker.Package pack = new() {
             Name = Package!,
-            Filename = Filename,
+            Filename = Filepath,
             Data = Pack(),
         };
 
@@ -82,18 +91,18 @@ public sealed class Map : IPackable {
                     Meta.Unpack(child);
 
                     if (Meta.BackgroundTiles is { } moddedBgTiles) {
-                        using var bgStream = ModAssetHelper.OpenModFile(moddedBgTiles.Unbackslash());
-                        if (bgStream is { }) {
-                            BGAutotiler.ReadFromXml(bgStream);
+                        var cache = ModAssetHelper.GetModFileCache(moddedBgTiles.Unbackslash());
+                        if (cache is { }) {
+                            BGAutotiler.UseCache(cache);
                         } else {
                             Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
                         }
                     }
 
                     if (Meta.ForegroundTiles is { } moddedFgTiles) {
-                        using var stream = ModAssetHelper.OpenModFile(moddedFgTiles.Unbackslash());
-                        if (stream is { }) {
-                            FGAutotiler.ReadFromXml(stream);
+                        var cache = ModAssetHelper.GetModFileCache(moddedFgTiles.Unbackslash());
+                        if (cache is { }) {
+                            FGAutotiler.UseCache(cache);
                         } else {
                             Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
                         }
@@ -105,7 +114,8 @@ public sealed class Map : IPackable {
                             Map = this,
                         };
                         r.Unpack(room);
-                        Rooms[r!.Name] = r;
+
+                        Rooms.Add(r);
                     }
 
                     break;
@@ -118,6 +128,16 @@ public sealed class Map : IPackable {
             }
         }
 
+        UseVanillaTilesetsIfNeeded();
+        InitStyleAndFillerIfNeeded();
+    }
+
+    private void InitStyleAndFillerIfNeeded() {
+        Style ??= new("Style");
+        Filler ??= new("Filler");
+    }
+
+    private void UseVanillaTilesetsIfNeeded() {
         if (!BGAutotiler.IsLoaded()) {
             using var stream = File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/BackgroundTiles.xml");
             BGAutotiler.ReadFromXml(stream);
@@ -127,8 +147,6 @@ public sealed class Map : IPackable {
             FGAutotiler.ReadFromXml(stream);
         }
     }
-
-
 }
 
 public sealed class MapMetadata {
@@ -184,6 +202,8 @@ public sealed class MapMetadata {
 
     public MetaMode Mode { get; set; } = new();
 
+    public MapMetaCassetteModifier CassetteModifier { get; set; } = new();
+
     //public MapMetaMountain Mountain { get; set; }
 
     //public MapMetaCompleteScreen CompleteScreen { get; set; }
@@ -220,10 +240,10 @@ public sealed class MapMetadata {
 
     public MapMetadata Unpack(BinaryPacker.Element el) {
         Deserialize(el, this);
+        Deserialize(el.Children.FirstOrDefault(e => e.Name == "cassettemodifier"), CassetteModifier);
         var modes = el.Children.FirstOrDefault(e => e.Name == "mode");
         Deserialize(modes, Mode);
         Deserialize(modes?.Children.FirstOrDefault(e => e.Name == "audiostate"), Mode.AudioState);
-        Deserialize(modes?.Children.FirstOrDefault(e => e.Name == "cassettemodifier"), Mode.CassetteModifier);
 
         return this;
     }
@@ -238,11 +258,11 @@ public sealed class MapMetadata {
                 Children = new BinaryPacker.Element[] {
                     new("audiostate") {
                         Attributes = SerializeAttrs(Mode.AudioState)
-                    },
-                    new("cassettemodifier") {
-                        Attributes = SerializeAttrs(Mode.CassetteModifier),
                     }
                 },
+            },
+            new("cassettemodifier") {
+                Attributes = SerializeAttrs(CassetteModifier),
             }
         };
 
@@ -268,8 +288,6 @@ public sealed class MetaMode {
     public bool? TheoInBubble { get; set; }
 
     public AudioState AudioState { get; set; } = new();
-
-    public MapMetaCassetteModifier CassetteModifier { get; set; } = new();
 }
 
 public class AudioState {

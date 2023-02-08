@@ -17,6 +17,9 @@ public interface IAtlas {
     public void DisposeTextures();
 
     public void AddTexture(string virtPath, VirtTexture texture);
+
+    public event Action<string> OnTextureLoad;
+    public event Action OnUnload;
 }
 
 public static class IAtlasExt {
@@ -31,7 +34,7 @@ public static class IAtlasExt {
         await Task.WhenAll(
                 Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories)
                 .Select(item => Task.Run(() => {
-                    var virtPath = item.Replace(dir, "").ToVirtPath(prefix);
+                    var virtPath = item.AsSpan()[(dir.Length + 1)..].ToVirtPath(prefix);//item.Replace(dir, "").ToVirtPath(prefix);
                     var texture = VirtTexture.FromFile(item);
                     lock (self) {
                         self.AddTexture(virtPath, texture);
@@ -39,15 +42,19 @@ public static class IAtlasExt {
                 })));
     }
 
-    public static void LoadFromZip(this IAtlas self, string zipName, ZipArchive zip) {
-        foreach (var item in zip.Entries) {
-            var name = item.FullName;
-            if (name.StartsWith("Graphics/Atlases/Gameplay")) {
-                var virtPath = name.Replace("Graphics/Atlases/Gameplay", "").ToVirtPath();
-                var texture = VirtTexture.FromFile(zipName, item);
-                self.AddTexture(virtPath, texture);
+    public static async ValueTask LoadFromZip(this IAtlas self, string zipName, ZipArchive zip) {
+        await Parallel.ForEachAsync(zip.Entries, (entry, token) => {
+            var name = entry.FullName;
+            if (name.StartsWith("Graphics/Atlases/Gameplay", StringComparison.Ordinal) && !name.EndsWith("/", StringComparison.Ordinal)) {
+                var virtPath = name.AsSpan()["Graphics/Atlases/Gameplay/".Length..].ToVirtPath();
+                var texture = VirtTexture.FromFile(zipName, entry);
+                lock (self) {
+                    self.AddTexture(virtPath, texture);
+                }
             }
-        }
+
+            return ValueTask.CompletedTask;
+        });
     }
 
     /// <summary>

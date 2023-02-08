@@ -77,6 +77,13 @@ public static class Logger {
 #endif
     }
 
+    /// <summary>
+    /// Returns the JSON representation of this object.
+    /// </summary>
+    public static string ToJson<T>(this T? obj) {
+        return obj is { } ? JsonSerializer.Serialize(obj, JsonSerializerOptions) : "";
+    }
+
     private static readonly JsonSerializerOptions JsonSerializerOptions = new() {
         WriteIndented = true,
         IncludeFields = true,

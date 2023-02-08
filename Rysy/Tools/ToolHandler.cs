@@ -7,7 +7,7 @@ using Rysy.Scenes;
 namespace Rysy.Tools;
 
 public class ToolHandler {
-    public const float DefaultMaterialListWidth = 150f;
+    public const float DefaultMaterialListWidth = 200f;
 
     public readonly HistoryHandler History;
 
@@ -18,10 +18,13 @@ public class ToolHandler {
         // TODO: autogen
         AddTool(new BrushTool());
         AddTool(new TileRectTool());
+        AddTool(new PlacementTool());
 
-        
 
         HotReloadHandler.OnHotReload += () => {
+            _firstGui = true;
+        };
+        RysyEngine.OnViewportChanged += (v) => {
             _firstGui = true;
         };
     }

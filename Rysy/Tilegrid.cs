@@ -5,15 +5,48 @@ using System.Text;
 namespace Rysy;
 
 public class Tilegrid {
+    public Tilegrid() { }
+
+    public Tilegrid(int widthPixels, int heightPixels) {
+        Tiles = new char[widthPixels / 8, heightPixels / 8];
+        Tiles.Fill('0');
+    }
+
     public int Width, Height;
 
-    public char[,] Tiles = null!;
+    private char[,] _tiles = null!;
+    public char[,] Tiles {
+        get => _tiles;
+        set {
+            _tiles = value;
+            Width = value.GetLength(0);
+            Height = value.GetLength(1);
+            RenderCacheToken?.Invalidate();
+        }
+    }
 
     public int? Depth { get; set; }
 
-    public Autotiler? Autotiler;
+    private Autotiler? _autotiler;
+    public Autotiler? Autotiler {
+        get => _autotiler;
+        set {
+            _autotiler = value;
 
-    public CacheToken? CacheToken;
+            // Make sure to clear the render cache whenever the autotiler data changes
+            _autotiler!.TilesetDataCacheToken.OnInvalidate += () => {
+                RenderCacheToken?.Invalidate();
+            };
+
+            RenderCacheToken?.Invalidate();
+        }
+    }
+
+    /// <summary>
+    /// A token which will be invalidated when the render cache needs to be cleared, for example when tiles are edited, or the Autotiler used is changed.
+    /// The object that assigns this token is responsible for resetting the token once the render cache is reestablished.
+    /// </summary>
+    public CacheToken? RenderCacheToken;
 
     public char SafeTileAt(int x, int y) {
         if (x < 0 || y < 0 || x >= Width || y >= Height)
@@ -44,23 +77,30 @@ public class Tilegrid {
             return false;
         }
         currentTile = tile;
-        CacheToken?.Invalidate();
+        RenderCacheToken?.Invalidate();
         return true;
     }
 
-    public static unsafe Tilegrid FromString(int w, int h, string tilesString) {
+    public void Resize(int widthPixels, int heightPixels) {
+        Tiles = Tiles.CreateResized(widthPixels / 8, heightPixels / 8, '0');
+        RenderCacheToken?.Invalidate();
+    }
+
+    public IEnumerable<ISprite> GetSprites() {
+        return Autotiler?.GetSprites(Vector2.Zero, Tiles).Select(s => {
+            s.Depth = Depth;
+            return s;
+        }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
+    }
+
+    #region Saving
+    public static unsafe Tilegrid FromString(int widthPixels, int heightPixels, string tilesString) {
         tilesString = tilesString.Replace("\r", "");
-        w /= 8;
-        h /= 8;
+        var w = widthPixels / 8;
+        var h = heightPixels / 8;
 
-        var tiles = new char[w, h];
-        tiles.Fill('0');
-
-        var g = new Tilegrid() {
-            Width = w,
-            Height = h,
-            Tiles = tiles,
-        };
+        var g = new Tilegrid(widthPixels, heightPixels);
+        var tiles = g.Tiles;
 
         int x = 0, y = 0;
         for (int ci = 0; ci < tilesString.Length; ci++) {
@@ -88,13 +128,6 @@ public class Tilegrid {
         }
 
         return g;
-    }
-
-    public IEnumerable<ISprite> GetSprites(Random random) {
-        return Autotiler?.GetSprites(Vector2.Zero, Tiles, random).Select(s => {
-            s.Depth = Depth;
-            return s;
-        }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
     }
 
     private string GetSaveString() {
@@ -133,4 +166,6 @@ public class Tilegrid {
             }
         };
     }
+
+    #endregion
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Graphics.TextureTypes;
+﻿using Rysy.Graphics.TextureTypes;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
@@ -33,6 +32,8 @@ public record struct Sprite : ISprite {
     public Vector2 DrawOffset;
     public int Width;
     public int Height;
+
+    private Vector2 _multOrigin;
 
     public Sprite(VirtTexture text) {
         Texture = text;
@@ -70,38 +71,20 @@ public record struct Sprite : ISprite {
         if (Texture.Texture is { } texture) {
             // store some fields for later use
             // this is not done in the constructor, as that would force preloading
-            ClipRect ??= Texture.ClipRect;
-            if (Width == 0) {
-                LoadSizeFromTexture();
-
-                // Fixup properties now, at this point nothing should try to get stuff from the sprite...
-                Flip = SpriteEffects.None;
-                Origin = (Origin * new Vector2(Width, Height)) + DrawOffset;
-                // Monogame doesn't like negative scales...
-                if (Scale.X < 0) {
-                    Scale.X = -Scale.X;
-                    Flip ^= SpriteEffects.FlipHorizontally;
-                    Origin.X = ClipRect!.Value.Width - Origin.X;
-                }
-                if (Scale.Y < 0) {
-                    Scale.Y = -Scale.Y;
-                    Flip ^= SpriteEffects.FlipVertically;
-                    Origin.Y = ClipRect!.Value.Height - Origin.Y;
-                }
-            }
+            CacheFields();
 
             var scale = Scale;
+            var origin = _multOrigin;
 
             if (cam is { }) {
                 var size = new Vector2(Width * scale.X, Height * scale.Y);
-                var pos = Pos - Origin * scale;
+                var pos = Pos - origin * scale;
                 //ISprite.HollowRect(pos, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
                 if (!cam.IsRectVisible(pos + offset, (int) size.X, (int) size.Y))
                     return;
             }
 
             var flip = Flip;
-            var origin = Origin;
             if (OutlineColor != default) {
                 var color = OutlineColor;
 
@@ -111,6 +94,64 @@ public record struct Sprite : ISprite {
                 Render(texture, Pos + new Vector2(0f, -1f), color, scale, flip, origin);
             }
             Render(texture, Pos, Color, scale, flip, origin);
+        }
+    }
+
+    public Rectangle? GetRenderRect() {
+        if (Texture.Texture is not { } texture) {
+            return null;
+        }
+
+        CacheFields();
+
+        var scale = Scale;
+        var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
+        Vector2 pos;
+        if (Rotation == 0f) {
+            pos = Pos - _multOrigin * scale;
+            if (OutlineColor != default) {
+                return new Rectangle((int) pos.X - 1, (int) pos.Y - 1, (int) size.X + 2, (int) size.Y + 2);
+            } else {
+                return new Rectangle((int) pos.X, (int) pos.Y, (int) size.X, (int) size.Y);
+            }
+        }
+
+        // rotate our points, by rotating the offset
+        var off = -_multOrigin;
+        var r1 = Pos + off.Rotate(Rotation);
+        var r2 = Pos + (off + size).Rotate(Rotation);
+
+        if (OutlineColor != default) {
+            r1 -= new Vector2(1);
+            r2 -= new Vector2(1);
+
+            return RectangleExt.FromPoints(r1.ToPoint(), r2.ToPoint()).AddSize(2, 2);
+        }
+
+        return RectangleExt.FromPoints(r1.ToPoint(), r2.ToPoint());
+    }
+
+
+
+    private void CacheFields() {
+        ClipRect ??= Texture.ClipRect;
+        if (Width == 0) {
+            LoadSizeFromTexture();
+
+            // Fixup properties now, at this point nothing should try to get stuff from the sprite...
+            Flip = SpriteEffects.None;
+            _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+            // Monogame doesn't like negative scales...
+            if (Scale.X < 0) {
+                Scale.X = -Scale.X;
+                Flip ^= SpriteEffects.FlipHorizontally;
+                _multOrigin.X = ClipRect!.Value.Width - _multOrigin.X;
+            }
+            if (Scale.Y < 0) {
+                Scale.Y = -Scale.Y;
+                Flip ^= SpriteEffects.FlipVertically;
+                _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
+            }
         }
     }
 
