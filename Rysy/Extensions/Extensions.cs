@@ -36,6 +36,13 @@ public static class Extensions {
         }
     }
 
+    public static IEnumerable<T> Apply<T>(this IEnumerable<T> self, Action<T> action) {
+        foreach (var item in self) {
+            action(item);
+            yield return item;
+        }
+    }
+
     /// <summary>
     /// If this is true, then performs the action
     /// </summary>

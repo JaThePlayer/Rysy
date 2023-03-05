@@ -1,7 +1,7 @@
 ﻿using Rysy.Graphics;
 using Rysy.Helpers;
 
-namespace Rysy.Triggers;
+namespace Rysy;
 
 public class Trigger : Entity, INodeSpriteProvider {
     public virtual Color Color => Color.LightSkyBlue;

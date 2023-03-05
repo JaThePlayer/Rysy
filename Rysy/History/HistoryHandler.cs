@@ -4,6 +4,8 @@ public class HistoryHandler {
     private List<IHistoryAction> Actions { get; set; } = new();
     private List<IHistoryAction> UndoneActions { get; set; } = new();
 
+    public Action? OnUndo;
+
     public void ApplyNewAction(IHistoryAction action) {
         if (action.Apply()) {
             Actions.Add(action);
@@ -17,6 +19,7 @@ public class HistoryHandler {
             var action = Pop(Actions);
             action.Undo();
             UndoneActions.Add(action);
+            OnUndo?.Invoke();
         }
     }
 

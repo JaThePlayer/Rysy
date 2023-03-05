@@ -1,10 +1,12 @@
-﻿using Rysy.Entities;
+﻿using KeraLua;
+using Rysy.Entities;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.LuaSupport;
 
 namespace Rysy;
 
-public sealed class Room : IPackable {
+public sealed class Room : IPackable, ILuaWrapper {
     public Room() {
         RenderCacheToken = new(ClearRenderCache);
 
@@ -155,10 +157,20 @@ public sealed class Room : IPackable {
         foreach (var child in from.Children) {
             switch (child.Name) {
                 case "bgdecals":
-                    BgDecals = child.Children.Select(Decal.Create).ToList();
+                    BgDecals = child.Children.Select((e) => {
+                        var d = Decal.Create(e);
+                        d.Room = this;
+                        d.FG = false;
+                        return d;
+                    }).ToList();
                     break;
                 case "fgdecals":
-                    FgDecals = child.Children.Select(Decal.Create).ToList();
+                    FgDecals = child.Children.Select((e) => {
+                        var d = Decal.Create(e);
+                        d.Room = this;
+                        d.FG = true;
+                        return d;
+                    }).ToList();
                     break;
                 case "entities":
                     foreach (var entity in child.Children) {
@@ -277,6 +289,14 @@ public sealed class Room : IPackable {
     public Vector2 WorldToRoomPos(Camera camera, Vector2 world)
         => camera.ScreenToReal(world) - new Vector2(X, Y);
 
+    public Point WorldToRoomPos(Camera camera, Point world) => WorldToRoomPos(camera, world.ToVector2()).ToPoint();
+
+    public Rectangle WorldToRoomPos(Camera camera, Rectangle world)
+        => RectangleExt.FromPoints(
+            camera.ScreenToReal(world.Location.ToVector2()) - new Vector2(X, Y),
+            camera.ScreenToReal((world.Location + world.Size).ToVector2()) - new Vector2(X, Y)
+           );
+
     internal void StartBatch(Camera camera) {
         GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
     }
@@ -295,14 +315,26 @@ public sealed class Room : IPackable {
             //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
+            var layer = p.EditorLayer;
+
             if (p.EntitiesVisible) {
                 sprites = sprites.Concat(Entities.Select(e => {
-                    return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
+                    var spr = e.GetSprites().SetDepth(e.Depth);
+                    spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
+                    if (layer is { } && e.EditorLayer != layer)
+                        spr = spr.Apply(s => s.Alpha *= Settings.Instance.HiddenLayerAlpha);
+
+                    return spr;
                 }).SelectMany(x => x));
             }
             if (p.TriggersVisible) {
                 sprites = sprites.Concat(Triggers.Select(e => {
-                    return NodeHelper.GetNodeSpritesFor(e).Concat(e.GetSprites().SetDepth(e.Depth));
+                    var spr = e.GetSprites().SetDepth(e.Depth);
+                    spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
+                    if (layer is { } && e.EditorLayer != layer)
+                        spr = spr.Apply(s => s.Alpha *= Settings.Instance.HiddenLayerAlpha);
+
+                    return spr;
                 }).SelectMany(x => x));
             }
             if (p.FGTilesVisible) {
@@ -312,10 +344,22 @@ public sealed class Room : IPackable {
                 sprites = sprites.Concat(BG.GetSprites());
             }
             if (p.FGDecalsVisible) {
-                sprites = sprites.Concat(FgDecals.Select<Decal, ISprite>(d => d.GetSprite(true)));
+                sprites = sprites.Concat(FgDecals.Select<Decal, ISprite>(d => {
+                    var spr = d.GetSprite();
+                    if (layer is { } && d.EditorLayer != layer)
+                        spr.Color *= Settings.Instance.HiddenLayerAlpha;
+
+                    return spr;
+                }));
             }
             if (p.BGDecalsVisible) {
-                sprites = sprites.Concat(BgDecals.Select<Decal, ISprite>(d => d.GetSprite(false)));
+                sprites = sprites.Concat(BgDecals.Select<Decal, ISprite>(d => {
+                    var spr = d.GetSprite();
+                    if (layer is { } && d.EditorLayer != layer)
+                        spr.Color *= Settings.Instance.HiddenLayerAlpha;
+
+                    return spr;
+                }));
             }
 
             CachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
@@ -384,4 +428,91 @@ public sealed class Room : IPackable {
 
     public bool IsInBounds(Vector2 roomPos)
         => new Rectangle(0, 0, Width, Height).Contains(roomPos);
+
+    /// <summary>
+    /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
+    /// Respects editor layers.
+    /// </summary>
+    public List<Selection> GetSelectionsInRect(Rectangle rect, SelectionLayer layer) {
+        var list = new List<Selection>();
+
+        if ((layer & SelectionLayer.Entities) != 0) {
+            GetSelectionsInRectForEntities(rect, Entities, list);
+        }
+
+        if ((layer & SelectionLayer.Triggers) != 0) {
+            GetSelectionsInRectForEntities(rect, Triggers, list);
+        }
+
+        if ((layer & SelectionLayer.FGDecals) != 0) {
+            GetSelectionsInRectForDecals(rect, FgDecals, list);
+        }
+
+        if ((layer & SelectionLayer.BGDecals) != 0) {
+            GetSelectionsInRectForDecals(rect, BgDecals, list);
+        }
+
+        if ((layer & SelectionLayer.FGTiles) != 0) {
+            GetSelectionsInRectForGrid(rect, FG, list);
+        }
+
+        if ((layer & SelectionLayer.BGTiles) != 0) {
+            GetSelectionsInRectForGrid(rect, BG, list);
+        }
+
+        return list;
+    }
+
+    private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into) {
+        var pos = rect.Location.ToVector2().GridPosFloor(8);
+        var pos2 = (rect.Location.ToVector2() + rect.Size.ToVector2()).GridPosFloor(8);
+        into.Add(grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8)));
+    }
+
+    private void GetSelectionsInRectForEntities(Rectangle rect, TypeTrackedList<Entity> entities, List<Selection> into) {
+        var layer = Persistence.Instance.EditorLayer;
+
+        foreach (var entity in entities) {
+            if (layer is { } && entity.EditorLayer != layer)
+                continue;
+            foreach (var selection in entity.GetSelection()) {
+                if (selection.Check(rect)) {
+                    into.Add(selection);
+                }
+            }
+        }
+    }
+
+    private void GetSelectionsInRectForDecals(Rectangle rect, List<Decal> decals, List<Selection> into) {
+        var layer = Persistence.Instance.EditorLayer;
+
+        foreach (var decal in decals) {
+            if (layer is { } && decal.EditorLayer != layer)
+                continue;
+
+            var selection = decal.GetSelection();
+
+            if (selection.Check(rect)) {
+                into.Add(selection);
+            }
+        }
+    }
+
+    public int Lua__index(Lua lua, object key) {
+        switch (key) {
+            case "entities":
+                lua.PushWrapper(new ListWrapper<Entity>(Entities));
+                return 1;
+            case "tilesFg":
+                lua.PushWrapper(FG);
+                return 1;
+            case "tilesBg":
+                lua.PushWrapper(BG);
+                return 1;
+            default:
+                break;
+        }
+
+        return 0;
+    }
 }

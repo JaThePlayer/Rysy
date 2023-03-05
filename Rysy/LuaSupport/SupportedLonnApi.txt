@@ -1,0 +1,35 @@
+﻿entityHandler:
+- depth, texture, justification, scale, rotation, color, fillColor, borderColor, placements, sprite*
+
+Structs:
+entityInstance:
+- x, y, _id, entitydata
+- nodes are MISSING!
+
+room:
+- entities
+- tilesFg, tilesBg
+
+tiles:
+- matrix
+
+matrix:
+- get
+
+consts/:
+- all
+
+structs/:
+- drawable_sprite.lua:
+  - all except for getRectangleRaw, getRectangle, drawRectangle, draw, getRelativeQuad
+utils/:
+- drawing.lua:
+  - getCurvePoint, getSimpleCurve, getTrianglePoints, getDashedLineSegments
+utils.lua:
+  - all except for getFileHandle, readAll, newImage, getProcessId, and OS-specific functions
+
+bit (the luaJIT library)
+  - lshift
+
+
+*Not all entity plugins using 'sprite' work, due to missing APIs

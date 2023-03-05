@@ -1,6 +1,4 @@
-﻿using ImGuiNET;
-using Microsoft.Xna.Framework.Graphics;
-using Rysy;
+﻿using Rysy;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Platforms;
@@ -14,7 +12,10 @@ public sealed class RysyEngine : Game {
     private static Scene _scene = new BlankScene();
     public static Scene Scene {
         get => _scene;
-        set => _scene = value;
+        set {
+            _scene = value;
+            value.OnBegin();
+        }
     }
 
     private static SmartFramerate smartFramerate = new(5);
@@ -159,8 +160,10 @@ public sealed class RysyEngine : Game {
 
             Scene.Update();
 
-            OnFrameEnd?.Invoke();
-            OnFrameEnd = null;
+            if (OnFrameEnd is { } onFrameEnd) {
+                OnFrameEnd = null;
+                onFrameEnd.Invoke();
+            }
         }
 
         _lastActive = IsActive;

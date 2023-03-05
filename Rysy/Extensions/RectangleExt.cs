@@ -1,6 +1,8 @@
 ﻿namespace Rysy;
 
 public static class RectangleExt {
+    public static Rectangle FromPoints(Vector2 a, Vector2 b) => FromPoints(a.ToPoint(), b.ToPoint());
+
     //https://stackoverflow.com/questions/45259380/convert-2-vector2-points-to-a-rectangle-in-xna-monogame
     public static Rectangle FromPoints(Point a, Point b) {
         //we need to figure out the top left and bottom right coordinates
@@ -26,5 +28,12 @@ public static class RectangleExt {
         return new(r.X * mult, r.Y * mult, r.Width * mult, r.Height * mult);
     }
 
+    public static Rectangle Div(this Rectangle r, int mult) {
+        return new(r.X / mult, r.Y / mult, r.Width / mult, r.Height / mult);
+    }
+
     public static Rectangle AddSize(this Rectangle r, int w, int h) => new(r.X, r.Y, r.Width + w, r.Height + h);
+
+    public static Rectangle MovedBy(this Rectangle r, Vector2 offset) => new(r.X + (int) offset.X, r.Y + (int) offset.Y, r.Width, r.Height);
+    public static Rectangle MovedTo(this Rectangle r, Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
 }

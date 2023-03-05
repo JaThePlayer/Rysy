@@ -60,7 +60,7 @@ public static class GFX {
 
         scene?.SetText("Scanning Rysy assets");
         using (ScopedStopwatch watch = new("Scanning Rysy assets"))
-            await Atlas.LoadFromDirectoryAsync("Assets", "Rysy");
+            await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
 
         scene?.SetText("Scanning mod dirs");
         using (ScopedStopwatch watch = new("Scanning mod dirs")) {

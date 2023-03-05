@@ -1,4 +1,5 @@
 ﻿using Rysy.Platforms;
+using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -52,6 +53,34 @@ public static class Logger {
         WriteImpl(txt);
     }
 
+    public static void Error(Exception exception, string message,
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        var txt = $"{message}: {exception.ToString()}\n";
+
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+
+        WriteImpl(txt);
+    }
+
+    public static void Error(Exception exception, FancyInterpolatedStringHandler message,
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        var txt = $"{message.GetFormattedText()}: {exception.ToString()}\n";
+
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+
+        WriteImpl(txt);
+    }
+
     /// <summary>
     /// Writes this object to the log as JSON.
     /// </summary>
@@ -90,7 +119,7 @@ public static class Logger {
     };
 
     private static void WriteImpl(string str) {
-        Console.Write(str);
+        Console.Write(str.TryCensor());
         File.AppendAllText(LogFile, str.UnformatColors());
     }
 }

@@ -6,7 +6,6 @@ namespace Rysy.Entities;
 internal class Checkpoint : Entity {
     public override int Depth => 9990;
 
-#warning GetSprites
     public override IEnumerable<ISprite> GetSprites() {
         var bg = Attr("bg", "");
 

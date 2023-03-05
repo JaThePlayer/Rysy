@@ -32,8 +32,7 @@ internal class TileRectTool : TileTool {
         RenderTiles(rect.Location.ToVector2(), rect.Width / 8, rect.Height / 8);
 
         if (startPos is { } start) {
-            var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).Cap(70f), 1f, 1f);
-            ISprite.OutlinedRect(rect, c * 0.3f, c).Render();
+            DrawSelectionRect(rect);
         } else {
             ISprite.OutlinedRect(rect, Color.Transparent, DefaultColor).Render();
         }

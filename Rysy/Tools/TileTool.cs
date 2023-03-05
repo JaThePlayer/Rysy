@@ -8,7 +8,7 @@ namespace Rysy.Tools;
 public abstract class TileTool : Tool {
     public Color DefaultColor = ColorHelper.HSVToColor(0f, 1f, 1f);
 
-    private static List<string> _ValidLayers = new() { LayerNames.FG, LayerNames.BG, LayerNames.BOTH };
+    private static List<string> _ValidLayers = new() { LayerNames.FG, LayerNames.BG, LayerNames.BOTH_TILEGRIDS };
 
     public override List<string> ValidLayers => _ValidLayers;
 
@@ -81,13 +81,13 @@ public abstract class TileTool : Tool {
     }
 
     protected Tilegrid GetGrid(Room room, string? layer = null) => (layer ?? Layer) switch {
-        LayerNames.FG or LayerNames.BOTH => room.FG,
+        LayerNames.FG or LayerNames.BOTH_TILEGRIDS => room.FG,
         LayerNames.BG => room.BG,
         _ => throw new NotImplementedException(Layer)
     };
 
     protected Tilegrid? GetSecondGrid(Room room) => Layer switch {
-        LayerNames.BOTH => room.BG,
+        LayerNames.BOTH_TILEGRIDS => room.BG,
         _ => null,
     };
 
@@ -107,7 +107,7 @@ public abstract class TileTool : Tool {
             var bg = currentRoom.BG.SafeTileAt(tx, ty);
 
             (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (LayerNames.BOTH, bg), // if both tiles are air, switch to the "Both" layer.
+                ('0', '0') => (LayerNames.BOTH_TILEGRIDS, bg), // if both tiles are air, switch to the "Both" layer.
                 ('0', not '0') => (LayerNames.BG, bg), // fg is air, but bg isn't. Switch to BG.
                 (not '0', _) => (LayerNames.FG, fg), // fg tile exists, swap to that.
             };

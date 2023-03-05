@@ -28,7 +28,7 @@ public class CliffFlags : Entity, ICustomNodeHandler {
 
     // TODO: Move to helper
     public override IEnumerable<ISprite> GetSprites() {
-        var (p1, p2) = (Pos, Nodes![0]);
+        var (p1, p2) = (Pos, Nodes![0].Pos);
         var (start, end) = p1.X < p2.X ? (p1, p2) : (p2, p1);
 
         var droopAmount = 0.2f;

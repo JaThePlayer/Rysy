@@ -52,7 +52,7 @@ public interface ISprite {
             OutlineColor = outlineColor,
         };
 
-    public static RectangleSprite HollowRect(Vector2 pos, int w, int h, Color color, Color outlineColor)
+    public static RectangleSprite OutlinedRect(Vector2 pos, int w, int h, Color color, Color outlineColor)
     => new() {
         Pos = new((int) pos.X, (int) pos.Y, w, h),
         Color = color,

@@ -19,7 +19,7 @@ public class ToolHandler {
         AddTool(new BrushTool());
         AddTool(new TileRectTool());
         AddTool(new PlacementTool());
-
+        AddTool(new SelectionTool());
 
         HotReloadHandler.OnHotReload += () => {
             _firstGui = true;
@@ -27,6 +27,12 @@ public class ToolHandler {
         RysyEngine.OnViewportChanged += (v) => {
             _firstGui = true;
         };
+
+        history.OnUndo += CancelInteraction;
+    }
+
+    public void CancelInteraction() {
+        CurrentTool.CancelInteraction();
     }
 
     private void AddTool(Tool tool) {
@@ -42,6 +48,12 @@ public class ToolHandler {
         set => ToolIndex = Tools.IndexOf(value);
     }
     public int ToolIndex { get; set; } = 1;
+
+    public void InitHotkeys(HotkeyHandler handler) {
+        foreach (var tool in Tools) {
+            tool.InitHotkeys(handler);
+        }
+    }
 
     public void Update(Camera camera, Room currentRoom) {
         CurrentTool.Update(camera, currentRoom);
@@ -79,7 +91,7 @@ public class ToolHandler {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
-            var size = new NumVector2(80f, ImGui.GetTextLineHeightWithSpacing() * tool.ValidLayers.Count + ImGui.GetFrameHeightWithSpacing() * 2);
+            var size = new NumVector2(80f, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X - DefaultMaterialListWidth, menubarHeight + toolListHeight));
             ImGui.SetNextWindowSize(size);
         }

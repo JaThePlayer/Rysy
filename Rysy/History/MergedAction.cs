@@ -1,6 +1,12 @@
 ﻿namespace Rysy.History;
 
-public record class MergedAction(List<IHistoryAction> Actions) : IHistoryAction {
+public class MergedAction : IHistoryAction {
+    List<IHistoryAction> Actions;
+
+    public MergedAction(IEnumerable<IHistoryAction> actions) {
+        Actions = new(actions);
+    }
+
     private bool[] Applied;
 
     public bool Apply() {

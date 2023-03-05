@@ -2,7 +2,6 @@
 using Rysy.Gui.Elements;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Triggers;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool {
@@ -10,8 +9,8 @@ public class PlacementTool : Tool {
 
     public override string PersistenceGroup => "placement";
 
-    private static List<string> _validLayers = new() { 
-        LayerNames.ENTITIES, 
+    private static List<string> _validLayers = new() {
+        LayerNames.ENTITIES,
         LayerNames.TRIGGERS,
         LayerNames.FG_DECALS,
     };
@@ -77,8 +76,8 @@ public class PlacementTool : Tool {
     private static Entity? GetEntityUnderCursor(Camera camera, Room currentRoom) {
         var mouse = GetMousePos(camera, currentRoom, precise: true);
 
-        var ent = currentRoom.Entities.FirstOrDefault(e => e.GetSelection().Check(mouse.ToVector2(), out int node));
-        return ent;
+        //var ent = currentRoom.Entities.FirstOrDefault(e => e.GetSelection().Check(mouse.ToVector2(), out int node));
+        return null;
     }
 
     public override void Render(Camera camera, Room currentRoom) {

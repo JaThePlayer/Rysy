@@ -131,8 +131,6 @@ public record struct Sprite : ISprite {
         return RectangleExt.FromPoints(r1.ToPoint(), r2.ToPoint());
     }
 
-
-
     private void CacheFields() {
         ClipRect ??= Texture.ClipRect;
         if (Width == 0) {
@@ -166,6 +164,11 @@ public record struct Sprite : ISprite {
 
     public Sprite Centered() {
         Origin = new(.5f, .5f);
+        return this;
+    }
+
+    public Sprite Offset(Vector2 offset) {
+        Pos += offset;
         return this;
     }
 
