@@ -9,11 +9,16 @@ public abstract class Scene {
         RemoveWindow = (w) => {
             Windows.Remove(w);
         };
-
-        SetupHotkeys();
     }
 
     public float TimeActive { get; private set; }
+
+    /// <summary>
+    /// Called when this scene is set to <see cref="RysyEngine.Scene"/>
+    /// </summary>
+    public virtual void OnBegin() {
+        SetupHotkeys();
+    }
 
     public virtual void SetupHotkeys() {
         Hotkeys = new();

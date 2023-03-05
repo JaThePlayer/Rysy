@@ -8,6 +8,18 @@ public class HotkeyHandler {
     public HotkeyHandler() { }
 
     /// <summary>
+    /// Adds a new hotkey, loading it from settings using <paramref name="name"/>, saving the hotkey to the settings file using <paramref name="defaultKeybind"/> if it doesn't exist.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="defaultKeybind"></param>
+    /// <param name="onPress"></param>
+    /// <param name="mode"></param>
+    /// <returns></returns>
+    public HotkeyHandler AddHotkeyFromSettings(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
+        return AddHotkey(Settings.Instance.GetOrCreateHotkey(name, defaultKeybind), onPress, mode);
+    }
+
+    /// <summary>
     /// Adds a new hotkey, parsed from <paramref name="hotkeyString"/>.
     /// </summary>
     /// <returns>this</returns>
@@ -18,7 +30,8 @@ public class HotkeyHandler {
                 Mode = mode
             };
 
-            Hotkeys.Add(hotkey);
+            lock (Hotkeys)
+                Hotkeys.Add(hotkey);
         }
 
         return this;
@@ -28,22 +41,22 @@ public class HotkeyHandler {
         var ctrl = Input.Keyboard.Ctrl();
         var shift = Input.Keyboard.Shift();
         var alt = Input.Keyboard.Alt();
-
-        foreach (var hotkey in Hotkeys) {
-            if (hotkey.Ctrl == ctrl && hotkey.Shift == shift && hotkey.Alt == alt) {
-                switch (hotkey.Mode) {
-                    case HotkeyModes.OnClick:
-                        HandleClickHotkey(hotkey);
-                        break;
-                    case HotkeyModes.OnHold:
-                        HandleHoldHotkey(hotkey);
-                        break;
-                    case HotkeyModes.OnHoldSmoothInterval:
-                        HandleSmoothHotkey(hotkey);
-                        break;
+        lock (Hotkeys)
+            foreach (var hotkey in Hotkeys) {
+                if (hotkey.Ctrl == ctrl && hotkey.Shift == shift && hotkey.Alt == alt) {
+                    switch (hotkey.Mode) {
+                        case HotkeyModes.OnClick:
+                            HandleClickHotkey(hotkey);
+                            break;
+                        case HotkeyModes.OnHold:
+                            HandleHoldHotkey(hotkey);
+                            break;
+                        case HotkeyModes.OnHoldSmoothInterval:
+                            HandleSmoothHotkey(hotkey);
+                            break;
+                    }
                 }
             }
-        }
     }
 
     private void HandleClickHotkey(Hotkey hotkey) {

@@ -3,7 +3,6 @@ using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.History;
 using Rysy.Scenes;
-using System.Collections.ObjectModel;
 
 namespace Rysy.Tools;
 
@@ -60,7 +59,7 @@ public abstract class Tool {
         if (favorites is null) {
             Favorites = favorites = new();
         }
-        
+
         if (!favorites.Add(name)) {
             favorites.Remove(name);
         }
@@ -68,14 +67,14 @@ public abstract class Tool {
         CachedSearch = null;
     }
 
-    public abstract void Update(Camera camera, Room currentRoom);
+    public abstract void Update(Camera camera, Room room);
 
     /// <summary>
     /// Renders this tool. Before calling, the sprite batch should be set using currentRoom.StartBatch(camera)
     /// </summary>
     /// <param name="camera"></param>
-    /// <param name="currentRoom"></param>
-    public abstract void Render(Camera camera, Room currentRoom);
+    /// <param name="room"></param>
+    public abstract void Render(Camera camera, Room room);
 
     /// <summary>
     /// Renders the overlay for this tool. The spritebatch has no transformation matrix, used to draw directly to the screen.
@@ -89,11 +88,29 @@ public abstract class Tool {
 
     }
 
+    /// <summary>
+    /// Called whenever the tool should cancel an interaction (like rectangle drawing, selections, etc),
+    /// for example when switching rooms or undoing
+    /// </summary>
+    public virtual void CancelInteraction() {
+
+    }
+
+    /// <summary>
+    /// Initializes hotkeys for this tool
+    /// </summary>
+    public virtual void InitHotkeys(HotkeyHandler handler) { }
+
     public abstract IEnumerable<object>? GetMaterials(string layer);
 
     public abstract string GetMaterialDisplayName(string layer, object material);
 
     public abstract string? GetMaterialTooltip(string layer, object material);
+
+    public static void DrawSelectionRect(Rectangle rect) {
+        var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).Cap(70f), 1f, 1f);
+        ISprite.OutlinedRect(rect, c * 0.3f, c).Render();
+    }
 
     private bool IsEqual(string layer, object? currentMaterial, string name) {
         return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
@@ -106,13 +123,7 @@ public abstract class Tool {
     private string? CachedLayer;
     private List<(object mat, string)>? CachedSearch;
 
-    private void RenderMaterialList(EditorScene editor, bool firstGui) {
-        var currentLayer = Layer;
-        var materials = GetMaterials(currentLayer);
-        if (materials is null)
-            materials = new List<object>();
-        var currentMaterial = Material;
-
+    protected void BeginMaterialListGUI(bool firstGui) {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
@@ -128,9 +139,37 @@ public abstract class Tool {
         ImGuiManager.PopWindowStyle();
 
         var windowSize = ImGui.GetWindowSize();
+        ImGui.BeginListBox("##ToolMaterialBox", new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3));
+    }
+
+    protected void EndMaterialListGUI(bool searchBar) {
+        ImGui.EndListBox();
+
+        if (searchBar)
+            RenderSearchBar();
+
+        ImGui.End();
+    }
+
+    protected void RenderSearchBar() {
+        var search = Search;
+        // pass the persistence key as the ID to imgui, because otherwise if you had the search bar selected while switching layers/tools,
+        // your search would persist to the different layer/tool
+        if (ImGui.InputText($"##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
+            Search = search;
+            CachedSearch = null;
+        }
+    }
+
+    private void RenderMaterialList(EditorScene editor, bool firstGui) {
+        var currentLayer = Layer;
+        var materials = GetMaterials(currentLayer);
+        if (materials is null)
+            materials = new List<object>();
+        var currentMaterial = Material;
         var favorites = Favorites;
 
-        ImGui.BeginListBox("##ToolMaterialBox", new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3));
+        BeginMaterialListGUI(firstGui);
 
         if (currentLayer != CachedLayer) {
             CachedSearch = null;
@@ -140,7 +179,7 @@ public abstract class Tool {
         var cachedSearch = CachedSearch ??= materials.Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
         var rendered = 0;
 
-        
+
         var skip = (ImGui.GetScrollY()) / ImGui.GetTextLineHeightWithSpacing() - 1;
         //ImGui.BeginChildFrame(2, new(0, (skip) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
         //ImGui.EndChildFrame();
@@ -160,11 +199,11 @@ public abstract class Tool {
                 }
             } else {
                 //if (skip <= 0)
-                    ImGui.NewLine(); // better performance than selectable
-                //else
-                    //break;
+                ImGui.NewLine(); // better performance than selectable
+                                 //else
+                                 //break;
             }
-                
+
 
             skip--;
         }
@@ -173,17 +212,6 @@ public abstract class Tool {
         //ImGui.BeginChildFrame(1, new(0, (cachedSearch.Count - 60) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
         //ImGui.EndChildFrame();
 
-        ImGui.EndListBox();
-
-
-        var search = Search;
-        // pass the persistence key as the ID to imgui, because otherwise if you had the search bar selected while switching layers/tools,
-        // your search would persist to the different layer/tool
-        if (ImGui.InputText($"##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
-            Search = search;
-            CachedSearch = null;
-        }
-
-        ImGui.End();
+        EndMaterialListGUI(searchBar: true);
     }
 }

@@ -1,4 +1,8 @@
-﻿using Rysy.Graphics;
+﻿using KeraLua;
+using Rysy.Graphics;
+using Rysy.Helpers;
+using Rysy.History;
+using Rysy.LuaSupport;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -6,8 +10,14 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public abstract class Entity {
+public abstract class Entity : ILuaWrapper, ISelectionHandler {
+    [JsonIgnore]
     public abstract int Depth { get; }
+
+    public string Name => EntityData.Name;
+
+    [JsonPropertyName("Room")]
+    public string RoomName => Room.Name;
 
     // set by EntityRegistry:
     public EntityData EntityData = null!;
@@ -20,7 +30,7 @@ public abstract class Entity {
     public Vector2 Pos;
 
     [JsonIgnore]
-    public Vector2[]? Nodes => EntityData.Nodes;
+    public List<Node>? Nodes => EntityData.Nodes;
 
     [JsonIgnore]
     public int Width {
@@ -69,18 +79,38 @@ public abstract class Entity {
         }
     }
 
-    public virtual Selection GetSelection() {
+    public virtual IEnumerable<Selection> GetSelection() {
+        var nodes = Nodes;
+
         if (Width > 0 || Height > 0) {
-            return Selection.FromRect(Rectangle);
+            var rect = Rectangle;
+            yield return Selection.FromRect(this, rect);
+            if (nodes is { })
+                foreach (var node in nodes) {
+                    yield return Selection.FromRect(node.ToSelectionHandler(this), rect.MovedTo(node));
+                }
+            yield break;
         }
 
-        var sprites = GetSprites().FirstOrDefault();
+        yield return GetMain();
 
-        if (sprites is Sprite s) {
-            return Selection.FromSprite(s);
+        if (nodes is { })
+            for (int i = 0; i < nodes.Count; i++) {
+                var firstSprite = NodeHelper.GetNodeSpritesForNode(this, i).FirstOrDefault();
+                if (firstSprite is Sprite s) {
+                    yield return Selection.FromSprite(nodes[i].ToSelectionHandler(this), s);
+                }
+            }
+
+        Selection GetMain() {
+            var firstSprite = GetSprites().FirstOrDefault();
+
+            if (firstSprite is Sprite s) {
+                return Selection.FromSprite(this, s);
+            }
+
+            return Selection.FromRect(this, Rectangle);
         }
-
-        return Selection.FromRect(Rectangle);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,12 +158,73 @@ public abstract class Entity {
         }).ToArray() : null!;
         return el;
     }
+
+    int ILuaWrapper.Lua__index(Lua lua, object key) {
+        switch (key) {
+            case "x":
+                lua.PushNumber(Pos.X);
+                return 1;
+            case "y":
+                lua.PushNumber(Pos.Y);
+                return 1;
+            case "_id":
+                lua.PushNumber(ID);
+                return 1;
+            case "nodes":
+                if (Nodes is { }) {
+                    lua.PushWrapper(new NodesWrapper(this));
+                } else {
+                    lua.PushNil();
+                }
+                return 1;
+            case string str:
+                EntityData.TryGetValue(str, out var value);
+                lua.Push(value);
+                return 1;
+            default:
+                throw new LuaException(lua, $"Tried to index Entity with non-string key: {key} [{key.GetType()}]");
+        }
+    }
+
+    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
+        return new MoveEntityAction(this, offset);
+    }
+
+    IHistoryAction ISelectionHandler.DeleteSelf() {
+        return new RemoveEntityAction(this, Room);
+    }
+
+    private record class NodesWrapper(Entity Entity) : ILuaWrapper {
+        public int Lua__index(Lua lua, object key) {
+            if (key is long i) {
+                var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
+                if (node is { } n) {
+                    lua.CreateTable(0, 2);
+                    var tableLoc = lua.GetTop();
+
+                    lua.PushString("x");
+                    lua.PushNumber(n.X);
+                    lua.SetTable(tableLoc);
+
+                    lua.PushString("y");
+                    lua.PushNumber(n.Y);
+                    lua.SetTable(tableLoc);
+
+                    return 1;
+                } else {
+                    return 0;
+                }
+            } else {
+                throw new LuaException(lua, $"Tried to index NodeWrapper with non-number key: {key} [{key.GetType()}]");
+            }
+        }
+    }
 }
 
 public class EntityData : IDictionary<string, object> {
     public string Name;
 
-    public Vector2[]? Nodes;
+    public List<Node>? Nodes;
 
     public EntityData(string sid, BinaryPacker.Element e) {
         Name = sid;
@@ -148,18 +239,18 @@ public class EntityData : IDictionary<string, object> {
         }
 
         if (e.Children is { Length: > 0 }) {
-            var nodes = Nodes = new Vector2[e.Children.Length];
+            var nodes = Nodes = new(e.Children.Length);
 
             for (int i = 0; i < e.Children.Length; i++) {
                 var child = e.Children[i];
-                nodes[i] = new(child.Float("x"), child.Float("y"));
+                nodes.Add(new(child.Float("x"), child.Float("y")));
             }
         }
     }
 
     public EntityData(string sid, Dictionary<string, object> attributes, Vector2[]? nodes = null) {
         Name = sid;
-        Nodes = nodes?.ShallowClone();
+        Nodes = nodes?.Select(n => new Node(n)).ToList();
         Inner = new(attributes);
     }
 

@@ -13,7 +13,7 @@ public class Waterfall : Entity {
     public override IEnumerable<ISprite> GetSprites() {
         var h = GetHeight();
 
-        yield return ISprite.HollowRect(Pos, 8, h, FillColor, SurfaceColor);
+        yield return ISprite.OutlinedRect(Pos, 8, h, FillColor, SurfaceColor);
     }
 
     public int GetHeight() {

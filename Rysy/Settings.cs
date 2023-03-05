@@ -1,6 +1,7 @@
 ﻿using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Platforms;
+using Rysy.Scenes;
 using System.Text.Json;
 
 namespace Rysy;
@@ -70,7 +71,7 @@ public sealed class Settings {
         return Save(Instance);
     }
 
-    public string GetHotkey(string name, string? defaultHotkey = null) {
+    public string GetOrCreateHotkey(string name, string? defaultHotkey = null) {
         if (!Hotkeys.TryGetValue(name, out var hotkey)) {
             if (defaultHotkey is { }) {
                 Hotkeys[name] = defaultHotkey;
@@ -112,5 +113,19 @@ public sealed class Settings {
     public Dictionary<string, string> Hotkeys { get; set; } = new();
 
     public int MaxBackups { get; set; } = 25;
+
+    private float _HiddenLayerAlpha = 0.3f;
+    public float HiddenLayerAlpha {
+        get => _HiddenLayerAlpha;
+        set {
+            _HiddenLayerAlpha = value;
+            if (RysyEngine.Scene is EditorScene editor) {
+                editor.ClearMapRenderCache();
+            }
+        }
+    }
+
+    #warning Remove
+    public string? LonnPluginPath { get; set; }
     #endregion
 }

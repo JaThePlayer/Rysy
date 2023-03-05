@@ -23,7 +23,7 @@ public sealed class Spinner : Entity, IPlaceable {
 
     public override IEnumerable<ISprite> GetSprites() {
         if (Bool("dust")) {
-            yield return ISprite.FromTexture(Pos, "Rysy:util/dustSpriteOutlines/base00").Centered() with {
+            yield return ISprite.FromTexture(Pos, "Rysy:dust_creature_outlines/base00").Centered() with {
                 Color = Color.Red,
                 Depth = -48,
             };

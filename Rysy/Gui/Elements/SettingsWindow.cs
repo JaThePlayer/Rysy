@@ -38,7 +38,13 @@ public static class SettingsWindow {
 
         var backups = Settings.Instance.MaxBackups;
         if (ImGui.InputInt("Max Backups", ref backups).WithTooltip("The maximum amount of backups stored at once. Once this limit is exceeded, old backups will get deleted.")) {
-            Settings.Instance.MaxBackups = backups;
+            Settings.Instance.MaxBackups = backups.AtLeast(0);
+            Settings.Instance.Save();
+        }
+
+        var alpha = Settings.Instance.HiddenLayerAlpha;
+        if (ImGui.InputFloat("Hidden Layer Alpha", ref alpha, step: 0.1f).WithTooltip("The alpha value used for tinting entities that are not in the currently visible editor layer.")) {
+            Settings.Instance.HiddenLayerAlpha = alpha.SnapBetween(0f, 1f);
             Settings.Instance.Save();
         }
 

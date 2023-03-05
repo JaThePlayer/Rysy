@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Rysy.Scenes;
+using System.Text.Json;
 
 namespace Rysy;
 
@@ -67,6 +68,18 @@ public class Persistence {
     public bool BGDecalsVisible { get; set; } = true;
     public bool EntitiesVisible { get; set; } = true;
     public bool TriggersVisible { get; set; } = true;
+
+    private int? _EditorLayer;
+    public int? EditorLayer {
+        get => _EditorLayer;
+        set {
+            if (_EditorLayer != value) {
+                _EditorLayer = value;
+
+                (RysyEngine.Scene as EditorScene)?.ClearMapRenderCache();
+            }
+        }
+    }
     #endregion
 
     public struct RecentMap {

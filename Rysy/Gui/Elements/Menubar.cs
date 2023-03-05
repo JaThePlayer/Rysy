@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Gui.Elements;
+using Rysy.Helpers;
 using Rysy.Scenes;
 
 namespace Rysy.Gui;
@@ -60,6 +61,15 @@ public static class Menubar {
                 editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
             }
 
+            var currLayer = p.EditorLayer ?? 0;
+            var allLayers = p.EditorLayer is null;
+            if (ImGui.InputInt("Layer", ref currLayer)) {
+                p.EditorLayer = currLayer;
+            }
+            if (ImGui.Checkbox("All layers", ref allLayers)) {
+                p.EditorLayer = allLayers ? null : 0;
+            }
+
             ImGui.EndMenu();
         }
     }
@@ -76,6 +86,10 @@ public static class Menubar {
                 ImGui.SetClipboardText(editor.Map.Pack().ToJson());
             }
 
+            if (ImGui.MenuItem("GC")) {
+                GCHelper.VeryAggressiveGC();
+            }
+
             ImGui.EndMenu();
         }
     }
@@ -86,10 +100,10 @@ public static class Menubar {
                 SettingsWindow.Add(editor);
             }
 
-            if (ImGui.MenuItem("Undo", Settings.Instance.GetHotkey("undo")))
+            if (ImGui.MenuItem("Undo", Settings.Instance.GetOrCreateHotkey("undo")))
                 editor.Undo();
 
-            if (ImGui.MenuItem("Redo", Settings.Instance.GetHotkey("redo")))
+            if (ImGui.MenuItem("Redo", Settings.Instance.GetOrCreateHotkey("redo")))
                 editor.Redo();
 
             ImGui.EndMenu();
@@ -98,11 +112,11 @@ public static class Menubar {
 
     private static void FileMenu(EditorScene editor) {
         if (ImGui.BeginMenu("File")) {
-            if (ImGui.MenuItem("New", Settings.Instance.GetHotkey("newMap"))) {
+            if (ImGui.MenuItem("New", Settings.Instance.GetOrCreateHotkey("newMap"))) {
                 editor.LoadNewMap();
             }
 
-            if (ImGui.MenuItem("Open", Settings.Instance.GetHotkey("openMap"))) {
+            if (ImGui.MenuItem("Open", Settings.Instance.GetOrCreateHotkey("openMap"))) {
                 editor.Open();
             }
 
@@ -112,7 +126,7 @@ public static class Menubar {
                     : p.Name,
                 p => editor.LoadMapFromBin(p.Filename));
 
-            if (ImGui.MenuItem("Save", Settings.Instance.GetHotkey("saveMap")).WithTooltip(editor.Map?.Filepath?.TryCensor() ?? "[null]")) {
+            if (ImGui.MenuItem("Save", Settings.Instance.GetOrCreateHotkey("saveMap")).WithTooltip(editor.Map?.Filepath?.TryCensor() ?? "[null]")) {
                 editor.Save();
             }
             if (ImGui.MenuItem("Save as")) {

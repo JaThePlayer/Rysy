@@ -1,24 +1,68 @@
 ﻿using Rysy.Entities;
+using Rysy.LuaSupport;
 using Rysy.Scenes;
-using Rysy.Triggers;
 using System.Reflection;
 
 namespace Rysy;
 
 public static class EntityRegistry {
-    public static Dictionary<string, Type> SIDToType = new();
-    public static Dictionary<string, FieldList> SIDToFields = new();
+    private static Dictionary<string, Type> SIDToType { get; set; } = new();
+    private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new();
+    public static Dictionary<string, FieldList> SIDToFields { get; set; } = new();
 
-    public static List<Placement> EntityPlacements = new();
-    public static List<Placement> TriggerPlacements = new();
+    public static List<Placement> EntityPlacements { get; set; } = new();
+    public static List<Placement> TriggerPlacements { get; set; } = new();
+
+    private static LuaCtx LuaCtx = LuaCtx.CreateNew();
 
     public static async ValueTask RegisterAsync() {
         SIDToType.Clear();
 
         var loadingScene = RysyEngine.Scene as LoadingScene;
         loadingScene?.SetText("Registering entities");
+
+        if (Settings.Instance.LonnPluginPath is { } path)
+            foreach (var item in Directory.EnumerateFiles(path, "*.lua")) {
+                RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item));
+            }
+
         using (var watch = new ScopedStopwatch("Registering entities")) {
             await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
+        }
+    }
+
+    public static void RegisterFromLua(string lua, string chunkName) {
+        try {
+            LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
+            List<LonnEntityPlugin>? plugins = null;
+
+            try {
+                plugins = LonnEntityPlugin.FromCtx(LuaCtx);
+            } finally {
+                LuaCtx.Lua.Pop(1);
+            }
+
+            foreach (var pl in plugins) {
+                lock (SIDToType) {
+                    SIDToType[pl.Name] = typeof(LonnEntity);
+                }
+                lock (SIDToLonnPlugin) {
+                    SIDToLonnPlugin[pl.Name] = pl;
+                }
+
+                lock (EntityPlacements) {
+                    foreach (var item in pl.Placements) {
+                        EntityPlacements.Add(new($"{pl.Name} [{item.Name}]") {
+                            ValueOverrides = item.Data,
+                            SID = pl.Name,
+                            Tooltip = "[From Lonn]"
+                        });
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName}: {ex}");
+            return;
         }
     }
 
@@ -27,7 +71,8 @@ public static class EntityRegistry {
             var sids = t.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToArray();
 
             if (sids.Length == 0) {
-                throw new Exception($"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
+                Logger.Write("EntityRegistry", LogLevel.Warning, $"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
+                continue;
             }
 
             lock (SIDToType) {
@@ -87,6 +132,10 @@ public static class EntityRegistry {
         e.EntityData = entityData;
         e.Room = room;
         e.Pos = pos;
+
+        if (e is LonnEntity lonnPlugin) {
+            lonnPlugin.Plugin = SIDToLonnPlugin[sid];
+        }
 
         return e;
     }

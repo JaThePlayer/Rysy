@@ -1,13 +1,10 @@
-﻿using Rysy.Triggers;
+﻿namespace Rysy.History;
 
-namespace Rysy.History;
-public record class AddEntityAction(Entity Entity, Room Room) : IHistoryAction {
+public sealed record class AddEntityAction(Entity Entity, Room Room) : IHistoryAction {
     public bool Apply() {
         var list = GetList();
 
         list.Add(Entity);
-
-        Console.WriteLine(Entity.ToJson());
 
         return true;
     }

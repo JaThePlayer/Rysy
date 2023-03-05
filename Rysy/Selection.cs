@@ -1,70 +1,108 @@
 ﻿using Rysy.Graphics;
+using Rysy.History;
 
 namespace Rysy;
 
 public class Selection {
     public Selection() { }
 
-    public ISelectionProvider Main;
+    public ISelectionCollider Collider;
 
-    public List<ISelectionProvider> Nodes;
+    public ISelectionHandler Handler;
 
-    public static Selection FromRect(Rectangle r) {
+    public static Selection FromRect(ISelectionHandler handler, Rectangle r) {
         return new Selection() {
-            Main = new RectangleSelection(r),
+            Collider = new RectangleSelection { Rect = r },
+            Handler = handler,
         };
     }
 
-    public static Selection FromSprite(Sprite s) {
+    public static Selection FromSprite(ISelectionHandler handler, Sprite s) {
         return new Selection() {
-            Main = new SpriteSelection(s),
+            Collider = new SpriteSelection(s),
+            Handler = handler,
         };
     }
 
     /// <summary>
-    /// Checks if <paramref name="roomPos"/> intersects this selection. <paramref name="nodeIdx"/> is set to -1 if the main selection is selected.
+    /// Checks if <paramref name="roomPos"/> intersects this selection.
     /// </summary>
     /// <param name="roomPos"></param>
-    /// <param name="nodeIdx"></param>
     /// <returns></returns>
-    public bool Check(Vector2 roomPos, out int nodeIdx) {
-#warning TODO: Nodes
-
-        nodeIdx = -1;
-        if (Main?.Overlaps(roomPos) ?? false) {
+    public bool Check(Rectangle roomPos) {
+        if (Collider?.Overlaps(roomPos) ?? false) {
             return true;
         }
-            
-
 
         return false;
     }
+
+    public void Render(Color c) => Collider.Render(c);
 }
 
-public interface ISelectionProvider {
-    public bool Overlaps(Vector2 roomPos);
+public interface ISelectionCollider {
+    public bool Overlaps(Rectangle roomPos);
 
     public void Render(Color c);
+
+    public void MoveBy(Vector2 offset);
 }
 
-public record class RectangleSelection(Rectangle Rect) : ISelectionProvider {
-    public bool Overlaps(Vector2 roomPos) {
-        return Rect.Contains(roomPos);
+/// <summary>
+/// Provides methods needed by the Selection tool to be able to perform operations on this object.
+/// </summary>
+public interface ISelectionHandler {
+    /// <summary>
+    /// Returns a history action representing the action of moving this selectable by the given offset.
+    /// Calling this method should not have side effects
+    /// </summary>
+    public IHistoryAction MoveBy(Vector2 offset);
+    public IHistoryAction DeleteSelf();
+}
+
+public enum SelectionLayer {
+    None = 0,
+    Entities = 1 << 0,
+    Triggers = 1 << 1,
+    FGDecals = 1 << 2,
+    BGDecals = 1 << 3,
+    FGTiles = 1 << 4,
+    BGTiles = 1 << 5,
+
+    All = Entities | Triggers | FGDecals | BGDecals | FGTiles | BGTiles,
+}
+
+public record class RectangleSelection : ISelectionCollider {
+    public Rectangle Rect;
+
+    public void MoveBy(Vector2 offset) {
+        Rect.X += (int) offset.X;
+        Rect.Y += (int) offset.Y;
+    }
+
+    public bool Overlaps(Rectangle roomPos) {
+        return Rect.Intersects(roomPos);
     }
 
     public void Render(Color c) {
-        ISprite.OutlinedRect(Rect, c * 0.2f, c).Render();
+        ISprite.OutlinedRect(Rect, c * 0.4f, c).Render();
     }
 }
 
-public record class SpriteSelection(Sprite Sprite) : ISelectionProvider {
-    public bool Overlaps(Vector2 roomPos) {
-        return Sprite.GetRenderRect()?.Contains(roomPos) ?? false;
+public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
+    private Vector2 DrawOffset;
+
+    public void MoveBy(Vector2 offset) {
+        DrawOffset += offset;
+    }
+
+    public bool Overlaps(Rectangle roomPos) {
+        return Sprite.GetRenderRect()?.Intersects(roomPos) ?? false;
     }
 
     public void Render(Color c) {
         if (Sprite.GetRenderRect() is { } r) {
-            ISprite.OutlinedRect(r, c * 0.2f, c).Render();
+            ISprite.OutlinedRect(r.MovedBy(DrawOffset), c * 0.4f, c).Render();
         }
             
     }

@@ -1,10 +1,13 @@
-﻿using Rysy.Graphics;
+﻿using KeraLua;
+using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.History;
+using Rysy.LuaSupport;
 using System.Text;
 
 namespace Rysy;
 
-public class Tilegrid {
+public class Tilegrid : ILuaWrapper {
     public Tilegrid() { }
 
     public Tilegrid(int widthPixels, int heightPixels) {
@@ -55,6 +58,13 @@ public class Tilegrid {
         return Tiles[x, y];
     }
 
+    public char SafeTileAt(int x, int y, char def) {
+        if (x < 0 || y < 0 || x >= Width || y >= Height)
+            return def;
+
+        return Tiles[x, y];
+    }
+
     /// <summary>
     /// Safely sets a tile at (x,y). If this caused a change, returns true, false otherwise.
     /// </summary>
@@ -91,6 +101,14 @@ public class Tilegrid {
             s.Depth = Depth;
             return s;
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
+    }
+
+    public Selection GetSelectionForArea(Rectangle area) {
+        var handler = new RectSelectionHandler(this, area);
+        return new Selection() { 
+            Handler = handler,
+            Collider = handler
+        };
     }
 
     #region Saving
@@ -168,4 +186,99 @@ public class Tilegrid {
     }
 
     #endregion
+
+    public int Lua__index(Lua lua, object key) {
+        switch (key) {
+            case "matrix":
+                lua.PushWrapper(new MatrixLuaWrapper(this));
+                return 1;
+        }
+
+        return 0;
+    }
+
+    internal class RectSelectionHandler : ISelectionHandler, ISelectionCollider {
+        public Tilegrid Grid;
+        public Rectangle Rect;
+
+        private char[,] ToMove;
+        private char[,]? Orig;
+
+        public RectSelectionHandler(Tilegrid grid, Rectangle rectPixels) {
+            (Grid, Rect) = (grid, rectPixels);
+        }
+
+        public IHistoryAction DeleteSelf() {
+            return new TileRectChangeAction('0', Rect.Div(8), Grid);
+        }
+
+        public IHistoryAction MoveBy(Vector2 offset) {
+            if (Orig is null) {
+                Orig ??= (char[,])Grid.Tiles.Clone();
+                var rect = Rect.Div(8);
+                var (w, h) = (rect.Width, rect.Height);
+
+                var toMove = new char[w, h];
+                for (int x = rect.X; x < rect.Right; x++)
+                    for (int y = rect.Y; y < rect.Bottom; y++)
+                        toMove[x - rect.X, y - rect.Y] = Grid.SafeTileAt(x, y);
+                ToMove = toMove;
+
+                for (int x = rect.X; x < rect.Right; x++)
+                    for (int y = rect.Y; y < rect.Bottom; y++) {
+                        if (x >= 0 && y >= 0 && x < Grid.Width && y < Grid.Height)
+                            Orig[x, y] = '0';
+                    }
+            }
+
+            return new TileRectMoveAction(Grid, Rect.Div(8), Orig, ToMove, (offset / 8).ToPoint());
+        }
+
+        // collider:
+
+        public bool Overlaps(Rectangle roomPos) {
+            return Rect.Intersects(roomPos);
+        }
+
+        public void Render(Color c) {
+            var rect = Rect.Div(8);
+            for (int x = rect.X; x < rect.Right; x++)
+                for (int y = rect.Y; y < rect.Bottom; y++) {
+                    if (Grid.SafeTileAt(x, y) != '0') {
+                        ISprite.OutlinedRect(new(x * 8, y * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
+                    }
+                }
+        }
+
+        void ISelectionCollider.MoveBy(Vector2 offset) {
+            Rect = Rect.MovedBy(offset);
+        }
+    }
+
+    private record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
+        public int Lua__index(Lua lua, object key) {
+            switch (key) {
+                case "get":
+                    lua.PushCFunction(Get);
+                    return 1;
+            }
+
+            return 0;
+        }
+
+        private static int Get(nint n) {
+            var lua = Lua.FromIntPtr(n);
+
+            var wrapper = lua.UnboxWrapper<MatrixLuaWrapper>(1);
+            var x = (int) lua.ToInteger(2);
+            var y = (int) lua.ToInteger(3);
+            var def = lua.FastToString(4);
+
+            var tile = wrapper.Grid.SafeTileAt(x, y, def[0]);
+
+            lua.PushString(tile.ToString());
+
+            return 1;
+        }
+    }
 }

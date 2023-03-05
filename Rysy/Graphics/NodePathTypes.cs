@@ -8,7 +8,7 @@ public static class NodePathTypes {
         var nodes = entity.Nodes!;
         var start = entity.Center;
 
-        for (int i = 0; i < nodes.Length; i++) {
+        for (int i = 0; i < nodes.Count; i++) {
             var end = entity.GetNodeCentered(i);
 
             yield return ISprite.Line(start, end, Color.White * .5f);
@@ -22,7 +22,7 @@ public static class NodePathTypes {
         var nodes = entity.Nodes!;
         var start = entity.Center;
 
-        for (int i = 0; i < nodes.Length; i++) {
+        for (int i = 0; i < nodes.Count; i++) {
             var end = entity.GetNodeCentered(i);
 
             yield return ISprite.Line(start, end, Color.White * .5f);

@@ -28,7 +28,7 @@ public sealed class EditorScene : Scene {
 
             Persistence.Instance.PushRecentMap(value);
 
-            GC.Collect(3);
+            RysyEngine.OnFrameEnd += GCHelper.VeryAggressiveGC;
         }
     }
 
@@ -38,6 +38,8 @@ public sealed class EditorScene : Scene {
         set {
             _currentRoom = value;
             RysyEngine.ForceActiveTimer = 0.25f;
+
+            ToolHandler.CancelInteraction();
         }
     }
 
@@ -61,22 +63,33 @@ public sealed class EditorScene : Scene {
 
         // not trusting rysy enough rn
         //AddHotkey("saveMap", "ctrl+s", () => Save());
-        AddHotkey("openMap", "ctrl+o", Open);
-        AddHotkey("newMap", "ctrl+shift+n", () => LoadNewMap());
+        Hotkeys.AddHotkeyFromSettings("openMap", "ctrl+o", Open);
+        Hotkeys.AddHotkeyFromSettings("newMap", "ctrl+shift+n", () => LoadNewMap());
 
-        AddHotkey("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
-        AddHotkey("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
 
-        AddHotkey("newRoom", "ctrl+n", AddNewRoom);
+        Hotkeys.AddHotkeyFromSettings("newRoom", "ctrl+n", AddNewRoom);
 
-        AddHotkey("moveRoomDown", "alt+down", () => MoveCurrentRoom(0, 1), HotkeyModes.OnHoldSmoothInterval);
-        AddHotkey("moveRoomUp", "alt+up", () => MoveCurrentRoom(0, -1), HotkeyModes.OnHoldSmoothInterval);
-        AddHotkey("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
-        AddHotkey("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("moveRoomDown", "alt+down", () => MoveCurrentRoom(0, 1), HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("moveRoomUp", "alt+up", () => MoveCurrentRoom(0, -1), HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
+
+        Hotkeys.AddHotkeyFromSettings("layerUp", "pageup", () => ChangeEditorLayer(1), HotkeyModes.OnHoldSmoothInterval);
+        Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
+
+        ToolHandler.InitHotkeys(Hotkeys);
     }
 
-    public void AddHotkey(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
-        Hotkeys.AddHotkey(Settings.Instance.GetHotkey(name, defaultKeybind), onPress, mode);
+    public void ClearMapRenderCache() {
+        Map.Rooms.ForEach(r => r.ClearRenderCache());
+    }
+
+    public void ChangeEditorLayer(int by) {
+        Persistence.Instance.EditorLayer = (Persistence.Instance.EditorLayer ?? 0) + by;
+
+        ClearMapRenderCache();
     }
 
     public override void OnFileDrop(FileDropEventArgs args) {

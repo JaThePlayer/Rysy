@@ -60,8 +60,15 @@ public static partial class StringExt {
     /// Should be used when a path is displayed on-screen
     /// </summary>
     public static string TryCensor(this string path) {
-        if (UserNameRegex.Match(path) is { } m) {
-            return path.Replace(m.Groups[1].Value, "<USER>");
+        if (string.IsNullOrWhiteSpace(path))
+            return path;
+
+        
+        if (UserNameRegex.Matches(path) is { } matches) {
+            for (int i = 0; i < matches.Count; i++) {
+                path = path.Replace(matches[i].Groups[1].Value, "<USER>");
+            }
+            return path;
         }
 
         return path;

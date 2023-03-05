@@ -118,7 +118,7 @@ public class DynamicAtlas : IAtlas {
         GFX.Batch.Draw(_packed, pos, Color.White);
 
         foreach (var item in Areas) {
-            ISprite.HollowRect(item.Location.ToVector2(), item.Width, item.Height, Color.White, Color.Pink * 0.8f).Render();
+            ISprite.OutlinedRect(item.Location.ToVector2(), item.Width, item.Height, Color.White, Color.Pink * 0.8f).Render();
         }
     }
 

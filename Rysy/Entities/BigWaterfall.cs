@@ -14,7 +14,7 @@ public class BigWaterfall : Entity {
 
 
     public override IEnumerable<ISprite> GetSprites() {
-        yield return ISprite.HollowRect(Pos, Width, Height, FillColor, SurfaceColor);
+        yield return ISprite.OutlinedRect(Pos, Width, Height, FillColor, SurfaceColor);
     }
 
 

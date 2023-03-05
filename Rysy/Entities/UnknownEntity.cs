@@ -15,9 +15,9 @@ public sealed class UnknownEntity : Entity {
         var w = Width;
         var h = Height;
         if (w != 0 || h != 0) {
-            yield return ISprite.HollowRect(Pos, w == 0 ? 8 : w, h == 0 ? 8 : h, Color, OutlineColor);
+            yield return ISprite.OutlinedRect(Pos, w == 0 ? 8 : w, h == 0 ? 8 : h, Color, OutlineColor);
         } else {
-            yield return ISprite.HollowRect(Pos - new Vector2(2, 2), 4, 4, Color, OutlineColor);
+            yield return ISprite.OutlinedRect(Pos - new Vector2(2, 2), 4, 4, Color, OutlineColor);
         }
     }
 }
