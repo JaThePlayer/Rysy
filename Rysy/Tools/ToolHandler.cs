@@ -32,7 +32,7 @@ public class ToolHandler {
     }
 
     public void CancelInteraction() {
-        CurrentTool.CancelInteraction();
+        CurrentTool?.CancelInteraction();
     }
 
     private void AddTool(Tool tool) {
@@ -43,11 +43,14 @@ public class ToolHandler {
 
     public List<Tool> Tools;
 
+    private Tool _currentTool;
     public Tool CurrentTool {
-        get => Tools[ToolIndex];
-        set => ToolIndex = Tools.IndexOf(value);
+        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new Exception("No tools registered?");
+        set {
+            CancelInteraction();
+            _currentTool = value;
+        }
     }
-    public int ToolIndex { get; set; } = 1;
 
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {

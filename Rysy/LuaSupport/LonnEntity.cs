@@ -27,11 +27,6 @@ public class LonnEntity : Entity, ICustomNodeHandler {
     }
 
     private List<ISprite> SpritesFromLonn(Lua lua, int top) {
-        if (!lua.IsTable(-1)) {
-            Logger.Write("SpritesFromLonn", LogLevel.Warning, $"Returning early, got {lua.Type(-1)}");
-            return new(0);
-        }
-
         var list = new List<ISprite>();
 
         switch (lua.PeekTableType(top, "_type")) {
@@ -59,31 +54,54 @@ public class LonnEntity : Entity, ICustomNodeHandler {
                     addTo.Add(LuaToLine(lua, top));
                     break;
                 case "_RYSY_fakeTiles":
-                    var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-                    var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-                    var w = lua.PeekTableIntValue(top, "w") ?? 8;
-                    var h = lua.PeekTableIntValue(top, "h") ?? 8;
-                    var material = lua.PeekTableStringValue(top, "material") ?? "3";
-                    var layer = lua.PeekTableStringValue(top, "layer") ?? "tilesFg";
-                    
-                    var sprites = layer switch {
-                        "tilesFg" => Room.FG.Autotiler?.GetSprites(new(x,y), material[0], w / 8, h / 8),
-                        "tilesBg" => Room.BG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8),
-                        _ => null
-                    };
-
-                    addTo.AddRange(sprites ?? Array.Empty<ISprite>());
+                    addTo.AddRange(LuaToFakeTiles(lua, top) ?? Array.Empty<ISprite>());
+                    break;
+                case "drawableRectangle":
+                    addTo.Add(LuaToRect(lua, top));
                     break;
                 default:
-                    type.LogAsJson();
+                    Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type}: {lua.TableToDictionary(top).ToJson()}");
                     break;
             }
         }
+    }
 
+    private static RectangleSprite LuaToRect(Lua lua, int top) {
+        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
+        var w = lua.PeekTableIntValue(top, "width") ?? 8;
+        var h = lua.PeekTableIntValue(top, "height") ?? 8;
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
+        var mode = lua.PeekTableStringValue(top, "mode");
+        var rect = new Rectangle((int) x, (int) y, w, h);
+
+        var sprite = mode switch {
+            "fill" => ISprite.Rect(rect, color),
+            "line" => ISprite.OutlinedRect(rect, Color.Transparent, color),
+            "bordered" => ISprite.OutlinedRect(rect, color, lua.PeekTableColorValue(top, "secondaryColor", Color.White)),
+            _ => ISprite.Rect(rect, color),
+        };
+        return sprite;
+    }
+
+    private IEnumerable<ISprite>? LuaToFakeTiles(Lua lua, int top) {
+        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
+        var w = lua.PeekTableIntValue(top, "w") ?? 8;
+        var h = lua.PeekTableIntValue(top, "h") ?? 8;
+        var material = lua.PeekTableStringValue(top, "material") ?? "3";
+        var layer = lua.PeekTableStringValue(top, "layer") ?? "tilesFg";
+
+        var sprites = layer switch {
+            "tilesFg" => Room.FG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8),
+            "tilesBg" => Room.BG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8),
+            _ => null
+        };
+        return sprites;
     }
 
     private static LineSprite LuaToLine(Lua lua, int top) {
-        var color = lua.PeekTableColorValue(top, "color");
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
         var offX = lua.PeekTableFloatValue(top, "offsetX") ?? 0;
         var offY = lua.PeekTableFloatValue(top, "offsetY") ?? 0;
         var magnitudeOffset = lua.PeekTableFloatValue(top, "magnitudeOffset") ?? 0;
@@ -109,7 +127,7 @@ public class LonnEntity : Entity, ICustomNodeHandler {
         var scaleY = lua.PeekTableFloatValue(top, "scaleY");
         var originX = lua.PeekTableFloatValue(top, "justificationX");
         var originY = lua.PeekTableFloatValue(top, "justificationY");
-        var color = lua.PeekTableColorValue(top, "color");
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
         var rotation = lua.PeekTableFloatValue(top, "rotation");
         var depth = lua.PeekTableIntValue(top, "depth");
 
@@ -301,19 +319,19 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetColor = NullConstOrGetter(plugin, "color",
             def: Color.White,
-            constGetter: () => lua.PeekTableColorValue(top, "color"),
+            constGetter: () => lua.PeekTableColorValue(top, "color", Color.White),
             funcGetter: static (lua, top) => lua.ToColor(top)
         );
 
         plugin.GetFillColor = NullConstOrGetter(plugin, "fillColor",
             def: plugin.GetColor,
-            constGetter: () => lua.PeekTableColorValue(top, "fillColor"),
+            constGetter: () => lua.PeekTableColorValue(top, "fillColor", Color.White),
             funcGetter: static (lua, top) => lua.ToColor(top)
         )!;
 
         plugin.GetBorderColor = NullConstOrGetter(plugin, "borderColor",
             def: plugin.GetColor,
-            constGetter: () => lua.PeekTableColorValue(top, "borderColor"),
+            constGetter: () => lua.PeekTableColorValue(top, "borderColor", Color.White),
             funcGetter: static (lua, top) => lua.ToColor(top)
         )!;
 

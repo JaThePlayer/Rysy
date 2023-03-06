@@ -28,6 +28,13 @@ public static class Input {
         public static float X1HoldTime => HoldTimes[3];
         public static float X2HoldTime => HoldTimes[4];
 
+        public static bool AnyClicked =>
+            Left is not MouseInputState.Released ||
+            Right is not MouseInputState.Released ||
+            Middle is not MouseInputState.Released ||
+            X1 is not MouseInputState.Released ||
+            X2 is not MouseInputState.Released;
+
         private static int lastMouseScroll;
         private static int realMouseScroll;
         // GetState storage
@@ -204,6 +211,8 @@ public static class Input {
         public static bool Shift() => LastState.IsKeyDown(Keys.LeftShift) || LastState.IsKeyDown(Keys.RightShift);
         public static bool Alt() => LastState.IsKeyDown(Keys.LeftAlt) || LastState.IsKeyDown(Keys.RightAlt);
 
+        public static bool AnyKeyHeld { get; private set; }
+
         public static float GetHoldTime(Keys key) {
             if (IsKeyHeld(key)) {
                 return HoldTimes[key];
@@ -229,15 +238,16 @@ public static class Input {
             var clickedKeyIndex = 0;
             Array.Clear(ClickedKeys, 0, ClickedKeys.Length);
 
-            foreach (var key in state.GetPressedKeys()) {
+            var keys = state.GetPressedKeys();
+            AnyKeyHeld = keys.Length > 0;
+
+            foreach (var key in keys) {
                 if (!LastState.IsKeyDown(key) && clickedKeyIndex < ClickedKeys.Length) {
                     ClickedKeys[clickedKeyIndex++] = key;
                     HoldTimes[key] = 0;
                 } else {
                     HoldTimes[key] = HoldTimes.TryGetValue(key, out var timer) ? timer + delta : delta;
                 }
-
-
             }
 
             LastState = state;

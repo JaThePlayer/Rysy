@@ -58,6 +58,11 @@ public interface ISelectionHandler {
     /// </summary>
     public IHistoryAction MoveBy(Vector2 offset);
     public IHistoryAction DeleteSelf();
+
+    /// <summary>
+    /// The parent object which this handler manipulates.
+    /// </summary>
+    public object Parent { get; }
 }
 
 public enum SelectionLayer {
@@ -97,7 +102,7 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
     }
 
     public bool Overlaps(Rectangle roomPos) {
-        return Sprite.GetRenderRect()?.Intersects(roomPos) ?? false;
+        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).Intersects(roomPos) ?? false;
     }
 
     public void Render(Color c) {

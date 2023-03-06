@@ -40,6 +40,7 @@ public record class Window {
         if (ImGui.Begin(WindowID, ref open, Size is { } ? ImGuiManager.WindowFlagsUnresizable : ImGuiManager.WindowFlagsResizable)) {
             Render(this);
         }
+        ImGui.End();
 
         if (!open) {
             RemoveSelf();

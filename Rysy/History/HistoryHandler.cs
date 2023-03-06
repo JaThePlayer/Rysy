@@ -1,8 +1,8 @@
 ﻿namespace Rysy.History;
 
 public class HistoryHandler {
-    private List<IHistoryAction> Actions { get; set; } = new();
-    private List<IHistoryAction> UndoneActions { get; set; } = new();
+    internal List<IHistoryAction> Actions { get; set; } = new();
+    internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
     public Action? OnUndo;
 

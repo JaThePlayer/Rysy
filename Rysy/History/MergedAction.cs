@@ -1,6 +1,6 @@
 ﻿namespace Rysy.History;
 
-public class MergedAction : IHistoryAction {
+public record class MergedAction : IHistoryAction {
     List<IHistoryAction> Actions;
 
     public MergedAction(IEnumerable<IHistoryAction> actions) {
@@ -30,5 +30,9 @@ public class MergedAction : IHistoryAction {
                 Actions[i].Undo();
             }
         }
+    }
+
+    public override string ToString() {
+        return $"{{\n{string.Join("\n    ", Actions.Select(a => a.ToString()))}\n}}";
     }
 }

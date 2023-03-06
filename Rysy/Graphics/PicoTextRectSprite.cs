@@ -26,4 +26,13 @@ public record struct PicoTextRectSprite : ISprite {
     public void Render() {
         PicoFont.Print(Text, Pos, Color, Scale);
     }
+
+    public void Render(Camera? cam, Vector2 offset) {
+        if (cam is { }) {
+            if (!cam.IsRectVisible(Pos.MovedBy(offset)))
+                return;
+        }
+
+        Render();
+    }
 }

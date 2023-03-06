@@ -1,8 +1,10 @@
 ﻿using Rysy;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Elements;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using System;
 
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
@@ -44,9 +46,19 @@ public sealed class RysyEngine : Game {
         Window.ClientSizeChanged += Window_ClientSizeChanged;
         Window.FileDrop += Window_FileDrop;
 
-        TargetElapsedTime = TimeSpan.FromSeconds(1d / 120d);
-        GDM.SynchronizeWithVerticalRetrace = false;
+        SetTargetFps(60);
+        ToggleVSync(false);
         IsFixedTimeStep = true;
+    }
+
+    public static void SetTargetFps(int fps) {
+        Instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double)fps);
+    }
+
+    public static void ToggleVSync(bool toggle) {
+        GDM.SynchronizeWithVerticalRetrace = toggle;
+
+        GDM.ApplyChanges();
     }
 
     private void Window_FileDrop(object? sender, FileDropEventArgs e) {
@@ -158,6 +170,8 @@ public sealed class RysyEngine : Game {
             Time.Update(gameTime);
             Input.Update(gameTime);
 
+            SmartFPSHandler.Update();
+
             Scene.Update();
 
             if (OnFrameEnd is { } onFrameEnd) {
@@ -181,11 +195,15 @@ public sealed class RysyEngine : Game {
             Scene.RenderImGui();
             Scene.Render();
 
+            if (DebugInfoWindow.Enabled)
+                DebugInfoWindow.Instance.RenderGui();
             ImGuiManager.GuiRenderer.AfterLayout();
 
             smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
 
             Framerate = smartFramerate.framerate;
+
+            
         }
     }
 

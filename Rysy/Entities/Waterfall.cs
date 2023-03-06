@@ -11,28 +11,27 @@ public class Waterfall : Entity {
     public override int Depth => -9999;
 
     public override IEnumerable<ISprite> GetSprites() {
-        var h = GetHeight();
+        var h = GetHeight(Room, Pos);
 
         yield return ISprite.OutlinedRect(Pos, 8, h, FillColor, SurfaceColor);
     }
 
-    public int GetHeight() {
-        var room = Room;
+    public static int GetHeight(Room room, Vector2 pos) {
         var h = 8;
 
-        var maxH = room.Height - Pos.Y;
-        while (h < maxH && !room.IsTileAt(Pos + new Vector2(0, h))) {
+        var maxH = room.Height - pos.Y;
+        while (h < maxH && !room.IsTileAt(pos + new Vector2(0, h))) {
             h += 8;
         }
 
-        var rect = new Rectangle((int) Pos.X, (int) Pos.Y, 8, h);
+        var rect = new Rectangle((int) pos.X, (int) pos.Y, 8, h);
 
         foreach (var e in room.Entities[typeof(IWaterfallBlocker)]) {
             if (e is IWaterfallBlocker { BlockWaterfalls: true }) {
                 Rectangle bRect = e.Rectangle;
 
                 if (bRect.Intersects(rect)) {
-                    h = (int) (e.Pos.Y - Pos.Y);
+                    h = (int) (e.Pos.Y - pos.Y);
                     rect.Height = h;
                 }
             }

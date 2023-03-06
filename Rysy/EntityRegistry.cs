@@ -21,6 +21,7 @@ public static class EntityRegistry {
         var loadingScene = RysyEngine.Scene as LoadingScene;
         loadingScene?.SetText("Registering entities");
 
+
         if (Settings.Instance.LonnPluginPath is { } path)
             foreach (var item in Directory.EnumerateFiles(path, "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item));
@@ -55,7 +56,8 @@ public static class EntityRegistry {
                         EntityPlacements.Add(new($"{pl.Name} [{item.Name}]") {
                             ValueOverrides = item.Data,
                             SID = pl.Name,
-                            Tooltip = "[From Lonn]"
+                            Tooltip = "[From Lonn]",
+                            PlacementHandler = EntityPlacementHandler.Instance
                         });
                     }
                 }
@@ -88,8 +90,8 @@ public static class EntityRegistry {
 
                 lock (placementsRegistry) {
                     foreach (var placement in placements) {
-                        placement.IsTrigger = isTrigger;
                         placement.SID ??= sids.Length == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
+                        placement.PlacementHandler = isTrigger ? TriggerPlacementHandler.Instance : EntityPlacementHandler.Instance;
                     }
                     placementsRegistry.AddRange(placements);
                 }
@@ -104,9 +106,10 @@ public static class EntityRegistry {
         }
     }
 
-    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID) {
+    
+    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
-        return Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, nodes: null), room, from.IsTrigger);
+        return Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, nodes: null), room, isTrigger);
     }
 
     public static Entity Create(BinaryPacker.Element from, Room room, bool trigger) {

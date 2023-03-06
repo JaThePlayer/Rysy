@@ -26,7 +26,10 @@ public abstract class Tool {
     /// </summary>
     public string Layer {
         get => Persistence.Instance.Get($"{PersistenceGroup}.Layer", ValidLayers.FirstOrDefault() ?? "");
-        set => Persistence.Instance.Set($"{PersistenceGroup}.Layer", value);
+        set {
+            Persistence.Instance.Set($"{PersistenceGroup}.Layer", value);
+            CancelInteraction();
+        }
     }
 
     private string SearchPersistenceKey => $"{PersistenceGroup}.{Layer}.Search";
@@ -43,7 +46,10 @@ public abstract class Tool {
     /// </summary>
     public object? Material {
         get => Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.Material", (object) null!);
-        set => Persistence.Instance.Set($"{PersistenceGroup}.{Layer}.Material", value);
+        set {
+            Persistence.Instance.Set($"{PersistenceGroup}.{Layer}.Material", value);
+            CancelInteraction();
+        }
     }
 
     public HashSet<string>? Favorites {
@@ -108,7 +114,7 @@ public abstract class Tool {
     public abstract string? GetMaterialTooltip(string layer, object material);
 
     public static void DrawSelectionRect(Rectangle rect) {
-        var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).Cap(70f), 1f, 1f);
+        var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
         ISprite.OutlinedRect(rect, c * 0.3f, c).Render();
     }
 

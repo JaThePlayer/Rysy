@@ -173,10 +173,10 @@ public static class LuaExt {
         return ret;
     }
 
-    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, string key) {
+    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, string key, Color def) {
         lua.PushString(key);
         var type = lua.GetTable(tableStackIndex);
-        Color ret = Color.White;
+        Color ret = def;
         if (type is LuaType.Table or LuaType.String) {
             ret = lua.ToColor(lua.GetTop());
         }
@@ -404,6 +404,7 @@ where TArg1 : class, ILuaWrapper {
             LuaType.Number => s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
             LuaType.Function => s.FastToString(index, false),
+            LuaType.Table => "table",
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;

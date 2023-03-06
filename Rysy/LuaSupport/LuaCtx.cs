@@ -114,6 +114,8 @@ public class LuaCtx {
 
             error(traceback)
         end
+
+        math.atan2 = math.atan
         """, "setup_globals");
 
         lua.PCallStringThrowIfError(File.ReadAllText("Assets/lua/funpack.lua"), "funpack");
@@ -145,6 +147,17 @@ public class LuaCtx {
 
             // x,y,w,h
             return 4;
+        });
+
+        lua.Register("_RYSY_INTERNAL_getWaterfallHeight", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var room = lua.UnboxWrapper<Room>(1);
+            var x = lua.ToNumber(2);
+            var y = lua.ToNumber(3);
+
+            lua.PushNumber(Entities.Waterfall.GetHeight(room, new((float) x, (float) y)));
+            return 1;
         });
 
         var orig = lua.AtPanic(AtLuaPanic);

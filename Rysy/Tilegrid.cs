@@ -204,15 +204,28 @@ public class Tilegrid : ILuaWrapper {
         private char[,] ToMove;
         private char[,]? Orig;
 
+        private Vector2 RemainderOffset;
+
         public RectSelectionHandler(Tilegrid grid, Rectangle rectPixels) {
             (Grid, Rect) = (grid, rectPixels);
         }
+
+        public object Parent => Grid;
 
         public IHistoryAction DeleteSelf() {
             return new TileRectChangeAction('0', Rect.Div(8), Grid);
         }
 
         public IHistoryAction MoveBy(Vector2 offset) {
+            var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
+
+            // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
+            RemainderOffset += offset - (tileOffset.ToVector2() * 8);
+
+            if (tileOffset.X == 0 && tileOffset.Y == 0) {
+                return new MergedAction(Array.Empty<IHistoryAction>());
+            }
+
             if (Orig is null) {
                 Orig ??= (char[,])Grid.Tiles.Clone();
                 var rect = Rect.Div(8);
@@ -231,27 +244,66 @@ public class Tilegrid : ILuaWrapper {
                     }
             }
 
-            return new TileRectMoveAction(Grid, Rect.Div(8), Orig, ToMove, (offset / 8).ToPoint());
+            var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig, ToMove, tileOffset);
+            Rect = Rect.MovedBy(tileOffset.ToVector2() * 8);
+            return action;
         }
 
         // collider:
 
         public bool Overlaps(Rectangle roomPos) {
-            return Rect.Intersects(roomPos);
+            if (!Rect.Intersects(roomPos))
+                return false;
+
+            var rect = roomPos.Div(8);
+            rect.Width = rect.Width.AtLeast(1);
+            rect.Height = rect.Height.AtLeast(1);
+
+            if (ToMove is { } toMove) {
+                // if we've moved the tiles, make sure to render ToMove instead of the current grid,
+                // as otherwise we might render an outline on a tile that's within range, but not actually selected
+                for (int x = 0; x < ToMove.GetLength(0); x++)
+                    for (int y = 0; y < ToMove.GetLength(1); y++) {
+                        if (ToMove[x, y] != '0') {
+                            return true;
+                        }
+                    }
+            } else {
+                for (int x = rect.X; x < rect.Right; x++)
+                    for (int y = rect.Y; y < rect.Bottom; y++) {
+                        if (Grid.SafeTileAt(x, y) != '0') {
+                            return true;
+                        }
+                    }
+            }
+
+            return false;
         }
 
         public void Render(Color c) {
             var rect = Rect.Div(8);
-            for (int x = rect.X; x < rect.Right; x++)
-                for (int y = rect.Y; y < rect.Bottom; y++) {
-                    if (Grid.SafeTileAt(x, y) != '0') {
-                        ISprite.OutlinedRect(new(x * 8, y * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
+
+            if (ToMove is { } toMove) {
+                // if we've moved the tiles, make sure to render ToMove instead of the current grid,
+                // as otherwise we might render an outline on a tile that's within range, but not actually selected
+                for (int x = 0; x < ToMove.GetLength(0); x++)
+                    for (int y = 0; y < ToMove.GetLength(1); y++) {
+                        if (ToMove[x, y] != '0') {
+                            ISprite.OutlinedRect(new((x + rect.X) * 8, (y + rect.Y) * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
+                        }
                     }
-                }
+            } else {
+                for (int x = rect.X; x < rect.Right; x++)
+                    for (int y = rect.Y; y < rect.Bottom; y++) {
+                        if (Grid.SafeTileAt(x, y) != '0') {
+                            ISprite.OutlinedRect(new((x) * 8, (y) * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
+                        }
+                    }
+            }
+
         }
 
         void ISelectionCollider.MoveBy(Vector2 offset) {
-            Rect = Rect.MovedBy(offset);
         }
     }
 

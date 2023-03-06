@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Decal : IPackable, ISelectionHandler {
+public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleToPlacement, IDepth {
     //[GeneratedRegex("\\d+$|\\.png")]
     public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
 
@@ -17,13 +17,15 @@ public sealed partial class Decal : IPackable, ISelectionHandler {
     /// <summary>
     /// The original texture, as stored in map data. Needed to be able to differenciate between decals ending with 00 and not.
     /// </summary>
-    private string OrigTexture;
+    public string OrigTexture;
 
     [JsonIgnore]
     public Room Room { get; set; }
 
     [JsonIgnore]
     public bool FG { get; set; }
+
+    public int Depth => FG ? Depths.FGDecals : Depths.BGDecals; // TODO: Decal registry depth
 
     public BinaryPacker.Element Pack() {
         var attributes = new Dictionary<string, object>(5 + EditorLayer != 0 ? 1 : 0) {
@@ -54,7 +56,7 @@ public sealed partial class Decal : IPackable, ISelectionHandler {
 
     public Sprite GetSprite()
         => ISprite.FromTexture(Pos, Texture).Centered() with {
-            Depth = FG ? Depths.FGDecals : Depths.BGDecals, // TODO: Decal registry depth
+            Depth = Depth,
             Scale = Scale
         };
 
@@ -66,11 +68,45 @@ public sealed partial class Decal : IPackable, ISelectionHandler {
 
     public Selection GetSelection() => Selection.FromSprite(this, GetSprite());
 
-    public IHistoryAction MoveBy(Vector2 offset) {
+    public void ClearRoomRenderCache() {
+        if (FG)
+            Room.ClearFgDecalsRenderCache();
+        else
+            Room.ClearBgDecalsRenderCache();
+    }
+
+    object ISelectionHandler.Parent => this;
+
+    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
         return new MoveDecalAction(this, offset);
     }
 
-    public IHistoryAction DeleteSelf() {
+    IHistoryAction ISelectionHandler.DeleteSelf() {
         return new RemoveDecalAction(this, Room);
+    }
+
+    Placement IConvertibleToPlacement.ToPlacement() {
+        return new Placement(Texture) {
+            ValueOverrides = new(StringComparer.Ordinal) {
+                ["scale"] = Scale,
+                ["texture"] = Texture,
+                ["origTexture"] = OrigTexture,
+                ["editorLayer"] = EditorLayer,
+            },
+            PlacementHandler = FG ? DecalPlacementHandler.FGInstance : DecalPlacementHandler.BGInstance
+        };
+    }
+
+    public static Decal FromPlacement(Placement placement, Vector2 pos, Room room, bool fg) {
+        var overrides = placement.ValueOverrides;
+        return new Decal() {
+            EditorLayer = (int)overrides["editorLayer"],
+            Scale = (Vector2)overrides["scale"],
+            Texture = (string)overrides["texture"],
+            OrigTexture = (string)overrides["origTexture"],
+            Pos = pos,
+            FG = fg,
+            Room = room,
+        };
     }
 }

@@ -1,5 +1,6 @@
 ﻿local bit = require("bit")
 local xnaColors = require("consts.xna_colors")
+local rectangles = require("structs.rectangle")
 
 local utils = {}
 

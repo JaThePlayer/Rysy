@@ -4,7 +4,7 @@ public record class MoveNodeAction(Node Node, Entity Entity, Vector2 By) : IHist
     public bool Apply() {
         Node.Pos += By;
 
-        Entity.Room?.ClearRenderCache();
+        Entity.ClearRoomRenderCache();
 
         return true;
     }
@@ -12,6 +12,6 @@ public record class MoveNodeAction(Node Node, Entity Entity, Vector2 By) : IHist
     public void Undo() {
         Node.Pos -= By;
 
-        Entity.Room?.ClearRenderCache();
+        Entity.ClearRoomRenderCache();
     }
 }

@@ -5,7 +5,7 @@ namespace Rysy;
 
 public static class NumberExt {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T Cap<T>(this T num, T max) where T : INumber<T> {
+    public static T AtMost<T>(this T num, T max) where T : INumber<T> {
         return T.Min(num, max);
     }
 

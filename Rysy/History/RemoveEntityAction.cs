@@ -17,7 +17,7 @@ public sealed record class RemoveEntityAction(Entity Entity, Room Room) : IHisto
 public sealed record class RemoveDecalAction(Decal Decal, Room Room) : IHistoryAction {
     public bool Apply() {
         var ret = GetList().Remove(Decal);
-        Room.ClearRenderCache();
+        Decal.ClearRoomRenderCache();
 
         return ret;
     }
@@ -29,6 +29,6 @@ public sealed record class RemoveDecalAction(Decal Decal, Room Room) : IHistoryA
     public void Undo() {
         GetList().Add(Decal);
 
-        Room.ClearRenderCache();
+        Decal.ClearRoomRenderCache();
     }
 }

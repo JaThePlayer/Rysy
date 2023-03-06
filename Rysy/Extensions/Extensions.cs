@@ -52,6 +52,7 @@ public static class Extensions {
     }
 
     public static int AsInt(this bool b) => Unsafe.As<bool, byte>(ref b);
+    public static byte AsByte(this bool b) => Unsafe.As<bool, byte>(ref b);
 
     public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
 

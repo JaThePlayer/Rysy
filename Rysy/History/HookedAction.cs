@@ -19,4 +19,8 @@ public record class HookedAction(IHistoryAction Parent) : IHistoryAction {
         Parent.Undo();
         OnUndo?.Invoke();
     }
+
+    public override string ToString() {
+        return Parent.ToString()!;
+    }
 }

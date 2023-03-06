@@ -29,4 +29,13 @@ public record struct CircleSprite : ISprite {
     public void Render() {
         GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color);
     }
+
+    public void Render(Camera? cam, Vector2 offset) {
+        if (cam is { }) {
+            if (!cam.IsPointVisible(Pos + offset + new Vector2(Radius)))
+                return;
+        }
+
+        Render();
+    }
 }
