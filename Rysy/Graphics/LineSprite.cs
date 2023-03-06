@@ -29,4 +29,8 @@ public record struct LineSprite : ISprite {
             b.DrawLine(start, end, c);
         }
     }
+
+    public void Render(Camera? cam, Vector2 offset) {
+        Render();
+    }
 }

@@ -19,10 +19,16 @@ public sealed class Autotiler {
 
         public bool IgnoreAll;
 
-        private bool TryFindFirstMaskMatch(Span<bool> mask, [NotNullWhen(true)] out Point[]? tiles) {
+        /// <summary>
+        /// Stores a tilegrid bitmask -> possible tiles.
+        /// Used for speeding up <see cref="GetFirstMatch(char[,], int, int, int, int, out Point[]?)"/>
+        /// </summary>
+        private Dictionary<long, Point[]> FastTileDataToTiles = new();
+
+        private bool TryFindFirstMaskMatch(Span<bool> tileData, [NotNullWhen(true)] out Point[]? tiles) {
             var allTiles = Tiles;
             for (int i = 0; i < allTiles.Count; i++) {
-                if (MatchingMask(allTiles[i].mask, mask)) {
+                if (MatchingMask(allTiles[i].mask, tileData)) {
                     tiles = allTiles[i].tiles;
                     return true;
                 }
@@ -70,22 +76,37 @@ public sealed class Autotiler {
         }
 
         public bool GetFirstMatch(char[,] t, int x, int y, int w, int h, [NotNullWhen(true)] out Point[]? tiles) {
-            Span<bool> mask = stackalloc bool[9];
+            Span<bool> tileData = stackalloc bool[9];
             char middleTile = t[x, y];
-            mask[0] = IsTileAt(x - 1, y - 1);
-            mask[1] = IsTileAt(x, y - 1);
-            mask[2] = IsTileAt(x + 1, y - 1);
+            tileData[0] = IsTileAt(x - 1, y - 1);
+            tileData[1] = IsTileAt(x, y - 1);
+            tileData[2] = IsTileAt(x + 1, y - 1);
 
-            mask[3] = IsTileAt(x - 1, y);
-            mask[4] = true;
-            mask[5] = IsTileAt(x + 1, y);
+            tileData[3] = IsTileAt(x - 1, y);
+            tileData[4] = true;
+            tileData[5] = IsTileAt(x + 1, y);
 
-            mask[6] = IsTileAt(x - 1, y + 1);
-            mask[7] = IsTileAt(x, y + 1);
-            mask[8] = IsTileAt(x + 1, y + 1);
+            tileData[6] = IsTileAt(x - 1, y + 1);
+            tileData[7] = IsTileAt(x, y + 1);
+            tileData[8] = IsTileAt(x + 1, y + 1);
 
+            long bitmask = 
+                tileData[0].AsByte() +
+                (tileData[1].AsByte() << 1) +
+                (tileData[2].AsByte() << 2) +
+                (tileData[3].AsByte() << 3) +
+                (tileData[4].AsByte() << 4) +
+                (tileData[5].AsByte() << 5) +
+                (tileData[6].AsByte() << 6) +
+                (tileData[7].AsByte() << 7) +
+                (tileData[8].AsByte() << 8);
 
-            if (TryFindFirstMaskMatch(mask, out tiles)) {
+            if (FastTileDataToTiles.TryGetValue(bitmask, out tiles)) {
+                return true;
+            }
+
+            if (TryFindFirstMaskMatch(tileData, out tiles)) {
+                FastTileDataToTiles[bitmask] = tiles;
                 return true;
             }
 
@@ -97,6 +118,7 @@ public sealed class Autotiler {
             } else {
                 tiles = Center;
             }
+            //FastTileDataToTiles[bitmask] = tiles;
 
             return true;
 
@@ -191,10 +213,10 @@ public sealed class Autotiler {
         var data = xml["Data"] ?? throw new Exception("Tileset .xml missing starting <Data> tag");
         foreach (var child in data.ChildNodes) {
             if (child is XmlNode { Name: "Tileset" } tileset) {
-                var id = tileset.Attributes?["id"]?.InnerText[0] ?? throw new Exception($"<Tileset> node missing id");
+                var id = tileset.Attributes?["id"]?.InnerText.FirstOrDefault() ?? throw new Exception($"<Tileset> node missing id");
                 var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
 
-                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t[0])?.ToArray();
+                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray();
 
                 AutotilerData autotilerData = new();
                 autotilerData.Filename = path;
@@ -202,8 +224,8 @@ public sealed class Autotiler {
                 autotilerData.Ignores = ignores;
                 autotilerData.IgnoreAll = ignores?.Contains('*') ?? false;
 
-                if (tileset.Attributes?["copy"]?.InnerText is { } copy) {
-                    var copied = Tilesets[copy[0]];
+                if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
+                    var copied = Tilesets[copy];
                     autotilerData.Tiles = new(copied.Tiles);
                     autotilerData.Padding = copied.Padding;
                     autotilerData.Center = copied.Center;

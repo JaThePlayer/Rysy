@@ -1,10 +1,17 @@
 ﻿using Rysy.Graphics;
-using Rysy.Gui.Elements;
 using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool {
+    private bool PickNextFrame;
+
+    public override void InitHotkeys(HotkeyHandler handler) {
+        base.InitHotkeys(handler);
+
+        handler.AddHotkeyFromSettings("tools.pick", "mousemiddle", OnMiddleClick);
+    }
+
     public override string Name => "Placement";
 
     public override string PersistenceGroup => "placement";
@@ -13,6 +20,7 @@ public class PlacementTool : Tool {
         LayerNames.ENTITIES,
         LayerNames.TRIGGERS,
         LayerNames.FG_DECALS,
+        LayerNames.BG_DECALS,
     };
     public override List<string> ValidLayers => _validLayers;
 
@@ -21,6 +29,7 @@ public class PlacementTool : Tool {
             LayerNames.ENTITIES => EntityRegistry.EntityPlacements,
             LayerNames.TRIGGERS => EntityRegistry.TriggerPlacements,
             LayerNames.FG_DECALS => GFX.ValidDecalPaths,
+            LayerNames.BG_DECALS => GFX.ValidDecalPaths,
             _ => throw new NotImplementedException(layer)
         };
     }
@@ -47,36 +56,39 @@ public class PlacementTool : Tool {
                 Input.Mouse.ConsumeLeft();
                 var mouse = GetMousePos(camera, currentRoom);
 
-                History.ApplyNewAction(new AddEntityAction(CreateEntity(currentRoom, mouse, placement, assignID: true), currentRoom));
+                History.ApplyNewAction(placement.Place(mouse.ToVector2(), currentRoom));
             }
         }
 
 #warning TEMP
-        if (Input.Mouse.Right.Clicked()) {
-            Entity? ent = GetEntityUnderCursor(camera, currentRoom);
-            if (ent is { }) {
-                Input.Mouse.ConsumeRight();
-                RysyEngine.Scene.AddWindow(new EntityPropertyWindow(ent));
-            }
-        }
+        /*
+                if (Input.Mouse.Right.Clicked()) {
+                    Entity? ent = GetPlacementUnderCursor(camera, currentRoom);
+                    if (ent is { }) {
+                        Input.Mouse.ConsumeRight();
+                        RysyEngine.Scene.AddWindow(new EntityPropertyWindow(ent));
+                    }
+                }*/
 
-        if (Input.Mouse.Middle.Clicked()) {
-            Entity? ent = GetEntityUnderCursor(camera, currentRoom);
-            if (ent is { }) {
-                Input.Mouse.ConsumeMiddle();
-                Material = new Placement(ent.EntityData.Name) {
-                    SID = ent.EntityData.Name,
-                    IsTrigger = ent is Trigger,
-                    ValueOverrides = ent.EntityData.Inner,
-                };
+        if (PickNextFrame) {
+            PickNextFrame = false;
+            if (GetPlacementUnderCursor(camera, currentRoom) is { } place) {
+                Material = place;
             }
         }
     }
 
-    private static Entity? GetEntityUnderCursor(Camera camera, Room currentRoom) {
-        var mouse = GetMousePos(camera, currentRoom, precise: true);
+    public void OnMiddleClick() {
+        PickNextFrame = true;
+    }
 
-        //var ent = currentRoom.Entities.FirstOrDefault(e => e.GetSelection().Check(mouse.ToVector2(), out int node));
+    private Placement? GetPlacementUnderCursor(Camera camera, Room currentRoom) {
+        var mouse = GetMousePos(camera, currentRoom, precise: true);
+        var selections = currentRoom.GetSelectionsInRect(new(mouse, new(1, 1)), LayerNames.ToolLayerToEnum(Layer));
+
+        if (selections.FirstOrDefault()?.Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
+            return placement;
+
         return null;
     }
 
@@ -84,14 +96,10 @@ public class PlacementTool : Tool {
         var mouse = GetMousePos(camera, currentRoom);
 
         if (Material is Placement placement) {
-            foreach (var item in CreateEntity(currentRoom, mouse, placement, assignID: false).GetSprites()) {
+            foreach (var item in placement.GetPreviewSprites(mouse.ToVector2(), currentRoom)) {
                 item.Render();
             }
         }
-    }
-
-    private static Entity CreateEntity(Room currentRoom, Point pos, Placement placement, bool assignID) {
-        return EntityRegistry.Create(placement, pos.ToVector2(), currentRoom, assignID);
     }
 
     private static Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null) {

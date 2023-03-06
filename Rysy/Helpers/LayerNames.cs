@@ -9,5 +9,18 @@ public static class LayerNames {
     public const string FG_DECALS = "FGDecals";
     public const string BG_DECALS = "BGDecals";
 
+    public const string CUSTOM_LAYER = "Custom";
     public const string ALL = "All";
+
+    public static SelectionLayer ToolLayerToEnum(string layer, SelectionLayer customLayer = SelectionLayer.None) => layer switch {
+        FG => SelectionLayer.FGTiles,
+        BG => SelectionLayer.BGTiles,
+        FG_DECALS => SelectionLayer.FGDecals,
+        BG_DECALS => SelectionLayer.BGDecals,
+        ENTITIES => SelectionLayer.Entities,
+        TRIGGERS => SelectionLayer.Triggers,
+        ALL => SelectionLayer.All,
+        CUSTOM_LAYER => customLayer,
+        _ => SelectionLayer.None,
+    };
 }

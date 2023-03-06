@@ -5,12 +5,26 @@ namespace Rysy.Graphics;
 public class Camera {
     private Vector2 _pos;
     public Vector2 Pos => _pos;
-    public float Scale = 1f;
 
-    public Viewport Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+    private float _Scale = 1f;
+    public float Scale {
+        get => _Scale;
+        set {
+            _Scale = value;
+            RecalculateMatrix();
+        }
+    }
+
+    private Viewport _Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+    public Viewport Viewport => _Viewport;
 
     public Camera() {
-        RysyEngine.OnViewportChanged += (v) => Viewport = v;
+        RysyEngine.OnViewportChanged += (v) => {
+            _Viewport = v;
+            RecalculateMatrix();
+        };
+
+        RecalculateMatrix();
     }
 
     /// <summary>
@@ -18,15 +32,21 @@ public class Camera {
     /// </summary>
     public Matrix Inverse => Matrix.Invert(Matrix);
 
-    public Matrix Matrix =>
-          Matrix.CreateTranslation(-MathF.Floor(Pos.X), -MathF.Floor(Pos.Y), 0f)
-        * Matrix.CreateScale(Scale);
+    private Matrix _Matrix;
+    public Matrix Matrix => _Matrix;
+          
 
+    private void RecalculateMatrix() {
+        _Matrix = Matrix.CreateTranslation(-MathF.Floor(Pos.X), -MathF.Floor(Pos.Y), 0f)
+        * Matrix.CreateScale(Scale);
+    }
     /// <summary>
     /// Moves the camera the specified amount.
     /// </summary>
     public void Move(Vector2 amount) {
         _pos += amount;
+
+        RecalculateMatrix();
     }
 
     /// <summary>
@@ -34,6 +54,8 @@ public class Camera {
     /// </summary>
     public void Goto(Vector2 position) {
         _pos = position;
+
+        RecalculateMatrix();
     }
 
     /// <summary>
@@ -42,6 +64,8 @@ public class Camera {
     /// <param name="position">The position to center on.</param>
     public void CenterOnRealPos(Vector2 position) {
         _pos = Vector2.Floor(position - new Vector2(Viewport.Width / 2, Viewport.Height / 2) / Scale);
+
+        RecalculateMatrix();
     }
 
     public void CenterOnScreenPos(Vector2 position) {
@@ -65,6 +89,8 @@ public class Camera {
         var rp2 = ScreenToReal(Input.Mouse.Pos.ToVector2());
 
         _pos += rp - rp2;
+
+        RecalculateMatrix();
     }
 
     /// <summary>
@@ -98,6 +124,15 @@ public class Camera {
         var h = rect.Height * Scale;
 
         return Viewport.Bounds.Intersects(new Rectangle((int) x, (int) y, (int) w, (int) h));
+    }
+
+    /// <summary>
+    /// Checks whether the given rectangle is visible inside of the camera at a given camera position
+    /// </summary>
+    public bool IsPointVisible(Vector2 point) {
+        var (x, y) = RealToScreen(point);
+
+        return Viewport.Bounds.Contains(new Vector2(x,y));
     }
 
     /// <summary>

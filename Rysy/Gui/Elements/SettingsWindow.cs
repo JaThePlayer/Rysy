@@ -24,12 +24,38 @@ public static class SettingsWindow {
         if (ImGui.BeginTabBar("Tabbar")) {
             ProfileBar(window);
             GeneralBar(window);
+            VisualBar(window);
             ThemeBar(window);
             HotkeyBar(window);
             DebugBar(window);
 
             ImGui.EndTabBar();
         }
+    }
+
+    private static void VisualBar(Window<SettingWindowData> window) {
+        if (!ImGui.BeginTabItem("Visual"))
+            return;
+
+        var fps = Settings.Instance.TargetFps;
+        if (ImGui.InputInt("Target FPS", ref fps, 10, 30, ImGuiInputTextFlags.EnterReturnsTrue).WithTooltip("The maximum FPS that Rysy will attempt to reach. Higher values increase CPU/GPU usage in exchange for smoother visuals.")) {
+            Settings.Instance.TargetFps = fps.AtLeast(20);
+            Settings.Instance.Save();
+        }
+
+        var vsync = Settings.Instance.VSync;
+        if (ImGui.Checkbox("VSync", ref vsync).WithTooltip("Whether to use VSync or not")) {
+            Settings.Instance.VSync = vsync;
+            Settings.Instance.Save();
+        }
+
+        var smart = Settings.Instance.SmartFramerate;
+        if (ImGui.Checkbox("Smart Framerate", ref smart).WithTooltip("Reduces target FPS when you haven't moved the mouse or pressed any keys for 1 second, to reduce CPU/GPU usage.")) {
+            Settings.Instance.SmartFramerate = smart;
+            Settings.Instance.Save();
+        }
+
+        ImGui.EndTabItem();
     }
 
     private static void GeneralBar(Window<SettingWindowData> window) {

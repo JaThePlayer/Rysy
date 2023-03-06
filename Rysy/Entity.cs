@@ -7,10 +7,11 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, ISelectionHandler {
+public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPlacement, IDepth {
     [JsonIgnore]
     public abstract int Depth { get; }
 
@@ -97,9 +98,13 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler {
         if (nodes is { })
             for (int i = 0; i < nodes.Count; i++) {
                 var firstSprite = NodeHelper.GetNodeSpritesForNode(this, i).FirstOrDefault();
+                var node = nodes[i];
+
                 if (firstSprite is Sprite s) {
-                    yield return Selection.FromSprite(nodes[i].ToSelectionHandler(this), s);
+                    yield return Selection.FromSprite(node.ToSelectionHandler(this), s);
                 }
+
+                yield return Selection.FromRect(node.ToSelectionHandler(this), Rectangle.MovedTo(nodes[i]));
             }
 
         Selection GetMain() {
@@ -142,6 +147,16 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler {
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum => EntityData.Enum(attrName, def);
 
+    public void ClearRoomRenderCache() {
+        if (Room is { } r) {
+            if (this is Trigger) {
+                r.ClearTriggerRenderCache();
+            } else {
+                r.ClearEntityRenderCache();
+            }
+        }
+    }
+
     public BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.Name);
         el.Attributes = new Dictionary<string, object>(EntityData.Inner) {
@@ -159,6 +174,27 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler {
         return el;
     }
 
+    Placement IConvertibleToPlacement.ToPlacement() {
+        return new Placement(EntityData.Name) {
+            SID = EntityData.Name,
+            PlacementHandler = this is Trigger ? TriggerPlacementHandler.Instance : EntityPlacementHandler.Instance,
+            ValueOverrides = EntityData.Inner,
+        };
+    }
+
+    #region ISelectionHandler
+    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
+        return new MoveEntityAction(this, offset);
+    }
+
+    IHistoryAction ISelectionHandler.DeleteSelf() {
+        return new RemoveEntityAction(this, Room);
+    }
+
+    object ISelectionHandler.Parent => this;
+    #endregion
+
+    #region ILuaWrapper
     int ILuaWrapper.Lua__index(Lua lua, object key) {
         switch (key) {
             case "x":
@@ -186,14 +222,6 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler {
         }
     }
 
-    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
-        return new MoveEntityAction(this, offset);
-    }
-
-    IHistoryAction ISelectionHandler.DeleteSelf() {
-        return new RemoveEntityAction(this, Room);
-    }
-
     private record class NodesWrapper(Entity Entity) : ILuaWrapper {
         public int Lua__index(Lua lua, object key) {
             if (key is long i) {
@@ -219,6 +247,7 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler {
             }
         }
     }
+    #endregion
 }
 
 public class EntityData : IDictionary<string, object> {

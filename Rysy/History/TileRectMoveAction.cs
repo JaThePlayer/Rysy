@@ -3,7 +3,6 @@ internal record class TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] 
     char[,] Old;
 
     public bool Apply() {
-        var ret = false;
         var ox = Offset.X;
         var oy = Offset.Y;
 
@@ -20,19 +19,15 @@ internal record class TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] 
                 if (c == '0')
                     continue;
 
-                ret |= Grid.SafeReplaceTile(c, x + ox, y + oy, out char orig);
+                Grid.SafeReplaceTile(c, x + ox, y + oy, out char orig);
             }
 
         Grid.RenderCacheToken?.Invalidate();
-        return ret;
+        return true;
     }
 
     public void Undo() {
         Grid.Tiles = Old;
-        //var ox = Offset.X;
-        //var oy = Offset.Y;
-        //Old.AsSpan2D().CopyTo(Grid.Tiles.AsSpan2D().Slice(Rect.X + ox, Rect.Y + oy, Rect.Width, Rect.Height));
-        //ToMove.AsSpan2D().CopyTo(Grid.Tiles.AsSpan2D().Slice(Rect.X, Rect.Y, Rect.Width, Rect.Height));
 
         Grid.RenderCacheToken?.Invalidate();
     }

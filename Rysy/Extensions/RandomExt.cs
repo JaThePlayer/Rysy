@@ -7,7 +7,10 @@ public static class RandomExt {
     /// Creates a random value out of two float values
     /// </summary>
     public static ulong SeededRandom(float x, float y) {
-        return splitmix64(Unsafe.As<float, uint>(ref x)) ^ splitmix64(Unsafe.As<float, uint>(ref y));
+        ulong ix = Unsafe.As<float, uint>(ref x);
+        ulong iy = Unsafe.As<float, uint>(ref y);
+
+        return splitmix64(ix ^ (iy << 32));
     }
 
     /// <summary>

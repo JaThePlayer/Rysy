@@ -59,8 +59,10 @@ public static class GFX {
             await LoadVanillaAtlasAsync();
 
         scene?.SetText("Scanning Rysy assets");
-        using (ScopedStopwatch watch = new("Scanning Rysy assets"))
+        using (ScopedStopwatch watch = new("Scanning Rysy assets")) {
             await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
+            Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
+        }
 
         scene?.SetText("Scanning mod dirs");
         using (ScopedStopwatch watch = new("Scanning mod dirs")) {

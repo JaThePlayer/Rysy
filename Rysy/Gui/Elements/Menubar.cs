@@ -28,37 +28,37 @@ public static class Menubar {
             b = p.FGTilesVisible;
             if (ImGui.Checkbox("FG Tiles", ref b)) {
                 p.FGTilesVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
             }
 
             b = p.BGTilesVisible;
             if (ImGui.Checkbox("BG Tiles", ref b)) {
                 p.BGTilesVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
             }
 
             b = p.EntitiesVisible;
             if (ImGui.Checkbox("Entities", ref b)) {
                 p.EntitiesVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearEntityRenderCache());
             }
 
             b = p.TriggersVisible;
             if (ImGui.Checkbox("Triggers", ref b)) {
                 p.TriggersVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearTriggerRenderCache());
             }
 
             b = p.FGDecalsVisible;
             if (ImGui.Checkbox("FG Decals", ref b)) {
                 p.FGDecalsVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
             }
 
             b = p.BGDecalsVisible;
             if (ImGui.Checkbox("BG Decals", ref b)) {
                 p.BGDecalsVisible = b;
-                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+                editor.Map.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
             }
 
             var currLayer = p.EditorLayer ?? 0;
@@ -89,6 +89,10 @@ public static class Menubar {
             if (ImGui.MenuItem("GC")) {
                 GCHelper.VeryAggressiveGC();
             }
+
+            bool b = DebugInfoWindow.Enabled;
+            if (ImGui.Checkbox("Debug Info Window", ref b))
+                DebugInfoWindow.Enabled = b;
 
             ImGui.EndMenu();
         }

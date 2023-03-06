@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using static System.Formats.Asn1.AsnWriter;
+
+namespace Rysy.Graphics;
 
 public record struct RectangleSprite : ISprite {
     public int? Depth { get; set; }
@@ -19,6 +21,15 @@ public record struct RectangleSprite : ISprite {
     public Color OutlineColor = Color.Transparent;
 
     public RectangleSprite() {
+    }
+
+    public void Render(Camera? cam, Vector2 offset) {
+        if (cam is { }) {
+            if (!cam.IsRectVisible(Pos.MovedBy(offset)))
+                return;
+        }
+
+        Render();
     }
 
     public void Render() {

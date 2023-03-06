@@ -78,7 +78,7 @@ public static class PicoFont {
     public static void Print(ReadOnlySpan<char> txt, Rectangle bounds, Color color, float scale = 1f) {
         var rw = W * scale;
         var boundWidth = bounds.Width - 2;
-        var maxPerLine = (int) (boundWidth / rw);
+        var maxPerLine = (int) (boundWidth / rw).AtLeast(1);
 
         // Split the text into as few vertical lines as we can fit.
         var lines = (int) Math.Floor((txt.Length / (float) maxPerLine));

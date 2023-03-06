@@ -45,7 +45,9 @@ public static class IAtlasExt {
     public static async ValueTask LoadFromZip(this IAtlas self, string zipName, ZipArchive zip) {
         await Parallel.ForEachAsync(zip.Entries, (entry, token) => {
             var name = entry.FullName;
-            if (name.StartsWith("Graphics/Atlases/Gameplay", StringComparison.Ordinal) && !name.EndsWith("/", StringComparison.Ordinal)) {
+            if (name.StartsWith("Graphics/Atlases/Gameplay", StringComparison.Ordinal) 
+            && name.EndsWith(".png", StringComparison.Ordinal)
+            ) {
                 var virtPath = name.AsSpan()["Graphics/Atlases/Gameplay/".Length..].ToVirtPath();
                 var texture = VirtTexture.FromFile(zipName, entry);
                 lock (self) {

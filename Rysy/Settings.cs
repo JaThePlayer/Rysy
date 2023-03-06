@@ -125,7 +125,34 @@ public sealed class Settings {
         }
     }
 
-    #warning Remove
+    private int _TargetFps = 60;
+    public int TargetFps {
+        get => _TargetFps;
+        set {
+            _TargetFps = value;
+            RysyEngine.SetTargetFps(value);
+        }
+    }
+
+    private bool _VSync = true;
+    public bool VSync {
+        get => _VSync;
+        set {
+            _VSync = value;
+            RysyEngine.ToggleVSync(value);
+        }
+    }
+
+    private bool _SmartFramerate = true;
+    public bool SmartFramerate {
+        get => _SmartFramerate;
+        set {
+            _SmartFramerate = value;
+            SmartFPSHandler.OnToggle();
+        }
+    }
+
+#warning Remove
     public string? LonnPluginPath { get; set; }
     #endregion
 }

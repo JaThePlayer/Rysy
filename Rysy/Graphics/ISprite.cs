@@ -13,6 +13,7 @@ public interface ISprite {
     public bool IsLoaded { get; }
 
     public void Render();
+    public void Render(Camera? cam, Vector2 offset);
 
     public static ISpriteDepthComparer DepthDescendingComparer = new();
 

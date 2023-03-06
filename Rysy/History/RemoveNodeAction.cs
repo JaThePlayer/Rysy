@@ -9,7 +9,7 @@ public record class RemoveNodeAction(Node Node, Entity Entity) : IHistoryAction 
 
 #warning Handle minimum nodes!
 
-            Entity.Room?.ClearRenderCache();
+            Entity.ClearRoomRenderCache();
             return true;
         }
 
@@ -18,6 +18,6 @@ public record class RemoveNodeAction(Node Node, Entity Entity) : IHistoryAction 
 
     public void Undo() {
         Entity.Nodes?.Insert(Index, Node);
-        Entity.Room?.ClearRenderCache();
+        Entity.ClearRoomRenderCache();
     }
 }
