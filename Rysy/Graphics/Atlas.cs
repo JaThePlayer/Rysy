@@ -9,6 +9,10 @@ public class Atlas : IAtlas {
                 return texture;
             }
 
+            if (Textures.TryGetValue(key + "00", out texture)) {
+                return texture;
+            }
+
             Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
             return GFX.VirtPixel;
         }

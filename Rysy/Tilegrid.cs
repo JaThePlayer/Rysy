@@ -305,6 +305,14 @@ public class Tilegrid : ILuaWrapper {
 
         void ISelectionCollider.MoveBy(Vector2 offset) {
         }
+
+        void ISelectionCollider.ResizeBy(Point offset) {
+            
+        }
+
+        IHistoryAction? ISelectionHandler.TryResize(Point delta) {
+            return null;
+        }
     }
 
     private record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {

@@ -16,7 +16,11 @@ public static class GFX {
         get {
             if (_ValidDecalPaths is { } p)
                 return p;
-            _ValidDecalPaths = Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal)).Select(p => p.virtPath["decals/".Length..]).ToList();
+            _ValidDecalPaths = Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal)).Select(p => {
+                return p.virtPath["decals/".Length..].RegexReplace(Decal.NumberTrimEnd, string.Empty);
+
+
+            }).Distinct().ToList();
 
             Atlas.OnTextureLoad += (a) => _ValidDecalPaths = null!;
             Atlas.OnUnload += () => _ValidDecalPaths = null!;

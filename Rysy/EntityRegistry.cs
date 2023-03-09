@@ -17,6 +17,10 @@ public static class EntityRegistry {
 
     public static async ValueTask RegisterAsync() {
         SIDToType.Clear();
+        SIDToLonnPlugin.Clear();
+        SIDToFields.Clear();
+        EntityPlacements.Clear();
+        TriggerPlacements.Clear();
 
         var loadingScene = RysyEngine.Scene as LoadingScene;
         loadingScene?.SetText("Registering entities");
@@ -138,6 +142,16 @@ public static class EntityRegistry {
 
         if (e is LonnEntity lonnPlugin) {
             lonnPlugin.Plugin = SIDToLonnPlugin[sid];
+        }
+
+        var min = e.MinimumSize;
+
+        if (e.ResizableX && e.Width < min.X) {
+            e.Width = min.X;
+        }
+
+        if (e.ResizableY && e.Height < min.Y) {
+            e.Height = min.Y;
         }
 
         return e;

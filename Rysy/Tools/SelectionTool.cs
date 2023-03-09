@@ -34,8 +34,20 @@ internal class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.moveRight", "right", CreateMoveHandler(new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.moveUp", "up", CreateMoveHandler(new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.moveDown", "down", CreateMoveHandler(new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+
+        handler.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeUp", "w", CreateUpsizeHandler(new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeDown", "s", CreateUpsizeHandler(new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+
         handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelection);
     }
+
+    private Action CreateUpsizeHandler(Point offset) => () => {
+        if (CurrentSelections is { } selections) {
+            ResizeSelectionsBy(offset, selections);
+        }
+    };
 
     private Action CreateMoveHandler(Vector2 offset) => () => {
         if (CurrentSelections is { } selections) {
@@ -47,6 +59,15 @@ internal class SelectionTool : Tool {
         var action = selections.Select(s => s.Handler.MoveBy(offset)).MergeActions().WithHook(
             onApply: () => selections.ForEach(s => s.Collider.MoveBy(offset)),
             onUndo: () => selections.ForEach(s => s.Collider.MoveBy(-offset))
+        );
+
+        History.ApplyNewAction(action);
+    }
+
+    private void ResizeSelectionsBy(Point offset, List<Selection> selections) {
+        var action = selections.Select(s => s.Handler.TryResize(offset)).MergeActions().WithHook(
+            onApply: () => selections.ForEach(s => s.Collider.ResizeBy(offset)),
+            onUndo: () => selections.ForEach(s => s.Collider.ResizeBy(offset.Negate()))
         );
 
         History.ApplyNewAction(action);

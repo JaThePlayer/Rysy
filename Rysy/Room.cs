@@ -34,7 +34,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         SetupBGTilegrid();
     }
 
-    [JsonIgnore]
     public CacheToken RenderCacheToken;
     public CacheToken EntityRenderCacheToken;
     public CacheToken TriggerRenderCacheToken;
@@ -42,6 +41,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     public CacheToken BgDecalsRenderCacheToken;
     public CacheToken FgTilesRenderCacheToken;
     public CacheToken BgTilesRenderCacheToken;
+
+    private RenderTarget2D? FullRenderCanvas;
 
     private Map _map = null!;
 
@@ -329,9 +330,6 @@ public sealed class Room : IPackable, ILuaWrapper {
             return;
         }
 
-        StartBatch(camera);
-        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * (selected ? .5f : .2f)).Render();
-
         if (CachedSprites is null) {
             ResetRandom();
             //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
@@ -415,6 +413,20 @@ public sealed class Room : IPackable, ILuaWrapper {
                 StartTextureLoadTimer();
         }
 
+        StartBatch(camera);
+        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * (selected ? .5f : .2f)).Render();
+
+        /*
+        if (FullRenderCanvas is { IsDisposed: false } canvas) {
+            DrawFromCanvas(camera);
+        } else if (CachedSprites.All(s => s.IsLoaded)) {
+            canvas = CacheIntoCanvas(camera);
+            DrawFromCanvas(camera);
+        } else {
+            foreach (var item in CachedSprites) {
+                item.Render(camera, new(X, Y));
+            }
+        }*/
         foreach (var item in CachedSprites) {
             item.Render(camera, new(X, Y));
         }
@@ -427,6 +439,38 @@ public sealed class Room : IPackable, ILuaWrapper {
         GFX.Batch.End();
     }
 
+    private void DrawFromCanvas(Camera camera) {
+        GFX.Batch.Draw(FullRenderCanvas, new Vector2(0, 0), Color.White);
+
+        if (CachedTriggerSprites is { } triggers)
+            foreach (var item in triggers) {
+                item.Render(camera, new(X, Y));
+            }
+    }
+
+    private RenderTarget2D CacheIntoCanvas(Camera camera) {
+        RenderTarget2D canvas;
+        Console.WriteLine("All loaded, caching!");
+        var gd = RysyEngine.GDM.GraphicsDevice;
+        canvas = new(gd, Width, Height);
+        FullRenderCanvas = canvas;
+        GFX.Batch.End();
+
+        gd.SetRenderTarget(canvas);
+        gd.Clear(Color.Transparent);
+
+        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+
+        foreach (var item in CachedSprites!) {
+            item.Render();
+        }
+
+        GFX.Batch.End();
+        gd.SetRenderTarget(null);
+        StartBatch(camera);
+        return canvas;
+    }
+
     private void StartTextureLoadTimer() {
         Task.Run(async () => {
             using (var w = new ScopedStopwatch($"Loading {CachedSprites!.Count} textures for {Name}"))
@@ -437,7 +481,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void ClearRenderCache() {
-        CachedSprites = null;
+        ClearFullRenderCache();
         ClearEntityRenderCache();
         ClearTriggerRenderCache();
         ClearBgDecalsRenderCache();
@@ -449,30 +493,36 @@ public sealed class Room : IPackable, ILuaWrapper {
     public void ClearEntityRenderCache() {
         CachedEntitySprites?.Clear();
         CachedEntitySprites = null;
-        CachedSprites = null;
+        ClearFullRenderCache();
     }
 
     public void ClearTriggerRenderCache() {
         CachedTriggerSprites = null;
-        CachedSprites = null;
+        ClearFullRenderCache();
     }
 
     public void ClearFgDecalsRenderCache() {
         CachedFgDecalSprites = null;
-        CachedSprites = null;
+        ClearFullRenderCache();
     }
 
     public void ClearBgDecalsRenderCache() {
         CachedBgDecalSprites = null;
-        CachedSprites = null;
+        ClearFullRenderCache();
     }
 
     public void ClearFgTilesRenderCache() {
         CachedFgTileSprites = null;
-        CachedSprites = null;
+        ClearFullRenderCache();
     }
     public void ClearBgTilesRenderCache() {
         CachedBgTileSprites = null;
+        ClearFullRenderCache();
+    }
+
+    private void ClearFullRenderCache() {
+        FullRenderCanvas?.Dispose();
+        FullRenderCanvas = null;
         CachedSprites = null;
     }
 

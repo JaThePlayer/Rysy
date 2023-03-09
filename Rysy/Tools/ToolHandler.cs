@@ -56,6 +56,13 @@ public class ToolHandler {
         foreach (var tool in Tools) {
             tool.InitHotkeys(handler);
         }
+
+        handler.AddHotkeyFromSettings("tools.nextTool", "tab", SwapToNextTool, HotkeyModes.OnClick);
+    }
+
+    private void SwapToNextTool() {
+        var i = Tools.IndexOf(CurrentTool);
+        CurrentTool = Tools[(i + 1) % Tools.Count];
     }
 
     public void Update(Camera camera, Room currentRoom) {
