@@ -8,6 +8,10 @@ public class Trigger : Entity, INodeSpriteProvider {
 
     public override int Depth => Depths.Top;
 
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
+    public override Point MinimumSize => new(8, 8);
+
     public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var node = Nodes![nodeIndex];
         var rect = new Rectangle((int) node.X - 2, (int) node.Y - 2, 4, 4);

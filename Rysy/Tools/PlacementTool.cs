@@ -49,7 +49,19 @@ public class PlacementTool : Tool {
         };
     }
 
+    private Placement? PlacementFromString(string str) {
+        return Layer switch {
+            LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One),
+            LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One),
+            _ => null,
+        };
+    }
+
     public override void Update(Camera camera, Room currentRoom) {
+        if (Material is string strPlacement) {
+            Material = PlacementFromString(strPlacement);
+        }
+        
 
         if (Material is Placement placement) {
             if (Input.Mouse.Left.Clicked()) {

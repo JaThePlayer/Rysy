@@ -46,6 +46,8 @@ public interface ISelectionCollider {
     public void Render(Color c);
 
     public void MoveBy(Vector2 offset);
+
+    public void ResizeBy(Point offset);
 }
 
 /// <summary>
@@ -58,6 +60,7 @@ public interface ISelectionHandler {
     /// </summary>
     public IHistoryAction MoveBy(Vector2 offset);
     public IHistoryAction DeleteSelf();
+    public IHistoryAction? TryResize(Point delta);
 
     /// <summary>
     /// The parent object which this handler manipulates.
@@ -85,6 +88,11 @@ public record class RectangleSelection : ISelectionCollider {
         Rect.Y += (int) offset.Y;
     }
 
+    public void ResizeBy(Point offset) {
+        Rect.Width += offset.X;
+        Rect.Height += offset.Y;
+    }
+
     public bool Overlaps(Rectangle roomPos) {
         return Rect.Intersects(roomPos);
     }
@@ -96,13 +104,18 @@ public record class RectangleSelection : ISelectionCollider {
 
 public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
     private Vector2 DrawOffset;
+    private Point SizeOffset;
 
     public void MoveBy(Vector2 offset) {
         DrawOffset += offset;
     }
 
+    public void ResizeBy(Point offset) {
+        SizeOffset += offset;
+    }
+
     public bool Overlaps(Rectangle roomPos) {
-        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).Intersects(roomPos) ?? false;
+        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).AddSize(SizeOffset).Intersects(roomPos) ?? false;
     }
 
     public void Render(Color c) {

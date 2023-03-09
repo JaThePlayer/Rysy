@@ -3,8 +3,8 @@
 public record class MergedAction : IHistoryAction {
     List<IHistoryAction> Actions;
 
-    public MergedAction(IEnumerable<IHistoryAction> actions) {
-        Actions = new(actions);
+    public MergedAction(IEnumerable<IHistoryAction?> actions) {
+        Actions = new(actions.Where(act => act is not null)!);
     }
 
     private bool[] Applied;

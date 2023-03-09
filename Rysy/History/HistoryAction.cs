@@ -7,7 +7,7 @@ public interface IHistoryAction {
 }
 
 public static class HistoryActionExtensions {
-    public static MergedAction MergeActions(this IEnumerable<IHistoryAction> actions) => new(actions);
+    public static MergedAction MergeActions(this IEnumerable<IHistoryAction?> actions) => new(actions);
 
     public static HookedAction WithHook(this IHistoryAction action, Action? onApply = null, Action? onUndo = null) => new(action) {
         OnApply = onApply,

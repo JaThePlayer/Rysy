@@ -36,13 +36,19 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     [JsonIgnore]
     public int Width {
         get => EntityData.Int("width");
-        set => EntityData["width"] = value;
+        set {
+            EntityData["width"] = value;
+            ClearRoomRenderCache();
+        }
     }
 
     [JsonIgnore]
     public int Height {
         get => EntityData.Int("height");
-        set => EntityData["height"] = value;
+        set {
+            EntityData["height"] = value;
+            ClearRoomRenderCache();
+        }
     }
 
     [JsonIgnore]
@@ -102,9 +108,10 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
 
                 if (firstSprite is Sprite s) {
                     yield return Selection.FromSprite(node.ToSelectionHandler(this), s);
+                } else {
+                    yield return Selection.FromRect(node.ToSelectionHandler(this), Rectangle.MovedTo(nodes[i]));
                 }
 
-                yield return Selection.FromRect(node.ToSelectionHandler(this), Rectangle.MovedTo(nodes[i]));
             }
 
         Selection GetMain() {
@@ -126,6 +133,11 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     public virtual IEnumerable<ISprite> GetSprites() {
         yield break;
     }
+
+    public virtual bool ResizableX => false;
+    public virtual bool ResizableY => false;
+
+    public virtual Point MinimumSize => new(8, 8);
 
     public override string ToString() {
         return $"{GetType().FullName}{{Room:{Room.Name}, Pos:{Pos}}}";
@@ -183,6 +195,7 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     }
 
     #region ISelectionHandler
+    object ISelectionHandler.Parent => this;
     IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
         return new MoveEntityAction(this, offset);
     }
@@ -191,7 +204,12 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
         return new RemoveEntityAction(this, Room);
     }
 
-    object ISelectionHandler.Parent => this;
+    IHistoryAction? ISelectionHandler.TryResize(Point delta) {
+        if ((ResizableX && delta.X != 0) || (ResizableY && delta.Y != 0)) 
+            return new EntityResizeAction(this, delta);
+
+        return null;
+    }
     #endregion
 
     #region ILuaWrapper

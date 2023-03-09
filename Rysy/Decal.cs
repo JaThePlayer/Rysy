@@ -50,8 +50,11 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
         Scale = new(from.Float("scaleX", 1), from.Float("scaleY", 1));
         OrigTexture = from.Attr("texture", "");
         EditorLayer = from.Int("_editorLayer", 0);
+        Texture = MapTextureToPath(OrigTexture);
+    }
 
-        Texture = "decals/" + OrigTexture.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
+    private static string MapTextureToPath(string textureFromMap) {
+        return "decals/" + textureFromMap.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
     }
 
     public Sprite GetSprite()
@@ -75,6 +78,7 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
             Room.ClearBgDecalsRenderCache();
     }
 
+    #region ISelectionHandler
     object ISelectionHandler.Parent => this;
 
     IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
@@ -84,6 +88,11 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
     IHistoryAction ISelectionHandler.DeleteSelf() {
         return new RemoveDecalAction(this, Room);
     }
+
+    IHistoryAction? ISelectionHandler.TryResize(Point delta) {
+        return null;
+    }
+    #endregion
 
     Placement IConvertibleToPlacement.ToPlacement() {
         return new Placement(Texture) {
@@ -107,6 +116,18 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
             Pos = pos,
             FG = fg,
             Room = room,
+        };
+    }
+
+    public static Placement PlacementFromPath(string path, bool fg, Vector2 scale) {
+        return new Placement(path) {
+            ValueOverrides = new(StringComparer.Ordinal) {
+                ["scale"] = scale,
+                ["texture"] = MapTextureToPath(path),
+                ["origTexture"] = path,
+                ["editorLayer"] = Persistence.Instance.EditorLayer ?? 0,
+            },
+            PlacementHandler = fg ? DecalPlacementHandler.FGInstance : DecalPlacementHandler.BGInstance
         };
     }
 }

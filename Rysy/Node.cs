@@ -29,4 +29,8 @@ sealed record class NodeSelectionHandler(Entity Entity, Node Node) : ISelectionH
     public IHistoryAction DeleteSelf() {
         return new RemoveNodeAction(Node, Entity);
     }
+
+    public IHistoryAction? TryResize(Point delta) {
+        return null;
+    }
 }

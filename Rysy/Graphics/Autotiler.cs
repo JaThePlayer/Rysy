@@ -347,7 +347,7 @@ public sealed class Autotiler {
         public Color Color { get; set; } = Color.White;
         public float Alpha { get; set; }
 
-        public bool IsLoaded => Sprites.Cast<AutotiledSprite>().All(s => s.T.Texture is { });
+        public bool IsLoaded => Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });
 
         public AutotiledSprite[,] Sprites;
 
@@ -360,11 +360,19 @@ public sealed class Autotiler {
             var b = GFX.Batch;
             var sprites = Sprites;
 
-            var scrPos = cam.Pos - offset;
-            var left = Math.Max(0, (int) scrPos.X / 8);
-            var right = Math.Min(sprites.GetLength(0), left + cam.Viewport.Width / cam.Scale / 8 + 1);
-            var top = Math.Max(0, (int) scrPos.Y / 8);
-            var bot = Math.Min(sprites.GetLength(1), top + cam.Viewport.Height / cam.Scale / 8 + 1);
+            int left, right, top, bot;
+            if (cam is { }) {
+                var scrPos = cam.Pos - offset;
+                left = Math.Max(0, (int) scrPos.X / 8);
+                right = (int)Math.Min(sprites.GetLength(0), left + cam.Viewport.Width / cam.Scale / 8 + 1);
+                top = Math.Max(0, (int) scrPos.Y / 8);
+                bot = (int) Math.Min(sprites.GetLength(1), top + cam.Viewport.Height / cam.Scale / 8 + 1);
+            } else {
+                left = 0;
+                top = 0;
+                right = sprites.GetLength(0);
+                bot = sprites.GetLength(1);
+            }
 
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bot; y++) {
@@ -377,7 +385,6 @@ public sealed class Autotiler {
         }
 
         public void Render() {
-#warning MAKE CAMERA, VECTOR2 THE OVERLOAD FOR ISPRITE.RENDER!!!!
             Render(null, default);
         }
 
