@@ -32,19 +32,3 @@ public record class MoveEntityAction(Entity Entity, Vector2 By) : IHistoryAction
         return new MoveEntityAction(entity!, by);
     }
 }
-
-public record class MoveDecalAction(Decal Decal, Vector2 By) : IHistoryAction {
-    public bool Apply() {
-        Decal.Pos += By;
-
-        Decal.ClearRoomRenderCache();
-
-        return true;
-    }
-
-    public void Undo() {
-        Decal.Pos -= By;
-
-        Decal.ClearRoomRenderCache();
-    }
-}

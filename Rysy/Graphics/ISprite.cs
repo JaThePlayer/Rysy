@@ -8,7 +8,7 @@ public interface ISprite {
 
     public Color Color { get; set; }
 
-    public float Alpha { get; set; }
+    public void MultiplyAlphaBy(float alpha);
 
     public bool IsLoaded { get; }
 

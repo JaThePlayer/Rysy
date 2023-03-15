@@ -46,11 +46,28 @@ public interface IPlacementHandler {
     public IHistoryAction Place(Placement placement, Vector2 pos, Room room);
 }
 
-public class EntityPlacementHandler : IPlacementHandler {
-    public static EntityPlacementHandler Instance = new();
+public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHandler {
+    public static EntityPlacementHandler Entity = new(SelectionLayer.Entities);
+    public static EntityPlacementHandler Trigger = new(SelectionLayer.Triggers);
+    public static EntityPlacementHandler FGDecals = new(SelectionLayer.FGDecals);
+    public static EntityPlacementHandler BGDecals = new(SelectionLayer.BGDecals);
 
-    private static Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
-        return EntityRegistry.Create(placement, pos, room, false, false);
+    private Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
+        placement.ValueOverrides["_editorLayer"] = Persistence.Instance?.EditorLayer ?? 0;
+
+        switch (Layer) {
+            case SelectionLayer.Entities:
+                return EntityRegistry.Create(placement, pos, room, false, false);
+            case SelectionLayer.FGDecals:
+                var entity = EntityRegistry.Create(placement, pos, room, false, false);
+                entity.AsDecal()!.FG = true;
+                return entity;
+            case SelectionLayer.BGDecals:
+                return EntityRegistry.Create(placement, pos, room, false, false);
+            case SelectionLayer.Triggers:
+                return EntityRegistry.Create(placement, pos, room, false, true);
+        }
+        throw new Exception($"Can't create entity from layer: {Layer}");
     }
 
     public IEnumerable<ISprite> GetPreviewSprites(Placement placement, Vector2 pos, Room room) {
@@ -61,41 +78,6 @@ public class EntityPlacementHandler : IPlacementHandler {
         var entity = CreateFromPlacement(placement, pos, room);
 
         return new AddEntityAction(entity, room);
-    }
-}
-
-public class TriggerPlacementHandler : IPlacementHandler {
-    public static TriggerPlacementHandler Instance = new();
-
-    private static Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
-        return EntityRegistry.Create(placement, pos, room, false, true);
-    }
-
-    public IEnumerable<ISprite> GetPreviewSprites(Placement placement, Vector2 pos, Room room) {
-        return CreateFromPlacement(placement, pos, room).GetSprites();
-    }
-
-    public IHistoryAction Place(Placement placement, Vector2 pos, Room room) {
-        var entity = CreateFromPlacement(placement, pos, room);
-
-        return new AddEntityAction(entity, room);
-    }
-}
-
-public class DecalPlacementHandler : IPlacementHandler {
-    public bool FG { get; init; }
-
-    public static DecalPlacementHandler FGInstance = new() { FG = true };
-    public static DecalPlacementHandler BGInstance = new() { FG = false };
-
-    public IEnumerable<ISprite> GetPreviewSprites(Placement placement, Vector2 pos, Room room) {
-        return new ISprite[] { Decal.FromPlacement(placement, pos, room, FG).GetSprite() };
-    }
-
-    public IHistoryAction Place(Placement placement, Vector2 pos, Room room) {
-        var decal = Decal.FromPlacement(placement, pos, room, FG);
-
-        return new AddDecalAction(decal, room);
     }
 }
 

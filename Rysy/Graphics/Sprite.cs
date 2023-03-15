@@ -1,9 +1,10 @@
 ﻿using Rysy.Graphics.TextureTypes;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
 
-public record struct Sprite : ISprite {
+public record struct Sprite : ISprite, IEnumerable<ISprite> {
     public int? Depth { get; set; }
 
     public Vector2 Pos;
@@ -12,12 +13,9 @@ public record struct Sprite : ISprite {
     public Rectangle? ClipRect;
 
     public Color Color { get; set; } = Color.White;
-    public float Alpha {
-        get => Color.A / 255f;
-        set {
-            //Color = new Color(Color, value);
-            Color = Color * value;
-        }
+    public void MultiplyAlphaBy(float alpha) {
+        Color *= alpha;
+        OutlineColor *= alpha;
     }
 
     public bool IsLoaded => Texture.Texture is { };
@@ -200,5 +198,31 @@ public record struct Sprite : ISprite {
         }
 
         return new(newX, newY, w, h);
+    }
+
+    public IEnumerator<ISprite> GetEnumerator() => new SingleSpriteEnumerator(this);
+
+    IEnumerator IEnumerable.GetEnumerator() => new SingleSpriteEnumerator(this);
+
+    private record struct SingleSpriteEnumerator(Sprite Sprite) : IEnumerator<ISprite> {
+        private bool _moved = false;
+    
+        public ISprite Current => Sprite;
+
+        object IEnumerator.Current => Sprite;
+
+        public void Dispose() {
+        }
+
+        public bool MoveNext() {
+            if (!_moved) {
+                _moved = true;
+                return true;
+            }
+            return false;
+        }
+
+        public void Reset() {
+        }
     }
 }

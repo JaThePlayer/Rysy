@@ -7,16 +7,14 @@ public class HistoryHandler {
     internal List<IHistoryAction> Actions { get; set; } = new();
     internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
-    public Action? OnUndo;
-    public Action? OnApply;
+    public Action? OnUndo { get; set; }
+    public Action? OnApply { get; set; }
 
     public void ApplyNewAction(IHistoryAction action) {
         if (action.Apply()) {
             Actions.Add(action);
             UndoneActions.Clear();
             OnApply?.Invoke();
-            Logger.Write("History.Serialize", LogLevel.Debug, Serialize());
-            Logger.Write("History.Deserialize", LogLevel.Debug, Deserialize(Serialize()).ToJson());
         }
 
     }

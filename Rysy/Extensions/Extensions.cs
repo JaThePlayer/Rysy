@@ -23,26 +23,6 @@ public static class Extensions {
         return Array.IndexOf(tiles, value) >= 0;
     }
 
-    public static IEnumerable<Task> SelectToTaskRun<T>(this IEnumerable<T> self, Action<T> action) {
-        foreach (var item in self) {
-            yield return Task.Run(() => action(item));
-        }
-    }
-
-    public static IEnumerable<T> Do<T>(this IEnumerable<T> self, Action action) {
-        action();
-        foreach (var item in self) {
-            yield return item;
-        }
-    }
-
-    public static IEnumerable<T> Apply<T>(this IEnumerable<T> self, Action<T> action) {
-        foreach (var item in self) {
-            action(item);
-            yield return item;
-        }
-    }
-
     /// <summary>
     /// If this is true, then performs the action
     /// </summary>

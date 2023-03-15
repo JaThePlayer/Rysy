@@ -19,6 +19,9 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         Entities.OnChanged += ClearEntityRenderCache;
         Triggers.OnChanged += ClearTriggerRenderCache;
+
+        BgDecals = new(ClearBgDecalsRenderCache);
+        FgDecals = new(ClearFgDecalsRenderCache);
     }
 
     public Room(Map map, int width, int height) : this() {
@@ -86,8 +89,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     public TypeTrackedList<Entity> Entities { get; init; } = new();
     public TypeTrackedList<Entity> Triggers { get; init; } = new();
 
-    public List<Decal> BgDecals = new();
-    public List<Decal> FgDecals = new();
+    public ListenableList<Entity> BgDecals { get; private set; }
+    public ListenableList<Entity> FgDecals { get; private set; }
 
     public Tilegrid FG = null!;
     public Tilegrid BG = null!;
@@ -103,7 +106,6 @@ public sealed class Room : IPackable, ILuaWrapper {
             var old = Attributes.Name;
             if (old != value) {
                 Attributes.Name = value;
-                ResetRandom();
                 OnNameChanged?.Invoke(old, value);
             }
 
@@ -123,10 +125,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     private List<ISprite>? CachedBgTileSprites;
     private List<ISprite>? CachedFgTileSprites;
 
-    //public int RandomSeed => Name.Sum(c => (int) c);
-
-    //public Random Random { get; private set; } = null!;
-
     /// <summary>
     /// Gets an entity ID that's not yet used in this room.
     /// </summary>
@@ -136,10 +134,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.ID == id);
-
-    private void ResetRandom() {
-        //Random = new(RandomSeed);
-    }
 
     public void Unpack(BinaryPacker.Element from) {
         Attributes = new();
@@ -183,19 +177,17 @@ public sealed class Room : IPackable, ILuaWrapper {
             switch (child.Name) {
                 case "bgdecals":
                     BgDecals = child.Children.Select((e) => {
-                        var d = Decal.Create(e);
+                        var d = Decal.Create(e, false);
                         d.Room = this;
-                        d.FG = false;
                         return d;
-                    }).ToList();
+                    }).ToListenableList<Entity>(ClearBgDecalsRenderCache);
                     break;
                 case "fgdecals":
                     FgDecals = child.Children.Select((e) => {
-                        var d = Decal.Create(e);
+                        var d = Decal.Create(e, true);
                         d.Room = this;
-                        d.FG = true;
                         return d;
-                    }).ToList();
+                    }).ToListenableList<Entity>(ClearFgDecalsRenderCache);
                     break;
                 case "entities":
                     foreach (var entity in child.Children) {
@@ -333,7 +325,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         if (CachedSprites is null) {
-            ResetRandom();
             //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
@@ -344,7 +335,7 @@ public sealed class Room : IPackable, ILuaWrapper {
                     var spr = e.GetSprites().SetDepth(e.Depth);
                     spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
                     if (layer is { } && e.EditorLayer != layer)
-                        spr = spr.Apply(s => s.Alpha *= Settings.Instance.HiddenLayerAlpha);
+                        spr = spr.Apply(s => s.MultiplyAlphaBy(Settings.Instance.HiddenLayerAlpha));
 
                     return spr;
                 }).SelectMany(x => x).ToList();
@@ -359,7 +350,7 @@ public sealed class Room : IPackable, ILuaWrapper {
                     var spr = e.GetSprites().SetDepth(e.Depth);
                     spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
                     if (layer is { } && e.EditorLayer != layer)
-                        spr = spr.Apply(s => s.Alpha *= Settings.Instance.HiddenLayerAlpha);
+                        spr = spr.Apply(s => s.MultiplyAlphaBy(Settings.Instance.HiddenLayerAlpha));
 
                     return spr;
                 }).SelectMany(x => x).ToList();
@@ -383,8 +374,8 @@ public sealed class Room : IPackable, ILuaWrapper {
             }
 
             if (p.FGDecalsVisible) {
-                CachedFgDecalSprites ??= FgDecals.Select<Decal, ISprite>(d => {
-                    var spr = d.GetSprite();
+                CachedFgDecalSprites ??= FgDecals.Select<Entity, ISprite>(d => {
+                    var spr = d.AsDecal()!.GetSprite();
                     if (layer is { } && d.EditorLayer != layer)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
 
@@ -395,8 +386,8 @@ public sealed class Room : IPackable, ILuaWrapper {
                 sprites = sprites.Concat(CachedFgDecalSprites);
             }
             if (p.BGDecalsVisible) {
-                CachedBgDecalSprites ??= BgDecals.Select<Decal, ISprite>(d => {
-                    var spr = d.GetSprite();
+                CachedBgDecalSprites ??= BgDecals.Select<Entity, ISprite>(d => {
+                    var spr = d.AsDecal()!.GetSprite();
                     if (layer is { } && d.EditorLayer != layer)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
 
@@ -625,17 +616,17 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    private void GetSelectionsInRectForDecals(Rectangle rect, List<Decal> decals, List<Selection> into) {
+    private void GetSelectionsInRectForDecals(Rectangle rect, ListenableList<Entity> decals, List<Selection> into) {
         var layer = Persistence.Instance.EditorLayer;
 
         foreach (var decal in decals) {
             if (layer is { } && decal.EditorLayer != layer)
                 continue;
 
-            var selection = decal.GetSelection();
+            var selection = decal.GetMainSelection();
 
-            if (selection.Check(rect)) {
-                into.Add(selection);
+            if (selection.IsWithinRectangle(rect)) {
+                into.Add(new Selection() { Handler = new EntitySelectionHandler() { Entity = decal } });
             }
         }
     }

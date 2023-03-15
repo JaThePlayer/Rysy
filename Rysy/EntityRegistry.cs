@@ -15,12 +15,18 @@ public static class EntityRegistry {
 
     private static LuaCtx LuaCtx = LuaCtx.CreateNew();
 
+    public const string FGDecalSID = "fgDecal";
+    public const string BGDecalSID = "bgDecal";
+
     public static async ValueTask RegisterAsync() {
         SIDToType.Clear();
         SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
         EntityPlacements.Clear();
         TriggerPlacements.Clear();
+
+        SIDToType[FGDecalSID] = typeof(Decal);
+        SIDToType[BGDecalSID] = typeof(Decal);
 
         var loadingScene = RysyEngine.Scene as LoadingScene;
         loadingScene?.SetText("Registering entities");
@@ -61,7 +67,7 @@ public static class EntityRegistry {
                             ValueOverrides = item.Data,
                             SID = pl.Name,
                             Tooltip = "[From Lonn]",
-                            PlacementHandler = EntityPlacementHandler.Instance
+                            PlacementHandler = EntityPlacementHandler.Entity
                         });
                     }
                 }
@@ -95,7 +101,7 @@ public static class EntityRegistry {
                 lock (placementsRegistry) {
                     foreach (var placement in placements) {
                         placement.SID ??= sids.Length == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
-                        placement.PlacementHandler = isTrigger ? TriggerPlacementHandler.Instance : EntityPlacementHandler.Instance;
+                        placement.PlacementHandler = isTrigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
                     }
                     placementsRegistry.AddRange(placements);
                 }
