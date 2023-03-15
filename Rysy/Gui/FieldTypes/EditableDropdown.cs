@@ -9,6 +9,14 @@ public class EditableDropdownField<T> : IField {
 
     public object GetDefault() => Default!;
 
+    public bool IsValid(object value) {
+        if (value is not T val) {
+            return false;
+        }
+
+        return true;
+    }
+
     public object? RenderGui(string fieldName, object value) {
         if (value is not T val) {
             return null;

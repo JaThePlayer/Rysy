@@ -66,6 +66,24 @@ public static class ImGuiManager {
         if (_invalidStyleEnabled) {
             ImGui.PopStyleColor(2);
             ImGui.PopStyleVar(2);
+            _invalidStyleEnabled = false;
+        }
+    }
+
+    private static bool _editedStylePushed;
+    public static void PushEditedStyle() {
+        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(0, 255, 0, 255));
+        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(0, 255, 0, 255));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
+        _editedStylePushed = true;
+    }
+
+    public static void PopEditedStyle() {
+        if (_editedStylePushed) {
+            ImGui.PopStyleColor(2);
+            ImGui.PopStyleVar(2);
+            _editedStylePushed = false;
         }
     }
 

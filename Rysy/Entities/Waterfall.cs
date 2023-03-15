@@ -31,7 +31,7 @@ public class Waterfall : Entity {
                 Rectangle bRect = e.Rectangle;
 
                 if (bRect.Intersects(rect)) {
-                    h = (int) (e.Pos.Y - pos.Y);
+                    h = (int) (e.Y - pos.Y);
                     rect.Height = h;
                 }
             }

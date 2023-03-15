@@ -3,8 +3,10 @@ using Rysy.Helpers;
 
 namespace Rysy;
 
-public class Trigger : Entity, INodeSpriteProvider {
+public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
     public virtual Color Color => Color.LightSkyBlue;
+
+    public virtual Color FillColor => Color * 0.15f;
 
     public override int Depth => Depths.Top;
 
@@ -12,20 +14,32 @@ public class Trigger : Entity, INodeSpriteProvider {
     public override bool ResizableY => true;
     public override Point MinimumSize => new(8, 8);
 
+    public IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => self.GetNodeRect(nodeIndex).Center.ToVector2());
+
     public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
-        var node = Nodes![nodeIndex];
-        var rect = new Rectangle((int) node.X - 2, (int) node.Y - 2, 4, 4);
-        yield return ISprite.OutlinedRect(rect, Color * 0.35f, Color);
+        var rect = GetNodeRect(nodeIndex);
+        yield return ISprite.OutlinedRect(rect, FillColor, Color);
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        var rect = new Rectangle((int) Pos.X, (int) Pos.Y, Width, Height);
-        yield return ISprite.OutlinedRect(rect, Color * 0.35f, Color);
+        var rect = new Rectangle(X, Y, Width, Height);
+        yield return ISprite.OutlinedRect(rect, FillColor, Color);
         yield return new PicoTextRectSprite() {
-            Text = TriggerHelpers.Humanize(EntityData.Name),
+            Text = TriggerHelpers.Humanize(EntityData.SID),
             Pos = rect,
             Color = Color.White,
             Scale = 0.5f,
         };
+    }
+
+    public override ISelectionCollider GetNodeSelection(int nodeIndex) {
+        return ISelectionCollider.RectCollider(GetNodeRect(nodeIndex));
+    }
+
+    private Rectangle GetNodeRect(int nodeIndex) {
+        var node = Nodes![nodeIndex];
+        var rect = new Rectangle((int) node.X - 2, (int) node.Y - 2, 5, 5);
+
+        return rect;
     }
 }

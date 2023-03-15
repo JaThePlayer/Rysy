@@ -13,11 +13,12 @@ public class TouchSwitch : SpriteEntity {
 
     public override IEnumerable<ISprite> GetSprites() {
         var container = GetSprite("objects/touchswitch/container");
+        yield return container;
         yield return container with {
             Color = Color.Black,
-            Pos = Pos.AddY(-1)
+            Pos = Pos.AddY(-1),
+            Depth = Depth + 1,
         };
-        yield return container;
         yield return GetSprite("objects/touchswitch/icon00");
     }
 }

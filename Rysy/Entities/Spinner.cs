@@ -41,6 +41,8 @@ public sealed class Spinner : Entity, IPlaceable {
 
     public static FieldList GetFields() => new() {
         ["color"] = Fields.Dropdown("blue", SpinnerColors),
+        ["attachToSolid"] = Fields.Bool(false),
+        ["dust"] = Fields.Bool(false),
     };
 
     public static List<Placement>? GetPlacements() => new() {

@@ -7,6 +7,8 @@ public class StringField : IField {
 
     public object GetDefault() => Default;
 
+    public bool IsValid(object value) => value is string;
+
     public object? RenderGui(string fieldName, object value) {
         var b = value.ToString();
         if (ImGui.InputText(fieldName, ref b, 256))

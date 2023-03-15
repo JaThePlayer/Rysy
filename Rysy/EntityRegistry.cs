@@ -135,8 +135,8 @@ public static class EntityRegistry {
             e = trigger ? new Trigger() : new UnknownEntity();
         }
 
-        e.ID = id ?? room.NextEntityID();
         e.EntityData = entityData;
+        e.ID = id ?? room.NextEntityID();
         e.Room = room;
         e.Pos = pos;
 

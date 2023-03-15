@@ -82,11 +82,15 @@ public static class Menubar {
                 }));
             }
 
+            if (ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
+                editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+            }
+
             if (ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {
                 ImGui.SetClipboardText(editor.Map.Pack().ToJson());
             }
 
-            if (ImGui.MenuItem("GC")) {
+            if (ImGui.MenuItem("GC").WithTooltip("Causes a very aggressive GC call")) {
                 GCHelper.VeryAggressiveGC();
             }
 

@@ -1,4 +1,6 @@
-﻿using Rysy.Helpers;
+﻿using CommunityToolkit.HighPerformance;
+using Rysy.Helpers;
+using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -90,7 +92,7 @@ public sealed class Autotiler {
             tileData[7] = IsTileAt(x, y + 1);
             tileData[8] = IsTileAt(x + 1, y + 1);
 
-            long bitmask = 
+            long bitmask =
                 tileData[0].AsByte() +
                 (tileData[1].AsByte() << 1) +
                 (tileData[2].AsByte() << 2) +
@@ -303,6 +305,12 @@ public sealed class Autotiler {
             Pos = position,
         };
 
+        for (int i = 0; i < l.Sprites.GetLength(0); i++) {
+            for (int j = 0; j < l.Sprites.GetLength(1); j++) {
+                l.Sprites[i, j] = new();
+            }
+        }
+
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 var c = tileGrid[x, y];
@@ -342,7 +350,7 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
 
-    internal struct AutotiledSpriteList : ISprite {
+    internal class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
         public float Alpha { get; set; }
@@ -364,9 +372,9 @@ public sealed class Autotiler {
             if (cam is { }) {
                 var scrPos = cam.Pos - offset;
                 left = Math.Max(0, (int) scrPos.X / 8);
-                right = (int)Math.Min(sprites.GetLength(0), left + cam.Viewport.Width / cam.Scale / 8 + 1);
+                right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 1);
                 top = Math.Max(0, (int) scrPos.Y / 8);
-                bot = (int) Math.Min(sprites.GetLength(1), top + cam.Viewport.Height / cam.Scale / 8 + 1);
+                bot = (int) Math.Min(sprites.GetLength(1), top + float.Round(cam.Viewport.Height / cam.Scale / 8) + 1);
             } else {
                 left = 0;
                 top = 0;
@@ -374,12 +382,14 @@ public sealed class Autotiler {
                 bot = sprites.GetLength(1);
             }
 
+            var sprSpan = sprites.AsSpan2D();
+            var color = Color;
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bot; y++) {
-                    var s = sprites[x, y];
+                    ref var s = ref sprSpan.DangerousGetReferenceAt(x, y);// ref sprites[x, y];
 
                     if (s.T?.Texture is { } t)
-                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtext, Color);
+                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtext, color);
                 }
             }
         }
@@ -388,10 +398,13 @@ public sealed class Autotiler {
             Render(null, default);
         }
 
+
         public struct AutotiledSprite {
             public VirtTexture T;
-            //public Vector2 Pos;
-            public Rectangle? Subtext;
+            public Rectangle Subtext;
+
+            public AutotiledSprite() {
+            }
         }
 
     }

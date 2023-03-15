@@ -5,12 +5,20 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleToPlacement, IDepth {
+public sealed partial class Decal : IPackable, IConvertibleToPlacement, IDepth {
     //[GeneratedRegex("\\d+$|\\.png")]
     public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
 
     public Vector2 Pos;
-    public Vector2 Scale;
+
+    private Vector2 _Scale;
+    public Vector2 Scale {
+        get => _Scale; 
+        set {
+            _Scale = value;
+            ClearRoomRenderCache();
+        }
+    }
     public string Texture = "";
     public int EditorLayer;
 
@@ -69,30 +77,14 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
         return d;
     }
 
-    public Selection GetSelection() => Selection.FromSprite(this, GetSprite());
+    public Selection GetSelection() => new() { Handler = new DecalSelectionHandler(this) };
 
     public void ClearRoomRenderCache() {
         if (FG)
-            Room.ClearFgDecalsRenderCache();
+            Room?.ClearFgDecalsRenderCache();
         else
-            Room.ClearBgDecalsRenderCache();
+            Room?.ClearBgDecalsRenderCache();
     }
-
-    #region ISelectionHandler
-    object ISelectionHandler.Parent => this;
-
-    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
-        return new MoveDecalAction(this, offset);
-    }
-
-    IHistoryAction ISelectionHandler.DeleteSelf() {
-        return new RemoveDecalAction(this, Room);
-    }
-
-    IHistoryAction? ISelectionHandler.TryResize(Point delta) {
-        return null;
-    }
-    #endregion
 
     Placement IConvertibleToPlacement.ToPlacement() {
         return new Placement(Texture) {
@@ -129,5 +121,44 @@ public sealed partial class Decal : IPackable, ISelectionHandler, IConvertibleTo
             },
             PlacementHandler = fg ? DecalPlacementHandler.FGInstance : DecalPlacementHandler.BGInstance
         };
+    }
+}
+
+internal record class DecalSelectionHandler(Decal Parent) : ISelectionHandler, ISelectionFlipHandler {
+    private ISelectionCollider? _Collider;
+    private ISelectionCollider Collider => _Collider ??= ISelectionCollider.SpriteCollider(Parent.GetSprite());
+
+    object ISelectionHandler.Parent => Parent;
+
+    public IHistoryAction DeleteSelf() {
+        return new RemoveDecalAction(Parent, Parent.Room);
+    }
+
+    public IHistoryAction MoveBy(Vector2 offset) {
+        return new MoveDecalAction(Parent, offset);
+    }
+    public IHistoryAction? TryResize(Point delta) {
+        return null;
+    }
+
+    public void RenderSelection(Color c) {
+        Collider.Render(c);
+    }
+
+    public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
+
+    public void ClearCollideCache() {
+        _Collider = null;
+    }
+
+    public IHistoryAction? TryFlipHorizontal() {
+        return new FlipDecalAction(Parent, true, false);
+    }
+
+    public IHistoryAction? TryFlipVertical() {
+        return new FlipDecalAction(Parent, false, true);
+    }
+
+    public void OnRightClicked(IEnumerable<Selection> selections) {
     }
 }

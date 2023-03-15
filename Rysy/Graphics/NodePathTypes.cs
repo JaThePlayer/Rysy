@@ -31,6 +31,21 @@ public static class NodePathTypes {
         }
     }
 
+    /// <inheritdoc/>
+    public static IEnumerable<ISprite> Line<TEntity>(TEntity entity, Func<TEntity, int, Vector2> nodeToPos)
+        where TEntity : Entity {
+        var nodes = entity.Nodes!;
+        var start = entity.Center;
+
+        for (int i = 0; i < nodes.Count; i++) {
+            var end = nodeToPos(entity, i);
+
+            yield return ISprite.Line(start, end, Color.White * .5f);
+
+            start = end;
+        }
+    }
+
     /// <summary>
     /// Nodes don't have any path connecting them.
     /// </summary>

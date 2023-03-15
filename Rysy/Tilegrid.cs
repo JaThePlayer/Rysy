@@ -103,12 +103,15 @@ public class Tilegrid : ILuaWrapper {
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
     }
 
-    public Selection GetSelectionForArea(Rectangle area) {
+    public Selection? GetSelectionForArea(Rectangle area) {
         var handler = new RectSelectionHandler(this, area);
-        return new Selection() { 
-            Handler = handler,
-            Collider = handler
-        };
+
+        if (handler.AnyTileWithin())
+            return new Selection() { 
+                Handler = handler,
+            };
+
+        return null;
     }
 
     #region Saving
@@ -210,6 +213,16 @@ public class Tilegrid : ILuaWrapper {
             (Grid, Rect) = (grid, rectPixels);
         }
 
+        public bool AnyTileWithin() {
+            var rect = Rect.Div(8);
+            for (int x = rect.X; x < rect.Right; x++)
+                for (int y = rect.Y; y < rect.Bottom; y++)
+                    if (Grid.SafeTileAt(x, y) != '0')
+                        return true;
+
+            return false;
+        }
+
         public object Parent => Grid;
 
         public IHistoryAction DeleteSelf() {
@@ -251,7 +264,7 @@ public class Tilegrid : ILuaWrapper {
 
         // collider:
 
-        public bool Overlaps(Rectangle roomPos) {
+        public bool IsWithinRectangle(Rectangle roomPos) {
             if (!Rect.Intersects(roomPos))
                 return false;
 
@@ -303,15 +316,17 @@ public class Tilegrid : ILuaWrapper {
 
         }
 
-        void ISelectionCollider.MoveBy(Vector2 offset) {
+        public IHistoryAction? TryResize(Point delta) {
+            return null;
         }
 
-        void ISelectionCollider.ResizeBy(Point offset) {
+        public void RenderSelection(Color c) => Render(c);
+
+        public void ClearCollideCache() {
             
         }
 
-        IHistoryAction? ISelectionHandler.TryResize(Point delta) {
-            return null;
+        public void OnRightClicked(IEnumerable<Selection> selections) {
         }
     }
 

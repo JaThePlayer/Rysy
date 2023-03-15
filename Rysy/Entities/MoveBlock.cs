@@ -61,7 +61,7 @@ public class MoveBlock : Entity {
             }
         }
 
-        yield return ISprite.Rect(new((int) Pos.X + 3, (int) Pos.Y + 3, w - 6, h - 6), FillColor);
+        yield return ISprite.Rect(new(X + 3, Y + 3, w - 6, h - 6), FillColor);
 
         foreach (var item in ISprite.GetNineSliceSprites(ISprite.FromTexture(baseSpritePath), Pos, w / 8, h / 8, 8)) {
             yield return item;

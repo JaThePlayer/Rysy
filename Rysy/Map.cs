@@ -147,6 +147,8 @@ public sealed class Map : IPackable {
             FGAutotiler.ReadFromXml(stream);
         }
     }
+
+    public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);
 }
 
 public sealed class MapMetadata {

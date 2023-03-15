@@ -1,21 +1,22 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using Rysy.Gui.Elements;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
+using Rysy.Scenes;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPlacement, IDepth {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     [JsonIgnore]
     public abstract int Depth { get; }
 
-    public string Name => EntityData.Name;
+    public string Name => EntityData.SID;
 
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
@@ -26,9 +27,36 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     [JsonIgnore]
     public Room Room { get; set; } = null!;
 
-    public int ID;
+    public int ID {
+        get => EntityData.Int("id");
+        set => EntityData["id"] = value;
+    }
 
-    public Vector2 Pos;
+    public int X {
+        get => EntityData.Int("x");
+        set {
+            EntityData["x"] = value;
+            ClearRoomRenderCache();
+        }
+    }
+
+    public int Y {
+        get => EntityData.Int("y");
+        set {
+            EntityData["y"] = value;
+            ClearRoomRenderCache();
+        }
+    }
+
+    public Vector2 Pos {
+        get => new(EntityData.Float("x"), EntityData.Float("y"));
+        set {
+            EntityData["x"] = value.X;
+            EntityData["y"] = value.Y;
+
+            ClearRoomRenderCache();
+        }
+    }
 
     [JsonIgnore]
     public List<Node>? Nodes => EntityData.Nodes;
@@ -63,8 +91,8 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     /// </summary>
     public virtual Vector2 Center {
         get {
-            var x = Pos.X;
-            var y = Pos.Y;
+            var x = X;
+            var y = Y;
 
             x += Width / 2;
             y += Height / 2;
@@ -81,48 +109,41 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
         get {
             var bw = Width;
             var bh = Height;
-            Rectangle bRect = new((int) Pos.X, (int) Pos.Y, bw == 0 ? 8 : bw, bh == 0 ? 8 : bh);
+            Rectangle bRect = new(X, Y, bw == 0 ? 8 : bw, bh == 0 ? 8 : bh);
             return bRect;
         }
     }
 
-    public virtual IEnumerable<Selection> GetSelection() {
-        var nodes = Nodes;
+    public virtual ISelectionCollider GetMainSelection() {
+        if (Width > 0 || Height > 0) {
+            var rect = Rectangle;
+
+            return ISelectionCollider.RectCollider(rect);
+        }
+
+        var firstSprite = GetSprites().FirstOrDefault();
+
+        if (firstSprite is Sprite s) {
+            return ISelectionCollider.SpriteCollider(s);
+        }
+
+        return ISelectionCollider.RectCollider(Rectangle);
+    }
+
+    public virtual ISelectionCollider GetNodeSelection(int nodeIndex) {
+        var node = Nodes![nodeIndex];
 
         if (Width > 0 || Height > 0) {
             var rect = Rectangle;
-            yield return Selection.FromRect(this, rect);
-            if (nodes is { })
-                foreach (var node in nodes) {
-                    yield return Selection.FromRect(node.ToSelectionHandler(this), rect.MovedTo(node));
-                }
-            yield break;
+            return ISelectionCollider.RectCollider(rect.MovedTo(node));
         }
 
-        yield return GetMain();
-
-        if (nodes is { })
-            for (int i = 0; i < nodes.Count; i++) {
-                var firstSprite = NodeHelper.GetNodeSpritesForNode(this, i).FirstOrDefault();
-                var node = nodes[i];
-
-                if (firstSprite is Sprite s) {
-                    yield return Selection.FromSprite(node.ToSelectionHandler(this), s);
-                } else {
-                    yield return Selection.FromRect(node.ToSelectionHandler(this), Rectangle.MovedTo(nodes[i]));
-                }
-
-            }
-
-        Selection GetMain() {
-            var firstSprite = GetSprites().FirstOrDefault();
-
-            if (firstSprite is Sprite s) {
-                return Selection.FromSprite(this, s);
-            }
-
-            return Selection.FromRect(this, Rectangle);
+        var firstSprite = NodeHelper.GetNodeSpritesForNode(this, nodeIndex).FirstOrDefault();
+        if (firstSprite is Sprite s) {
+            return ISelectionCollider.SpriteCollider(s);
         }
+
+        return ISelectionCollider.RectCollider(Rectangle.MovedTo(node));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -169,15 +190,50 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
         }
     }
 
+    /// <summary>
+    /// Creates a clone of this entity by creating a placement out of this entity, then using <see cref="EntityRegistry.Create"/>
+    /// </summary>
+    public Entity Clone() {
+        var clone = EntityRegistry.Create(ToPlacement(), Pos, Room, false, this is Trigger);
+        clone.ID = ID;
+
+        return clone;
+    }
+
+    /// <summary>
+    /// Creates a clone of this entity by creating a placement out of this entity, then creating an entity out of it.
+    /// The generated placement gets passed to <paramref name="manipulator"/> before being used for entity creation, allowing to, for example, change the SID.
+    /// </summary>
+    public Entity CloneWith(Action<Placement> manipulator) {
+        var placement = ToPlacement();
+        manipulator(placement);
+
+        var clone = EntityRegistry.Create(placement, Pos, Room, false, this is Trigger);
+        clone.ID = ID;
+
+        return clone;
+    }
+
+    /// <summary>
+    /// Tries to flip the entity horizontally. Returning null means that the entity cannot be flipped.
+    /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
+    /// </summary>
+    public virtual Entity? TryFlipHorizontal() => null;
+    /// <summary>
+    /// Tries to flip the entity vertically. Returning null means that the entity cannot be flipped.
+    /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
+    /// </summary>
+    public virtual Entity? TryFlipVertical() => null;
+
     public BinaryPacker.Element Pack() {
-        var el = new BinaryPacker.Element(EntityData.Name);
+        var el = new BinaryPacker.Element(EntityData.SID);
         el.Attributes = new Dictionary<string, object>(EntityData.Inner) {
-            ["x"] = Pos.X,
-            ["y"] = Pos.Y,
+            ["x"] = X,
+            ["y"] = Y,
             ["id"] = ID
         };
 
-        el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") { 
+        el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
             Attributes = new() {
                 ["x"] = n.X,
                 ["y"] = n.Y,
@@ -186,40 +242,23 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
         return el;
     }
 
-    Placement IConvertibleToPlacement.ToPlacement() {
-        return new Placement(EntityData.Name) {
-            SID = EntityData.Name,
+    public Placement ToPlacement() {
+        return new Placement(EntityData.SID) {
+            SID = EntityData.SID,
             PlacementHandler = this is Trigger ? TriggerPlacementHandler.Instance : EntityPlacementHandler.Instance,
             ValueOverrides = EntityData.Inner,
         };
     }
 
-    #region ISelectionHandler
-    object ISelectionHandler.Parent => this;
-    IHistoryAction ISelectionHandler.MoveBy(Vector2 offset) {
-        return new MoveEntityAction(this, offset);
-    }
-
-    IHistoryAction ISelectionHandler.DeleteSelf() {
-        return new RemoveEntityAction(this, Room);
-    }
-
-    IHistoryAction? ISelectionHandler.TryResize(Point delta) {
-        if ((ResizableX && delta.X != 0) || (ResizableY && delta.Y != 0)) 
-            return new EntityResizeAction(this, delta);
-
-        return null;
-    }
-    #endregion
 
     #region ILuaWrapper
     int ILuaWrapper.Lua__index(Lua lua, object key) {
         switch (key) {
             case "x":
-                lua.PushNumber(Pos.X);
+                lua.PushNumber(X);
                 return 1;
             case "y":
-                lua.PushNumber(Pos.Y);
+                lua.PushNumber(Y);
                 return 1;
             case "_id":
                 lua.PushNumber(ID);
@@ -268,22 +307,96 @@ public abstract class Entity : ILuaWrapper, ISelectionHandler, IConvertibleToPla
     #endregion
 }
 
+internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler {
+    public Entity Entity { get; set; }
+
+    public object Parent => Entity;
+
+    private ISelectionCollider? _Collider;
+    private ISelectionCollider Collider => _Collider ??= Entity.GetMainSelection();
+
+    public IHistoryAction DeleteSelf() {
+        return new RemoveEntityAction(Entity, Entity.Room);
+    }
+
+    public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
+
+    public IHistoryAction MoveBy(Vector2 offset) {
+        return new MoveEntityAction(Entity, offset);
+    }
+
+    public void RenderSelection(Color c) {
+        Collider.Render(c);
+    }
+
+    public IHistoryAction? TryResize(Point delta) {
+        var resizableX = Entity.ResizableX;
+        var resizableY = Entity.ResizableY;
+
+        if ((resizableX && delta.X != 0) || (resizableY && delta.Y != 0)) {
+            return new EntityResizeAction(Entity, delta);
+        }
+
+        return null;
+    }
+
+    public void ClearCollideCache() {
+        _Collider = null;
+    }
+
+    private IHistoryAction? FlipImpl(Entity? flipped, string funcName) {
+        var orig = Entity;
+
+        if (flipped is null)
+            return null;
+
+        if (orig == flipped)
+            throw new Exception($"When implementing Entity.{funcName}, don't return or manipulate 'this'!");
+
+        Entity = flipped;
+        return new SwapEntityAction(orig, flipped);
+    }
+
+    IHistoryAction? ISelectionFlipHandler.TryFlipHorizontal() {
+        var flipped = Entity.TryFlipHorizontal();
+
+        return FlipImpl(flipped, "TryFlipHorizontal");
+    }
+
+    IHistoryAction? ISelectionFlipHandler.TryFlipVertical() {
+        var flipped = Entity.TryFlipVertical();
+
+        return FlipImpl(flipped, "TryFlipVertical");
+    }
+
+    public void OnRightClicked(IEnumerable<Selection> selections) {
+        var history = (RysyEngine.Scene as EditorScene)?.HistoryHandler;
+
+        if (history is { }) {
+            var allEntities = selections.SelectWhereNotNull(s => s.Handler is EntitySelectionHandler handler && handler.Entity.GetType() == Entity.GetType() ? handler.Entity : null).ToList();
+            RysyEngine.Scene.AddWindow(new EntityPropertyWindow(history, Entity, allEntities));
+        }
+    }
+}
+
 public class EntityData : IDictionary<string, object> {
-    public string Name;
+    public string SID { get; init; }
 
     public List<Node>? Nodes;
 
     public EntityData(string sid, BinaryPacker.Element e) {
-        Name = sid;
+        SID = sid;
 
         var dict = e.Attributes;
+        /*
         Inner = new(Math.Max(0, dict.Count - 3));
 
         foreach (var item in dict) {
             if (item.Key is not "x" and not "y" and not "id") {
                 Inner[item.Key] = item.Value;
             }
-        }
+        }*/
+        Inner = new(dict);
 
         if (e.Children is { Length: > 0 }) {
             var nodes = Nodes = new(e.Children.Length);
@@ -296,7 +409,7 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public EntityData(string sid, Dictionary<string, object> attributes, Vector2[]? nodes = null) {
-        Name = sid;
+        SID = sid;
         Nodes = nodes?.Select(n => new Node(n)).ToList();
         Inner = new(attributes);
     }

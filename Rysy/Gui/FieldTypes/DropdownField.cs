@@ -9,6 +9,14 @@ public class DropdownField<T> : IField where T : notnull {
 
     public object GetDefault() => Default!;
 
+    public bool IsValid(object value) {
+        if (value is not T val) {
+            return false;
+        }
+
+        return Values.TryGetValue(val, out _);
+    }
+
     public object? RenderGui(string fieldName, object value) {
         if (value is not T val) {
             return null;
@@ -19,7 +27,7 @@ public class DropdownField<T> : IField where T : notnull {
 
         T? ret = default;
 
-        if (ImGui.BeginCombo(fieldName, humanizedName, ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo(fieldName, humanizedName)) {
             foreach (var (key, name) in Values) {
                 if (ImGui.MenuItem(name)) {
                     ret = key;

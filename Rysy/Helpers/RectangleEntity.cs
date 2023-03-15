@@ -15,7 +15,7 @@ public abstract class RectangleEntity : Entity {
             0 => 8,
             var other => other
         };
-        var rect = new Rectangle((int) Pos.X, (int) Pos.Y, w, h);
+        var rect = new Rectangle(X, Y, w, h);
 
         yield return ISprite.OutlinedRect(rect, FillColor, OutlineColor);
     }
