@@ -19,7 +19,17 @@ public class TypeTrackedList<T> : IList<T> {
 
     public T this[int index] {
         get => Inner[index];
-        set => Inner[index] = value;
+        set {
+            var prev = Inner.ElementAtOrDefault(index);
+            if (prev != null) {
+                UntrackItem(prev);
+            }
+
+            Inner[index] = value;
+            TrackNewItem(value);
+
+            OnChanged?.Invoke();
+        }
     }
 
     public List<T> this[Type type] {

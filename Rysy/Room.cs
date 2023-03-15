@@ -135,6 +135,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         return Entities.Concat(Triggers).Max(e => e.ID) + 1;
     }
 
+    public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.ID == id);
+
     private void ResetRandom() {
         //Random = new(RandomSeed);
     }
@@ -321,7 +323,7 @@ public sealed class Room : IPackable, ILuaWrapper {
            );
 
     internal void StartBatch(Camera camera) {
-        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
+        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
     }
 
     public void Render(Camera camera, bool selected) {
@@ -414,7 +416,9 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         StartBatch(camera);
-        ISprite.Rect(new(0, 0, Width, Height), Color.Gray * (selected ? .5f : .2f)).Render();
+
+        //ISprite.Rect(new(0, 0, Width, Height), Color.White * (selected ? .1f : .0f)).Render();
+        ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
 
         /*
         if (FullRenderCanvas is { IsDisposed: false } canvas) {
@@ -434,6 +438,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         // Darken the room if it's not selected
         if (!selected)
             ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
+
+        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors[Attributes.C]).Render();
 
 
         GFX.Batch.End();
@@ -588,7 +594,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into) {
         var pos = rect.Location.ToVector2().GridPosFloor(8);
         var pos2 = (rect.Location.ToVector2() + rect.Size.ToVector2()).GridPosFloor(8);
-        into.Add(grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8)));
+
+
+        var selection = grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8));
+
+        if (selection is { })
+            into.Add(selection);
     }
 
     private void GetSelectionsInRectForEntities(Rectangle rect, TypeTrackedList<Entity> entities, List<Selection> into) {
@@ -597,11 +608,20 @@ public sealed class Room : IPackable, ILuaWrapper {
         foreach (var entity in entities) {
             if (layer is { } && entity.EditorLayer != layer)
                 continue;
-            foreach (var selection in entity.GetSelection()) {
-                if (selection.Check(rect)) {
-                    into.Add(selection);
-                }
+
+
+            var mainSelect = entity.GetMainSelection();
+            if (mainSelect.IsWithinRectangle(rect)) {
+                into.Add(new Selection() { Handler = new EntitySelectionHandler() { Entity = entity } });
             }
+
+            if (entity.Nodes is { } nodes)
+                for (int i = 0; i < nodes.Count; i++) {
+                    var nodeSelect = entity.GetNodeSelection(i);
+                    if (nodeSelect.IsWithinRectangle(rect)) {
+                        into.Add(new Selection() { Handler = new NodeSelectionHandler(entity, i) });
+                    }
+                }
         }
     }
 

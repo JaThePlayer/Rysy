@@ -1,9 +1,12 @@
 ﻿using ImGuiNET;
 using Rysy.Graphics;
+using Rysy.Gui.Elements;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace Rysy.Tools;
 
@@ -40,7 +43,12 @@ internal class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.upsizeUp", "w", CreateUpsizeHandler(new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.upsizeDown", "s", CreateUpsizeHandler(new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelection);
+        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", HorizontalFlipSelections);
+        handler.AddHotkeyFromSettings("selection.flipVertical", "v", VerticalFlipSelections);
+
+        handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelections);
+
+        History.OnApply += ClearColliderCachesInSelections;
     }
 
     private Action CreateUpsizeHandler(Point offset) => () => {
@@ -55,20 +63,44 @@ internal class SelectionTool : Tool {
         }
     };
 
+    private void HorizontalFlipSelections() {
+        if (CurrentSelections is not { } selections) {
+            return;
+        }
+
+        var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipHorizontal() : null).MergeActions();
+        if (action.Any())
+            ClearColliderCachesInSelections();
+
+        History.ApplyNewAction(action);
+    }
+
+    private void VerticalFlipSelections() {
+        if (CurrentSelections is not { } selections) {
+            return;
+        }
+
+        var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipVertical() : null).MergeActions();
+        if (action.Any())
+            ClearColliderCachesInSelections();
+
+        History.ApplyNewAction(action);
+    }
+
     private void MoveSelectionsBy(Vector2 offset, List<Selection> selections) {
-        var action = selections.Select(s => s.Handler.MoveBy(offset)).MergeActions().WithHook(
-            onApply: () => selections.ForEach(s => s.Collider.MoveBy(offset)),
-            onUndo: () => selections.ForEach(s => s.Collider.MoveBy(-offset))
-        );
+        var action = selections.Select(s => s.Handler.MoveBy(offset)).MergeActions();
+
+        ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
     }
 
     private void ResizeSelectionsBy(Point offset, List<Selection> selections) {
-        var action = selections.Select(s => s.Handler.TryResize(offset)).MergeActions().WithHook(
-            onApply: () => selections.ForEach(s => s.Collider.ResizeBy(offset)),
-            onUndo: () => selections.ForEach(s => s.Collider.ResizeBy(offset.Negate()))
-        );
+        var action = selections.Select(s => s.Handler.TryResize(offset)).MergeActions();
+
+        if (action.Any()) {
+            ClearColliderCachesInSelections();
+        }
 
         History.ApplyNewAction(action);
     }
@@ -76,11 +108,11 @@ internal class SelectionTool : Tool {
     private void SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections) {
         foreach (var s in selections) {
             s.Handler.MoveBy(offset).Apply();
-            s.Collider.MoveBy(offset);
+            s.Handler.ClearCollideCache();
         }
     }
 
-    private void DeleteSelection() {
+    private void DeleteSelections() {
         if (CurrentSelections is { } selections) {
             var action = selections.Select(s => s.Handler.DeleteSelf()).MergeActions().WithHook(
                 onApply: () => {
@@ -90,9 +122,13 @@ internal class SelectionTool : Tool {
                 }
             );
 
+            ClearColliderCachesInSelections();
+
             History.ApplyNewAction(action);
         }
     }
+
+    private void ClearColliderCachesInSelections() => CurrentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
     private void Deselect() {
         // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
@@ -137,15 +173,30 @@ internal class SelectionTool : Tool {
     }
 
     public override void Update(Camera camera, Room room) {
-        if (Input.Mouse.Left.Clicked() && CurrentSelections is { } selections) {
-            var mouseRoomPos = GetMouseRoomPos(camera, room);
-            var mouseRect = new Rectangle(mouseRoomPos, new(1, 1));
+        if (CurrentSelections is { } selections) {
+            if (Input.Mouse.Left.Clicked()) {
+                var mouseRoomPos = GetMouseRoomPos(camera, room);
+                var mouseRect = new Rectangle(mouseRoomPos, new(1, 1));
 
-            foreach (var selection in selections) {
-                if (selection.Check(mouseRect)) {
-                    State = States.MoveGesture;
-                    MoveGestureStart = mouseRoomPos;
-                    break;
+                foreach (var selection in selections) {
+                    if (selection.Check(mouseRect)) {
+                        State = States.MoveGesture;
+                        MoveGestureStart = mouseRoomPos;
+                        break;
+                    }
+                }
+            }
+
+            if (Input.Mouse.Right.Clicked()) {
+                var mouseRoomPos = GetMouseRoomPos(camera, room);
+                var mouseRect = new Rectangle(mouseRoomPos, new(1, 1));
+
+                foreach (var selection in selections) {
+                    if (selection.Check(mouseRect)) {
+                        selection.Handler.OnRightClicked(selections);
+
+                        break;
+                    }
                 }
             }
         }
@@ -262,7 +313,7 @@ internal class SelectionTool : Tool {
             int idx = ClickInPlaceIdx % selections.Count;
             ClickInPlaceIdx = (idx + 1) % selections.Count;
 
-            finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : 0).Take(idx..(idx + 1));
+            finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1));
         } else {
             finalSelections = selections;
             ClickInPlaceIdx = 0;
@@ -270,12 +321,28 @@ internal class SelectionTool : Tool {
 
         if (Input.Keyboard.Shift() && CurrentSelections is { }) {
             CurrentSelections = CurrentSelections
-                .Concat(finalSelections.Where(s => s.Handler is not Tilegrid.RectSelectionHandler))
+                .Concat(finalSelections)
                 .DistinctBy(x => x.Handler.Parent)
                 .ToList();
-        } else {
+        } else if (Input.Keyboard.Ctrl() && CurrentSelections is { }) {
+            CurrentSelections = CurrentSelections
+                .Except(finalSelections, new HandlerParentEqualityComparer())
+                .DistinctBy(x => x.Handler.Parent)
+                .ToList();
+        }
+        else {
             Deselect();
             CurrentSelections = finalSelections.ToList();
+        }
+    }
+
+    private struct HandlerParentEqualityComparer : IEqualityComparer<Selection> {
+        public bool Equals(Selection? x, Selection? y) {
+            return x!.Handler.Parent == y!.Handler.Parent;
+        }
+
+        public int GetHashCode([DisallowNull] Selection obj) {
+            return obj.Handler.Parent.GetHashCode();
         }
     }
 

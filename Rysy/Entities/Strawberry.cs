@@ -14,8 +14,8 @@ public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider {
 
     public override int Depth => Depths.Top;
 
-    public bool Winged => Bool("winged") || EntityData.Name == "memorialTextController";
-    public bool Golden => EntityData.Name is "memorialTextController" or "goldenBerry";
+    public bool Winged => Bool("winged") || EntityData.SID == "memorialTextController";
+    public bool Golden => EntityData.SID is "memorialTextController" or "goldenBerry";
     public bool Moon => Bool("moon");
 
     public IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Fan(this);

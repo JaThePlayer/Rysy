@@ -131,7 +131,7 @@ public class LonnEntity : Entity, ICustomNodeHandler {
         var rotation = lua.PeekTableFloatValue(top, "rotation");
         var depth = lua.PeekTableIntValue(top, "depth");
 
-        var sprite = ISprite.FromTexture(new Vector2(x ?? Pos.X, y ?? Pos.Y), texture) with {
+        var sprite = ISprite.FromTexture(new Vector2(x ?? X, y ?? Y), texture) with {
             Scale = new(scaleX ?? 1f, scaleY ?? 1f),
             Origin = new(originX ?? .5f, originY ?? .5f),
             Color = color,

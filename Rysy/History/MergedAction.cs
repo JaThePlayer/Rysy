@@ -1,6 +1,9 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Scenes;
+using System.Collections;
 
-public record class MergedAction : IHistoryAction {
+namespace Rysy.History;
+
+public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, ISerializableAction {
     List<IHistoryAction> Actions;
 
     public MergedAction(IEnumerable<IHistoryAction?> actions) {
@@ -34,5 +37,23 @@ public record class MergedAction : IHistoryAction {
 
     public override string ToString() {
         return $"{{\n{string.Join("\n    ", Actions.Select(a => a.ToString()))}\n}}";
+    }
+
+    public IEnumerator<IHistoryAction> GetEnumerator() {
+        return ((IEnumerable<IHistoryAction>) Actions).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() {
+        return ((IEnumerable) Actions).GetEnumerator();
+    }
+
+    public Dictionary<string, object> GetSerializableData() {
+        return new() {
+            ["inner"] = Actions.Select(act => act is ISerializableAction s ? s.GetSerializable() : null).Where(s => s is not null).ToList()!
+        };
+    }
+
+    public static ISerializableAction FromSerializable(Map map, Dictionary<string, object> data) {
+        return new MergedAction(HistoryHandler.Deserialize(data["inner"].ToJson()));
     }
 }

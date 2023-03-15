@@ -21,17 +21,18 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         var other => throw new NotImplementedException($"Unknown spring orientation {other}")
     };
 
-    public Orientations Orientation => EntityData.Name switch {
+    public Orientations Orientation => EntityData.SID switch {
         "spring" => Orientations.Floor,
         "wallSpringLeft" => Orientations.WallLeft,
         "wallSpringRight" => Orientations.WallRight,
         var other => throw new NotImplementedException($"Unknown spring entity {other}")
     };
 
-    public static List<Placement>? GetPlacements() => new() {
-        new Placement("Spring (Up)").ForSID("spring"),
-        new Placement("Spring (Left)").ForSID("wallSpringLeft"),
-        new Placement("Spring (Right)").ForSID("wallSpringRight"),
+    public override Entity? TryFlipHorizontal() => Orientation switch {
+        Orientations.Floor => null,
+        Orientations.WallLeft => CloneWith(placement => placement.SID = "wallSpringRight"),
+        Orientations.WallRight => CloneWith(placement => placement.SID = "wallSpringLeft"),
+        _ => throw new NotImplementedException()
     };
 
     public enum Orientations {
@@ -39,4 +40,10 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         WallLeft,
         WallRight
     }
+
+    public static List<Placement>? GetPlacements() => new() {
+        new Placement("Spring (Up)").ForSID("spring"),
+        new Placement("Spring (Left)").ForSID("wallSpringLeft"),
+        new Placement("Spring (Right)").ForSID("wallSpringRight"),
+    };
 }

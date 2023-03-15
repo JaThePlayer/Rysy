@@ -7,6 +7,8 @@ public class IntField : IField {
 
     public object GetDefault() => Default;
 
+    public bool IsValid(object value) => value is int;
+
     public object? RenderGui(string fieldName, object value) {
         int b = Convert.ToInt32(value);
         if (ImGui.InputInt(fieldName, ref b))

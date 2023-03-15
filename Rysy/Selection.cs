@@ -6,23 +6,7 @@ namespace Rysy;
 public class Selection {
     public Selection() { }
 
-    public ISelectionCollider Collider;
-
     public ISelectionHandler Handler;
-
-    public static Selection FromRect(ISelectionHandler handler, Rectangle r) {
-        return new Selection() {
-            Collider = new RectangleSelection { Rect = r },
-            Handler = handler,
-        };
-    }
-
-    public static Selection FromSprite(ISelectionHandler handler, Sprite s) {
-        return new Selection() {
-            Collider = new SpriteSelection(s),
-            Handler = handler,
-        };
-    }
 
     /// <summary>
     /// Checks if <paramref name="roomPos"/> intersects this selection.
@@ -30,24 +14,26 @@ public class Selection {
     /// <param name="roomPos"></param>
     /// <returns></returns>
     public bool Check(Rectangle roomPos) {
-        if (Collider?.Overlaps(roomPos) ?? false) {
+        if (Handler.IsWithinRectangle(roomPos)) {
             return true;
         }
 
         return false;
     }
 
-    public void Render(Color c) => Collider.Render(c);
+    public void Render(Color c) => Handler.RenderSelection(c);
 }
 
 public interface ISelectionCollider {
-    public bool Overlaps(Rectangle roomPos);
+    public bool IsWithinRectangle(Rectangle roomPos);
 
     public void Render(Color c);
 
-    public void MoveBy(Vector2 offset);
-
-    public void ResizeBy(Point offset);
+    public static ISelectionCollider RectCollider(Rectangle rect) => new RectangleSelection() { Rect = rect };
+    public static ISelectionCollider RectCollider(int x, int y, int w, int h) => RectCollider(new(x, y, w, h));
+    public static ISelectionCollider RectCollider(float x, float y, int w, int h) => RectCollider(new((int) x, (int) y, w, h));
+    public static ISelectionCollider RectCollider(Vector2 pos, int w, int h) => RectCollider(new((int) pos.X, (int) pos.Y, w, h));
+    public static ISelectionCollider SpriteCollider(Sprite s) => new SpriteSelection(s);
 }
 
 /// <summary>
@@ -61,11 +47,21 @@ public interface ISelectionHandler {
     public IHistoryAction MoveBy(Vector2 offset);
     public IHistoryAction DeleteSelf();
     public IHistoryAction? TryResize(Point delta);
+    public void RenderSelection(Color c);
+    public bool IsWithinRectangle(Rectangle roomPos);
+    public void ClearCollideCache();
+
+    public void OnRightClicked(IEnumerable<Selection> selections);
 
     /// <summary>
     /// The parent object which this handler manipulates.
     /// </summary>
     public object Parent { get; }
+}
+
+public interface ISelectionFlipHandler {
+    public IHistoryAction? TryFlipHorizontal();
+    public IHistoryAction? TryFlipVertical();
 }
 
 public enum SelectionLayer {
@@ -93,7 +89,7 @@ public record class RectangleSelection : ISelectionCollider {
         Rect.Height += offset.Y;
     }
 
-    public bool Overlaps(Rectangle roomPos) {
+    public bool IsWithinRectangle(Rectangle roomPos) {
         return Rect.Intersects(roomPos);
     }
 
@@ -114,7 +110,7 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
         SizeOffset += offset;
     }
 
-    public bool Overlaps(Rectangle roomPos) {
+    public bool IsWithinRectangle(Rectangle roomPos) {
         return Sprite.GetRenderRect()?.MovedBy(DrawOffset).AddSize(SizeOffset).Intersects(roomPos) ?? false;
     }
 

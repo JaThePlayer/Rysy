@@ -135,7 +135,7 @@ public static class ConnectedEntityHelper {
     }
 
     private static bool Open(Entity self, List<Entity> blocks, float offX, float offY) {
-        var selfRect = new Rectangle((int) (self.Pos.X + offX + 4f), (int) (self.Pos.Y + offY + 4f), 1, 1);
+        var selfRect = new Rectangle((int) (self.X + offX + 4f), (int) (self.Y + offY + 4f), 1, 1);
 
         foreach (var other in blocks) {
             if (other == self) {

@@ -6,6 +6,30 @@ public interface IHistoryAction {
     public void Undo();
 }
 
+public interface ISerializableAction : IHistoryAction {
+    public Dictionary<string, object> GetSerializableData();
+    public static abstract ISerializableAction FromSerializable(Map map, Dictionary<string, object> data);
+}
+
+public static class SerializableActionExt {
+    public static ActionData? GetSerializable(this ISerializableAction action) {
+        var data = action.GetSerializableData();
+        if (data is { })
+            return new ActionData() { 
+                Data = data,
+                TypeName = action.GetType().FullName!,
+            };
+
+        return null;
+    }
+}
+
+public class ActionData {
+    public string TypeName { get; set; }
+
+    public object Data { get; set; }
+}
+
 public static class HistoryActionExtensions {
     public static MergedAction MergeActions(this IEnumerable<IHistoryAction?> actions) => new(actions);
 

@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.History;
 using Rysy.Scenes;
 
 namespace Rysy.Gui.Elements;
@@ -11,6 +12,8 @@ public record class DebugInfoWindow : Window {
         SetRemoveAction((w) => Enabled = false);
     }
 
+    private static string HistoryFromText = "";
+
     public static new void Render(Window w) {
         ImGui.Text($"FPS: {RysyEngine.Framerate}");
 
@@ -22,7 +25,14 @@ public record class DebugInfoWindow : Window {
             ImGui.Text($"Count: {editor.HistoryHandler.Actions.Count}");
             if (ImGui.BeginListBox("")) {
                 ImGui.TextWrapped(string.Join('\n', editor.HistoryHandler.Actions.Select(act => act.ToString())));
+                //ImGui.TextWrapped(editor.HistoryHandler.Serialize());
                 ImGui.EndListBox();
+            }
+
+            if (ImGui.InputText("From Text", ref HistoryFromText, 10_000, ImGuiInputTextFlags.EnterReturnsTrue)) {
+                foreach (var item in HistoryHandler.Deserialize(HistoryFromText)) {
+                    editor.HistoryHandler.ApplyNewAction(item);
+                }
             }
         }
 

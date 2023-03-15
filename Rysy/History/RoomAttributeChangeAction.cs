@@ -2,17 +2,25 @@
 
 namespace Rysy.History;
 
-public record class RoomAttributeChangeAction(Room Room, RoomAttributes Changed) : IHistoryAction {
+public class RoomAttributeChangeAction : IHistoryAction {
     private RoomAttributes Orig;
     private RoomResizeAction? Resize;
     private Entity? RemovedCheckpoint;
     private Entity? AddedCheckpoint;
     private bool NewRoom;
 
+    private readonly Room Room;
+    private readonly RoomAttributes Changed;
+
+    public RoomAttributeChangeAction(Room room, RoomAttributes changed) {
+        Room = room;
+        Changed = changed.Copy();
+    }
+
     public bool Apply() {
         NewRoom = !Room.Map.Rooms.Contains(Room);
 
-        Orig = Room.Attributes;
+        Orig = Room.Attributes.Copy();
         if (Orig != Changed) {
             if (Room.Width != Changed.Width || Room.Height != Changed.Height) {
                 Resize = new RoomResizeAction(Room, Changed.Width, Changed.Height);
