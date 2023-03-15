@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 
 namespace Rysy;
 
@@ -7,7 +6,7 @@ namespace Rysy;
 /// A wrapper over <see cref="List{T}"/>, which sorts elements added to it based on their type and implemented interfaces, 
 /// allowing for quick access of all elements of a given type
 /// </summary>
-public class TypeTrackedList<T> : IList<T> {
+public class TypeTrackedList<T> : IListenableList<T> {
     private List<T> Inner = new();
 
     private Dictionary<Type, List<T>> ByType = new();
@@ -15,7 +14,7 @@ public class TypeTrackedList<T> : IList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
-    public Action? OnChanged;
+    public Action? OnChanged { get; set; }
 
     public T this[int index] {
         get => Inner[index];

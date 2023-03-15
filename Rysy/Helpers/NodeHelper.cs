@@ -45,40 +45,46 @@ public static class NodeHelper {
     /// </summary>
     public static IEnumerable<ISprite> GetNodeSpritesFor(Entity entity, bool includeConnectors = true) {
         if (entity.Nodes is not { } nodes) {
-            yield break;
+            return Array.Empty<ISprite>();
         }
 
 
         var depth = entity.Depth;
 
-        switch (entity) {
-            case ICustomNodeHandler customHandler:
-                foreach (var item in customHandler.GetNodeSprites()) {
-                    item.Depth ??= depth;
-                    yield return item;
-                }
-                break;
+        return entity switch {
+            ICustomNodeHandler customHandler => customHandler.GetNodeSprites().Apply(s => s.Depth ??= depth),
+            _ => GetGuessedNodeSpritesFor(entity, includeConnectors),
+        };
+    }
 
-            default:
-                INodeSpriteProvider provider = entity switch {
-                    INodeSpriteProvider p => p,
-                    _ => defaultNodeSpriteProvider.For(entity)
-                };
+    /// <summary>
+    /// Returns all sprites needed to render nodes for a given entity.
+    /// Rysy will guess how this should be done, bypassing <see cref="ICustomNodeHandler"/>
+    /// </summary>
+    public static IEnumerable<ISprite> GetGuessedNodeSpritesFor(Entity entity, bool includeConnectors = true) {
+        if (entity.Nodes is not { } nodes) {
+            yield break;
+        }
 
-                if (includeConnectors && GetNodeConnectors(entity) is { } connectors)
-                    foreach (var item in connectors) {
-                        item.Depth = depth + 1;
-                        yield return item;
-                    }
+        var depth = entity.Depth;
 
-                for (int i = 0; i < entity.Nodes.Count; i++) {
-                    foreach (var item in provider.GetNodeSprites(i)) {
-                        item.Depth ??= depth;
+        INodeSpriteProvider provider = entity switch {
+            INodeSpriteProvider p => p,
+            _ => defaultNodeSpriteProvider.For(entity)
+        };
 
-                        yield return item;
-                    }
-                }
-                break;
+        if (includeConnectors && GetNodeConnectors(entity) is { } connectors)
+            foreach (var item in connectors) {
+                item.Depth = depth + 1;
+                yield return item;
+            }
+
+        for (int i = 0; i < entity.Nodes.Count; i++) {
+            foreach (var item in provider.GetNodeSprites(i)) {
+                item.Depth ??= depth;
+
+                yield return item;
+            }
         }
     }
 
@@ -116,7 +122,7 @@ public static class NodeHelper {
             try {
                 var spr = entity.GetSprites();
                 foreach (var item in spr) {
-                    item.Alpha *= .5f;
+                    item.MultiplyAlphaBy(.5f);
                     yield return item;
                 }
             } finally {

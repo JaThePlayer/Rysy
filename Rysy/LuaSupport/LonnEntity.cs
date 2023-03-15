@@ -20,7 +20,7 @@ public class LonnEntity : Entity, ICustomNodeHandler {
         var visibility = Plugin.GetNodeVisibility(this);
 
         return visibility switch {
-            "always" => NodeHelper.GetNodeSpritesFor(this),
+            "always" => NodeHelper.GetGuessedNodeSpritesFor(this),
             "selected" => Array.Empty<ISprite>(),
             var other => Array.Empty<ISprite>(),
         };

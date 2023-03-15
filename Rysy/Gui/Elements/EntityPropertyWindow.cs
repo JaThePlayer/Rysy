@@ -19,7 +19,7 @@ public record class EntityPropertyWindow : Window {
 
     private Action HistoryHook;
 
-    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit Entity - {main.EntityData.SID}:{main.ID}", null) {
+    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit Entity - {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}", null) {
         Render = DoRender;
         Main = main;
         All = all;
@@ -28,7 +28,7 @@ public record class EntityPropertyWindow : Window {
         HashSet<string> blacklistedKeys = new() { "x", "y", "id", "originX", "originY" };
 
         HistoryHook = ReevaluateEditedValues;
-        history.OnApply += HistoryHook; // Main.EntityData.TryGetValue(name, out var current) && val != current
+        history.OnApply += HistoryHook;
         history.OnUndo += HistoryHook;
         SetRemoveAction((w) => {
             History.OnApply -= HistoryHook;
@@ -77,7 +77,12 @@ public record class EntityPropertyWindow : Window {
 
         foreach (var (name, prop) in FieldList) {
             var inMain = Main.EntityData.TryGetValue(name, out var current);
-            if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) : !current.Equals(prop.Value))) {
+            if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
+                current switch {
+                    string currStr => currStr != (string)prop.Value,
+                    _ => !current!.Equals(prop.Value)
+                }
+            )) {
                 EditedValues[name] = prop.Value;
             }
         }

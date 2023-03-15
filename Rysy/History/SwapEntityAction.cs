@@ -5,7 +5,7 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
         if (Orig == With)
             return false;
 
-        var list = GetList(Orig);
+        var list = Orig.GetRoomList();
 
         if (list.IndexOf(Orig) is { } idx && idx == -1)
             return false;
@@ -16,12 +16,8 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
     }
 
     public void Undo() {
-        var list = GetList(With);
+        var list = With.GetRoomList();
 
         list[list.IndexOf(With)] = Orig;
-    }
-
-    private TypeTrackedList<Entity> GetList(Entity entity) {
-        return entity is Trigger ? entity.Room.Triggers : entity.Room.Entities;
     }
 }

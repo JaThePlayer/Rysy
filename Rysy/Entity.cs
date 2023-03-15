@@ -161,7 +161,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     public virtual Point MinimumSize => new(8, 8);
 
     public override string ToString() {
-        return $"{GetType().FullName}{{Room:{Room.Name}, Pos:{Pos}}}";
+        return (Room, EntityData) switch {
+            ( { } r, { } data) => $"{GetType().FullName}{{Room:{Room.Name}, Pos:{Pos}}}",
+            ( { } r, null) => $"{GetType().FullName}{{Room:{Room.Name}}}",
+            (null, { } data) => $"{GetType().FullName}{{Pos:{Pos}}}",
+            (null, null) => $"{GetType().FullName}",
+        };
     }
 
     public int Int(string attrName, int def = 0) => EntityData.Int(attrName, def);
@@ -180,15 +185,33 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum => EntityData.Enum(attrName, def);
 
+    /// <summary>
+    /// Clears the correct render cache in the parent room
+    /// </summary>
     public void ClearRoomRenderCache() {
         if (Room is { } r) {
-            if (this is Trigger) {
-                r.ClearTriggerRenderCache();
-            } else {
-                r.ClearEntityRenderCache();
+            switch (this) {
+                case Decal d:
+                    if (d.FG)
+                        r.ClearFgDecalsRenderCache();
+                    else
+                        r.ClearBgDecalsRenderCache();
+                    break;
+                case Trigger:
+                    r.ClearTriggerRenderCache();
+                    break;
+                default:
+                    r.ClearEntityRenderCache();
+                    break;
             }
         }
     }
+
+    public IList<Entity> GetRoomList() => this switch {
+        Decal d => d.FG ? Room.FgDecals : Room.BgDecals,
+        Trigger => Room.Triggers,
+        _ => Room.Entities,
+    };
 
     /// <summary>
     /// Creates a clone of this entity by creating a placement out of this entity, then using <see cref="EntityRegistry.Create"/>
@@ -245,11 +268,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     public Placement ToPlacement() {
         return new Placement(EntityData.SID) {
             SID = EntityData.SID,
-            PlacementHandler = this is Trigger ? TriggerPlacementHandler.Instance : EntityPlacementHandler.Instance,
+            PlacementHandler = this is Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
             ValueOverrides = EntityData.Inner,
         };
     }
 
+    public Decal? AsDecal() => this as Decal;
+    public Trigger? AsTrigger() => this as Trigger;
 
     #region ILuaWrapper
     int ILuaWrapper.Lua__index(Lua lua, object key) {

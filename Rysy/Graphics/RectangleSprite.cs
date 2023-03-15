@@ -1,6 +1,4 @@
-﻿using static System.Formats.Asn1.AsnWriter;
-
-namespace Rysy.Graphics;
+﻿namespace Rysy.Graphics;
 
 public record struct RectangleSprite : ISprite {
     public int? Depth { get; set; }
@@ -8,12 +6,9 @@ public record struct RectangleSprite : ISprite {
     public Rectangle Pos;
 
     public Color Color { get; set; } = Color.White;
-    public float Alpha {
-        get => Color.A / 255f;
-        set {
-            OutlineColor *= value;
-            Color *= value;
-        }
+    public void MultiplyAlphaBy(float alpha) {
+        Color *= alpha;
+        OutlineColor *= alpha;
     }
 
     public bool IsLoaded => true;

@@ -353,7 +353,10 @@ public sealed class Autotiler {
     internal class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
-        public float Alpha { get; set; }
+
+        public void MultiplyAlphaBy(float alpha) {
+            Color *= alpha;
+        }
 
         public bool IsLoaded => Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });
 
@@ -397,7 +400,6 @@ public sealed class Autotiler {
         public void Render() {
             Render(null, default);
         }
-
 
         public struct AutotiledSprite {
             public VirtTexture T;

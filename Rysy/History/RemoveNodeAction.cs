@@ -3,7 +3,6 @@ public record class RemoveNodeAction(Node Node, Entity Entity) : IHistoryAction 
     private int Index;
 
     public bool Apply() {
-
         if (Entity.Nodes is { } nodes && (Index = nodes.IndexOf(Node)) != -1) {
             nodes.RemoveAt(Index);
 

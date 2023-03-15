@@ -3,11 +3,9 @@
 public record struct CircleSprite : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; }
-    public float Alpha {
-        get => Color.A / 255f;
-        set {
-            Color = new Color(Color, value);
-        }
+
+    public void MultiplyAlphaBy(float alpha) {
+        Color *= alpha;
     }
 
     public bool IsLoaded => true;

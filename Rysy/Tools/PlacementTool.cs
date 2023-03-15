@@ -109,6 +109,7 @@ public class PlacementTool : Tool {
 
         if (Material is Placement placement) {
             foreach (var item in placement.GetPreviewSprites(mouse.ToVector2(), currentRoom)) {
+                item.MultiplyAlphaBy(0.4f);
                 item.Render();
             }
         }
