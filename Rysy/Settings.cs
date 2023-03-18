@@ -152,6 +152,8 @@ public sealed class Settings {
         }
     }
 
+    public bool MinifyClipboard { get; set; } = true;
+
 #warning Remove
     public string? LonnPluginPath { get; set; }
     #endregion

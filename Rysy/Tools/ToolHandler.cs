@@ -28,6 +28,8 @@ public class ToolHandler {
             _firstGui = true;
         };
 
+        EditorState.OnCurrentRoomChanged += CancelInteraction;
+
         history.OnUndo += CancelInteraction;
     }
 

@@ -32,4 +32,6 @@ public class Cobweb : Entity, ICustomNodeHandler {
     public IEnumerable<ISprite> GetNodeSprites() {
         yield break;
     }
+
+    public override Range NodeLimits => 1..;
 }

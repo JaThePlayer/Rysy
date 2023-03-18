@@ -74,6 +74,12 @@ public static class SettingsWindow {
             Settings.Instance.Save();
         }
 
+        var minifyClipboard = Settings.Instance.MinifyClipboard;
+        if (ImGui.Checkbox("Minify Clipboard", ref minifyClipboard).WithTooltip("Minifies selections copied to the clipboard to reduce their size.")) {
+            Settings.Instance.MinifyClipboard = minifyClipboard;
+            Settings.Instance.Save();
+        }
+
         ImGui.EndTabItem();
     }
 

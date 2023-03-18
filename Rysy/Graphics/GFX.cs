@@ -148,7 +148,11 @@ public static class GFX {
     /// Begins the sprite batch with default settings.
     /// </summary>
     public static void BeginBatch() {
-        Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+        Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+    }
+
+    public static void BeginBatch(Camera camera) {
+        Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
     }
 
     /// <summary>

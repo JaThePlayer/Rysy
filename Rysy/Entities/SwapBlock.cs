@@ -20,6 +20,8 @@ public class SwapBlock : NineSliceEntity {
         _ => "objects/swapblock/midBlock00",
     };
 
+    public override Range NodeLimits => 1..1;
+
 
     public enum Themes {
         Normal,

@@ -320,6 +320,14 @@ public class Tilegrid : ILuaWrapper {
             return null;
         }
 
+        public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
+            return null;
+        }
+
+        public BinaryPacker.Element? PackParent() {
+            return null;
+        }
+
         public void RenderSelection(Color c) => Render(c);
 
         public void ClearCollideCache() {
@@ -328,6 +336,8 @@ public class Tilegrid : ILuaWrapper {
 
         public void OnRightClicked(IEnumerable<Selection> selections) {
         }
+
+        public SelectionLayer Layer => SelectionLayer.None;
     }
 
     private record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {

@@ -12,6 +12,8 @@ public record class EntityPropertyWindow : Window {
     private Dictionary<string, Prop> FieldList;
     private Dictionary<string, object> EditedValues = new();
 
+    public int ITEM_WIDTH = 150;
+
     private record class Prop() {
         public IField Field;
         public object Value;
@@ -25,7 +27,7 @@ public record class EntityPropertyWindow : Window {
         All = all;
         History = history;
 
-        HashSet<string> blacklistedKeys = new() { "x", "y", "id", "originX", "originY" };
+        HashSet<string> blacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorLayer", "_editorColor" };
 
         HistoryHook = ReevaluateEditedValues;
         history.OnApply += HistoryHook;
@@ -36,16 +38,45 @@ public record class EntityPropertyWindow : Window {
         });
 
         var fields = EntityRegistry.SIDToFields.GetValueOrDefault(main.EntityData.SID) ?? new();
-        FieldList = new() {
-            ["x"] = new() {
+        FieldList = new();
+
+        if (false && all.Count == 1) {
+            FieldList["x"] = new() {
                 Field = Fields.Int(0),
                 Value = main.X,
-            },
-            ["y"] = new() {
+            };
+            FieldList["y"] = new() {
                 Field = Fields.Int(0),
-                Value = main.Y,
-            },
+                Value = main.X,
+            };
+        }
+
+        var minSize = Main.MinimumSize;
+        if (main.Width != 0) {
+            FieldList["width"] = new() {
+                Field = Fields.Int(0).WithStep(8).WithMin(minSize.X),
+                Value = main.Width,
+            };
+        }
+
+        if (main.Height != 0) {
+            FieldList["height"] = new() {
+                Field = Fields.Int(0).WithStep(8).WithMin(minSize.Y),
+                Value = main.Height,
+            };
+        }
+
+        FieldList["_editorLayer"] = new() {
+            Field = Fields.Int(0),
+            Value = main.EditorLayer,
         };
+
+        if (main is Trigger tr) {
+            FieldList["_editorColor"] = new() {
+                Field = Fields.RGBA(Color.White),
+                Value = tr.EditorColor,
+            };
+        }
 
         foreach (var (k, f) in fields) {
             if (!blacklistedKeys.Contains(k))
@@ -69,7 +100,13 @@ public record class EntityPropertyWindow : Window {
             }
         }
 
-        Size = new(500, ImGui.GetTextLineHeightWithSpacing() * FieldList.Count + ImGui.GetFrameHeightWithSpacing() * 2);
+        
+        Size = new(
+            FieldList.Select(p => p.Key.Length).Chunk(2).Max(pair => pair.Sum()) * ImGui.GetFontSize() + ITEM_WIDTH * 2f, 
+            ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
+        );
+
+        Resizable = true;
     }
 
     private void ReevaluateEditedValues() {
@@ -91,15 +128,19 @@ public record class EntityPropertyWindow : Window {
     private void DoRender(Window w) {
         ImGui.Columns(2);
 
+        bool valid = true;
+
         foreach (var (name, prop) in FieldList) {
-            HandleProp(name, prop);
+            if (!HandleProp(name, prop)) {
+                valid = false;
+            }
 
             ImGui.NextColumn();
         }
 
         ImGui.Columns();
 
-        ImGuiManager.BeginWindowBottomBar(true);
+        ImGuiManager.BeginWindowBottomBar(valid);
         if (ImGui.Button("Save Changes")) {
             History.ApplyNewAction(new EntityEditAction(All, EditedValues));
             ReevaluateEditedValues();
@@ -107,7 +148,7 @@ public record class EntityPropertyWindow : Window {
         ImGuiManager.EndWindowBottomBar();
     }
 
-    private void HandleProp(string name, Prop prop) {
+    private bool HandleProp(string name, Prop prop) {
         var val = prop.Value;
 
         // determine color
@@ -117,7 +158,8 @@ public record class EntityPropertyWindow : Window {
         else if (EditedValues.ContainsKey(name))
             ImGuiManager.PushEditedStyle();
 
-        var newVal = prop.Field.RenderGui(name, val);
+        ImGui.SetNextItemWidth(ITEM_WIDTH);
+        var newVal = prop.Field.RenderGui(name.Humanize(), val);
 
         ImGuiManager.PopInvalidStyle();
         ImGuiManager.PopEditedStyle();
@@ -126,5 +168,7 @@ public record class EntityPropertyWindow : Window {
             EditedValues[name] = newVal;
             prop.Value = newVal;
         }
+
+        return valid;
     }
 }

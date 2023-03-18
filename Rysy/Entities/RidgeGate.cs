@@ -11,4 +11,6 @@ public class RidgeGate : SpriteEntity {
     public override Color Color => Color.White * 0.8f;
 
     public override int Depth => Depths.Below;
+
+    public override Range NodeLimits => 0..1;
 }

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Decal : Entity {
+public sealed class Decal : Entity, IPlaceable {
     //[GeneratedRegex("\\d+$|\\.png")]
     public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
 
@@ -22,7 +22,7 @@ public sealed class Decal : Entity {
     }
 
     public float ScaleX {
-        get => EntityData.Float("scaleX");
+        get => EntityData.Float("scaleX", 1);
         set {
             EntityData["scaleX"] = value;
             ClearRoomRenderCache();
@@ -30,7 +30,7 @@ public sealed class Decal : Entity {
     }
 
     public float ScaleY {
-        get => EntityData.Float("scaleY");
+        get => EntityData.Float("scaleY", 1);
         set {
             EntityData["scaleY"] = value;
             ClearRoomRenderCache();
@@ -47,15 +47,33 @@ public sealed class Decal : Entity {
         }
     }
 
-    public override int Depth => FG ? Depths.FGDecals : Depths.BGDecals; // TODO: Decal registry depth
+    public float Rotation {
+        get => EntityData.Float("rotation");
+        set {
+            EntityData["rotation"] = value;
+            ClearRoomRenderCache();
+        }
+    }
 
-    public override IEnumerable<ISprite> GetSprites() => GetSprite();
+    public Color Color {
+        get => EntityData.RGBA("color", Color.White);
+        set {
+            EntityData["color"] = value.ToRGBAString();
+            ClearRoomRenderCache();
+        }
+    }
+
+    public sealed override int Depth => FG ? Depths.FGDecals : Depths.BGDecals; // TODO: Decal registry depth
+
+    public sealed override IEnumerable<ISprite> GetSprites() => GetSprite();
 
     public Sprite GetSprite()
         => ISprite.FromTexture(Pos, MapTextureToPath(Texture)).Centered() with {
             Depth = Depth,
-            Scale = Scale
-    };
+            Scale = Scale,
+            Rotation = Rotation.ToRad(),
+            Color = Color,
+        };
 
     public static Decal Create(BinaryPacker.Element from, bool fg) {
         var d = new Decal();
@@ -68,27 +86,62 @@ public sealed class Decal : Entity {
         return "decals/" + textureFromMap.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
     }
 
-    public static Placement PlacementFromPath(string path, bool fg, Vector2 scale) {
+    public static Placement PlacementFromPath(string path, bool fg, Vector2 scale, Color color, float rotation) {
         return new Placement(path) {
             ValueOverrides = new(StringComparer.Ordinal) {
                 ["scaleX"] = scale.X,
                 ["scaleY"] = scale.Y,
                 ["texture"] = path,
+                ["rotation"] = rotation,
+                ["color"] = color.ToRGBAString(),
             },
             PlacementHandler = fg ? EntityPlacementHandler.FGDecals : EntityPlacementHandler.BGDecals,
             SID = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID,
         };
     }
 
-    public override Entity? TryFlipHorizontal() {
+    public sealed override Entity? TryFlipHorizontal() {
         var clone = Clone().AsDecal()!;
         clone.ScaleX = -clone.ScaleX;
         return clone;
     }
 
-    public override Entity? TryFlipVertical() {
+    public sealed override Entity? TryFlipVertical() {
         var clone = Clone().AsDecal()!;
         clone.ScaleY = -clone.ScaleY;
         return clone;
+    }
+
+    public static List<Placement>? GetPlacements() => new();
+
+    public static FieldList GetFields() => new() { 
+        ["texture"] = Fields.String(""),
+        ["color"] = Fields.RGBA(Color.White),
+        ["scaleX"] = Fields.Float(1f),
+        ["scaleY"] = Fields.Float(1f),
+        ["rotation"] = Fields.Float(0f),
+    };
+
+    public override BinaryPacker.Element Pack() {
+        var el = new BinaryPacker.Element(EntityData.SID);
+        var attr = new Dictionary<string, object>(EntityData.Inner.Count, StringComparer.Ordinal) {
+            ["x"] = X,
+            ["y"] = Y,
+            ["texture"] = Texture,
+            // omitting these crashes the game...
+            ["scaleX"] = ScaleX,
+            ["scaleY"] = ScaleY
+        };
+
+        if (Color != Color.White)
+            attr["color"] = EntityData.Inner["color"];
+
+        var rotation = Rotation;
+        if (rotation != 0f)
+            attr["rotation"] = rotation;
+
+        el.Attributes = attr;
+
+        return el;
     }
 }

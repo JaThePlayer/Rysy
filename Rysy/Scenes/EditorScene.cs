@@ -11,7 +11,10 @@ namespace Rysy.Scenes;
 public sealed class EditorScene : Scene {
     public ToolHandler ToolHandler;
 
-    public HistoryHandler HistoryHandler;
+    public HistoryHandler HistoryHandler {
+        get => EditorState.History!;
+        set => EditorState.History = value;
+    }
 
     private Map _map = null!;
     public Map Map {
@@ -32,18 +35,15 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    private Room _currentRoom = null!; // will be set in Map.set
     public Room CurrentRoom {
-        get => _currentRoom;
-        set {
-            _currentRoom = value;
-            RysyEngine.ForceActiveTimer = 0.25f;
-
-            ToolHandler.CancelInteraction();
-        }
+        get => EditorState.CurrentRoom;
+        set => EditorState.CurrentRoom = value;
     }
 
-    public Camera Camera { get; set; } = null!; // will be set in Map.set
+    public Camera Camera {
+        get => EditorState.Camera!;
+        set => EditorState.Camera = value;
+    } // will be set in Map.set
 
     public EditorScene(bool loadFromPersistence = true) {
         HistoryHandler = new();
@@ -224,7 +224,7 @@ public sealed class EditorScene : Scene {
     }
 
     private void HandleRoomSwapInputs() {
-        if (Input.Mouse.Left.Clicked()) {
+        if (ToolHandler.CurrentTool.AllowSwappingRooms && Input.Mouse.Left.Clicked()) {
             var mousePos = Input.Mouse.Pos.ToVector2();
             foreach (var room in Map.Rooms) {
                 if (room == CurrentRoom)

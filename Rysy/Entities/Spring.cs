@@ -41,6 +41,7 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         WallRight
     }
 
+    public static FieldList GetFields() => new();
     public static List<Placement>? GetPlacements() => new() {
         new Placement("Spring (Up)").ForSID("spring"),
         new Placement("Spring (Left)").ForSID("wallSpringLeft"),

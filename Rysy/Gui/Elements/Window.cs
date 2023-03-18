@@ -8,6 +8,7 @@ public record class Window {
     public readonly string Name;
     public Action<Window>? Render;
     public NumVector2? Size;
+    public bool Resizable;
 
     /// <summary>
     /// The ID used for ImGui.Begin, which guarantees that multiple windows with the same name with pop up seperately.
@@ -37,7 +38,7 @@ public record class Window {
         ImGuiManager.PushWindowStyle();
         var open = true;
 
-        if (ImGui.Begin(WindowID, ref open, Size is { } ? ImGuiManager.WindowFlagsUnresizable : ImGuiManager.WindowFlagsResizable)) {
+        if (ImGui.Begin(WindowID, ref open, Resizable ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable)) {
             Render(this);
         }
         ImGui.End();

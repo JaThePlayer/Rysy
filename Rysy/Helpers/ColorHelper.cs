@@ -29,6 +29,19 @@ public static class ColorHelper {
     }
 
     /// <summary>
+    /// Tries to convert a string to a color using the given format.
+    /// </summary>
+    public static bool TryGet(string colorString, ColorFormat format, out Color color) {
+        try {
+            color = Get(colorString, format);
+            return true;
+        } catch {
+            color = default;
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as RRGGBB
     /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.RGB"/> as the second parameter if this is needed
     /// </summary>
@@ -174,6 +187,44 @@ public static Color HsvToColor(float h, float s, float v) {
 
         return s;
     }
+
+    /// <summary>
+    /// Turns the given color into an rgba-formatted color hexcode. If color.A == 255, returns an rgb string instead.
+    /// </summary>
+    /// <param name="color"></param>
+    /// <returns></returns>
+    public static string ToRGBAString(Color color) {
+        if (color.A == 255) {
+            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
+        }
+
+        return $"{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
+    }
+
+    /// <summary>
+    /// Turns the given color into an argb-formatted color hexcode. If color.A == 255, returns an rgb string instead.
+    /// </summary>
+    /// <param name="color"></param>
+    /// <returns></returns>
+    public static string ToARGBString(Color color) {
+        if (color.A == 255) {
+            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
+        }
+
+        return $"{color.A:x2}{color.R:x2}{color.G:x2}{color.B:x2}";
+    }
+
+    /// <summary>
+    /// Converts a color into its hex representation, using the provided format
+    /// </summary>
+    public static string ToString(Color color, ColorFormat format) {
+        return format switch {
+            ColorFormat.RGBA => ToRGBAString(color),
+            ColorFormat.RGB => ToRGBAString(color),
+            ColorFormat.ARGB => ToARGBString(color),
+            _ => throw new NotImplementedException(),
+        };
+    }
 }
 
 public enum ColorFormat {
@@ -217,4 +268,19 @@ public static class ColorHelperExtensions {
     /// <inheritdoc cref="ColorHelper.Get(string, ColorFormat)"/>
     /// </summary>
     public static Color ToColor(this string str, ColorFormat format = ColorFormat.RGBA) => ColorHelper.Get(str, format);
+
+    /// <summary>
+    /// <inheritdoc cref="ColorHelper.TryGet(string, ColorFormat, out Microsoft.Xna.Framework.Color)"/>
+    /// </summary>
+    public static bool TryToColor(string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
+
+    /// <summary>
+    /// <inheritdoc cref="ColorHelper.ToRGBAString(Color)"/>
+    /// </summary>
+    public static string ToRGBAString(this Color color) => ColorHelper.ToRGBAString(color);
+
+    /// <summary>
+    /// <inheritdoc cref="ColorHelper.ToString(Color, ColorFormat)"/>
+    /// </summary>
+    public static string ToString(this Color color, ColorFormat format) => ColorHelper.ToString(color, format);
 }

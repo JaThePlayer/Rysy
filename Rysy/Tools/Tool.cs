@@ -115,7 +115,7 @@ public abstract class Tool {
 
     public static void DrawSelectionRect(Rectangle rect) {
         var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
-        ISprite.OutlinedRect(rect, c * 0.3f, c).Render();
+        ISprite.OutlinedRect(rect, c * 0.3f, c, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
     }
 
     private bool IsEqual(string layer, object? currentMaterial, string name) {
@@ -125,6 +125,8 @@ public abstract class Tool {
     public virtual void RenderGui(EditorScene editor, bool firstGui) {
         RenderMaterialList(editor, firstGui);
     }
+
+    public virtual bool AllowSwappingRooms => true;
 
     private string? CachedLayer;
     private List<(object mat, string)>? CachedSearch;

@@ -8,6 +8,7 @@ public static class LayerNames {
     public const string TRIGGERS = "Triggers";
     public const string FG_DECALS = "FGDecals";
     public const string BG_DECALS = "BGDecals";
+    public const string ROOM = "Rooms";
 
     public const string CUSTOM_LAYER = "Custom";
     public const string ALL = "All";
@@ -19,6 +20,7 @@ public static class LayerNames {
         BG_DECALS => SelectionLayer.BGDecals,
         ENTITIES => SelectionLayer.Entities,
         TRIGGERS => SelectionLayer.Triggers,
+        ROOM => SelectionLayer.Rooms,
         ALL => SelectionLayer.All,
         CUSTOM_LAYER => customLayer,
         _ => SelectionLayer.None,

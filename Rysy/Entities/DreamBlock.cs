@@ -9,4 +9,6 @@ public class DreamBlock : RectangleEntity, ISolid {
     public override Color OutlineColor => Color.White;
 
     public override int Depth => Depths.Solids;
+
+    public override Range NodeLimits => 0..1;
 }

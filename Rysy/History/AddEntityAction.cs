@@ -10,4 +10,8 @@ public sealed record class AddEntityAction(Entity Entity, Room Room) : IHistoryA
     public void Undo() {
         Entity.GetRoomList().Remove(Entity);
     }
+
+    public static IHistoryAction AddAll(IEnumerable<Entity> entities, Room room) {
+        return new MergedAction(entities.Select(e => new AddEntityAction(e, room)));
+    }
 }

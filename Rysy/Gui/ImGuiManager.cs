@@ -1,7 +1,6 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 
 namespace Rysy.Gui;
 
@@ -128,14 +127,19 @@ public static class ImGuiManager {
     }
 
     public static void BeginWindowBottomBar(bool valid) {
-        ImGui.SetCursorPosY(ImGui.GetWindowHeight() - ImGui.GetFrameHeightWithSpacing() + ImGui.GetScrollY());
-        ImGui.Separator();
+        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y;
+        var posy = ImGui.GetWindowHeight() - height - ImGui.GetStyle().FramePadding.Y * 2f;
 
+        ImGui.SetNextWindowPos(ImGui.GetWindowPos() + new NumVector2(ImGui.GetStyle().FramePadding.X * 2, posy));
+
+        ImGui.BeginChild(1, new(0, height - ImGui.GetStyle().FramePadding.Y), false, ImGuiWindowFlags.Modal);
+        ImGui.Separator();
         ImGui.BeginDisabled(!valid);
     }
 
     public static void EndWindowBottomBar() {
         ImGui.EndDisabled();
+        ImGui.EndChild();
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

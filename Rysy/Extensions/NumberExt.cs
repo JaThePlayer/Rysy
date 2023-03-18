@@ -22,4 +22,9 @@ public static class NumberExt {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Div<T>(this T num, T by) where T : INumber<T>
         => num / by;
+
+    public static bool IsIn(this int i, Range range) {
+        return (range.Start.IsFromEnd || range.Start.Value <= i) 
+            && (range.End.IsFromEnd || range.End.Value >= i);
+    }
 }

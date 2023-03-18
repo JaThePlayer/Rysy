@@ -116,8 +116,20 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
         // rotate our points, by rotating the offset
         var off = -_multOrigin;
-        var r1 = Pos + off.Rotate(Rotation);
-        var r2 = Pos + (off + size).Rotate(Rotation);
+
+        var p1 = off.Rotate(Rotation);
+        var p2 = (off + new Vector2(size.X, 0)).Rotate(Rotation);
+        var p3 = (off + new Vector2(0, size.Y)).Rotate(Rotation);
+        var p4 = (off + size).Rotate(Rotation);
+
+        var r1 = Pos + new Vector2(
+            Math.Min(p4.X, Math.Min(p3.X, Math.Min(p1.X, p2.X))),
+            Math.Min(p4.Y, Math.Min(p3.Y, Math.Min(p1.Y, p2.Y)))
+        );
+        var r2 = Pos + new Vector2(
+            Math.Max(p4.X, Math.Max(p3.X, Math.Max(p1.X, p2.X))),
+            Math.Max(p4.Y, Math.Max(p3.Y, Math.Max(p1.Y, p2.Y)))
+        );
 
         if (OutlineColor != default) {
             r1 -= new Vector2(1);
