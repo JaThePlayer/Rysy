@@ -51,8 +51,8 @@ public class PlacementTool : Tool {
 
     private Placement? PlacementFromString(string str) {
         return Layer switch {
-            LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One),
-            LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One),
+            LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One, Color.White, rotation: 0f),
+            LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One, Color.White, rotation: 0f),
             _ => null,
         };
     }

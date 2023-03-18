@@ -6,6 +6,8 @@ namespace Rysy;
 public class Selection {
     public Selection() { }
 
+    public Selection(ISelectionHandler handler) => Handler = handler;
+
     public ISelectionHandler Handler;
 
     /// <summary>
@@ -29,11 +31,11 @@ public interface ISelectionCollider {
 
     public void Render(Color c);
 
-    public static ISelectionCollider RectCollider(Rectangle rect) => new RectangleSelection() { Rect = rect };
-    public static ISelectionCollider RectCollider(int x, int y, int w, int h) => RectCollider(new(x, y, w, h));
-    public static ISelectionCollider RectCollider(float x, float y, int w, int h) => RectCollider(new((int) x, (int) y, w, h));
-    public static ISelectionCollider RectCollider(Vector2 pos, int w, int h) => RectCollider(new((int) pos.X, (int) pos.Y, w, h));
-    public static ISelectionCollider SpriteCollider(Sprite s) => new SpriteSelection(s);
+    public static ISelectionCollider FromRect(Rectangle rect) => new RectangleSelection() { Rect = rect };
+    public static ISelectionCollider FromRect(int x, int y, int w, int h) => FromRect(new(x, y, w, h));
+    public static ISelectionCollider FromRect(float x, float y, int w, int h) => FromRect(new((int) x, (int) y, w, h));
+    public static ISelectionCollider FromRect(Vector2 pos, int w, int h) => FromRect(new((int) pos.X, (int) pos.Y, w, h));
+    public static ISelectionCollider FromSprite(Sprite s) => new SpriteSelection(s);
 }
 
 /// <summary>
@@ -47,16 +49,21 @@ public interface ISelectionHandler {
     public IHistoryAction MoveBy(Vector2 offset);
     public IHistoryAction DeleteSelf();
     public IHistoryAction? TryResize(Point delta);
+    public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null);
+
     public void RenderSelection(Color c);
     public bool IsWithinRectangle(Rectangle roomPos);
     public void ClearCollideCache();
-
     public void OnRightClicked(IEnumerable<Selection> selections);
+
+    public BinaryPacker.Element? PackParent();
 
     /// <summary>
     /// The parent object which this handler manipulates.
     /// </summary>
     public object Parent { get; }
+
+    public SelectionLayer Layer { get; }
 }
 
 public interface ISelectionFlipHandler {
@@ -72,7 +79,9 @@ public enum SelectionLayer {
     BGDecals = 1 << 3,
     FGTiles = 1 << 4,
     BGTiles = 1 << 5,
+    Rooms = 1 << 6,
 
+    // intentionally omits "Rooms"
     All = Entities | Triggers | FGDecals | BGDecals | FGTiles | BGTiles,
 }
 

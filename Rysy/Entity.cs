@@ -118,16 +118,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         if (Width > 0 || Height > 0) {
             var rect = Rectangle;
 
-            return ISelectionCollider.RectCollider(rect);
+            return ISelectionCollider.FromRect(rect);
         }
 
         var firstSprite = GetSprites().FirstOrDefault();
 
         if (firstSprite is Sprite s) {
-            return ISelectionCollider.SpriteCollider(s);
+            return ISelectionCollider.FromSprite(s);
         }
 
-        return ISelectionCollider.RectCollider(Rectangle);
+        return ISelectionCollider.FromRect(Rectangle);
     }
 
     public virtual ISelectionCollider GetNodeSelection(int nodeIndex) {
@@ -135,30 +135,34 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 
         if (Width > 0 || Height > 0) {
             var rect = Rectangle;
-            return ISelectionCollider.RectCollider(rect.MovedTo(node));
+            return ISelectionCollider.FromRect(rect.MovedTo(node));
         }
 
         var firstSprite = NodeHelper.GetNodeSpritesForNode(this, nodeIndex).FirstOrDefault();
         if (firstSprite is Sprite s) {
-            return ISelectionCollider.SpriteCollider(s);
+            return ISelectionCollider.FromSprite(s);
         }
 
-        return ISelectionCollider.RectCollider(Rectangle.MovedTo(node));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Vector2 GetNodeCentered(int index) {
-        return Nodes![index] + new Vector2(Width / 2, Height / 2);
+        return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
     }
 
     public virtual IEnumerable<ISprite> GetSprites() {
         yield break;
     }
 
+    public IEnumerable<ISprite> GetSpritesWithNodes() {
+        if (Nodes is { }) {
+            return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this));
+        }
+
+        return GetSprites();
+    }
+
     public virtual bool ResizableX => false;
     public virtual bool ResizableY => false;
 
     public virtual Point MinimumSize => new(8, 8);
+    public virtual Range NodeLimits => 0..0;
 
     public override string ToString() {
         return (Room, EntityData) switch {
@@ -169,6 +173,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Vector2 GetNodeCentered(int index) {
+        return Nodes![index] + new Vector2(Width / 2, Height / 2);
+    }
     public int Int(string attrName, int def = 0) => EntityData.Int(attrName, def);
     public string Attr(string attrName, string def = "") => EntityData.Attr(attrName, def);
     public float Float(string attrName, float def = 0f) => EntityData.Float(attrName, def);
@@ -248,13 +256,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     /// </summary>
     public virtual Entity? TryFlipVertical() => null;
 
-    public BinaryPacker.Element Pack() {
+    public virtual BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.SID);
-        el.Attributes = new Dictionary<string, object>(EntityData.Inner) {
-            ["x"] = X,
-            ["y"] = Y,
-            ["id"] = ID
-        };
+        el.Attributes = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
+
+        if (ID == 0) {
+            el.Attributes.Remove("id");
+        }
 
         el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
             Attributes = new() {
@@ -275,6 +283,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 
     public Decal? AsDecal() => this as Decal;
     public Trigger? AsTrigger() => this as Trigger;
+
+    public SelectionLayer GetSelectionLayer() => this switch {
+        Trigger => SelectionLayer.Triggers,
+        Decal d => d.FG ? SelectionLayer.FGDecals : SelectionLayer.BGDecals,
+        _ => SelectionLayer.Entities,
+    };
 
     #region ILuaWrapper
     int ILuaWrapper.Lua__index(Lua lua, object key) {
@@ -333,9 +347,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 }
 
 internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler {
+    public EntitySelectionHandler(Entity entity) => Entity = entity;
+
     public Entity Entity { get; set; }
 
     public object Parent => Entity;
+
+    public SelectionLayer Layer => Entity.GetSelectionLayer();
 
     private ISelectionCollider? _Collider;
     private ISelectionCollider Collider => _Collider ??= Entity.GetMainSelection();
@@ -348,6 +366,19 @@ internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler
 
     public IHistoryAction MoveBy(Vector2 offset) {
         return new MoveEntityAction(Entity, offset);
+    }
+
+    public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
+        var nodeLimitsEnd = Entity.NodeLimits.End;
+        if (!nodeLimitsEnd.IsFromEnd && (Entity.Nodes?.Count ?? 0) == nodeLimitsEnd.Value)
+            return null;
+
+        var node = new Node(pos ?? (Entity.Pos + new Vector2(16f, 0)));
+
+        return (
+            new AddNodeAction(Entity, node, 0),
+            new NodeSelectionHandler(Entity, node)
+        );
     }
 
     public void RenderSelection(Color c) {
@@ -395,12 +426,35 @@ internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler
     }
 
     public void OnRightClicked(IEnumerable<Selection> selections) {
-        var history = (RysyEngine.Scene as EditorScene)?.HistoryHandler;
+        CreateEntityPropertyWindow(Entity, selections);
+    }
+
+    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections) {
+        var history = EditorState.History;
 
         if (history is { }) {
-            var allEntities = selections.SelectWhereNotNull(s => s.Handler is EntitySelectionHandler handler && handler.Entity.GetType() == Entity.GetType() ? handler.Entity : null).ToList();
-            RysyEngine.Scene.AddWindow(new EntityPropertyWindow(history, Entity, allEntities));
+            var allEntities = selections.SelectWhereNotNull(s => {
+                switch (s.Handler) {
+                    case EntitySelectionHandler entitySelect:
+                        if (entitySelect.Entity.GetType() == main.GetType())
+                            return entitySelect.Entity;
+                        break;
+                    case NodeSelectionHandler entitySelect:
+                        if (entitySelect.Entity.GetType() == main.GetType())
+                            return entitySelect.Entity;
+                        break;
+                    default:
+                        break;
+                }
+
+                return null;
+            }).Distinct().ToList();
+            RysyEngine.Scene.AddWindow(new EntityPropertyWindow(history, main, allEntities));
         }
+    }
+
+    public BinaryPacker.Element? PackParent() {
+        return Entity.Pack();
     }
 }
 
@@ -411,17 +465,7 @@ public class EntityData : IDictionary<string, object> {
 
     public EntityData(string sid, BinaryPacker.Element e) {
         SID = sid;
-
-        var dict = e.Attributes;
-        /*
-        Inner = new(Math.Max(0, dict.Count - 3));
-
-        foreach (var item in dict) {
-            if (item.Key is not "x" and not "y" and not "id") {
-                Inner[item.Key] = item.Value;
-            }
-        }*/
-        Inner = new(dict);
+        Inner = new(e.Attributes, StringComparer.Ordinal);
 
         if (e.Children is { Length: > 0 }) {
             var nodes = Nodes = new(e.Children.Length);

@@ -1,7 +1,9 @@
 ﻿using KeraLua;
 using Rysy.Entities;
 using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.History;
 using Rysy.LuaSupport;
 using System.Text.Json.Serialization;
 
@@ -65,6 +67,9 @@ public sealed class Room : IPackable, ILuaWrapper {
         get => Attributes.Y;
         set => Attributes.Y = value;
     }
+
+    public Vector2 Pos => new(X, Y);
+
     public int Width {
         get => Attributes.Width;
         private set => Attributes.Width = value;
@@ -319,11 +324,59 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void Render(Camera camera, bool selected) {
+        var canvasReady = FullRenderCanvas is { IsDisposed: false };
+
+        // canvases are not used in selected rooms, free the canvas
+        if (canvasReady && selected)
+            ClearRenderCache();
+
+        // if the room takes up extremely tiny amounts of space due to huge zoom out, there's no point in rendering the interior
+        var interiorVisible = new Vector2(Width * camera.Scale, Height * camera.Scale) is { X: >= 8, Y: >= 8 };
+        if (!interiorVisible)
+            ClearRenderCache();
+
         if (!camera.IsRectVisible(Bounds)) {
-            CachedSprites = null;
+            ClearRenderCache();
             return;
         }
 
+        StartBatch(camera);
+
+        ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
+
+        if (interiorVisible)
+            DrawRoomInterior(camera, selected, canvasReady);
+
+        // Darken the room if it's not selected
+        if (!selected)
+            ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
+
+        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors[Attributes.C], outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
+
+        GFX.Batch.End();
+    }
+
+    private void DrawRoomInterior(Camera camera, bool selected, bool canvasReady) {
+        if (!selected && canvasReady) {
+            DrawFromCanvas(camera);
+        } else {
+            CacheSpritesIfNeeded();
+
+            if (!selected && CachedSprites!.All(s => s.IsLoaded)) {
+                RysyEngine.OnFrameEnd += () => CacheIntoCanvas(camera);
+            }
+
+            foreach (var item in CachedSprites!) {
+                item.Render(camera, new(X, Y));
+            }
+        }
+
+        //foreach (var item in CachedSprites) {
+        //    item.Render(camera, new(X, Y));
+        //}
+    }
+
+    private void CacheSpritesIfNeeded() {
         if (CachedSprites is null) {
             //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
@@ -332,8 +385,10 @@ public sealed class Room : IPackable, ILuaWrapper {
 
             if (p.EntitiesVisible) {
                 CachedEntitySprites ??= Entities.Select(e => {
-                    var spr = e.GetSprites().SetDepth(e.Depth);
-                    spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
+                    /*
+                        var spr = e.GetSprites().SetDepth(e.Depth);
+                        spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);*/
+                    var spr = e.GetSpritesWithNodes().SetDepth(e.Depth);
                     if (layer is { } && e.EditorLayer != layer)
                         spr = spr.Apply(s => s.MultiplyAlphaBy(Settings.Instance.HiddenLayerAlpha));
 
@@ -405,67 +460,35 @@ public sealed class Room : IPackable, ILuaWrapper {
             if (Settings.Instance.LogTextureLoadTimes)
                 StartTextureLoadTimer();
         }
-
-        StartBatch(camera);
-
-        //ISprite.Rect(new(0, 0, Width, Height), Color.White * (selected ? .1f : .0f)).Render();
-        ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
-
-        /*
-        if (FullRenderCanvas is { IsDisposed: false } canvas) {
-            DrawFromCanvas(camera);
-        } else if (CachedSprites.All(s => s.IsLoaded)) {
-            canvas = CacheIntoCanvas(camera);
-            DrawFromCanvas(camera);
-        } else {
-            foreach (var item in CachedSprites) {
-                item.Render(camera, new(X, Y));
-            }
-        }*/
-        foreach (var item in CachedSprites) {
-            item.Render(camera, new(X, Y));
-        }
-
-        // Darken the room if it's not selected
-        if (!selected)
-            ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
-
-        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors[Attributes.C]).Render();
-
-
-        GFX.Batch.End();
     }
 
     private void DrawFromCanvas(Camera camera) {
         GFX.Batch.Draw(FullRenderCanvas, new Vector2(0, 0), Color.White);
-
-        if (CachedTriggerSprites is { } triggers)
-            foreach (var item in triggers) {
-                item.Render(camera, new(X, Y));
-            }
     }
 
-    private RenderTarget2D CacheIntoCanvas(Camera camera) {
+    private void CacheIntoCanvas(Camera camera) {
+        if (CachedSprites is null)
+            return;
+
         RenderTarget2D canvas;
-        Console.WriteLine("All loaded, caching!");
+
         var gd = RysyEngine.GDM.GraphicsDevice;
-        canvas = new(gd, Width, Height);
+        canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
         FullRenderCanvas = canvas;
-        GFX.Batch.End();
 
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);
 
-        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
 
-        foreach (var item in CachedSprites!) {
+        foreach (var item in CachedSprites) {
             item.Render();
         }
 
+        CachedSprites = null;
+
         GFX.Batch.End();
         gd.SetRenderTarget(null);
-        StartBatch(camera);
-        return canvas;
     }
 
     private void StartTextureLoadTimer() {
@@ -555,6 +578,21 @@ public sealed class Room : IPackable, ILuaWrapper {
     public List<Selection> GetSelectionsInRect(Rectangle rect, SelectionLayer layer) {
         var list = new List<Selection>();
 
+        if ((layer & SelectionLayer.Rooms) != 0) {
+            var map = Map;
+
+
+            foreach (var room in map.Rooms) {
+                var handler = room.GetSelectionHandler();
+
+                if (handler.IsWithinRectangle(rect)) {
+                    list.Add(new Selection(handler));
+                }
+            }
+
+            return list;
+        }
+
         if ((layer & SelectionLayer.Entities) != 0) {
             GetSelectionsInRectForEntities(rect, Entities, list);
         }
@@ -579,7 +617,27 @@ public sealed class Room : IPackable, ILuaWrapper {
             GetSelectionsInRectForGrid(rect, BG, list);
         }
 
+
+
         return list;
+    }
+
+    /// <summary>
+    /// Returns a list of all selections for objects simillar to this one, to be used for double clicking in the selection tool.
+    /// </summary>
+    public List<Selection>? GetSelectionsForSimillar(object obj) {
+        switch (obj) {
+            case Decal d:
+                return d.GetRoomList().Select(CreateSelectionFrom).ToList();
+            case Entity e:
+                if (e.GetRoomList() is TypeTrackedList<Entity> tracked) {
+                    var sid = e.EntityData.SID;
+                    return tracked.Where(e => e.EntityData.SID == sid).Select(CreateSelectionFrom).ToList();
+                }
+                return null;
+            default:
+                return null;
+        }
     }
 
     private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into) {
@@ -603,17 +661,21 @@ public sealed class Room : IPackable, ILuaWrapper {
 
             var mainSelect = entity.GetMainSelection();
             if (mainSelect.IsWithinRectangle(rect)) {
-                into.Add(new Selection() { Handler = new EntitySelectionHandler() { Entity = entity } });
+                into.Add(CreateSelectionFrom(entity));
             }
 
             if (entity.Nodes is { } nodes)
                 for (int i = 0; i < nodes.Count; i++) {
                     var nodeSelect = entity.GetNodeSelection(i);
                     if (nodeSelect.IsWithinRectangle(rect)) {
-                        into.Add(new Selection() { Handler = new NodeSelectionHandler(entity, i) });
+                        into.Add(new Selection(new NodeSelectionHandler(entity, nodes[i])));
                     }
                 }
         }
+    }
+
+    private static Selection CreateSelectionFrom(Entity entity) {
+        return new Selection(new EntitySelectionHandler(entity));
     }
 
     private void GetSelectionsInRectForDecals(Rectangle rect, ListenableList<Entity> decals, List<Selection> into) {
@@ -626,7 +688,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             var selection = decal.GetMainSelection();
 
             if (selection.IsWithinRectangle(rect)) {
-                into.Add(new Selection() { Handler = new EntitySelectionHandler() { Entity = decal } });
+                into.Add(new Selection() { Handler = new EntitySelectionHandler(decal)});
             }
         }
     }
@@ -653,5 +715,60 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         return 0;
+    }
+
+    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler() { Room = this };
+}
+
+public class RoomSelectionHandler : ISelectionHandler {
+    public Room Room { get; set; }
+    private Vector2 RemainderOffset;
+
+    public Rectangle Bounds => Room.Bounds;
+
+    public object Parent => Room;
+
+    public SelectionLayer Layer => SelectionLayer.Rooms;
+
+    public void ClearCollideCache() {
+    }
+
+    public IHistoryAction DeleteSelf() {
+        return new RoomDeleteAction(Room.Map, Room);
+    }
+
+    public bool IsWithinRectangle(Rectangle roomPos) => Bounds.Intersects(roomPos);
+
+    public IHistoryAction MoveBy(Vector2 offset) {
+        var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
+
+        // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
+        RemainderOffset += offset - (tileOffset.ToVector2() * 8);
+
+        if (tileOffset.X == 0 && tileOffset.Y == 0) {
+            return new MergedAction(Array.Empty<IHistoryAction>());
+        }
+
+        return new RoomMoveAction(Room, tileOffset.X, tileOffset.Y);
+    }
+
+    public void OnRightClicked(IEnumerable<Selection> selections) {
+        RysyEngine.Scene.AddWindow(new RoomEditWindow(Room, false));
+    }
+
+    public BinaryPacker.Element? PackParent() {
+        return Room.Pack();
+    }
+
+    public void RenderSelection(Color c) {
+        ISelectionCollider.FromRect(Bounds).Render(c);
+    }
+
+    public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null) {
+        return null;
+    }
+
+    public IHistoryAction? TryResize(Point delta) {
+        return new RoomResizeAction(Room, Room.Width + delta.X, Room.Height + delta.Y);
     }
 }

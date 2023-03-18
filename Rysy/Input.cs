@@ -1,8 +1,11 @@
 ﻿namespace Rysy;
 
+using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Buffers.Text;
+using System.IO.Compression;
 
 public static class Input {
     internal static void Update(GameTime gameTime) => Update((float) gameTime.ElapsedGameTime.TotalSeconds);
@@ -13,6 +16,8 @@ public static class Input {
     }
 
     public static class Mouse {
+        public const float DOUBLE_CLICK_TIME = .3f;
+
         public static int ScrollDelta { get; private set; }
         public static MouseInputState Left { get; private set; }
         public static MouseInputState Right { get; private set; }
@@ -28,6 +33,8 @@ public static class Input {
         public static float X1HoldTime => HoldTimes[3];
         public static float X2HoldTime => HoldTimes[4];
 
+        public static bool LeftDoubleClicked() => TimeSinceLastClick[0] < DOUBLE_CLICK_TIME && DoubleClicks[0];
+
         public static bool AnyClicked =>
             Left is not MouseInputState.Released ||
             Right is not MouseInputState.Released ||
@@ -42,19 +49,36 @@ public static class Input {
         private static float[] HoldTimes = new float[5];
         private static bool[] ConsumedInputs = new bool[5];
 
+        private static float[] TimeSinceLastClick = new float[5];
+        private static bool[] DoubleClicks = new bool[5];
+
         private static MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
+            if (PositionDelta != Point.Zero) {
+                // if the mouse moves, cancel and prevent any double clicks
+                DoubleClicks[index] = false;
+                TimeSinceLastClick[index] = float.MaxValue;
+            }
+
             if (current == ButtonState.Released) {
                 HoldTimes[index] = 0f;
                 ConsumedInputs[index] = false;
+                TimeSinceLastClick[index] += timeDeltaSeconds;
+
                 return MouseInputState.Released;
             }
+
             // Currently held/clicked
+
             if (ConsumedInputs[index]) {
                 return MouseInputState.Released;
             }
 
             if (prev == ButtonState.Released) {
+                // just clicked this frame
+                DoubleClicks[index] = TimeSinceLastClick[index] < DOUBLE_CLICK_TIME;
+
                 HoldTimes[index] = 0f;
+                TimeSinceLastClick[index] = 0f;
                 return MouseInputState.Clicked;
             }
 
@@ -67,6 +91,15 @@ public static class Input {
             mousePrevState = mouseState;
             mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
             var delta = deltaSeconds;
+
+            lastMouseScroll = realMouseScroll;
+            realMouseScroll = mouseState.ScrollWheelValue;
+
+            ScrollDelta = realMouseScroll - lastMouseScroll;
+
+            var lastPos = Pos;
+            Pos = new(mouseState.X, mouseState.Y);
+            PositionDelta = Pos - lastPos;
 
             var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
             var canInput = viewport.Bounds.Contains(new Point(mouseState.X, mouseState.Y));
@@ -83,15 +116,6 @@ public static class Input {
             Middle = GetCorrectState(middleButton, mousePrevState.MiddleButton, 2, delta);
             X1 = GetCorrectState(x1Button, mousePrevState.XButton1, 3, delta);
             X2 = GetCorrectState(x2Button, mousePrevState.XButton2, 4, delta);
-
-            lastMouseScroll = realMouseScroll;
-            realMouseScroll = mouseState.ScrollWheelValue;
-
-            ScrollDelta = realMouseScroll - lastMouseScroll;
-
-            var lastPos = Pos;
-            Pos = new(mouseState.X, mouseState.Y);
-            PositionDelta = Pos - lastPos;
         }
 
         public static void ConsumeLeft() {
@@ -166,10 +190,10 @@ public static class Input {
                 case 0:
                     ConsumeLeft();
                     break;
-                case 1: 
+                case 1:
                     ConsumeRight();
                     break;
-                case 2: 
+                case 2:
                     ConsumeMiddle();
                     break;
                 case 3:
@@ -254,6 +278,19 @@ public static class Input {
         }
     }
 
+    public static class Clipboard {
+        public static void Set(string text) {
+            ImGui.SetClipboardText(text);
+        }
+
+        public static void SetAsJson<T>(T obj) {
+            Set(obj.ToJson(Settings.Instance.MinifyClipboard));
+        }
+
+        public static string Get() => ImGui.GetClipboardText();
+
+        public static T? TryGetFromJson<T>() => JsonHelper.TryDeserialize<T>(Get());
+    }
 }
 
 public enum MouseInputState {

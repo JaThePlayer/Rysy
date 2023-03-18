@@ -46,18 +46,20 @@ public interface ISprite {
         Color = color,
     };
 
-    public static RectangleSprite OutlinedRect(Rectangle rect, Color color, Color outlineColor)
+    public static RectangleSprite OutlinedRect(Rectangle rect, Color color, Color outlineColor, int outlineWidth = 1)
         => new() {
             Pos = rect,
             Color = color,
             OutlineColor = outlineColor,
+            OutlineWidth = outlineWidth,
         };
 
-    public static RectangleSprite OutlinedRect(Vector2 pos, int w, int h, Color color, Color outlineColor)
+    public static RectangleSprite OutlinedRect(Vector2 pos, int w, int h, Color color, Color outlineColor, int outlineWidth = 1)
     => new() {
         Pos = new((int) pos.X, (int) pos.Y, w, h),
         Color = color,
         OutlineColor = outlineColor,
+        OutlineWidth = outlineWidth,
     };
 
     public static LineSprite Line(Vector2 start, Vector2 end, Color color)

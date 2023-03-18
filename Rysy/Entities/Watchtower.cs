@@ -9,4 +9,6 @@ public class Watchtower : SpriteEntity {
     public override Vector2 Origin => new(0.5f, 1.0f);
 
     public override int Depth => -8500;
+
+    public override Range NodeLimits => 0..;
 }

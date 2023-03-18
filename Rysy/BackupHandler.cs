@@ -12,7 +12,7 @@ public static class BackupHandler {
     /// Handles removing old backups as well
     /// </summary>
     public static void Backup(Map map) {
-        if (map.Filepath is not { } mapFilename) {
+        if (map.Filepath is not { } mapFilename || !File.Exists(mapFilename)) {
             return;
         }
 

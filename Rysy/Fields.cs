@@ -24,6 +24,21 @@ public static class Fields {
         Values = values
     };
 
+    public static ColorField RGBA(Color def) => new() { 
+        Default = def,
+        Format = ColorFormat.RGBA,
+    };
+
+    public static ColorField RGB(Color def) => new() {
+        Default = def,
+        Format = ColorFormat.RGB,
+    };
+
+    public static ColorField ARGB(Color def) => new() {
+        Default = def,
+        Format = ColorFormat.ARGB,
+    };
+
     public static IField? GuessFromValue(object val) => val switch {
         bool b => Bool(b),
         float b => Float(b),

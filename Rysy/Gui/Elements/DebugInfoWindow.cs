@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.History;
 using Rysy.Scenes;
+using System.Diagnostics;
 
 namespace Rysy.Gui.Elements;
 public record class DebugInfoWindow : Window {
@@ -16,6 +17,10 @@ public record class DebugInfoWindow : Window {
 
     public static new void Render(Window w) {
         ImGui.Text($"FPS: {RysyEngine.Framerate}");
+
+        if (ImGui.CollapsingHeader("Memory")) {
+            ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
+        }
 
         if (ImGui.CollapsingHeader("Metrics")) {
             var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;

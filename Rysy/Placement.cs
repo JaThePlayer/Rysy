@@ -8,8 +8,10 @@ public record class Placement(string Name) {
 
     public string? Tooltip;
 
+    public Action<Entity>? Finalizer;
+
     // set in entity registry
-    public IPlacementHandler PlacementHandler { get; set; }
+    public IPlacementHandler PlacementHandler { get; internal set; }
 
     public Dictionary<string, object> ValueOverrides { get; set; } = new();
 
@@ -71,7 +73,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     }
 
     public IEnumerable<ISprite> GetPreviewSprites(Placement placement, Vector2 pos, Room room) {
-        return CreateFromPlacement(placement, pos, room).GetSprites();
+        return CreateFromPlacement(placement, pos, room).GetSpritesWithNodes();
     }
 
     public IHistoryAction Place(Placement placement, Vector2 pos, Room room) {
@@ -88,5 +90,5 @@ public interface IConvertibleToPlacement {
 public interface IPlaceable {
     public static abstract List<Placement>? GetPlacements();
 
-    public static virtual FieldList GetFields() => new();
+    public static abstract FieldList GetFields();
 }

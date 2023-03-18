@@ -11,7 +11,7 @@ public sealed class SpikesUp : Entity {
 
     public override Entity? TryFlipVertical() => CloneWith(pl => pl.SID = "spikesDown");
 
-    public override ISelectionCollider GetMainSelection() => ISelectionCollider.RectCollider(X, Y - 8, Width, 8);
+    public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X, Y - 8, Width, 8);
 }
 
 [CustomEntity("spikesDown")]
@@ -40,5 +40,5 @@ public sealed class SpikesLeft : Entity {
 
     public override Entity? TryFlipHorizontal() => CloneWith(pl => pl.SID = "spikesRight");
 
-    public override ISelectionCollider GetMainSelection() => ISelectionCollider.RectCollider(X - 8, Y, 8, Height);
+    public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X - 8, Y, 8, Height);
 }

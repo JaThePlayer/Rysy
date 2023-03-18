@@ -1,5 +1,7 @@
 ﻿using System.Data;
+using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Rysy;
 
@@ -51,7 +53,7 @@ public sealed class BinaryPacker {
         };
     }
 
-    public static void SaveToFile(Package package, string filename) {
+    public static void SaveToStream(Package package, Stream output) {
         // contains the map header and lookup table
         using var headerStream = new MemoryStream();
         using var headerWriter = new BinaryWriter(headerStream);
@@ -69,15 +71,18 @@ public sealed class BinaryPacker {
         packer.WriteElement(package.Data);
 
         // write lookup table
-        headerWriter.Write((short)packer.WritingLookup.Count);
+        headerWriter.Write((short) packer.WritingLookup.Count);
         foreach (var item in packer.WritingLookup.OrderBy(k => k.Value)) {
             headerWriter.Write(item.Key);
         }
 
-        // Write the map into the file
+        output.Write(headerStream.ToArray());
+        output.Write(contentStream.ToArray());
+    }
+
+    public static void SaveToFile(Package package, string filename) {
         using var fileStream = File.Open(filename, FileMode.Create);
-        fileStream.Write(headerStream.ToArray());
-        fileStream.Write(contentStream.ToArray());
+        SaveToStream(package, fileStream);
     }
     
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
@@ -180,7 +185,7 @@ public sealed class BinaryPacker {
         var element = new Element(ReadLookup());
 
         var attrCount = Reader.ReadByte();
-        var attrs = element.Attributes = new(attrCount);
+        var attrs = element._Attributes = new(attrCount, StringComparer.Ordinal);
         for (int i = 0; i < attrCount; i++) {
             string attrName = ReadLookup();
 
@@ -262,12 +267,24 @@ public sealed class BinaryPacker {
     }
 
     public class Element {
-        internal Element(string? name = null) {
+        public Element() { }
+
+        public Element(string? name = null) {
             Name = name;
         }
 
-        public readonly string? Name;
-        public Dictionary<string, object> Attributes = null!;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name;
+
+        internal Dictionary<string, object> _Attributes;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, object> Attributes {
+            get => _Attributes;
+            set => _Attributes = value.FixDict(StringComparer.Ordinal);
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Element[] Children = null!;
 
         public int Int(string attrName, int def = 0) {

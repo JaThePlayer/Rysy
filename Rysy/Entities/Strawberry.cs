@@ -25,4 +25,6 @@ public class Strawberry : SpriteEntity, INodeSpriteProvider, INodePathProvider {
             Pos = Nodes![nodeIndex]
         };
     }
+
+    public override Range NodeLimits => 0..;
 }

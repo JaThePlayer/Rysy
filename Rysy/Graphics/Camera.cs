@@ -111,9 +111,15 @@ public class Camera {
     /// <summary>
     /// Converts a screen position to a real (level/map) position.
     /// </summary>
-    /// <param name="pos">The position to convert.</param>
-    /// <returns>The converted position.</returns>
     public Vector2 ScreenToReal(Vector2 pos) => Vector2.Transform(pos, Inverse);
+    public Point ScreenToReal(Point pos) => Vector2.Transform(pos.ToVector2(), Inverse).ToPoint();
+    public Rectangle ScreenToReal(Rectangle rect) {
+        var (x, y) = RealToScreen(rect.Location.ToVector2());
+        var w = rect.Width * Scale;
+        var h = rect.Height * Scale;
+
+        return new((int) x, (int) y, (int) w, (int) h);
+    }
 
     /// <summary>
     /// Checks whether the given rectangle is visible inside of the camera at a given camera position

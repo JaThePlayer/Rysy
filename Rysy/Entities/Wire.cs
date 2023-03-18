@@ -14,4 +14,6 @@ public class Wire : Entity, ICustomNodeHandler {
 
     public override IEnumerable<ISprite> GetSprites()
         => ISprite.GetCurveSprites(Pos, Nodes![0], new(0f, 24f), Color, 16);
+
+    public override Range NodeLimits => 1..1;
 }

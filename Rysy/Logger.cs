@@ -98,25 +98,13 @@ public static class Logger {
             return;
         }
 
-        FancyInterpolatedStringHandler txt = $"{caller} = {JsonSerializer.Serialize(obj, JsonSerializerOptions)}";
+        FancyInterpolatedStringHandler txt = $"{caller} = {obj.ToJson()}";
 #if DEBUG
         Write(tag, LogLevel.Debug, txt, callerMethod, callerFile, lineNumber);
 #else
         Write(tag, LogLevel.Debug, txt);
 #endif
     }
-
-    /// <summary>
-    /// Returns the JSON representation of this object.
-    /// </summary>
-    public static string ToJson<T>(this T? obj) {
-        return obj is { } ? JsonSerializer.Serialize(obj, JsonSerializerOptions) : "";
-    }
-
-    private static readonly JsonSerializerOptions JsonSerializerOptions = new() {
-        WriteIndented = true,
-        IncludeFields = true,
-    };
 
     private static void WriteImpl(string str) {
         Console.Write(str.TryCensor());

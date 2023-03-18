@@ -17,10 +17,22 @@ public sealed class Node : IDepth {
     public static implicit operator Node(Vector2 node) => new(node);
 }
 
-sealed record class NodeSelectionHandler(Entity Entity, int NodeIdx) : ISelectionHandler {
-    public Node Node => Entity.Nodes![NodeIdx];
+sealed record class NodeSelectionHandler : ISelectionHandler {
+    //public Node Node => Entity.Nodes![NodeIdx];
+    public Entity Entity;
+
+    public Node Node;
+
+    public NodeSelectionHandler(Entity entity, Node node) {
+        Entity = entity;
+        Node = node;
+    }
+
+    public int NodeIdx => Entity.Nodes!.IndexOf(Node);
 
     public object Parent => Node;
+
+    public SelectionLayer Layer => Entity.GetSelectionLayer(); 
 
     private ISelectionCollider? _Collider;
     private ISelectionCollider Collider => _Collider ??= Entity.GetNodeSelection(NodeIdx);
@@ -30,11 +42,29 @@ sealed record class NodeSelectionHandler(Entity Entity, int NodeIdx) : ISelectio
     }
 
     public IHistoryAction DeleteSelf() {
+        var nodesLeft = Entity.Nodes!.Count - 1;
+        if (nodesLeft < Entity.NodeLimits.Start.Value) {
+            return new RemoveEntityAction(Entity, Entity.Room);
+        }
+
         return new RemoveNodeAction(Node, Entity);
     }
 
     public IHistoryAction? TryResize(Point delta) {
         return null;
+    }
+
+    public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
+        var maxNodes = Entity.NodeLimits.End;
+        if (!maxNodes.IsFromEnd && (Entity.Nodes?.Count ?? 0) == maxNodes.Value)
+            return null;
+
+        var node = new Node(pos ?? (Node.Pos + new Vector2(16f, 0)));
+
+        return (
+            new AddNodeAction(Entity, node, NodeIdx + 1),
+            new NodeSelectionHandler(Entity, node)
+        );
     }
 
     public void RenderSelection(Color c) => Collider.Render(c);
@@ -46,5 +76,10 @@ sealed record class NodeSelectionHandler(Entity Entity, int NodeIdx) : ISelectio
     }
 
     public void OnRightClicked(IEnumerable<Selection> selections) {
+        EntitySelectionHandler.CreateEntityPropertyWindow(Entity, selections);
+    }
+
+    public BinaryPacker.Element? PackParent() {
+        return Entity.Pack();
     }
 }

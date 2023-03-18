@@ -7,4 +7,6 @@ public class Seeker : SpriteEntity {
     public override string TexturePath => "characters/monsters/predator00";
 
     public override int Depth => -200;
+
+    public override Range NodeLimits => 0..;
 }

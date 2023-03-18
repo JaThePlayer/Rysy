@@ -115,10 +115,26 @@ public static partial class StringExt {
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static string Humanize(this string text) => text.SplitPascalCase().UppercaseFirst();
+    public static string Humanize(this string text) => text.TrimStart('_').SplitPascalCase().UppercaseFirst();
 
     /// <summary>
     /// Returns the string <paramref name="formatted"/> with all color formatting removed.
     /// </summary>
     public static string UnformatColors(this string formatted) => formatted.RegexReplace(UnformatRegex, "");
+
+    /// <summary>
+    /// Returns <paramref name="possiblyDuplicated"/> suffixed in such a way that the returned string is not contained in <paramref name="strings"/>.
+    /// </summary>
+    public static string GetDeduplicatedIn(this string possiblyDuplicated, IEnumerable<string> strings) {
+        int i = 0;
+        var origName = possiblyDuplicated;
+        var newName = origName;
+
+        while (strings.Contains(newName)) {
+            newName = $"{origName}-{i}";
+            i++;
+        }
+
+        return newName;
+    }
 }

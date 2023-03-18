@@ -25,8 +25,7 @@ public static class EntityRegistry {
         EntityPlacements.Clear();
         TriggerPlacements.Clear();
 
-        SIDToType[FGDecalSID] = typeof(Decal);
-        SIDToType[BGDecalSID] = typeof(Decal);
+        RegisterHardcoded();
 
         var loadingScene = RysyEngine.Scene as LoadingScene;
         loadingScene?.SetText("Registering entities");
@@ -40,6 +39,16 @@ public static class EntityRegistry {
         using (var watch = new ScopedStopwatch("Registering entities")) {
             await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
+    }
+
+    private static void RegisterHardcoded() {
+        SIDToType[FGDecalSID] = typeof(Decal);
+        SIDToType[BGDecalSID] = typeof(Decal);
+
+        var decalFields = Decal.GetFields();
+
+        SIDToFields[FGDecalSID] = decalFields;
+        SIDToFields[BGDecalSID] = decalFields;
     }
 
     public static void RegisterFromLua(string lua, string chunkName) {
@@ -119,7 +128,10 @@ public static class EntityRegistry {
     
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
-        return Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, nodes: null), room, isTrigger);
+        var entity = Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, nodes: null), room, isTrigger);
+        from.Finalizer?.Invoke(entity);
+
+        return entity;
     }
 
     public static Entity Create(BinaryPacker.Element from, Room room, bool trigger) {
@@ -158,6 +170,15 @@ public static class EntityRegistry {
 
         if (e.ResizableY && e.Height < min.Y) {
             e.Height = min.Y;
+        }
+
+        var minimumNodes = e.NodeLimits.Start.Value;
+        if (minimumNodes > 0 && e.Nodes is not { }) {
+            var nodes = e.EntityData.Nodes = new List<Node>();
+
+            for (int i = 1; i <= minimumNodes; i++) {
+                nodes.Add(new(e.X + (8 * i), e.Y));
+            }
         }
 
         return e;

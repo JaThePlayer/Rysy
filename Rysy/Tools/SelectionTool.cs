@@ -1,14 +1,19 @@
 ﻿using ImGuiNET;
 using Rysy.Graphics;
-using Rysy.Gui.Elements;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
+using System.IO.Compression;
 
 namespace Rysy.Tools;
+
+struct CopiedSelection {
+    public CopiedSelection() { }
+
+    public BinaryPacker.Element Data;
+    public SelectionLayer Layer;
+}
 
 internal class SelectionTool : Tool {
     private enum States {
@@ -48,7 +53,134 @@ internal class SelectionTool : Tool {
 
         handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelections);
 
+        handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => AddNodeKeybind(at: null));
+        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => AddNodeKeybind(at: GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom).ToVector2().Snap(8)));
+
+        handler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
+        handler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
+
         History.OnApply += ClearColliderCachesInSelections;
+    }
+
+    private void PasteSelections() {
+        var pasted = Input.Clipboard.TryGetFromJson<List<CopiedSelection>>();
+        if (pasted is null) {
+            return;
+        }
+
+        if (pasted.Any(p => p.Layer == SelectionLayer.Rooms)) {
+            PasteRoomSelections(pasted);
+            return;
+        }
+
+        PasteEntitylikeSelections(pasted);
+    }
+
+    private void PasteRoomSelections(List<CopiedSelection> pasted) {
+        var rooms = pasted.Where(s => s.Layer == SelectionLayer.Rooms).Select(s => {
+            var room = new Room();
+            room.Map = EditorState.CurrentRoom.Map;
+            room.Unpack(s.Data);
+
+            return room;
+        }).ToList();
+
+        var map = EditorState.CurrentRoom.Map;
+
+        var topLeft = new Vector2(rooms.Min(e => e.X), rooms.Min(e => e.Y)).Snap(8);
+        var bottomRight = new Vector2(rooms.Max(e => e.X + e.Width), rooms.Max(e => e.Y + e.Height)).Snap(8);
+
+        var mousePos = GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom).ToVector2().Snap(8);
+
+        var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f).Snap(8)).ToPoint();
+
+        foreach (var room in rooms) {
+            room.X += offset.X;
+            room.Y += offset.Y;
+            room.Name = room.Name.GetDeduplicatedIn(map.Rooms.Select(s => s.Name));
+        }
+
+        Layer = LayerNames.ROOM;
+        Deselect();
+        CurrentSelections = rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
+
+        History.ApplyNewAction(rooms.Select(r => new AddRoomAction(map, r)).MergeActions());
+
+        if (rooms.Count == 1) {
+            EditorState.CurrentRoom = rooms[0];
+        }
+    }
+
+    private void PasteEntitylikeSelections(List<CopiedSelection> pasted) {
+        var entities = new List<Entity>();
+
+        var newSelections = pasted.SelectMany(s => {
+            var e = EntityRegistry.Create(s.Data, EditorState.CurrentRoom, s.Layer == SelectionLayer.Triggers);
+            entities.Add(e);
+
+            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(e, n)) ?? Array.Empty<ISelectionHandler>();
+
+            return selections.Append(new EntitySelectionHandler(e));
+        }).Select(h => new Selection() { Handler = h }).ToList();
+
+        Deselect();
+        CurrentSelections = newSelections;
+
+        if (entities.Count > 0) {
+            var topLeft = new Vector2(entities.Min(e => e.X), entities.Min(e => e.Y)).Snap(8);
+            var bottomRight = new Vector2(entities.Max(e => e.X), entities.Max(e => e.Y)).Snap(8);
+
+            var mousePos = GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom).ToVector2().Snap(8);
+
+            var offset = -topLeft + mousePos - ((bottomRight - topLeft) / 2f).Snap(8);
+
+            foreach (var entity in entities) {
+                entity.Pos += offset;
+
+                if (entity.Nodes is { } nodes)
+                    foreach (var node in nodes) {
+                        node.Pos += offset;
+                    }
+            }
+
+            History.ApplyNewAction(AddEntityAction.AddAll(entities, EditorState.CurrentRoom));
+        }
+    }
+
+    private void CopySelections() {
+        if (CurrentSelections is not { } selections)
+            return;
+
+        var copied = selections
+            // if you selected multiple nodes of the same entity, don't copy the entity twice
+            .DistinctBy(s => s.Handler is NodeSelectionHandler n ? n.Entity : s.Handler.Parent)
+            .Select(s => new CopiedSelection() {
+                Data = s.Handler.PackParent()!,
+                Layer = s.Handler.Layer,
+            })
+            .Where(s => s.Data is { })
+            .ToList();
+
+        Input.Clipboard.SetAsJson(copied);
+
+        //Input.Clipboard.Set(Compress(copied.ToJsonUTF8()));
+
+        static string Compress(byte[] input) {
+            using (var result = new MemoryStream()) {
+                var lengthBytes = BitConverter.GetBytes(input.Length);
+                result.Write(lengthBytes, 0, 4);
+
+                using (var compressionStream = new GZipStream(result,
+                    CompressionLevel.Optimal)) {
+                    compressionStream.Write(input, 0, input.Length);
+                    compressionStream.Flush();
+
+                }
+                var gzipBytes = result.ToArray();
+
+                return Convert.ToBase64String(gzipBytes);
+            }
+        }
     }
 
     private Action CreateUpsizeHandler(Point offset) => () => {
@@ -62,6 +194,31 @@ internal class SelectionTool : Tool {
             MoveSelectionsBy(offset, selections);
         }
     };
+
+    private void AddNodeKeybind(Vector2? at) {
+        if (CurrentSelections is not { } selections) {
+            return;
+        }
+
+        List<IHistoryAction> actions = new();
+        List<Selection> newSelections = new();
+        List<Selection> unselected = new();
+
+        foreach (var s in selections) {
+            if (s.Handler.TryAddNode(at) is { } res) {
+                actions.Add(res.Item1);
+                newSelections.Add(new() { Handler = res.Item2 });
+                unselected.Add(s);
+            }
+        }
+
+        if (actions.Count > 0) {
+            ClearColliderCachesInSelections();
+            History.ApplyNewAction(actions.MergeActions());
+
+            CurrentSelections = new(selections.Except(unselected).Concat(newSelections));
+        }
+    }
 
     private void HorizontalFlipSelections() {
         if (CurrentSelections is not { } selections) {
@@ -144,6 +301,7 @@ internal class SelectionTool : Tool {
         LayerNames.ENTITIES, LayerNames.TRIGGERS,
         LayerNames.FG_DECALS, LayerNames.BG_DECALS,
         LayerNames.FG, LayerNames.BG,
+        LayerNames.ROOM,
         LayerNames.ALL, LayerNames.CUSTOM_LAYER
     };
 
@@ -160,6 +318,23 @@ internal class SelectionTool : Tool {
     }
 
     public override void Render(Camera camera, Room room) {
+        if (Layer == LayerNames.ROOM)
+            return;
+
+        DoRender();
+    }
+
+    public override void RenderOverlay() {
+        if (Layer != LayerNames.ROOM)
+            return;
+
+        GFX.EndBatch();
+        GFX.BeginBatch(EditorState.Camera!);
+
+        DoRender();
+    }
+
+    private void DoRender() {
         if (SelectionGestureHandler.CurrentRectangle is { } rect) {
             DrawSelectionRect(rect);
         }
@@ -167,9 +342,6 @@ internal class SelectionTool : Tool {
             foreach (var selection in selections) {
                 selection.Render(Color.Red);
             }
-    }
-
-    public override void RenderOverlay() {
     }
 
     public override void Update(Camera camera, Room room) {
@@ -221,6 +393,8 @@ internal class SelectionTool : Tool {
         Deselect();
     }
 
+    public override bool AllowSwappingRooms => Layer != LayerNames.ROOM;
+
     private void EndMoveGesture(bool simulate) {
         if (State != States.MoveGesture)
             return;
@@ -243,7 +417,7 @@ internal class SelectionTool : Tool {
                     Point mousePos = GetMouseRoomPos(camera, room);
                     Vector2 delta = MoveGestureFinalDelta;
 
-                    if (delta.LengthSquared() <= 1) {
+                    if (delta.LengthSquared() <= 0) {
                         // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
                         SelectWithin(room, new Rectangle(mousePos, new(1, 1)));
                     } else {
@@ -277,7 +451,7 @@ internal class SelectionTool : Tool {
         }
     }
 
-    private static Vector2 CalculateMovementDelta(Point start, Point mousePos) {
+    private Vector2 CalculateMovementDelta(Point start, Point mousePos) {
         var delta = (mousePos - start).ToVector2();
         delta = SnapToGridIfNeeded(delta);
 
@@ -292,12 +466,14 @@ internal class SelectionTool : Tool {
         return pos;
     }
 
-    private static Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
+    private Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
+        if (Layer == LayerNames.ROOM)
+            return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
         return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
     }
 
     private void UpdateDragGesture(Camera camera, Room room) {
-        if (SelectionGestureHandler.Update((p) => room.WorldToRoomPos(camera, p)) is { } rect) {
+        if (SelectionGestureHandler.Update((p) => GetMouseRoomPos(camera, room, p)) is { } rect) {
             SelectWithin(room, rect);
         }
     }
@@ -306,15 +482,24 @@ internal class SelectionTool : Tool {
 
     private void SelectWithin(Room room, Rectangle rect) {
         var selections = room.GetSelectionsInRect(rect, LayerNames.ToolLayerToEnum(Layer, CustomLayer));
-        IEnumerable<Selection> finalSelections;
+        IEnumerable<Selection> finalSelections = null!;
 
         if (rect.Size.X <= 1 && rect.Size.Y <= 1 && selections.Count > 0) {
             // you just clicked in place, select only 1 selection
-            int idx = ClickInPlaceIdx % selections.Count;
-            ClickInPlaceIdx = (idx + 1) % selections.Count;
+            if (selections.Count > 1) {
+                int idx = ClickInPlaceIdx % selections.Count;
+                ClickInPlaceIdx = (idx + 1) % selections.Count;
 
-            finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1));
-        } else {
+                finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1));
+            } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
+                // if you double clicked in place, select all simillar entities/decals
+                finalSelections = room.GetSelectionsForSimillar(selections[0].Handler.Parent)!;
+                ClickInPlaceIdx = 0;
+            }
+
+        }
+
+        if (finalSelections == null) {
             finalSelections = selections;
             ClickInPlaceIdx = 0;
         }
@@ -329,8 +514,7 @@ internal class SelectionTool : Tool {
                 .Except(finalSelections, new HandlerParentEqualityComparer())
                 .DistinctBy(x => x.Handler.Parent)
                 .ToList();
-        }
-        else {
+        } else {
             Deselect();
             CurrentSelections = finalSelections.ToList();
         }

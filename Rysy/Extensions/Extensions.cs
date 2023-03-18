@@ -31,9 +31,20 @@ public static class Extensions {
             act();
     }
 
-    public static int AsInt(this bool b) => Unsafe.As<bool, byte>(ref b);
+    /// <summary>
+    /// Performs <see cref="Unsafe.As{TFrom, TTo}(ref TFrom)"/> to reinterpret this bool to a byte.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static byte AsByte(this bool b) => Unsafe.As<bool, byte>(ref b);
 
+    /// <summary>
+    /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
+    /// </summary>
+    public static NumVector3 ToNumVec3(this Color color) => color.ToVector3().ToNumerics();
+
+    /// <summary>
+    /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
+    /// </summary>
     public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
 
     public static T[] ShallowClone<T>(this T[] array) => (T[])array.Clone();

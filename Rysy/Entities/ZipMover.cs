@@ -21,4 +21,6 @@ public class ZipMover : Entity, ISolid {
             Origin = new(.5f, 0f)
         };
     }
+
+    public override Range NodeLimits => 1..1;
 }

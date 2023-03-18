@@ -4,7 +4,15 @@ using Rysy.Helpers;
 namespace Rysy;
 
 public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
-    public virtual Color Color => Color.LightSkyBlue;
+    public string EditorColor {
+        get => EntityData.Attr("_editorColor", Color.LightSkyBlue.ToRGBAString());
+        set {
+            EntityData["_editorColor"] = value;
+            ClearRoomRenderCache();
+        }
+    }
+
+    public virtual Color Color => EditorColor.FromARGB();
 
     public virtual Color FillColor => Color * 0.15f;
 
@@ -33,7 +41,7 @@ public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
     }
 
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {
-        return ISelectionCollider.RectCollider(GetNodeRect(nodeIndex));
+        return ISelectionCollider.FromRect(GetNodeRect(nodeIndex));
     }
 
     private Rectangle GetNodeRect(int nodeIndex) {
