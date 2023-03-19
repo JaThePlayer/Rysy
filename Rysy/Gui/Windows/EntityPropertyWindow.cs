@@ -1,9 +1,10 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.History;
 
-namespace Rysy.Gui.Elements;
+namespace Rysy.Gui.Windows;
 
-public record class EntityPropertyWindow : Window {
+public class EntityPropertyWindow : Window {
     public readonly Entity Main;
     public readonly List<Entity> All;
 
@@ -22,7 +23,6 @@ public record class EntityPropertyWindow : Window {
     private Action HistoryHook;
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit Entity - {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}", null) {
-        Render = DoRender;
         Main = main;
         All = all;
         History = history;
@@ -125,7 +125,7 @@ public record class EntityPropertyWindow : Window {
         }
     }
 
-    private void DoRender(Window w) {
+    protected override void Render() {
         ImGui.Columns(2);
 
         bool valid = true;

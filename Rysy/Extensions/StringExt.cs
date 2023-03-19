@@ -1,6 +1,7 @@
-﻿using System.Text.RegularExpressions;
+﻿using Rysy.Extensions;
+using System.Text.RegularExpressions;
 
-namespace Rysy;
+namespace Rysy.Extensions;
 
 public static partial class StringExt {
     //[GeneratedRegex("[a-z][A-Z]")]
@@ -15,7 +16,7 @@ public static partial class StringExt {
     /// Splits the string on [a-z][A-Z] patterns, inserting a space between them.
     /// </summary>
     public static string SplitPascalCase(this string pascalCase) {
-        return PascalCaseRegex.Replace(pascalCase, (Match match) => {
+        return PascalCaseRegex.Replace(pascalCase, (match) => {
             return $"{match.ValueSpan[0]} {match.ValueSpan[1]}";
         });
     }
@@ -63,11 +64,18 @@ public static partial class StringExt {
         if (string.IsNullOrWhiteSpace(path))
             return path;
 
-        
+
         if (UserNameRegex.Matches(path) is { } matches) {
+
+/* Unmerged change from project 'Rysy (net7.0)'
+Before:
             for (int i = 0; i < matches.Count; i++) {
                 path = path.Replace(matches[i].Groups[1].Value, "<USER>");
-            }
+After:
+            for (int i = 0; i < matches.Count; i++)                 path = path.Replace(matches[i].Groups[1].Value, "<USER>");
+*/
+            for (int i = 0; i < matches.Count; i++)
+                path = path.Replace(matches[i].Groups[1].Value, "<USER>");
             return path;
         }
 
@@ -136,5 +144,33 @@ public static partial class StringExt {
         }
 
         return newName;
+    }
+
+    public static string ToValidFilename(this string str) {
+
+/* Unmerged change from project 'Rysy (net7.0)'
+Before:
+        if (str == null) {
+            return string.Empty;
+After:
+        if (str == null)             return string.Empty;
+*/
+        if (str == null)
+            return string.Empty;
+
+        return str.ReplaceAll(Path.GetInvalidFileNameChars(), '_');
+    }
+
+    public static string ReplaceAll(this string str, char[] chars, char replacement) {
+        return string.Create(str.Length, (str, chars, replacement), static (span, state) => {
+            var (str, chars, replacement) = state;
+            str.AsSpan().CopyTo(span);
+
+            int i;
+            while ((i = span.IndexOfAny(chars)) != -1) {
+                span[i] = replacement;
+                span = span[i..];
+            }
+        });
     }
 }

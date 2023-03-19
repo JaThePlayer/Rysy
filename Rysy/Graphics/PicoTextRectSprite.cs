@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Graphics;
 
 /// <summary>
 /// Allows rendering PICO-8 text, centered into a rectangle.

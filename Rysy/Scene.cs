@@ -1,4 +1,7 @@
-﻿namespace Rysy;
+﻿using ImGuiNET;
+using Rysy.Gui;
+
+namespace Rysy;
 
 public abstract class Scene {
     private List<Gui.Window> Windows = new();
@@ -25,7 +28,8 @@ public abstract class Scene {
     }
 
     public virtual void Update() {
-        Hotkeys.Update();
+        if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantCaptureMouse)
+            Hotkeys.Update();
 
         TimeActive += Time.Delta;
     }
@@ -49,6 +53,11 @@ public abstract class Scene {
     public void AddWindow(Gui.Window wind) {
         wind.SetRemoveAction(RemoveWindow);
         Windows.Add(wind);
+    }
+
+    public void AddWindowIfNeeded<T>() where T : Window, new() {
+        if (!Windows.Any(w => w is T))
+            AddWindow(new T());
     }
 
     public virtual void OnFileDrop(FileDropEventArgs args) {

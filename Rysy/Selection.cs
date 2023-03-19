@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.History;
 
 namespace Rysy;
@@ -64,6 +65,11 @@ public interface ISelectionHandler {
     public object Parent { get; }
 
     public SelectionLayer Layer { get; }
+
+    /// <summary>
+    /// Places the entity 
+    /// </summary>
+    public IHistoryAction PlaceClone(Room room);
 }
 
 public interface ISelectionFlipHandler {

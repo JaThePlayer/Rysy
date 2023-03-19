@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Rysy;
+namespace Rysy.Helpers;
 
 /// <summary>
 /// A wrapper over <see cref="List{T}"/>, which sorts elements added to it based on their type and implemented interfaces, 
@@ -20,9 +20,8 @@ public class TypeTrackedList<T> : IListenableList<T> {
         get => Inner[index];
         set {
             var prev = Inner.ElementAtOrDefault(index);
-            if (prev != null) {
+            if (prev != null)
                 UntrackItem(prev);
-            }
 
             Inner[index] = value;
             TrackNewItem(value);
@@ -40,29 +39,26 @@ public class TypeTrackedList<T> : IListenableList<T> {
     public bool IsReadOnly => false;
 
     private void TrackAsType(T item, Type t) {
-        if (ByType.TryGetValue(t, out var l)) {
+        if (ByType.TryGetValue(t, out var l))
             l.Add(item);
-        } else {
+        else
             ByType.Add(t, new() { item });
-        }
     }
 
     private void TrackNewItem(T item) {
         var t = item!.GetType();
 
         TrackAsType(item, t);
-        foreach (var inter in t.GetInterfaces()) {
+        foreach (var inter in t.GetInterfaces())
             TrackAsType(item, inter);
-        }
     }
 
     private void UntrackItem(T item) {
         var t = item!.GetType();
 
         ByType[t].Remove(item);
-        foreach (var inter in t.GetInterfaces()) {
+        foreach (var inter in t.GetInterfaces())
             ByType[inter].Remove(item);
-        }
     }
 
     public void Add(T item) {
@@ -112,9 +108,8 @@ public class TypeTrackedList<T> : IListenableList<T> {
     public bool Remove(T item) {
         UntrackItem(item);
         var ret = Inner.Remove(item);
-        if (ret) {
+        if (ret)
             OnChanged?.Invoke();
-        }
         return ret;
     }
 

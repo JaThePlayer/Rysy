@@ -1,4 +1,4 @@
-﻿namespace Rysy;
+﻿namespace Rysy.Extensions;
 
 public static class _2DArrayExt {
     /// <summary>
@@ -18,9 +18,8 @@ public static class _2DArrayExt {
     public static T[,] CreateResized<T>(this T[,] original, int width, int height, T? fillWith) where T : unmanaged {
         var newArray = new T[width, height];
 
-        if (fillWith is { } fill) {
+        if (fillWith is { } fill)
             newArray.Fill(fill);
-        }
 
         int mMin = Math.Min(original.GetLength(0), newArray.GetLength(0));
         int nMin = Math.Min(original.GetLength(1), newArray.GetLength(1));

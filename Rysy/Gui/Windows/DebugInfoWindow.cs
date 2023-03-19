@@ -1,21 +1,23 @@
 ﻿using ImGuiNET;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
 using System.Diagnostics;
 
-namespace Rysy.Gui.Elements;
-public record class DebugInfoWindow : Window {
+namespace Rysy.Gui.Windows;
+
+public class DebugInfoWindow : Window {
     public static DebugInfoWindow Instance = new();
 
     public static bool Enabled { get; set; } = false;
 
-    public DebugInfoWindow() : base("Debug", Render, new(480, 480)) {
+    public DebugInfoWindow() : base("Debug", new(480, 480)) {
         SetRemoveAction((w) => Enabled = false);
     }
 
     private static string HistoryFromText = "";
 
-    public static new void Render(Window w) {
+    protected override void Render() {
         ImGui.Text($"FPS: {RysyEngine.Framerate}");
 
         if (ImGui.CollapsingHeader("Memory")) {

@@ -1,10 +1,9 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 
-namespace Rysy;
+namespace Rysy.Extensions;
 
-public static class Extensions {
+public static class MiscExtensions {
     public static T[] AwaitAll<T>(this IEnumerable<Task<T>> tasks) {
         var all = Task.WhenAll(tasks);
         all.Wait();
@@ -47,5 +46,5 @@ public static class Extensions {
     /// </summary>
     public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
 
-    public static T[] ShallowClone<T>(this T[] array) => (T[])array.Clone();
+    public static T[] ShallowClone<T>(this T[] array) => (T[]) array.Clone();
 }

@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Entities;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
@@ -135,7 +136,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     /// <returns></returns>
     public int NextEntityID() {
-        return Entities.Concat(Triggers).Max(e => e.ID) + 1;
+        var collection = Entities.Concat(Triggers);
+
+        if (collection.Any())
+            return collection.Max(e => e.ID) + 1;
+
+        return 1;
     }
 
     public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.ID == id);
@@ -718,6 +724,15 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler() { Room = this };
+
+    public Room Clone() {
+        var packed = Pack();
+        var room = new Room();
+        room.Map = Map;
+        room.Unpack(packed);
+
+        return room;
+    }
 }
 
 public class RoomSelectionHandler : ISelectionHandler {
@@ -770,5 +785,9 @@ public class RoomSelectionHandler : ISelectionHandler {
 
     public IHistoryAction? TryResize(Point delta) {
         return new RoomResizeAction(Room, Room.Width + delta.X, Room.Height + delta.Y);
+    }
+
+    public IHistoryAction PlaceClone(Room room) {
+        return new AddRoomAction(Room.Map, Room.Clone());
     }
 }

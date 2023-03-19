@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Rysy.Extensions;
+using System.Runtime.CompilerServices;
 
 namespace Rysy.Helpers;
 

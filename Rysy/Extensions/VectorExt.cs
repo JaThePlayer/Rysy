@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Rysy;
+﻿namespace Rysy.Extensions;
 
 public static class VectorExt {
     public static Vector2 XY(this Rectangle r) => new(r.X, r.Y);
@@ -35,8 +33,8 @@ public static class VectorExt {
 
         float tx = v.X;
         float ty = v.Y;
-        v.X = (cos * tx) - (sin * ty);
-        v.Y = (sin * tx) + (cos * ty);
+        v.X = cos * tx - sin * ty;
+        v.Y = sin * tx + cos * ty;
         return v;
     }
 }

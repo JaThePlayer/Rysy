@@ -1,4 +1,5 @@
 ﻿using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 
 namespace Rysy;
 
@@ -42,7 +43,9 @@ public static class Fields {
     public static IField? GuessFromValue(object val) => val switch {
         bool b => Bool(b),
         float b => Float(b),
+        double d => Float((float)d),
         int i => Int(i),
+        long l => Int((int)l),
         char c => Char(c),
         string s => String(s),
         _ => null,

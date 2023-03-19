@@ -1,8 +1,11 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
+using System;
 
 namespace Rysy.Tools;
 
@@ -131,6 +134,11 @@ public abstract class Tool {
     private string? CachedLayer;
     private List<(object mat, string)>? CachedSearch;
 
+    public void ClearMaterialListCache() {
+        CachedSearch = null;
+        CachedLayer = null;
+    }
+
     protected void BeginMaterialListGUI(bool firstGui) {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
@@ -169,6 +177,21 @@ public abstract class Tool {
         }
     }
 
+    protected virtual void RenderMaterialListElement(object material, string name) {
+        var favorites = Favorites;
+        var currentLayer = Layer;
+        var currentMaterial = Material;
+
+        var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
+        if (ImGui.Selectable(displayName, IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick).WithTooltip(GetMaterialTooltip(currentLayer, material))) {
+            Material = material;
+
+            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
+                ToggleFavorite(name);
+            }
+        }
+    }
+
     private void RenderMaterialList(EditorScene editor, bool firstGui) {
         var currentLayer = Layer;
         var materials = GetMaterials(currentLayer);
@@ -197,19 +220,9 @@ public abstract class Tool {
             // todo: calculate that 60!!!
             if (rendered < 60 && skip <= 0) {
                 rendered++;
-                var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-                if (ImGui.Selectable(displayName, IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick).WithTooltip(GetMaterialTooltip(currentLayer, mat))) {
-                    Material = mat;
-
-                    if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
-                        ToggleFavorite(name);
-                    }
-                }
+                RenderMaterialListElement(mat, name);
             } else {
-                //if (skip <= 0)
                 ImGui.NewLine(); // better performance than selectable
-                                 //else
-                                 //break;
             }
 
 

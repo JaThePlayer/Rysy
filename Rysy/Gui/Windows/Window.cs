@@ -2,11 +2,10 @@
 
 namespace Rysy.Gui;
 
-public record class Window {
+public class Window {
     private Action<Window> RemoveSelfImpl;
 
     public readonly string Name;
-    public Action<Window>? Render;
     public NumVector2? Size;
     public bool Resizable;
 
@@ -15,21 +14,16 @@ public record class Window {
     /// </summary>
     private string WindowID;
 
-    public Window(string name, Action<Window>? render, NumVector2? size = null) {
+    public Window(string name, NumVector2? size = null) {
         Name = name;
-        Render = render;
         Size = size;
         WindowID = $"{Name}##{Guid.NewGuid()}";
-    }
-
-    public Window(string name, NumVector2? size = null) : this(name, null, size) {
-
     }
 
     public void SetRemoveAction(Action<Window> removeSelf) => RemoveSelfImpl += removeSelf;
 
     public void RenderGui() {
-        if (Render is null)
+        if (!Visible)
             return;
 
         if (Size is { } size)
@@ -39,7 +33,7 @@ public record class Window {
         var open = true;
 
         if (ImGui.Begin(WindowID, ref open, Resizable ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable)) {
-            Render(this);
+            Render();
         }
         ImGui.End();
 
@@ -50,25 +44,26 @@ public record class Window {
         ImGuiManager.PopWindowStyle();
     }
 
-    public void RemoveSelf() {
+    protected virtual void Render() {
+
+    }
+
+    protected virtual bool Visible => true;
+
+    public virtual void RemoveSelf() {
         RemoveSelfImpl?.Invoke(this);
     }
 }
 
-/// <summary>
-/// A window, which stores arbitrary data of type <typeparamref name="T"/>.
-/// </summary>
-public record class Window<T> : Window {
-    /// <summary>
-    /// Extra data attached to this window.
-    /// </summary>
-    public T Data;
+public class ScriptedWindow : Window {
+    public Action<Window> RenderFunc;
 
-    public Window(string Name, Action<Window<T>> Render, NumVector2? Size = null) : base(Name, (w) => Render((Window<T>)w), Size) {
-
+    public ScriptedWindow(string name, Action<Window> renderFunc, NumVector2? size = null) : base(name, size) {
+        RenderFunc = renderFunc;
     }
 
-    public Window(string Name, T data, Action<Window<T>> Render, NumVector2? Size = null) : base(Name, (w) => Render((Window<T>) w), Size) {
-        Data = data;
+    protected override void Render() {
+        base.Render();
+        RenderFunc(this);
     }
 }

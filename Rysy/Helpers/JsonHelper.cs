@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace Rysy;
+namespace Rysy.Helpers;
 
 public static class JsonHelper {
     /// <summary>
@@ -28,6 +28,15 @@ public static class JsonHelper {
         }
     }
 
+    public static async ValueTask<T?> TryDeserializeAsync<T>(Stream stream) {
+        try {
+            return await JsonSerializer.DeserializeAsync<T>(stream, Options(true));
+        } catch (Exception e) {
+            Console.WriteLine(e);
+            return default;
+        }
+    }
+
     /// <summary>
     /// Fixes a object-valued dictionary after getting deserialised to not contain JsonElement values, instead replacing them with primitive types.
     /// </summary>
@@ -36,19 +45,11 @@ public static class JsonHelper {
         where TKey : notnull
         => dict?.ToDictionary(kv => kv.Key, kv => {
             if (kv.Value is JsonElement n) {
-                if (n.ValueKind == JsonValueKind.String) {
-                    return n.GetString()!;
-                }
-                if (n.ValueKind == JsonValueKind.False) {
-                    return false;
-                }
-                if (n.ValueKind == JsonValueKind.True) {
-                    return true;
-                }
+                if (n.ValueKind == JsonValueKind.String)                     return n.GetString()!;
+                if (n.ValueKind == JsonValueKind.False)                     return false;
+                if (n.ValueKind == JsonValueKind.True)                     return true;
                 if (n.ValueKind == JsonValueKind.Number) {
-                    if (n.TryGetInt32(out int i)) {
-                        return i;
-                    }
+                    if (n.TryGetInt32(out int i))                         return i;
                     return n.GetSingle();
                 }
             }

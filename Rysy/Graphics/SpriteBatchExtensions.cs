@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using Rysy.Extensions;
 
 namespace Rysy.Graphics;
 

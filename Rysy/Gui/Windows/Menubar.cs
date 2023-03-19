@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
-using Rysy.Gui.Elements;
+using Rysy.Extensions;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Scenes;
 
@@ -22,6 +23,8 @@ public static class Menubar {
 
     private static void ViewMenu(EditorScene editor) {
         if (ImGui.BeginMenu("View")) {
+            ViewWindowsMenu(editor);
+
             var p = Persistence.Instance;
             bool b;
 
@@ -74,10 +77,22 @@ public static class Menubar {
         }
     }
 
+    private static void ViewWindowsMenu(EditorScene editor) {
+        if (!ImGui.BeginMenu("Windows")) {
+            return;
+        }
+
+        if (ImGui.Checkbox("History", ref Persistence.Instance.HistoryWindowOpen)) {
+            editor.AddWindowIfNeeded<HistoryWindow>();
+        }
+
+        ImGui.EndMenu();
+    }
+
     private static void DebugMenu(EditorScene editor) {
         if (ImGui.BeginMenu("Debug")) {
             if (ImGui.MenuItem("Style Editor")) {
-                editor.AddWindow(new("Style Editor", (w) => {
+                editor.AddWindow(new ScriptedWindow("Style Editor", (w) => {
                     ImGui.ShowStyleEditor();
                 }));
             }

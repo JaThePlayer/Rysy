@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
 

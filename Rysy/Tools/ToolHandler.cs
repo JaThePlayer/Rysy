@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.History;
@@ -59,12 +60,13 @@ public class ToolHandler {
             tool.InitHotkeys(handler);
         }
 
-        handler.AddHotkeyFromSettings("tools.nextTool", "tab", SwapToNextTool, HotkeyModes.OnClick);
+        handler.AddHotkeyFromSettings("tools.nextTool", "tab", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevTool", "shift+tab", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
     }
 
-    private void SwapToNextTool() {
+    private void SwapToNextTool(int idOffset) {
         var i = Tools.IndexOf(CurrentTool);
-        CurrentTool = Tools[(i + 1) % Tools.Count];
+        CurrentTool = Tools[(i + idOffset).MathMod(Tools.Count)];
     }
 
     public void Update(Camera camera, Room currentRoom) {

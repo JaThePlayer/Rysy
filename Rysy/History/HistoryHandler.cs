@@ -1,4 +1,5 @@
-﻿using Rysy.Scenes;
+﻿using Rysy.Helpers;
+using Rysy.Scenes;
 using System.Text.Json;
 
 namespace Rysy.History;
@@ -79,24 +80,7 @@ public class HistoryHandler {
 
             var m = type?.GetMethod(nameof(ISerializableAction.FromSerializable));
 
-            Data = Data.ToDictionary(kv => kv.Key, kv => {
-                if (kv.Value is JsonElement n) {
-                    if (n.ValueKind == JsonValueKind.String) {
-                        return n.GetString()!;
-                    }
-                    if (n.ValueKind == JsonValueKind.False) {
-                        return false;
-                    }
-                    if (n.ValueKind == JsonValueKind.True) {
-                        return true;
-                    }
-                    if (n.ValueKind == JsonValueKind.Number) {
-                        return n.GetDouble();
-                    }
-                }
-
-                return kv.Value;
-            });
+            Data = Data.FixDict(StringComparer.Ordinal);
 
             var act = (ISerializableAction) m.Invoke(null, new object[] { map, Data })!;
 

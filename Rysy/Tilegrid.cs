@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
@@ -335,6 +336,10 @@ public class Tilegrid : ILuaWrapper {
         }
 
         public void OnRightClicked(IEnumerable<Selection> selections) {
+        }
+
+        public IHistoryAction PlaceClone(Room room) {
+            throw new NotImplementedException();
         }
 
         public SelectionLayer Layer => SelectionLayer.None;

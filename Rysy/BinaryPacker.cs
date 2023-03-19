@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using Rysy.Helpers;
+using System.Data;
 using System.IO;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -138,6 +139,14 @@ public sealed class BinaryPacker {
                     Writer.Write(b);
                 }
                 break;
+            case double b:
+                if (double.IsEvenInteger(b)) {
+                    WriteNumber((uint) b);
+                } else {
+                    Writer.Write((byte) 4);
+                    Writer.Write((float)b);
+                }
+                break;
             case Enum e:
                 EncodeString(e.ToString());
                 break;
@@ -145,7 +154,7 @@ public sealed class BinaryPacker {
                 EncodeString(b);
                 break;
             default:
-                Console.WriteLine($"UKNOWN OBJECT: {val}, {val.GetType()}");
+                Console.WriteLine($"UNKNOWN OBJECT: {val}, {val.GetType()}");
                 break;
         }
 

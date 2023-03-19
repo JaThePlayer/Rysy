@@ -1,9 +1,12 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Platforms;
 
-namespace Rysy.Gui.Elements;
-public static class SettingsWindow {
+namespace Rysy.Gui.Windows;
+public class SettingsWindow : Window {
     private const string REQUIRES_RELOAD = "Requires a reload. Changing this value might immediately reload Rysy.";
+
+    private SettingWindowData Data = new();
 
     private class SettingWindowData {
         public bool ProfileSettingsChanged = false;
@@ -16,24 +19,24 @@ public static class SettingsWindow {
     }
 
     public static void Add(Scene scene) {
-        var wind = new Window<SettingWindowData>("Settings", new(), Render, new(720, 480));
+        var wind = new SettingsWindow("Settings", new(720, 480));
         scene.AddWindow(wind);
     }
 
-    private static void Render(Window<SettingWindowData> window) {
+    protected override void Render() {
         if (ImGui.BeginTabBar("Tabbar")) {
-            ProfileBar(window);
-            GeneralBar(window);
-            VisualBar(window);
-            ThemeBar(window);
-            HotkeyBar(window);
-            DebugBar(window);
+            ProfileBar();
+            GeneralBar();
+            VisualBar();
+            ThemeBar();
+            HotkeyBar();
+            DebugBar();
 
             ImGui.EndTabBar();
         }
     }
 
-    private static void VisualBar(Window<SettingWindowData> window) {
+    private void VisualBar() {
         if (!ImGui.BeginTabItem("Visual"))
             return;
 
@@ -58,7 +61,7 @@ public static class SettingsWindow {
         ImGui.EndTabItem();
     }
 
-    private static void GeneralBar(Window<SettingWindowData> window) {
+    private void GeneralBar() {
         if (!ImGui.BeginTabItem("General"))
             return;
 
@@ -83,43 +86,43 @@ public static class SettingsWindow {
         ImGui.EndTabItem();
     }
 
-    private static void HotkeyBar(Window<SettingWindowData> window) {
+    private void HotkeyBar() {
         if (!ImGui.BeginTabItem("Hotkeys"))
             return;
 
         var invalid = false;
         foreach (var (name, origHotkey) in Settings.Instance.Hotkeys) {
             var hotkey = origHotkey;
-            if (window.Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
+            if (Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
                 hotkey = changed;
                 invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey));
             }
             
             if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {
-                var edited = window.Data.EditedHotkeys ??= new();
+                var edited = Data.EditedHotkeys ??= new();
 
                 edited[name] = hotkey;
             }
             ImGuiManager.PopInvalidStyle();
         }
 
-        ImGuiManager.BeginWindowBottomBar(!invalid && window.Data.EditedHotkeys is { });
-        if (ImGui.Button("Apply Changes") && window.Data.EditedHotkeys is { } hotkeys) {
+        ImGuiManager.BeginWindowBottomBar(!invalid && Data.EditedHotkeys is { });
+        if (ImGui.Button("Apply Changes") && Data.EditedHotkeys is { } hotkeys) {
             foreach (var (name, newVal) in hotkeys) {
                 Settings.Instance.Hotkeys[name] = newVal;
                 Settings.Instance.Save();
 
                 RysyEngine.Scene.SetupHotkeys();
             }
-            window.Data.EditedHotkeys = null;
+            Data.EditedHotkeys = null;
         }
         ImGuiManager.EndWindowBottomBar();
 
         ImGui.EndTabItem();
     }
 
-    private static void ThemeBar(Window<SettingWindowData> window) {
-        var windowData = window.Data;
+    private void ThemeBar() {
+        var windowData = Data;
 
         if (ImGui.BeginTabItem("Themes")) {
             var theme = Settings.Instance.Theme;
@@ -152,7 +155,7 @@ public static class SettingsWindow {
         }
     }
 
-    private static void DebugBar(Window<SettingWindowData> window) {
+    private void DebugBar() {
         if (ImGui.BeginTabItem("Debug")) {
             var m = Settings.Instance.LogMissingEntities;
             if (ImGui.Checkbox("Log Missing Entities", ref m).WithTooltip("Logs any entities without Rysy plugins to the console.")) {
@@ -171,8 +174,8 @@ public static class SettingsWindow {
         }
     }
 
-    private static void ProfileBar(Window<SettingWindowData> window) {
-        var windowData = window.Data;
+    private void ProfileBar() {
+        var windowData = Data;
 
         if (ImGui.BeginTabItem("Profile")) {
             if (ImGui.BeginCombo("Current Profile", Settings.Instance.Profile)) {
@@ -190,7 +193,7 @@ public static class SettingsWindow {
 
                 if (ImGui.Button("New")) {
                     string text = "";
-                    RysyEngine.Scene.AddWindow(new("New Profile Name", (w) => {
+                    RysyEngine.Scene.AddWindow(new ScriptedWindow("New Profile Name", (w) => {
                         ImGui.InputText("Name", ref text, 64);
                         if (ImGui.Button("Create").WithTooltip(REQUIRES_RELOAD)) {
                             SetProfile(text, isNew: true);
@@ -228,6 +231,9 @@ public static class SettingsWindow {
     }
 
     private static bool ShowPaths;
+
+    public SettingsWindow(string name, NumVector2? size = null) : base(name, size) {
+    }
 
     private static void SetProfile(string name, bool isNew) {
         Settings.Instance.Profile = name;

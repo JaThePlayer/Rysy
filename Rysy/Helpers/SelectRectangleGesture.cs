@@ -1,10 +1,15 @@
-﻿namespace Rysy.Helpers;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Helpers;
 
 /// <summary>
 /// Provides an easy way to implement a gesture for selecting a rectangle, to be used for tools.
 /// </summary>
 public sealed class SelectRectangleGesture {
     private Point? StartPos = null;
+
+    private Rectangle? CurrentRect = null;
+    private Rectangle? LastRect = null;
 
     /// <summary>
     /// Action to be called whenever this gesture is finished. The argument represents the area selected by the user.
@@ -35,6 +40,23 @@ public sealed class SelectRectangleGesture {
         not null => SelectionRect(StartPos.Value, GetTransformedMousePos())
     };
 
+    public Rectangle? Delta {
+        get {
+            if (StartPos is null)
+                return null;
+
+            if (LastRect is not { } last || CurrentRectangle is not { } current)
+                return null;
+
+            return new Rectangle(
+                current.X - last.X,
+                current.Y - last.Y,
+                current.Width - last.Width,
+                current.Height - last.Height
+            );
+        }
+    }
+
     /// <summary>
     /// Cancels the current gesture, if it has started already.
     /// </summary>
@@ -49,6 +71,8 @@ public sealed class SelectRectangleGesture {
     public Rectangle? Update(Func<Point, Point>? transform) {
         Transform = transform ?? ((p) => p);
         Rectangle? ret = null;
+
+        
 
         switch (Input.Mouse.Left) {
             case MouseInputState.Released:
@@ -67,6 +91,9 @@ public sealed class SelectRectangleGesture {
             default:
                 break;
         }
+
+        LastRect = CurrentRect;
+        CurrentRect = CurrentRectangle;
 
         return ret;
     }

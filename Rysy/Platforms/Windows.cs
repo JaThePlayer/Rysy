@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using Rysy.Extensions;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Platforms;
 
@@ -66,6 +67,6 @@ public class Windows : RysyPlatform {
     private static extern IntPtr GetStdHandle(int nStdHandle);
 
     [DllImport("kernel32.dll")]
-    public static extern uint GetLastError();
+    private static extern uint GetLastError();
     #endregion
 }
