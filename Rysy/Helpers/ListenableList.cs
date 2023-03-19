@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Rysy;
+namespace Rysy.Helpers;
 
 public interface IListenableList<T> : IList<T> {
     /// <summary>

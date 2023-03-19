@@ -1,4 +1,5 @@
-﻿using Rysy.Platforms;
+﻿using Rysy.Extensions;
+using Rysy.Platforms;
 
 namespace Rysy;
 
@@ -6,6 +7,22 @@ public static class BackupHandler {
     private static string BackupFolder => $"{RysyPlatform.Current.GetSaveLocation()}/Backups";
 
     private const string IndexPath = "Backups/index.json";
+
+    private static Dictionary<int, string> LoadIndex() => SettingsHelper.Load<Dictionary<int, string>>(IndexPath, false);
+
+    public static Map? LoadMostRecentBackup() {
+        var index = LoadIndex();
+
+        var latest = index[index.Count - 1];
+
+        if (!File.Exists(latest)) {
+            return null;
+        }
+
+        var package = BinaryPacker.FromBinary(latest);
+
+        return Map.FromBinaryPackage(package);
+    }
 
     /// <summary>
     /// Makes a backup of the map, provided that the <paramref name="map"/>'s <see cref="Map.Filepath"/> is not null.
@@ -17,7 +34,7 @@ public static class BackupHandler {
         }
 
         // contains information about which backups exist, and their order
-        var index = SettingsHelper.Load<Dictionary<int, string>>(IndexPath, false);
+        var index = LoadIndex();
 
         var newPath = $"{BackupFolder}/{map.Filepath.FilenameNoExt()}/{DateTime.Now:HH.mm.ss dd.MM.yyyy}.bin";
         newPath = Path.GetFullPath(newPath);

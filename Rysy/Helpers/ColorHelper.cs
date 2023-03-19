@@ -1,13 +1,11 @@
-﻿namespace Rysy;
+﻿namespace Rysy.Helpers;
 
 public static class ColorHelper {
     static Dictionary<string, Color> cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     static Dictionary<string, Color[]> colorArrayCache = new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase);
     static ColorHelper() {
-        foreach (var prop in typeof(Color).GetProperties()) {
-            if (prop.GetValue(default(Color), null) is Color color)
+        foreach (var prop in typeof(Color).GetProperties())             if (prop.GetValue(default(Color), null) is Color color)
                 cache[prop.Name] = color;
-        }
         cache[""] = Color.White;
         colorArrayCache[""] = null!;
     }
@@ -64,7 +62,7 @@ public static class ColorHelper {
         var packedValue = GetPacked(hex);
         return hex.Length switch {
             6 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
-            8 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) (packedValue), (byte) (packedValue >> 24)), // argb
+            8 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue, (byte) (packedValue >> 24)), // argb
             _ => default,
         };
     }
@@ -103,12 +101,11 @@ public static Color HsvToColor(float h, float s, float v) {
     /// <returns></returns>
     public static Color HSVToColor(float h, float s, float v) {
         float H = h;
-        while (H < 0) { H += 360; };
-        while (H >= 360) { H -= 360; };
+        while (H < 0) H += 360; ;
+        while (H >= 360) H -= 360; ;
         float R, G, B;
-        if (v <= 0) { R = G = B = 0; } else if (s <= 0) {
-            R = G = B = v;
-        } else {
+        if (v <= 0) R = G = B = 0; else if (s <= 0)             R = G = B = v;
+else {
             float hf = H / 60.0f;
             int i = (int) Math.Floor(hf);
             float f = hf - i;
@@ -181,9 +178,7 @@ public static Color HsvToColor(float h, float s, float v) {
 
     private static ReadOnlySpan<char> PrepareSpan(ReadOnlySpan<char> s) {
         s = s.Trim();
-        if (s.StartsWith("#")) {
-            s = s[1..];
-        }
+        if (s.StartsWith("#"))             s = s[1..];
 
         return s;
     }
@@ -194,9 +189,7 @@ public static Color HsvToColor(float h, float s, float v) {
     /// <param name="color"></param>
     /// <returns></returns>
     public static string ToRGBAString(Color color) {
-        if (color.A == 255) {
-            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
-        }
+        if (color.A == 255)             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
         return $"{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
     }
@@ -207,9 +200,7 @@ public static Color HsvToColor(float h, float s, float v) {
     /// <param name="color"></param>
     /// <returns></returns>
     public static string ToARGBString(Color color) {
-        if (color.A == 255) {
-            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
-        }
+        if (color.A == 255)             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
         return $"{color.A:x2}{color.R:x2}{color.G:x2}{color.B:x2}";
     }
@@ -270,7 +261,7 @@ public static class ColorHelperExtensions {
     public static Color ToColor(this string str, ColorFormat format = ColorFormat.RGBA) => ColorHelper.Get(str, format);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.TryGet(string, ColorFormat, out Microsoft.Xna.Framework.Color)"/>
+    /// <inheritdoc cref="ColorHelper.TryGet(string, ColorFormat, out Color)"/>
     /// </summary>
     public static bool TryToColor(string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
 

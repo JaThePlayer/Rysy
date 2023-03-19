@@ -1,4 +1,6 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 

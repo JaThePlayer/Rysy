@@ -82,4 +82,8 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public BinaryPacker.Element? PackParent() {
         return Entity.Pack();
     }
+
+    public IHistoryAction PlaceClone(Room room) {
+        return IHistoryAction.Empty;
+    }
 }

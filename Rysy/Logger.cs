@@ -1,4 +1,6 @@
-﻿using Rysy.Platforms;
+﻿using Rysy.Extensions;
+using Rysy.Helpers;
+using Rysy.Platforms;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;

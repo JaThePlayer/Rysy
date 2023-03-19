@@ -1,7 +1,7 @@
 ﻿using Rysy;
 using Rysy.Graphics;
 using Rysy.Gui;
-using Rysy.Gui.Elements;
+using Rysy.Gui.Windows;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using System;

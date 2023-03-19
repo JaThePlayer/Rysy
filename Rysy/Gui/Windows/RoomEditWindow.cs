@@ -1,10 +1,11 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
 
 namespace Rysy.Gui;
-public sealed record class RoomEditWindow : Window {
+public sealed class RoomEditWindow : Window {
     public const int WIDTH = 800;
     private Room Room;
     private RoomAttributes Attrs;
@@ -14,19 +15,13 @@ public sealed record class RoomEditWindow : Window {
     private bool NewRoom;
 
     public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}", new(WIDTH, 250)) {
-        Render = DoRender;
         Room = room;
 
         Attrs = room.Attributes.Copy();
         NewRoom = newRoom;
     }
 
-    private void DoRender(Window w) {
-        if (RysyEngine.Scene is not EditorScene editor) {
-            RemoveSelf();
-            return;
-        }
-
+    protected override void Render() {
         ImGui.BeginTabBar("TabBar");
 
         GeneralTab();
@@ -39,9 +34,9 @@ public sealed record class RoomEditWindow : Window {
 
         if (ImGui.Button("Apply Changes")) {
             var newRoom = NewRoom;
-            editor.HistoryHandler.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
+            EditorState.History.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
             if (newRoom) {
-                editor.CurrentRoom = Room;
+                EditorState.CurrentRoom = Room;
             }
         }
 
@@ -55,7 +50,11 @@ public sealed record class RoomEditWindow : Window {
 
         ImGui.Columns(2, "Music", false);
 
-        StringInput("Music", ref Attrs.Music);
+        //StringInput("Music", ref Attrs.Music);
+        ImGui.SetNextItemWidth(ImGui.GetColumnWidth() / 2);
+        ImGuiManager.EditableCombo("Music", ref Attrs.Music, CelesteEnums.Music, s => s);
+        ImGui.NextColumn();
+
         StringInput("Alt Music", ref Attrs.AltMusic);
         StringInput("Music Progress", ref Attrs.MusicProgress);
         StringInput("Ambience Progress", ref Attrs.AmbienceProgress);

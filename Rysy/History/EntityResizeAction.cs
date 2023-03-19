@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Extensions;
+
+namespace Rysy.History;
 
 public record class EntityResizeAction(Entity Entity, Point Delta) : IHistoryAction {
     private Point RealDelta;

@@ -1,4 +1,4 @@
-﻿namespace Rysy;
+﻿namespace Rysy.Extensions;
 
 public static class SpanExtensions {
     /// <summary>

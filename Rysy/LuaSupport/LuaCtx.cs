@@ -149,6 +149,22 @@ public class LuaCtx {
             return 4;
         });
 
+        lua.Register("_RYSY_DRAWABLE_getRectangle", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var top = lua.GetTop();
+
+            var sprite = LonnDrawables.LuaToSprite(lua, top, Vector2.Zero);
+            var rect = sprite.GetRenderRect() ?? new Rectangle(0,0,0,0);
+
+            lua.PushNumber(rect.X);
+            lua.PushNumber(rect.Y);
+            lua.PushNumber(rect.Width);
+            lua.PushNumber(rect.Height);
+
+            // x,y,w,h
+            return 4;
+        });
+
         lua.Register("_RYSY_INTERNAL_getWaterfallHeight", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 

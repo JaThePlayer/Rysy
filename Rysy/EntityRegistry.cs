@@ -1,4 +1,5 @@
 ﻿using Rysy.Entities;
+using Rysy.Extensions;
 using Rysy.LuaSupport;
 using Rysy.Scenes;
 using System.Reflection;
@@ -31,10 +32,16 @@ public static class EntityRegistry {
         loadingScene?.SetText("Registering entities");
 
 
-        if (Settings.Instance.LonnPluginPath is { } path)
-            foreach (var item in Directory.EnumerateFiles(path, "*.lua")) {
-                RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item));
+        if (Settings.Instance.LonnPluginPath is { } path) {
+            foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "entities"), "*.lua")) {
+                RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: false);
             }
+
+            foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "triggers"), "*.lua")) {
+                RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: true);
+            }
+        }
+
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
             await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
@@ -51,7 +58,7 @@ public static class EntityRegistry {
         SIDToFields[BGDecalSID] = decalFields;
     }
 
-    public static void RegisterFromLua(string lua, string chunkName) {
+    public static void RegisterFromLua(string lua, string chunkName, bool trigger) {
         try {
             LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
             List<LonnEntityPlugin>? plugins = null;
@@ -64,19 +71,21 @@ public static class EntityRegistry {
 
             foreach (var pl in plugins) {
                 lock (SIDToType) {
-                    SIDToType[pl.Name] = typeof(LonnEntity);
+                    SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 }
                 lock (SIDToLonnPlugin) {
                     SIDToLonnPlugin[pl.Name] = pl;
                 }
 
-                lock (EntityPlacements) {
+                var placements = trigger ? TriggerPlacements : EntityPlacements;
+
+                lock (placements) {
                     foreach (var item in pl.Placements) {
-                        EntityPlacements.Add(new($"{pl.Name} [{item.Name}]") {
+                        placements.Add(new($"{pl.Name} [{item.Name}]") {
                             ValueOverrides = item.Data,
                             SID = pl.Name,
                             Tooltip = "[From Lonn]",
-                            PlacementHandler = EntityPlacementHandler.Entity
+                            PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity
                         });
                     }
                 }
@@ -128,7 +137,7 @@ public static class EntityRegistry {
     
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
-        var entity = Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, nodes: null), room, isTrigger);
+        var entity = Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, from.Nodes), room, isTrigger);
         from.Finalizer?.Invoke(entity);
 
         return entity;
@@ -174,11 +183,16 @@ public static class EntityRegistry {
 
         var minimumNodes = e.NodeLimits.Start.Value;
         if (minimumNodes > 0 && e.Nodes is not { }) {
-            var nodes = e.EntityData.Nodes = new List<Node>();
-
-            for (int i = 1; i <= minimumNodes; i++) {
-                nodes.Add(new(e.X + (8 * i), e.Y));
+            var nodes = e.EntityData.Nodes = new List<Node>(minimumNodes);
+            for (int i = 0; i < minimumNodes; i++) {
+                nodes.Add(new(0, 0));
             }
+
+            e.InitializeNodePositions();
+        }
+
+        if (e is Decal d) {
+            d.FG = sid == FGDecalSID;
         }
 
         return e;

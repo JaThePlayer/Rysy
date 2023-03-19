@@ -1,4 +1,4 @@
-﻿namespace Rysy;
+﻿namespace Rysy.Extensions;
 
 public static class RectangleExt {
     public static Rectangle FromPoints(Vector2 a, Vector2 b) => FromPoints(a.ToPoint(), b.ToPoint());

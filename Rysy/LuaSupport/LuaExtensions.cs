@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Helpers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -199,6 +200,8 @@ public static class LuaExt {
             list.Add((float)lua.ToNumber(loc));
         });
 
+        lua.Pop(1);
+
         return list;
     }
 
@@ -323,7 +326,7 @@ where TArg1 : class, ILuaWrapper {
     /// <param name="lua"></param>
     /// <param name="index"></param>
     /// <returns></returns>
-    public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null) {
+    public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null, int depth = 0) {
         var dict = new Dictionary<string, object>();
         var dataStart = index;
 
@@ -334,7 +337,7 @@ where TArg1 : class, ILuaWrapper {
                 goto next;
             }
 
-            var value = ToCSharpSimple(lua, -1);
+            var value = ToCSharpSimple(lua, lua.GetTop(), depth: depth);
             dict[key] = value;
 
             next:
@@ -397,17 +400,26 @@ where TArg1 : class, ILuaWrapper {
         };
     }
 
-    internal static object ToCSharpSimple(Lua s, int index) {
+    internal static object ToCSharpSimple(Lua s, int index, int depth = 0) {
         object val = s.Type(index) switch {
             LuaType.Nil => null!,
             LuaType.Boolean => s.ToBoolean(index),
-            LuaType.Number => s.ToNumber(index),
+            LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
             LuaType.Function => s.FastToString(index, false),
-            LuaType.Table => "table",
+            LuaType.Table => depth > 5 ? "table" : s.TableToDictionary(index, depth: depth + 1),//"table",
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;
+    }
+
+    public static Rectangle ToRectangle(this Lua lua, int index) {
+        var x = lua.PeekTableIntValue(index, "x") ?? 0;
+        var y = lua.PeekTableIntValue(index, "y") ?? 0;
+        var w = lua.PeekTableIntValue(index, "width") ?? 8;
+        var h = lua.PeekTableIntValue(index, "height") ?? 8;
+
+        return new Rectangle(x, y, w, h);
     }
 
     /// <summary>

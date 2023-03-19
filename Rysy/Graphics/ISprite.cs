@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Graphics;
 
 /// <summary>
 /// Interface which represents anything that can be rendered by Rysy's sprite rendering system.

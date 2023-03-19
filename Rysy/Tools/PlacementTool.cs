@@ -1,9 +1,16 @@
-﻿using Rysy.Graphics;
+﻿using ImGuiNET;
+using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Scenes;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool {
+    public ISelectionHandler? CurrentPlacement;
+
+    public SelectRectangleGesture RectangleGesture = new();
+
     private bool PickNextFrame;
 
     public override void InitHotkeys(HotkeyHandler handler) {
@@ -21,6 +28,7 @@ public class PlacementTool : Tool {
         LayerNames.TRIGGERS,
         LayerNames.FG_DECALS,
         LayerNames.BG_DECALS,
+        LayerNames.PREFABS,
     };
     public override List<string> ValidLayers => _validLayers;
 
@@ -30,6 +38,7 @@ public class PlacementTool : Tool {
             LayerNames.TRIGGERS => EntityRegistry.TriggerPlacements,
             LayerNames.FG_DECALS => GFX.ValidDecalPaths,
             LayerNames.BG_DECALS => GFX.ValidDecalPaths,
+            LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => s.Key),
             _ => throw new NotImplementedException(layer)
         };
     }
@@ -53,40 +62,57 @@ public class PlacementTool : Tool {
         return Layer switch {
             LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One, Color.White, rotation: 0f),
             LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One, Color.White, rotation: 0f),
+            LayerNames.PREFABS => PrefabHelper.PlacementFromName(str),
             _ => null,
         };
     }
 
     public override void Update(Camera camera, Room currentRoom) {
+        if (PickNextFrame) {
+            PickNextFrame = false;
+            if (GetPlacementUnderCursor(camera, currentRoom) is { } underCursor) {
+                Material = underCursor;
+            }
+            CurrentPlacement = null;
+        }
+
+        if (CurrentPlacement is not { } selection) {
+            CreatePlacementFromMaterial(camera, currentRoom);
+            return;
+        }
+
+        if (Material is Placement place) {
+            //Input.Mouse.ConsumeLeft();
+
+            //History.ApplyNewAction(place.PlacementHandler.Place(selection, currentRoom));
+            if (RectangleGesture.Update((p) => GetMousePos(camera, currentRoom, position: p.ToVector2())) is { } rect) {
+                //Console.WriteLine(rect);
+                History.ApplyNewAction(place.PlacementHandler.Place(selection, currentRoom));
+            }
+
+            if (RectangleGesture.Delta is { } delta) {
+                var offset = delta.Location.ToVector2();
+                var resize = delta.Size;
+
+                if (offset.X != 0 || offset.Y != 0) {
+                    selection.MoveBy(offset).Apply();
+                }
+
+                if (resize.X != 0 || resize.Y != 0) {
+                    selection.TryResize(resize)?.Apply();
+                }
+            }
+        }
+    }
+
+    private void CreatePlacementFromMaterial(Camera camera, Room currentRoom) {
         if (Material is string strPlacement) {
             Material = PlacementFromString(strPlacement);
         }
-        
 
-        if (Material is Placement placement) {
-            if (Input.Mouse.Left.Clicked()) {
-                Input.Mouse.ConsumeLeft();
-                var mouse = GetMousePos(camera, currentRoom);
 
-                History.ApplyNewAction(placement.Place(mouse.ToVector2(), currentRoom));
-            }
-        }
-
-#warning TEMP
-        /*
-                if (Input.Mouse.Right.Clicked()) {
-                    Entity? ent = GetPlacementUnderCursor(camera, currentRoom);
-                    if (ent is { }) {
-                        Input.Mouse.ConsumeRight();
-                        RysyEngine.Scene.AddWindow(new EntityPropertyWindow(ent));
-                    }
-                }*/
-
-        if (PickNextFrame) {
-            PickNextFrame = false;
-            if (GetPlacementUnderCursor(camera, currentRoom) is { } place) {
-                Material = place;
-            }
+        if (Material is Placement place) {
+            CurrentPlacement = place.PlacementHandler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
         }
     }
 
@@ -107,18 +133,18 @@ public class PlacementTool : Tool {
     public override void Render(Camera camera, Room currentRoom) {
         var mouse = GetMousePos(camera, currentRoom);
 
-        if (Material is Placement placement) {
-            foreach (var item in placement.GetPreviewSprites(mouse.ToVector2(), currentRoom)) {
+        if (Material is Placement placement && CurrentPlacement is { } selection) {
+            foreach (var item in placement.GetPreviewSprites(selection, RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2(), currentRoom)) {
                 item.MultiplyAlphaBy(0.4f);
                 item.Render();
             }
         }
     }
 
-    private static Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null) {
+    private static Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null, Vector2? position = null) {
         precise ??= Input.Keyboard.Ctrl();
 
-        var pos = currentRoom.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2());
+        var pos = currentRoom.WorldToRoomPos(camera, position ?? Input.Mouse.Pos.ToVector2());
 
         if (!precise.Value) {
             pos = pos.Snap(8);
@@ -130,4 +156,30 @@ public class PlacementTool : Tool {
     public override void RenderOverlay() {
     }
 
+    public override void CancelInteraction() {
+        base.CancelInteraction();
+
+        CurrentPlacement = null;
+        PickNextFrame = false;
+    }
+
+    public override void Init() {
+        base.Init();
+
+        PrefabHelper.CurrentPrefabs.OnChanged += ClearMaterialListCache;
+    }
+
+    protected override void RenderMaterialListElement(object material, string name) {
+        base.RenderMaterialListElement(material, name);
+
+        if (Layer == LayerNames.PREFABS) {
+            if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
+                if (ImGui.MenuItem("Remove")) {
+                    PrefabHelper.Remove(name);
+                }
+
+                ImGui.EndPopup();
+            }
+        }
+    }
 }

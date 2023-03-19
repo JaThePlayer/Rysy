@@ -1,4 +1,5 @@
-﻿using Rysy.Scenes;
+﻿using Rysy.Extensions;
+using Rysy.Scenes;
 using System.IO.Compression;
 
 namespace Rysy.Graphics;

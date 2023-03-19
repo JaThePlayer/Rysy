@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.HighPerformance;
+using Rysy.Extensions;
 using Rysy.Helpers;
 using System;
 using System.Buffers;

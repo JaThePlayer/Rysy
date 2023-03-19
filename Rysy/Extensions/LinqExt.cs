@@ -1,4 +1,6 @@
-﻿namespace Rysy;
+﻿using Rysy.Helpers;
+
+namespace Rysy.Extensions;
 
 public static class LinqExt {
     public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb) {
@@ -10,16 +12,14 @@ public static class LinqExt {
     }
 
     public static IEnumerable<Task> SelectToTaskRun<T>(this IEnumerable<T> self, Action<T> action) {
-        foreach (var item in self) {
+        foreach (var item in self)
             yield return Task.Run(() => action(item));
-        }
     }
 
     public static IEnumerable<T> Do<T>(this IEnumerable<T> self, Action action) {
         action();
-        foreach (var item in self) {
+        foreach (var item in self)
             yield return item;
-        }
     }
 
     public static IEnumerable<T> Apply<T>(this IEnumerable<T> self, Action<T> action) {

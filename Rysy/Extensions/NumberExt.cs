@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace Rysy;
+namespace Rysy.Extensions;
 
 public static class NumberExt {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -24,7 +24,14 @@ public static class NumberExt {
         => num / by;
 
     public static bool IsIn(this int i, Range range) {
-        return (range.Start.IsFromEnd || range.Start.Value <= i) 
+        return (range.Start.IsFromEnd || range.Start.Value <= i)
             && (range.End.IsFromEnd || range.End.Value >= i);
+    }
+
+    /// <summary>
+    /// Mathematical modulus, with correct handling for negative numbers.
+    /// </summary>
+    public static int MathMod(this int a, int b) {
+        return (a % b + b) % b;
     }
 }

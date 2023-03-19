@@ -80,6 +80,8 @@ public class Persistence {
             }
         }
     }
+
+    public bool HistoryWindowOpen = false;
     #endregion
 
     public struct RecentMap {

@@ -1,7 +1,9 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Tools;
@@ -51,7 +53,7 @@ public sealed class EditorScene : Scene {
 
         // Try to load the last edited map.
         if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
-            LoadMapFromBin(Persistence.Instance.LastEditedMap);
+            LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
     }
 
     public EditorScene(Map map) : this(false) {
@@ -62,7 +64,7 @@ public sealed class EditorScene : Scene {
         base.SetupHotkeys();
 
         // not trusting rysy enough rn
-        //AddHotkey("saveMap", "ctrl+s", () => Save());
+        Hotkeys.AddHotkeyFromSettings("saveMap", "ctrl+s", () => Save());
         Hotkeys.AddHotkeyFromSettings("openMap", "ctrl+o", Open);
         Hotkeys.AddHotkeyFromSettings("newMap", "ctrl+shift+n", () => LoadNewMap());
 
@@ -101,12 +103,12 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    public void LoadMapFromBin(string file) {
+    public void LoadMapFromBin(string file, bool fromPersistence = false) {
         if (!File.Exists(file))
             return;
 
         RysyEngine.OnFrameEnd += async () => {
-            //try {
+            try {
                 if (RysyEngine.Scene is not LoadingScene loadingScreen) {
                     loadingScreen = new LoadingScene();
                     RysyEngine.Scene = loadingScreen;
@@ -123,9 +125,15 @@ public sealed class EditorScene : Scene {
                 Map = map;
 
                 RysyEngine.Scene = this;
-            //} catch {
-            //
-            //}
+            } catch(Exception e) {
+                Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
+
+                if (fromPersistence) {
+                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e);
+                } else {
+                    RysyEngine.Scene = this;
+                }
+            }
         };
     }
 
@@ -139,19 +147,19 @@ public sealed class EditorScene : Scene {
     }
 
     private void AddNewMapWindow() {
-        var window = new Window<string>("New map", (w) => {
+        var wData = "";
+        var window = new ScriptedWindow("New map", (w) => {
             ImGui.TextWrapped("Please enter the Package Name for your map.");
             ImGui.TextWrapped("This name is only used internally, and is not visible in-game.");
-            ImGui.InputText("Package Name", ref w.Data, 512);
+            ImGui.InputText("Package Name", ref wData, 512);
 
-            ImGuiManager.BeginWindowBottomBar(!string.IsNullOrWhiteSpace(w.Data));
+            ImGuiManager.BeginWindowBottomBar(!string.IsNullOrWhiteSpace(wData));
             if (ImGui.Button("Create Map")) {
-                LoadNewMap(w.Data);
+                LoadNewMap(wData);
                 w.RemoveSelf();
             }
             ImGuiManager.EndWindowBottomBar();
         }, new(350, ImGui.GetTextLineHeightWithSpacing() * 8));
-        window.Data = "";
 
         AddWindow(window);
     }

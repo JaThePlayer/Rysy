@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using System.IO;
 using System.IO.Compression;
 

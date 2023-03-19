@@ -8,10 +8,12 @@ public static class LayerNames {
     public const string TRIGGERS = "Triggers";
     public const string FG_DECALS = "FGDecals";
     public const string BG_DECALS = "BGDecals";
+
     public const string ROOM = "Rooms";
 
     public const string CUSTOM_LAYER = "Custom";
     public const string ALL = "All";
+    public const string PREFABS = "Prefabs";
 
     public static SelectionLayer ToolLayerToEnum(string layer, SelectionLayer customLayer = SelectionLayer.None) => layer switch {
         FG => SelectionLayer.FGTiles,

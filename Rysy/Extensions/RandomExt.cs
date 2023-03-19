@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Rysy;
+namespace Rysy.Extensions;
 
 public static class RandomExt {
     /// <summary>
@@ -10,7 +10,7 @@ public static class RandomExt {
         ulong ix = Unsafe.As<float, uint>(ref x);
         ulong iy = Unsafe.As<float, uint>(ref y);
 
-        return splitmix64(ix ^ (iy << 32));
+        return splitmix64(ix ^ iy << 32);
     }
 
     /// <summary>
@@ -21,7 +21,7 @@ public static class RandomExt {
     /// <summary>
     /// Creates a random int out of this Vector2
     /// </summary>
-    public static int SeededRandomExclusive(this Vector2 pos, int max) => (int)(SeededRandom(pos.X, pos.Y) % (ulong)(max));
+    public static int SeededRandomExclusive(this Vector2 pos, int max) => (int) (SeededRandom(pos.X, pos.Y) % (ulong) max);
 
     /// <summary>
     /// Creates a random int out of this Vector2, between min and max (inclusive)
@@ -50,10 +50,10 @@ public static class RandomExt {
     for some reason you absolutely want 64 bits of state.
     */
     static ulong splitmix64(ulong seed) {
-        ulong z = (seed += 0x9e3779b97f4a7c15);
-        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-        z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-        return z ^ (z >> 31);
+        ulong z = seed += 0x9e3779b97f4a7c15;
+        z = (z ^ z >> 30) * 0xbf58476d1ce4e5b9;
+        z = (z ^ z >> 27) * 0x94d049bb133111eb;
+        return z ^ z >> 31;
     }
     #endregion
 }

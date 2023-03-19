@@ -4,6 +4,8 @@ public interface IHistoryAction {
     /// <returns>Whether the action had any effect. If false is returned, the action will not be added to history</returns>
     public bool Apply();
     public void Undo();
+
+    public static IHistoryAction Empty => new MergedAction(Array.Empty<IHistoryAction>());
 }
 
 public interface ISerializableAction : IHistoryAction {

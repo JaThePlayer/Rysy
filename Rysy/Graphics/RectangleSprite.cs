@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Graphics;
 
 public record struct RectangleSprite : ISprite {
     public int? Depth { get; set; }

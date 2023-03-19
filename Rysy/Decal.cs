@@ -1,4 +1,6 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.History;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;

@@ -3,6 +3,7 @@
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Helpers;
 using System;
 using System.Buffers.Text;
 using System.IO.Compression;

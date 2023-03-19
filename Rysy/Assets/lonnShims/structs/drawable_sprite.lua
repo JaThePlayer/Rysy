@@ -123,7 +123,8 @@ function drawableSpriteMt.__index:getRectangleRaw()
 end
 
 function drawableSpriteMt.__index:getRectangle()
-    _RYSY_unimplemented()
+    local x,y,w,h = _RYSY_DRAWABLE_getRectangle(self)
+	return utils.rectangle(x, y, w, h)
 end
 
 function drawableSpriteMt.__index:drawRectangle(mode, color)

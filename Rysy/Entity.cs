@@ -1,6 +1,7 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
-using Rysy.Gui.Elements;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
@@ -158,10 +159,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         return GetSprites();
     }
 
-    public virtual bool ResizableX => false;
-    public virtual bool ResizableY => false;
+    public virtual bool ResizableX => Width > 0;
+    public virtual bool ResizableY => Height > 0;
 
-    public virtual Point MinimumSize => new(8, 8);
+    public virtual Point MinimumSize => new(ResizableX ? 8 : 0, ResizableY ? 8 : 0);
     public virtual Range NodeLimits => 0..0;
 
     public override string ToString() {
@@ -274,10 +275,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     }
 
     public Placement ToPlacement() {
+        var overrides = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
+
         return new Placement(EntityData.SID) {
             SID = EntityData.SID,
             PlacementHandler = this is Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
-            ValueOverrides = EntityData.Inner,
+            ValueOverrides = overrides,
+            Nodes = Nodes?.Select(n => n.Pos).ToArray()
         };
     }
 
@@ -289,6 +293,17 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         Decal d => d.FG ? SelectionLayer.FGDecals : SelectionLayer.BGDecals,
         _ => SelectionLayer.Entities,
     };
+
+    public void InitializeNodePositions() {
+        if (Nodes is { } nodes) {
+            var (x, y) = (X, Y);
+            var xOffset = Rectangle.Width + 8;
+
+            for (int i = 0; i < nodes.Count; i++) {
+                nodes[i].Pos = new(x + (xOffset * (i + 1)), y);
+            }
+        }
+    }
 
     #region ILuaWrapper
     int ILuaWrapper.Lua__index(Lua lua, object key) {
@@ -455,6 +470,10 @@ internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler
 
     public BinaryPacker.Element? PackParent() {
         return Entity.Pack();
+    }
+
+    public IHistoryAction PlaceClone(Room room) {
+        return new AddEntityAction(Entity.Clone(), room);
     }
 }
 

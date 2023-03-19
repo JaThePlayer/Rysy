@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using CommunityToolkit.HighPerformance;
+using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
 using System.Runtime.InteropServices;
 
@@ -124,6 +125,43 @@ public static class ImGuiManager {
             }
             ImGui.EndCombo();
         }
+    }
+
+    public static void Combo<T>(string name, ref T value, Dictionary<string, T> values) where T : IEquatable<T> {
+        var val = value;
+        if (ImGui.BeginCombo(name, values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString())) {
+            foreach (var item in values) {
+                if (ImGui.MenuItem(item.Key)) {
+                    value = item.Value;
+                }
+            }
+            ImGui.EndCombo();
+        }
+    }
+
+    public static void EditableCombo<T>(string name, ref T value, Dictionary<string, T> values, Func<string, T> stringToValue) where T : IEquatable<T> {
+        var val = value;
+        var valueName = values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString();
+
+
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - ImGui.CalcTextSize("+").X - ImGui.GetStyle().FramePadding.X * 3);
+        if (ImGui.InputText("##text", ref valueName, 128)) {
+            value = stringToValue(valueName);
+        }
+
+        ImGui.SameLine(0f,0f);
+
+        if (ImGui.BeginCombo("##combo", valueName, ImGuiComboFlags.NoPreview)) {
+            foreach (var item in values) {
+                if (ImGui.MenuItem(item.Key)) {
+                    value = item.Value;
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+        ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
+        ImGui.Text(name);
     }
 
     public static void BeginWindowBottomBar(bool valid) {

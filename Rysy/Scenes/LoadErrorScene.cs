@@ -5,15 +5,8 @@ namespace Rysy.Scenes;
 public class LoadErrorScene : Scene {
     public string Text;
 
-    public LoadErrorScene(FancyInterpolatedStringHandler text) {
-        Text = text.GetFormattedText().UnformatColors();
-        Logger.Write("Engine", LogLevel.Error, text);
-    }
-
     public LoadErrorScene(string text) {
         Text = text;
-
-        Logger.Write("Engine", LogLevel.Error, text);
     }
 
     public override void Render() {
