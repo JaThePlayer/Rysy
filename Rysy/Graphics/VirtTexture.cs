@@ -64,9 +64,7 @@ public class VirtTexture : IDisposable {
             Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"Returning null clip rect for {this}!");
             return default;
         }
-        protected set {
-            _clipRect = value;
-        }
+        protected set => _clipRect = value;
     }
 
     /// <summary>
@@ -94,6 +92,16 @@ public class VirtTexture : IDisposable {
         _ => null,
     };
 
+    public virtual Rectangle GetSubtextureRect(int x, int y, int w, int h, out Vector2 drawOffset, Rectangle? clipRect = null) {
+        drawOffset = Vector2.Zero;
+        var clipRectPos = clipRect?.Location ?? ClipRectPos;
+
+        var newY = clipRectPos.Y + y;
+        var newX = clipRectPos.X + x;
+
+        return new(newX, newY, w, h);
+    }
+
     private Texture2D? StartLoadingIfNeeded() {
         if (state == State.Unloaded) {
             state = State.Loading;
@@ -116,6 +124,8 @@ public class VirtTexture : IDisposable {
     public virtual void Dispose() {
         state = State.Unloaded;
         texture?.Dispose();
+
+        GC.SuppressFinalize(this);
     }
 
     protected virtual bool TryPreloadClipRect() { return false; }

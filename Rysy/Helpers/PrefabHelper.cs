@@ -142,7 +142,6 @@ public static class PrefabHelper {
 
         private class MergedSelectionHandler : ISelectionHandler {
             public List<Selection> Selections;
-            public List<Vector2> Positions;
 
             public MergedSelectionHandler(List<Selection> selections) {
                 Selections = selections;
@@ -193,6 +192,7 @@ public static class PrefabHelper {
             }
 
             public IHistoryAction? TryResize(Point delta) {
+                // dont allow resizing prefabs
                 //var act = Selections.Select(s => s.Handler.TryResize(delta)).MergeActions();
 
                 //if (act.Any())

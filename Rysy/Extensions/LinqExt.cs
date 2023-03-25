@@ -16,12 +16,6 @@ public static class LinqExt {
             yield return Task.Run(() => action(item));
     }
 
-    public static IEnumerable<T> Do<T>(this IEnumerable<T> self, Action action) {
-        action();
-        foreach (var item in self)
-            yield return item;
-    }
-
     public static IEnumerable<T> Apply<T>(this IEnumerable<T> self, Action<T> action) {
         foreach (var item in self) {
             action(item);
@@ -38,4 +32,6 @@ public static class LinqExt {
             OnChanged = onChange,
         };
     }
+
+    public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
 }

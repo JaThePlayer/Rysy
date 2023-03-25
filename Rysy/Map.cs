@@ -53,6 +53,8 @@ public sealed class Map : IPackable {
         return map;
     }
 
+    public static Map FromFile(string filepath) => FromBinaryPackage(BinaryPacker.FromBinary(filepath));
+
     public BinaryPacker.Element Pack() {
         BinaryPacker.Element el = new("Map");
 
@@ -139,14 +141,25 @@ public sealed class Map : IPackable {
     }
 
     private void UseVanillaTilesetsIfNeeded() {
-        if (!BGAutotiler.IsLoaded()) {
-            using var stream = File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/BackgroundTiles.xml");
-            BGAutotiler.ReadFromXml(stream);
+        /*
+        if (Profile.Instance?.CelesteDirectory is { } celesteDir) {
+            if (!BGAutotiler.HasCache) {
+                using var stream = File.OpenRead($"{celesteDir}/Content/Graphics/BackgroundTiles.xml");
+                BGAutotiler.ReadFromXml(stream);
+            }
+            if (!FGAutotiler.HasCache) {
+                using var stream = File.OpenRead($"{celesteDir}/Content/Graphics/ForegroundTiles.xml");
+                FGAutotiler.ReadFromXml(stream);
+            }
+        }*/
+        if (!BGAutotiler.HasCache) {
+            BGAutotiler.UseCache(new(new(), () => File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/BackgroundTiles.xml")));
         }
-        if (!FGAutotiler.IsLoaded()) {
-            using var stream = File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/ForegroundTiles.xml");
-            FGAutotiler.ReadFromXml(stream);
+
+        if (!FGAutotiler.HasCache) {
+            FGAutotiler.UseCache(new(new(), () => File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/ForegroundTiles.xml")));
         }
+
     }
 
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);

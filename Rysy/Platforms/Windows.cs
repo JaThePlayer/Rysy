@@ -47,6 +47,8 @@ public class Windows : RysyPlatform {
             Console.WriteLine($"failed to set output console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
             return;
         }
+
+        Logger.UseColorsInConsole = true;
     }
 
     private const int STD_INPUT_HANDLE = -10;

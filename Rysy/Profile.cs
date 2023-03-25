@@ -26,7 +26,17 @@ public class Profile {
         return this;
     }
 
-    public static Profile Load() {
-        return SettingsHelper.Load<Profile>("profile.json", perProfile: true);
+    public static Profile Load(bool setInstance = true) {
+        if (Settings.Instance == null) {
+            throw new Exception("Settings.Load() needs to be called before Profile.Load()");
+        }
+
+        var profile = SettingsHelper.Load<Profile>("profile.json", perProfile: true);
+
+        if (setInstance) {
+            Instance = profile;
+        }
+
+        return profile;
     }
 }

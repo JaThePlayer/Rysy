@@ -17,4 +17,10 @@ public class Linux : RysyPlatform {
         }
         return Path.Combine(osConfigDir, "Rysy");
     }
+
+    public override void Init() {
+        base.Init();
+
+        Logger.UseColorsInConsole = true;
+    }
 }

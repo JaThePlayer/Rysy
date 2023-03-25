@@ -16,7 +16,12 @@ public abstract class TileTool : Tool {
     public override string PersistenceGroup => "TileTool";
 
     public override IEnumerable<object>? GetMaterials(string layer) {
-        return GetAutotiler(layer)?.Tilesets.Keys.Where(k => k is not 'z' or 'y').Select(k => (object) k) ?? null;
+        var autotiler = GetAutotiler(layer);
+        if (autotiler is not { })
+            return null;
+
+        autotiler.TilesetDataCacheToken.OnNextInvalidate += ClearMaterialListCache;
+        return autotiler.Tilesets.Keys.Where(k => k is not 'z' or 'y').Select(k => (object) k);
     }
 
     private static Dictionary<string, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();

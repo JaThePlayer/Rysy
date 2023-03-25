@@ -71,6 +71,9 @@
     <None Update="Assets\lonnShims\structs\drawable_line.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\lonnShims\structs\drawable_nine_patch.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\lonnShims\structs\drawable_rectangle.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

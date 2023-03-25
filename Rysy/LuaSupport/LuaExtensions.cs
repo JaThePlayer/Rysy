@@ -2,10 +2,11 @@
 using Rysy.Helpers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Rysy.LuaSupport;
 
-public static class LuaExt {
+public static partial class LuaExt {
     /// <summary>
     /// Converts the Lua value at the given index to a C# string
     /// </summary>
@@ -27,9 +28,67 @@ public static class LuaExt {
         if (length == 0)
             return "";
 
+        if (length == 1) {
+            var b = ((byte*) source)[0];
+            switch (b) {
+                case (byte) 'x':
+                    return "x";
+                case (byte) 'y':
+                    return "y";
+                default:
+                    break;
+            }
+        }
+
         var str = state.Encoding.GetString((byte*) source, length);
 
         return str;
+    }
+
+
+    public static char[] SharedToStringBuffer = new char[4098];
+
+    public static unsafe Span<char> ToStringInto(this Lua state, int index, Span<char> buffer, bool callMetamethod = true) {
+        UIntPtr num;
+        IntPtr source;
+        if (callMetamethod) {
+            source = luaL_tolstring(state.Handle, index, out num);
+            state.Pop(1);
+        } else {
+            source = lua_tolstring(state.Handle, index, out num);
+        }
+
+        if (source == IntPtr.Zero)
+            return Span<char>.Empty;
+
+        // todo: check if all these casts are needed?
+        int length = checked((int) (uint) num);
+        if (length == 0) {
+            return Span<char>.Empty;
+        }
+
+        /*
+        if (length == 1) {
+            var b = ((byte*) source)[0];
+            buffer[0] = (char)b;
+            return buffer;
+        }*/
+
+        var decoded = state.Encoding.GetChars(new Span<byte>((void*) source, length), buffer);
+
+        return buffer[..decoded];
+    }
+
+    /// <summary>
+    /// Pushes an ASCII string onto the stack
+    /// </summary>
+    public static void PushASCIIString(this Lua lua, byte[] value) {
+        if (value == null) {
+            lua.PushNil();
+            return;
+        }
+
+        lua.PushBuffer(value);
     }
 
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
@@ -209,7 +268,16 @@ public static class LuaExt {
     /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
     public static LuaType GetTable(this Lua lua, int index, string key) {
-        lua.PushString(key);
+        //lua.PushString(key);
+        //return lua.GetTable(index);
+        return lua.GetField(index, key);
+    }
+
+    /// <summary>
+    /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
+    /// </summary>
+    public static LuaType GetTable(this Lua lua, int index, byte[] keyASCII) {
+        lua.PushASCIIString(keyASCII);
         return lua.GetTable(index);
     }
 
@@ -422,6 +490,10 @@ where TArg1 : class, ILuaWrapper {
         return new Rectangle(x, y, w, h);
     }
 
+
+    private static byte[] WrapperThisASCII = Encoding.ASCII.GetBytes("__this");
+    /*
+
     /// <summary>
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua<->C# easily.
     /// Make sure to run <see cref="ClearWrappers"/>, otherwise you'll have a memory leak :(
@@ -429,16 +501,15 @@ where TArg1 : class, ILuaWrapper {
     /// <typeparam name="T"></typeparam>
     /// <param name="state"></param>
     /// <param name="wrapper"></param>
-    public static void PushWrapper<T>(this Lua state, T wrapper) where T : class, ILuaWrapper {
+    public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
         state.CreateTable(0, 0);
         var tablePos = state.GetTop();
 
-        state.PushString("__this");
+        state.PushASCIIString(WrapperThisASCII);
         state.PushObjectStoreHandle(wrapper);
         state.SetTable(tablePos);
 
-        state.NewTable();
-        var metatablePos = state.GetTop();
+        if (state.NewMetaTable("RYSY_INTERNAL_WRAPPER"))
         {
             // Create a metatable that will call the C# methods:
             int metatableIndex = state.GetTop();
@@ -447,8 +518,10 @@ where TArg1 : class, ILuaWrapper {
             state.PushCFunction(static (nint ptr) => {
                 var lua = Lua.FromIntPtr(ptr);
 
-                lua.GetTable(1, "__this");
-                var wrapper = lua.ToObject<T>(lua.GetTop(), false);
+                lua.GetTable(1, WrapperThisASCII);
+                //lua.RawGetInteger(1, 1);
+
+                var wrapper = lua.ToObject<ILuaWrapper>(lua.GetTop(), false);
                 lua.Pop(1);
 
                 var obj = wrapper ?? throw new LuaException(lua, $"Tried to index null wrapper");
@@ -471,14 +544,14 @@ where TArg1 : class, ILuaWrapper {
     }
 
     public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
-        lua.GetTable(loc, "__this");
+        //lua.RawGetInteger(loc, 1);
+        lua.GetTable(loc, WrapperThisASCII);
         var wrapper = lua.ToObject<T>(lua.GetTop(), false);
         lua.Pop(1);
 
         return wrapper;
     }
-
-
+        
     #region GCHandleStore
     public static void PushObjectStoreHandle<T>(this Lua lua, T obj) {
         if (obj == null) {
@@ -503,14 +576,124 @@ where TArg1 : class, ILuaWrapper {
         WrapperGCHandles.Clear();
     }
     #endregion
+     
+     */
+
+    private static int idx = -1;
+    private static List<LuaFunction> WrapperFuncs = new();
+    private static List<byte[]> WrapperMetatableNames = new();
+
+    public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
+        var newIndex = LuaWrapperList.Count;
+        LuaWrapperList.Add(wrapper);
+
+        if (newIndex == WrapperMetatableNames.Count) {
+            WrapperMetatableNames.Add(Encoding.ASCII.GetBytes($"_RIW{newIndex}\0"));
+        }
+
+        if (state.NewMetatableASCII(WrapperMetatableNames[newIndex])) {
+            // Create a metatable that will call the C# methods:
+            int metatableIndex = state.GetTop();
+
+            state.PushString("__index");
+
+            state.PushNumber(newIndex);
+            state.RawSetInteger(metatableIndex, idx);
+
+            if (newIndex == WrapperFuncs.Count) {
+                var f = CreateLuaWrapperForIdx(newIndex);
+                GCHandle.Alloc(f);
+                WrapperFuncs.Add(f);
+            }
+
+            state.PushCFunction(WrapperFuncs[newIndex]);
+
+            // set the table to be a metatable of itself
+            // this way, pushing a wrapper is very cheap, as it doesn't create any tables
+            state.SetTable(metatableIndex);
+            state.PushCopy(metatableIndex);
+            state.SetMetaTable(metatableIndex);
+        }
+    }
+
+    private static LuaFunction CreateLuaWrapperForIdx(int wrapperIndex) {
+        return (nint ptr) => {
+            var lua = Lua.FromIntPtr(ptr);
+
+            var wrapper = LuaWrapperList[wrapperIndex];//UnboxWrapper<ILuaWrapper>(lua, 1);
+
+            var obj = wrapper ?? throw new LuaException(lua, $"Tried to index null wrapper");
+            var top = lua.GetTop();
+            var t = lua.Type(top);
+
+            int ret;
+            switch (t) {
+                case LuaType.Number:
+                    ret = obj.Lua__index(lua, lua.ToInteger(top));
+                    break;
+                case LuaType.String:
+                    //ret = obj.Lua__index(lua, lua.FastToString(top));
+
+                    Span<char> buffer = SharedToStringBuffer.AsSpan();
+                    var str = lua.ToStringInto(top, buffer, callMetamethod: false);
+                    ret = obj.Lua__index(lua, str);
+                    break;
+                default:
+                    throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");
+            }
+
+            return ret;
+        };
+    }
+
+    public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
+        lua.RawGetInteger(loc, idx);
+        var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
+        lua.Pop(1);
+
+        return (T)wrapper;
+    }
+
+    private static List<ILuaWrapper> LuaWrapperList = new();
+    internal static void ClearWrappers() {
+        LuaWrapperList.Clear();
+    }
+
+    public static unsafe LuaType GetGlobalASCII(this Lua lua, byte[] asciiName) {
+        fixed (byte* ptr = &asciiName[0]) {
+            return (LuaType)lua_getglobal(lua.Handle, ptr);
+        }
+    }
+
+    public static unsafe bool NewMetatableASCII(this Lua lua, byte[] asciiName) {
+        fixed (byte* ptr = &asciiName[0]) {
+            return luaL_newmetatable(lua.Handle, ptr) != 0;
+        }
+    }
 
     public static long ToIntegerSafe(Lua lua, int index) {
         return lua.ToIntegerX(index) ?? throw new LuaException(lua, new InvalidCastException($"Can't convert lua {lua.Type(index)} [{lua.ToString(index)}] to c# integer"));
     }
 
-    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern IntPtr luaL_tolstring(IntPtr luaState, int index, out UIntPtr len);
+    [LibraryImport("lua54")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    //[DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
+    internal static partial IntPtr luaL_tolstring(IntPtr luaState, int index, out UIntPtr len);
 
-    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern IntPtr lua_tolstring(IntPtr luaState, int index, out UIntPtr strLen);
+    [LibraryImport("lua54")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    //[DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
+    internal static partial IntPtr lua_tolstring(IntPtr luaState, int index, out UIntPtr strLen);
+
+    //[LibraryImport("lua54", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+    //[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    //internal static partial int lua_getglobal(IntPtr luaState, string name);
+
+    [LibraryImport("lua54")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    internal static unsafe partial int lua_getglobal(nint luaState, byte* name);
+
+    [LibraryImport("lua54")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    internal static unsafe partial int luaL_newmetatable(nint luaState, byte* name);
 }

@@ -17,4 +17,10 @@ public class MacOS : RysyPlatform {
             "Rysy"
         );
     }
+
+    public override void Init() {
+        base.Init();
+
+        Logger.UseColorsInConsole = true;
+    }
 }

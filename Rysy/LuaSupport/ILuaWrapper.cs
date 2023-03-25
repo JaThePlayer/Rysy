@@ -9,5 +9,8 @@ public interface ILuaWrapper {
     /// <summary>
     /// Implements the __index metamethod. Returns the amount of values pushed to the stack.
     /// </summary>
-    public int Lua__index(Lua lua, object key);
+    public int Lua__index(Lua lua, long key);
+
+    public int Lua__index(Lua lua, ReadOnlySpan<char> key);
+    //public int Lua__index(Lua lua, object key);
 }

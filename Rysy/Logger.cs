@@ -15,7 +15,9 @@ public static class Logger {
     /// <summary>
     /// The path where Rysy was compiled from. Unlike most paths, it's not unbackslashed, to be able to call .TrimStart with it directly.
     /// </summary>
-    private static string CompilePath;
+    private static string CompilePath = "";
+
+    public static bool UseColorsInConsole { get; set; } = false;
 
     public static void Init([CallerFilePath] string filePath = "") {
         CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
@@ -109,8 +111,14 @@ public static class Logger {
     }
 
     private static void WriteImpl(string str) {
-        Console.Write(str.TryCensor());
-        File.AppendAllText(LogFile, str.UnformatColors());
+        var unformatted = str.UnformatColors();
+        if (UseColorsInConsole) {
+            Console.Write(str.TryCensor());
+        } else {
+            Console.Write(unformatted.TryCensor());
+        }
+
+        File.AppendAllText(LogFile, unformatted);
     }
 }
 

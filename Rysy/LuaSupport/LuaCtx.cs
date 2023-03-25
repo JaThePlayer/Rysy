@@ -4,7 +4,7 @@ using Rysy.Graphics;
 namespace Rysy.LuaSupport;
 
 public class LuaCtx {
-    public Lua Lua { get; set; } = new();
+    public Lua Lua { get; private set; } = new();
 
     private static readonly string[] RequireSearchPaths = new string[] {
         "?.lua",

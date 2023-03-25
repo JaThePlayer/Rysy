@@ -1,4 +1,6 @@
-﻿using Rysy.Gui;
+﻿#define DOT_TRACE
+
+using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Platforms;
 using Rysy.Scenes;
@@ -6,7 +8,10 @@ using System.Text.Json;
 
 namespace Rysy;
 
+
 public static class SettingsHelper {
+    public static bool ReadSettings = true;
+
     public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
     ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{Settings.Instance.Profile}/{settingFileName}"
     : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
@@ -14,6 +19,9 @@ public static class SettingsHelper {
     //public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
 
     public static T Load<T>(string filename, bool perProfile = false) where T : class, new() {
+        if (!ReadSettings)
+            return new();
+        
         var settingsFile = GetFullPath(filename, perProfile);
         var saveLocation = Path.GetDirectoryName(settingsFile);
 
@@ -24,11 +32,23 @@ public static class SettingsHelper {
         }
 
         if (File.Exists(settingsFile)) {
+#if DOT_TRACE
+            int attempts = 0;
+        tryRead:
+#endif
             try {
                 using var stream = File.OpenRead(settingsFile);
                 settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.DefaultOptions);
             } catch (Exception e) {
                 Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
+#if DOT_TRACE
+                // dot trace's precise profiler breaks file reading while loading??????
+                attempts++;
+                if (attempts < 100) {
+                    Thread.Sleep(10);
+                    goto tryRead;
+                }
+#endif
                 throw;
             }
         }
@@ -39,7 +59,10 @@ public static class SettingsHelper {
         }, filename, perProfile);
     }
 
-    public static T Save<T>(T settings, string filename, bool perProfile = false) {
+    public static T Save<T>(T settings, string filename, bool perProfile = false) where T : class, new() {
+        if (!ReadSettings)
+            return new();
+
         var settingsFile = GetFullPath(filename, perProfile);
         var saveLocation = Path.GetDirectoryName(settingsFile);
 
@@ -59,8 +82,13 @@ public static class SettingsHelper {
 public sealed class Settings {
     public static string SettingsFileLocation = $"settings.json";
 
-    public static Settings Load() {
-        return SettingsHelper.Load<Settings>(SettingsFileLocation);
+    public static Settings Load(bool setInstance = true) {
+        var settings = SettingsHelper.Load<Settings>(SettingsFileLocation);
+
+        if (setInstance)
+            Instance = settings;
+
+        return settings;
     }
 
     public static Settings Save(Settings settings) {
@@ -97,7 +125,8 @@ public sealed class Settings {
         get => _theme;
         set {
             _theme = value;
-            ImGuiThemer.LoadTheme(value);
+            if (RysyEngine.ImGuiAvailable)
+                ImGuiThemer.LoadTheme(value);
         }
     }
 
@@ -106,7 +135,8 @@ public sealed class Settings {
         get => _fontSize;
         set {
             _fontSize = value;
-            RysyEngine.OnFrameEnd += () => ImGuiThemer.SetFontSize(value);
+            if (RysyEngine.ImGuiAvailable)
+                RysyEngine.OnFrameEnd += () => ImGuiThemer.SetFontSize(value);
         }
     }
 

@@ -19,7 +19,10 @@ public sealed class BinaryPacker {
     internal BinaryPacker() { }
 
     public static Package FromBinary(string filename) {
+#if DEBUG
         using var watch = new ScopedStopwatch("FromBinary");
+#endif
+
         if (filename == null)
             throw new ArgumentNullException(nameof(filename));
         if (!File.Exists(filename))

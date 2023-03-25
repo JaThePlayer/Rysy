@@ -337,7 +337,10 @@ public sealed class Room : IPackable, ILuaWrapper {
             ClearRenderCache();
 
         // if the room takes up extremely tiny amounts of space due to huge zoom out, there's no point in rendering the interior
-        var interiorVisible = new Vector2(Width * camera.Scale, Height * camera.Scale) is { X: >= 8, Y: >= 8 };
+        var interiorVisible = 
+               Width * camera.Scale >= 8 
+            && Height * camera.Scale >= 8;
+
         if (!interiorVisible)
             ClearRenderCache();
 
@@ -384,7 +387,9 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private void CacheSpritesIfNeeded() {
         if (CachedSprites is null) {
-            //using (var w = new ScopedStopwatch($"Generating sprites for {Name}"))
+            using var w = new ScopedStopwatch($"Generating sprites for {Name}");
+
+
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
             var layer = p.EditorLayer;
@@ -480,7 +485,6 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         var gd = RysyEngine.GDM.GraphicsDevice;
         canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-        FullRenderCanvas = canvas;
 
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);
@@ -491,10 +495,11 @@ public sealed class Room : IPackable, ILuaWrapper {
             item.Render();
         }
 
-        CachedSprites = null;
-
         GFX.Batch.End();
         gd.SetRenderTarget(null);
+
+        ClearRenderCache();
+        FullRenderCanvas = canvas;
     }
 
     private void StartTextureLoadTimer() {
@@ -546,6 +551,10 @@ public sealed class Room : IPackable, ILuaWrapper {
         ClearFullRenderCache();
     }
 
+    /// <summary>
+    /// Clears the full list of cached sprite (without clearing the cache for individual layers),
+    /// and the render target if it exists.
+    /// </summary>
     private void ClearFullRenderCache() {
         FullRenderCanvas?.Dispose();
         FullRenderCanvas = null;
@@ -699,10 +708,25 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    public int Lua__index(Lua lua, object key) {
+    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler() { Room = this };
+
+    public Room Clone() {
+        var packed = Pack();
+        var room = new Room();
+        room.Map = Map;
+        room.Unpack(packed);
+
+        return room;
+    }
+
+    public int Lua__index(Lua lua, long key) {
+        throw new NotImplementedException();
+    }
+
+    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "entities":
-                lua.PushWrapper(new ListWrapper<Entity>(Entities));
+                lua.PushWrapper(new EntityListWrapper(Entities));
                 return 1;
             case "tilesFg":
                 lua.PushWrapper(FG);
@@ -721,17 +745,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         return 0;
-    }
-
-    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler() { Room = this };
-
-    public Room Clone() {
-        var packed = Pack();
-        var room = new Room();
-        room.Map = Map;
-        room.Unpack(packed);
-
-        return room;
     }
 }
 

@@ -4,8 +4,6 @@ namespace Rysy.Entities;
 
 [CustomEntity("swapBlock")]
 public class SwapBlock : NineSliceEntity {
-    public override int TileSize => 8;
-
     public Themes Theme => Enum("theme", Themes.Normal);
 
     public override string TexturePath => Theme switch {
