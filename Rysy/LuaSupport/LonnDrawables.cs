@@ -88,4 +88,27 @@ public static class LonnDrawables {
 
         return sprite;
     }
+
+    public static NineSliceSprite LuaToNineSlice(Lua lua, int top) {
+        var texture = lua.PeekTableStringValue(top, "texture") ?? "";
+
+        var x = lua.PeekTableFloatValue(top, "drawX") ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "drawY") ?? 0f;
+        var w = lua.PeekTableIntValue(top, "drawWidth") ?? 8;
+        var h = lua.PeekTableIntValue(top, "drawHeight") ?? 8;
+        var rect = new Rectangle((int) x, (int) y, w, h);
+
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
+
+        /*
+    ninePatch.hideOverflow = options.hideOverflow or true
+    ninePatch.mode = options.mode or "fill"
+    ninePatch.borderMode = options.borderMode or "repeat"
+    ninePatch.fillMode = options.fillMode or "repeat"
+         */
+
+        return ISprite.NineSliceFromTexture(rect, texture) with {
+            Color = color,
+        };
+    }
 }

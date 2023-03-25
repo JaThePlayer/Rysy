@@ -35,6 +35,8 @@ public sealed class RysyEngine : Game {
 
     public static float ForceActiveTimer = 0.0f;
 
+    public static bool ImGuiAvailable { get; internal set; }
+
     public RysyEngine() {
         Instance = this;
 
@@ -52,13 +54,15 @@ public sealed class RysyEngine : Game {
     }
 
     public static void SetTargetFps(int fps) {
-        Instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double)fps);
+        if (Instance is { } instance)
+            instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double)fps);
     }
 
     public static void ToggleVSync(bool toggle) {
-        GDM.SynchronizeWithVerticalRetrace = toggle;
-
-        GDM.ApplyChanges();
+        if (GDM is { } gdm) {
+            gdm.SynchronizeWithVerticalRetrace = toggle;
+            gdm.ApplyChanges();
+        }
     }
 
     private void Window_FileDrop(object? sender, FileDropEventArgs e) {
@@ -124,17 +128,6 @@ public sealed class RysyEngine : Game {
             Persistence.Instance.Get("StartingWindowX", Window.Position.X),
             Persistence.Instance.Get("StartingWindowY", Window.Position.Y)
         );
-
-        /*
-#if DEBUG
-        Time.TimeScale = 0f;
-        while (!Input.Mouse.Right.Clicked())
-        {
-            await Task.Delay(10);
-        }
-        Time.TimeScale = 1f;
-#endif
-*/
 
         if (Profile.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);

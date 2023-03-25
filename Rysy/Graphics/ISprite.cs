@@ -36,6 +36,15 @@ public interface ISprite {
         Color = Color.White
     };
 
+    public static NineSliceSprite NineSliceFromTexture(Vector2 pos, int w, int h, string texturePath) 
+        => NineSliceFromTexture(new((int) pos.X, (int) pos.Y, w, h), texturePath);
+
+    public static NineSliceSprite NineSliceFromTexture(Rectangle pos, string texturePath)
+    => new(GFX.Atlas[texturePath]) {
+        Pos = pos,
+        Color = Color.White,
+    };
+
     public static RectangleSprite Rect(Rectangle rect, Color color)
         => new() {
             Pos = rect,
@@ -85,25 +94,6 @@ public interface ISprite {
         Color = color,
         Resulution = resolution,
     };
-
-    public static IEnumerable<Sprite> GetNineSliceSprites(Sprite baseSprite, Vector2 pos, int w, int h, int tileSize) {
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                yield return baseSprite.CreateSubtexture(x switch {
-                    0 => 0,
-                    _ when x == w - 1 => tileSize * 2,
-                    _ => tileSize
-                }, y switch {
-                    0 => 0,
-                    _ when y == h - 1 => tileSize * 2,
-                    _ => tileSize
-                }, tileSize, tileSize) with {
-                    Pos = pos + new Vector2(x * 8, y * 8),
-                    Origin = new(),
-                };
-            }
-        }
-    }
 
     public static IEnumerable<ISprite> GetCurveSprites(Vector2 start, Vector2 end, Vector2 middleOffset, Color color, int segments = 16)
     => new SimpleCurve {

@@ -65,27 +65,6 @@ public static class RoomList {
 
         }
 
-        /*
-        DECAL LIST CODE for later
-
-        cached:
-        private static List<(string VirtPath, VirtTexture)> decalList = GFX.Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.InvariantCulture)).SearchFilter(p => p.virtPath, Search).ToList();
-        
-        decal list code:
-        var skip = (ImGui.GetScrollY()) / ImGui.GetTextLineHeightWithSpacing() - 1;
-        var rendered = 0;
-        foreach (var item in decalList) {
-        // todo: calculate that 60!!!
-            if (rendered < 60 && skip <= 0) {
-                rendered++;
-                ImGui.Selectable(item.VirtPath);
-            }
-            else
-                ImGui.NewLine();
-
-            skip--;
-        }*/
-
         ImGui.EndListBox();
 
         if (ImGui.Button("New")) {

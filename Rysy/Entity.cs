@@ -9,6 +9,7 @@ using Rysy.Scenes;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
@@ -34,7 +35,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     }
 
     public int X {
-        get => EntityData.Int("x");
+        get => EntityData.X;
         set {
             EntityData["x"] = value;
             ClearRoomRenderCache();
@@ -42,7 +43,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     }
 
     public int Y {
-        get => EntityData.Int("y");
+        get => EntityData.Y;
         set {
             EntityData["y"] = value;
             ClearRoomRenderCache();
@@ -159,10 +160,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         return GetSprites();
     }
 
+    [JsonIgnore]
     public virtual bool ResizableX => Width > 0;
+
+    [JsonIgnore]
     public virtual bool ResizableY => Height > 0;
 
+    [JsonIgnore]
     public virtual Point MinimumSize => new(ResizableX ? 8 : 0, ResizableY ? 8 : 0);
+
+    [JsonIgnore]
     public virtual Range NodeLimits => 0..0;
 
     public override string ToString() {
@@ -306,7 +313,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     }
 
     #region ILuaWrapper
-    int ILuaWrapper.Lua__index(Lua lua, object key) {
+    private byte[]? _NameAsASCII = null;
+
+    public int Lua__index(Lua lua, long key) {
+        throw new NotImplementedException($"Can't index entity via number key: {key}");
+    }
+
+    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "x":
                 lua.PushNumber(X);
@@ -324,38 +337,40 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
                     lua.PushNil();
                 }
                 return 1;
-            case string str:
-                EntityData.TryGetValue(str, out var value);
-                lua.Push(value);
+            case "_name":
+                //lua.PushString(Name);
+                lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             default:
-                throw new LuaException(lua, $"Tried to index Entity with non-string key: {key} [{key.GetType()}]");
+                EntityData.TryGetValue(key.ToString(), out var value);
+                lua.Push(value);
+                return 1;
         }
     }
 
     private record class NodesWrapper(Entity Entity) : ILuaWrapper {
-        public int Lua__index(Lua lua, object key) {
-            if (key is long i) {
-                var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
-                if (node is { } n) {
-                    lua.CreateTable(0, 2);
-                    var tableLoc = lua.GetTop();
+        public int Lua__index(Lua lua, long i) {
+            var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
+            if (node is { } n) {
+                lua.CreateTable(0, 2);
+                var tableLoc = lua.GetTop();
 
-                    lua.PushString("x");
-                    lua.PushNumber(n.X);
-                    lua.SetTable(tableLoc);
+                lua.PushString("x");
+                lua.PushNumber(n.X);
+                lua.SetTable(tableLoc);
 
-                    lua.PushString("y");
-                    lua.PushNumber(n.Y);
-                    lua.SetTable(tableLoc);
+                lua.PushString("y");
+                lua.PushNumber(n.Y);
+                lua.SetTable(tableLoc);
 
-                    return 1;
-                } else {
-                    return 0;
-                }
+                return 1;
             } else {
-                throw new LuaException(lua, $"Tried to index NodeWrapper with non-number key: {key} [{key.GetType()}]");
+                return 0;
             }
+        }
+
+        public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+            throw new LuaException(lua, $"Tried to index NodeWrapper with non-number key: {key} [{typeof(ReadOnlySpan<char>)}]");
         }
     }
     #endregion
@@ -482,6 +497,11 @@ public class EntityData : IDictionary<string, object> {
 
     public List<Node>? Nodes;
 
+    private int? _X;
+    private int? _Y;
+    public int X => _X ??= Int("x");
+    public int Y => _Y ??= Int("y");
+
     public EntityData(string sid, BinaryPacker.Element e) {
         SID = sid;
         Inner = new(e.Attributes, StringComparer.Ordinal);
@@ -502,9 +522,16 @@ public class EntityData : IDictionary<string, object> {
         Inner = new(attributes);
     }
 
-    internal Dictionary<string, object> Inner = new();
+    internal Dictionary<string, object> Inner { get; set; } = new();
 
-    public object this[string key] { get => Inner[key]; set => Inner[key] = value; }
+    public object this[string key] { 
+        get => Inner[key]; 
+        set {
+            Inner[key] = value;
+            _X = null;
+            _Y = null;
+        }
+    }
 
     #region IDictionary
     public ICollection<string> Keys => Inner.Keys;
@@ -564,7 +591,7 @@ public class EntityData : IDictionary<string, object> {
 
     public int Int(string attrName, int def = 0) {
         if (Inner.TryGetValue(attrName, out var obj)) {
-            return Convert.ToInt32(obj);
+            return obj is int i ? i : Convert.ToInt32(obj);
         }
 
         return def;

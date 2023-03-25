@@ -1,5 +1,4 @@
 ﻿using Rysy.Extensions;
-using Rysy.Graphics.TextureTypes;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
@@ -75,10 +74,11 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
             var scale = Scale;
             var origin = _multOrigin;
 
-            if (cam is { }) {
+            // todo: figure out if calculating rotated rectangles for culling is worth it
+            if (cam is { } && Rotation == 0f) {
                 var size = new Vector2(Width * scale.X, Height * scale.Y);
                 var pos = Pos - origin * scale;
-                //ISprite.HollowRect(pos, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
+                //ISprite.OutlinedRect(pos + offset, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
                 if (!cam.IsRectVisible(pos + offset, (int) size.X, (int) size.Y))
                     return;
             }
@@ -93,6 +93,13 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
                 Render(texture, Pos + new Vector2(0f, -1f), color, scale, flip, origin);
             }
             Render(texture, Pos, Color, scale, flip, origin);
+
+            {
+                var size = new Vector2(Width * scale.X, Height * scale.Y);
+                var pos = Pos - origin * scale;
+                //ISprite.OutlinedRect(pos + offset, (int) size.X, (int) size.Y, Color.Transparent, Color.Red * 0.1f).Render();
+            }
+
         }
     }
 
@@ -179,19 +186,29 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
     }
 
     public Sprite Offset(Vector2 offset) {
-        Pos += offset;
-        return this;
-    }
-
-    public Sprite CreateSubtexture(int x, int y, int w, int h) {
         return this with {
-            ClipRect = GetSubtextureRect(x, y, w, h),
-            DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)),
-            Width = w,
-            Height = h
+            Pos = Pos + offset
         };
     }
 
+    public Sprite Offset(float x, float y) {
+        return this with {
+            Pos = Pos + new Vector2(x, y),
+        };
+    }
+
+    public Sprite CreateSubtexture(int x, int y, int w, int h) {
+        var clip = Texture.GetSubtextureRect(x, y, w, h, out var offset, ClipRect);
+        return this with {
+            ClipRect = clip,
+            DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)) - offset,
+            Width = w,
+            Height = h,
+            Pos = Pos,
+        };
+    }
+
+    /*
     public Rectangle GetSubtextureRect(int x, int y, int w, int h) {
         var clipRectPos = ClipRect?.Location ?? Texture.ClipRectPos;
 
@@ -211,7 +228,9 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         }
 
         return new(newX, newY, w, h);
-    }
+    }*/
+
+    public Rectangle GetSubtextureRect(int x, int y, int w, int h) => Texture.GetSubtextureRect(x, y, w, h, out _, ClipRect);
 
     public IEnumerator<ISprite> GetEnumerator() => new SingleSpriteEnumerator(this);
 
@@ -219,7 +238,7 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
     private record struct SingleSpriteEnumerator(Sprite Sprite) : IEnumerator<ISprite> {
         private bool _moved = false;
-    
+
         public ISprite Current => Sprite;
 
         object IEnumerator.Current => Sprite;

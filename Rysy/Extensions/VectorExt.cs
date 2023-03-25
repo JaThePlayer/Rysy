@@ -8,6 +8,7 @@ public static class VectorExt {
     /// </summary>
     public static Vector2 WH(this Rectangle r) => new(r.Width, r.Height);
 
+    public static Vector2 Add(this Vector2 v, float x, float y) => new(v.X + x, v.Y + y);
     public static Vector2 AddX(this Vector2 v, float toAdd) => new(v.X + toAdd, v.Y);
     public static Vector2 AddY(this Vector2 v, float toAdd) => new(v.X, v.Y + toAdd);
     public static float Angle(Vector2 from, Vector2 to)

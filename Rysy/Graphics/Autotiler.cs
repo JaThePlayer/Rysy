@@ -185,9 +185,15 @@ public sealed class Autotiler {
 
     public Dictionary<char, AutotilerData> Tilesets = new();
 
-    public bool IsLoaded() => Tilesets.Count > 0;
+    private bool _Loaded = false;
+    public bool Loaded => _Loaded;
 
-    public CacheToken TilesetDataCacheToken = new();
+    public bool HasCache => TilesetXmlCache is { };
+
+    public CacheToken TilesetDataCacheToken { get; set; } = new();
+
+
+    private Cache<Stream?>? TilesetXmlCache { get; set; }
 
     public void UseCache(Cache<Stream?> cache) {
         cache.Token.OnInvalidate += () => {
@@ -199,12 +205,13 @@ public sealed class Autotiler {
 
                 TilesetDataCacheToken.Invalidate();
                 TilesetDataCacheToken.Reset();
+                _Loaded = true;
             } else {
                 Logger.Write("[Autotiler]", LogLevel.Error, $"Failed to reload tileset, most likely because the xml file got locked by another process.");
             }
         };
 
-        cache.Token.Invalidate();
+        TilesetXmlCache = cache;
     }
 
     public void ReadFromXml(Stream stream) {
@@ -270,6 +277,13 @@ public sealed class Autotiler {
     /// Generates sprites needed to render a rectangular tile grid fully made up of a specified id
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int w, int h) {
+        if (!Loaded)
+            TilesetXmlCache?.Token.Invalidate();
+
+        if (!Loaded) {
+            yield break;
+        }
+
         if (id == '0')
             yield break;
 
@@ -297,6 +311,14 @@ public sealed class Autotiler {
     /// Generates sprites needed to render a tile grid
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid) {
+        if (!Loaded)
+            TilesetXmlCache?.Token.Invalidate();
+
+        if (!Loaded) {
+            yield break;
+        }
+
+
         List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
         var h = tileGrid.GetLength(1);
@@ -359,7 +381,17 @@ public sealed class Autotiler {
             Color *= alpha;
         }
 
-        public bool IsLoaded => Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });
+        public bool IsLoaded //=> Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });
+        {
+            get {
+                foreach (var item in Sprites.AsSpan2D()) {
+                    if (item.T is { } t && t.Texture is not { })
+                        return false;
+                }
+
+                return true;
+            }
+        }
 
         public AutotiledSprite[,] Sprites;
 

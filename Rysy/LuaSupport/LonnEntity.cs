@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using System.Collections.Generic;
@@ -64,6 +65,16 @@ public class LonnEntity : Entity, ICustomNodeHandler {
         return base.GetMainSelection();
     }
 
+    public override Range NodeLimits {
+        get {
+            var limits = Plugin.GetNodeLimits(Room, this);
+
+            return new(limits.X.AtLeast(0), limits.Y == -1 ? Index.End : limits.Y);
+        }
+    }
+
+    public override Point MinimumSize => Plugin.GetMinimumSize(Room, this);
+
     #region Sprites
     private List<ISprite> SpritesFromLonn(Lua lua, int top) {
         var list = new List<ISprite>();
@@ -97,6 +108,9 @@ public class LonnEntity : Entity, ICustomNodeHandler {
                     break;
                 case "drawableRectangle":
                     addTo.Add(LonnDrawables.LuaToRect(lua, top));
+                    break;
+                case "drawableNinePatch":
+                    addTo.Add(LonnDrawables.LuaToNineSlice(lua, top));
                     break;
                 default:
                     Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type}: {lua.TableToDictionary(top).ToJson()}");
@@ -158,6 +172,10 @@ public sealed class LonnEntityPlugin {
     public Func<Room, Entity, Color> GetBorderColor;
 
     public Func<Entity, string> GetNodeVisibility;
+
+    public Func<Room, Entity, Point> GetNodeLimits;
+    public Func<Room, Entity, Point> GetMinimumSize;
+    public Func<Room, Entity, Point> GetMaximumSize;
 
     public bool HasSelectionFunction;
 
@@ -257,6 +275,27 @@ public sealed class LonnEntityPlugin {
             def: new Vector2(0.5f),
             constGetter: () => lua.PeekTableVector2Value(top, "justification"),
             funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcResults: 2
+        );
+
+        plugin.GetNodeLimits = NullConstOrGetter(plugin, "nodeLimits",
+            def: new Point(0, 0),
+            constGetter: () => lua.PeekTableVector2Value(top, "nodeLimits").ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcResults: 2
+        );
+
+        plugin.GetMinimumSize = NullConstOrGetter(plugin, "minimumSize",
+            def: new Point(8, 8),
+            constGetter: () => lua.PeekTableVector2Value(top, "minimumSize").ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcResults: 2
+        );
+
+        plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize",
+            def: new Point(int.MaxValue, int.MaxValue),
+            constGetter: () => lua.PeekTableVector2Value(top, "maximumSize").ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
 

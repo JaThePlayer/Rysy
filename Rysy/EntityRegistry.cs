@@ -14,7 +14,8 @@ public static class EntityRegistry {
     public static List<Placement> EntityPlacements { get; set; } = new();
     public static List<Placement> TriggerPlacements { get; set; } = new();
 
-    private static LuaCtx LuaCtx = LuaCtx.CreateNew();
+    private static LuaCtx? _LuaCtx = null;
+    private static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
 
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
@@ -44,7 +45,7 @@ public static class EntityRegistry {
 
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
-            await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
+            //await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
     }
 
@@ -137,7 +138,20 @@ public static class EntityRegistry {
     
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
-        var entity = Create(sid, pos, assignID ? null : -1, new(sid, from.ValueOverrides, from.Nodes), room, isTrigger);
+        Dictionary<string, object> data;
+
+        if (SIDToFields.TryGetValue(sid, out var fields)) {
+            data = 
+                fields.Select(f => (f.Key, f.Value.GetDefault()))
+                .Concat(from.ValueOverrides.Select(o => (o.Key, o.Value)))
+                .DistinctBy(p => p.Key)
+                .ToDictionary(f => f.Item1, f => f.Item2);
+        } else {
+            data = from.ValueOverrides;
+        }
+
+        var entity = Create(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger);
+
         from.Finalizer?.Invoke(entity);
 
         return entity;
@@ -157,7 +171,7 @@ public static class EntityRegistry {
                 var other => throw new InvalidCastException($"Cannot convert {other} to {typeof(Entity)}")
             };
         } else {
-            if (Settings.Instance.LogMissingEntities)
+            if (Settings.Instance?.LogMissingEntities ?? false)
                 Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
             e = trigger ? new Trigger() : new UnknownEntity();
         }
@@ -169,6 +183,9 @@ public static class EntityRegistry {
 
         if (e is LonnEntity lonnPlugin) {
             lonnPlugin.Plugin = SIDToLonnPlugin[sid];
+        }
+        if (e is LonnTrigger lonnTrigger) {
+            lonnTrigger.Plugin = SIDToLonnPlugin[sid];
         }
 
         var min = e.MinimumSize;

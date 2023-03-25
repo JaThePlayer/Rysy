@@ -15,6 +15,12 @@ public static class Fields {
         Values = values
     };
 
+    public static DropdownField<string> EnumNamesDropdown<T>(T def) where T : struct, Enum
+    => new() {
+        Default = def.ToString(),
+        Values = Enum.GetNames<T>().ToDictionary(k => k, v => v)
+    };
+
     public static DropdownField<string> Dropdown(string def, List<string> values) => new() {
         Default = def, 
         Values = values.ToDictionary(k => k, k => k) 

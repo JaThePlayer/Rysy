@@ -194,9 +194,6 @@ public abstract class Tool {
 
     private void RenderMaterialList(EditorScene editor, bool firstGui) {
         var currentLayer = Layer;
-        var materials = GetMaterials(currentLayer);
-        if (materials is null)
-            materials = new List<object>();
         var currentMaterial = Material;
         var favorites = Favorites;
 
@@ -207,7 +204,7 @@ public abstract class Tool {
             CachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??= materials.Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
+        var cachedSearch = CachedSearch ??= (GetMaterials(currentLayer) ?? new List<object>()).Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
         var rendered = 0;
 
 

@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.History;
+using System;
 
 namespace Rysy;
 
@@ -25,6 +26,12 @@ public record class Placement(string Name) {
 
     public Placement WithTooltip(string tooltip) {
         Tooltip = tooltip;
+
+        return this;
+    }
+
+    public Placement WithFinalizer(Action<Entity> act) {
+        Finalizer += act;
 
         return this;
     }
@@ -127,7 +134,6 @@ public interface IConvertibleToPlacement {
 }
 
 public interface IPlaceable {
-    public static abstract List<Placement>? GetPlacements();
-
     public static abstract FieldList GetFields();
+    public static abstract List<Placement>? GetPlacements();
 }

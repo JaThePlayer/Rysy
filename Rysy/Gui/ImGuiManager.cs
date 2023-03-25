@@ -30,6 +30,8 @@ public static class ImGuiManager {
         GuiRenderer = new ImGuiRenderer(game);
 
         ImGuiThemer.SetFontSize(16f);
+
+        RysyEngine.ImGuiAvailable = true;
     }
 
     public static void PushWindowStyle() {

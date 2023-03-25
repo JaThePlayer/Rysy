@@ -2,26 +2,31 @@
 
 namespace Rysy.Helpers;
 
-public abstract class NineSliceEntity : SpriteEntity {
+public abstract class NineSliceEntity : Entity {
+    /// <summary>
+    /// The color to use to tint the nine slice. Leave as <see cref="Color.White"/> to not apply any tinting.
+    /// </summary>
+    public virtual Color Color => Color.White;
+
+    /// <summary>
+    /// The path to the texture used to render the nine slice.
+    /// </summary>
+    public abstract string TexturePath { get; }
+
     public virtual string? CenterSpritePath => null;
     public virtual Color CenterSpriteColor => Color.White;
     public virtual Color CenterSpriteOutlineColor => Color.Transparent;
 
-    public abstract int TileSize { get; }
-
     public override IEnumerable<ISprite> GetSprites() {
-        var baseSprite = GetSprite();
+        var w = Math.Max(Width, 8);
+        var h = Math.Max(Height, 8);
 
-        var tileSize = TileSize;
-        var w = Math.Max(Width, 8) / 8;
-        var h = Math.Max(Height, 8) / 8;
-
-        foreach (var item in ISprite.GetNineSliceSprites(baseSprite, Pos, w, h, tileSize))
-            yield return item;
+        yield return ISprite.NineSliceFromTexture(Pos, w, h, TexturePath) with {
+            Color = Color,
+        };
 
         if (CenterSpritePath is { } centerPath) {
-            yield return GetSprite(centerPath) with {
-                Pos = Pos + new Vector2(w * 8 / 2, h * 8 / 2),
+            yield return ISprite.FromTexture(Pos + new Vector2(w / 2, h / 2), centerPath).Centered() with {
                 Color = CenterSpriteColor,
                 OutlineColor = CenterSpriteOutlineColor,
             };
