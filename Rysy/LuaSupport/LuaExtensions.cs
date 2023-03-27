@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Helpers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -233,6 +234,21 @@ public static partial class LuaExt {
         return ret;
     }
 
+    /// <summary>
+    /// Peeks a value at <paramref name="tableStackIndex"/>[<paramref name="key"/>], converting it to a range using <see cref="ToRangeNegativeIsFromEnd(Lua, int)"/>
+    /// </summary>
+    public static Range PeekTableRangeValue(this Lua lua, int tableStackIndex, string key) {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+        Range ret = default;
+        if (type is LuaType.Table) {
+            ret = lua.ToRangeNegativeIsFromEnd(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
+
     public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, string key, Color def) {
         lua.PushString(key);
         var type = lua.GetTable(tableStackIndex);
@@ -452,15 +468,31 @@ where TArg1 : class, ILuaWrapper {
         };
     }
 
+    public static Point ToPoint(this Lua lua, int index) {
+        var vec = lua.ToVector2(index);
+
+        return vec.ToPoint();
+    }
+
+    /// <summary>
+    /// Turns the lua value on the stack at <paramref name="index"/> to a range.
+    /// A negative value for the 2nd number gets converted to <see cref="Index.End"/>
+    /// </summary>
+    public static Range ToRangeNegativeIsFromEnd(this Lua lua, int index) {
+        var point = lua.ToPoint(index);
+
+        return new(point.X.AtLeast(0), point.Y < 0 ? Index.End : point.Y);
+    }
+
     public static Color ToColor(this Lua lua, int index) {
         switch (lua.Type(index)) {
             case LuaType.Table:
-                return new(
-                    (float) lua.PeekTableNumberValue(index, 1)!,
-                    (float) lua.PeekTableNumberValue(index, 2)!,
-                    (float) lua.PeekTableNumberValue(index, 3)!,
-                    (float) (lua.PeekTableNumberValue(index, 4) ?? 1)
-                 );
+                var a = (float) (lua.PeekTableNumberValue(index, 4) ?? 1f);
+                return new Color(
+                    (float) (lua.PeekTableNumberValue(index, 1) ?? 1f),
+                    (float) (lua.PeekTableNumberValue(index, 2) ?? 1f),
+                    (float) (lua.PeekTableNumberValue(index, 3) ?? 1f)
+                 ) * a;
             case LuaType.String:
                 return ColorHelper.RGBA(lua.FastToString(index));
             default:
@@ -579,9 +611,11 @@ where TArg1 : class, ILuaWrapper {
      
      */
 
-    private static int idx = -1;
+    private static int WrapperIDLoc = -1;
     private static List<LuaFunction> WrapperFuncs = new();
     private static List<byte[]> WrapperMetatableNames = new();
+
+    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("RYSY_wrapper\0");
 
     public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
         var newIndex = LuaWrapperList.Count;
@@ -595,22 +629,51 @@ where TArg1 : class, ILuaWrapper {
             // Create a metatable that will call the C# methods:
             int metatableIndex = state.GetTop();
 
-            state.PushString("__index");
-
             state.PushNumber(newIndex);
-            state.RawSetInteger(metatableIndex, idx);
+            state.RawSetInteger(metatableIndex, WrapperIDLoc);
 
+            state.PushASCIIString(WrapperMarkerNameASCII);
+            state.PushBoolean(true);
+            state.RawSet(metatableIndex);
+
+            state.PushString("__index");
             if (newIndex == WrapperFuncs.Count) {
                 var f = CreateLuaWrapperForIdx(newIndex);
                 GCHandle.Alloc(f);
                 WrapperFuncs.Add(f);
             }
-
             state.PushCFunction(WrapperFuncs[newIndex]);
+            state.SetTable(metatableIndex);
+
+            // equality operator
+            state.PushString("__eq");
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+
+                if (lua.IsWrapper(2)) {
+                    /*
+                    // get the wrapper indexes of both the wrappers
+                    // doesn't work because of the lack of wrapper deduplication, would be a bit faster though...
+                    lua.RawGetInteger(1, WrapperIDLoc);
+                    var aIdx = lua.ToInteger(lua.GetTop());
+                    lua.RawGetInteger(2, WrapperIDLoc);
+                    var bIdx = lua.ToInteger(lua.GetTop());
+                    lua.Pop(2);
+                    lua.PushBoolean(aIdx == bIdx);*/
+                    var a = lua.UnboxWrapper<ILuaWrapper>(1);
+                    var b = lua.UnboxWrapper<ILuaWrapper>(2);
+                    lua.PushBoolean(ReferenceEquals(a, b));
+                } else {
+                    lua.PushBoolean(false);
+                }
+
+                return 1;
+            });
+            state.SetTable(metatableIndex);
+
 
             // set the table to be a metatable of itself
             // this way, pushing a wrapper is very cheap, as it doesn't create any tables
-            state.SetTable(metatableIndex);
             state.PushCopy(metatableIndex);
             state.SetMetaTable(metatableIndex);
         }
@@ -646,8 +709,16 @@ where TArg1 : class, ILuaWrapper {
         };
     }
 
+    public static bool IsWrapper(this Lua lua, int loc) {
+        lua.PushASCIIString(WrapperMarkerNameASCII);
+        var t = lua.RawGet(loc);
+        lua.Pop(1);
+
+        return t != LuaType.Nil;
+    }
+
     public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
-        lua.RawGetInteger(loc, idx);
+        lua.RawGetInteger(loc, WrapperIDLoc);
         var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
         lua.Pop(1);
 

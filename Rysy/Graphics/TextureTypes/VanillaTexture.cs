@@ -40,7 +40,7 @@ internal sealed class VanillaTexture : UndisposableVirtTexture {
             var dif = newX - clip.X;
             newX -= dif;
             _drawOffset.X -= dif;
-            w += dif + 1;
+            w += dif;
         }
 
         if (newY < clip.Y) {
