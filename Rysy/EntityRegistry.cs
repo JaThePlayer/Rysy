@@ -34,6 +34,8 @@ public static class EntityRegistry {
 
 
         if (Settings.Instance.LonnPluginPath is { } path) {
+            using var w = new ScopedStopwatch("Registering Lua entities");
+
             foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "entities"), "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: false);
             }

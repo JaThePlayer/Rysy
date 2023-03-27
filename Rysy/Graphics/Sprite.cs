@@ -33,6 +33,8 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
     private Vector2 _multOrigin;
 
+    public Vector2 SubtextureOffset;
+
     public Sprite(VirtTexture text) {
         Texture = text;
         DrawOffset = text.DrawOffset;
@@ -77,26 +79,28 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
             // todo: figure out if calculating rotated rectangles for culling is worth it
             if (cam is { } && Rotation == 0f) {
                 var size = new Vector2(Width * scale.X, Height * scale.Y);
-                var pos = Pos - origin * scale;
-                //ISprite.OutlinedRect(pos + offset, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
-                if (!cam.IsRectVisible(pos + offset, (int) size.X, (int) size.Y))
+                var rPos = Pos - origin * scale;
+                //ISprite.OutlinedRect(rPos + offset, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
+                if (!cam.IsRectVisible(rPos + offset, (int) size.X, (int) size.Y))
                     return;
             }
 
             var flip = Flip;
+            var pos = Pos + SubtextureOffset.Rotate(Rotation);
+
             if (OutlineColor != default) {
                 var color = OutlineColor;
 
-                Render(texture, Pos + new Vector2(-1f, 0f), color, scale, flip, origin);
-                Render(texture, Pos + new Vector2(1f, 0f), color, scale, flip, origin);
-                Render(texture, Pos + new Vector2(0f, 1f), color, scale, flip, origin);
-                Render(texture, Pos + new Vector2(0f, -1f), color, scale, flip, origin);
+                Render(texture, pos + new Vector2(-1f, 0f), color, scale, flip, origin);
+                Render(texture, pos + new Vector2(1f, 0f), color, scale, flip, origin);
+                Render(texture, pos + new Vector2(0f, 1f), color, scale, flip, origin);
+                Render(texture, pos + new Vector2(0f, -1f), color, scale, flip, origin);
             }
-            Render(texture, Pos, Color, scale, flip, origin);
+            Render(texture, pos, Color, scale, flip, origin);
 
             {
-                var size = new Vector2(Width * scale.X, Height * scale.Y);
-                var pos = Pos - origin * scale;
+                //var size = new Vector2(Width * scale.X, Height * scale.Y);
+                //var pos = Pos - origin * scale;
                 //ISprite.OutlinedRect(pos + offset, (int) size.X, (int) size.Y, Color.Transparent, Color.Red * 0.1f).Render();
             }
 
@@ -201,10 +205,11 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         var clip = Texture.GetSubtextureRect(x, y, w, h, out var offset, ClipRect);
         return this with {
             ClipRect = clip,
-            DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)) - offset,
+            DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)),
             Width = w,
             Height = h,
             Pos = Pos,
+            SubtextureOffset = offset,
         };
     }
 

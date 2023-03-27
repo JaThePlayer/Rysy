@@ -387,8 +387,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private void CacheSpritesIfNeeded() {
         if (CachedSprites is null) {
-            using var w = new ScopedStopwatch($"Generating sprites for {Name}");
-
+            //using var w = new ScopedStopwatch($"Generating sprites for {Name}");
 
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;

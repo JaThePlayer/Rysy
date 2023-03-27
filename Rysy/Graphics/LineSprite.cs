@@ -9,9 +9,12 @@ public record struct LineSprite : ISprite {
 
     public bool IsLoaded => true;
 
-    public Vector2[] Positions;
+    public Vector2[] Positions { get; set; }
 
-    public int Thickness = 1;
+    public int Thickness { get; set; } = 1;
+    public float MagnitudeOffset { get; set; } = 0f;
+
+    public Vector2 Offset { get; set; } = default;
 
     public LineSprite(Vector2[] positions) {
         Positions = positions;
@@ -23,7 +26,7 @@ public record struct LineSprite : ISprite {
         for (int i = 0; i < Positions.Length - 1; i++) {
             var start = Positions[i];
             var end = Positions[i + 1];
-            b.DrawLine(start, end, c);
+            b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);
         }
     }
 

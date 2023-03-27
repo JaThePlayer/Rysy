@@ -48,12 +48,14 @@ public static class LonnDrawables {
 
         var pointsVec2 = new Vector2[points.Count / 2];
         for (int i = 0; i < points.Count; i += 2) {
-            pointsVec2[i / 2] = new(points[i] + offX, points[i + 1] + offY);
+            pointsVec2[i / 2] = new(points[i], points[i + 1]);
         }
 
         return new LineSprite(pointsVec2) with {
             Color = color,
             Thickness = thickness,
+            MagnitudeOffset = magnitudeOffset,
+            Offset = new(offX, offY)
         };
     }
 
