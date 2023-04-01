@@ -141,7 +141,7 @@ public static class ImGuiManager {
         }
     }
 
-    public static void EditableCombo<T>(string name, ref T value, Dictionary<string, T> values, Func<string, T> stringToValue) where T : IEquatable<T> {
+    public static bool EditableCombo<T>(string name, ref T value, Dictionary<string, T> values, Func<string, T> stringToValue) where T : IEquatable<T> {
         var val = value;
         var valueName = values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString();
 
@@ -149,6 +149,7 @@ public static class ImGuiManager {
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - ImGui.CalcTextSize("+").X - ImGui.GetStyle().FramePadding.X * 3);
         if (ImGui.InputText("##text", ref valueName, 128)) {
             value = stringToValue(valueName);
+            return true;
         }
 
         ImGui.SameLine(0f,0f);
@@ -157,6 +158,7 @@ public static class ImGuiManager {
             foreach (var item in values) {
                 if (ImGui.MenuItem(item.Key)) {
                     value = item.Value;
+                    return true;
                 }
             }
 
@@ -164,6 +166,8 @@ public static class ImGuiManager {
         }
         ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
         ImGui.Text(name);
+
+        return false;
     }
 
     public static void BeginWindowBottomBar(bool valid) {

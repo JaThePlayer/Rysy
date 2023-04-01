@@ -22,8 +22,8 @@ public static class JsonHelper {
         try {
             return JsonSerializer.Deserialize<T>(str, Options(true));
         } catch (Exception e) {
-            Console.WriteLine(str);
-            Console.WriteLine(e);
+            //Console.WriteLine(str);
+            //Console.WriteLine(e);
             return default;
         }
     }

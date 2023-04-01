@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using Rysy.Extensions;
 using System.IO.Compression;
 
 namespace Rysy.Graphics;
@@ -9,6 +10,8 @@ public interface IAtlas {
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures();
 
     public VirtTexture this[string key] { get; }
+
+    public bool Exists(string key);
 
     /// <summary>
     /// Disposes all currently loaded textures. This does *not* clear <see cref="Textures"/>, and instead just disposes of any native data.
@@ -24,13 +27,6 @@ public interface IAtlas {
 
 public static class IAtlasExt {
     public static async Task LoadFromDirectoryAsync(this IAtlas self, string dir, string prefix = "") {
-        /*
-            foreach (var item in Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories))
-            {
-                var virtPath = item.Replace(dir, "").ToVirtPath(prefix);
-                var texture = VirtTexture.FromFile(item);
-                self.AddTexture(virtPath, texture);
-            }*/
         await Task.WhenAll(
                 Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories)
                 .Select(item => Task.Run(() => {

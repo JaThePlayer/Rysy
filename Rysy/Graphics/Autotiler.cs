@@ -188,31 +188,7 @@ public sealed class Autotiler {
     private bool _Loaded = false;
     public bool Loaded => _Loaded;
 
-    public bool HasCache => TilesetXmlCache is { };
-
     public CacheToken TilesetDataCacheToken { get; set; } = new();
-
-
-    private Cache<Stream?>? TilesetXmlCache { get; set; }
-
-    public void UseCache(Cache<Stream?> cache) {
-        cache.Token.OnInvalidate += () => {
-            using var str = cache.Value;
-            if (str is { }) { // Stream can be null if the file gets locked forever for some reason
-                ReadFromXml(str);
-
-                cache.Token.Reset();
-
-                TilesetDataCacheToken.Invalidate();
-                TilesetDataCacheToken.Reset();
-                _Loaded = true;
-            } else {
-                Logger.Write("[Autotiler]", LogLevel.Error, $"Failed to reload tileset, most likely because the xml file got locked by another process.");
-            }
-        };
-
-        TilesetXmlCache = cache;
-    }
 
     public void ReadFromXml(Stream stream) {
         Tilesets.Clear();
@@ -263,6 +239,10 @@ public sealed class Autotiler {
                 Tilesets[id] = autotilerData;
             }
         }
+
+        TilesetDataCacheToken.Invalidate();
+        TilesetDataCacheToken.Reset();
+        _Loaded = true;
     }
 
     private static Point[] ParseTiles(string tiles) {
@@ -277,9 +257,6 @@ public sealed class Autotiler {
     /// Generates sprites needed to render a rectangular tile grid fully made up of a specified id
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int w, int h) {
-        if (!Loaded)
-            TilesetXmlCache?.Token.Invalidate();
-
         if (!Loaded) {
             yield break;
         }
@@ -311,9 +288,6 @@ public sealed class Autotiler {
     /// Generates sprites needed to render a tile grid
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid) {
-        if (!Loaded)
-            TilesetXmlCache?.Token.Invalidate();
-
         if (!Loaded) {
             yield break;
         }

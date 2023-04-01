@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Extensions;
+﻿using Rysy.Extensions;
 
 namespace Rysy.Graphics;
 
@@ -7,6 +6,7 @@ namespace Rysy.Graphics;
 /// Allows rendering text using a modified version of the PICO-8-leste font.
 /// </summary>
 public static class PicoFont {
+    // font size:
     public const int W = 4;
     public const int H = 6;
 

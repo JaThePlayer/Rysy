@@ -66,14 +66,6 @@ public static partial class StringExt {
 
 
         if (UserNameRegex.Matches(path) is { } matches) {
-
-/* Unmerged change from project 'Rysy (net7.0)'
-Before:
-            for (int i = 0; i < matches.Count; i++) {
-                path = path.Replace(matches[i].Groups[1].Value, "<USER>");
-After:
-            for (int i = 0; i < matches.Count; i++)                 path = path.Replace(matches[i].Groups[1].Value, "<USER>");
-*/
             for (int i = 0; i < matches.Count; i++)
                 path = path.Replace(matches[i].Groups[1].Value, "<USER>");
             return path;
@@ -147,14 +139,6 @@ After:
     }
 
     public static string ToValidFilename(this string str) {
-
-/* Unmerged change from project 'Rysy (net7.0)'
-Before:
-        if (str == null) {
-            return string.Empty;
-After:
-        if (str == null)             return string.Empty;
-*/
         if (str == null)
             return string.Empty;
 
@@ -172,5 +156,29 @@ After:
                 span = span[i..];
             }
         });
+    }
+
+    public static string ToVirtPath(this string val, string prefix = "")
+        => ToVirtPath(val.AsSpan(), prefix);
+
+    public static string ToVirtPath(this ReadOnlySpan<char> val, string prefix = "") {
+        var ext = Path.GetExtension(val);
+        if (ext.IsEmpty)
+            return val.ToString();
+
+        // Trim trailing slash
+        var vLen = val.Length - ext.Length;
+        if (val.Length > 1 && val[vLen - 1] is '\\' or '/') {
+            vLen--;
+        }
+
+        Span<char> b = stackalloc char[vLen];
+        val[0..vLen].CopyTo(b);
+        b.ReplaceInPlace('\\', '/');
+
+        if (!string.IsNullOrWhiteSpace(prefix))
+            return $"{prefix}:{b}";
+
+        return b.ToString();
     }
 }

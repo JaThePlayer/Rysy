@@ -28,7 +28,14 @@ public static class Fields {
 
     public static EditableDropdownField<string> EditableDropdown(string def, List<string> values) => new() {
         Default = def,
-        Values = values
+        Values = values.ToDictionary(v => v, v => v)
+    };
+
+    public static EditableDropdownField<T> EditableDropdown<T>(T def, Dictionary<string, T> dict)
+        where T : IEquatable<T>
+    => new() {
+        Default = def,
+        Values = dict
     };
 
     public static ColorField RGBA(Color def) => new() { 

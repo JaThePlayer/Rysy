@@ -114,6 +114,9 @@ internal class SelectionTool : Tool {
             Deselect();
             CurrentSelections = selections;
         }
+
+        Input.Keyboard.ConsumeKeyClick(Microsoft.Xna.Framework.Input.Keys.LeftControl);
+        Input.Keyboard.ConsumeKeyClick(Microsoft.Xna.Framework.Input.Keys.RightControl);
     }
 
     private void CopySelections() {

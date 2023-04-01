@@ -11,12 +11,14 @@ local __metaMt = {}
 function __metaMt.__index(self, key)
     local loaded = rawget(self, "_RYSY_loaded")
     if not loaded then
-        local x, y, width, height = _RYSY_DRAWABLE_getTextureSize(rawget(self, "_RYSY_INTERNAL_sprite")._RYSY_INTERNAL_texture)
+        local x, y, width, height, offsetX, offsetY = _RYSY_DRAWABLE_getTextureSize(rawget(self, "_RYSY_INTERNAL_texture"))
         
         rawset(self, "x", x)
         rawset(self, "y", y)
         rawset(self, "width", width)
         rawset(self, "height", height)
+		rawset(self, "offsetX", offsetX)
+		rawset(self, "offsetY", offsetY)
         rawset(self, "_RYSY_loaded", true)
     end
 
@@ -30,7 +32,7 @@ end
 
 local function __newMeta(sprite)
 	local m = {
-        _RYSY_INTERNAL_sprite = sprite
+        _RYSY_INTERNAL_texture = sprite._RYSY_INTERNAL_texture
     }
 
     return setmetatable(m, __metaMt)
@@ -167,7 +169,14 @@ function drawableSpriteStruct.fromMeta(meta, data)
     drawableSprite.depth = data.depth
 
     drawableSprite.meta = meta or __newMeta(drawableSprite)
-    drawableSprite.quad = data.quad or meta and meta.quad
+
+	-- handle creating clones of sprites
+	if meta then
+		local baseSprite = rawget(meta, "_RYSY_INTERNAL_texture")
+		if baseSprite then
+			drawableSprite._RYSY_INTERNAL_texture = baseSprite
+		end
+	end
 
     if data.color then
         setColor(drawableSprite, data.color)
@@ -177,8 +186,13 @@ function drawableSpriteStruct.fromMeta(meta, data)
 end
 
 function drawableSpriteStruct.fromTexture(texture, data)
+	if not _RYSY_DRAWABLE_exists(texture) then
+		return nil
+	end
+
     local spr = drawableSpriteStruct.fromMeta(spriteMeta, data)
     spr._RYSY_INTERNAL_texture = texture
+	rawset(spr.meta, "_RYSY_INTERNAL_texture", texture)
 
     return spr
 end

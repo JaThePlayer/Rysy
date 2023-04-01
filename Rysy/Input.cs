@@ -229,10 +229,11 @@ public static class Input {
         /// Returns whether a key has just been clicked this frame
         /// </summary>
         public static bool IsKeyClicked(Keys key) => Contains(ClickedKeys, key); //HoldTimes.TryGetValue(key, out var time) && time < 1f / 60f;
-        public static bool IsKeyHeld(Keys key) => LastState.IsKeyDown(key) && !IsKeyClicked(key);
+        public static bool IsKeyHeld(Keys key) => HoldTimes.TryGetValue(key, out var timer) && timer > 0f
+            && LastState.IsKeyDown(key) && !IsKeyClicked(key);
         public static bool HeldOrClicked(Keys key) => LastState.IsKeyDown(key);
 
-        public static bool Ctrl() => LastState.IsKeyDown(Keys.LeftControl) || LastState.IsKeyDown(Keys.RightControl);
+        public static bool Ctrl() => IsKeyHeld(Keys.LeftControl) || IsKeyHeld(Keys.RightControl);//LastState.IsKeyDown(Keys.LeftControl) || LastState.IsKeyDown(Keys.RightControl);
         public static bool Shift() => LastState.IsKeyDown(Keys.LeftShift) || LastState.IsKeyDown(Keys.RightShift);
         public static bool Alt() => LastState.IsKeyDown(Keys.LeftAlt) || LastState.IsKeyDown(Keys.RightAlt);
 
@@ -249,7 +250,8 @@ public static class Input {
 
         public static void ConsumeKeyClick(Keys key) {
             var i = Array.IndexOf(ClickedKeys, key);
-            ClickedKeys[i] = Keys.None;
+            if (i != -1)
+                ClickedKeys[i] = Keys.None;
         }
 
         public static void Setup() {

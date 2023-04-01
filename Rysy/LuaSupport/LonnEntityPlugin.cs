@@ -1,10 +1,13 @@
 ﻿using KeraLua;
 using Rysy.Helpers;
+using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.LuaSupport;
 
 public sealed class LonnEntityPlugin {
+    public ModMeta? ParentMod { get; internal set; }
+
     public LuaCtx LuaCtx { get; private set; }
     public int StackLoc { get; private set; }
 
@@ -20,7 +23,6 @@ public sealed class LonnEntityPlugin {
     public Func<Room, Entity, float> GetRotation;
 
     public Func<Room, Entity, Color> GetColor;
-
     public Func<Room, Entity, Color> GetFillColor;
     public Func<Room, Entity, Color> GetBorderColor;
 
@@ -30,9 +32,12 @@ public sealed class LonnEntityPlugin {
     public Func<Room, Entity, Point>? GetMinimumSize;
     public Func<Room, Entity, Point> GetMaximumSize;
 
+    public Func<Room, Entity, Rectangle>? GetRectangle;
+
     public bool HasSelectionFunction;
 
     public List<LonnPlacement> Placements = new();
+    public FieldList? FieldList;
 
     public LuaStackHolder? StackHolder { get; private set; }
 
@@ -67,6 +72,7 @@ public sealed class LonnEntityPlugin {
             //return null;
         }
 
+        SetModNameInLua(lua);
 
         lua.GetGlobal("_RYSY_entities");
         var entitiesTableLoc = lua.GetTop();
@@ -80,6 +86,12 @@ public sealed class LonnEntityPlugin {
         StackHolder = holder;
 
         return holder;
+    }
+
+    private void SetModNameInLua(Lua lua) {
+        var modName = ParentMod?.Name ?? string.Empty;
+        lua.PushString(modName);
+        lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
     public static List<LonnEntityPlugin> FromCtx(LuaCtx ctx) {
@@ -183,11 +195,17 @@ public sealed class LonnEntityPlugin {
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
 
+        
+        plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle",
+            def: null,
+            constGetter: () => lua.PeekTableRectangleValue(top, "rectangle", default),
+            funcGetter: static (lua, top) => lua.ToRectangle(top)
+        );
+
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
         plugin.HasSelectionFunction = lua.PeekTableType(top, "selection") is LuaType.Function;
 
-        var placementType = lua.GetTable(top, "placements");
-        if (placementType == LuaType.Table) {
+        if (lua.GetTable(top, "placements") == LuaType.Table) {
             var placement1loc = lua.GetTop();
 
             switch (lua.PeekTableType(placement1loc, "name")) {
@@ -201,6 +219,71 @@ public sealed class LonnEntityPlugin {
                     });
                     break;
             }
+        }
+        lua.Pop(1);
+
+        if (lua.GetTable(top, "fieldInformation") == LuaType.Table) {
+            var fieldInfoLoc = lua.GetTop();
+            var dict = lua.TableToDictionary(fieldInfoLoc);
+            var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
+
+            var fieldList = new FieldList();
+            foreach (var (key, val) in dict) {
+                if (val is not Dictionary<string, object> infoDict)
+                    continue;
+
+                IField? field = null;
+
+                var editable = (bool) infoDict.GetValueOrDefault("editable", true);
+                var options = infoDict!.GetValueOrDefault("options", null);
+
+                if (options is { } && mainPlacement.Data.TryGetValue(key, out var def)) {
+                    switch (def, editable, options) {
+                        case (string str, true, List<object> dropdownOptions):
+                            field = Fields.EditableDropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList());
+                            break;
+                        case (string str, false, List<object> dropdownOptions):
+                            if (dropdownOptions.First() is List<object>) {
+                                /*
+                                 * {text, value},
+                                 * {text, value2},
+                                 */
+                                field = Fields.Dropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0]!.ToString()!));
+                            } else {
+                                field = Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList());
+                            }
+
+
+                            break;
+                        case (string str, true, Dictionary<string, object> dropdownOptions): {
+                            var firstVal = dropdownOptions.FirstOrDefault().Value;
+
+                            field = firstVal switch {
+                                string => Fields.EditableDropdown(str, dropdownOptions.ToDictionary(v => (string) v.Value, v => v.Key)),
+                            };
+                            break;
+                        }
+
+                        case (string str, false, Dictionary<string, object> dropdownOptions): {
+                            var firstVal = dropdownOptions.FirstOrDefault().Value;
+
+                            field = firstVal switch {
+                                string => Fields.Dropdown(str, dropdownOptions.ToDictionary(v => (string) v.Value, v => v.Key)),
+                            };
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
+                }
+
+                if (field is { }) {
+                    fieldList[key] = field;
+                }
+            }
+
+            plugin.FieldList = fieldList;
         }
         lua.Pop(1);
 
@@ -262,7 +345,6 @@ public sealed class LonnEntityPlugin {
                     using var token = pl.PushToStack();
                     var lua = pl.LuaCtx.Lua;
 
-                    lua.PeekTableStringValue(pl.StackLoc, "name");
                     lua.GetTable(pl.StackLoc, fieldName);
 
                     return lua.PCallFunction(e, funcGetter, results: funcResults)!;
@@ -288,7 +370,9 @@ public sealed class LonnEntityPlugin {
                 return def;
             case LuaType.Function:
                 return (r, e) => {
+                    using var token = pl.PushToStack();
                     var lua = pl.LuaCtx.Lua;
+
                     lua.GetTable(pl.StackLoc, fieldName);
                     return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                 };
@@ -301,6 +385,10 @@ public sealed class LonnEntityPlugin {
     public class LonnPlacement {
         public string Name;
         public Dictionary<string, object> Data = new();
+
+        internal LonnPlacement() {
+            Name = "";
+        }
 
         public LonnPlacement(Lua lua) {
             var start = lua.GetTop();

@@ -146,16 +146,7 @@ end
 function fakeTilesHelper.getTilesOptions(layer)
     layer = layer or "tilesFg"
 
-    local validTiles = brushes.getValidTiles(layer, false)
-    local tileOptions = {}
-
-    for id, path in pairs(validTiles) do
-        local displayName = brushes.cleanMaterialPath(path)
-
-        tileOptions[displayName] = id
-    end
-
-    return tileOptions
+    _RYSY_unimplemented()
 end
 
 -- Returns a function to be up to date with any XML changes

@@ -12,6 +12,8 @@ public static class Logger {
     private static string LogFile = $"{RysyPlatform.Current.GetSaveLocation()}/log.txt";
     private static string LastLogFile = $"{RysyPlatform.Current.GetSaveLocation()}/prev-log.txt";
 
+    private static object FILE_LOCK = new();
+
     /// <summary>
     /// The path where Rysy was compiled from. Unlike most paths, it's not unbackslashed, to be able to call .TrimStart with it directly.
     /// </summary>
@@ -111,14 +113,17 @@ public static class Logger {
     }
 
     private static void WriteImpl(string str) {
-        var unformatted = str.UnformatColors();
-        if (UseColorsInConsole) {
-            Console.Write(str.TryCensor());
-        } else {
-            Console.Write(unformatted.TryCensor());
+        lock (FILE_LOCK) {
+            var unformatted = str.UnformatColors();
+            if (UseColorsInConsole) {
+                Console.Write(str.TryCensor());
+            } else {
+                Console.Write(unformatted.TryCensor());
+            }
+
+            File.AppendAllText(LogFile, unformatted);
         }
 
-        File.AppendAllText(LogFile, unformatted);
     }
 }
 

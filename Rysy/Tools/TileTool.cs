@@ -15,6 +15,12 @@ public abstract class TileTool : Tool {
 
     public override string PersistenceGroup => "TileTool";
 
+    public override void CancelInteraction() {
+        base.CancelInteraction();
+
+        ClearMaterialListCache();
+    }
+
     public override IEnumerable<object>? GetMaterials(string layer) {
         var autotiler = GetAutotiler(layer);
         if (autotiler is not { })

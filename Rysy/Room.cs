@@ -739,6 +739,12 @@ public sealed class Room : IPackable, ILuaWrapper {
             case "height":
                 lua.PushNumber(Height);
                 return 1;
+            case "x":
+                lua.PushNumber(X);
+                return 1;
+            case "y":
+                lua.PushNumber(Y);
+                return 1;
             default:
                 break;
         }
