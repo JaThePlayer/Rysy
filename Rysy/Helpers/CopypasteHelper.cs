@@ -1,6 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.History;
-using System.IO.Compression;
+using Rysy.LuaSupport;
 
 namespace Rysy.Helpers;
 
@@ -12,8 +12,17 @@ public static class CopypasteHelper {
         public SelectionLayer Layer;
     }
 
+    public static List<CopiedSelection>? GetSelectionsFromString(string selectionString) {
+        if (JsonHelper.TryDeserialize<List<CopiedSelection>>(selectionString) is { } jsonSelections)
+            return jsonSelections;
+
+        if (LuaSerializer.TryGetSelectionsFromLuaString(selectionString) is { } luaSelections)
+            return luaSelections;
+
+        return null;
+    }
+
     public static List<CopiedSelection>? GetSelectionsFromClipboard() => GetSelectionsFromString(Input.Clipboard.Get());
-    public static List<CopiedSelection>? GetSelectionsFromString(string selectionString) => JsonHelper.TryDeserialize<List<CopiedSelection>>(selectionString);
 
     public static List<Selection>? PasteSelectionsFromClipboard(HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
         => PasteSelections(GetSelectionsFromClipboard(), history, map, room, pos, out pastedRooms);
@@ -30,7 +39,7 @@ public static class CopypasteHelper {
             pastedRooms = true;
             if (map is { })
                 return PasteRoomSelections(history, map, pasted, pos);
-            else 
+            else
                 return null;
         }
 
@@ -128,7 +137,7 @@ static string Compress(byte[] input) {
 
             //var mousePos = room.WorldToRoomPos(EditorState.Camera, Input.Mouse.Pos).ToVector2().Snap(8);
 
-            var offset = -topLeft + pos - ((bottomRight - topLeft) / 2f).Snap(8);
+            var offset = (-topLeft + pos - ((bottomRight - topLeft) / 2f)).Snap(8);
 
             foreach (var entity in entities) {
                 entity.Pos += offset;

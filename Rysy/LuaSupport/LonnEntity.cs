@@ -59,6 +59,11 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
             return ISelectionCollider.FromRect(rectangle);
         }
 
+        if (Plugin.GetRectangle is { } rectFunc) {
+            var rectangle = rectFunc(Room, this);
+            return ISelectionCollider.FromRect(rectangle);
+        }
+
         return base.GetMainSelection();
     }
 

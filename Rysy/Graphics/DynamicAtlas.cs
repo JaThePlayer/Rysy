@@ -130,4 +130,8 @@ public class DynamicAtlas : IAtlas {
     }
 
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures() => Textures.Select(t => (t.Key, t.Value));
+
+    public bool Exists(string key) {
+        throw new NotImplementedException();
+    }
 }

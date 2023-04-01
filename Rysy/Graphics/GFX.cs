@@ -1,4 +1,6 @@
 ﻿using Rysy.Extensions;
+using Rysy.Graphics.TextureTypes;
+using Rysy.Mods;
 using Rysy.Scenes;
 using System.IO.Compression;
 
@@ -69,23 +71,11 @@ public static class GFX {
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
         }
 
-        scene?.SetText("Scanning mod dirs");
-        using (ScopedStopwatch watch = new("Scanning mod dirs")) {
-            await Parallel.ForEachAsync(Directory.GetDirectories(Profile.Instance.ModsDirectory), (dir, token) => {
-                return LoadModFromDirAsync(dir);
+        scene?.SetText("Scanning mod assets");
+        using (ScopedStopwatch watch = new("Scanning mods")) {
+            await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
+                return LoadModAsync(m);
             });
-        }
-
-        scene?.SetText("Scanning mod .zips");
-        using (ScopedStopwatch watch = new("Scanning mod .zips")) {
-            await Parallel.ForEachAsync(Directory.EnumerateFiles(Profile.Instance.ModsDirectory, "*.zip"), (zip, token) => {
-                return LoadModFromZip(zip);
-            });
-
-            /*
-                await Task.WhenAll(
-                    Directory.EnumerateFiles(Profile.Instance.ModsDirectory, "*.zip")
-                    .Select(item => Task.Run(() => LoadModFromZip(item))));*/
         }
     }
 
@@ -94,55 +84,17 @@ public static class GFX {
         await Atlas.LoadFromPackerAtlasAsync(path);
     }
 
-    // TODO: MOVE
-    internal static async ValueTask LoadModFromDirAsync(string modDir) {
-        modDir = modDir.Replace('\\', '/').TrimEnd('/');
+    internal static ValueTask LoadModAsync(ModMeta mod) {
+        var files = mod.Filesystem.FindFilesInDirectoryRecursive("Graphics/Atlases/Gameplay", "png");
+        var atlas = Atlas;
 
-        var gameplayAtlasPath = $"{modDir}/Graphics/Atlases/Gameplay";
-        if (Directory.Exists(gameplayAtlasPath)) {
-            await Atlas.LoadFromDirectoryAsync(gameplayAtlasPath);
-        }
-    }
+        foreach (var file in files) {
+            var virt = file["Graphics/Atlases/Gameplay/".Length..(^".png".Length)];
 
-    internal static async ValueTask LoadModFromZip(string modZipPath) {
-        var stream = File.OpenRead(modZipPath);
-        var zip = new ZipArchive(stream, ZipArchiveMode.Read, false);
-
-        await Atlas.LoadFromZip(modZipPath, zip);
-    }
-
-    /*
-    public static string ToVirtPath(this string val, string prefix = "") {
-        var ext = Path.GetExtension(val) switch {
-            "" or null => ".png",
-            var other => other,
-        };
-        var v = val.Replace('\\', '/').Replace(ext, "").Trim('/');
-        if (!string.IsNullOrWhiteSpace(prefix))
-            v = $"{prefix}:{v}";
-
-        return v;
-    }*/
-
-    public static string ToVirtPath(this ReadOnlySpan<char> val, string prefix = "") {
-        var ext = Path.GetExtension(val);
-        if (ext.IsEmpty)
-            return val.ToString();
-
-        // Trim trailing slash
-        var vLen = val.Length - ext.Length;
-        if (val.Length > 1 && val[vLen - 1] is '\\' or '/') {
-            vLen--;
+            atlas.AddTexture(virt, new ModTexture(mod, file));
         }
 
-        Span<char> b = stackalloc char[vLen];
-        val[0..vLen].CopyTo(b);
-        b.Replace('\\', '/');
-
-        if (!string.IsNullOrWhiteSpace(prefix))
-            return $"{prefix}:{b}";
-
-        return b.ToString().Replace('\\', '/');
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>

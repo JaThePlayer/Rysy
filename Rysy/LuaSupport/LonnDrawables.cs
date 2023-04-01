@@ -19,6 +19,10 @@ public static class LonnDrawables {
             "bordered" => ISprite.OutlinedRect(rect, color, lua.PeekTableColorValue(top, "secondaryColor", Color.White)),
             _ => ISprite.Rect(rect, color),
         };
+
+        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+            sprite.Depth = depth;
+
         return sprite;
     }
 
@@ -51,12 +55,17 @@ public static class LonnDrawables {
             pointsVec2[i / 2] = new(points[i], points[i + 1]);
         }
 
-        return new LineSprite(pointsVec2) with {
+        var sprite = new LineSprite(pointsVec2) with {
             Color = color,
             Thickness = thickness,
             MagnitudeOffset = magnitudeOffset,
             Offset = new(offX, offY)
         };
+
+        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+            sprite.Depth = depth;
+
+        return sprite;
     }
 
     public static Sprite LuaToSprite(Lua lua, int top, Vector2 defaultPos) {
@@ -109,8 +118,13 @@ public static class LonnDrawables {
     ninePatch.fillMode = options.fillMode or "repeat"
          */
 
-        return ISprite.NineSliceFromTexture(rect, texture) with {
+        var sprite = ISprite.NineSliceFromTexture(rect, texture) with {
             Color = color,
         };
+
+        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+            sprite.Depth = depth;
+
+        return sprite;
     }
 }

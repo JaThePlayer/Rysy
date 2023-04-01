@@ -756,4 +756,23 @@ function utils.getProcessId()
     _RYSY_unimplemented()
 end
 
+local shownWarningFor = {}
+function utils.tryrequire(lib, verbose)
+    verbose = verbose == nil or verbose
+
+    local success, res = pcall(require, lib)
+
+    if not success then
+        if not shownWarningFor[lib] and verbose then
+            print("Failed to require '" .. lib .. "'")
+            print(res)
+
+            shownWarningFor[lib] = true
+        end
+    end
+
+    return success, res
+end
+
+
 return utils

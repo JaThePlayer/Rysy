@@ -1,6 +1,8 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Mods;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -261,6 +263,18 @@ public static partial class LuaExt {
         return ret;
     }
 
+    public static Rectangle PeekTableRectangleValue(this Lua lua, int tableStackIndex, string key, Rectangle def) {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+        var ret = def;
+        if (type is LuaType.Table or LuaType.String) {
+            ret = lua.ToRectangle(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
+
     public static List<float>? PeekTableNumberList(this Lua lua, int tableStackIndex, string key) {
         lua.PushString(key);
         var type = lua.GetTable(tableStackIndex);
@@ -500,6 +514,32 @@ where TArg1 : class, ILuaWrapper {
         };
     }
 
+
+
+    internal static object ToListOrDict(Lua lua, int index, int depth = 0) {
+        List<object> list = new();
+
+        lua.IPairs((lua, index, loc) => {
+            list.Add(ToCSharpSimple(lua, loc, depth + 1));
+        });
+
+        if (list.Count > 0) {
+            return list;
+        }
+
+        return lua.TableToDictionary(index, depth: depth + 1);
+    }
+
+    public static List<object>? ToList(this Lua lua, int index, int depth = 0) {
+        List<object> list = new();
+
+        lua.IPairs((lua, index, loc) => {
+            list.Add(ToCSharpSimple(lua, loc, depth + 1));
+        });
+
+        return list;
+    }
+
     internal static object ToCSharpSimple(Lua s, int index, int depth = 0) {
         object val = s.Type(index) switch {
             LuaType.Nil => null!,
@@ -507,7 +547,7 @@ where TArg1 : class, ILuaWrapper {
             LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
             LuaType.Function => s.FastToString(index, false),
-            LuaType.Table => depth > 5 ? "table" : s.TableToDictionary(index, depth: depth + 1),//"table",
+            LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1),//"table",
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;
@@ -645,6 +685,18 @@ where TArg1 : class, ILuaWrapper {
             state.PushCFunction(WrapperFuncs[newIndex]);
             state.SetTable(metatableIndex);
 
+            state.PushString("__newindex");
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+
+                var wrapper = lua.UnboxWrapper<ILuaWrapper>(1);
+                // todo: implement
+
+                return 0;
+            });
+            state.SetTable(metatableIndex);
+
+
             // equality operator
             state.PushString("__eq");
             state.PushCFunction(static (nint s) => {
@@ -695,8 +747,6 @@ where TArg1 : class, ILuaWrapper {
                     ret = obj.Lua__index(lua, lua.ToInteger(top));
                     break;
                 case LuaType.String:
-                    //ret = obj.Lua__index(lua, lua.FastToString(top));
-
                     Span<char> buffer = SharedToStringBuffer.AsSpan();
                     var str = lua.ToStringInto(top, buffer, callMetamethod: false);
                     ret = obj.Lua__index(lua, str);
@@ -728,6 +778,12 @@ where TArg1 : class, ILuaWrapper {
     private static List<ILuaWrapper> LuaWrapperList = new();
     internal static void ClearWrappers() {
         LuaWrapperList.Clear();
+    }
+
+    public static void SetCurrentModName(this Lua lua, ModMeta? mod) {
+        var modName = mod?.Name ?? string.Empty;
+        lua.PushString(modName);
+        lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
     public static unsafe LuaType GetGlobalASCII(this Lua lua, byte[] asciiName) {

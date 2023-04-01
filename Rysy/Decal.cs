@@ -14,6 +14,10 @@ public sealed class Decal : Entity, IPlaceable {
     [JsonIgnore]
     public bool FG { get; set; }
 
+    public void OnCreated() {
+        Texture = Texture.TrimStart("decals/");
+    }
+
     public string Texture {
         get => Attr("texture");
         set {

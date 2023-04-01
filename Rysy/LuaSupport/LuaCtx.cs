@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using Rysy.Mods;
 
 namespace Rysy.LuaSupport;
 
@@ -132,6 +133,8 @@ public class LuaCtx {
             return 1;
         });
 
+        // _RYSY_DRAWABLE_getTextureSize(texturePath) -> number, number, number, number, number, number
+        // gets the clip rectangle and draw offset for a texture, potentially causing preloading.
         lua.Register("_RYSY_DRAWABLE_getTextureSize", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -144,11 +147,15 @@ public class LuaCtx {
             lua.PushNumber(clipRect.Y);
             lua.PushNumber(clipRect.Width);
             lua.PushNumber(clipRect.Height);
+            lua.PushNumber(texture.DrawOffset.X);
+            lua.PushNumber(texture.DrawOffset.Y);
 
-            // x,y,w,h
-            return 4;
+            // x,y,w,h,offX,offY
+            return 6;
         });
 
+        // _RYSY_DRAWABLE_getRectangle(drawableSprite) -> number, number, number, number
+        // gets the render rectangle for a given sprite
         lua.Register("_RYSY_DRAWABLE_getRectangle", (nint s) => {
             var lua = Lua.FromIntPtr(s);
             var top = lua.GetTop();
@@ -165,6 +172,8 @@ public class LuaCtx {
             return 4;
         });
 
+        // _RYSY_INTERNAL_getWaterfallHeight(room, x, y) -> number
+        // calculates the target height of a waterfall, written in c# for performance.
         lua.Register("_RYSY_INTERNAL_getWaterfallHeight", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -173,6 +182,62 @@ public class LuaCtx {
             var y = lua.ToNumber(3);
 
             lua.PushNumber(Entities.Waterfall.GetHeight(room, new((float) x, (float) y)));
+            return 1;
+        });
+
+        lua.Register("_RYSY_INTERNAL_requireFromPlugin", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var lib = lua.FastToString(1, callMetamethod: false);
+            var modName = lua.FastToString(2, callMetamethod: false);
+            lua.Pop(2);
+
+            Console.WriteLine($"requireFromPlugin {lib}, {modName}");
+
+            if (ModRegistry.GetModByName(modName) is not { } mod) {
+                lua.Error($"Mod {modName} not loaded!");
+                return 1;
+            }
+
+            var path = $"Loenn/{lib.Replace('.', '/')}.lua";
+
+            if (mod.Filesystem.ReadAllText(path) is not { } libString) {
+
+                //lua.Error($"library {path} [{modName}] not found!");
+                lua.PushNil();
+                return 1;
+            }
+
+            //lua.PCallStringThrowIfError(libString, lib, results: 1);
+            lua.PushString(libString);
+            return 1;
+        });
+
+        // _RYSY_MODS_find(string modname) -> ModWrapper - finds a mod by everest yaml name
+        lua.Register("_RYSY_MODS_find", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var modName = lua.FastToString(1, callMetamethod: false);
+
+            var mod = ModRegistry.GetModByName(modName);
+
+            if (mod is null) {
+                lua.PushNil();
+                return 1;
+            }
+
+            lua.PushWrapper(mod);
+            return 1;
+        });
+
+        // _RYSY_DRAWABLE_exists(string texturepath) -> bool - checks if a texture exists
+        lua.Register("_RYSY_DRAWABLE_exists", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var texture = lua.FastToString(1, callMetamethod: false);
+
+            lua.PushBoolean(GFX.Atlas.Exists(texture));
+
             return 1;
         });
 

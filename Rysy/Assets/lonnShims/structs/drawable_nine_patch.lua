@@ -57,6 +57,10 @@ function drawableNinePatchMt.__index:setColor(color)
 end
 
 function drawableNinePatch.fromTexture(texture, options, drawX, drawY, drawWidth, drawHeight)
+	if not _RYSY_DRAWABLE_exists(texture) then
+		return nil
+	end
+
     local ninePatch = {
         _type = "drawableNinePatch"
     }

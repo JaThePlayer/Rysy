@@ -327,6 +327,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
             case "y":
                 lua.PushNumber(Y);
                 return 1;
+
             case "_id":
                 lua.PushNumber(ID);
                 return 1;

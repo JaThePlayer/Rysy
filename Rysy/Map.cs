@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Mods;
 
 namespace Rysy;
 
@@ -94,19 +95,13 @@ public sealed class Map : IPackable {
                     Meta.Unpack(child);
 
                     if (Meta.BackgroundTiles is { } moddedBgTiles) {
-                        var cache = ModAssetHelper.GetModFileCache(moddedBgTiles.Unbackslash());
-                        if (cache is { }) {
-                            BGAutotiler.UseCache(cache);
-                        } else {
+                        if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), BGAutotiler.ReadFromXml)) {
                             Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
                         }
                     }
 
                     if (Meta.ForegroundTiles is { } moddedFgTiles) {
-                        var cache = ModAssetHelper.GetModFileCache(moddedFgTiles.Unbackslash());
-                        if (cache is { }) {
-                            FGAutotiler.UseCache(cache);
-                        } else {
+                        if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), FGAutotiler.ReadFromXml)) {
                             Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
                         }
                     }
@@ -141,25 +136,13 @@ public sealed class Map : IPackable {
     }
 
     private void UseVanillaTilesetsIfNeeded() {
-        /*
-        if (Profile.Instance?.CelesteDirectory is { } celesteDir) {
-            if (!BGAutotiler.HasCache) {
-                using var stream = File.OpenRead($"{celesteDir}/Content/Graphics/BackgroundTiles.xml");
-                BGAutotiler.ReadFromXml(stream);
-            }
-            if (!FGAutotiler.HasCache) {
-                using var stream = File.OpenRead($"{celesteDir}/Content/Graphics/ForegroundTiles.xml");
-                FGAutotiler.ReadFromXml(stream);
-            }
-        }*/
-        if (!BGAutotiler.HasCache) {
-            BGAutotiler.UseCache(new(new(), () => File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/BackgroundTiles.xml")));
+        if (!BGAutotiler.Loaded) {
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/BackgroundTiles.xml", BGAutotiler.ReadFromXml);
         }
 
-        if (!FGAutotiler.HasCache) {
-            FGAutotiler.UseCache(new(new(), () => File.OpenRead($"{Profile.Instance.CelesteDirectory}/Content/Graphics/ForegroundTiles.xml")));
+        if (!FGAutotiler.Loaded) {
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FGAutotiler.ReadFromXml);
         }
-
     }
 
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);

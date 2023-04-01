@@ -1,6 +1,7 @@
 ﻿using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.LuaSupport;
+using Rysy.Mods;
 using Rysy.Scenes;
 using System.Reflection;
 
@@ -43,11 +44,31 @@ public static class EntityRegistry {
             foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "triggers"), "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: true);
             }
+
+
+
+            foreach (var (_, mod) in ModRegistry.Mods) {
+                LoadPluginsFromMod(mod);
+            }
+            //LoadPluginsFromMod(ModRegistry.GetModByName("FrostHelper")!);
         }
 
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
-            //await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
+            await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
+        }
+    }
+
+    private static void LoadPluginsFromMod(ModMeta mod) {
+        var fs = mod.Filesystem;
+        var allPlugins = fs.FindFilesInDirectoryRecursive("Loenn", "lua").ToList();
+
+        foreach (var pluginPath in allPlugins) {
+            if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
+                RegisterFromLua(fs.ReadAllText(pluginPath)!, pluginPath, trigger: false, mod);
+            } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
+                RegisterFromLua(fs.ReadAllText(pluginPath)!, pluginPath, trigger: true, mod);
+            }
         }
     }
 
@@ -61,8 +82,9 @@ public static class EntityRegistry {
         SIDToFields[BGDecalSID] = decalFields;
     }
 
-    public static void RegisterFromLua(string lua, string chunkName, bool trigger) {
+    public static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
         try {
+            LuaCtx.Lua.SetCurrentModName(mod);
             LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
             List<LonnEntityPlugin>? plugins = null;
 
@@ -73,6 +95,8 @@ public static class EntityRegistry {
             }
 
             foreach (var pl in plugins) {
+                pl.ParentMod = mod;
+
                 lock (SIDToType) {
                     SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 }
@@ -92,9 +116,15 @@ public static class EntityRegistry {
                         });
                     }
                 }
+
+                if (pl.FieldList is { } fields) {
+                    lock (SIDToFields) {
+                        SIDToFields[pl.Name] = fields;
+                    }
+                }
             }
         } catch (Exception ex) {
-            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName}: {ex}");
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName} [{mod?.Name}]: {ex}");
             return;
         }
     }
@@ -140,16 +170,13 @@ public static class EntityRegistry {
     
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
-        Dictionary<string, object> data;
+        Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
 
         if (SIDToFields.TryGetValue(sid, out var fields)) {
-            data = 
-                fields.Select(f => (f.Key, f.Value.GetDefault()))
-                .Concat(from.ValueOverrides.Select(o => (o.Key, o.Value)))
-                .DistinctBy(p => p.Key)
-                .ToDictionary(f => f.Item1, f => f.Item2);
-        } else {
-            data = from.ValueOverrides;
+            foreach (var (name, field) in fields) {
+                if (!data.ContainsKey(name))
+                    data.Add(name, field.GetDefault());
+            }
         }
 
         var entity = Create(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger);
@@ -212,6 +239,8 @@ public static class EntityRegistry {
 
         if (e is Decal d) {
             d.FG = sid == FGDecalSID;
+
+            d.OnCreated();
         }
 
         return e;

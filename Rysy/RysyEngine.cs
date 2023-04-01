@@ -2,6 +2,7 @@
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
+using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using System;
@@ -134,6 +135,8 @@ public sealed class RysyEngine : Game {
             Scene = picker;
             await picker.AwaitInstallPickedAsync();
         }
+
+        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory);
 
         await GFX.LoadAsync();
 

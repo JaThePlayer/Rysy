@@ -18,6 +18,19 @@ public class Atlas : IAtlas {
         }
     }
 
+    public bool Exists(string key) {
+        if (Textures.TryGetValue(key, out var texture)) {
+            return true;
+        }
+
+        if (Textures.TryGetValue(key + "00", out texture)) {
+            return true;
+        }
+
+        return false;
+    }
+
+
     public Atlas() {
 
     }
