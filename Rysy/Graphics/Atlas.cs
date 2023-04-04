@@ -13,7 +13,8 @@ public class Atlas : IAtlas {
                 return texture;
             }
 
-            Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
+            if (Settings.Instance?.LogMissingTextures ?? true)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
             return GFX.VirtPixel;
         }
     }

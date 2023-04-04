@@ -50,7 +50,7 @@ public static class ModFilesystemExtensions {
     /// <summary>
     /// Reads the given file as a string.
     /// </summary>
-    public static string? ReadAllText(this IModFilesystem filesystem, string path) {
+    public static string? TryReadAllText(this IModFilesystem filesystem, string path) {
         return filesystem.OpenFile(path, stream => {
             using var reader = new StreamReader(stream);
 

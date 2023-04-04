@@ -288,6 +288,10 @@ local fmt = {
       local fm = getmetatable(fnc)
       return (not fm.applies and truef) or fm.applies
     end
+	--print(fnc._fnc, key, fnc)
+	--local inf = debug.getinfo(fnc._fnc, "Sl")
+	--print(inf.source, inf.linedefined)
+
     return fnc._fnc[key]
   end,
   __newindex = mt.__newindex,

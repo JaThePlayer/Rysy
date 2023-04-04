@@ -30,12 +30,13 @@ public static class EntityRegistry {
 
         RegisterHardcoded();
 
-        var loadingScene = RysyEngine.Scene as LoadingScene;
-        loadingScene?.SetText("Registering entities");
+        const string baseText = "Registering entities:";
 
+        LoadingScene.Text = baseText;
 
         if (Settings.Instance.LonnPluginPath is { } path) {
             using var w = new ScopedStopwatch("Registering Lua entities");
+            LoadingScene.Text = $"{baseText} Loenn";
 
             foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "entities"), "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: false);
@@ -44,17 +45,17 @@ public static class EntityRegistry {
             foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "triggers"), "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: true);
             }
+        }
 
-
-
-            foreach (var (_, mod) in ModRegistry.Mods) {
-                LoadPluginsFromMod(mod);
-            }
-            //LoadPluginsFromMod(ModRegistry.GetModByName("FrostHelper")!);
+        foreach (var (_, mod) in ModRegistry.Mods) {
+            LoadingScene.Text = $"{baseText} {mod.Name}";
+            LoadPluginsFromMod(mod);
         }
 
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
+            LoadingScene.Text = $"{baseText} Rysy";
+
             await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
     }
@@ -65,9 +66,9 @@ public static class EntityRegistry {
 
         foreach (var pluginPath in allPlugins) {
             if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
-                RegisterFromLua(fs.ReadAllText(pluginPath)!, pluginPath, trigger: false, mod);
+                RegisterFromLua(fs.TryReadAllText(pluginPath)!, pluginPath, trigger: false, mod);
             } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
-                RegisterFromLua(fs.ReadAllText(pluginPath)!, pluginPath, trigger: true, mod);
+                RegisterFromLua(fs.TryReadAllText(pluginPath)!, pluginPath, trigger: true, mod);
             }
         }
     }

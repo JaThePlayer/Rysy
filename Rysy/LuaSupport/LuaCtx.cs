@@ -201,7 +201,7 @@ public class LuaCtx {
 
             var path = $"Loenn/{lib.Replace('.', '/')}.lua";
 
-            if (mod.Filesystem.ReadAllText(path) is not { } libString) {
+            if (mod.Filesystem.TryReadAllText(path) is not { } libString) {
 
                 //lua.Error($"library {path} [{modName}] not found!");
                 lua.PushNil();
@@ -231,7 +231,7 @@ public class LuaCtx {
         });
 
         // _RYSY_DRAWABLE_exists(string texturepath) -> bool - checks if a texture exists
-        lua.Register("_RYSY_DRAWABLE_exists", (nint s) => {
+        lua.Register("_RYSY_DRAWABLE_exists", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
             var texture = lua.FastToString(1, callMetamethod: false);
@@ -239,6 +239,34 @@ public class LuaCtx {
             lua.PushBoolean(GFX.Atlas.Exists(texture));
 
             return 1;
+        });
+
+        // _RYSY_log(status, message) -> nothing - implements logging.log
+        lua.Register("_RYSY_log", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var status = lua.FastToString(1);
+            var message = lua.FastToString(2);
+
+            var logLevel = status switch {
+                "DEBUG" => LogLevel.Debug,
+                "INFO" => LogLevel.Info,
+                "WARNING" => LogLevel.Warning,
+                "ERROR" => LogLevel.Error,
+                _ => LogLevel.Debug,
+            };
+
+            lua.GetInfo("Sn", 2);
+            var debugInfoLoc = lua.GetTop();
+
+            var lineNumber = lua.PeekTableIntValue(debugInfoLoc, "linedefined") ?? -1;
+            var source = lua.PeekTableStringValue(debugInfoLoc, "short_src") ?? "";
+            var funcName = lua.PeekTableStringValue(debugInfoLoc, "name") ?? "";
+
+            lua.Pop(1);
+
+            Logger.Write("[Lua]", logLevel, message, callerMethod: funcName, callerFile: source, lineNumber: lineNumber);
+
+            return 0;
         });
 
         var orig = lua.AtPanic(AtLuaPanic);

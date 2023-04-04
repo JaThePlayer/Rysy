@@ -163,6 +163,12 @@ public class SettingsWindow : Window {
                 Settings.Instance.Save();
             }
 
+            m = Settings.Instance.LogMissingTextures;
+            if (ImGui.Checkbox("Log Missing Textures", ref m).WithTooltip("Logs any missing textures to the console")) {
+                Settings.Instance.LogMissingTextures = m;
+                Settings.Instance.Save();
+            }
+
             m = Settings.Instance.LogTextureLoadTimes;
             if (ImGui.Checkbox("Log Texture Load Times", ref m).WithTooltip("Logs time spent loading textures in the background.")) {
                 Settings.Instance.LogTextureLoadTimes = m;

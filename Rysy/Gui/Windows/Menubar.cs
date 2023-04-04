@@ -86,6 +86,10 @@ public static class Menubar {
             editor.AddWindowIfNeeded<HistoryWindow>();
         }
 
+        if (ImGui.Button("Filesystem Explorer")) {
+            editor.AddWindow(new FilesystemExplorerWindow());
+        }
+
         ImGui.EndMenu();
     }
 

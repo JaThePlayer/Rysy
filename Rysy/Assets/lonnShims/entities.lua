@@ -2,8 +2,6 @@
 
 local registeredEntitiesMt = {
 	__index = function (self, key)
-		print("tried to access entity: " .. key)
-
 		return _RYSY_entities[key]
 	end,
 }
@@ -51,7 +49,8 @@ end
 
 -- Returns drawable, depth
 function entities.getEntityDrawable(name, handler, room, entity, viewport)
-	_RYSY_unimplemented()
+	--_RYSY_unimplemented()
+
 end
 
 -- Does not check for errors
