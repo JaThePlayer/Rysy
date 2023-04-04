@@ -51,27 +51,25 @@ public static class GFX {
     /// </summary>
     /// <returns></returns>
     internal static async ValueTask LoadAsync() {
-        LoadingScene? scene = RysyEngine.Scene as LoadingScene;
-
         if (Atlas is { } oldAtlas) {
             oldAtlas.DisposeTextures();
         }
 
-        scene?.SetText("Loading");
+        LoadingScene.Text = "Loading";
 
         Atlas = new Atlas();
 
-        scene?.SetText("Reading vanilla atlas");
+        LoadingScene.Text = "Reading vanilla atlas";
         using (ScopedStopwatch watch = new("Reading vanilla atlas"))
             await LoadVanillaAtlasAsync();
 
-        scene?.SetText("Scanning Rysy assets");
+        LoadingScene.Text = "Scanning Rysy assets";
         using (ScopedStopwatch watch = new("Scanning Rysy assets")) {
             await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
         }
 
-        scene?.SetText("Scanning mod assets");
+        LoadingScene.Text = "Scanning mod assets";
         using (ScopedStopwatch watch = new("Scanning mods")) {
             await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
                 return LoadModAsync(m);

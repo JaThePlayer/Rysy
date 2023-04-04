@@ -213,8 +213,9 @@ public static partial class LuaExt {
     /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
     /// </summary>
     public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+        //lua.PushString(key);
+        //var type = lua.GetTable(tableStackIndex);
+        var type = lua.GetField(tableStackIndex, key);
         long? ret = null;
         if (type is LuaType.Number) {
             ret = lua.ToIntegerX(lua.GetTop());
@@ -256,7 +257,7 @@ public static partial class LuaExt {
         var type = lua.GetTable(tableStackIndex);
         Color ret = def;
         if (type is LuaType.Table or LuaType.String) {
-            ret = lua.ToColor(lua.GetTop());
+            ret = lua.ToColor(lua.GetTop(), def);
         }
         lua.Pop(1);
 
@@ -498,7 +499,7 @@ where TArg1 : class, ILuaWrapper {
         return new(point.X.AtLeast(0), point.Y < 0 ? Index.End : point.Y);
     }
 
-    public static Color ToColor(this Lua lua, int index) {
+    public static Color ToColor(this Lua lua, int index, Color def) {
         switch (lua.Type(index)) {
             case LuaType.Table:
                 var a = (float) (lua.PeekTableNumberValue(index, 4) ?? 1f);
@@ -510,7 +511,7 @@ where TArg1 : class, ILuaWrapper {
             case LuaType.String:
                 return ColorHelper.RGBA(lua.FastToString(index));
             default:
-                return default;
+                return def;
         };
     }
 

@@ -113,7 +113,7 @@ public sealed class EditorScene : Scene {
                     loadingScreen = new LoadingScene();
                     RysyEngine.Scene = loadingScreen;
                 }
-                loadingScreen.SetText($"Loading map {file.TryCensor()}");
+                LoadingScene.Text = $"Loading map {file.TryCensor()}";
                 
                 // Just to make this run async, so we can see the loading screen.
                 await Task.Delay(1);

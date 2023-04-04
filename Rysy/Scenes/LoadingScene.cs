@@ -3,11 +3,10 @@
 namespace Rysy.Scenes;
 
 public class LoadingScene : Scene {
-    public string Text;
-
-    public void SetText(string text) {
-        Text = text;
-    }
+    /// <summary>
+    /// Text used in the loading scene.
+    /// </summary>
+    public static string Text { get; set; }
 
     public override void Render() {
         base.Render();

@@ -100,7 +100,8 @@ public sealed class RysyEngine : Game {
 
         using var reloadTimer = new ScopedStopwatch("Loading");
         GFX.LoadEssencials(this);
-        LoadingScene loading = new() { Text = "Loading settings" };
+        LoadingScene loading = new();
+        LoadingScene.Text = "Loading settings";
         Scene = loading;
 
         try {

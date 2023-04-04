@@ -38,25 +38,33 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
         }
     }
 
-    public override ISelectionCollider GetMainSelection() {
-        //selection(room, entity):rectangle, table of rectangles
-        if (Plugin.HasSelectionFunction) {
-            Rectangle rectangle;
-            var lua = Plugin.LuaCtx.Lua;
-            using (var stackHolder = Plugin.PushToStack()) {
-                var type = lua.GetTable(Plugin.StackLoc, "selection");
+    private bool CallSelectionFunc<T>(Func<Lua, int, T> valueRetriever, out T? value) {
+        var lua = Plugin.LuaCtx.Lua;
 
-                if (type != LuaType.Function) {
-                    lua.Pop(1);
-                    return base.GetMainSelection();
-                }
+        if (!Plugin.HasSelectionFunction) {
+            value = default;
+            return false;
+        }
 
-                rectangle = lua.PCallFunction(Room, this, (lua, top) => {
-                    return lua.ToRectangle(top);
-                });
+
+        using (var stackHolder = Plugin.PushToStack()) {
+            var type = lua.GetTable(Plugin.StackLoc, "selection");
+
+            if (type != LuaType.Function) {
+                lua.Pop(1);
+                value = default;
+                return false;
             }
 
-            return ISelectionCollider.FromRect(rectangle);
+            value = lua.PCallFunction(Room, this, valueRetriever, results: 2);
+            return true;
+        }
+    }
+
+    public override ISelectionCollider GetMainSelection() {
+        //selection(room, entity):rectangle, table of rectangles
+        if (CallSelectionFunc((lua, top) => lua.ToRectangle(top - 1), out var selectionRect)) {
+            return ISelectionCollider.FromRect(selectionRect);
         }
 
         if (Plugin.GetRectangle is { } rectFunc) {
@@ -65,6 +73,36 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
         }
 
         return base.GetMainSelection();
+    }
+
+    public override ISelectionCollider GetNodeSelection(int nodeIndex) {
+        if (CallSelectionFunc((lua, top) => {
+            if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
+                var rect = lua.ToRectangle(lua.GetTop()); ;
+                lua.Pop(1);
+                return rect;
+            }
+            lua.Pop(1);
+            return default;
+        }, out var selectionRect) && selectionRect != default) {
+            return ISelectionCollider.FromRect(selectionRect);
+        }
+
+        // todo: nodeRectangle
+
+        if (Plugin.GetRectangle is { } rectFunc) {
+            var oldPos = Pos;
+            Pos = Nodes![nodeIndex];
+
+            try {
+                var rectangle = rectFunc(Room, this);
+                return ISelectionCollider.FromRect(rectangle);
+            } finally { 
+                Pos = oldPos; 
+            }
+        }
+
+        return base.GetNodeSelection(nodeIndex);
     }
 
     public override Range NodeLimits => Plugin.GetNodeLimits(Room, this);
@@ -143,7 +181,14 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
                 Rotation = Plugin.GetRotation(Room, this),
             }};
         } else {
-            return new() { ISprite.OutlinedRect(Rectangle, Plugin.GetFillColor(Room, this), Plugin.GetBorderColor(Room, this)) };
+            Rectangle rectangle;
+            if (Plugin.GetRectangle is { } rectFunc) {
+                rectangle = rectFunc(Room, this);
+            } else {
+                rectangle = Rectangle;
+            }
+
+            return new() { ISprite.OutlinedRect(rectangle, Plugin.GetFillColor(Room, this), Plugin.GetBorderColor(Room, this)) };
         }
     }
 

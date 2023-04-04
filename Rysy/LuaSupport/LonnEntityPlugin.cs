@@ -1,4 +1,5 @@
-﻿using KeraLua;
+﻿using CommunityToolkit.HighPerformance;
+using KeraLua;
 using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
@@ -120,85 +121,72 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetDepth = NullConstOrGetter(plugin, "depth",
             def: 0,
-            constGetter: () => lua.PeekTableIntValue(top, "depth") ?? 0,
             funcGetter: static (lua, top) => (int) lua.ToInteger(top)
         );
 
         plugin.GetRotation = NullConstOrGetter(plugin, "rotation",
             def: 0f,
-            constGetter: () => (float) (lua.PeekTableNumberValue(top, "rotation") ?? 0f),
             funcGetter: static (lua, top) => (float) lua.ToNumber(top)
         );
 
         plugin.GetTexture = NullConstOrGetter(plugin, "texture",
             def: (string?) null,
-            constGetter: () => lua.PeekTableStringValue(top, "texture"),
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
 
         plugin.GetJustification = NullConstOrGetter(plugin, "justification",
             def: new Vector2(0.5f),
-            constGetter: () => lua.PeekTableVector2Value(top, "justification"),
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
 
         plugin.GetNodeLimits = NullConstOrGetter(plugin, "nodeLimits",
             def: 0..0,
-            constGetter: () => lua.PeekTableRangeValue(top, "nodeLimits"),
             funcGetter: static (lua, top) => lua.ToRangeNegativeIsFromEnd(top),
             funcResults: 2
         );
 
         plugin.GetMinimumSize = NullConstOrGetter(plugin, "minimumSize",
             def: null,
-            constGetter: () => lua.PeekTableVector2Value(top, "minimumSize").ToPoint(),
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
 
         plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize",
             def: new Point(int.MaxValue, int.MaxValue),
-            constGetter: () => lua.PeekTableVector2Value(top, "maximumSize").ToPoint(),
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
 
         plugin.GetScale = NullConstOrGetter(plugin, "scale",
             def: Vector2.One,
-            constGetter: () => lua.PeekTableVector2Value(top, "scale"),
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
 
         plugin.GetColor = NullConstOrGetter(plugin, "color",
             def: Color.White,
-            constGetter: () => lua.PeekTableColorValue(top, "color", Color.White),
-            funcGetter: static (lua, top) => lua.ToColor(top)
+            funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         );
 
         plugin.GetFillColor = NullConstOrGetter(plugin, "fillColor",
             def: plugin.GetColor,
-            constGetter: () => lua.PeekTableColorValue(top, "fillColor", Color.White),
-            funcGetter: static (lua, top) => lua.ToColor(top)
+            funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         )!;
 
         plugin.GetBorderColor = NullConstOrGetter(plugin, "borderColor",
             def: plugin.GetColor,
-            constGetter: () => lua.PeekTableColorValue(top, "borderColor", Color.White),
-            funcGetter: static (lua, top) => lua.ToColor(top)
+            funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         )!;
 
         plugin.GetNodeVisibility = NullConstOrGetter_Entity(plugin, "nodeVisibility",
             def: "always",
-            constGetter: () => lua.PeekTableStringValue(top, "nodeVisibility") ?? "always",
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
 
         
         plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle",
             def: null,
-            constGetter: () => lua.PeekTableRectangleValue(top, "rectangle", default),
             funcGetter: static (lua, top) => lua.ToRectangle(top)
         );
 
@@ -296,79 +284,56 @@ public sealed class LonnEntityPlugin {
         return plugin;
     }
 
-    [return: NotNullIfNotNull(nameof(def))]
-    private static Func<Room, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, string fieldName,
-        T? def,
-        Func<T> constGetter,
-        Func<Lua, int, T> funcGetter,
-        int funcResults = 1
-    ) {
+
+    private enum LonnRetrievalStrategy {
+        Missing,
+        Const,
+        Function
+    }
+
+    private static LonnRetrievalStrategy NullConstOrGetterImpl(LonnEntityPlugin pl, string fieldName) {
         var lua = pl.LuaCtx.Lua;
         var top = lua.GetTop();
 
-        switch (lua.PeekTableType(top, fieldName)) {
+        switch (lua.GetField(top, fieldName)) {
             case LuaType.None:
             case LuaType.Nil:
-                return def is { } ? (r, e) => def : null;
+                lua.Pop(1);
+                return LonnRetrievalStrategy.Missing;
             case LuaType.Function:
-                return (r, e) => {
-                    using var token = pl.PushToStack();
-                    var lua = pl.LuaCtx.Lua;
+                lua.Pop(1);
+                return LonnRetrievalStrategy.Function;
+            case LuaType.Table:
+                // selene lambdas use tables with a metatable...
+                var callType = lua.GetMetaField(lua.GetTop(), "__call");
+                if (callType is not LuaType.None and not LuaType.Nil) {
+                    lua.Pop(2); // pop the metafield and field
+                    return LonnRetrievalStrategy.Function;
+                }
 
-                    lua.GetTable(pl.StackLoc, fieldName);
-                    var ret = lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
-
-                    return ret;
-                };
+                // intentionally leave 1 element on the stack
+                return LonnRetrievalStrategy.Const;
             default:
-                var depth = constGetter();
-                return (r, e) => depth;
+                // intentionally leave 1 element on the stack
+                return LonnRetrievalStrategy.Const;
         }
     }
 
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<Entity, T?>? NullConstOrGetter_Entity<T>(LonnEntityPlugin pl, string fieldName,
-        T? def,
-        Func<T> constGetter,
-        Func<Lua, int, T> funcGetter,
-        int funcResults = 1
-    ) {
-        var lua = pl.LuaCtx.Lua;
-        var top = lua.GetTop();
-
-        switch (lua.PeekTableType(top, fieldName)) {
-            case LuaType.None:
-            case LuaType.Nil:
-                return def is { } ? (e) => def : null;
-            case LuaType.Function:
-                return (e) => {
-                    using var token = pl.PushToStack();
-                    var lua = pl.LuaCtx.Lua;
-
-                    lua.GetTable(pl.StackLoc, fieldName);
-
-                    return lua.PCallFunction(e, funcGetter, results: funcResults)!;
-                };
-            default:
-                var depth = constGetter();
-                return (e) => depth;
-        }
-    }
-
     private static Func<Room, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, string fieldName,
-        Func<Room, Entity, T?>? def,
-        Func<T> constGetter,
+        T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
     ) {
         var lua = pl.LuaCtx.Lua;
-        var top = lua.GetTop();
+        var strat = NullConstOrGetterImpl(pl, fieldName);
 
-        switch (lua.PeekTableType(top, fieldName)) {
-            case LuaType.None:
-            case LuaType.Nil:
-                return def;
-            case LuaType.Function:
+        switch (strat) {
+            case LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r, e) => con;
+            case LonnRetrievalStrategy.Function:
                 return (r, e) => {
                     using var token = pl.PushToStack();
                     var lua = pl.LuaCtx.Lua;
@@ -377,8 +342,60 @@ public sealed class LonnEntityPlugin {
                     return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                 };
             default:
-                var depth = constGetter();
-                return (r, e) => depth;
+                return def is { } ? (r, e) => def : null;
+        }
+    }
+
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<Entity, T?>? NullConstOrGetter_Entity<T>(LonnEntityPlugin pl, string fieldName,
+        T? def,
+        Func<Lua, int, T> funcGetter,
+        int funcResults = 1
+    ) {
+        var lua = pl.LuaCtx.Lua;
+        var strat = NullConstOrGetterImpl(pl, fieldName);
+
+        switch (strat) {
+            case LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r) => con;
+            case LonnRetrievalStrategy.Function:
+                return (r) => {
+                    using var token = pl.PushToStack();
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, fieldName);
+                    return lua.PCallFunction(r, funcGetter, results: funcResults)!;
+                };
+            default:
+                return def is { } ? (e) => def : null;
+        }
+    }
+
+    private static Func<Room, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, string fieldName,
+        Func<Room, Entity, T?>? def,
+        Func<Lua, int, T> funcGetter,
+        int funcResults = 1
+    ) {
+        var lua = pl.LuaCtx.Lua;
+        var strat = NullConstOrGetterImpl(pl, fieldName);
+
+        switch (strat) {
+            case LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r, e) => con;
+            case LonnRetrievalStrategy.Function:
+                return (r, e) => {
+                    using var token = pl.PushToStack();
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, fieldName);
+                    return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
+                };
+            default:
+                return def;
         }
     }
 
