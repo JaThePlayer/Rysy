@@ -38,6 +38,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     private ISelectionCollider Collider => _Collider ??= Entity.GetNodeSelection(NodeIdx);
 
     public IHistoryAction MoveBy(Vector2 offset) {
+        Entity.OnChanged();
         return new MoveNodeAction(Node, Entity, offset);
     }
 
@@ -60,6 +61,8 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
             return null;
 
         var node = new Node(pos ?? (Node.Pos + new Vector2(16f, 0)));
+
+        Entity.OnChanged();
 
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),

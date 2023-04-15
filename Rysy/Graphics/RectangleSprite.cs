@@ -8,9 +8,11 @@ public record struct RectangleSprite : ISprite {
     public Rectangle Pos;
 
     public Color Color { get; set; } = Color.White;
-    public void MultiplyAlphaBy(float alpha) {
-        Color *= alpha;
-        OutlineColor *= alpha;
+    public ISprite WithMultipliedAlpha(float alpha) {
+        return this with {
+            Color = Color * alpha,
+            OutlineColor = OutlineColor * alpha,
+        };
     }
 
     public bool IsLoaded => true;

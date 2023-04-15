@@ -5,7 +5,6 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
-using Rysy.Scenes;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -15,11 +14,6 @@ using System.Text.Json.Serialization;
 namespace Rysy;
 
 public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
-    [JsonIgnore]
-    public abstract int Depth { get; }
-
-    public string Name => EntityData.SID;
-
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -29,39 +23,43 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     [JsonIgnore]
     public Room Room { get; set; } = null!;
 
+    #region EntityData Wrappers
+    public string Name => EntityData.SID;
+
     public int ID {
         get => EntityData.Int("id");
         set => EntityData["id"] = value;
     }
 
     public int X {
-        get => EntityData.X;
+        get => (int) _pos.X;
         set {
             EntityData["x"] = value;
-            ClearRoomRenderCache();
+            //ClearRoomRenderCache();
         }
     }
 
     public int Y {
-        get => EntityData.Y;
+        get => (int) _pos.Y;
         set {
             EntityData["y"] = value;
-            ClearRoomRenderCache();
+            //ClearRoomRenderCache();
         }
     }
 
+    private Vector2 _pos;
     public Vector2 Pos {
-        get => new(EntityData.Float("x"), EntityData.Float("y"));
+        get => _pos;
         set {
-            EntityData["x"] = value.X;
-            EntityData["y"] = value.Y;
+            X = (int) value.X;
+            Y = (int) value.Y;
 
-            ClearRoomRenderCache();
+            //ClearRoomRenderCache();
         }
     }
 
     [JsonIgnore]
-    public List<Node>? Nodes => EntityData.Nodes;
+    public IList<Node> Nodes => EntityData.Nodes;
 
     [JsonIgnore]
     public int Width {
@@ -86,6 +84,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         get => EntityData.Int("_editorLayer");
         set => EntityData["_editorLayer"] = value;
     }
+    #endregion
+
+    [JsonIgnore]
+    public abstract int Depth { get; }
 
     [JsonIgnore]
     /// <summary>
@@ -123,11 +125,17 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
             return ISelectionCollider.FromRect(rect);
         }
 
-        var firstSprite = GetSprites().FirstOrDefault();
+        try {
+            var firstSprite = GetSprites().FirstOrDefault();
 
-        if (firstSprite is Sprite s) {
-            return ISelectionCollider.FromSprite(s);
-        }
+            if (firstSprite is Sprite s) {
+                return ISelectionCollider.FromSprite(s);
+            }
+
+            if (firstSprite is RectangleSprite rectSprite) {
+                return ISelectionCollider.FromRect(rectSprite.Pos);
+            }
+        } catch { }
 
         return ISelectionCollider.FromRect(Rectangle);
     }
@@ -149,15 +157,45 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     }
 
     public virtual IEnumerable<ISprite> GetSprites() {
-        yield break;
+        var w = Width;
+        var h = Height;
+        if (w != 0 || h != 0) {
+            yield return ISprite.OutlinedRect(Pos, w == 0 ? 8 : w, h == 0 ? 8 : h, Color.Green * 0.3f, Color.Green);
+        } else {
+            yield return ISprite.OutlinedRect(Pos - new Vector2(2, 2), 4, 4, Color.Green * 0.3f, Color.Green);
+        }
     }
 
     public IEnumerable<ISprite> GetSpritesWithNodes() {
-        if (Nodes is { }) {
-            return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this));
-        }
+        try {
+            if (Nodes is { }) {
+                return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this)).WithErrorCatch(LogError).SetDepth(Depth);
+            }
 
-        return GetSprites();
+            return GetSprites().WithErrorCatch(LogError).SetDepth(Depth);
+        } catch (Exception ex) {
+            return LogError(ex);
+        }
+    }
+
+    private IEnumerable<ISprite> LogError(Exception ex) {
+        Logger.Error(ex, $"Erroring entity definition for {Name} at {ToJson()}");
+
+        var w = Width;
+        var h = Height;
+        if (w != 0 || h != 0) {
+            return new List<ISprite>(1) { 
+                ISprite.OutlinedRect(Pos, w == 0 ? 8 : w, h == 0 ? 8 : h, Color.Red * 0.3f, Color.Red) with { 
+                    Depth = Depths.Top,
+                }
+            };
+        } else {
+            return new List<ISprite>(1) { 
+                ISprite.OutlinedRect(Pos - new Vector2(2, 2), 4, 4, Color.Red * 0.3f, Color.Red) with {
+                    Depth = Depths.Top,
+                } 
+            };
+        }
     }
 
     [JsonIgnore]
@@ -200,6 +238,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     public Color ARGB(string attrName, string def = "ffffff") => EntityData.ARGB(attrName, def);
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum => EntityData.Enum(attrName, def);
+
+    public bool Has(string attrName) => EntityData.Has(attrName);
 
     /// <summary>
     /// Clears the correct render cache in the parent room
@@ -272,7 +312,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
             el.Attributes.Remove("id");
         }
 
-        el.Children = Nodes is { } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
+        el.Children = Nodes is { Count: > 0 } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
             Attributes = new() {
                 ["x"] = n.X,
                 ["y"] = n.Y,
@@ -310,6 +350,20 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
                 nodes[i].Pos = new(x + (xOffset * (i + 1)), y);
             }
         }
+    }
+
+    /// <summary>
+    /// Gets fired whenever the EntityData for this entity gets changed in any way.
+    /// </summary>
+    public virtual void OnChanged() {
+        _pos = new(EntityData.X, EntityData.Y);
+    }
+
+    public string ToJson() {
+        return new {
+            Name = Name,
+            Data = EntityData
+        }.ToJson();
     }
 
     #region ILuaWrapper
@@ -496,7 +550,9 @@ internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler
 public class EntityData : IDictionary<string, object> {
     public string SID { get; init; }
 
-    public List<Node>? Nodes;
+    public ListenableList<Node> Nodes { get; private set; }
+
+    public Action? OnChanged { get; set; }
 
     private int? _X;
     private int? _Y;
@@ -508,29 +564,41 @@ public class EntityData : IDictionary<string, object> {
         Inner = new(e.Attributes, StringComparer.Ordinal);
 
         if (e.Children is { Length: > 0 }) {
-            var nodes = Nodes = new(e.Children.Length);
+            InitializeNodes(e.Children.Length);
+            var nodes = Nodes!;
 
             for (int i = 0; i < e.Children.Length; i++) {
                 var child = e.Children[i];
                 nodes.Add(new(child.Float("x"), child.Float("y")));
             }
+        } else {
+            InitializeNodes(0);
         }
     }
 
     public EntityData(string sid, Dictionary<string, object> attributes, Vector2[]? nodes = null) {
         SID = sid;
-        Nodes = nodes?.Select(n => new Node(n)).ToList();
+
+        Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
+        Nodes.OnChanged = () => OnChanged?.Invoke();
+
         Inner = new(attributes);
+    }
+
+    public void InitializeNodes(int capacity) {
+        Nodes = new(() => OnChanged?.Invoke(), capacity: capacity);
     }
 
     internal Dictionary<string, object> Inner { get; set; } = new();
 
-    public object this[string key] { 
-        get => Inner[key]; 
+    public object this[string key] {
+        get => Inner[key];
         set {
             Inner[key] = value;
             _X = null;
             _Y = null;
+
+            OnChanged?.Invoke();
         }
     }
 
@@ -634,45 +702,42 @@ public class EntityData : IDictionary<string, object> {
         return def;
     }
 
-    public Color RGB(string attrName, Color def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.RGB(obj.ToString());
+    public Color RGB(string attrName, Color def)
+        => GetColor(attrName, def, ColorFormat.RGB);
+
+    public Color RGB(string attrName, string def)
+        => GetColor(attrName, def, ColorFormat.RGB);
+
+    public Color RGBA(string attrName, Color def)
+        => GetColor(attrName, def, ColorFormat.RGBA);
+
+    public Color RGBA(string attrName, string def)
+        => GetColor(attrName, def, ColorFormat.RGBA);
+
+    public Color ARGB(string attrName, Color def)
+        => GetColor(attrName, def, ColorFormat.ARGB);
+
+    public Color ARGB(string attrName, string def)
+        => GetColor(attrName, def, ColorFormat.ARGB);
+
+    public Color GetColor(string attrName, Color def, ColorFormat format) {
+        if (Inner.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+            return parsed;
 
         return def;
     }
 
-    public Color RGB(string attrName, string def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.RGB(obj.ToString());
+    public Color GetColor(string attrName, string def, ColorFormat format) {
+        if (Inner.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+            return parsed;
 
-        return ColorHelper.RGB(def);
+        if (ColorHelper.TryGet(def, format, out var defParsed)) {
+            return defParsed;
+        }
+
+        return Color.White;
     }
 
-    public Color RGBA(string attrName, Color def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.RGBA(obj.ToString());
-
-        return def;
-    }
-
-    public Color RGBA(string attrName, string def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.RGBA(obj.ToString());
-
-        return ColorHelper.RGBA(def);
-    }
-
-    public Color ARGB(string attrName, Color def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.ARGB(obj.ToString());
-
-        return def;
-    }
-
-    public Color ARGB(string attrName, string def) {
-        if (Inner.TryGetValue(attrName, out var obj))
-            return ColorHelper.ARGB(obj.ToString());
-
-        return ColorHelper.ARGB(def);
-    }
+    public bool Has(string attrName) 
+        => Inner.ContainsKey(attrName);
 }

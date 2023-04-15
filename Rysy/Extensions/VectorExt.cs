@@ -1,4 +1,6 @@
-﻿namespace Rysy.Extensions;
+﻿using System.Runtime.CompilerServices;
+
+namespace Rysy.Extensions;
 
 public static class VectorExt {
     public static Vector2 XY(this Rectangle r) => new(r.X, r.Y);
@@ -38,4 +40,6 @@ public static class VectorExt {
         v.Y = sin * tx + cos * ty;
         return v;
     }
+
+    public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);
 }

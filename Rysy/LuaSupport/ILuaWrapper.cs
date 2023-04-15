@@ -7,10 +7,21 @@ namespace Rysy.LuaSupport;
 /// </summary>
 public interface ILuaWrapper {
     /// <summary>
-    /// Implements the __index metamethod. Returns the amount of values pushed to the stack.
+    /// Implements the __index metamethod for number-keys. Returns the amount of values pushed to the stack.
     /// </summary>
     public int Lua__index(Lua lua, long key);
 
+    /// <summary>
+    /// Implements the __index metamethod for string-keys. Returns the amount of values pushed to the stack.
+    /// </summary>
     public int Lua__index(Lua lua, ReadOnlySpan<char> key);
-    //public int Lua__index(Lua lua, object key);
+
+    /// <summary>
+    /// Implements the __len metamethod. Returns the amount of values pushed to the stack.
+    /// </summary>
+    public virtual int Lua__len(Lua lua) {
+        lua.PushInteger(0);
+
+        return 1;
+    }
 }

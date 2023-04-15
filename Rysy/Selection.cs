@@ -35,6 +35,7 @@ public interface ISelectionCollider {
     public static ISelectionCollider FromRect(Rectangle rect) => new RectangleSelection() { Rect = rect };
     public static ISelectionCollider FromRect(int x, int y, int w, int h) => FromRect(new(x, y, w, h));
     public static ISelectionCollider FromRect(float x, float y, int w, int h) => FromRect(new((int) x, (int) y, w, h));
+    public static ISelectionCollider FromRect(float x, float y, float w, float h) => FromRect(new((int) x, (int) y, (int) w, (int) h));
     public static ISelectionCollider FromRect(Vector2 pos, int w, int h) => FromRect(new((int) pos.X, (int) pos.Y, w, h));
     public static ISelectionCollider FromSprite(Sprite s) => new SpriteSelection(s);
 }

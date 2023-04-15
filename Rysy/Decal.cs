@@ -81,11 +81,14 @@ public sealed class Decal : Entity, IPlaceable {
             Color = Color,
         };
 
-    public static Decal Create(BinaryPacker.Element from, bool fg) {
-        var d = new Decal();
-        d.FG = fg;
-        d.EntityData = new(fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID, from);
-        return d;
+    public static Decal Create(BinaryPacker.Element from, bool fg, Room room) {
+        //var d = new Decal();
+        //d.FG = fg;
+        //d.EntityData = new(fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID, from);
+
+        from.Name = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID;
+
+        return (Decal)EntityRegistry.Create(from, room, false);
     }
 
     private static string MapTextureToPath(string textureFromMap) {

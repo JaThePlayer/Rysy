@@ -1,4 +1,5 @@
 ﻿using Rysy;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
@@ -66,18 +67,33 @@ public sealed class RysyEngine : Game {
         }
     }
 
+    public static void ToggleBorderlessFullscreen(bool toggle) {
+        if (GDM is not { } gdm || Instance is not { } instance) {
+            return;
+        }
+
+        instance.Window.IsBorderless = toggle;
+        if (toggle) {
+            var monitorSize = GDM.GraphicsDevice.DisplayMode;
+
+            instance.ResizeWindow(monitorSize.Width, monitorSize.Height, 0, 0);
+        } else {
+            instance.ResizeWindowUsingPersistence();
+        }
+    }
+
     private void Window_FileDrop(object? sender, FileDropEventArgs e) {
         Console.WriteLine(string.Join(' ', e.Files));
 
         Scene?.OnFileDrop(e);
     }
 
-    public static event Action<Viewport>? OnViewportChanged;
+    public static Action<Viewport>? OnViewportChanged { get; set; }
 
     private void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
 
-        if (Persistence.Instance is { }) {
+        if (Persistence.Instance is { } && !Instance.Window.IsBorderless) {
             Persistence.Instance.Set("StartingWindowWidth", GDM.GraphicsDevice.Viewport.Width);
             Persistence.Instance.Set("StartingWindowHeight", GDM.GraphicsDevice.Viewport.Height);
             Persistence.Instance.Set("StartingWindowX", Window.Position.X);
@@ -124,12 +140,7 @@ public sealed class RysyEngine : Game {
         }
 
         //ResizeWindow(Settings.Instance.StartingWindowWidth, Settings.Instance.StartingWindowHeight);
-        ResizeWindow(
-            Persistence.Instance.Get("StartingWindowWidth", 800),
-            Persistence.Instance.Get("StartingWindowHeight", 480),
-            Persistence.Instance.Get("StartingWindowX", Window.Position.X),
-            Persistence.Instance.Get("StartingWindowY", Window.Position.Y)
-        );
+        ResizeWindowUsingPersistence();
 
         if (Profile.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);
@@ -146,13 +157,37 @@ public sealed class RysyEngine : Game {
         Scene = new EditorScene();
     }
 
+    private void ResizeWindowUsingPersistence() {
+        if (Persistence.Instance is not { } persistence)
+            return;
+
+        ResizeWindow(
+            persistence.Get("StartingWindowWidth", 800),
+            persistence.Get("StartingWindowHeight", 480),
+            persistence.Get("StartingWindowX", Window.Position.X),
+            persistence.Get("StartingWindowY", Window.Position.Y)
+        );
+    }
+
     private void ResizeWindow(int w, int h, int x, int y) {
         OnFrameEnd += () => {
             GDM.PreferredBackBufferWidth = w;
             GDM.PreferredBackBufferHeight = h;
             GDM.ApplyChanges();
-            Window.Position = new(x, Math.Max(32, y));
+
+            var monitorSize = GDM.GraphicsDevice.DisplayMode;
+            // just in case persistence got a messed up value, snap these back in range
+            if (!x.IsInRange(0, monitorSize.Width - w - 32))
+                x = 0;
+
+            // todo: get rid of that hardcoded 32, though that's not easy cross-platform...
+            var minY = Window.IsBorderless ? 0 : 32;
+            if (!y.IsInRange(minY, monitorSize.Height - h - 32))
+                y = 32;
+
+            Window.Position = new(x, y);
             Window_ClientSizeChanged(null, new());
+            GDM.ApplyChanges();
         };
     }
 
@@ -170,11 +205,11 @@ public sealed class RysyEngine : Game {
             SmartFPSHandler.Update();
 
             Scene.Update();
+        }
 
-            if (OnFrameEnd is { } onFrameEnd) {
-                OnFrameEnd = null;
-                onFrameEnd.Invoke();
-            }
+        if (OnFrameEnd is { } onFrameEnd) {
+            OnFrameEnd = null;
+            onFrameEnd.Invoke();
         }
 
         _lastActive = IsActive;

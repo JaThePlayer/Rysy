@@ -18,13 +18,11 @@ public sealed class ModTexture : VirtTexture, IModAsset {
     protected override Task? QueueLoad() {
         return Task.Run(() => {
             try {
-                //lock (Mod.Filesystem) {
-                //using var stream = Mod.Filesystem.OpenFile(VirtPath);
-                //texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
-                //}
-
-                texture = Mod.Filesystem.OpenFile(VirtPath, stream => {
-                    return Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
+                    lock (this) {
+                        texture?.Dispose();
+                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                    }
                 });
             } catch (Exception e) {
                 Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {e}");

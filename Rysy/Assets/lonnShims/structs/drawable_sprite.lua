@@ -142,11 +142,22 @@ function drawableSpriteMt.__index:getRelativeQuad(x, y, width, height, hideOverf
 end
 
 function drawableSpriteMt.__index:useRelativeQuad(x, y, width, height, hideOverflow, realSize)
-    self._RYSY_quadX = x
-    self._RYSY_quadY = y
-    self._RYSY_quadW = width
-    self._RYSY_quadH = height
+    self._RYSYqX = x
+    self._RYSYqY = y
+    self._RYSYqW = width
+    self._RYSYqH = height
 end
+
+function RYSY_UNPACKSPR(drawableSprite)
+	return rawget(drawableSprite, "x"), rawget(drawableSprite, "y"),
+		   rawget(drawableSprite, "justificationX"), rawget(drawableSprite, "justificationY"),
+		   rawget(drawableSprite, "scaleX"), rawget(drawableSprite, "scaleY"),
+		   rawget(drawableSprite, "rotation"), rawget(drawableSprite, "depth"),
+		   rawget(drawableSprite, "color"), rawget(drawableSprite, "_RYSY_INTERNAL_texture"),
+		   rawget(drawableSprite, "_RYSYqX")
+
+end
+
 
 function drawableSpriteStruct.fromMeta(meta, data)
     data = data or {}

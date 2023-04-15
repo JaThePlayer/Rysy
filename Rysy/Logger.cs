@@ -1,5 +1,4 @@
 ﻿using Rysy.Extensions;
-using Rysy.Helpers;
 using Rysy.Platforms;
 using System;
 using System.Runtime.CompilerServices;
@@ -21,6 +20,8 @@ public static class Logger {
 
     public static bool UseColorsInConsole { get; set; } = false;
 
+    public static LogLevel MinimumLevel { get; set; } = LogLevel.Debug;
+
     public static void Init([CallerFilePath] string filePath = "") {
         CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
 
@@ -33,11 +34,16 @@ public static class Logger {
     private static string PrependLocation(string txt, string callerMethod, string callerFile, int lineNumber)
         => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.RESET_COLOR}] {txt}";
 
+    private static bool ValidLogLevel(LogLevel level) => level >= MinimumLevel;
+
     public static void Write(string tag, LogLevel logLevel, string msg, 
         [CallerMemberName] string callerMethod = "",
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
+        if (!ValidLogLevel(logLevel))
+            return;
+
         var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg}\n";
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -50,6 +56,9 @@ public static class Logger {
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
+        if (!ValidLogLevel(logLevel))
+            return;
+
         var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{logLevel.ToColoredString()}] {msg.GetFormattedText()}\n";
 
 #if DEBUG
@@ -64,6 +73,9 @@ public static class Logger {
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
+        if (!ValidLogLevel(LogLevel.Error))
+            return;
+
         var txt = $"{message}: {exception.ToString()}\n";
 
 #if DEBUG
@@ -78,6 +90,9 @@ public static class Logger {
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
+        if (!ValidLogLevel(LogLevel.Error))
+            return;
+
         var txt = $"{message.GetFormattedText()}: {exception.ToString()}\n";
 
 #if DEBUG
@@ -90,25 +105,28 @@ public static class Logger {
     /// <summary>
     /// Writes this object to the log as JSON.
     /// </summary>
-    public static void LogAsJson<T>(this T? obj, string tag = "LogAsJson", [CallerArgumentExpression(nameof(obj))] string caller = "", 
+    public static void LogAsJson<T>(this T? obj, string tag = "LogAsJson", LogLevel level = LogLevel.Debug, [CallerArgumentExpression(nameof(obj))] string caller = "", 
         [CallerMemberName] string callerMethod = "",
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
+        if (!ValidLogLevel(level))
+            return;
+
         if (obj is null) {
 #if DEBUG
-            Write(tag, LogLevel.Debug, "null", callerMethod, callerFile, lineNumber);
+            Write(tag, level, "null", callerMethod, callerFile, lineNumber);
 #else
-            Write(tag, LogLevel.Debug, "null");
+            Write(tag, level, "null");
 #endif
             return;
         }
 
         FancyInterpolatedStringHandler txt = $"{caller} = {obj.ToJson()}";
 #if DEBUG
-        Write(tag, LogLevel.Debug, txt, callerMethod, callerFile, lineNumber);
+        Write(tag, level, txt, callerMethod, callerFile, lineNumber);
 #else
-        Write(tag, LogLevel.Debug, txt);
+        Write(tag, level, txt);
 #endif
     }
 
@@ -121,7 +139,7 @@ public static class Logger {
                 Console.Write(unformatted.TryCensor());
             }
 
-            File.AppendAllText(LogFile, unformatted);
+            File.AppendAllText(LogFile, unformatted); 
         }
 
     }

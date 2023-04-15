@@ -5,6 +5,9 @@ public class Atlas : IAtlas {
 
     public VirtTexture this[string key] {
         get {
+            if (key is null)
+                return GFX.VirtPixel;
+
             if (Textures.TryGetValue(key, out var texture)) {
                 return texture;
             }
@@ -20,6 +23,9 @@ public class Atlas : IAtlas {
     }
 
     public bool Exists(string key) {
+        if (key is null)
+            return false;
+
         if (Textures.TryGetValue(key, out var texture)) {
             return true;
         }

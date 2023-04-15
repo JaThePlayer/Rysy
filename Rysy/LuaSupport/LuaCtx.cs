@@ -1,5 +1,7 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Mods;
 
 namespace Rysy.LuaSupport;
@@ -102,7 +104,7 @@ public class LuaCtx {
         """, "new_require");
 
         lua.PCallStringThrowIfError("""
-        RYSY = true -- Set up a global RYSY variable set to true, so that plugins know they're running in Rysy if needed.
+        RYSY = {} -- Set up a global RYSY variable, so that plugins know they're running in Rysy if needed.
         _RYSY_entities = {}
 
         _RYSY_unimplemented = function()
@@ -177,9 +179,10 @@ public class LuaCtx {
         lua.Register("_RYSY_INTERNAL_getWaterfallHeight", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
-            var room = lua.UnboxWrapper<Room>(1);
+            var room = lua.UnboxRoomWrapper(1);
             var x = lua.ToNumber(2);
             var y = lua.ToNumber(3);
+
 
             lua.PushNumber(Entities.Waterfall.GetHeight(room, new((float) x, (float) y)));
             return 1;
@@ -269,9 +272,73 @@ public class LuaCtx {
             return 0;
         });
 
+        RegisterAPIFuncs(lua);
+
         var orig = lua.AtPanic(AtLuaPanic);
 
         return luaCtx;
+    }
+
+    private static void RegisterAPIFuncs(Lua lua) {
+        lua.GetGlobal("RYSY");
+        var rysyTableLoc = lua.GetTop();
+
+        // (room, string) -> table
+        RegisterApi("entitiesWithSID", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var room = lua.UnboxRoomWrapper(1);
+            var sid = lua.FastToString(2);
+
+            var filtered = room.Entities[sid];
+
+            lua.PushWrapper(new WrapperListWrapper<Entity>(filtered));
+
+            return 1;
+        });
+
+        // (room, string, entity, int) -> table
+        RegisterApi("entitiesWithSIDWithinRange", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var room = lua.UnboxRoomWrapper(1);
+            var sid = lua.FastToString(2);
+            var entity = lua.UnboxWrapper<Entity>(3);
+
+            var pos = entity.Pos;
+            var maxDistanceSquared = MathF.Pow((float)lua.ToNumber(4), 2);
+
+            var enumerator = room.Entities[sid].GetEnumerator();
+            long i = 0;
+
+            lua.PushAndPinFunction((nint s) => {
+                start:
+                if (enumerator.MoveNext()) {
+                    i++;
+                    var e = enumerator.Current;
+                    if (Vector2.DistanceSquared(pos, e.Pos) >= maxDistanceSquared)
+                        goto start;
+
+                    lua.PushInteger(i);
+                    lua.PushWrapper(e);
+                } else {
+                    lua.PushNil();
+                    lua.PushNil();
+                }
+
+
+                return 2;
+            });
+
+            return 1;
+        });
+
+        lua.Pop(1);
+
+        void RegisterApi(string name, LuaFunction cb) {
+            lua.PushCFunction(cb);
+            lua.SetField(rysyTableLoc, name);
+        }
     }
 
     private static int AtLuaPanic(nint s) {

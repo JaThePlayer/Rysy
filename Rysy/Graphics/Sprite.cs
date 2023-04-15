@@ -13,9 +13,12 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
     public Rectangle? ClipRect;
 
     public Color Color { get; set; } = Color.White;
-    public void MultiplyAlphaBy(float alpha) {
-        Color *= alpha;
-        OutlineColor *= alpha;
+
+    public ISprite WithMultipliedAlpha(float alpha) {
+        return this with {
+            Color = Color * alpha,
+            OutlineColor = OutlineColor * alpha,
+        };
     }
 
     public bool IsLoaded => Texture.Texture is { };
@@ -96,7 +99,9 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
                 Render(texture, pos + new Vector2(0f, 1f), color, scale, flip, origin);
                 Render(texture, pos + new Vector2(0f, -1f), color, scale, flip, origin);
             }
-            Render(texture, pos, Color, scale, flip, origin);
+
+            if (Color != default)
+                Render(texture, pos, Color, scale, flip, origin);
 
             {
                 //var size = new Vector2(Width * scale.X, Height * scale.Y);
@@ -185,8 +190,9 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
     }
 
     public Sprite Centered() {
-        Origin = new(.5f, .5f);
-        return this;
+        return this with {
+            Origin = new(.5f, .5f)
+        };
     }
 
     public Sprite Offset(Vector2 offset) {

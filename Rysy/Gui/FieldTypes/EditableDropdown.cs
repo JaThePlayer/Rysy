@@ -5,13 +5,14 @@ namespace Rysy.Gui.FieldTypes;
 static class EditableDropdownHelper {
     public static Dictionary<Type, object> DefaultStringToT = new() {
         [typeof(string)] = (Func<string, string>)((string s) => s),
-
+        [typeof(object)] = (Func<string, object>) ((string s) => s),
     };
 }
 
 public class EditableDropdownField<T> : IField
-    where T : IEquatable<T> {
-    public Dictionary<string, T> Values;
+    where T : notnull 
+{
+    public Dictionary<T, string> Values;
 
     public EditableDropdownField() {
         var obj = EditableDropdownHelper.DefaultStringToT[typeof(T)];

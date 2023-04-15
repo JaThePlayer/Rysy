@@ -1,8 +1,10 @@
 ﻿using ImGuiNET;
-using Rysy.Helpers;
+using Rysy.Extensions;
 using Rysy.History;
+using Rysy.LuaSupport;
 using Rysy.Scenes;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Rysy.Gui.Windows;
 
@@ -28,6 +30,49 @@ public class DebugInfoWindow : Window {
             var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
             ImGui.Text(metrics.ToJson());
         }
+
+        HistoryTab();
+
+        if (ImGui.CollapsingHeader("GC")) {
+            var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
+            ImGui.Text($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
+        }
+
+        if (RysyEngine.Scene is EditorScene editor) {
+            if (ImGui.CollapsingHeader("Lonn Entity stats:")) {
+                var lonnEntities = editor.CurrentRoom.Entities.OfType<LonnEntity>().ToList();
+                var cachedAmt = lonnEntities.Count(e => e.CachedSprites is { });
+                var uncachedSids = lonnEntities.Where(e => e.CachedSprites is not { }).Select(e => e.Name).Distinct();
+
+                ImGui.TextUnformatted($"Cached: {cachedAmt}/{lonnEntities.Count} [{cachedAmt / (float)lonnEntities.Count}%]");
+                
+                if (ImGui.BeginListBox("Uncached SID's", new(Size.Value.X, 300))) {
+                    foreach (var sid in uncachedSids) {
+                        ImGui.TextUnformatted(sid);
+                    }
+
+                    ImGui.EndListBox();
+                }
+                
+            }
+
+            if (ImGui.Button("Benchmark current room")) {
+                var room = EditorState.CurrentRoom;
+
+                var watch = Stopwatch.StartNew();
+                const int times = 100;
+                for (int i = 0; i < times; i++) {
+                    room.ClearEntityRenderCache();
+                    room.CacheSpritesIfNeeded();
+                }
+
+                watch.Stop();
+                Console.WriteLine($"Benchmark: {room.Name}: {(watch.Elapsed / times).TotalMilliseconds}ms");
+            }
+        }
+    }
+
+    private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && ImGui.CollapsingHeader("History")) {
             ImGui.Text($"Count: {editor.HistoryHandler.Actions.Count}");
             if (ImGui.BeginListBox("")) {
@@ -41,11 +86,6 @@ public class DebugInfoWindow : Window {
                     editor.HistoryHandler.ApplyNewAction(item);
                 }
             }
-        }
-
-        if (ImGui.CollapsingHeader("GC")) {
-            var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
-            ImGui.Text($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
         }
     }
 }

@@ -1,41 +1,51 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
-public sealed class LonnEntity : Entity, ICustomNodeHandler {
+public class LonnEntity : Entity, ICustomNodeHandler {
     [JsonIgnore]
-    public LonnEntityPlugin Plugin;
+    internal LonnEntityPlugin Plugin;
 
     [JsonIgnore]
     public override int Depth => Plugin.GetDepth(Room, this);
 
     public IEnumerable<ISprite> GetNodeSprites() {
-        using var stackHolder = Plugin.PushToStack();
+        //using var stackHolder = Plugin.PushToStack();
 
-        var visibility = Plugin.GetNodeVisibility(this);
+        return Plugin.PushToStack((pl) => {
+            var visibility = pl.GetNodeVisibility(this);
 
-        return visibility switch {
-            "always" => NodeHelper.GetGuessedNodeSpritesFor(this),
-            "selected" => Array.Empty<ISprite>(),
-            var other => Array.Empty<ISprite>(),
-        };
+            return visibility switch {
+                "always" => NodeHelper.GetGuessedNodeSpritesFor(this),
+                "selected" => Array.Empty<ISprite>(),
+                var other => Array.Empty<ISprite>(),
+            };
+        });
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        try {
-            using var stackHolder = Plugin.PushToStack();
+        if (CachedSprites is { } cached)
+            return cached;
 
-            var spr = _GetSprites();
-            //stackHolder?.Dispose();
+        return Plugin.PushToStack((pl) => {
+            // TODO: push a RoomWrapper instead of the room, so that we can see whether the room ever got accessed or not
+            // if the room never got accessed, we can cache, if it did, we cannot
+            var roomWrapper = new RoomLuaWrapper(Room);
+
+            var spr = _GetSprites(roomWrapper);
+
+            if (!roomWrapper.Used)
+                CachedSprites = spr;
+            //else
+            //    (Name, roomWrapper.Reasons).LogAsJson();
 
             return spr;
-        } catch (LuaException ex) {
-            Logger.Error(ex, $"Erroring entity definition for {Plugin.Name} at {this.ToJson()}");
-            return Array.Empty<ISprite>();
-        }
+        });
     }
 
     private bool CallSelectionFunc<T>(Func<Lua, int, T> valueRetriever, out T? value) {
@@ -46,60 +56,75 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
             return false;
         }
 
-
-        using (var stackHolder = Plugin.PushToStack()) {
-            var type = lua.GetTable(Plugin.StackLoc, "selection");
+        (var ret, value) = Plugin.PushToStack((pl) => {
+            var type = lua.GetTable(pl.StackLoc, "selection");
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
-                value = default;
-                return false;
+                return (false, default);
             }
 
-            value = lua.PCallFunction(Room, this, valueRetriever, results: 2);
-            return true;
-        }
+            var value = lua.PCallFunction(Room, this, valueRetriever, results: 2);
+            return (true, value);
+        });
+
+        return ret;
     }
 
     public override ISelectionCollider GetMainSelection() {
-        //selection(room, entity):rectangle, table of rectangles
-        if (CallSelectionFunc((lua, top) => lua.ToRectangle(top - 1), out var selectionRect)) {
-            return ISelectionCollider.FromRect(selectionRect);
+        try {
+            //selection(room, entity):rectangle, table of rectangles
+            if (CallSelectionFunc((lua, top) => lua.ToRectangle(top - 1), out var selectionRect)) {
+                return ISelectionCollider.FromRect(selectionRect);
+            }
+
+            if (Plugin.GetRectangle is { } rectFunc) {
+                var rectangle = rectFunc(Room, this);
+                return ISelectionCollider.FromRect(rectangle);
+            }
+        } catch(Exception ex) {
+            Logger.Error(ex, $"Failed to get selection for: {ToJson()}");
         }
 
-        if (Plugin.GetRectangle is { } rectFunc) {
-            var rectangle = rectFunc(Room, this);
-            return ISelectionCollider.FromRect(rectangle);
-        }
 
         return base.GetMainSelection();
     }
 
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {
-        if (CallSelectionFunc((lua, top) => {
-            if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
-                var rect = lua.ToRectangle(lua.GetTop()); ;
+        try {
+            if (CallSelectionFunc((lua, top) => {
+                if (lua.Type(top) != LuaType.Table) {
+                    return default;
+                }
+
+
+                if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
+                    var rect = lua.ToRectangle(lua.GetTop());
+                    ;
+                    lua.Pop(1);
+                    return rect;
+                }
                 lua.Pop(1);
-                return rect;
+                return default;
+            }, out var selectionRect) && selectionRect != default) {
+                return ISelectionCollider.FromRect(selectionRect);
             }
-            lua.Pop(1);
-            return default;
-        }, out var selectionRect) && selectionRect != default) {
-            return ISelectionCollider.FromRect(selectionRect);
-        }
 
-        // todo: nodeRectangle
+            // todo: nodeRectangle
 
-        if (Plugin.GetRectangle is { } rectFunc) {
-            var oldPos = Pos;
-            Pos = Nodes![nodeIndex];
+            if (Plugin.GetRectangle is { } rectFunc) {
+                var oldPos = Pos;
+                Pos = Nodes![nodeIndex];
 
-            try {
-                var rectangle = rectFunc(Room, this);
-                return ISelectionCollider.FromRect(rectangle);
-            } finally { 
-                Pos = oldPos; 
+                try {
+                    var rectangle = rectFunc(Room, this);
+                    return ISelectionCollider.FromRect(rectangle);
+                } finally {
+                    Pos = oldPos;
+                }
             }
+        } catch (Exception ex) {
+            Logger.Error(ex, $"Failed to get node {nodeIndex} selection for: {ToJson()}");
         }
 
         return base.GetNodeSelection(nodeIndex);
@@ -109,7 +134,17 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
 
     public override Point MinimumSize => Plugin.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
 
+    public override void OnChanged() {
+        base.OnChanged();
+
+        CachedSprites = null;
+    }
+
     #region Sprites
+    private static byte[] _typeASCII = Encoding.ASCII.GetBytes("_type");
+
+    internal List<ISprite>? CachedSprites;
+
     private List<ISprite> SpritesFromLonn(Lua lua, int top) {
         var list = new List<ISprite>();
 
@@ -132,7 +167,11 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
         return list;
 
         void NextSprite(int top, List<ISprite> addTo) {
-            var type = lua.PeekTableStringValue(top, "_type");
+            //var type = lua.PeekTableStringValue(top, _typeASCII);
+            if (!lua.TryPeekTableStringValueToSpanInSharedBuffer(top, _typeASCII, out var type)) {
+                return;
+            }
+
             switch (type) {
                 case "drawableSprite":
                     addTo.Add(LonnDrawables.LuaToSprite(lua, top, Pos));
@@ -149,14 +188,16 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
                 case "drawableNinePatch":
                     addTo.Add(LonnDrawables.LuaToNineSlice(lua, top));
                     break;
+                case "drawableFunction":
+                    break;
                 default:
-                    Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type}: {lua.TableToDictionary(top).ToJson()}");
+                    Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type.ToString()}: {lua.TableToDictionary(top).ToJson()}");
                     break;
             }
         }
     }
 
-    private List<ISprite> _GetSprites() {
+    private List<ISprite> _GetSprites(RoomLuaWrapper roomWrapper) {
         if (Plugin.HasGetSprite) {
             var lua = Plugin.LuaCtx.Lua;
 
@@ -167,28 +208,27 @@ public sealed class LonnEntity : Entity, ICustomNodeHandler {
                 return new();
             }
 
-            var sprites = lua.PCallFunction(Room, this, (lua, i) => SpritesFromLonn(lua, i));
+            var sprites = lua.PCallFunction(roomWrapper, this, (lua, i) => SpritesFromLonn(lua, i));
 
             return sprites!;
         }
 
-
-        if (Plugin.GetTexture is { } getTexture && getTexture(Room, this) is { } texturePath) {
+        if (Plugin.GetTexture is { } getTexture && getTexture(roomWrapper, this) is { } texturePath) {
             return new() { ISprite.FromTexture(Pos, texturePath) with {
-                Origin = Plugin.GetJustification(Room, this),
-                Color = Plugin.GetColor(Room, this),
-                Scale = Plugin.GetScale(Room, this),
-                Rotation = Plugin.GetRotation(Room, this),
+                Origin = Plugin.GetJustification(roomWrapper, this),
+                Color = Plugin.GetColor(roomWrapper, this),
+                Scale = Plugin.GetScale(roomWrapper, this),
+                Rotation = Plugin.GetRotation(roomWrapper, this),
             }};
         } else {
             Rectangle rectangle;
             if (Plugin.GetRectangle is { } rectFunc) {
-                rectangle = rectFunc(Room, this);
+                rectangle = rectFunc(roomWrapper, this);
             } else {
                 rectangle = Rectangle;
             }
 
-            return new() { ISprite.OutlinedRect(rectangle, Plugin.GetFillColor(Room, this), Plugin.GetBorderColor(Room, this)) };
+            return new() { ISprite.OutlinedRect(rectangle, Plugin.GetFillColor(roomWrapper, this), Plugin.GetBorderColor(roomWrapper, this)) };
         }
     }
 

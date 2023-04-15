@@ -6,7 +6,9 @@ using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
+using YamlDotNet.Core.Tokens;
 
 namespace Rysy;
 
@@ -92,8 +94,8 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public Rectangle Bounds => new(X, Y, Width, Height);
 
-    public TypeTrackedList<Entity> Entities { get; init; } = new();
-    public TypeTrackedList<Entity> Triggers { get; init; } = new();
+    public EntityList Entities { get; init; } = new();
+    public EntityList Triggers { get; init; } = new();
 
     public ListenableList<Entity> BgDecals { get; private set; }
     public ListenableList<Entity> FgDecals { get; private set; }
@@ -188,14 +190,14 @@ public sealed class Room : IPackable, ILuaWrapper {
             switch (child.Name) {
                 case "bgdecals":
                     BgDecals = child.Children.Select((e) => {
-                        var d = Decal.Create(e, false);
+                        var d = Decal.Create(e, false, this);
                         d.Room = this;
                         return d;
                     }).ToListenableList<Entity>(ClearBgDecalsRenderCache);
                     break;
                 case "fgdecals":
                     FgDecals = child.Children.Select((e) => {
-                        var d = Decal.Create(e, true);
+                        var d = Decal.Create(e, true, this);
                         d.Room = this;
                         return d;
                     }).ToListenableList<Entity>(ClearFgDecalsRenderCache);
@@ -385,7 +387,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         //}
     }
 
-    private void CacheSpritesIfNeeded() {
+    internal void CacheSpritesIfNeeded() {
         if (CachedSprites is null) {
             //using var w = new ScopedStopwatch($"Generating sprites for {Name}");
 
@@ -394,28 +396,27 @@ public sealed class Room : IPackable, ILuaWrapper {
             var layer = p.EditorLayer;
 
             if (p.EntitiesVisible) {
-                CachedEntitySprites ??= Entities.Select(e => {
-                    /*
-                        var spr = e.GetSprites().SetDepth(e.Depth);
-                        spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);*/
-                    var spr = e.GetSpritesWithNodes().SetDepth(e.Depth);
-                    if (layer is { } && e.EditorLayer != layer)
-                        spr = spr.Apply(s => s.MultiplyAlphaBy(Settings.Instance.HiddenLayerAlpha));
+                if (CachedEntitySprites is null) {
+                    CachedEntitySprites = Entities.Select(e => {
+                        var spr = e.GetSpritesWithNodes();
+                        if (layer is { } && e.EditorLayer != layer)
+                            spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
 
-                    return spr;
-                }).SelectMany(x => x).ToList();
+                        return spr;
+                    }).SelectMany(x => x).ToList();
 
-                EntityRenderCacheToken.Reset();
+                    EntityRenderCacheToken.Reset();
+                }
+
 
                 sprites = sprites.Concat(CachedEntitySprites);
             }
 
             if (p.TriggersVisible) {
                 CachedTriggerSprites ??= Triggers.Select(e => {
-                    var spr = e.GetSprites().SetDepth(e.Depth);
-                    spr = NodeHelper.GetNodeSpritesFor(e).Concat(spr);
+                    var spr = e.GetSpritesWithNodes();
                     if (layer is { } && e.EditorLayer != layer)
-                        spr = spr.Apply(s => s.MultiplyAlphaBy(Settings.Instance.HiddenLayerAlpha));
+                        spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
 
                     return spr;
                 }).SelectMany(x => x).ToList();
@@ -466,6 +467,8 @@ public sealed class Room : IPackable, ILuaWrapper {
             CachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
 
             RenderCacheToken.Reset();
+
+            // w.Message = $"Generating {CachedSprites.Count} sprites for {Name}";
 
             if (Settings.Instance.LogTextureLoadTimes)
                 StartTextureLoadTimer();
@@ -750,6 +753,43 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         return 0;
+    }
+}
+
+public sealed class RoomLuaWrapper : ILuaWrapper {
+    /// <summary>
+    /// Whether this wrapper was ever accessed.
+    /// </summary>
+    public bool Used { get; private set; } = false;
+
+    internal List<string> Reasons = new();
+
+    private Room Room { get; init; }
+
+    public Room GetRoom() {
+        Used = true;
+        Reasons.Add("GetRoom");
+
+        return Room;
+    }
+
+    public RoomLuaWrapper(Room room) {
+        Room = room;
+    }
+
+    public int Lua__index(Lua lua, long key) {
+        Used = true;
+
+        Reasons.Add(key.ToString());
+
+        return Room.Lua__index(lua, key);
+    }
+
+    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+        Used = true;
+        Reasons.Add(key.ToString());
+
+        return Room.Lua__index(lua, key);
     }
 }
 

@@ -36,6 +36,7 @@ public interface IModFilesystem {
     /// <summary>
     /// Finds all files that are contained in the <paramref name="directory"/> with the file extension <paramref name="extension"/>.
     /// Returned paths use forward slashes, and contain the file extension.
+    /// If extension is an empty string, extensions are ignored.
     /// Calling OpenFile(path) using paths returned by this function allows you to access the file.
     /// </summary>
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension);
@@ -55,6 +56,18 @@ public static class ModFilesystemExtensions {
             using var reader = new StreamReader(stream);
 
             return reader.ReadToEnd();
+        });
+    }
+
+    /// <summary>
+    /// Reads the given file.
+    /// </summary>
+    public static byte[]? TryReadAllBytes(this IModFilesystem filesystem, string path) {
+        return filesystem.OpenFile(path, stream => {
+            using MemoryStream ms = new MemoryStream();
+
+            stream.CopyTo(ms);
+            return ms.ToArray();
         });
     }
 

@@ -3,7 +3,7 @@
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using Rysy.Helpers;
+using Rysy.Extensions;
 using System;
 using System.Buffers.Text;
 using System.IO.Compression;
@@ -292,7 +292,7 @@ public static class Input {
 
         public static string Get() => ImGui.GetClipboardText();
 
-        public static T? TryGetFromJson<T>() => JsonHelper.TryDeserialize<T>(Get());
+        public static T? TryGetFromJson<T>() => JsonExtensions.TryDeserialize<T>(Get());
     }
 }
 

@@ -1,9 +1,24 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using System.Text;
 
 namespace Rysy.LuaSupport;
 
 public static class LonnDrawables {
+    private static byte[] xASCII = Encoding.ASCII.GetBytes("x");
+    private static byte[] yASCII = Encoding.ASCII.GetBytes("y");
+    private static byte[] scaleXASCII = Encoding.ASCII.GetBytes("scaleX");
+    private static byte[] scaleYASCII = Encoding.ASCII.GetBytes("scaleY");
+    private static byte[] justificationXASCII = Encoding.ASCII.GetBytes("justificationX");
+    private static byte[] justificationYASCII = Encoding.ASCII.GetBytes("justificationY");
+    private static byte[] colorASCII = Encoding.ASCII.GetBytes("color");
+    private static byte[] rotationASCII = Encoding.ASCII.GetBytes("rotation");
+    private static byte[] depthASCII = Encoding.ASCII.GetBytes("depth");
+    private static byte[] _RYSY_quadXASCII = Encoding.ASCII.GetBytes("_RYSYqX");
+    private static byte[] _RYSY_INTERNAL_textureASCII = Encoding.ASCII.GetBytes("_RYSY_INTERNAL_texture");
+    private static byte[] RYSY_UNPACKSPRASCII = Encoding.ASCII.GetBytes("RYSY_UNPACKSPR");
+
+
     public static RectangleSprite LuaToRect(Lua lua, int top) {
         var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
         var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
@@ -69,31 +84,50 @@ public static class LonnDrawables {
     }
 
     public static Sprite LuaToSprite(Lua lua, int top, Vector2 defaultPos) {
-        var texture = lua.PeekTableStringValue(top, "_RYSY_INTERNAL_texture") ?? throw new Exception("DrawableSprite doesn't have the '_RYSY_INTERNAL_texture' field set!");
-        var x = lua.PeekTableFloatValue(top, "x");
-        var y = lua.PeekTableFloatValue(top, "y");
-        var scaleX = lua.PeekTableFloatValue(top, "scaleX");
-        var scaleY = lua.PeekTableFloatValue(top, "scaleY");
-        var originX = lua.PeekTableFloatValue(top, "justificationX");
-        var originY = lua.PeekTableFloatValue(top, "justificationY");
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
-        var rotation = lua.PeekTableFloatValue(top, "rotation");
-        var depth = lua.PeekTableIntValue(top, "depth");
+        /*
+        var texture = lua.PeekTableStringValue(top, _RYSY_INTERNAL_textureASCII) ?? throw new Exception("DrawableSprite doesn't have the '_RYSY_INTERNAL_texture' field set!");
+        var x = lua.PeekTableFloatValue(top, xASCII);
+        var y = lua.PeekTableFloatValue(top, yASCII);
+        var scaleX = lua.PeekTableFloatValue(top, scaleXASCII);
+        var scaleY = lua.PeekTableFloatValue(top, scaleYASCII);
+        var originX = lua.PeekTableFloatValue(top, justificationXASCII);
+        var originY = lua.PeekTableFloatValue(top, justificationYASCII);
+        var color = lua.PeekTableColorValue(top, colorASCII, Color.White);
+        var rotation = lua.PeekTableFloatValue(top, rotationASCII);
+        var depth = lua.PeekTableIntValue(top, depthASCII);*/
+        lua.GetGlobalASCII(RYSY_UNPACKSPRASCII);
+        lua.PushCopy(top);
+        lua.Call(1, 11);
 
-        var sprite = ISprite.FromTexture(new Vector2(x ?? defaultPos.X, y ?? defaultPos.Y), texture) with {
-            Scale = new(scaleX ?? 1f, scaleY ?? 1f),
-            Origin = new(originX ?? .5f, originY ?? .5f),
+        var x = lua.ToFloat(top + 1);
+        var y = lua.ToFloat(top + 2);
+        var originX = lua.ToFloat(top + 3);
+        var originY = lua.ToFloat(top + 4);
+        var scaleX = lua.ToFloat(top + 5);
+        var scaleY = lua.ToFloat(top + 6);
+        var rotation = lua.ToFloat(top + 7);
+        int? depth = lua.ToIntegerX(top + 8) is { } l ? (int)l : null;
+        var color = lua.ToColor(top + 9, Color.White);
+        var texture = lua.FastToString(top + 10, callMetamethod: false);
+        var quadX = lua.ToIntegerX(top + 11);
+
+        lua.Pop(11);
+
+        
+        var sprite = ISprite.FromTexture(new Vector2(x, y), texture) with {
+            Scale = new(scaleX, scaleY),
+            Origin = new(originX, originY),
             Color = color,
-            Rotation = rotation ?? 0f,
+            Rotation = rotation,
             Depth = depth
         };
 
-        if (lua.PeekTableIntValue(top, "_RYSY_quadX") is { } qx) {
+        if (quadX is { } qx) {
             sprite = sprite.CreateSubtexture(
-                qx,
-                lua.PeekTableIntValue(top, "_RYSY_quadY") ?? 0,
-                lua.PeekTableIntValue(top, "_RYSY_quadW") ?? 0,
-                lua.PeekTableIntValue(top, "_RYSY_quadH") ?? 0
+                (int)qx,
+                lua.PeekTableIntValue(top, "_RYSYqY") ?? 0,
+                lua.PeekTableIntValue(top, "_RYSYqW") ?? 0,
+                lua.PeekTableIntValue(top, "_RYSYqH") ?? 0
             );
         }
 

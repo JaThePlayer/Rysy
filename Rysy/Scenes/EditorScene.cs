@@ -22,8 +22,8 @@ public sealed class EditorScene : Scene {
     public Map Map {
         get => _map;
         set {
-            _map = value;
-            HistoryHandler.Clear();
+            SwapMapPreserveState(value);
+
             Camera = new();
 
             if (_map.Rooms.Count > 0) {
@@ -35,6 +35,13 @@ public sealed class EditorScene : Scene {
 
             RysyEngine.OnFrameEnd += GCHelper.VeryAggressiveGC;
         }
+    }
+
+    private void SwapMapPreserveState(Map map) {
+        _map = map;
+
+        // history has to be cleared, as it might contain references to specific entity instances
+        HistoryHandler.Clear();
     }
 
     public Room CurrentRoom {
@@ -212,6 +219,22 @@ public sealed class EditorScene : Scene {
 
     public void Undo() => HistoryHandler.Undo();
     public void Redo() => HistoryHandler.Redo();
+
+
+    public void QuickReload() {
+        if (Map is not { } map) {
+            return;
+        }
+
+        var selectedRoomName = CurrentRoom?.Name;
+
+        Map = Map.FromBinaryPackage(map.IntoBinary());
+
+        if (selectedRoomName is { }) {
+            CurrentRoom = Map.TryGetRoomByName(selectedRoomName)!;
+            CenterCameraOnRoom(CurrentRoom!);
+        }
+    }
 
     public override void Update() {
         base.Update();

@@ -7,7 +7,7 @@ namespace Rysy.Helpers;
 /// allowing for quick access of all elements of a given type
 /// </summary>
 public class TypeTrackedList<T> : IListenableList<T> {
-    private List<T> Inner = new();
+    protected List<T> Inner = new();
 
     private Dictionary<Type, List<T>> ByType = new();
 

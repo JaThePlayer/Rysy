@@ -10,7 +10,7 @@ public interface ISprite {
 
     public Color Color { get; set; }
 
-    public void MultiplyAlphaBy(float alpha);
+    public ISprite WithMultipliedAlpha(float alpha);
 
     public bool IsLoaded { get; }
 

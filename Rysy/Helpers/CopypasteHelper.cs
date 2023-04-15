@@ -13,7 +13,7 @@ public static class CopypasteHelper {
     }
 
     public static List<CopiedSelection>? GetSelectionsFromString(string selectionString) {
-        if (JsonHelper.TryDeserialize<List<CopiedSelection>>(selectionString) is { } jsonSelections)
+        if (JsonExtensions.TryDeserialize<List<CopiedSelection>>(selectionString) is { } jsonSelections)
             return jsonSelections;
 
         if (LuaSerializer.TryGetSelectionsFromLuaString(selectionString) is { } luaSelections)

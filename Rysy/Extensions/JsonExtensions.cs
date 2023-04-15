@@ -1,9 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Rysy.Helpers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace Rysy.Helpers;
+namespace Rysy.Extensions;
 
-public static class JsonHelper {
+public static class JsonExtensions {
     /// <summary>
     /// Returns the JSON representation of this object.
     /// </summary>
@@ -45,11 +46,15 @@ public static class JsonHelper {
         where TKey : notnull
         => dict?.ToDictionary(kv => kv.Key, kv => {
             if (kv.Value is JsonElement n) {
-                if (n.ValueKind == JsonValueKind.String)                     return n.GetString()!;
-                if (n.ValueKind == JsonValueKind.False)                     return false;
-                if (n.ValueKind == JsonValueKind.True)                     return true;
+                if (n.ValueKind == JsonValueKind.String)
+                    return n.GetString()!;
+                if (n.ValueKind == JsonValueKind.False)
+                    return false;
+                if (n.ValueKind == JsonValueKind.True)
+                    return true;
                 if (n.ValueKind == JsonValueKind.Number) {
-                    if (n.TryGetInt32(out int i))                         return i;
+                    if (n.TryGetInt32(out int i))
+                        return i;
                     return n.GetSingle();
                 }
             }
@@ -57,13 +62,6 @@ public static class JsonHelper {
             return kv.Value;
         }) ?? dict;
 
-    private static JsonSerializerOptions Options(bool minified) => minified ? JsonSerializerOptionsMinified : JsonSerializerOptions;
+    private static JsonSerializerOptions Options(bool minified) => minified ? JsonSerializerHelper.DefaultOptionsMinified : JsonSerializerHelper.DefaultOptions;
 
-    private static readonly JsonSerializerOptions JsonSerializerOptionsMinified = new() {
-        IncludeFields = true,
-    };
-
-    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerOptionsMinified) {
-        WriteIndented = true,
-    };
 }

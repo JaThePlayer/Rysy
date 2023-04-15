@@ -91,6 +91,7 @@ public static partial class LuaExt {
             return;
         }
 
+        //(value.Select(b => b.ToString())).LogAsJson();
         lua.PushBuffer(value);
     }
 
@@ -176,6 +177,35 @@ public static partial class LuaExt {
     }
 
     /// <summary>
+    /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+    /// </summary>
+    public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
+        lua.PushASCIIString(keyASCII);
+        var type = lua.GetTable(tableStackIndex);
+        string? ret = null;
+        if (type == LuaType.String) {
+            ret = lua.FastToString(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
+
+    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, byte[] keyASCII, out Span<char> chars) {
+        lua.PushASCIIString(keyASCII);
+        var type = lua.GetTable(tableStackIndex);
+        if (type == LuaType.String) {
+            chars = lua.ToStringInto(lua.GetTop(), SharedToStringBuffer);
+            lua.Pop(1);
+            return true;
+        }
+        lua.Pop(1);
+
+        chars = default;
+        return false;
+    }
+
+    /// <summary>
     /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
     public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, string key) {
@@ -190,8 +220,35 @@ public static partial class LuaExt {
         return ret;
     }
 
+    /// <summary>
+    /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+    /// </summary>
+    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
+        lua.PushASCIIString(keyASCII);
+        var type = lua.GetTable(tableStackIndex);
+        double? ret = null;
+        if (type == LuaType.Number) {
+            ret = lua.ToNumber(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
+
     public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, string key) {
         return PeekTableNumberValue(lua, tableStackIndex, key) is double d ? (float) d : null;
+    }
+
+    public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
+        lua.PushASCIIString(keyASCII);
+        var type = lua.GetTable(tableStackIndex);
+        float? ret = null;
+        if (type == LuaType.Number) {
+            ret = (float)lua.ToNumber(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
     }
 
     /// <summary>
@@ -223,6 +280,22 @@ public static partial class LuaExt {
         lua.Pop(1);
 
         return ret is { } r ? (int)r : null;
+    }
+
+    /// <summary>
+    /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
+    /// </summary>
+    public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
+        lua.PushASCIIString(keyASCII);
+        var type = lua.GetTable(tableStackIndex);
+
+        long? ret = null;
+        if (type is LuaType.Number) {
+            ret = lua.ToIntegerX(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret is { } r ? (int) r : null;
     }
 
     public static Vector2 PeekTableVector2Value(this Lua lua, int tableStackIndex, string key) {
@@ -264,6 +337,18 @@ public static partial class LuaExt {
         return ret;
     }
 
+    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, byte[] key, Color def) {
+        lua.PushASCIIString(key);
+        var type = lua.GetTable(tableStackIndex);
+        Color ret = def;
+        if (type is LuaType.Table or LuaType.String) {
+            ret = lua.ToColor(lua.GetTop(), def);
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
+
     public static Rectangle PeekTableRectangleValue(this Lua lua, int tableStackIndex, string key, Rectangle def) {
         lua.PushString(key);
         var type = lua.GetTable(tableStackIndex);
@@ -295,6 +380,14 @@ public static partial class LuaExt {
         return list;
     }
 
+    public static float? ToFloatX(this Lua lua, int index) {
+        return lua.ToNumberX(index) is { } d ? (float) d : null;
+    }
+
+    public static float ToFloat(this Lua lua, int index) {
+        return (float) lua.ToNumber(index);
+    }
+
     /// <summary>
     /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
@@ -317,20 +410,8 @@ public static partial class LuaExt {
             case null:
                 lua.PushNil();
                 break;
-            case short s:
-                lua.PushInteger(s);
-                break;
-            case ushort s:
-                lua.PushInteger(s);
-                break;
-            case uint u:
-                lua.PushInteger(u);
-                break;
             case int i:
                 lua.PushInteger(i);
-                break;
-            case ulong ul:
-                lua.PushInteger((long) ul);
                 break;
             case long l:
                 lua.PushInteger(l);
@@ -370,7 +451,7 @@ public static partial class LuaExt {
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
 
-        ClearWrappers();
+        ClearLuaResources();
 
         return ret;
     }
@@ -393,7 +474,7 @@ where TArg2 : class, ILuaWrapper {
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
 
-        ClearWrappers();
+        ClearLuaResources();
 
         return ret;
     }
@@ -414,7 +495,7 @@ where TArg1 : class, ILuaWrapper {
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
 
-        ClearWrappers();
+        ClearLuaResources();
 
         return ret;
     }
@@ -436,7 +517,7 @@ where TArg1 : class, ILuaWrapper {
                 goto next;
             }
 
-            var value = ToCSharpSimple(lua, lua.GetTop(), depth: depth);
+            var value = ToCSharp(lua, lua.GetTop(), depth: depth);
             dict[key] = value;
 
             next:
@@ -521,7 +602,7 @@ where TArg1 : class, ILuaWrapper {
         List<object> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharpSimple(lua, loc, depth + 1));
+            list.Add(ToCSharp(lua, loc, depth + 1));
         });
 
         if (list.Count > 0) {
@@ -535,13 +616,13 @@ where TArg1 : class, ILuaWrapper {
         List<object> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharpSimple(lua, loc, depth + 1));
+            list.Add(ToCSharp(lua, loc, depth + 1));
         });
 
         return list;
     }
 
-    internal static object ToCSharpSimple(Lua s, int index, int depth = 0) {
+    public static object ToCSharp(this Lua s, int index, int depth = 0) {
         object val = s.Type(index) switch {
             LuaType.Nil => null!,
             LuaType.Boolean => s.ToBoolean(index),
@@ -565,171 +646,107 @@ where TArg1 : class, ILuaWrapper {
 
 
     private static byte[] WrapperThisASCII = Encoding.ASCII.GetBytes("__this");
-    /*
-
-    /// <summary>
-    /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua<->C# easily.
-    /// Make sure to run <see cref="ClearWrappers"/>, otherwise you'll have a memory leak :(
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="state"></param>
-    /// <param name="wrapper"></param>
-    public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
-        state.CreateTable(0, 0);
-        var tablePos = state.GetTop();
-
-        state.PushASCIIString(WrapperThisASCII);
-        state.PushObjectStoreHandle(wrapper);
-        state.SetTable(tablePos);
-
-        if (state.NewMetaTable("RYSY_INTERNAL_WRAPPER"))
-        {
-            // Create a metatable that will call the C# methods:
-            int metatableIndex = state.GetTop();
-
-            state.PushString("__index");
-            state.PushCFunction(static (nint ptr) => {
-                var lua = Lua.FromIntPtr(ptr);
-
-                lua.GetTable(1, WrapperThisASCII);
-                //lua.RawGetInteger(1, 1);
-
-                var wrapper = lua.ToObject<ILuaWrapper>(lua.GetTop(), false);
-                lua.Pop(1);
-
-                var obj = wrapper ?? throw new LuaException(lua, $"Tried to index null wrapper");
-                var top = lua.GetTop();
-                var t = lua.Type(top);
-
-                var ret = obj.Lua__index(lua, t switch {
-                    LuaType.Number => lua.ToInteger(top),
-                    LuaType.String => lua.FastToString(top)
-                });
-
-                return ret;
-            });
-
-            state.SetTable(metatableIndex);
-
-        }
-
-        state.SetMetaTable(tablePos);
-    }
-
-    public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
-        //lua.RawGetInteger(loc, 1);
-        lua.GetTable(loc, WrapperThisASCII);
-        var wrapper = lua.ToObject<T>(lua.GetTop(), false);
-        lua.Pop(1);
-
-        return wrapper;
-    }
-        
-    #region GCHandleStore
-    public static void PushObjectStoreHandle<T>(this Lua lua, T obj) {
-        if (obj == null) {
-            lua.PushNil();
-            return;
-        }
-
-        var handle = GCHandle.Alloc(obj);
-        WrapperGCHandles.Add(handle);
-        lua.PushLightUserData(GCHandle.ToIntPtr(handle));
-    }
-
-    private static List<GCHandle> WrapperGCHandles = new();
-
-    /// <summary>
-    /// Forcibly clears all GCHandles used for wrappers. Used to avoid memory leaks.
-    /// </summary>
-    internal static void ClearWrappers() {
-        foreach (var item in WrapperGCHandles) {
-            item.Free();
-        }
-        WrapperGCHandles.Clear();
-    }
-    #endregion
-     
-     */
-
     private static int WrapperIDLoc = -1;
     private static List<LuaFunction> WrapperFuncs = new();
     private static List<byte[]> WrapperMetatableNames = new();
 
-    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("RYSY_wrapper\0");
+    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("RWR\0");
 
+    /// <summary>
+    /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua<->C# easily.
+    /// </summary>
     public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
-        var newIndex = LuaWrapperList.Count;
-        LuaWrapperList.Add(wrapper);
-
-        if (newIndex == WrapperMetatableNames.Count) {
-            WrapperMetatableNames.Add(Encoding.ASCII.GetBytes($"_RIW{newIndex}\0"));
-        }
+        int newIndex = RegisterWrapper(wrapper);
 
         if (state.NewMetatableASCII(WrapperMetatableNames[newIndex])) {
             // Create a metatable that will call the C# methods:
             int metatableIndex = state.GetTop();
 
-            state.PushNumber(newIndex);
-            state.RawSetInteger(metatableIndex, WrapperIDLoc);
-
-            state.PushASCIIString(WrapperMarkerNameASCII);
-            state.PushBoolean(true);
-            state.RawSet(metatableIndex);
-
-            state.PushString("__index");
-            if (newIndex == WrapperFuncs.Count) {
-                var f = CreateLuaWrapperForIdx(newIndex);
-                GCHandle.Alloc(f);
-                WrapperFuncs.Add(f);
-            }
-            state.PushCFunction(WrapperFuncs[newIndex]);
-            state.SetTable(metatableIndex);
-
-            state.PushString("__newindex");
-            state.PushCFunction(static (nint s) => {
-                var lua = Lua.FromIntPtr(s);
-
-                var wrapper = lua.UnboxWrapper<ILuaWrapper>(1);
-                // todo: implement
-
-                return 0;
-            });
-            state.SetTable(metatableIndex);
-
-
-            // equality operator
-            state.PushString("__eq");
-            state.PushCFunction(static (nint s) => {
-                var lua = Lua.FromIntPtr(s);
-
-                if (lua.IsWrapper(2)) {
-                    /*
-                    // get the wrapper indexes of both the wrappers
-                    // doesn't work because of the lack of wrapper deduplication, would be a bit faster though...
-                    lua.RawGetInteger(1, WrapperIDLoc);
-                    var aIdx = lua.ToInteger(lua.GetTop());
-                    lua.RawGetInteger(2, WrapperIDLoc);
-                    var bIdx = lua.ToInteger(lua.GetTop());
-                    lua.Pop(2);
-                    lua.PushBoolean(aIdx == bIdx);*/
-                    var a = lua.UnboxWrapper<ILuaWrapper>(1);
-                    var b = lua.UnboxWrapper<ILuaWrapper>(2);
-                    lua.PushBoolean(ReferenceEquals(a, b));
-                } else {
-                    lua.PushBoolean(false);
-                }
-
-                return 1;
-            });
-            state.SetTable(metatableIndex);
-
-
-            // set the table to be a metatable of itself
-            // this way, pushing a wrapper is very cheap, as it doesn't create any tables
-            state.PushCopy(metatableIndex);
-            state.SetMetaTable(metatableIndex);
+            SetupWrapperMetatable(state, newIndex, metatableIndex);
         }
+    }
+
+    private static void SetupWrapperMetatable(Lua state, int wrapperIndex, int metatableStackLoc) {
+        state.PushNumber(wrapperIndex);
+        state.RawSetInteger(metatableStackLoc, WrapperIDLoc);
+
+        state.PushASCIIString(WrapperMarkerNameASCII);
+        state.PushBoolean(true);
+        state.RawSet(metatableStackLoc);
+
+        state.PushString("__index");
+        if (wrapperIndex == WrapperFuncs.Count) {
+            var f = CreateLuaWrapperForIdx(wrapperIndex);
+            GCHandle.Alloc(f);
+            WrapperFuncs.Add(f);
+        }
+        state.PushCFunction(WrapperFuncs[wrapperIndex]);
+        state.SetTable(metatableStackLoc);
+
+        state.PushString("__newindex");
+        state.PushCFunction(static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var wrapper = lua.UnboxWrapper(1);
+            // todo: implement
+
+            return 0;
+        });
+        state.SetTable(metatableStackLoc);
+
+        // # operator
+        state.PushString("__len");
+        state.PushCFunction(static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var wrapper = lua.UnboxWrapper(1);
+
+            return wrapper.Lua__len(lua);
+        });
+        state.SetTable(metatableStackLoc);
+
+        // equality operator
+        state.PushString("__eq");
+        state.PushCFunction(static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            if (lua.IsWrapper(2)) {
+                /*
+                // get the wrapper indexes of both the wrappers
+                // doesn't work because of the lack of wrapper deduplication, would be a bit faster though...
+                lua.RawGetInteger(1, WrapperIDLoc);
+                var aIdx = lua.ToInteger(lua.GetTop());
+                lua.RawGetInteger(2, WrapperIDLoc);
+                var bIdx = lua.ToInteger(lua.GetTop());
+                lua.Pop(2);
+                lua.PushBoolean(aIdx == bIdx);*/
+                var a = lua.UnboxWrapper(1);
+                var b = lua.UnboxWrapper(2);
+                lua.PushBoolean(ReferenceEquals(a, b));
+            } else {
+                lua.PushBoolean(false);
+            }
+
+            return 1;
+        });
+        state.SetTable(metatableStackLoc);
+
+
+        // set the table to be a metatable of itself
+        // this way, pushing a wrapper is very cheap, as it doesn't create any tables
+        state.PushCopy(metatableStackLoc);
+        state.SetMetaTable(metatableStackLoc);
+    }
+
+    private static int RegisterWrapper(ILuaWrapper wrapper) {
+        var newIndex = LuaWrapperList.Count;
+        LuaWrapperList.Add(wrapper);
+
+        if (newIndex == WrapperMetatableNames.Count) {
+            WrapperMetatableNames.Add(Encoding.ASCII.GetBytes($"{newIndex}"));
+        }
+
+        return newIndex;
     }
 
     private static LuaFunction CreateLuaWrapperForIdx(int wrapperIndex) {
@@ -768,6 +785,14 @@ where TArg1 : class, ILuaWrapper {
         return t != LuaType.Nil;
     }
 
+    public static ILuaWrapper UnboxWrapper(this Lua lua, int loc){
+        lua.RawGetInteger(loc, WrapperIDLoc);
+        var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
+        lua.Pop(1);
+
+        return wrapper;
+    }
+
     public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
         lua.RawGetInteger(loc, WrapperIDLoc);
         var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
@@ -776,9 +801,34 @@ where TArg1 : class, ILuaWrapper {
         return (T)wrapper;
     }
 
+    public static Room UnboxRoomWrapper(this Lua lua, int loc) {
+        var roomWrapper = lua.UnboxWrapper(loc);
+        var room = roomWrapper switch {
+            Room r => r,
+            RoomLuaWrapper wr => wr.GetRoom(),
+            _ => throw new Exception($"Can't convert {roomWrapper} to a Room!")
+        };
+
+        return room;
+    }
+
     private static List<ILuaWrapper> LuaWrapperList = new();
-    internal static void ClearWrappers() {
+    private static List<GCHandle> LuaUsedHandles = new();
+
+    public static void ClearLuaResources() {
         LuaWrapperList.Clear();
+
+        foreach (var handler in LuaUsedHandles) {
+            handler.Free();
+        }
+        LuaUsedHandles.Clear();
+    }
+
+    public static void PushAndPinFunction(this Lua lua, LuaFunction func) {
+        var pin = GCHandle.Alloc(func);
+        LuaUsedHandles.Add(pin);
+
+        lua.PushCFunction(func);
     }
 
     public static void SetCurrentModName(this Lua lua, ModMeta? mod) {
@@ -802,6 +852,7 @@ where TArg1 : class, ILuaWrapper {
     public static long ToIntegerSafe(Lua lua, int index) {
         return lua.ToIntegerX(index) ?? throw new LuaException(lua, new InvalidCastException($"Can't convert lua {lua.Type(index)} [{lua.ToString(index)}] to c# integer"));
     }
+
 
     [LibraryImport("lua54")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]

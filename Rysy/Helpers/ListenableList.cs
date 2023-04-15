@@ -27,6 +27,16 @@ public class ListenableList<T> : IListenableList<T> {
         OnChanged = onChanged;
     }
 
+    public ListenableList(Action onChanged, int capacity) {
+        Inner = new(capacity);
+
+        OnChanged = onChanged;
+    }
+
+    public ListenableList(int capacity) {
+        Inner = new(capacity);
+    }
+
     public ListenableList(IEnumerable<T> from) {
         Inner = new(from);
     }

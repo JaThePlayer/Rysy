@@ -76,7 +76,10 @@ public sealed class FolderModFilesystem : IModFilesystem {
             return Array.Empty<string>();
         }
 
-        return Directory.EnumerateFiles(realPath, $"*.{extension}", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(Root, f).Unbackslash());
+
+        var searchFilter = string.IsNullOrWhiteSpace(extension) ? "*" : $"*.{extension}";
+
+        return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.AllDirectories).Select(f => Path.GetRelativePath(Root, f).Unbackslash());
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {

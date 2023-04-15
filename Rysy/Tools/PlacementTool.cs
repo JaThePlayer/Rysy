@@ -135,8 +135,7 @@ public class PlacementTool : Tool {
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             foreach (var item in placement.GetPreviewSprites(selection, RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2(), currentRoom)) {
-                item.MultiplyAlphaBy(0.4f);
-                item.Render();
+                item.WithMultipliedAlpha(0.4f).Render();
             }
         }
     }

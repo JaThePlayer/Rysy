@@ -303,11 +303,17 @@ function spikeHelper.getFieldInformations(variants, attribute)
 end
 
 local _RYSY_selectionFuncs = {
+	down = function(room, entity)
+		return utils.rectangle(entity.x, entity.y, entity.width, 8)
+	end,
 	up = function(room, entity)
 		return utils.rectangle(entity.x, entity.y - 8, entity.width, 8)
 	end,
 	left = function(room, entity)
 		return utils.rectangle(entity.x - 8, entity.y, 8, entity.height)
+	end,
+	right = function(room, entity)
+		return utils.rectangle(entity.x, entity.y, 8, entity.height)
 	end,
 }
 

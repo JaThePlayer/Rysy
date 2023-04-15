@@ -1,13 +1,22 @@
-﻿using Rysy.Entities;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+using Rysy.Entities;
 using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
+using System.CodeDom.Compiler;
 using System.Reflection;
 
 namespace Rysy;
 
 public static class EntityRegistry {
+    static EntityRegistry() {
+        RegisterHardcoded();
+    }
+
     private static Dictionary<string, Type> SIDToType { get; set; } = new();
     private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new();
     public static Dictionary<string, FieldList> SIDToFields { get; set; } = new();
@@ -21,7 +30,7 @@ public static class EntityRegistry {
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
-    public static async ValueTask RegisterAsync() {
+    public static async ValueTask RegisterAsync(bool loadLuaPlugins = true) {
         SIDToType.Clear();
         SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
@@ -34,7 +43,10 @@ public static class EntityRegistry {
 
         LoadingScene.Text = baseText;
 
-        if (Settings.Instance.LonnPluginPath is { } path) {
+        //TODO: REMOVE
+        //loadLuaPlugins = false;
+
+        if (loadLuaPlugins && Settings.Instance.LonnPluginPath is { } path) {
             using var w = new ScopedStopwatch("Registering Lua entities");
             LoadingScene.Text = $"{baseText} Loenn";
 
@@ -49,7 +61,7 @@ public static class EntityRegistry {
 
         foreach (var (_, mod) in ModRegistry.Mods) {
             LoadingScene.Text = $"{baseText} {mod.Name}";
-            LoadPluginsFromMod(mod);
+            LoadPluginsFromMod(mod, loadLuaPlugins);
         }
 
 
@@ -60,17 +72,41 @@ public static class EntityRegistry {
         }
     }
 
-    private static void LoadPluginsFromMod(ModMeta mod) {
-        var fs = mod.Filesystem;
-        var allPlugins = fs.FindFilesInDirectoryRecursive("Loenn", "lua").ToList();
+    private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins) {
+        if (loadLuaPlugins)
+            foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToList()) {
+                if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
+                    LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
 
-        foreach (var pluginPath in allPlugins) {
-            if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
-                RegisterFromLua(fs.TryReadAllText(pluginPath)!, pluginPath, trigger: false, mod);
-            } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
-                RegisterFromLua(fs.TryReadAllText(pluginPath)!, pluginPath, trigger: true, mod);
+                } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
+                    LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
+                }
             }
+
+        LoadRysyPlugins(mod);
+    }
+
+    private static void LoadRysyPlugins(ModMeta mod) {
+        mod.OnAssemblyReloaded += (asm) => {
+            RegisterFrom(asm);
+
+            // perform a quick reload to make entities use their new C# type.
+            if (RysyEngine.Scene is EditorScene editor) {
+                editor.QuickReload();
+            }
+        };
+
+        if (mod.PluginAssembly is { } asm) {
+            RegisterFrom(asm);
         }
+    }
+
+    private static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
+        mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
+            var plugin = stream.ReadAllText();
+
+            RegisterFromLua(plugin, pluginPath, trigger, mod);
+        });
     }
 
     private static void RegisterHardcoded() {
@@ -108,11 +144,11 @@ public static class EntityRegistry {
                 var placements = trigger ? TriggerPlacements : EntityPlacements;
 
                 lock (placements) {
-                    foreach (var item in pl.Placements) {
-                        placements.Add(new($"{pl.Name} [{item.Name}]") {
-                            ValueOverrides = item.Data,
+                    foreach (var palcement in pl.Placements) {
+                        placements.Add(new($"{pl.Name.Split('/').Last().Humanize()} [{palcement.Name}]") {
+                            ValueOverrides = palcement.Data,
                             SID = pl.Name,
-                            Tooltip = "[From Lonn]",
+                            Tooltip = mod is { } ? $"{mod.Name}\n[From Lonn]" : "[From Lonn]",
                             PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity
                         });
                     }
@@ -184,6 +220,16 @@ public static class EntityRegistry {
 
         from.Finalizer?.Invoke(entity);
 
+        var minimumNodes = entity.NodeLimits.Start.Value;
+        if (minimumNodes > 0 && entity.Nodes is { Count: 0 }) {
+            var nodes = entity.EntityData.Nodes;
+            for (int i = 0; i < minimumNodes; i++) {
+                nodes.Add(new(0, 0));
+            }
+
+            entity.InitializeNodePositions();
+        }
+
         return entity;
     }
 
@@ -210,6 +256,8 @@ public static class EntityRegistry {
         e.ID = id ?? room.NextEntityID();
         e.Room = room;
         e.Pos = pos;
+        e.OnChanged();
+        entityData.OnChanged += e.OnChanged;
 
         if (e is LonnEntity lonnPlugin) {
             lonnPlugin.Plugin = SIDToLonnPlugin[sid];
@@ -226,16 +274,6 @@ public static class EntityRegistry {
 
         if (e.ResizableY && e.Height < min.Y) {
             e.Height = min.Y;
-        }
-
-        var minimumNodes = e.NodeLimits.Start.Value;
-        if (minimumNodes > 0 && e.Nodes is not { }) {
-            var nodes = e.EntityData.Nodes = new List<Node>(minimumNodes);
-            for (int i = 0; i < minimumNodes; i++) {
-                nodes.Add(new(0, 0));
-            }
-
-            e.InitializeNodePositions();
         }
 
         if (e is Decal d) {

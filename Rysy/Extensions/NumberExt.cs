@@ -23,9 +23,13 @@ public static class NumberExt {
     public static T Div<T>(this T num, T by) where T : INumber<T>
         => num / by;
 
-    public static bool IsIn(this int i, Range range) {
+    public static bool IsInRange(this int i, Range range) {
         return (range.Start.IsFromEnd || range.Start.Value <= i)
             && (range.End.IsFromEnd || range.End.Value >= i);
+    }
+
+    public static bool IsInRange<T>(this T num, T min, T max) where T : INumber<T> {
+        return num >= min && num <= max;
     }
 
     /// <summary>
