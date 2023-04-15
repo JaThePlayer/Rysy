@@ -3,8 +3,10 @@
 public record struct LineSprite : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; }
-    public void MultiplyAlphaBy(float alpha) {
-        Color *= alpha;
+    public ISprite WithMultipliedAlpha(float alpha) {
+        return this with {
+            Color = Color * alpha,
+        };
     }
 
     public bool IsLoaded => true;

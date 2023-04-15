@@ -10,7 +10,7 @@ public static partial class StringExt {
     //[GeneratedRegex(@"[A-Z]:[/\\]Users[/\\](.*?)[/\\]")]
     public static Regex UserNameRegex = new(@"[A-Z]:[/\\]Users[/\\](.*?)[/\\]", RegexOptions.Compiled);
 
-    private static Regex UnformatRegex = new("\u001b\\[.{1,2}m", RegexOptions.Compiled);
+    private static Regex UnformatRegex = new(@"\u001b\[[^m]{1,2}m", RegexOptions.Compiled);
 
     /// <summary>
     /// Splits the string on [a-z][A-Z] patterns, inserting a space between them.

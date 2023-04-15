@@ -347,12 +347,14 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
 
-    internal class AutotiledSpriteList : ISprite {
+    internal record class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
 
-        public void MultiplyAlphaBy(float alpha) {
-            Color *= alpha;
+        public ISprite WithMultipliedAlpha(float alpha) {
+            return this with {
+                Color = Color * alpha,
+            };
         }
 
         public bool IsLoaded //=> Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });

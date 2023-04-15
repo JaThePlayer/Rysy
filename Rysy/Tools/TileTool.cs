@@ -77,8 +77,7 @@ public abstract class TileTool : Tool {
 
     public void RenderTiles(Vector2 loc, int w, int h) {
         foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h) ?? Array.Empty<ISprite>()) {
-            item.MultiplyAlphaBy(0.3f);
-            item.Render();
+            item.WithMultipliedAlpha(0.3f).Render();
         }
     }
 

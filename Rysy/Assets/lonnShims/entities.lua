@@ -50,7 +50,7 @@ end
 -- Returns drawable, depth
 function entities.getEntityDrawable(name, handler, room, entity, viewport)
 	--_RYSY_unimplemented()
-
+	return {}
 end
 
 -- Does not check for errors

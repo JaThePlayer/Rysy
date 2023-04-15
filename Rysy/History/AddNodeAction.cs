@@ -3,10 +3,7 @@
 public record class AddNodeAction(Entity Entity, Node Node, int NodeIdx) : IHistoryAction {
     public bool Apply() {
         var node = Node;
-
-        if (Entity.Nodes is not { } nodes) {
-            nodes = Entity.EntityData.Nodes = new List<Node>();
-        }
+        var nodes = Entity.Nodes;
 
         nodes.Insert(NodeIdx, node);
 
@@ -18,7 +15,7 @@ public record class AddNodeAction(Entity Entity, Node Node, int NodeIdx) : IHist
     public void Undo() {
         var nodes = Entity.Nodes;
 
-        nodes!.Remove(Node);
+        nodes.Remove(Node);
 
         Entity.ClearRoomRenderCache();
     }

@@ -1,10 +1,11 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using Rysy.Extensions;
 
 namespace Rysy.Graphics;
 
 public class Camera {
-    private Vector2 _pos;
-    public Vector2 Pos => _pos;
+    private XnaVector2 _pos;
+    public XnaVector2 Pos => _pos;
 
     private float _Scale = 1f;
     public float Scale {
@@ -43,7 +44,7 @@ public class Camera {
     /// <summary>
     /// Moves the camera the specified amount.
     /// </summary>
-    public void Move(Vector2 amount) {
+    public void Move(XnaVector2 amount) {
         _pos += amount;
 
         RecalculateMatrix();
@@ -52,7 +53,7 @@ public class Camera {
     /// <summary>
     /// Moves the camera to the specified position.
     /// </summary>
-    public void Goto(Vector2 position) {
+    public void Goto(XnaVector2 position) {
         _pos = position;
 
         RecalculateMatrix();
@@ -62,13 +63,13 @@ public class Camera {
     /// Centers the camera on the specified REAL position.
     /// </summary>
     /// <param name="position">The position to center on.</param>
-    public void CenterOnRealPos(Vector2 position) {
-        _pos = Vector2.Floor(position - new Vector2(Viewport.Width / 2, Viewport.Height / 2) / Scale);
+    public void CenterOnRealPos(XnaVector2 position) {
+        _pos = XnaVector2.Floor(position - new Vector2(Viewport.Width / 2, Viewport.Height / 2) / Scale);
 
         RecalculateMatrix();
     }
 
-    public void CenterOnScreenPos(Vector2 position) {
+    public void CenterOnScreenPos(XnaVector2 position) {
         CenterOnRealPos(ScreenToReal(position));
     }
 
@@ -106,13 +107,13 @@ public class Camera {
     /// </summary>
     /// <param name="pos">The position to convert.</param>
     /// <returns>The converted position.</returns>
-    public Vector2 RealToScreen(Vector2 pos) => Vector2.Transform(pos, Matrix);
+    public XnaVector2 RealToScreen(XnaVector2 pos) => XnaVector2.Transform(pos, Matrix);
 
     /// <summary>
     /// Converts a screen position to a real (level/map) position.
     /// </summary>
-    public Vector2 ScreenToReal(Vector2 pos) => Vector2.Transform(pos, Inverse);
-    public Point ScreenToReal(Point pos) => Vector2.Transform(pos.ToVector2(), Inverse).ToPoint();
+    public XnaVector2 ScreenToReal(XnaVector2 pos) => XnaVector2.Transform(pos, Inverse);
+    public Point ScreenToReal(Point pos) => XnaVector2.Transform(pos.ToVector2(), Inverse).ToPoint();
     public Rectangle ScreenToReal(Rectangle rect) {
         var (x, y) = RealToScreen(rect.Location.ToVector2());
         var w = rect.Width * Scale;
@@ -135,7 +136,7 @@ public class Camera {
     /// <summary>
     /// Checks whether the given rectangle is visible inside of the camera at a given camera position
     /// </summary>
-    public bool IsPointVisible(Vector2 point) {
+    public bool IsPointVisible(XnaVector2 point) {
         var (x, y) = RealToScreen(point);
 
         return Viewport.Bounds.Contains(new Vector2(x,y));
@@ -155,7 +156,7 @@ public class Camera {
     public void HandleMouseMovement() {
         // Right click drag - move camera
         if (Input.Mouse.Right.Held() && Input.Mouse.PositionDelta != default) {
-            Move(-Input.Mouse.PositionDelta.ToVector2() / Scale);
+            Move(-Input.Mouse.PositionDelta.ToNVector2() / Scale);
         }
 
         // Scrolled - zoom camera

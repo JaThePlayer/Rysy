@@ -15,8 +15,10 @@ public record struct NineSliceSprite : ISprite {
 
     public bool IsLoaded => Texture.Texture is { };
 
-    public void MultiplyAlphaBy(float alpha) {
-        Color *= alpha;
+    public ISprite WithMultipliedAlpha(float alpha) {
+        return this with {
+            Color = Color * alpha,
+        };
     }
 
     public void Render() {

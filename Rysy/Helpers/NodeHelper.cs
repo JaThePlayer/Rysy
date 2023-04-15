@@ -11,7 +11,7 @@ public static class NodeHelper {
     /// This will take into account interfaces implemented on the entity type.
     /// </summary>
     public static IEnumerable<ISprite> GetNodeSpritesForNode(Entity entity, int nodeId) {
-        if (entity.Nodes is not { } nodes) {
+        if (entity.Nodes is not { Count: > 0 } nodes) {
             yield break;
         }
 
@@ -45,7 +45,7 @@ public static class NodeHelper {
     /// This will take into account interfaces implemented on the entity type.
     /// </summary>
     public static IEnumerable<ISprite> GetNodeSpritesFor(Entity entity, bool includeConnectors = true) {
-        if (entity.Nodes is not { } nodes) {
+        if (entity.Nodes is not { Count: > 0 } nodes) {
             return Array.Empty<ISprite>();
         }
 
@@ -63,7 +63,7 @@ public static class NodeHelper {
     /// Rysy will guess how this should be done, bypassing <see cref="ICustomNodeHandler"/>
     /// </summary>
     public static IEnumerable<ISprite> GetGuessedNodeSpritesFor(Entity entity, bool includeConnectors = true) {
-        if (entity.Nodes is not { } nodes) {
+        if (entity.Nodes is not { Count: > 0 } nodes) {
             yield break;
         }
 
@@ -90,7 +90,7 @@ public static class NodeHelper {
     }
 
     private static IEnumerable<ISprite>? GetNodeConnectors(Entity entity) {
-        if (entity.Nodes is { } nodes) {
+        if (entity.Nodes is { Count: > 0 } nodes) {
             return entity switch {
                 INodePathProvider p => p.GetNodePathSprites(),
                 _ => NodePathTypes.Line(entity),
@@ -123,8 +123,7 @@ public static class NodeHelper {
             try {
                 var spr = entity.GetSprites();
                 foreach (var item in spr) {
-                    item.MultiplyAlphaBy(.5f);
-                    yield return item;
+                    yield return item.WithMultipliedAlpha(.5f);
                 }
             } finally {
                 entity.Pos = oldPos;

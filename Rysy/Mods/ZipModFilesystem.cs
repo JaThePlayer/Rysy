@@ -163,7 +163,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
         var files = zip.Archive.Entries.SelectWhereNotNull(e => {
             var fullName = e.FullName;
-            var valid = fullName.StartsWith(directory, StringComparison.Ordinal)
+            var valid = !fullName.EndsWith("/", StringComparison.Ordinal)
+                     && fullName.StartsWith(directory, StringComparison.Ordinal)
                      && fullName.EndsWith(extension, StringComparison.Ordinal);
             return valid ? fullName : null;
         }).ToList();

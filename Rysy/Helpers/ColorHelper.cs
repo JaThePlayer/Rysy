@@ -4,7 +4,8 @@ public static class ColorHelper {
     static Dictionary<string, Color> cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     static Dictionary<string, Color[]> colorArrayCache = new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase);
     static ColorHelper() {
-        foreach (var prop in typeof(Color).GetProperties())             if (prop.GetValue(default(Color), null) is Color color)
+        foreach (var prop in typeof(Color).GetProperties())
+            if (prop.GetValue(default(Color), null) is Color color)
                 cache[prop.Name] = color;
         cache[""] = Color.White;
         colorArrayCache[""] = null!;
@@ -101,11 +102,18 @@ public static Color HsvToColor(float h, float s, float v) {
     /// <returns></returns>
     public static Color HSVToColor(float h, float s, float v) {
         float H = h;
-        while (H < 0) H += 360; ;
-        while (H >= 360) H -= 360; ;
+        while (H < 0)
+            H += 360;
+
+        while (H >= 360)
+            H -= 360;
+
         float R, G, B;
-        if (v <= 0) R = G = B = 0; else if (s <= 0)             R = G = B = v;
-else {
+        if (v <= 0)
+            R = G = B = 0;
+        else if (s <= 0)
+            R = G = B = v;
+        else {
             float hf = H / 60.0f;
             int i = (int) Math.Floor(hf);
             float f = hf - i;
@@ -173,12 +181,22 @@ else {
         return new Color(R, G, B);
     }
 
+    /// <summary>
+    /// Gets the color of rainbow spinners in a given location in the room.
+    /// </summary>
+    public static Color GetRainbowColor(Room room, Vector2 pos) {
+        float num = 280f;
+        float value = ((room.Pos + pos).Length()) % num / num;
+        return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
+    }
+
     private static uint GetPacked(ReadOnlySpan<char> s)
         => uint.Parse(s, System.Globalization.NumberStyles.HexNumber);
 
     private static ReadOnlySpan<char> PrepareSpan(ReadOnlySpan<char> s) {
         s = s.Trim();
-        if (s.StartsWith("#"))             s = s[1..];
+        if (s.StartsWith("#"))
+            s = s[1..];
 
         return s;
     }
@@ -189,7 +207,8 @@ else {
     /// <param name="color"></param>
     /// <returns></returns>
     public static string ToRGBAString(Color color) {
-        if (color.A == 255)             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
+        if (color.A == 255)
+            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
         return $"{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
     }
@@ -200,7 +219,8 @@ else {
     /// <param name="color"></param>
     /// <returns></returns>
     public static string ToARGBString(Color color) {
-        if (color.A == 255)             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
+        if (color.A == 255)
+            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
         return $"{color.A:x2}{color.R:x2}{color.G:x2}{color.B:x2}";
     }

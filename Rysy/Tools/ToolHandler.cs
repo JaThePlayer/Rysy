@@ -8,7 +8,7 @@ using Rysy.Scenes;
 namespace Rysy.Tools;
 
 public class ToolHandler {
-    public const float DefaultMaterialListWidth = 200f;
+    public const float DefaultMaterialListWidth = 360f;
 
     public readonly HistoryHandler History;
 
@@ -21,6 +21,7 @@ public class ToolHandler {
         AddTool(new TileRectTool());
         AddTool(new PlacementTool());
         AddTool(new SelectionTool());
+        AddTool(new ScriptTool());
 
         HotReloadHandler.OnHotReload += () => {
             _firstGui = true;

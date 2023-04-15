@@ -43,10 +43,15 @@ internal class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.moveUpPixel", "ctrl+up", CreateMoveHandler(new(0, -1)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.moveDownPixel", "ctrl+down", CreateMoveHandler(new(0, 1)), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeUp", "w", CreateUpsizeHandler(new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeDown", "s", CreateUpsizeHandler(new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeLeft",   "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeRight",  "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeTop",    "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 8), new()), HotkeyModes.OnHoldSmoothInterval);
+
+        handler.AddHotkeyFromSettings("selection.downsizeLeft",   "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeRight",  "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeTop",    "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
 
         handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", HorizontalFlipSelections);
         handler.AddHotkeyFromSettings("selection.flipVertical", "v", VerticalFlipSelections);
@@ -123,9 +128,23 @@ internal class SelectionTool : Tool {
         CopypasteHelper.CopySelectionsToClipboard(CurrentSelections);
     }
 
-    private Action CreateUpsizeHandler(Point offset) => () => {
+    private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
+        /*
+        Point resize = offset;
+        Vector2 move = default;
+
+        if (resize.X < 0) {
+            move.X += resize.X;
+            resize.X = Math.Abs(resize.X);
+        }
+
+        if (resize.Y < 0) {
+            move.Y += resize.Y;
+            resize.Y = Math.Abs(resize.Y);
+        }*/
+
         if (CurrentSelections is { } selections) {
-            ResizeSelectionsBy(offset, selections);
+            ResizeSelectionsBy(resize, move, selections);
         }
     };
 
@@ -192,14 +211,19 @@ internal class SelectionTool : Tool {
         History.ApplyNewAction(action);
     }
 
-    private void ResizeSelectionsBy(Point offset, List<Selection> selections) {
-        var action = selections.Select(s => s.Handler.TryResize(offset)).MergeActions();
+    private void ResizeSelectionsBy(Point resize, Vector2 move, List<Selection> selections) {
+        var actions = selections.Select(s => s.Handler.TryResize(resize));
+        if (move != default) {
+            actions = actions.Concat(selections.Select(s => s.Handler.MoveBy(move)));
+        }
+            
+        var merged = actions.MergeActions();
 
-        if (action.Any()) {
+        if (merged.Any()) {
             ClearColliderCachesInSelections();
         }
 
-        History.ApplyNewAction(action);
+        History.ApplyNewAction(merged);
     }
 
     private void SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections) {

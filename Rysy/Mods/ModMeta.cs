@@ -1,11 +1,28 @@
 ﻿using KeraLua;
 using Rysy.LuaSupport;
+using System.Reflection;
 using YamlDotNet.Serialization;
 
 namespace Rysy.Mods;
 
 public sealed class ModMeta : ILuaWrapper {
     public ModModule Module { get; internal set; }
+
+
+    private Assembly? _PluginAssembly;
+    public Assembly? PluginAssembly {
+        get => _PluginAssembly;
+        internal set {
+            _PluginAssembly = value;
+
+            OnAssemblyReloaded?.Invoke(value!);
+        } 
+    }
+
+    /// <summary>
+    /// Gets called whenever the <see cref="PluginAssembly"/> gets reloaded.
+    /// </summary>
+    public event Action<Assembly> OnAssemblyReloaded;
 
     public IModFilesystem Filesystem { get; internal set; }
 
@@ -71,11 +88,6 @@ public sealed class EverestModuleMetadata {
                 Version = new Version(value[..versionSplitIndex]);
         }
     }
-
-    /// <summary>
-    /// The path of the mod .dll inside the ZIP or the absolute DLL path if in a directory.
-    /// </summary>
-    public string DLL { get; set; }
 
     /// <summary>
     /// The dependencies of the mod.

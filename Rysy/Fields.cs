@@ -31,12 +31,14 @@ public static class Fields {
         Values = values.ToDictionary(v => v, v => v)
     };
 
-    public static EditableDropdownField<T> EditableDropdown<T>(T def, Dictionary<string, T> dict)
-        where T : IEquatable<T>
-    => new() {
-        Default = def,
-        Values = dict
-    };
+    public static EditableDropdownField<T> EditableDropdown<T>(T def, Dictionary<T, string> dict)
+        where T : notnull {
+
+        return new() {
+            Default = def,
+            Values = dict
+        };
+    }
 
     public static ColorField RGBA(Color def) => new() { 
         Default = def,
@@ -57,7 +59,7 @@ public static class Fields {
         bool b => Bool(b),
         float b => Float(b),
         double d => Float((float)d),
-        int i => Int(i),
+        int i => Float(i), // floats that represent integer values get saved as integers to map data, so we can't return Int(i)
         long l => Int((int)l),
         char c => Char(c),
         string s => String(s),

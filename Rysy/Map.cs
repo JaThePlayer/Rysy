@@ -87,7 +87,7 @@ public sealed class Map : IPackable {
     public void Unpack(BinaryPacker.Element from) {
         foreach (var child in from.Children) {
             if (child is null) {
-                Console.WriteLine("Emtpty child in map!");
+                Console.WriteLine("Empty child in map!");
                 continue;
             }
             switch (child.Name) {

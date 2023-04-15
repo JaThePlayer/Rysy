@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Mods;
 using Rysy.Platforms;
+using System.Reflection;
 
 Environment.CurrentDirectory = Path.GetDirectoryName(typeof(RysyEngine).Assembly.Location) ?? Environment.CurrentDirectory;
 new RysyEngine().Run();

@@ -26,7 +26,7 @@ public static class PrefabHelper {
         if (!File.Exists(path))
             return;
 
-        if (await JsonHelper.TryDeserializeAsync<Prefab>(File.Open(path, FileMode.Open)) is not { } prefab)
+        if (await JsonExtensions.TryDeserializeAsync<Prefab>(File.Open(path, FileMode.Open)) is not { } prefab)
             return;
 
         lock (_CurrentPrefabs) {
@@ -129,7 +129,7 @@ public static class PrefabHelper {
                         foreach (var item in nodes) {
                             item.Pos += delta;
                         }
-                    sprites.AddRange(e.GetSpritesWithNodes());
+                    sprites.AddRange(e.GetSpritesWithNodes().OrderByDescending(x => x.Depth));
                 }
             }
 

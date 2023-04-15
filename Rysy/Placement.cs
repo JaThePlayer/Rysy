@@ -108,7 +108,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         if (handler is EntitySelectionHandler entityHandler) {
             entityHandler.Entity.Pos = pos;
             entityHandler.Entity.InitializeNodePositions();
-            return entityHandler.Entity.GetSpritesWithNodes();
+            return entityHandler.Entity.GetSpritesWithNodes().OrderByDescending(x => x.Depth);
         }
             
 

@@ -38,7 +38,7 @@ public static class SettingsHelper {
 #endif
             try {
                 using var stream = File.OpenRead(settingsFile);
-                settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.DefaultOptions);
+                settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.SettingsOptions);
             } catch (Exception e) {
                 Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
 #if DOT_TRACE
@@ -73,7 +73,7 @@ public static class SettingsHelper {
         using var stream = File.Exists(settingsFile)
             ? File.Open(settingsFile, FileMode.Truncate)
             : File.Open(settingsFile, FileMode.CreateNew);
-        JsonSerializer.Serialize(stream, settings, typeof(T), JsonSerializerHelper.DefaultOptions);
+        JsonSerializer.Serialize(stream, settings, typeof(T), JsonSerializerHelper.SettingsOptions);
 
         return settings;
     }
@@ -185,6 +185,18 @@ public sealed class Settings {
     public bool MinifyClipboard { get; set; } = true;
 
     public bool LogMissingTextures { get; set; } = true;
+
+
+    private bool _BorderlessFullscreen = false;
+    // has issues with mouse positions
+    public bool BorderlessFullscreen {
+        get => _BorderlessFullscreen;
+        set {
+            _BorderlessFullscreen = value;
+
+            RysyEngine.ToggleBorderlessFullscreen(value);
+        }
+    }
 
 #warning Remove
     public string? LonnPluginPath { get; set; }

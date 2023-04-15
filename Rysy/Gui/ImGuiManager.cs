@@ -141,23 +141,25 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, Dictionary<string, T> values, Func<string, T> stringToValue) where T : IEquatable<T> {
+    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue) {
         var val = value;
-        var valueName = values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString();
-
+        //var valueName = //values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString();
+        if (!values.TryGetValue(value, out var valueName)) {
+            valueName = value!.ToString();
+        }
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - ImGui.CalcTextSize("+").X - ImGui.GetStyle().FramePadding.X * 3);
-        if (ImGui.InputText("##text", ref valueName, 128)) {
+        if (ImGui.InputText($"##text{name}", ref valueName, 128)) {
             value = stringToValue(valueName);
             return true;
         }
 
         ImGui.SameLine(0f,0f);
 
-        if (ImGui.BeginCombo("##combo", valueName, ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview)) {
             foreach (var item in values) {
-                if (ImGui.MenuItem(item.Key)) {
-                    value = item.Value;
+                if (ImGui.MenuItem(item.Value)) {
+                    value = item.Key;
                     return true;
                 }
             }
