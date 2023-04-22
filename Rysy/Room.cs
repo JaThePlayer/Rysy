@@ -203,12 +203,14 @@ public sealed class Room : IPackable, ILuaWrapper {
                     }).ToListenableList<Entity>(ClearFgDecalsRenderCache);
                     break;
                 case "entities":
+                    Entities.Clear();
                     foreach (var entity in child.Children) {
                         Entities.Add(EntityRegistry.Create(entity, this, trigger: false));
                     }
 
                     break;
                 case "triggers":
+                    Triggers.Clear();
                     foreach (var entity in child.Children) {
                         Triggers.Add(EntityRegistry.Create(entity, this, trigger: true));
                     }
@@ -374,17 +376,14 @@ public sealed class Room : IPackable, ILuaWrapper {
             CacheSpritesIfNeeded();
 
             if (!selected && CachedSprites!.All(s => s.IsLoaded)) {
-                RysyEngine.OnFrameEnd += () => CacheIntoCanvas(camera);
+                RysyEngine.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
             }
 
-            foreach (var item in CachedSprites!) {
-                item.Render(camera, new(X, Y));
-            }
+            if (selected)
+                foreach (var item in CachedSprites!) {
+                    item.Render(camera, new(X, Y));
+                }
         }
-
-        //foreach (var item in CachedSprites) {
-        //    item.Render(camera, new(X, Y));
-        //}
     }
 
     internal void CacheSpritesIfNeeded() {

@@ -1,4 +1,11 @@
 ﻿namespace Rysy.Mods;
 
-public abstract class ModModule {
+public class ModModule {
+    public virtual void Load() {
+
+    }
+
+    public virtual void Unload() {
+
+    }
 }

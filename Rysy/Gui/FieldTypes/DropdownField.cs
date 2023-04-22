@@ -2,12 +2,17 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public class DropdownField<T> : IField where T : notnull {
+public record class DropdownField<T> : IField where T : notnull {
+    public string Tooltip { get; set; }
+
     public Dictionary<T, string> Values;
 
     public T Default { get; set; }
 
     public object GetDefault() => Default!;
+
+    public void SetDefault(object newDefault)
+        => Default = (T)newDefault;
 
     public bool IsValid(object value) {
         if (value is not T val) {
@@ -27,7 +32,7 @@ public class DropdownField<T> : IField where T : notnull {
 
         T? ret = default;
 
-        if (ImGui.BeginCombo(fieldName, humanizedName)) {
+        if (ImGui.BeginCombo(fieldName, humanizedName).WithTooltip(Tooltip)) {
             foreach (var (key, name) in Values) {
                 if (ImGui.MenuItem(name)) {
                     ret = key;
@@ -39,4 +44,6 @@ public class DropdownField<T> : IField where T : notnull {
 
         return ret;
     }
+
+    public IField CreateClone() => this with { };
 }

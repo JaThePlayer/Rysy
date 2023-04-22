@@ -1,13 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Rysy.Entities;
 using Rysy.Extensions;
-using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
-using System.CodeDom.Compiler;
 using System.Reflection;
 
 namespace Rysy;
@@ -30,7 +26,7 @@ public static class EntityRegistry {
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
-    public static async ValueTask RegisterAsync(bool loadLuaPlugins = true) {
+    public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
         SIDToType.Clear();
         SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
@@ -61,18 +57,19 @@ public static class EntityRegistry {
 
         foreach (var (_, mod) in ModRegistry.Mods) {
             LoadingScene.Text = $"{baseText} {mod.Name}";
-            LoadPluginsFromMod(mod, loadLuaPlugins);
+            LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins);
         }
 
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
             LoadingScene.Text = $"{baseText} Rysy";
 
-            await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
+            if (loadCSharpPlugins)
+                await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
     }
 
-    private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins) {
+    private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins) {
         if (loadLuaPlugins)
             foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToList()) {
                 if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
@@ -83,7 +80,8 @@ public static class EntityRegistry {
                 }
             }
 
-        LoadRysyPlugins(mod);
+        if (loadCSharpPlugins)
+            LoadRysyPlugins(mod);
     }
 
     private static void LoadRysyPlugins(ModMeta mod) {
@@ -204,7 +202,7 @@ public static class EntityRegistry {
         }
     }
 
-    
+
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
         Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
@@ -259,11 +257,21 @@ public static class EntityRegistry {
         e.OnChanged();
         entityData.OnChanged += e.OnChanged;
 
-        if (e is LonnEntity lonnPlugin) {
-            lonnPlugin.Plugin = SIDToLonnPlugin[sid];
+        if (e is LonnEntity lonnEntity) {
+            if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+                plugin = LonnEntityPlugin.Default(LuaCtx, sid);
+                SIDToLonnPlugin[sid] = plugin;
+            }
+
+            lonnEntity.Plugin = plugin;
         }
         if (e is LonnTrigger lonnTrigger) {
-            lonnTrigger.Plugin = SIDToLonnPlugin[sid];
+            if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+                plugin = LonnEntityPlugin.Default(LuaCtx, sid);
+                SIDToLonnPlugin[sid] = plugin;
+            }
+
+            lonnTrigger.Plugin = plugin;
         }
 
         var min = e.MinimumSize;

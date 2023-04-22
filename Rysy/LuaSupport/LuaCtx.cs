@@ -107,6 +107,11 @@ public class LuaCtx {
         RYSY = {} -- Set up a global RYSY variable, so that plugins know they're running in Rysy if needed.
         _RYSY_entities = {}
 
+        _MAP_VIEWER = {
+            name = "rysy",
+            version = "0.0.0" -- todo: provide this automatically
+        }
+
         _RYSY_unimplemented = function()
             local info = debug.getinfo(2)
             local caller = info.name
@@ -195,7 +200,7 @@ public class LuaCtx {
             var modName = lua.FastToString(2, callMetamethod: false);
             lua.Pop(2);
 
-            Console.WriteLine($"requireFromPlugin {lib}, {modName}");
+            //Console.WriteLine($"requireFromPlugin {lib}, {modName}");
 
             if (ModRegistry.GetModByName(modName) is not { } mod) {
                 lua.Error($"Mod {modName} not loaded!");

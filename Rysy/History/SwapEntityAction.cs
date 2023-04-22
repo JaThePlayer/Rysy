@@ -11,6 +11,7 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
             return false;
 
         list[idx] = With;
+        With.ID = Orig.ID;
 
         return true;
     }

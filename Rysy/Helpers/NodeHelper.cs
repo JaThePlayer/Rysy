@@ -89,7 +89,7 @@ public static class NodeHelper {
         }
     }
 
-    private static IEnumerable<ISprite>? GetNodeConnectors(Entity entity) {
+    public static IEnumerable<ISprite>? GetNodeConnectors(Entity entity) {
         if (entity.Nodes is { Count: > 0 } nodes) {
             return entity switch {
                 INodePathProvider p => p.GetNodePathSprites(),

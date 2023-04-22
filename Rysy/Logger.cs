@@ -76,7 +76,7 @@ public static class Logger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-        var txt = $"{message}: {exception.ToString()}\n";
+        var txt = $"[{LogLevel.Error.ToColoredString()}] {message}: {exception.ToString()}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -93,7 +93,7 @@ public static class Logger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-        var txt = $"{message.GetFormattedText()}: {exception.ToString()}\n";
+        var txt = $"[{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exception.ToString()}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -134,9 +134,9 @@ public static class Logger {
         lock (FILE_LOCK) {
             var unformatted = str.UnformatColors();
             if (UseColorsInConsole) {
-                Console.Write(str.TryCensor());
+                Console.Write(str.Censor());
             } else {
-                Console.Write(unformatted.TryCensor());
+                Console.Write(unformatted.Censor());
             }
 
             File.AppendAllText(LogFile, unformatted); 

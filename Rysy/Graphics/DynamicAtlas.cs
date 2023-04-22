@@ -64,7 +64,7 @@ public class DynamicAtlas : IAtlas {
             Textures[key] = VirtTexture.FromAtlasSubtexture(_packed, new(pos.Value.X, pos.Value.Y, rTexture.Width, rTexture.Height), rTexture.Width, rTexture.Height);
         }
 
-        RysyEngine.OnFrameEnd += () => PackTextureCallback(texture, pos.Value.ToVector2(), needsClear);
+        RysyEngine.OnEndOfThisFrame += () => PackTextureCallback(texture, pos.Value.ToVector2(), needsClear);
 
         return true;
     }

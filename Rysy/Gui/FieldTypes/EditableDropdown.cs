@@ -9,10 +9,16 @@ static class EditableDropdownHelper {
     };
 }
 
-public class EditableDropdownField<T> : IField
+public record class EditableDropdownField<T> : IField
     where T : notnull 
 {
+    public string Tooltip { get; set; }
+
     public Dictionary<T, string> Values;
+
+    public Func<string, T> StringToT;
+
+    public T Default { get; set; }
 
     public EditableDropdownField() {
         var obj = EditableDropdownHelper.DefaultStringToT[typeof(T)];
@@ -20,11 +26,9 @@ public class EditableDropdownField<T> : IField
         StringToT = (Func<string, T>)obj;
     }
 
-    public Func<string, T> StringToT;
-
-    public T Default { get; set; }
-
     public object GetDefault() => Default!;
+    public void SetDefault(object newDefault)
+        => Default = (T) newDefault;
 
     public bool IsValid(object value) {
         if (value is not T val) {
@@ -41,6 +45,8 @@ public class EditableDropdownField<T> : IField
 
         var prevVal = val;
 
-        return ImGuiManager.EditableCombo(fieldName, ref val, Values, StringToT) ? val : null;
+        return ImGuiManager.EditableCombo(fieldName, ref val, Values, StringToT, Tooltip) ? val : null;
     }
+
+    public IField CreateClone() => this with { };
 }

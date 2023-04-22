@@ -19,6 +19,7 @@ public sealed class LonnEntityPlugin {
 
     public Func<ILuaWrapper, Entity, string?>? GetTexture;
     public bool HasGetSprite;
+    public bool HasGetNodeSprite;
 
     public Func<ILuaWrapper, Entity, Vector2> GetJustification;
     public Func<ILuaWrapper, Entity, Vector2> GetScale { get; set; }
@@ -113,6 +114,21 @@ public sealed class LonnEntityPlugin {
         lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
+    public static LonnEntityPlugin Default(LuaCtx ctx, string sid) {
+        ctx.Lua.DoString($$"""
+            return {
+                name = "{{sid}}",
+                depth = 0
+            }
+            """);
+
+        var pl = FromCtx(ctx);
+
+        ctx.Lua.Pop(1);
+
+        return pl[0];
+    }
+
     public static List<LonnEntityPlugin> FromCtx(LuaCtx ctx) {
         var lua = ctx.Lua;
         var top = lua.GetTop();
@@ -202,7 +218,7 @@ public sealed class LonnEntityPlugin {
         )!;
 
         plugin.GetNodeVisibility = NullConstOrGetter_Entity(plugin, "nodeVisibility",
-            def: "always",
+            def: "selected",
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
 
@@ -213,6 +229,7 @@ public sealed class LonnEntityPlugin {
         );
 
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
+        plugin.HasGetNodeSprite = lua.PeekTableType(top, "nodeSprite") is LuaType.Function;
         plugin.HasSelectionFunction = lua.PeekTableType(top, "selection") is LuaType.Function;
 
         if (lua.GetTable(top, "placements") == LuaType.Table) {

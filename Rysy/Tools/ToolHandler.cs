@@ -58,7 +58,7 @@ public class ToolHandler {
 
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {
-            tool.InitHotkeys(handler);
+            tool.InitHotkeys(new());
         }
 
         handler.AddHotkeyFromSettings("tools.nextTool", "tab", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
@@ -106,7 +106,7 @@ public class ToolHandler {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
-            var size = new NumVector2(80f, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
+            var size = new NumVector2(ImGuiManager.CalcListSize(Tools.SelectMany(t => t.ValidLayers)).X, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X - DefaultMaterialListWidth, menubarHeight + toolListHeight));
             ImGui.SetNextWindowSize(size);
         }

@@ -129,20 +129,6 @@ internal class SelectionTool : Tool {
     }
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
-        /*
-        Point resize = offset;
-        Vector2 move = default;
-
-        if (resize.X < 0) {
-            move.X += resize.X;
-            resize.X = Math.Abs(resize.X);
-        }
-
-        if (resize.Y < 0) {
-            move.Y += resize.Y;
-            resize.Y = Math.Abs(resize.Y);
-        }*/
-
         if (CurrentSelections is { } selections) {
             ResizeSelectionsBy(resize, move, selections);
         }
@@ -246,7 +232,14 @@ internal class SelectionTool : Tool {
     private void ClearColliderCachesInSelections() => CurrentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
     private void Deselect() {
+        if (CurrentSelections is null)
+            return;
+
         // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
+        foreach (var selection in CurrentSelections) {
+            selection.Handler.OnDeselected();
+        }
+
         CurrentSelections?.Clear();
         CurrentSelections = null;
     }

@@ -141,22 +141,20 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue) {
-        var val = value;
-        //var valueName = //values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString();
+    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, string? tooltip = null) {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
         }
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - ImGui.CalcTextSize("+").X - ImGui.GetStyle().FramePadding.X * 3);
-        if (ImGui.InputText($"##text{name}", ref valueName, 128)) {
+        if (ImGui.InputText($"##text{name}", ref valueName, 128).WithTooltip(tooltip)) {
             value = stringToValue(valueName);
             return true;
         }
 
         ImGui.SameLine(0f,0f);
 
-        if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             foreach (var item in values) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
@@ -186,6 +184,25 @@ public static class ImGuiManager {
     public static void EndWindowBottomBar() {
         ImGui.EndDisabled();
         ImGui.EndChild();
+    }
+
+    public static NumVector2 CalcListSize(IEnumerable<string> strings) {
+        int i = 1;
+        string longest = "";
+
+        foreach (var str in strings) {
+            if (str.Length > longest.Length) 
+                longest = str;
+
+            i++;
+        }
+
+        var style = ImGui.GetStyle();
+
+        return new(
+            ImGui.CalcTextSize(longest).X + style.WindowPadding.X * 2 + style.ItemSpacing.X,
+            ImGui.GetTextLineHeightWithSpacing() * i + ImGui.GetFrameHeightWithSpacing() * 2
+        );
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

@@ -12,6 +12,10 @@ public class Atlas : IAtlas {
                 return texture;
             }
 
+            if (Textures.TryGetValue(key + "0", out texture)) {
+                return texture;
+            }
+
             if (Textures.TryGetValue(key + "00", out texture)) {
                 return texture;
             }

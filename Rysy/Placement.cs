@@ -106,9 +106,16 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
 
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room) {
         if (handler is EntitySelectionHandler entityHandler) {
-            entityHandler.Entity.Pos = pos;
-            entityHandler.Entity.InitializeNodePositions();
-            return entityHandler.Entity.GetSpritesWithNodes().OrderByDescending(x => x.Depth);
+            var entity = entityHandler.Entity;
+            entity.Pos = pos;
+            entity.InitializeNodePositions();
+
+            // todo: hacky!!!
+            entity.Selected = true;
+            var sprites = entity.GetSpritesWithNodes().OrderByDescending(x => x.Depth).ToList();
+            entity.Selected = false;
+
+            return sprites;
         }
             
 

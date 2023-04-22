@@ -60,7 +60,7 @@ public static partial class StringExt {
     /// Tries to censor personal info from filepaths, specifically windows usernames.
     /// Should be used when a path is displayed on-screen
     /// </summary>
-    public static string TryCensor(this string path) {
+    public static string Censor(this string path) {
         if (string.IsNullOrWhiteSpace(path))
             return path;
 
