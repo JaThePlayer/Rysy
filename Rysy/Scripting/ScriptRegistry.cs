@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.Mods;
 using System.Reflection;
 
@@ -8,6 +9,11 @@ public static class ScriptRegistry {
     private static List<Script> _Scripts;
 
     private static Dictionary<string, List<Script>> ModScripts = new();
+
+    /// <summary>
+    /// Called whenever any script gets (re)loaded
+    /// </summary>
+    public static event Action OnScriptReloaded;
 
     public static List<Script> Scripts => _Scripts ??= LoadAll();
 
@@ -31,10 +37,10 @@ public static class ScriptRegistry {
     }
 
     private static void LoadFromAsm(string modName, Assembly? asm) {
+        ModScripts[modName] = new();
+
         if (asm is null)
             return;
-
-        ModScripts[modName] = new();
 
         foreach (var scriptType in asm.GetTypes().Where(t => t.IsSubclassOf(typeof(Script)))) {
             var script = (Script?)Activator.CreateInstance(scriptType) ?? throw new Exception("Huh?");
@@ -44,5 +50,8 @@ public static class ScriptRegistry {
                 ModScripts[modName].Add(script);
             }
         }
+
+
+        OnScriptReloaded();
     }
 }

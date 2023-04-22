@@ -9,7 +9,7 @@ namespace Rysy.LuaSupport;
 
 public class LonnEntity : Entity, ICustomNodeHandler {
     [JsonIgnore]
-    internal LonnEntityPlugin Plugin;
+    public LonnEntityPlugin Plugin { get; internal set; }
 
     [JsonIgnore]
     public override int Depth => Plugin.GetDepth(Room, this);
@@ -20,11 +20,46 @@ public class LonnEntity : Entity, ICustomNodeHandler {
         return Plugin.PushToStack((pl) => {
             var visibility = pl.GetNodeVisibility(this);
 
-            return visibility switch {
-                "always" => NodeHelper.GetGuessedNodeSpritesFor(this),
-                "selected" => Array.Empty<ISprite>(),
-                var other => Array.Empty<ISprite>(),
+            var visible = visibility switch {
+                "always" => true,
+                "selected" => Selected,
+                var other => false,
             };
+
+            if (!visible) {
+                return Array.Empty<ISprite>();
+            }
+
+            if (!pl.HasGetNodeSprite) {
+                return NodeHelper.GetGuessedNodeSpritesFor(this);
+            }
+
+            var roomWrapper = new RoomLuaWrapper(Room);
+
+            var lua = pl.LuaCtx.Lua;
+
+            var type = lua.GetTable(pl.StackLoc, "nodeSprite");
+
+            if (type != LuaType.Function) {
+                lua.Pop(1);
+                return Array.Empty<ISprite>();
+            }
+
+            var spriteFuncLoc = lua.GetTop();
+
+            var sprites = new List<ISprite>();
+            for (int i = 0; i < Nodes.Count; i++) {
+                var node = Nodes[i];
+
+                lua.PushCopy(spriteFuncLoc);
+                sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, (lua, idx) => SpritesFromLonn(lua, idx)) ?? new());
+            }
+
+            lua.Pop(1); // pop the "nodeSprite" func
+
+            sprites.AddRange(NodeHelper.GetNodeConnectors(this) ?? Array.Empty<ISprite>());
+
+            return sprites!;
         });
     }
 

@@ -37,8 +37,6 @@ public class PersistenceMapLoadErrorScene : Scene {
             map.Filepath = Persistence.Instance.LastEditedMap;
 
             RysyEngine.Scene = new EditorScene(map!);
-
-
         }
     }
 }

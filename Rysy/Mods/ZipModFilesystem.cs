@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 
@@ -16,7 +17,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     private ConcurrentBag<Stream> OpenedFiles = new();
 
-    private CancellationTokenSource Token;
+    private BackgroundTaskInfo CleanupTask;
 
     private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
@@ -25,23 +26,13 @@ public sealed class ZipModFilesystem : IModFilesystem {
     public ZipModFilesystem(string zipFilePath) {
         Root = zipFilePath;
 
-        Token = new();
-        var token = Token.Token;
-
         // setup a timer to close the zip archive if no more files from it are needed
-        Task.Run(async () => {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
-
-            while (await timer.WaitForNextTickAsync(token)) {
-                CleanupResources();
-            }
-        }, token);
+        CleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
 
         Watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
         Watcher.Changed += (s, e) => {
             if (e.FullPath != Root.CorrectSlashes())
                 return;
-            e.LogAsJson();
 
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return;
@@ -64,38 +55,24 @@ public sealed class ZipModFilesystem : IModFilesystem {
         if (Zips is null)
             return;
 
-        /*
-        lock (Zips) {
-            lock (OpenedFiles) {
-                if (!OpenedFiles.IsEmpty && OpenedFiles.All(x => !x.CanRead)) {
-                    OpenedFiles.Clear();
-                    foreach (var wrapper in Zips) {
-                        wrapper.Archive.Dispose();
-                    }
-
-                    Zips.Clear();
-                }
-            }
-        }*/
-
         lock (Zips) {
             lock (OpenedFiles) {
                 if (!OpenedFiles.IsEmpty && OpenedFiles.All(x => !x.CanRead)) {
                     OpenedFiles.Clear();
                 }
-
+                //if (Zips.Count > 0)
+                //    Console.WriteLine($"has some zips {Root}");
                 if (!OpenedFiles.IsEmpty)
                     return;
-                    
                 var zips = Zips;
                 for (int i = zips.Count - 1; i >= 0; i--) {
                     var zip = zips[i];
                     if (!zip.Used) {
-                        //Console.WriteLine("cleared zipArchive");
+                        //Console.WriteLine($"cleared zipArchive {Root}[{i}]");
                         zip.Archive.Dispose();
                         Zips.RemoveAt(i);
                     } else {
-                        Console.WriteLine($"not cleared: {Root}[{i}]");
+                        //Console.WriteLine($"not cleared: {Root}[{i}]");
                     }
                 }
             }

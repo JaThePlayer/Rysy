@@ -15,10 +15,10 @@ public abstract class TileTool : Tool {
 
     public override string PersistenceGroup => "TileTool";
 
-    public override void CancelInteraction() {
-        base.CancelInteraction();
+    public override void Init() {
+        base.Init();
 
-        ClearMaterialListCache();
+        EditorState.OnMapChanged += ClearMaterialListCache;
     }
 
     public override IEnumerable<object>? GetMaterials(string layer) {

@@ -28,11 +28,11 @@ public class Windows : RysyPlatform {
         var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
         if (!GetConsoleMode(iStdIn, out uint inConsoleMode)) {
-            Console.WriteLine("Failed to get input console mode. Not enabling ANSI codes!");
+            //Console.WriteLine("Failed to get input console mode. Not enabling ANSI codes!");
             return;
         }
         if (!GetConsoleMode(iStdOut, out uint outConsoleMode)) {
-            Console.WriteLine("failed to get output console mode. Not enabling ANSI codes!");
+            //Console.WriteLine("failed to get output console mode. Not enabling ANSI codes!");
             return;
         }
 
@@ -40,11 +40,11 @@ public class Windows : RysyPlatform {
         outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
         if (!SetConsoleMode(iStdIn, inConsoleMode)) {
-            Console.WriteLine($"failed to set input console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
+            //Console.WriteLine($"failed to set input console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
             return;
         }
         if (!SetConsoleMode(iStdOut, outConsoleMode)) {
-            Console.WriteLine($"failed to set output console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
+            //Console.WriteLine($"failed to set output console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
             return;
         }
 

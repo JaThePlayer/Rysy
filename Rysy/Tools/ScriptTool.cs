@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Gui.Windows;
 using Rysy.History;
 using Rysy.Scripting;
 
@@ -6,12 +7,13 @@ namespace Rysy.Tools;
 
 public class ScriptTool : Tool {
     public const string CURRENT_ROOM_LAYER = "Current Room";
+    public const string ALL_ROOMS_LAYER = "All Rooms";
 
     public override string Name => "Scripts";
 
     public override string PersistenceGroup => "Scripts";
 
-    public override List<string> ValidLayers => new() { CURRENT_ROOM_LAYER };
+    public override List<string> ValidLayers => new() { CURRENT_ROOM_LAYER, ALL_ROOMS_LAYER };
 
     public override string GetMaterialDisplayName(string layer, object material) {
         if (material is Script s) {
@@ -38,26 +40,70 @@ public class ScriptTool : Tool {
     public override void RenderOverlay() {
     }
 
-    private void RunScript(Script script) {
-        script.Prerun();
+    private void RunScript(Script script, Dictionary<string, object>? fieldValues = null) {
+        var args = new ScriptArgs();
 
-        switch (Layer) {
-            case CURRENT_ROOM_LAYER:
-                /*
-                var action = script.Run(EditorState.CurrentRoom);
+        args.Args = fieldValues ?? new();
 
-                if (action is { }) {
-                    History.ApplyNewAction(action);
-                }*/
-                var old = EditorState.CurrentRoom;
-                var clone = old.Clone();
-                script.Run(clone);
+        var rooms = Layer switch {
+            CURRENT_ROOM_LAYER => EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null,
+            ALL_ROOMS_LAYER => EditorState.Map?.Rooms,
+            _ => throw new NotImplementedException(Layer),
+        };
 
-                History.ApplyNewAction(new SwapRoomAction(old, clone));
+        if (rooms is null) {
+            return;
+        }
 
-                break;
-            default:
-                break;
+        if (script.CallRun) {
+            // if we're calling Run, we need to clone rooms, so that we can create a history action
+            var clonedRooms = rooms.Select(r => r.Clone()).ToList();
+
+            var actions = new List<IHistoryAction>();
+
+            args.Rooms = clonedRooms;
+
+            if (!CallPrerun(script, args, out var prerunAction))
+                return; // if prerun crashed, don't call Run, just in case
+
+            if (prerunAction is { }) {
+                actions.Add(prerunAction);
+            }
+
+            for (int i = 0; i < rooms.Count; i++) {
+                var room = rooms[i];
+                var clone = clonedRooms[i];
+
+                try {
+                    script.Run(clone, args);
+                    actions.Add(new SwapRoomAction(room, clone));
+                } catch (Exception e) {
+                    Logger.Error(e, $"Failed running script's Run method in room {room.Name}");
+                }
+            }
+
+            History.ApplyNewAction(actions.MergeActions());
+        } else {
+            // no need to clone the rooms, prerun should handle ctrl+z on its own.
+            args.Rooms = rooms;
+            CallPrerun(script, args, out var action);
+            if (action is { }) {
+                History.ApplyNewAction(action);
+            }
+        }
+    }
+
+    private bool CallPrerun(Script script, ScriptArgs args, out IHistoryAction? returnedAction) {
+        returnedAction = null;
+
+        try {
+            if (script.Prerun(args) is { } action) {
+                returnedAction = action;
+            }
+            return true;
+        } catch (Exception e) {
+            Logger.Error(e, $"Failed running script's Prerun method");
+            return false;
         }
     }
 
@@ -67,7 +113,25 @@ public class ScriptTool : Tool {
             return;
 
         if (Input.Mouse.Left.Clicked()) {
-            RunScript(script);
+            var fields = script.Parameters;
+            if (fields is { }) {
+                var form = new FormWindow(fields, $"Script Parameters: {script.Name}");
+                form.SaveChangesButtonName = "Run Script";
+
+                form.OnChanged = (edited) => {
+                    RunScript(script, form.GetAllValues());
+                };
+
+                RysyEngine.Scene.AddWindow(form);
+            } else {
+                RunScript(script);
+            }
         }
+    }
+
+    public override void Init() {
+        base.Init();
+
+        ScriptRegistry.OnScriptReloaded += ClearMaterialListCache;
     }
 }

@@ -4,7 +4,7 @@ using System.Collections;
 namespace Rysy.History;
 
 public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, ISerializableAction {
-    List<IHistoryAction> Actions;
+    private List<IHistoryAction> Actions;
 
     public MergedAction(IEnumerable<IHistoryAction?> actions) {
         Actions = new(actions.Where(act => act is not null)!);

@@ -10,6 +10,18 @@ public static class BackupHandler {
 
     private static Dictionary<int, string> LoadIndex() => SettingsHelper.Load<Dictionary<int, string>>(IndexPath, false);
 
+    public static DateTime? GetMostRecentBackupDate() {
+        var index = LoadIndex();
+
+        var latest = index[index.Count - 1];
+
+        if (!File.Exists(latest)) {
+            return null;
+        }
+
+        return File.GetLastWriteTime(latest);
+    }
+
     public static Map? LoadMostRecentBackup() {
         var index = LoadIndex();
 

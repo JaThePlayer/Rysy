@@ -6,7 +6,6 @@ using Rysy.Gui.Windows;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
-using System;
 
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
@@ -28,10 +27,24 @@ public sealed class RysyEngine : Game {
     /// Action that will be called on the UI thread once this frame ends.
     /// Afterwards, this will be set to null.
     /// </summary>
-    public static event Action? OnFrameEnd = null;
+    public static event Action? OnEndOfThisFrame = null;
+
+    /// <summary>
+    /// Called when the window loses focus.
+    /// </summary>
+    public static event Action? OnLoseFocus = null;
+
+    /// <summary>
+    /// Called each frame in the Update method.
+    /// </summary>
+    public static event Action? OnUpdate = null;
+
+    /// <summary>
+    /// Called each frame in the Render method, after the scene gets rendered, but before ImGui.
+    /// </summary>
+    public static event Action? OnRender = null;
 
     private static bool _lastActive;
-    public static event Action? OnLoseFocus = null;
 
     public static double Framerate;
 
@@ -57,7 +70,7 @@ public sealed class RysyEngine : Game {
 
     public static void SetTargetFps(int fps) {
         if (Instance is { } instance)
-            instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double)fps);
+            instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double) fps);
     }
 
     public static void ToggleVSync(bool toggle) {
@@ -170,7 +183,7 @@ public sealed class RysyEngine : Game {
     }
 
     private void ResizeWindow(int w, int h, int x, int y) {
-        OnFrameEnd += () => {
+        OnEndOfThisFrame += () => {
             GDM.PreferredBackBufferWidth = w;
             GDM.PreferredBackBufferHeight = h;
             GDM.ApplyChanges();
@@ -193,23 +206,30 @@ public sealed class RysyEngine : Game {
 
     protected override void Update(GameTime gameTime) {
         base.Update(gameTime);
+        try {
+            if (_lastActive != IsActive) {
+                OnLoseFocus?.Invoke();
+            }
 
-        if (_lastActive != IsActive) {
-            OnLoseFocus?.Invoke();
-        }
+            if (IsActive) {
+                Time.Update(gameTime);
+                Input.Update(gameTime);
 
-        if (IsActive) {
-            Time.Update(gameTime);
-            Input.Update(gameTime);
+                SmartFPSHandler.Update();
 
-            SmartFPSHandler.Update();
+                Scene.Update();
 
-            Scene.Update();
-        }
+                if (Scene is not CrashScene)
+                    OnUpdate?.Invoke();
+            }
 
-        if (OnFrameEnd is { } onFrameEnd) {
-            OnFrameEnd = null;
-            onFrameEnd.Invoke();
+            if (OnEndOfThisFrame is { } onFrameEnd) {
+                OnEndOfThisFrame = null;
+                onFrameEnd.Invoke();
+            }
+        } catch (Exception e) {
+            Logger.Error(e, $"Unhandled exception during update!");
+            Scene = new CrashScene(Scene, e);
         }
 
         _lastActive = IsActive;
@@ -224,18 +244,25 @@ public sealed class RysyEngine : Game {
 
             ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
 
-            Scene.RenderImGui();
-            Scene.Render();
+            try {
+                Scene.RenderImGui();
+                Scene.Render();
 
-            if (DebugInfoWindow.Enabled)
-                DebugInfoWindow.Instance.RenderGui();
+                if (Scene is not CrashScene)
+                    OnRender?.Invoke();
+
+                if (DebugInfoWindow.Enabled)
+                    DebugInfoWindow.Instance.RenderGui();
+            } catch (Exception e) {
+                Logger.Error(e, $"Unhandled exception during render!");
+                Scene = new CrashScene(Scene, e);
+            }
+
             ImGuiManager.GuiRenderer.AfterLayout();
 
             smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
 
             Framerate = smartFramerate.framerate;
-
-            
         }
     }
 

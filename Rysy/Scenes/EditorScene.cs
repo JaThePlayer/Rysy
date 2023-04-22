@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework.Input;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
-using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Tools;
@@ -18,34 +17,37 @@ public sealed class EditorScene : Scene {
         set => EditorState.History = value;
     }
 
-    private Map _map = null!;
     public Map Map {
-        get => _map;
-        set {
-            SwapMapPreserveState(value);
+        get => EditorState.Map!;
+        set => EditorState.Map = value;
+    }
 
-            Camera = new();
+    private void OnMapChanged() {
+        var map = EditorState.Map!;
 
-            if (_map.Rooms.Count > 0) {
-                CurrentRoom = _map.Rooms.First();
-                CenterCameraOnRoom(CurrentRoom);
-            }
+        SwapMapPreserveState(map);
 
-            Persistence.Instance.PushRecentMap(value);
+        Camera = new();
 
-            RysyEngine.OnFrameEnd += GCHelper.VeryAggressiveGC;
+        if (map.Rooms.Count > 0) {
+            CurrentRoom = map.Rooms.First();
+            CenterCameraOnRoom(CurrentRoom);
         }
+
+        Persistence.Instance.PushRecentMap(map);
+
+        RysyEngine.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
     }
 
     private void SwapMapPreserveState(Map map) {
-        _map = map;
+        EditorState.Map = map;
 
         // history has to be cleared, as it might contain references to specific entity instances
         HistoryHandler.Clear();
     }
 
     public Room CurrentRoom {
-        get => EditorState.CurrentRoom;
+        get => EditorState.CurrentRoom!;
         set => EditorState.CurrentRoom = value;
     }
 
@@ -61,6 +63,8 @@ public sealed class EditorScene : Scene {
         // Try to load the last edited map.
         if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
             LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
+
+        EditorState.OnMapChanged += OnMapChanged;
     }
 
     public EditorScene(Map map) : this(false) {
@@ -114,14 +118,14 @@ public sealed class EditorScene : Scene {
         if (!File.Exists(file))
             return;
 
-        RysyEngine.OnFrameEnd += async () => {
+        RysyEngine.OnEndOfThisFrame += async () => {
             try {
                 if (RysyEngine.Scene is not LoadingScene loadingScreen) {
                     loadingScreen = new LoadingScene();
                     RysyEngine.Scene = loadingScreen;
                 }
-                LoadingScene.Text = $"Loading map {file.TryCensor()}";
-                
+                LoadingScene.Text = $"Loading map {file.Censor()}";
+
                 // Just to make this run async, so we can see the loading screen.
                 await Task.Delay(1);
 
@@ -132,7 +136,7 @@ public sealed class EditorScene : Scene {
                 Map = map;
 
                 RysyEngine.Scene = this;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
 
                 if (fromPersistence) {

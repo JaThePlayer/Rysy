@@ -129,7 +129,11 @@ public static class PrefabHelper {
                         foreach (var item in nodes) {
                             item.Pos += delta;
                         }
+
+                    // todo: hacky!!!
+                    e.Selected = true;
                     sprites.AddRange(e.GetSpritesWithNodes().OrderByDescending(x => x.Depth));
+                    e.Selected = false;
                 }
             }
 

@@ -134,7 +134,7 @@ function modHandler.requireFromPlugin(lib, modName)
     if not loadedFromPlugins[modName][lib] then
 		local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName)
 		if not required then
-			print(string.format("library %s [%s] not found!", lib, modName))
+			error(string.format("library %s [%s] not found!", lib, modName))
 		end
 
 		loadedFromPlugins[modName][lib] = loadstring(required)()

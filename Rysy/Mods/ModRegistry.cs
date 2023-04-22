@@ -19,7 +19,9 @@ public static class ModRegistry {
     public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName);
 
     public static async Task LoadAllAsync(string modDir) {
+        UnloadAllMods();
         _Mods.Clear();
+
         Filesystem = new();
 
         var rysyPluginPath = SettingsHelper.GetFullPath("Plugins", perProfile: false);
@@ -44,9 +46,9 @@ public static class ModRegistry {
             .Concat(Directory.GetDirectories(rysyPluginPath))
             .Select(async f => {
                 if (f.EndsWith(".zip"))
-                    return await CreateModFromZipAsync(f);
+                    return await CreateModAsync(f, zip: true);
 
-                return await CreateModFromDirAsync(f);
+                return await CreateModAsync(f, zip: false);
             });
 
         if (CreateVanillaMod() is { } vanilla) {
@@ -73,10 +75,15 @@ public static class ModRegistry {
         Filesystem = new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content"),
     };
 
-    private static async Task<ModMeta> CreateModFromDirAsync(string dir) {
-        var mod = new ModMeta();
-        var filesystem = new FolderModFilesystem(dir);
+    private static void UnloadAllMods() {
+        foreach (var (_, mod) in _Mods) {
+            mod.Module?.Unload();
+        }
+    }
 
+    private static async Task<ModMeta> CreateModAsync(string dir, bool zip) {
+        var mod = new ModMeta();
+        IModFilesystem filesystem = zip ? new ZipModFilesystem(dir) : new FolderModFilesystem(dir);
         await filesystem.InitialScan();
 
         mod.Filesystem = filesystem;
@@ -87,17 +94,24 @@ public static class ModRegistry {
         return mod;
     }
 
-    private static async Task<ModMeta> CreateModFromZipAsync(string dir) {
-        var mod = new ModMeta();
-        var filesystem = new ZipModFilesystem(dir);
-        await filesystem.InitialScan();
+    private static void LoadModule(ModMeta mod) {
+        if (mod.Module is { } oldMod) {
+            // if we're hot-reloading, .Module will point to the old module type, let's unload it.
+            oldMod.Unload();
+        }
 
-        mod.Filesystem = filesystem;
+        if (mod.PluginAssembly is not { } asm) {
+            mod.Module = new();
+            return;
+        }
 
-        ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
-        LoadModRysyPlugins(mod);
+        if (asm.GetTypes().FirstOrDefault(t => t.IsSubclassOf(typeof(ModModule))) is not { } moduleType) {
+            mod.Module = new();
+            return;
+        }
 
-        return mod;
+        mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
+        mod.Module.Load();
     }
 
     private static void LoadModRysyPlugins(ModMeta mod, bool registerFilewatch = true) {
@@ -108,11 +122,11 @@ public static class ModRegistry {
         if (registerFilewatch)
             foreach (var file in files) {
                 mod.Filesystem.RegisterFilewatch(file, new() {
-                    OnChanged = stream => RysyEngine.OnFrameEnd += () => LoadModRysyPlugins(mod, registerFilewatch: false)
+                    OnChanged = stream => RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false)
                 });
             }
 
-        var fileInfo = files.Select(f => (mod.Filesystem.TryReadAllText(f)!, f)).Where(p => p.Item1 is not null).ToList();
+        var fileInfo = files.Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}")).Where(p => p.Item1 is not null).ToList();
 
         var cachePath = SettingsHelper.GetFullPath($"CompileCache/{mod.Name.ToValidFilename()}", perProfile: true);
         var anyFiles = CodeCompilationHelper.CompileFiles(mod.Name, fileInfo, cachePath, out var modAsm, out var emitResult);
@@ -132,6 +146,8 @@ public static class ModRegistry {
         }
 
         mod.PluginAssembly = modAsm;
+
+        LoadModule(mod);
     }
 
     private static void ReadEverestYaml(ModMeta mod, Func<string?>? guessedNameGetter) {

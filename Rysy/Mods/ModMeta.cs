@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 namespace Rysy.Mods;
 
 public sealed class ModMeta : ILuaWrapper {
-    public ModModule Module { get; internal set; }
+    public ModModule? Module { get; internal set; }
 
 
     private Assembly? _PluginAssembly;

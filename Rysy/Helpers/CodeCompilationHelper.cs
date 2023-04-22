@@ -19,6 +19,8 @@ public static class CodeCompilationHelper {
         global using Rysy.Scripting;
         global using Rysy.History;
         global using Rysy.Entities;
+        global using Rysy.Mods;
+        global using Rysy.Scenes;
         global using Rysy;
 
         global using System;
@@ -69,28 +71,31 @@ public static class CodeCompilationHelper {
             return false;
 
         var cachedDLLPath = $"{cachePath}/c.dll";
+        var cachedPdbPath = $"{cachePath}/c.pdb";
         var cachedSrcPath = $"{cachePath}/src.txt";
         var currentSource = files.ToJson(minified: true);
 
-        if (File.Exists(cachedDLLPath)) {
+        if (File.Exists(cachedDLLPath) && File.Exists(cachedSrcPath)) {
             var cachedSource = File.ReadAllText(cachedSrcPath);
 
             if (currentSource == cachedSource) {
-                asm = Assembly.Load(File.ReadAllBytes(cachedDLLPath));
+                var pdb = File.Exists(cachedPdbPath) ? File.ReadAllBytes(cachedPdbPath) : null;
+
+                asm = Assembly.Load(File.ReadAllBytes(cachedDLLPath), pdb);
 
                 return true;
             }
-            Console.WriteLine("invalidating cache");
+            //Console.WriteLine("invalidating cache");
 
             File.Delete(cachedDLLPath);
             File.Delete(cachedSrcPath);
         }
 
-        var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp10);
+        var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
 
         var trees = files
             .Append((SourceCode: GlobalUsingsCode, Filename: "GlobalUsings.gen.cs"))
-            .Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(f.SourceCode), options, path: f.Filename));
+            .Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(f.SourceCode, Encoding.UTF8), options, path: f.Filename));
 
         var csCompilation = CSharpCompilation.Create(asmName,
             trees,
@@ -100,17 +105,21 @@ public static class CodeCompilationHelper {
                 assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
 
         using var peStream = new MemoryStream();
+        using var pdbStream = new MemoryStream();
 
-        emitResult = csCompilation.Emit(peStream);
+        emitResult = csCompilation.Emit(peStream, pdbStream);
 
         if (emitResult.Success) {
             var asmBytes = peStream.ToArray();
-            asm = Assembly.Load(asmBytes);
+            var pdbBytes = pdbStream.ToArray();
+
+            asm = Assembly.Load(asmBytes, pdbBytes);
 
             if (cachePath is { }) {
                 Directory.CreateDirectory(cachePath);
                 File.WriteAllText(cachedSrcPath, currentSource);
                 File.WriteAllBytes(cachedDLLPath, asmBytes);
+                File.WriteAllBytes(cachedPdbPath, pdbBytes);
             }
 
             return true;

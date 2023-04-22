@@ -1,33 +1,69 @@
-﻿using ImGuiNET;
-using Rysy.Extensions;
+﻿using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Gui.Windows;
 
-public class EntityPropertyWindow : Window {
+public class EntityPropertyWindow : FormWindow {
+    private static readonly HashSet<string> BlacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorLayer", "_editorColor" };
+
     public readonly Entity Main;
     public readonly List<Entity> All;
 
     private HistoryHandler History;
-
-    private Dictionary<string, Prop> FieldList;
-    private Dictionary<string, object> EditedValues = new();
-
-    public int ITEM_WIDTH = 150;
-
-    private record class Prop() {
-        public IField Field;
-        public object Value;
-    }
-
     private Action HistoryHook;
 
-    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit Entity - {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}", null) {
+    public static FieldList GetFields(Entity main) {
+        var fieldInfo = EntityRegistry.SIDToFields.GetValueOrDefault(main.Name) ?? new();
+
+        var fields = new FieldList();
+
+        //if (false && all.Count == 1) {
+        //    fields["x"] = Fields.Int(main.X);
+        //    fields["y"] = Fields.Int(main.Y);
+        //}
+
+        var minSize = main.MinimumSize;
+        if (main.Width != 0) {
+            fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X);
+        }
+
+        if (main.Height != 0) {
+            fields["height"] = Fields.Int(main.Height).WithStep(8).WithMin(minSize.Y);
+        }
+
+        fields["_editorLayer"] = Fields.Int(main.EditorLayer);
+
+        if (main is Trigger tr) {
+            fields["_editorColor"] = Fields.RGBA(tr.EditorColor.ToColor(ColorFormat.RGBA));
+        }
+
+        foreach (var (k, f) in fieldInfo) {
+            if (!BlacklistedKeys.Contains(k))
+                fields[k] = f.CreateClone();
+        }
+
+        // Take into account properties defined on this entity, even if not present in FieldInfo
+        foreach (var (k, v) in main.EntityData.Inner) {
+            if (!BlacklistedKeys.Contains(k)) {
+                if (fields.TryGetValue(k, out var knownFieldType)) {
+                    fields[k].SetDefault(v);
+                } else {
+                    fields[k] = Fields.GuessFromValue(v)!;
+                }
+            }
+        }
+
+        return fields;
+    }
+
+    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base(GetFields(main), $"Edit Entity - {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
         Main = main;
         All = all;
         History = history;
 
-        HashSet<string> blacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorLayer", "_editorColor" };
+        OnChanged = (edited) => {
+            History.ApplyNewAction(new EntityEditAction(All, edited));
+        };
 
         HistoryHook = ReevaluateEditedValues;
         history.OnApply += HistoryHook;
@@ -36,139 +72,23 @@ public class EntityPropertyWindow : Window {
             History.OnApply -= HistoryHook;
             History.OnUndo -= HistoryHook;
         });
-
-        var fields = EntityRegistry.SIDToFields.GetValueOrDefault(main.EntityData.SID) ?? new();
-        FieldList = new();
-
-        if (false && all.Count == 1) {
-            FieldList["x"] = new() {
-                Field = Fields.Int(0),
-                Value = main.X,
-            };
-            FieldList["y"] = new() {
-                Field = Fields.Int(0),
-                Value = main.X,
-            };
-        }
-
-        var minSize = Main.MinimumSize;
-        if (main.Width != 0) {
-            FieldList["width"] = new() {
-                Field = Fields.Int(0).WithStep(8).WithMin(minSize.X),
-                Value = main.Width,
-            };
-        }
-
-        if (main.Height != 0) {
-            FieldList["height"] = new() {
-                Field = Fields.Int(0).WithStep(8).WithMin(minSize.Y),
-                Value = main.Height,
-            };
-        }
-
-        FieldList["_editorLayer"] = new() {
-            Field = Fields.Int(0),
-            Value = main.EditorLayer,
-        };
-
-        if (main is Trigger tr) {
-            FieldList["_editorColor"] = new() {
-                Field = Fields.RGBA(Color.White),
-                Value = tr.EditorColor,
-            };
-        }
-
-        foreach (var (k, f) in fields) {
-            if (!blacklistedKeys.Contains(k))
-                FieldList[k] = new() {
-                    Field = f,
-                    Value = f.GetDefault()
-                };
-        }
-
-        // Take into account properties defined on this entity, even if not present in FieldInfo
-        foreach (var (k, v) in Main.EntityData.Inner) {
-            if (!blacklistedKeys.Contains(k)) {
-                if (fields.TryGetValue(k, out var knownFieldType)) {
-                    FieldList[k].Value = v;
-                } else {
-                    FieldList[k] = new() {
-                        Field = Fields.GuessFromValue(v)!,
-                        Value = v,
-                    };
-                }
-            }
-        }
-
-        
-        Size = new(
-            FieldList.Select(p => p.Key.Length).Chunk(2).Max(pair => pair.Sum()) * ImGui.GetFontSize() + ITEM_WIDTH * 2f, 
-            ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
-        );
-
-        Resizable = true;
     }
 
     private void ReevaluateEditedValues() {
         EditedValues.Clear();
 
-        foreach (var (name, prop) in FieldList) {
+        foreach (var prop in FieldList) {
+            var name = prop.Name;
             var inMain = Main.EntityData.TryGetValue(name, out var current);
+
             if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
                 current switch {
-                    string currStr => currStr != (string)prop.Value,
+                    string currStr => currStr != (string) prop.Value,
                     _ => !current!.Equals(prop.Value)
                 }
             )) {
                 EditedValues[name] = prop.Value;
             }
         }
-    }
-
-    protected override void Render() {
-        ImGui.Columns(2);
-
-        bool valid = true;
-
-        foreach (var (name, prop) in FieldList) {
-            if (!HandleProp(name, prop)) {
-                valid = false;
-            }
-
-            ImGui.NextColumn();
-        }
-
-        ImGui.Columns();
-
-        ImGuiManager.BeginWindowBottomBar(valid);
-        if (ImGui.Button("Save Changes")) {
-            History.ApplyNewAction(new EntityEditAction(All, EditedValues));
-            ReevaluateEditedValues();
-        }
-        ImGuiManager.EndWindowBottomBar();
-    }
-
-    private bool HandleProp(string name, Prop prop) {
-        var val = prop.Value;
-
-        // determine color
-        var valid = prop.Field.IsValid(val);
-        if (!valid)
-            ImGuiManager.PushInvalidStyle();
-        else if (EditedValues.ContainsKey(name))
-            ImGuiManager.PushEditedStyle();
-
-        ImGui.SetNextItemWidth(ITEM_WIDTH);
-        var newVal = prop.Field.RenderGui(name.Humanize(), val);
-
-        ImGuiManager.PopInvalidStyle();
-        ImGuiManager.PopEditedStyle();
-
-        if (newVal != null) {
-            EditedValues[name] = newVal;
-            prop.Value = newVal;
-        }
-
-        return valid;
     }
 }

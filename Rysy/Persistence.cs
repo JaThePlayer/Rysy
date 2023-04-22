@@ -1,20 +1,36 @@
-﻿using Rysy.Scenes;
+﻿using Rysy.Helpers;
+using Rysy.Scenes;
 using System.Text.Json;
 
 namespace Rysy;
 
 public class Persistence {
+    static Persistence() {
+        BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(5), () => {
+            if (Instance is not { } || !RecentlyEdited)
+                return;
+
+            RecentlyEdited = false;
+
+            Save(Instance);
+        });
+    }
+
     #region Helpers
+
     public static Persistence Instance { get; internal set; } = null!;
 
-    public static string SettingsFileLocation = $"persistence.json";
+    private static string FileLocation { get; set; } = $"persistence.json";
+
+
+    private static bool RecentlyEdited { get; set; } = false;
 
     public static Persistence Load() {
-        return SettingsHelper.Load<Persistence>(SettingsFileLocation, perProfile: true);
+        return SettingsHelper.Load<Persistence>(FileLocation, perProfile: true);
     }
 
     public static Persistence Save(Persistence settings) {
-        return SettingsHelper.Save<Persistence>(settings, SettingsFileLocation, perProfile: true);
+        return SettingsHelper.Save<Persistence>(settings, FileLocation, perProfile: true);
     }
 
     public T Get<T>(string key, T defaultValue) {
@@ -32,8 +48,7 @@ public class Persistence {
     public void Set<T>(string key, T value) {
         Values[key] = value!;
 
-#warning TODO: Don't save immediately, only once in a while
-        Save(this);
+        RecentlyEdited = true;
     }
 
     public void PushRecentMap(Map map) {
@@ -51,8 +66,7 @@ public class Persistence {
             RecentMaps.RemoveAt(10);
         }
 
-#warning TODO: Don't save immediately, only once in a while
-        Save(this);
+        RecentlyEdited = true;
     }
     #endregion
 
@@ -62,12 +76,88 @@ public class Persistence {
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
 
-    public bool FGTilesVisible { get; set; } = true;
-    public bool BGTilesVisible { get; set; } = true;
-    public bool FGDecalsVisible { get; set; } = true;
-    public bool BGDecalsVisible { get; set; } = true;
-    public bool EntitiesVisible { get; set; } = true;
-    public bool TriggersVisible { get; set; } = true;
+    private bool _FGTilesVisible;
+    public bool FGTilesVisible {
+        get => _FGTilesVisible;
+        set {
+            if (_FGTilesVisible != value) {
+                _FGTilesVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
+
+                RecentlyEdited = true;
+            }
+        }
+    }
+
+    private bool _BGTilesVisible;
+    public bool BGTilesVisible {
+        get => _BGTilesVisible;
+        set {
+            if (_BGTilesVisible != value) {
+                _BGTilesVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
+                RecentlyEdited = true;
+            }
+        }
+    }
+
+    private bool _FGDecalsVisible = true;
+    public bool FGDecalsVisible {
+        get => _FGDecalsVisible;
+        set {
+            if (_FGDecalsVisible != value) {
+                _FGDecalsVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
+
+                RecentlyEdited = true;
+            }
+        }
+    }
+
+    private bool _BGDecalsVisible = true;
+    public bool BGDecalsVisible {
+        get => _BGDecalsVisible;
+        set {
+            if (_BGDecalsVisible != value) {
+                _BGDecalsVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
+
+                RecentlyEdited = true;
+            }
+        }
+    }
+
+    private bool _EntitiesVisible = true;
+    public bool EntitiesVisible {
+        get => _EntitiesVisible;
+        set {
+            if (_EntitiesVisible != value) {
+                _EntitiesVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
+
+                RecentlyEdited = true;
+            }
+        }
+    }
+
+    private bool _TriggersVisible = true;
+    public bool TriggersVisible {
+        get => _TriggersVisible;
+        set {
+            if (_TriggersVisible != value) {
+                _TriggersVisible = value;
+
+                EditorState.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
+
+                RecentlyEdited = true;
+            }
+        }
+    }
 
     private int? _EditorLayer;
     public int? EditorLayer {
@@ -77,6 +167,8 @@ public class Persistence {
                 _EditorLayer = value;
 
                 (RysyEngine.Scene as EditorScene)?.ClearMapRenderCache();
+
+                RecentlyEdited = true;
             }
         }
     }

@@ -41,5 +41,5 @@ public static class VectorExt {
         return v;
     }
 
-    public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);
+    //public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);
 }

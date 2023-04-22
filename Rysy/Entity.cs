@@ -118,6 +118,11 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         }
     }
 
+    /// <summary>
+    /// Returns the selection collider used for your entity.
+    /// For nodes,
+    /// </summary>
+    /// <returns></returns>
     public virtual ISelectionCollider GetMainSelection() {
         if (Width > 0 || Height > 0) {
             var rect = Rectangle;
@@ -209,6 +214,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 
     [JsonIgnore]
     public virtual Range NodeLimits => 0..0;
+
+
+    /// <summary>
+    /// Whether this entity is currently selected.
+    /// </summary>
+    [JsonIgnore]
+    public bool Selected { get; internal set; }
 
     public override string ToString() {
         return (Room, EntityData) switch {
@@ -432,7 +444,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 }
 
 internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler {
-    public EntitySelectionHandler(Entity entity) => Entity = entity;
+    public EntitySelectionHandler(Entity entity) {
+        Entity = entity;
+        entity.Selected = true;
+        Entity.ClearRoomRenderCache();
+    }
+
+    public void OnDeselected() {
+        Entity.ClearRoomRenderCache();
+        Entity.Selected = false;
+    }
 
     public Entity Entity { get; set; }
 

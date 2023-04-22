@@ -71,6 +71,8 @@ public interface ISelectionHandler {
     /// Places the entity 
     /// </summary>
     public IHistoryAction PlaceClone(Room room);
+
+    public virtual void OnDeselected() { }
 }
 
 public interface ISelectionFlipHandler {

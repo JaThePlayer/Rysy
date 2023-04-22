@@ -112,6 +112,17 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         }
     }
 
+    public void Render() {
+        Render(null, default);
+    }
+
+    public void RenderWithColor(Color color) {
+        var old = Color;
+        Color = color;
+        Render();
+        Color = old;
+    }
+
     public Rectangle? GetRenderRect() {
         if (Texture.Texture is not { } texture) {
             return null;
@@ -178,10 +189,6 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
                 _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
             }
         }
-    }
-
-    public void Render() {
-        Render(null, default);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

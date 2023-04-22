@@ -1,4 +1,4 @@
-﻿#define DOT_TRACE
+﻿//#define DOT_TRACE
 
 using Rysy.Gui;
 using Rysy.Helpers;
@@ -136,7 +136,7 @@ public sealed class Settings {
         set {
             _fontSize = value;
             if (RysyEngine.ImGuiAvailable)
-                RysyEngine.OnFrameEnd += () => ImGuiThemer.SetFontSize(value);
+                RysyEngine.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
         }
     }
 

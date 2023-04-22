@@ -7,19 +7,28 @@ namespace Rysy.Gui.Windows;
 public class FormWindow : Window {
     public delegate void FormWindowChanged(Dictionary<string, object> edited);
 
-    private List<Prop> FieldList;
-    private Dictionary<string, object> EditedValues = new();
+    protected List<Prop> FieldList;
+    public Dictionary<string, object> EditedValues = new();
     private int ITEM_WIDTH = 150;
 
     public FormWindowChanged OnChanged { get; set; }
 
-    private record class Prop(string Name) {
+    protected record class Prop(string Name) {
         public IField Field;
         public object Value;
     }
 
-    public FormWindow(FieldList fields, string name, FormWindowChanged onChanged, NumVector2? size = null) : base(name, size) {
-        OnChanged = onChanged;
+    public string SaveChangesButtonName = "Save Changes";
+
+    /// <summary>
+    /// Creates a dictionary containing all values in all fields, regardless of whether they've been edited or not.
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, object> GetAllValues() {
+        return FieldList.ToDictionary(p => p.Name, p => p.Value);
+    }
+
+    public FormWindow(FieldList fields, string name) : base(name, null) {
         FieldList = new();
 
         foreach (var f in fields) {
@@ -33,7 +42,7 @@ public class FormWindow : Window {
         }
 
         Size = new(
-            FieldList.Select(p => p.Name.Length).Chunk(2).Max(pair => pair.Sum()) * ImGui.GetFontSize() + ITEM_WIDTH * 2f,
+            FieldList.Select(p => p.Name.Length).Chunk(2).Max(pair => pair.Sum() + 2) * ImGui.GetFontSize() + ITEM_WIDTH * 2f,
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
         );
 
@@ -41,7 +50,10 @@ public class FormWindow : Window {
     }
 
     protected override void Render() {
-        ImGui.Columns(2);
+        var hasColumns = FieldList.Count > 1;
+
+        if (hasColumns)
+            ImGui.Columns(2);
 
         bool valid = true;
 
@@ -50,14 +62,16 @@ public class FormWindow : Window {
                 valid = false;
             }
 
-            ImGui.NextColumn();
+            if (hasColumns)
+                ImGui.NextColumn();
         }
 
-        ImGui.Columns();
+        if (hasColumns)
+            ImGui.Columns();
 
         ImGuiManager.BeginWindowBottomBar(valid);
-        if (ImGui.Button("Save Changes")) {
-            OnChanged(EditedValues);
+        if (ImGui.Button(SaveChangesButtonName)) {
+            OnChanged?.Invoke(EditedValues);
 
             EditedValues = new();
         }

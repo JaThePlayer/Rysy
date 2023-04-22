@@ -1,8 +1,10 @@
-﻿using Rysy.History;
+﻿using KeraLua;
+using Rysy.History;
+using Rysy.LuaSupport;
 
 namespace Rysy;
 
-public sealed class Node : IDepth {
+public sealed class Node : IDepth, ILuaWrapper {
     public Node(Vector2 pos) { Pos = pos; }
     public Node(float x, float y) { Pos = new(x, y); }
 
@@ -15,6 +17,24 @@ public sealed class Node : IDepth {
 
     public static implicit operator Vector2(Node node) => node.Pos;
     public static implicit operator Node(Vector2 node) => new(node);
+
+    public int Lua__index(Lua lua, long key) {
+        throw new NotImplementedException();
+    }
+
+    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+        switch (key) {
+            case "x":
+                lua.PushNumber(X);
+                return 1;
+            case "y":
+                lua.PushNumber(Y);
+                return 1;
+            default:
+                lua.PushNil();
+                return 1;
+        }
+    }
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler {

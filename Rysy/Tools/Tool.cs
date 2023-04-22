@@ -48,9 +48,9 @@ public abstract class Tool {
     /// Gets or sets the currently selected material.
     /// </summary>
     public object? Material {
-        get => Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.Material", (object) null!);
+        get => Persistence.Instance?.Get($"{PersistenceGroup}.{Layer}.Material", (object) null!);
         set {
-            Persistence.Instance.Set($"{PersistenceGroup}.{Layer}.Material", value);
+            Persistence.Instance?.Set($"{PersistenceGroup}.{Layer}.Material", value);
             CancelInteraction();
         }
     }
@@ -137,6 +137,8 @@ public abstract class Tool {
     public void ClearMaterialListCache() {
         CachedSearch = null;
         CachedLayer = null;
+
+        Material = null;
     }
 
     protected void BeginMaterialListGUI(bool firstGui) {

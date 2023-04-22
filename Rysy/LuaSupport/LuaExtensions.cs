@@ -479,6 +479,30 @@ where TArg2 : class, ILuaWrapper {
         return ret;
     }
 
+    public static TOut? PCallFunction<TArg1, TArg2, TArg3, TArg4, TOut>(this Lua lua, TArg1 arg1, TArg2 arg2, TArg3 arg3, TArg4 arg4, Func<Lua, int, TOut?> retGetter, int results = 1)
+    {
+        TOut? ret;
+
+        lua.Push(arg1);
+        lua.Push(arg2);
+        lua.Push(arg3);
+        lua.Push(arg4);
+
+        var result = lua.PCall(4, results, 0);
+        if (result != LuaStatus.OK) {
+            var ex = new LuaException(lua);
+            lua.Pop(results);
+            throw ex;
+        }
+
+        ret = retGetter(lua, lua.GetTop());
+        lua.Pop(results);
+
+        ClearLuaResources();
+
+        return ret;
+    }
+
     public static TOut? PCallFunction<TArg1, TOut>(this Lua lua, TArg1 arg1, Func<Lua, int, TOut?> retGetter, int results = 1)
 where TArg1 : class, ILuaWrapper {
         TOut? ret;
