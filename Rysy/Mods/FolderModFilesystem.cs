@@ -21,20 +21,26 @@ public sealed class FolderModFilesystem : IModFilesystem {
 
             var path = e.Name.Unbackslash();
             if (!WatchedAssets.TryGetValue(path, out var watched)) {
-                return;
+                // handle cases where you're editing a folder - all files in that folder need to be updated
+                if (WatchedAssets.FirstOrDefault(w => !Path.GetRelativePath(relativeTo: w.Key, path).StartsWith("..")) is not { Value: { } } watchedDir)
+                    return;
+
+                watched ??= watchedDir.Value;
             }
 
-            foreach (var asset in watched) {
-                using var stream = OpenFile(path);
-                if (stream is null)
-                    return;
-                try {
-                    asset.OnChanged(stream);
-                } catch (Exception ex) {
-                    Logger.Error(ex, $"Error when hot reloading {path}");
+            RysyEngine.OnEndOfThisFrame += () => {
+                foreach (var asset in watched) {
+                    using var stream = OpenFile(path);
+                    if (stream is null)
+                        return;
+                    try {
+                        asset.OnChanged(stream);
+                    } catch (Exception ex) {
+                        Logger.Error(ex, $"Error when hot reloading {path}");
+                    }
                 }
-                
-            }
+            };
+
         };
         Watcher.IncludeSubdirectories = true;
         Watcher.EnableRaisingEvents = true;

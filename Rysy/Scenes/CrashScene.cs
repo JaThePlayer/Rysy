@@ -21,7 +21,7 @@ public class CrashScene : Scene {
     public override void OnBegin() {
         base.OnBegin();
 
-        AddWindow(new CrashWindow(Exception, RenderButtons));
+        AddWindow(new CrashWindow("Caught an unknown exception:", Exception, RenderButtons));
     }
 
     private void RenderButtons() {

@@ -22,7 +22,7 @@ public static class JsonExtensions {
     public static T? TryDeserialize<T>(string str) {
         try {
             return JsonSerializer.Deserialize<T>(str, Options(true));
-        } catch (Exception e) {
+        } catch {
             //Console.WriteLine(str);
             //Console.WriteLine(e);
             return default;

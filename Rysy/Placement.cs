@@ -1,6 +1,7 @@
 ﻿using Rysy.Graphics;
 using Rysy.History;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Rysy;
 
@@ -9,6 +10,7 @@ public record class Placement(string Name) {
 
     public string? Tooltip;
 
+    [JsonIgnore]
     public Action<Entity>? Finalizer;
 
     // set in entity registry

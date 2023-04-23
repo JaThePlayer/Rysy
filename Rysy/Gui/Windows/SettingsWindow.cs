@@ -262,8 +262,6 @@ public class SettingsWindow : Window {
     }
 
     private static void QueueReload() {
-        RysyEngine.OnEndOfThisFrame += async () => {
-            await RysyEngine.Instance.ReloadAsync();
-        };
+        RysyEngine.QueueReload();
     }
 }

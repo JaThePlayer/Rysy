@@ -20,7 +20,7 @@ public class DebugInfoWindow : Window {
     private static string HistoryFromText = "";
 
     protected override void Render() {
-        ImGui.Text($"FPS: {RysyEngine.Framerate}");
+        ImGui.Text($"FPS: {RysyEngine.CurrentFPS}");
 
         if (ImGui.CollapsingHeader("Memory")) {
             ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
@@ -46,7 +46,7 @@ public class DebugInfoWindow : Window {
 
                 ImGui.TextUnformatted($"Cached: {cachedAmt}/{lonnEntities.Count} [{cachedAmt / (float)lonnEntities.Count * 100}%]");
                 
-                if (ImGui.BeginListBox("Uncached SID's", new(Size.Value.X, 300))) {
+                if (ImGui.BeginListBox("Uncached SID's", new(Size!.Value.X, 300))) {
                     foreach (var sid in uncachedSids) {
                         ImGui.TextUnformatted(sid);
                     }
@@ -56,9 +56,7 @@ public class DebugInfoWindow : Window {
                 
             }
 
-            if (ImGui.Button("Benchmark current room")) {
-                var room = EditorState.CurrentRoom;
-
+            if (EditorState.CurrentRoom is { } room && ImGui.Button("Benchmark current room")) {
                 var watch = Stopwatch.StartNew();
                 const int times = 100;
                 for (int i = 0; i < times; i++) {

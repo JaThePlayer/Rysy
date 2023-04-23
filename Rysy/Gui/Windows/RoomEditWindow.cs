@@ -4,7 +4,8 @@ using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
 
-namespace Rysy.Gui;
+namespace Rysy.Gui.Windows;
+
 public sealed class RoomEditWindow : Window {
     public const int WIDTH = 800;
     private Room Room;
@@ -34,7 +35,7 @@ public sealed class RoomEditWindow : Window {
 
         if (ImGui.Button("Apply Changes")) {
             var newRoom = NewRoom;
-            EditorState.History.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
+            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
             if (newRoom) {
                 EditorState.CurrentRoom = Room;
             }

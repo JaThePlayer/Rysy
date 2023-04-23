@@ -3,7 +3,8 @@
 namespace Rysy.Gui.FieldTypes;
 
 public record class BoolField : IField {
-    public string Tooltip { get; set; }
+    public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public bool Default { get; set; }
 

@@ -4,6 +4,7 @@ namespace Rysy.Gui.FieldTypes;
 
 public record class IntField : IField {
     public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
     public int Step { get; set; } = 1;
 
     public int Min { get; set; } = int.MinValue;

@@ -9,7 +9,7 @@ namespace Rysy;
 
 public sealed class Decal : Entity, IPlaceable {
     //[GeneratedRegex("\\d+$|\\.png")]
-    public static Regex NumberTrimEnd = new("\\d+$|\\.png", RegexOptions.Compiled);
+    internal static Regex NumberTrimEnd { get; set; } = new("\\d+$|\\.png", RegexOptions.Compiled);
 
     [JsonIgnore]
     public bool FG { get; set; }

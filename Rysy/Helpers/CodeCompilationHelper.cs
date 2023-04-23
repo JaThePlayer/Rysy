@@ -6,6 +6,7 @@ using Rysy.Extensions;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Rysy.Helpers;
@@ -63,6 +64,15 @@ public static class CodeCompilationHelper {
 
     private static List<MetadataReference>? _CachedReferences;
 
+    private static byte[]? RysyAssemblyHash;
+
+    private static byte[] GetAsmHash(Assembly asm) {
+        var loc = asm.Location;
+        using var asmStream = File.OpenRead(loc);
+
+        return MD5.HashData(asmStream);
+    }
+
     public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string cachePath, out Assembly? asm, out EmitResult? emitResult) {
         asm = null;
         emitResult = null;
@@ -70,10 +80,12 @@ public static class CodeCompilationHelper {
         if (files.Count == 0)
             return false;
 
+        
+
         var cachedDLLPath = $"{cachePath}/c.dll";
         var cachedPdbPath = $"{cachePath}/c.pdb";
         var cachedSrcPath = $"{cachePath}/src.txt";
-        var currentSource = files.ToJson(minified: true);
+        var currentSource = (files, RysyAssemblyHash ??= GetAsmHash(typeof(CodeCompilationHelper).Assembly)).ToJson(minified: true);
 
         if (File.Exists(cachedDLLPath) && File.Exists(cachedSrcPath)) {
             var cachedSource = File.ReadAllText(cachedSrcPath);
@@ -93,9 +105,12 @@ public static class CodeCompilationHelper {
 
         var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
 
-        var trees = files
-            .Append((SourceCode: GlobalUsingsCode, Filename: "GlobalUsings.gen.cs"))
-            .Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(f.SourceCode, Encoding.UTF8), options, path: f.Filename));
+        IEnumerable<(string SourceCode, string Filename)> allfiles = files;
+        if (!files.Any(f => f.Filename.EndsWith("GlobalUsings.cs"))) {
+            allfiles = allfiles.Append((SourceCode: GlobalUsingsCode, Filename: "GlobalUsings.gen.cs"));
+        }
+
+        var trees = allfiles.Select(f => SyntaxFactory.ParseSyntaxTree(SourceText.From(f.SourceCode, Encoding.UTF8), options, path: f.Filename));
 
         var csCompilation = CSharpCompilation.Create(asmName,
             trees,

@@ -90,7 +90,7 @@ public class FormWindow : Window {
             ImGuiManager.PushEditedStyle();
 
         ImGui.SetNextItemWidth(ITEM_WIDTH);
-        var newVal = prop.Field.RenderGui(name.Humanize(), val);
+        var newVal = prop.Field.RenderGui(prop.Field.NameOverride ??= name.Humanize(), val);
 
         ImGuiManager.PopInvalidStyle();
         ImGuiManager.PopEditedStyle();

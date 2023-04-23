@@ -4,7 +4,7 @@ using Rysy.Graphics;
 using Rysy.History;
 using Rysy.Scenes;
 
-namespace Rysy.Gui;
+namespace Rysy.Gui.Windows;
 
 public static class RoomList {
     private static bool _firstGui = true;
@@ -28,6 +28,9 @@ public static class RoomList {
             var menubarHeight = ImGuiManager.MenubarHeight;
             ImGui.SetNextWindowPos(new NumVector2(0f, menubarHeight));
             ImGui.SetNextWindowSize(new NumVector2(150f, RysyEngine.Instance.GraphicsDevice.Viewport.Height - menubarHeight));
+            //var dockingSpace = ImGui.DockSpace(0, new NumVector2(150f, 60f), ImGuiDockNodeFlags.PassthruCentralNode);
+
+            //ImGui.SetNextWindowDockID(dockingSpace);
 
             _firstGui = false;
         }

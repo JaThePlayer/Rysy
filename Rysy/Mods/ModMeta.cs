@@ -58,6 +58,8 @@ public sealed class ModMeta : ILuaWrapper {
         lua.PushNil();
         return 1;
     }
+
+    public override string ToString() => EverestYaml.ToString();
 }
 
 /// <summary>

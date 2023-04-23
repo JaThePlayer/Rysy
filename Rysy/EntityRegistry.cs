@@ -27,6 +27,7 @@ public static class EntityRegistry {
     public const string BGDecalSID = "bgDecal";
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
+        _LuaCtx = null;
         SIDToType.Clear();
         SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
@@ -57,9 +58,9 @@ public static class EntityRegistry {
 
         foreach (var (_, mod) in ModRegistry.Mods) {
             LoadingScene.Text = $"{baseText} {mod.Name}";
+
             LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins);
         }
-
 
         using (var watch = new ScopedStopwatch("Registering entities")) {
             LoadingScene.Text = $"{baseText} Rysy";

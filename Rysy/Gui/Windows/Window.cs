@@ -1,6 +1,6 @@
 ﻿using ImGuiNET;
 
-namespace Rysy.Gui;
+namespace Rysy.Gui.Windows;
 
 public class Window {
     private Action<Window> RemoveSelfImpl;
@@ -14,10 +14,20 @@ public class Window {
     /// </summary>
     private string WindowID;
 
+    /// <summary>
+    /// Tells imgui not to store any data about this window to its ini file.
+    /// Use for auto-generated windows.
+    /// </summary>
+    public bool NoSaveData = true;
+
     public Window(string name, NumVector2? size = null) {
         Name = name;
         Size = size;
-        WindowID = $"{Name}##{Guid.NewGuid()}";
+
+        if (NoSaveData)
+            WindowID = $"{Name}##{Guid.NewGuid()}";
+        else
+            WindowID = Name;
     }
 
     public void SetRemoveAction(Action<Window> removeSelf) => RemoveSelfImpl += removeSelf;
@@ -32,7 +42,12 @@ public class Window {
         ImGuiManager.PushWindowStyle();
         var open = true;
 
-        if (ImGui.Begin(WindowID, ref open, Resizable ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable)) {
+        var flags = Resizable ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable;
+
+        if (NoSaveData)
+            flags |= ImGuiWindowFlags.NoSavedSettings;
+
+        if (ImGui.Begin(WindowID, ref open, flags)) {
             Render();
         }
         ImGui.End();

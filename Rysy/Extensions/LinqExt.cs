@@ -1,9 +1,20 @@
 ﻿using Rysy.Helpers;
-using System;
 
 namespace Rysy.Extensions;
 
 public static class LinqExt {
+
+    /// <summary>
+    /// Returns the element at <paramref name="self"/>[<paramref name="index"/>], or <paramref name="def"/> if the list doesn't contain an element at that index.
+    /// </summary>
+    public static T AtOrDefault<T>(this IList<T> self, int index, T def) {
+        if (index < self.Count)
+            return self[index];
+
+        return def;
+    }
+
+
     /// <summary>
     /// Creates an enumerable, which returns all elements of <paramref name="self"/>, but try-catches the MoveNext method and calls <paramref name="onError"/> if an exception occurs.
     /// When an exception is caught, the enumeration ends.
@@ -46,7 +57,7 @@ public static class LinqExt {
                 yield return enumerator.Current;
         }
 
-        postError:
+    postError:
         if (onErrorEnumerable is { }) {
             using var errorEnumerator = onErrorEnumerable.GetEnumerator();
 

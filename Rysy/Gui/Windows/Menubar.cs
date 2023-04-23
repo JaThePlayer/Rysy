@@ -4,7 +4,8 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Scenes;
 
-namespace Rysy.Gui;
+namespace Rysy.Gui.Windows;
+
 public static class Menubar {
     private record class Tab {
         public string Name;

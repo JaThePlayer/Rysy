@@ -2,6 +2,8 @@
 using Rysy.Gui.Windows;
 using Rysy.History;
 using Rysy.Scripting;
+using ImGuiNET;
+using Rysy.Extensions;
 
 namespace Rysy.Tools;
 
@@ -79,6 +81,7 @@ public class ScriptTool : Tool {
                     actions.Add(new SwapRoomAction(room, clone));
                 } catch (Exception e) {
                     Logger.Error(e, $"Failed running script's Run method in room {room.Name}");
+                    CreateCrashWindow(e);
                 }
             }
 
@@ -103,10 +106,16 @@ public class ScriptTool : Tool {
             return true;
         } catch (Exception e) {
             Logger.Error(e, $"Failed running script's Prerun method");
+            CreateCrashWindow(e);
             return false;
         }
     }
 
+    private static void CreateCrashWindow(Exception e) {
+        RysyEngine.Scene.AddWindow(new CrashWindow("Failed to run script", e, () => {
+            ImGui.Button("OK");
+        }));
+    }
 
     public override void Update(Camera camera, Room room) {
         if (Material is not Script script)
