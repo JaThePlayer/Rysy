@@ -10,6 +10,8 @@ public static class ImGuiManager {
 
     public static float MenubarHeight;
 
+    public static uint CentralDockingSpaceID;
+
     public static ImGuiWindowFlags WindowFlagsResizable =>
         //ImGuiWindowFlags.NoDecoration |
         ImGuiWindowFlags.NoScrollbar |
@@ -141,7 +143,8 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, string? tooltip = null) {
+    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, string? tooltip = null) 
+        where T : notnull {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
         }
@@ -228,9 +231,12 @@ public static class ImGuiManager {
         private List<int> ImGUIKeys = new List<int>();
 
         public ImGuiRenderer(RysyEngine engine) {
+            //File.Delete("imgui.ini");
 
             IntPtr ctx = ImGui.CreateContext();
             ImGui.SetCurrentContext(ctx);
+
+            EnableDocking();
 
             Engine = engine ?? throw new ArgumentNullException(nameof(engine));
             GraphicsDevice = RysyEngine.Instance.GraphicsDevice;
@@ -246,6 +252,14 @@ public static class ImGuiManager {
             };
 
             SetupInput();
+        }
+
+        private static void EnableDocking() {
+            var io = ImGui.GetIO();
+
+            io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+            io.ConfigDockingAlwaysTabBar = true;
+            io.ConfigDockingTransparentPayload = true;
         }
 
         public unsafe void BuildFontAtlas() {
@@ -289,6 +303,9 @@ public static class ImGuiManager {
             if (RysyEngine.Instance.IsActive)
                 UpdateInput();
             ImGui.NewFrame();
+
+            // allow docking windows to the sides of the window
+            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingInCentralNode);
         }
 
         public void AfterLayout() {

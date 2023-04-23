@@ -116,11 +116,6 @@ public static partial class LuaExt {
     /// <summary>
     /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int, int)"/>
     /// </summary>
-    /// <param name="lua"></param>
-    /// <param name="code"></param>
-    /// <param name="arguments"></param>
-    /// <param name="results"></param>
-    /// <param name="errorFunctionIndex"></param>
     public static void PCallStringThrowIfError(this Lua lua, string code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
         lua.LoadStringWithSelene(code, chunkName);
         lua.PCallThrowIfError(arguments, results, errorFunctionIndex);
@@ -398,7 +393,7 @@ public static partial class LuaExt {
     }
 
     /// <summary>
-    /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
+    /// Pushes t[<paramref name="keyASCII"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
     public static LuaType GetTable(this Lua lua, int index, byte[] keyASCII) {
         lua.PushASCIIString(keyASCII);
@@ -527,9 +522,6 @@ where TArg1 : class, ILuaWrapper {
     /// <summary>
     /// Converts a lua table at index <paramref name="index"/> on the stack into a C# dictionary
     /// </summary>
-    /// <param name="lua"></param>
-    /// <param name="index"></param>
-    /// <returns></returns>
     public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null, int depth = 0) {
         var dict = new Dictionary<string, object>();
         var dataStart = index;
@@ -677,7 +669,7 @@ where TArg1 : class, ILuaWrapper {
     private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("RWR\0");
 
     /// <summary>
-    /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua<->C# easily.
+    /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
     public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
         int newIndex = RegisterWrapper(wrapper);

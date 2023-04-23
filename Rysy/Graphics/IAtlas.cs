@@ -14,7 +14,7 @@ public interface IAtlas {
     public bool Exists(string key);
 
     /// <summary>
-    /// Disposes all currently loaded textures. This does *not* clear <see cref="Textures"/>, and instead just disposes of any native data.
+    /// Disposes all currently loaded textures. This does *not* clear textures, and instead just disposes of any native data.
     /// If a texture of the atlas gets requested after calling this, it'll get lazy-loaded again.
     /// </summary>
     public void DisposeTextures();

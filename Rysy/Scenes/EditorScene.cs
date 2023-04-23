@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Input;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Tools;
@@ -302,16 +303,13 @@ public sealed class EditorScene : Scene {
         ToolHandler.Render(Camera, CurrentRoom);
 
         GFX.BeginBatch();
-        PicoFont.Print(RysyEngine.Framerate.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
+        PicoFont.Print(RysyEngine.CurrentFPS.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
         GFX.EndBatch();
 
         if (Input.Keyboard.Ctrl()) {
             // Reload everything
             if (Input.Keyboard.IsKeyClicked(Keys.F5)) {
-                Task.Run(async () => {
-                    await RysyEngine.Instance.ReloadAsync();
-                    GC.Collect(3);
-                });
+                RysyEngine.QueueReload();
             }
         } else {
             // clear render cache

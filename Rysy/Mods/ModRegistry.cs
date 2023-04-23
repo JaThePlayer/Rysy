@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Scenes;
 using System.Reflection;
 
 namespace Rysy.Mods;
@@ -19,6 +20,8 @@ public static class ModRegistry {
     public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName);
 
     public static async Task LoadAllAsync(string modDir) {
+        LoadingScene.Text = "Scanning For Mods";
+
         UnloadAllMods();
         _Mods.Clear();
 
@@ -49,7 +52,8 @@ public static class ModRegistry {
                     return await CreateModAsync(f, zip: true);
 
                 return await CreateModAsync(f, zip: false);
-            });
+            })
+            .Append(Task.FromResult(CreateRysyMod()));
 
         if (CreateVanillaMod() is { } vanilla) {
             allMods = allMods.Append(Task.FromResult(vanilla));
@@ -75,6 +79,14 @@ public static class ModRegistry {
         Filesystem = new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content"),
     };
 
+    private static ModMeta CreateRysyMod() => new() {
+        EverestYaml = new() {
+            Name = "Rysy",
+            Version = new(1, 0, 0, 0), // todo: auto-fill
+        },
+        Filesystem = new FolderModFilesystem($"Assets"),
+    };
+
     private static void UnloadAllMods() {
         foreach (var (_, mod) in _Mods) {
             mod.Module?.Unload();
@@ -88,8 +100,13 @@ public static class ModRegistry {
 
         mod.Filesystem = filesystem;
 
-        ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
-        LoadModRysyPlugins(mod);
+        try {
+            ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
+            LoadModRysyPlugins(mod);
+        } catch (Exception e) {
+            Logger.Error(e, $"Error loading mod: {dir}");
+        }
+
 
         return mod;
     }
@@ -115,16 +132,27 @@ public static class ModRegistry {
     }
 
     private static void LoadModRysyPlugins(ModMeta mod, bool registerFilewatch = true) {
-        var files = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "cs").ToArray();
+        var files = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "cs")
+            .Where(f => !f.StartsWith("Rysy/obj", StringComparison.Ordinal)
+                     && !f.StartsWith("Rysy/.vs", StringComparison.Ordinal)
+                     && !f.StartsWith("Rysy/bin", StringComparison.Ordinal))
+            .ToArray();
         if (files.Length == 0)
             return;
 
-        if (registerFilewatch)
-            foreach (var file in files) {
+        if (registerFilewatch) {
+            /*
+             foreach (var file in files) {
                 mod.Filesystem.RegisterFilewatch(file, new() {
                     OnChanged = stream => RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false)
                 });
             }
+             */
+            mod.Filesystem.RegisterFilewatch("Rysy", new() {
+                OnChanged = stream => RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false)
+            });
+        }
+
 
         var fileInfo = files.Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}")).Where(p => p.Item1 is not null).ToList();
 

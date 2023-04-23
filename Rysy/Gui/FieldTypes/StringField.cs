@@ -4,6 +4,7 @@ namespace Rysy.Gui.FieldTypes;
 
 public record class StringField : IField {
     public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public string Default { get; set; }
 

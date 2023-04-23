@@ -3,7 +3,8 @@
 namespace Rysy.Gui.FieldTypes;
 
 public record class DropdownField<T> : IField where T : notnull {
-    public string Tooltip { get; set; }
+    public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public Dictionary<T, string> Values;
 

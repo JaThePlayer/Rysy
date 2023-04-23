@@ -39,7 +39,7 @@ public class Persistence {
                 ret = e.Deserialize<T>();
                 Values[key] = ret!;
             }
-            return (T) ret;
+            return (T) ret!;
         }
 
         return defaultValue;

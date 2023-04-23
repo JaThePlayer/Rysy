@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
+using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
@@ -46,9 +47,12 @@ public sealed class RysyEngine : Game {
 
     private static bool _lastActive;
 
-    public static double Framerate;
+    /// <summary>
+    /// The current FPS
+    /// </summary>
+    public static double CurrentFPS { get; set; }
 
-    public static float ForceActiveTimer = 0.0f;
+    public static float ForceActiveTimer { get; set; } = 0.0f;
 
     public static bool ImGuiAvailable { get; internal set; }
 
@@ -69,15 +73,22 @@ public sealed class RysyEngine : Game {
     }
 
     public static void SetTargetFps(int fps) {
-        if (Instance is { } instance)
+        if (Instance is not { } instance) {
+            return;
+        }
+
+        OnEndOfThisFrame += () => {
             instance.TargetElapsedTime = TimeSpan.FromSeconds(1d / (double) fps);
+        };
     }
 
     public static void ToggleVSync(bool toggle) {
-        if (GDM is { } gdm) {
-            gdm.SynchronizeWithVerticalRetrace = toggle;
-            gdm.ApplyChanges();
-        }
+        OnEndOfThisFrame += () => {
+            if (GDM is { } gdm) {
+                gdm.SynchronizeWithVerticalRetrace = toggle;
+                gdm.ApplyChanges();
+            }
+        };
     }
 
     public static void ToggleBorderlessFullscreen(bool toggle) {
@@ -85,14 +96,16 @@ public sealed class RysyEngine : Game {
             return;
         }
 
-        instance.Window.IsBorderless = toggle;
-        if (toggle) {
-            var monitorSize = GDM.GraphicsDevice.DisplayMode;
+        OnEndOfThisFrame += () => {
+            instance.Window.IsBorderless = toggle;
+            if (toggle) {
+                var monitorSize = GDM.GraphicsDevice.DisplayMode;
 
-            instance.ResizeWindow(monitorSize.Width, monitorSize.Height, 0, 0);
-        } else {
-            instance.ResizeWindowUsingPersistence();
-        }
+                instance.ResizeWindow(monitorSize.Width, monitorSize.Height, 0, 0);
+            } else {
+                instance.ResizeWindowUsingPersistence();
+            }
+        };
     }
 
     private void Window_FileDrop(object? sender, FileDropEventArgs e) {
@@ -115,24 +128,38 @@ public sealed class RysyEngine : Game {
         }
     }
 
-    protected override async void Initialize() {
+    protected override void Initialize() {
         base.Initialize();
 
         RysyPlatform.Current.Init();
         Logger.Init();
         ImGuiManager.Load(this);
 
-        await ReloadAsync();
+        QueueReload();
     }
 
-    public async ValueTask ReloadAsync() {
+    /// <summary>
+    /// Queues a full reload of Rysy
+    /// </summary>
+    public static void QueueReload() {
+        OnEndOfThisFrame += () => {
+            lock (Instance) {
+                GFX.LoadEssencials(Instance);
+                Scene = new LoadingScene();
+            }
 
-        using var reloadTimer = new ScopedStopwatch("Loading");
-        GFX.LoadEssencials(this);
-        LoadingScene loading = new();
+            Task.Run(async () => await Instance.ReloadAsync());
+        };
+    }
+
+    private async ValueTask ReloadAsync() {
+        lock (this) {
+            GFX.LoadEssencials(this);
+            Scene = new LoadingScene();
+        }
+        var reloadTimer = new ScopedStopwatch("Loading");
+
         LoadingScene.Text = "Loading settings";
-        Scene = loading;
-
         try {
             Settings.Instance = Settings.Load();
         } catch {
@@ -166,6 +193,10 @@ public sealed class RysyEngine : Game {
         await GFX.LoadAsync();
 
         await EntityRegistry.RegisterAsync();
+
+        await LangRegistry.LoadAllAsync();
+
+        reloadTimer.Dispose();
 
         Scene = new EditorScene();
     }
@@ -211,9 +242,12 @@ public sealed class RysyEngine : Game {
                 OnLoseFocus?.Invoke();
             }
 
-            if (IsActive) {
+            //IsActive
+            if (true) {
                 Time.Update(gameTime);
-                Input.Update(gameTime);
+
+                if (IsActive)
+                    Input.Update(gameTime);
 
                 SmartFPSHandler.Update();
 
@@ -236,9 +270,10 @@ public sealed class RysyEngine : Game {
     }
 
     protected override unsafe void Draw(GameTime gameTime) {
-        if (IsActive || ForceActiveTimer > 0f) {
+        base.Draw(gameTime);
+        //IsActive || ForceActiveTimer > 0f
+        if (true) {
             ForceActiveTimer -= Time.Delta;
-            base.Draw(gameTime);
 
             GraphicsDevice.Clear(Color.Black);
 
@@ -262,7 +297,7 @@ public sealed class RysyEngine : Game {
 
             smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
 
-            Framerate = smartFramerate.framerate;
+            CurrentFPS = smartFramerate.framerate;
         }
     }
 

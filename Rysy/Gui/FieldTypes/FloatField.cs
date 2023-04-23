@@ -4,6 +4,7 @@ namespace Rysy.Gui.FieldTypes;
 
 public record class FloatField : IField {
     public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public float Default { get; set; }
 

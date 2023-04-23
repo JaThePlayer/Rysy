@@ -3,7 +3,8 @@
 namespace Rysy.Gui.FieldTypes;
 
 public record class CharField : IField {
-    public string Tooltip { get; set; }
+    public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public char Default { get; set; }
 

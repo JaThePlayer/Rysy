@@ -89,10 +89,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     [JsonIgnore]
     public abstract int Depth { get; }
 
-    [JsonIgnore]
     /// <summary>
     /// Gets the center of this entity. Used for centering node paths, for example, but can be used in your own plugins as well.
     /// </summary>
+    [JsonIgnore]
     public virtual Vector2 Center {
         get {
             var x = X;
@@ -105,10 +105,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         }
     }
 
-    [JsonIgnore]
     /// <summary>
     /// Gets the rectangle that this entity occupies. This makes use of the <see cref="Width"/> and <see cref="Height"/> properties, defaulting them to 8 if they're equal to 0.
     /// </summary>
+    [JsonIgnore]
     public Rectangle Rectangle {
         get {
             var bw = Width;
@@ -282,7 +282,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     };
 
     /// <summary>
-    /// Creates a clone of this entity by creating a placement out of this entity, then using <see cref="EntityRegistry.Create"/>
+    /// Creates a clone of this entity by creating a placement out of this entity, then using <see cref="EntityRegistry.Create(Placement, Microsoft.Xna.Framework.Vector2, Room, bool, bool)"/>
     /// </summary>
     public Entity Clone() {
         var clone = EntityRegistry.Create(ToPlacement(), Pos, Room, false, this is Trigger);

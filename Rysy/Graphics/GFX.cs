@@ -37,6 +37,9 @@ public static class GFX {
     /// </summary>
     /// <param name="eng"></param>
     internal static void LoadEssencials(RysyEngine eng) {
+        if (Batch is not null)
+            return;
+
         Batch = new(eng.GraphicsDevice);
 
         Pixel = new(eng.GraphicsDevice, 1, 1);

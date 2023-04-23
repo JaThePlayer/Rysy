@@ -3,10 +3,12 @@ using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.Json.Serialization;
 using YamlDotNet.Core.Tokens;
 
@@ -364,7 +366,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (!selected)
             ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
 
-        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors[Attributes.C], outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
+        // draw the colored border around the room
+        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White), outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
 
         GFX.Batch.End();
     }

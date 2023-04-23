@@ -7,6 +7,8 @@
     <Nullable>enable</Nullable>
     <LangVersion>11.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--<DebugSymbols>true</DebugSymbols>-->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <!--The DirectX version is much faster in my experience-->
@@ -15,6 +17,10 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
     <DefineConstants>$(DefineConstants);DirectX</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
     
   <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
@@ -35,6 +41,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\font.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\lang\en_gb.lang">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\lonnShims\bit.lua">

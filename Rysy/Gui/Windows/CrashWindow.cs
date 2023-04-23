@@ -6,12 +6,14 @@ namespace Rysy.Gui.Windows;
 public class CrashWindow : Window {
     public Exception Exception;
     public Action ButtonGenerator;
+    public string Message;
 
     private string ExceptionString;
 
-    public CrashWindow(Exception e, Action buttonGenerator) : base("Crash Handler", new(800, 500)) {
+    public CrashWindow(string message, Exception e, Action buttonGenerator) : base("Crash Handler", new(800, 500)) {
         Exception = e;
         ButtonGenerator = buttonGenerator;
+        Message = message;
 
         ExceptionString = Exception.ToString().Censor();
     }
@@ -19,7 +21,7 @@ public class CrashWindow : Window {
     protected override void Render() {
         base.Render();
 
-        ImGui.TextColored(Color.Red.ToNumVec4(), "Caught an unknown exception:");
+        ImGui.TextColored(Color.Red.ToNumVec4(), Message);
 
         ImGui.InputTextMultiline("Exception", ref ExceptionString, (uint)ExceptionString.Length, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()), ImGuiInputTextFlags.ReadOnly);
 

@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Gui.Windows;
@@ -51,6 +52,16 @@ public class EntityPropertyWindow : FormWindow {
                     fields[k] = Fields.GuessFromValue(v)!;
                 }
             }
+        }
+
+        var tooltipKeyPrefix = $"entities.{main.Name}.attributes.description";
+        var nameKeyPrefix = $"entities.{main.Name}.attributes.name";
+        var defaultTooltipKeyPrefix = "entities.default.attributes.description";
+        var defaultNameKeyPrefix = $"entities.default.attributes.name";
+
+        foreach (var (name, f) in fields) {
+            f.Tooltip ??= name.TranslateOrNull(tooltipKeyPrefix) ?? name.TranslateOrNull(defaultTooltipKeyPrefix);
+            f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
         }
 
         return fields;

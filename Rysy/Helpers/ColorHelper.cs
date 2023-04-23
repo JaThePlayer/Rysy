@@ -55,13 +55,13 @@ public static class ColorHelper {
     }
 
     /// <summary>
-    /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as AARRGGBB
+    /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as AARRGGBB.
     /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.ARGB"/> as the second parameter if this is needed
     /// </summary>
-    public static Color ARGB(ReadOnlySpan<char> hex) {
-        hex = PrepareSpan(hex);
-        var packedValue = GetPacked(hex);
-        return hex.Length switch {
+    public static Color ARGB(ReadOnlySpan<char> hexCode) {
+        hexCode = PrepareSpan(hexCode);
+        var packedValue = GetPacked(hexCode);
+        return hexCode.Length switch {
             6 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
             8 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue, (byte) (packedValue >> 24)), // argb
             _ => default,
@@ -72,10 +72,10 @@ public static class ColorHelper {
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as RRGGBBAA
     /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.RGBA"/> as the second parameter if this is needed
     /// </summary>
-    public static Color RGBA(ReadOnlySpan<char> hex) {
-        hex = PrepareSpan(hex);
-        var packedValue = GetPacked(hex);
-        return hex.Length switch {
+    public static Color RGBA(ReadOnlySpan<char> hexCode) {
+        hexCode = PrepareSpan(hexCode);
+        var packedValue = GetPacked(hexCode);
+        return hexCode.Length switch {
             // allow 7-length as RGB because of Temple of Zoom from SC having 00bc000 as spinner tint... why
             6 or 7 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
             8 => new Color((byte) (packedValue >> 24), (byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), // rgba

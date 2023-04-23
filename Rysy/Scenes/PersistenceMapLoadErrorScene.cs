@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using System;
 
 namespace Rysy.Scenes;

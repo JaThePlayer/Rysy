@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
@@ -59,7 +60,7 @@ internal class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelections);
 
         handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => AddNodeKeybind(at: null));
-        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => AddNodeKeybind(at: GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom).ToVector2().Snap(8)));
+        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => AddNodeKeybind(at: GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom!).ToVector2().Snap(8)));
 
         handler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
         handler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
@@ -110,7 +111,10 @@ internal class SelectionTool : Tool {
     }
 
     private void PasteSelections() {
-        var selections = CopypasteHelper.PasteSelectionsFromClipboard(History, EditorState.CurrentRoom.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
+        if (EditorState.CurrentRoom is null)
+            return;
+
+        var selections = CopypasteHelper.PasteSelectionsFromClipboard(History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
         if (pastedRooms) {
             Layer = LayerNames.ROOM;
         }

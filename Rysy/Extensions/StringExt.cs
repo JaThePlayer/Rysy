@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Extensions;
@@ -181,4 +182,28 @@ public static partial class StringExt {
 
         return b.ToString();
     }
+
+    /// <summary>
+    /// Translates the string using <see cref="LangRegistry.Translate(string)"/>.
+    /// If no translation is found, returns the string itself.
+    /// </summary>
+    public static string Translate(this string str) => LangRegistry.Translate(str);
+
+    /// <summary>
+    /// Translates the string using <see cref="LangRegistry.TranslateOrNull(string)"/>.
+    /// If no translation is found, returns null.
+    /// </summary>
+    public static string? TranslateOrNull(this string str) => LangRegistry.TranslateOrNull(str);
+
+    /// <summary>
+    /// Translates the string $"{<paramref name="prefix"/>}.{<paramref name="str"/>}" using <see cref="LangRegistry.TranslateOrNull(string)"/>.
+    /// If no translation is found, returns null.
+    /// </summary>
+    public static string? TranslateOrNull(this string str, string prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}");
+
+    /// <summary>
+    /// Translates the string $"{<paramref name="prefix"/>}.{<paramref name="str"/>}" using <see cref="LangRegistry.TranslateOrNull(string)"/>.
+    /// If no translation is found, returns the result of calling <see cref="Humanize(string)"/> on <paramref name="str"/>
+    /// </summary>
+    public static string TranslateOrHumanize(this string str, string prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}") ?? Humanize(str);
 }

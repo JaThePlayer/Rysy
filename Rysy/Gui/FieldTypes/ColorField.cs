@@ -5,7 +5,8 @@ using Rysy.Helpers;
 namespace Rysy.Gui.FieldTypes;
 
 public record class ColorField : IField {
-    public string Tooltip { get; set; }
+    public string? Tooltip { get; set; }
+    public string? NameOverride { get; set; }
 
     public Color Default { get; set; }
 

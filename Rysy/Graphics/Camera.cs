@@ -97,7 +97,6 @@ public class Camera {
     /// <summary>
     /// Zooms the camera out.
     /// </summary>
-    /// <param name="pos">The position to center the camera on when zooming.</param>
     public void ZoomOut() {
         DoZoom(Scale / 2f);
     }
