@@ -44,8 +44,12 @@ public class PlacementTool : Tool {
     }
 
     public override string GetMaterialDisplayName(string layer, object material) {
+        if (material is Placement pl) {
+            var name = pl.Name.TranslateOrHumanize($@"entities.{pl.SID}.placements.name");
+            return pl.GetMod() is { } mod ? $"{name} [{mod.Name}]" : name;
+        }
+
         return material switch {
-            Placement pl => pl.Name,
             string s => s,
             _ => material?.ToString() ?? "null",
         };
@@ -53,7 +57,7 @@ public class PlacementTool : Tool {
 
     public override string? GetMaterialTooltip(string layer, object material) {
         return material switch {
-            Placement pl => pl.Tooltip,
+            Placement pl => pl.Tooltip ?? pl.Name.TranslateOrNull($@"entities.{pl.SID}.placements.description"),
             _ => null,
         };
     }

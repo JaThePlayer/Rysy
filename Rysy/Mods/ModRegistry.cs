@@ -32,13 +32,16 @@ public static class ModRegistry {
 
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");
 
-        var blacklisted = TryHelper.Try(() => 
+        var blacklisted =
+            /*
+        TryHelper.Try(() => 
             File.ReadAllLines($"{modDir}/blacklist.txt")
             .Select(l => l.Trim())
             .Where(l => !l.StartsWith('#'))
             .Select(l => $"{modDir}/{l}".Unbackslash())
             .ToHashSet()
-        ) ?? new();
+        ) ?? new();*/
+            new HashSet<string>();
 
         var allMods =
             Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache"))
@@ -69,6 +72,8 @@ public static class ModRegistry {
             }
             _Mods[meta.Name] = meta;
         }
+
+        CreateRysyMod().Filesystem.Root.LogAsJson();
     }
 
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
@@ -84,7 +89,16 @@ public static class ModRegistry {
             Name = "Rysy",
             Version = new(1, 0, 0, 0), // todo: auto-fill
         },
-        Filesystem = new FolderModFilesystem($"Assets"),
+        PluginAssembly = typeof(RysyEngine).Assembly,
+        Filesystem =
+#if DEBUG
+        Directory.Exists("../../../Assets")
+        ? new FolderModFilesystem(Path.GetFullPath("../../../Assets"))
+        : new FolderModFilesystem("Assets"),
+
+#else
+        new FolderModFilesystem($"Assets"),
+#endif
     };
 
     private static void UnloadAllMods() {

@@ -2,20 +2,24 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class FloatField : IField {
-    public string? Tooltip { get; set; }
-    public string? NameOverride { get; set; }
-
+public record class FloatField : Field {
     public float Default { get; set; }
 
-    public object GetDefault() => Default;
+    public float Min { get; set; } = float.MinValue;
+    public float Max { get; set; } = float.MaxValue;
 
-    public void SetDefault(object newDefault)
+    public override object GetDefault() => Default;
+
+    public override void SetDefault(object newDefault)
         => Default = Convert.ToSingle(newDefault);
 
-    public bool IsValid(object value) => value is float or int;
+    public override bool IsValid(object? value) => (value switch {
+        int i when i >= Min && i <= Max => true,
+        float i when i >= Min && i <= Max => true,
+        _ => false
+    }) && base.IsValid(value);
 
-    public object? RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object value) {
         float b = Convert.ToSingle(value);
         if (ImGui.InputFloat(fieldName, ref b).WithTooltip(Tooltip))
             return b;
@@ -23,5 +27,15 @@ public record class FloatField : IField {
         return null;
     }
 
-    public IField CreateClone() => this with { };
+    public override Field CreateClone() => this with { };
+
+    public FloatField WithMin(float min) {
+        Min = min;
+        return this;
+    }
+
+    public FloatField WithMax(float max) {
+        Max = max;
+        return this;
+    }
 }

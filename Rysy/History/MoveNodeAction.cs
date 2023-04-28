@@ -5,6 +5,7 @@ public record class MoveNodeAction(Node Node, Entity Entity, Vector2 By) : IHist
         Node.Pos += By;
 
         Entity.ClearRoomRenderCache();
+        Entity.OnChanged();
 
         return true;
     }
@@ -13,5 +14,6 @@ public record class MoveNodeAction(Node Node, Entity Entity, Vector2 By) : IHist
         Node.Pos -= By;
 
         Entity.ClearRoomRenderCache();
+        Entity.OnChanged();
     }
 }

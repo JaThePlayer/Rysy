@@ -124,7 +124,6 @@ public sealed class RysyEngine : Game {
             Persistence.Instance.Set("StartingWindowHeight", GDM.GraphicsDevice.Viewport.Height);
             Persistence.Instance.Set("StartingWindowX", Window.Position.X);
             Persistence.Instance.Set("StartingWindowY", Window.Position.Y);
-            Persistence.Save(Persistence.Instance);
         }
     }
 

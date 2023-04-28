@@ -15,8 +15,8 @@ public static class ColorHelper {
     /// <summary>
     /// Gets a <see cref="Color"/> from the <paramref name="color"/> string, by either using an XNA color name, or converting a hex code from a given format
     /// </summary>
-    public static Color Get(string color, ColorFormat format = ColorFormat.RGBA) {
-        if (cache.TryGetValue(color, out var xnaColor))
+    public static Color Get(string color, ColorFormat format = ColorFormat.RGBA, bool allowXNA = true) {
+        if (allowXNA && cache.TryGetValue(color, out var xnaColor))
             return xnaColor;
 
         return format switch {
@@ -30,9 +30,9 @@ public static class ColorHelper {
     /// <summary>
     /// Tries to convert a string to a color using the given format.
     /// </summary>
-    public static bool TryGet(string colorString, ColorFormat format, out Color color) {
+    public static bool TryGet(string colorString, ColorFormat format, out Color color, bool allowXNA = true) {
         try {
-            color = Get(colorString, format);
+            color = Get(colorString, format, allowXNA);
             return true;
         } catch {
             color = default;

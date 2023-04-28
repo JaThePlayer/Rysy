@@ -153,4 +153,13 @@ public sealed class Decal : Entity, IPlaceable {
 
         return el;
     }
+
+    public override void ClearRoomRenderCache() {
+        if (Room is { } r) {
+            if (FG)
+                r.ClearFgDecalsRenderCache();
+            else
+                r.ClearBgDecalsRenderCache();
+        }
+    }
 }

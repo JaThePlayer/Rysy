@@ -146,7 +146,10 @@ end
 function fakeTilesHelper.getTilesOptions(layer)
     layer = layer or "tilesFg"
 
-    _RYSY_unimplemented()
+    --_RYSY_unimplemented()
+	print("yo wat")
+	return _RYSY_fake_tiles_get(layer)
+
 end
 
 -- Returns a function to be up to date with any XML changes
@@ -168,6 +171,7 @@ end
 -- Returns a function to be up to date with any XML changes
 function fakeTilesHelper.getFieldInformation(materialKey, layer)
     return function()
+	print("h")
         return {
             [materialKey] = {
                 options = fakeTilesHelper.getTilesOptions(layer),

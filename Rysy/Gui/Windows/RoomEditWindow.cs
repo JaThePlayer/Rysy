@@ -44,6 +44,8 @@ public sealed class RoomEditWindow : Window {
         ImGuiManager.EndWindowBottomBar();
     }
 
+    private string MusicDropdownSearch = "";
+
     private void MusicTab() {
         if (!ImGui.BeginTabItem("Music")) {
             return;
@@ -53,7 +55,7 @@ public sealed class RoomEditWindow : Window {
 
         //StringInput("Music", ref Attrs.Music);
         ImGui.SetNextItemWidth(ImGui.GetColumnWidth() / 2);
-        ImGuiManager.EditableCombo("Music", ref Attrs.Music, CelesteEnums.Music, s => s);
+        ImGuiManager.EditableCombo("Music", ref Attrs.Music, CelesteEnums.Music, s => s, ref MusicDropdownSearch);
         ImGui.NextColumn();
 
         StringInput("Alt Music", ref Attrs.AltMusic);

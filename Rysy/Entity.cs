@@ -256,22 +256,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     /// <summary>
     /// Clears the correct render cache in the parent room
     /// </summary>
-    public void ClearRoomRenderCache() {
+    public virtual void ClearRoomRenderCache() {
         if (Room is { } r) {
-            switch (this) {
-                case Decal d:
-                    if (d.FG)
-                        r.ClearFgDecalsRenderCache();
-                    else
-                        r.ClearBgDecalsRenderCache();
-                    break;
-                case Trigger:
-                    r.ClearTriggerRenderCache();
-                    break;
-                default:
-                    r.ClearEntityRenderCache();
-                    break;
-            }
+            r.ClearEntityRenderCache();
         }
     }
 

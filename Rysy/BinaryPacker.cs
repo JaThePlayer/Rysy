@@ -28,8 +28,12 @@ public sealed class BinaryPacker {
         if (!File.Exists(filename))
             throw new FileNotFoundException(filename);
 
-        var packer = new BinaryPacker();
         using var stream = File.OpenRead(filename);
+        return FromBinary(stream, filename);
+    }
+
+    public static Package FromBinary(Stream stream, string filename) {
+        var packer = new BinaryPacker();
         using var reader = new BinaryReader(stream);
 
         if (reader.ReadString() != "CELESTE MAP") {
@@ -152,6 +156,9 @@ public sealed class BinaryPacker {
                 break;
             case Enum e:
                 EncodeString(e.ToString());
+                break;
+            case char c:
+                EncodeString(c.ToString());
                 break;
             case string b:
                 EncodeString(b);

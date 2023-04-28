@@ -148,7 +148,7 @@ public sealed class Map : IPackable {
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);
 }
 
-public sealed class MapMetadata {
+public sealed record class MapMetadata {
     public string Parent { get; set; }
 
     public string Icon { get; set; }

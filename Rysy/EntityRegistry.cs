@@ -5,6 +5,7 @@ using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
 using System.Reflection;
+using System.Security.Cryptography;
 
 namespace Rysy;
 
@@ -13,9 +14,10 @@ public static class EntityRegistry {
         RegisterHardcoded();
     }
 
-    private static Dictionary<string, Type> SIDToType { get; set; } = new();
-    private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new();
-    public static Dictionary<string, FieldList> SIDToFields { get; set; } = new();
+    private static Dictionary<string, Type> SIDToType { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, Func<FieldList>> SIDToFields { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, ModMeta> SIDToMod { get; set; } = new(StringComparer.Ordinal);
 
     public static List<Placement> EntityPlacements { get; set; } = new();
     public static List<Placement> TriggerPlacements { get; set; } = new();
@@ -26,6 +28,18 @@ public static class EntityRegistry {
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
+    public static FieldList GetFields(Entity entity) {
+        if (SIDToFields.TryGetValue(entity.Name, out var getter)) {
+            return getter();
+        }
+
+        return new();
+    }
+
+    public static ModMeta? GetMod(string sid) {
+        return SIDToMod.GetValueOrDefault(sid);
+    }
+
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
         _LuaCtx = null;
         SIDToType.Clear();
@@ -33,15 +47,13 @@ public static class EntityRegistry {
         SIDToFields.Clear();
         EntityPlacements.Clear();
         TriggerPlacements.Clear();
+        SIDToMod.Clear();
 
         RegisterHardcoded();
 
         const string baseText = "Registering entities:";
-
         LoadingScene.Text = baseText;
-
-        //TODO: REMOVE
-        //loadLuaPlugins = false;
+        using var watch = new ScopedStopwatch("Registering entities");
 
         if (loadLuaPlugins && Settings.Instance.LonnPluginPath is { } path) {
             using var w = new ScopedStopwatch("Registering Lua entities");
@@ -60,13 +72,6 @@ public static class EntityRegistry {
             LoadingScene.Text = $"{baseText} {mod.Name}";
 
             LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins);
-        }
-
-        using (var watch = new ScopedStopwatch("Registering entities")) {
-            LoadingScene.Text = $"{baseText} Rysy";
-
-            if (loadCSharpPlugins)
-                await Task.WhenAll(AppDomain.CurrentDomain.GetAssemblies().SelectToTaskRun(RegisterFrom));
         }
     }
 
@@ -87,7 +92,7 @@ public static class EntityRegistry {
 
     private static void LoadRysyPlugins(ModMeta mod) {
         mod.OnAssemblyReloaded += (asm) => {
-            RegisterFrom(asm);
+            RegisterFrom(asm, mod);
 
             // perform a quick reload to make entities use their new C# type.
             if (RysyEngine.Scene is EditorScene editor) {
@@ -96,7 +101,7 @@ public static class EntityRegistry {
         };
 
         if (mod.PluginAssembly is { } asm) {
-            RegisterFrom(asm);
+            RegisterFrom(asm, mod);
         }
     }
 
@@ -114,8 +119,8 @@ public static class EntityRegistry {
 
         var decalFields = Decal.GetFields();
 
-        SIDToFields[FGDecalSID] = decalFields;
-        SIDToFields[BGDecalSID] = decalFields;
+        SIDToFields[FGDecalSID] = () => decalFields;
+        SIDToFields[BGDecalSID] = () => decalFields;
     }
 
     public static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
@@ -139,15 +144,20 @@ public static class EntityRegistry {
                 lock (SIDToLonnPlugin) {
                     SIDToLonnPlugin[pl.Name] = pl;
                 }
+                if (mod is { })
+                    lock (SIDToMod) {
+                        if (!SIDToMod.ContainsKey(pl.Name))
+                            SIDToMod[pl.Name] = mod;
+                    }
 
                 var placements = trigger ? TriggerPlacements : EntityPlacements;
 
                 lock (placements) {
                     foreach (var palcement in pl.Placements) {
-                        placements.Add(new($"{pl.Name.Split('/').Last().Humanize()} [{palcement.Name}]") {
+                        placements.Add(new(palcement.Name) {
                             ValueOverrides = palcement.Data,
                             SID = pl.Name,
-                            Tooltip = mod is { } ? $"{mod.Name}\n[From Lonn]" : "[From Lonn]",
+                            //Tooltip = mod is { } ? $"{mod.Name}\n[From Lonn]" : "[From Lonn]",
                             PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity
                         });
                     }
@@ -165,7 +175,7 @@ public static class EntityRegistry {
         }
     }
 
-    public static void RegisterFrom(Assembly asm) {
+    public static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
         foreach (var t in asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity) && t != typeof(Trigger))) {
             var sids = t.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToArray();
 
@@ -179,6 +189,14 @@ public static class EntityRegistry {
                     SIDToType[sid] = t;
                 }
             }
+
+            if (mod is { })
+                lock (SIDToMod) {
+                    foreach (var sid in sids) {
+                        if (!SIDToMod.ContainsKey(sid))
+                            SIDToMod[sid] = mod;
+                    }
+                }
 
             var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
             if (getPlacementsMethod is { } && (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null) is { } placements) {
@@ -195,9 +213,10 @@ public static class EntityRegistry {
             }
 
             var getFieldsMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
-            if (getFieldsMethod is { } && (FieldList?) getFieldsMethod.Invoke(null, null) is { } fields) {
+            if (getFieldsMethod is { }) {
+                var dele = getFieldsMethod.CreateDelegate<Func<FieldList>>();
                 foreach (var sid in sids) {
-                    SIDToFields[sid] = fields;
+                    SIDToFields[sid] = dele;
                 }
             }
         }
@@ -209,7 +228,7 @@ public static class EntityRegistry {
         Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
 
         if (SIDToFields.TryGetValue(sid, out var fields)) {
-            foreach (var (name, field) in fields) {
+            foreach (var (name, field) in fields()) {
                 if (!data.ContainsKey(name))
                     data.Add(name, field.GetDefault());
             }

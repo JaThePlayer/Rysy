@@ -131,7 +131,8 @@ public static class ImGuiManager {
         }
     }
 
-    public static void Combo<T>(string name, ref T value, Dictionary<string, T> values) where T : IEquatable<T> {
+    public static bool Combo<T>(string name, ref T value, Dictionary<T, string> values, ref string search, string? tooltip = null) where T : notnull {
+        /*
         var val = value;
         if (ImGui.BeginCombo(name, values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString())) {
             foreach (var item in values) {
@@ -140,10 +141,30 @@ public static class ImGuiManager {
                 }
             }
             ImGui.EndCombo();
+        }*/
+        if (!values.TryGetValue(value, out var valueName)) {
+            valueName = value!.ToString();
         }
+
+        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
+            if (ImGui.InputText("Search", ref search, 512)) {
+
+            }
+
+            foreach (var item in values.SearchFilter(i => i.Value, search)) {
+                if (ImGui.MenuItem(item.Value)) {
+                    value = item.Key;
+                    return true;
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        return false;
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, string? tooltip = null) 
+    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, ref string search, string? tooltip = null) 
         where T : notnull {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
@@ -158,7 +179,11 @@ public static class ImGuiManager {
         ImGui.SameLine(0f,0f);
 
         if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
-            foreach (var item in values) {
+            if (ImGui.InputText("Search", ref search, 512)) {
+
+            }
+
+            foreach (var item in values.SearchFilter(i => i.Value, search)) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
                     return true;
@@ -169,6 +194,7 @@ public static class ImGuiManager {
         }
         ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
         ImGui.Text(name);
+        true.WithTooltip(tooltip);
 
         return false;
     }

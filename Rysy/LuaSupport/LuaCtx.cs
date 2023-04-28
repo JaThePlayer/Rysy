@@ -277,6 +277,35 @@ public class LuaCtx {
             return 0;
         });
 
+        lua.Register("_RYSY_fake_tiles_get", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var layer = lua.FastToString(1);
+
+            if (EditorState.Map is not { } map) {
+                lua.CreateTable(0, 0);
+                return 1;
+            }
+
+            /*
+             * 	return {
+		dirt = "c",
+		snow = "3",
+	}
+             */
+            var autotiler = layer == "tilesFg" ? map.FGAutotiler : map.BGAutotiler;
+
+            var tiles = autotiler.Tilesets.Select(t => (t.Key, autotiler.GetTilesetDisplayName(t.Key)));
+
+            lua.CreateTable(0, autotiler.Tilesets.Count);
+            var tablePos = lua.GetTop();
+            foreach (var item in tiles) {
+                lua.PushString(item.Key.ToString());
+                lua.SetField(tablePos, item.Item2);
+            }
+
+            return 1;
+        });
+
         RegisterAPIFuncs(lua);
 
         var orig = lua.AtPanic(AtLuaPanic);

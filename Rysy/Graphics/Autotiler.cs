@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.HighPerformance;
+using Microsoft.CodeAnalysis;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using System;
@@ -252,6 +253,13 @@ public sealed class Autotiler {
         }).ToArray();
     }
 
+    public string GetTilesetDisplayName(char c) {
+        if (!Tilesets.TryGetValue(c, out var data)) {
+            return $"Unknown: {c}";
+        }
+
+        return data.Filename.Split('/').Last().TrimStart("bg").Humanize();
+    }
 
     /// <summary>
     /// Generates sprites needed to render a rectangular tile grid fully made up of a specified id
