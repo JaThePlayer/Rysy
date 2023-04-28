@@ -25,8 +25,10 @@ public static class ImGuiExt {
         var filter = source.Select(e => (e, Name: textSelector(e)));
 
         if (hasSearch) {
+            var searchSplit = search.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
             filter = filter
-                .Where(e => e.Name.Contains(search, StringComparison.InvariantCultureIgnoreCase)) // filter out materials that don't contain the search
+                .Where(e => searchSplit.All(search => e.Name.Contains(search, StringComparison.InvariantCultureIgnoreCase))) // filter out materials that don't contain the search
                 .OrderOrThenByDescending(e => e.Name.StartsWith(search, StringComparison.InvariantCultureIgnoreCase)); // put materials that start with the search first.
         }
 

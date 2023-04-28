@@ -15,5 +15,5 @@ public class Cache<T> where T : class? {
         };
     }
 
-    public T? Value => _cached ??= Generator();
+    public T Value => _cached ??= Generator();
 }

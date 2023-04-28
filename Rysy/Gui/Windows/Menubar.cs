@@ -7,26 +7,31 @@ using Rysy.Scenes;
 namespace Rysy.Gui.Windows;
 
 public static class Menubar {
+    private const string TabNameLangPrefix = "rysy.menubar.tab";
+
     private record class Tab {
         public string Name;
         public Action Render;
+
+        public Tab(string name) {
+            Name = name.TranslateOrHumanize(TabNameLangPrefix);
+        }
     }
 
     private static List<Tab> Tabs = new() {
-        new() { 
-            Name = "File",
+        new("file") { 
             Render = FileMenu,
         },
-        new() {
-            Name = "Edit",
+        new("edit") {
             Render = EditMenu,
         },
-        new() {
-            Name = "View",
+        new("map") {
+            Render = MapMenu,
+        },
+        new("view") {
             Render = ViewMenu,
         },
-        new() {
-            Name = "Debug",
+        new("debug") {
             Render = DebugMenu,
         },
     };
@@ -38,8 +43,7 @@ public static class Menubar {
         if (Tabs.FirstOrDefault(t => t.Name == name) is { } existing) {
             existing.Render += imguiCallback;
         } else {
-            Tabs.Add(new() { 
-                Name = name,
+            Tabs.Add(new(name) {
                 Render = imguiCallback
             });
         }
@@ -78,6 +82,15 @@ public static class Menubar {
         }
 
         ImGui.EndMainMenuBar();
+    }
+
+    private static void MapMenu() {
+        if (RysyEngine.Scene is not EditorScene editor)
+            return;
+
+        if (EditorState.Map is { } map && EditorState.History is { } history && ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+            editor.AddWindowIfNeeded(() => new MetadataWindow(history, map));
+        }
     }
 
     private static void ViewMenu() {

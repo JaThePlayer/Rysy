@@ -124,6 +124,29 @@ public enum WindPatterns {
     Space
 }
 
+public enum Inventories {
+    Prologue,
+    Default,
+    OldSite,
+    CH6End,
+    TheSummit,
+    Core,
+    Farewell,
+}
+
+public enum IntroTypes {
+    Transition,
+    Respawn,
+    WalkInRight,
+    WalkInLeft,
+    Jump,
+    WakeUp,
+    Fall,
+    TempleMirrorVoid,
+    None,
+    ThinkForABit
+}
+
 public static class Depths {
     public const int BGTerrain = 10000;
 

@@ -92,6 +92,13 @@ public static partial class StringExt {
     }
 
     /// <summary>
+    /// Calls <see cref="Path.GetExtension(string?)"/> on this string
+    /// </summary>
+    public static string? FileExtension(this string? path) {
+        return Path.GetExtension(path);
+    }
+
+    /// <summary>
     /// Calls <see cref="Regex.Replace(string, string)"/> with the provided regex with the given strings
     /// </summary>
     public static string RegexReplace(this string from, Regex regex, string with)

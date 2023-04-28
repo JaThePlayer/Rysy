@@ -36,7 +36,7 @@ public static class GFX {
     /// Loads the bare minimum needed to render anything.
     /// </summary>
     /// <param name="eng"></param>
-    internal static void LoadEssencials(RysyEngine eng) {
+    public static void LoadEssencials(RysyEngine eng) {
         if (Batch is not null)
             return;
 
@@ -53,7 +53,7 @@ public static class GFX {
     /// Loads all textures, including those from mods.
     /// </summary>
     /// <returns></returns>
-    internal static async ValueTask LoadAsync() {
+    public static async ValueTask LoadAsync() {
         if (Atlas is { } oldAtlas) {
             oldAtlas.DisposeTextures();
         }

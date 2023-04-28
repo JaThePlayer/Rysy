@@ -56,9 +56,21 @@ public abstract class Scene {
         Windows.Add(wind);
     }
 
+    /// <summary>
+    /// Adds a new window of type <typeparamref name="T"/> if there's no window of that type in the scene.
+    /// </summary>
     public void AddWindowIfNeeded<T>() where T : Window, new() {
         if (!Windows.Any(w => w is T))
             AddWindow(new T());
+    }
+
+    /// <summary>
+    /// Adds a new window of type <typeparamref name="T"/> if there's no window of that type in the scene.
+    /// Creates the instance by calling <paramref name="factory"/>
+    /// </summary>
+    public void AddWindowIfNeeded<T>(Func<T> factory) where T : Window {
+        if (!Windows.Any(w => w is T))
+            AddWindow(factory());
     }
 
     public virtual void OnFileDrop(FileDropEventArgs args) {

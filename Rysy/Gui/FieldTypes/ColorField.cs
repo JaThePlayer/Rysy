@@ -4,17 +4,16 @@ using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ColorField : IField {
-    public string? Tooltip { get; set; }
-    public string? NameOverride { get; set; }
-
+public record class ColorField : Field {
     public Color Default { get; set; }
+
+    public bool XnaColorsAllowed { get; set; } = true;
 
     public ColorFormat Format { get; set; }
 
-    public object GetDefault() => Default.ToString(Format);
+    public override object GetDefault() => Default.ToString(Format);
 
-    public void SetDefault(object newDefault) {
+    public override void SetDefault(object newDefault) {
         if (newDefault is Color c) {
             Default = c;
             return;
@@ -28,15 +27,15 @@ public record class ColorField : IField {
         Default = default;
     }
 
-    public bool ValueToColor(object value, out Color color) {
-        return ColorHelper.TryGet((string) value, Format, out color);
+    public bool ValueToColor(object? value, out Color color) {
+        return ColorHelper.TryGet(value?.ToString() ?? "", Format, out color, XnaColorsAllowed);
     }
 
-    public bool IsValid(object value) {
-        return ValueToColor(value, out _);
+    public override bool IsValid(object? value) {
+        return ValueToColor(value, out _) && base.IsValid(value);
     }
 
-    public object? RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object value) {
         if (!ValueToColor(value, out var color)) {
             color = Color.White;
         }
@@ -62,5 +61,11 @@ public record class ColorField : IField {
         return null;
     }
 
-    public IField CreateClone() => this with { };
+    public override Field CreateClone() => this with { };
+
+    public ColorField AllowXNAColors() {
+        XnaColorsAllowed = true;
+
+        return this;
+    }
 }

@@ -6,3 +6,72 @@ entities.default.attributes.description.width=The width of the entity.
 entities.default.attributes.description.height=The height of the entity.
 entities.default.attributes.description._editorLayer=The editor layer this entity is placed on.
 entities.default.attributes.description._editorColor=The color of this trigger in-editor.
+
+# Menubar
+rysy.menubar.tab.file=File
+
+rysy.menubar.tab.edit=Edit
+
+rysy.menubar.tab.map=Map
+rysy.menubar.tab.map.metadata=Metadata
+
+rysy.menubar.tab.view=View
+
+rysy.menubar.tab.debug=Debug
+
+# Metadata Window
+rysy.metadata.field.description.AnimatedTiles=The path to the .xml files to use for animated tiles, relative to mod root.
+rysy.metadata.field.description.BackgroundTiles=The path to the .xml files to use for background tiles, relative to mod root.
+rysy.metadata.field.description.BloomBase=The base value of bloom. The higher, the more bloom will be applied to the whole screen.
+rysy.metadata.field.description.BloomStrength=The strength of the bloom. The higer, the brighter bloom sources will be.
+rysy.metadata.field.description.CassetteCheckpointIndex=The checkpoint in which the Cassette is placed, used for displaying an indicator in the map screen.
+rysy.metadata.field.description.CassetteSong=The song used for cassette block rooms.
+rysy.metadata.field.description.ColorGrade=The colorgrade of the map.
+rysy.metadata.field.description.CoreMode=The starting core mode of the map.
+rysy.metadata.field.description.DarknessAlpha=The alpha value for darkness.
+rysy.metadata.field.description.Dreaming=Whether the map starts in the dreaming state. Changes the visuals of Star stylegrounds and debris.
+rysy.metadata.field.description.ForegroundTiles=The path to the .xml files to use for foreground tiles, relative to mod root.
+rysy.metadata.field.description.Icon=The path to the icon image in the map screen. Relative to Graphics/Atlases/Gui.
+rysy.metadata.field.description.Interlude=Whether this is an interlude. Interlude chapters don't display deaths.
+rysy.metadata.field.description.IntroType=The intro type to use for when the player enters the map.
+rysy.metadata.field.description.OverrideASideMeta=Whether this B/C-side should override the metadata of the A-side.
+rysy.metadata.field.description.Portraits=The path to the .xml files to use for portraits, relative to mod root.
+rysy.metadata.field.description.PostcardSoundID=The sound to use for the postcard.
+rysy.metadata.field.description.Sprites=The path to the .xml files to use for sprites, relative to mod root.
+rysy.metadata.field.description.TitleAccentColor=The accent color of the title card in the map screen.
+rysy.metadata.field.description.TitleBaseColor=The base color of the title card in the map screen.
+rysy.metadata.field.description.TitleTextColor=The text color on the title card in the map screen.
+rysy.metadata.field.description.Wipe=The wipe to be used whenever the player dies.
+
+rysy.metadata.field.name.mode:HeartIsEnd=Heart Is End
+rysy.metadata.field.description.mode:HeartIsEnd=Whether collecting the Crystal Heart ends the level.
+rysy.metadata.field.name.mode:Inventory=Inventory
+rysy.metadata.field.description.mode:Inventory=The starting inventory.
+rysy.metadata.field.name.mode:SeekerSlowdown=Seeker Slowdown
+rysy.metadata.field.description.mode:SeekerSlowdown=Whether Seekers should cause slowdown when the player is near to them.
+rysy.metadata.field.name.mode:StartLevel=Start Room
+rysy.metadata.field.description.mode:StartLevel=The room in which the level starts.
+rysy.metadata.field.name.mode:TheoInBubble=Theo In Boosters
+rysy.metadata.field.description.mode:TheoInBubble=Whether Theo can be carried into Boosters.
+
+rysy.metadata.field.name.cassettemodifier:TempoMult=Tempo Multiplier
+rysy.metadata.field.name.cassettemodifier:LeadBeats=Leading Beats
+rysy.metadata.field.name.cassettemodifier:BeatsPerTick=Beats Per Tick
+rysy.metadata.field.name.cassettemodifier:TicksPerSwap=Ticks Per Swap
+rysy.metadata.field.name.cassettemodifier:Blocks=Number of Colours
+rysy.metadata.field.name.cassettemodifier:BeatsMax=Max Beats
+rysy.metadata.field.name.cassettemodifier:BeatIndexOffset=Beat Index Offset
+rysy.metadata.field.name.cassettemodifier:OldBehavior=Old Behaviour
+rysy.metadata.field.description.cassettemodifier:TempoMult=Cassette music tempo multiplier. Only used with Old Behaviour and overrides the Tempo attribute in cassette blocks. Defaults to 1.0 which triggers one beat every 10 frames.
+rysy.metadata.field.description.cassettemodifier:LeadBeats=Beats of silence after a room is loaded before the cassette music starts. Defaults to 16.
+rysy.metadata.field.description.cassettemodifier:BeatsPerTick=Number of beats to the next tick. Defaults to 4. Each tick triggers the cassette click sound when using per-room cassette music. At a tempo multiplier of 1.0, a beat is 10 frames in duration.
+rysy.metadata.field.description.cassettemodifier:TicksPerSwap=Number of ticks to the next cassette block swap. Defaults to 2. Each swap activates the next cassette block index.
+rysy.metadata.field.description.cassettemodifier:Blocks=Total number of distinct cassette block colours. Defaults to 2. Only used with Old Behaviour and otherwise determined by the highest cassette block index in the current room.
+rysy.metadata.field.description.cassettemodifier:BeatsMax=Maximum number of beats before the cassette music loops. Defaults to 256. The maximum value of the cassette music FMOD parameter is one less than this number.
+rysy.metadata.field.description.cassettemodifier:BeatIndexOffset=An offset in beats between the beat counter in the game and the FMOD music parameter. Defaults to 0. Allows changing the timing of cassette music.
+rysy.metadata.field.description.cassettemodifier:OldBehavior=Activates old cassette music behaviour. Makes Tempo Multiplier override the Tempo attribute in cassette blocks, makes Max Beats ignore cassette block indices, and changes how initial cassette block states are calculated.
+
+rysy.metadata.field.name.mode:audiostate:Music=Music
+rysy.metadata.field.description.mode:audiostate:Music=The music of the level.
+rysy.metadata.field.name.mode:audiostate:Ambience=Ambience
+rysy.metadata.field.description.mode:audiostate:Ambience=The ambience of the level.

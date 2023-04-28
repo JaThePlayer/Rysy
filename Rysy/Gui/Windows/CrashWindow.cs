@@ -5,12 +5,12 @@ namespace Rysy.Gui.Windows;
 
 public class CrashWindow : Window {
     public Exception Exception;
-    public Action ButtonGenerator;
+    public Action<CrashWindow> ButtonGenerator;
     public string Message;
 
     private string ExceptionString;
 
-    public CrashWindow(string message, Exception e, Action buttonGenerator) : base("Crash Handler", new(800, 500)) {
+    public CrashWindow(string message, Exception e, Action<CrashWindow> buttonGenerator) : base("Crash Handler", new(800, 500)) {
         Exception = e;
         ButtonGenerator = buttonGenerator;
         Message = message;
@@ -27,6 +27,6 @@ public class CrashWindow : Window {
 
         ImGui.NewLine();
 
-        ButtonGenerator();
+        ButtonGenerator(this);
     }
 }

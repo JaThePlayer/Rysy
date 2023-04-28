@@ -50,4 +50,10 @@ public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
 
         return rect;
     }
+
+    public override void ClearRoomRenderCache() {
+        if (Room is { } r) {
+            r.ClearTriggerRenderCache();
+        }
+    }
 }

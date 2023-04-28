@@ -14,20 +14,34 @@ public class Window {
     /// </summary>
     private string WindowID;
 
+    private bool _NoSaveData = true;
     /// <summary>
     /// Tells imgui not to store any data about this window to its ini file.
     /// Use for auto-generated windows.
     /// </summary>
-    public bool NoSaveData = true;
+    public bool NoSaveData {
+        get => _NoSaveData;
+        set {
+            if (value != _NoSaveData) {
+                _NoSaveData = value;
+
+                GenerateID();
+            }
+        }
+    }
+
+    private void GenerateID() {
+        if (NoSaveData)
+            WindowID = $"{Name}##{Guid.NewGuid()}";
+        else
+            WindowID = Name;
+    }
 
     public Window(string name, NumVector2? size = null) {
         Name = name;
         Size = size;
 
-        if (NoSaveData)
-            WindowID = $"{Name}##{Guid.NewGuid()}";
-        else
-            WindowID = Name;
+        GenerateID();
     }
 
     public void SetRemoveAction(Action<Window> removeSelf) => RemoveSelfImpl += removeSelf;

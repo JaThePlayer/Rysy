@@ -2,9 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class IntField : IField {
-    public string? Tooltip { get; set; }
-    public string? NameOverride { get; set; }
+public record class IntField : Field {
     public int Step { get; set; } = 1;
 
     public int Min { get; set; } = int.MinValue;
@@ -12,13 +10,13 @@ public record class IntField : IField {
 
     public int Default { get; set; }
 
-    public object GetDefault() => Default;
-    public void SetDefault(object newDefault)
+    public override object GetDefault() => Default;
+    public override void SetDefault(object newDefault)
         => Default = Convert.ToInt32(newDefault);
 
-    public bool IsValid(object value) => value is int i && i >= Min && i <= Max;
+    public override bool IsValid(object? value) => value is int i && i >= Min && i <= Max && base.IsValid(value);
 
-    public object? RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object value) {
         int b = Convert.ToInt32(value);
         if (ImGui.InputInt(fieldName, ref b, Step).WithTooltip(Tooltip))
             return b;
@@ -49,5 +47,5 @@ public record class IntField : IField {
         return this;
     }
 
-    public IField CreateClone() => this with { };
+    public override Field CreateClone() => this with { };
 }

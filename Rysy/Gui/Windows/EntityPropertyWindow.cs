@@ -14,7 +14,7 @@ public class EntityPropertyWindow : FormWindow {
     private Action HistoryHook;
 
     public static FieldList GetFields(Entity main) {
-        var fieldInfo = EntityRegistry.SIDToFields.GetValueOrDefault(main.Name) ?? new();
+        var fieldInfo = EntityRegistry.GetFields(main);
 
         var fields = new FieldList();
 

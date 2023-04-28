@@ -58,7 +58,8 @@ public class ToolHandler {
 
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {
-            tool.InitHotkeys(new());
+            tool.HotkeyHandler = new();
+            tool.InitHotkeys(tool.HotkeyHandler);
         }
 
         handler.AddHotkeyFromSettings("tools.nextTool", "tab", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
@@ -71,6 +72,7 @@ public class ToolHandler {
     }
 
     public void Update(Camera camera, Room currentRoom) {
+        CurrentTool.HotkeyHandler.Update();
         CurrentTool.Update(camera, currentRoom);
     }
 

@@ -12,7 +12,11 @@ public class Persistence {
 
             RecentlyEdited = false;
 
-            Save(Instance);
+            try {
+                Save(Instance);
+            } catch {
+                // oh well, maybe we can save in 5 seconds
+            }
         });
     }
 

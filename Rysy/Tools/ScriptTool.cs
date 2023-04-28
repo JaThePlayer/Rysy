@@ -58,12 +58,9 @@ public class ScriptTool : Tool {
         }
 
         if (script.CallRun) {
-            // if we're calling Run, we need to clone rooms, so that we can create a history action
-            var clonedRooms = rooms.Select(r => r.Clone()).ToList();
-
             var actions = new List<IHistoryAction>();
 
-            args.Rooms = clonedRooms;
+            args.Rooms = rooms;
 
             if (!CallPrerun(script, args, out var prerunAction))
                 return; // if prerun crashed, don't call Run, just in case
@@ -72,13 +69,17 @@ public class ScriptTool : Tool {
                 actions.Add(prerunAction);
             }
 
+            // if we're calling Run, we need to clone rooms, so that we can create a history action
+            var clonedRooms = rooms.Select(r => r.Clone()).ToList();
+            args.Rooms = clonedRooms;
+
             for (int i = 0; i < rooms.Count; i++) {
                 var room = rooms[i];
                 var clone = clonedRooms[i];
 
                 try {
-                    script.Run(clone, args);
-                    actions.Add(new SwapRoomAction(room, clone));
+                    if (script.Run(clone, args))
+                        actions.Add(new SwapRoomAction(room, clone));
                 } catch (Exception e) {
                     Logger.Error(e, $"Failed running script's Run method in room {room.Name}");
                     CreateCrashWindow(e);
@@ -112,8 +113,10 @@ public class ScriptTool : Tool {
     }
 
     private static void CreateCrashWindow(Exception e) {
-        RysyEngine.Scene.AddWindow(new CrashWindow("Failed to run script", e, () => {
-            ImGui.Button("OK");
+        RysyEngine.Scene.AddWindow(new CrashWindow("Failed to run script", e, (w) => {
+            if (ImGui.Button("OK")) {
+                w.RemoveSelf();
+            }
         }));
     }
 

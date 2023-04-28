@@ -9,36 +9,50 @@ public static class Fields {
     public static IntField Int(int def) => new() { Default = def };
     public static CharField Char(char def) => new() { Default = def };
     public static StringField String(string def) => new() { Default = def };
-    public static DropdownField<T> Dropdown<T>(T def, Dictionary<T, string> values) where T : notnull
-    => new() { 
-        Default = def,
-        Values = values
-    };
 
     public static DropdownField<string> EnumNamesDropdown<T>(T def) where T : struct, Enum
-    => new() {
+    => new DropdownField<string>() {
         Default = def.ToString(),
-        Values = Enum.GetNames<T>().ToDictionary(k => k, v => v)
-    };
+    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => v));
 
-    public static DropdownField<string> Dropdown(string def, List<string> values) => new() {
-        Default = def, 
-        Values = values.ToDictionary(k => k, k => k) 
-    };
-
-    public static EditableDropdownField<string> EditableDropdown(string def, List<string> values) => new() {
+    public static DropdownField<string> EnumNamesDropdown<T>(string def) where T : struct, Enum
+    => new DropdownField<string>() {
         Default = def,
-        Values = values.ToDictionary(v => v, v => v)
-    };
+    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => v));
 
-    public static EditableDropdownField<T> EditableDropdown<T>(T def, Dictionary<T, string> dict)
-        where T : notnull {
+    public static DropdownField<T> Dropdown<T>(T def, Dictionary<T, string> values, bool editable = true) where T : notnull
+    => new DropdownField<T>() {
+        Default = def,
+        Editable = editable,
+    }.SetValues(values);
 
-        return new() {
-            Default = def,
-            Values = dict
-        };
-    }
+    public static DropdownField<T> Dropdown<T>(T def, Func<Dictionary<T, string>> values, bool editable = true) where T : notnull
+    => new DropdownField<T>() {
+        Default = def,
+        Editable = editable,
+    }.SetValues(values);
+
+    public static DropdownField<string> Dropdown(string def, Func<List<string>> values, bool editable = true) => new DropdownField<string>() {
+        Default = def,
+        Editable = editable,
+    }.SetValues(() => values().ToDictionary(k => k, k => k));
+
+    public static DropdownField<string> Dropdown(string def, List<string> values, bool editable = true) => new DropdownField<string>() {
+        Default = def,
+        Editable = editable,
+    }.SetValues(values.ToDictionary(k => k, k => k));
+
+    public static DropdownField<char> TileDropdown(char def, bool bg) => new DropdownField<char>() {
+        Default = def,
+    }.SetValues(() => {
+        if (EditorState.Map is not { } map) {
+            return new();
+        }
+
+        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+
+        return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
+    });
 
     public static ColorField RGBA(Color def) => new() { 
         Default = def,
@@ -55,7 +69,7 @@ public static class Fields {
         Format = ColorFormat.ARGB,
     };
 
-    public static IField? GuessFromValue(object val) => val switch {
+    public static Field? GuessFromValue(object val) => val switch {
         bool b => Bool(b),
         float b => Float(b),
         double d => Float((float)d),

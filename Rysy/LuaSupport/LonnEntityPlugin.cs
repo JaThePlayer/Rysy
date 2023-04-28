@@ -1,9 +1,9 @@
-﻿using CommunityToolkit.HighPerformance;
-using KeraLua;
+﻿using KeraLua;
 using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace Rysy.LuaSupport;
 
@@ -40,7 +40,7 @@ public sealed class LonnEntityPlugin {
     public bool HasSelectionFunction;
 
     public List<LonnPlacement> Placements { get; set; } = new();
-    public FieldList? FieldList;
+    public Func<FieldList>? FieldList;
 
     public LuaStackHolder? StackHolder { get; private set; }
 
@@ -249,76 +249,39 @@ public sealed class LonnEntityPlugin {
         }
         lua.Pop(1);
 
-        if (lua.GetTable(top, "fieldInformation") == LuaType.Table) {
-            var fieldInfoLoc = lua.GetTop();
-            var dict = lua.TableToDictionary(fieldInfoLoc);
-            var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
-
-            var fieldList = new FieldList();
-            foreach (var (key, val) in dict) {
-                if (val is not Dictionary<string, object> infoDict)
-                    continue;
-
-                IField? field = null;
-
-                var editable = (bool) infoDict.GetValueOrDefault("editable", true);
-                var options = infoDict!.GetValueOrDefault("options", null);
-
-                if (options is { } && mainPlacement.Data.TryGetValue(key, out var def)) {
-                    switch (def, editable, options) {
-                        case (string str, true, List<object> dropdownOptions):
-                            if (dropdownOptions.First() is List<object>) {
-                                /*
-                                 * {text, value},
-                                 * {text, value2},
-                                 */
-                                field = Fields.EditableDropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!));
-                            } else {
-                                field = Fields.EditableDropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList());
-                            }
-                            break;
-                        case (string str, false, List<object> dropdownOptions):
-                            if (dropdownOptions.First() is List<object>) {
-                                /*
-                                 * {text, value},
-                                 * {text, value2},
-                                 */
-                                field = Fields.Dropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0]!.ToString()!));
-                            } else {
-                                field = Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList());
-                            }
+        switch (lua.GetTable(top, "fieldInformation")) {
+            case LuaType.Table:
+                var fieldInfoLoc = lua.GetTop();
+                var dict = lua.TableToDictionary(fieldInfoLoc);
+                var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
 
 
-                            break;
-                        case (string str, true, Dictionary<string, object> dropdownOptions): {
-                            var firstVal = dropdownOptions.FirstOrDefault().Value;
+                var fields = LonnFieldIntoToFieldList(dict, mainPlacement);
+                plugin.FieldList = () => fields;
 
-                            field = firstVal switch {
-                                string => Fields.EditableDropdown(str, dropdownOptions.ToDictionary(v => (string) v.Value, v => v.Key)),
-                            };
-                            break;
+                break;
+            case LuaType.Function:
+                plugin.FieldList = () => {
+                    return plugin.PushToStack((plugin) => {
+                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation");
+
+                        if (type != LuaType.Function) {
+                            lua.Pop(1);
+                            return new();
                         }
 
-                        case (string str, false, Dictionary<string, object> dropdownOptions): {
-                            var firstVal = dropdownOptions.FirstOrDefault().Value;
+                        var fields = lua.PCallFunction((lua, i) => {
+                            var dict = lua.TableToDictionary(i);
+                            var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
 
-                            field = firstVal switch {
-                                string => Fields.Dropdown(str, dropdownOptions.ToDictionary(v => (string) v.Value, v => v.Key)),
-                            };
-                            break;
-                        }
+                            return LonnFieldIntoToFieldList(dict, mainPlacement);
+                        }) ?? new();
+                        lua.Pop(1);
 
-                        default:
-                            break;
-                    }
-                }
-
-                if (field is { }) {
-                    fieldList[key] = field;
-                }
-            }
-
-            plugin.FieldList = fieldList;
+                        return fields;
+                    });
+                };
+                break;
         }
         lua.Pop(1);
 
@@ -331,6 +294,90 @@ public sealed class LonnEntityPlugin {
         return plugin;
     }
 
+    private static FieldList LonnFieldIntoToFieldList(Dictionary<string, object> dict, LonnPlacement mainPlacement) {
+        var fieldList = new FieldList();
+
+        foreach (var (key, val) in dict) {
+            if (val is not Dictionary<string, object> infoDict)
+                continue;
+
+
+            var editable = (bool) infoDict.GetValueOrDefault("editable", true);
+            var options = infoDict!.GetValueOrDefault("options", null);
+            var fieldType = infoDict!.GetValueOrDefault("fieldType", null);
+            var min = infoDict!.GetValueOrDefault("minimumValue", null);
+            var max = infoDict!.GetValueOrDefault("maximumValue", null);
+
+            Field? field;
+            switch (fieldType) {
+                case "integer": {
+                    field = Fields.Int(mainPlacement.Data.TryGetValue(key, out var def) ? Convert.ToInt32(def) : 0);
+                    break;
+                }
+                case "color": {
+                    var allowXNA = (bool)Convert.ChangeType(infoDict!.GetValueOrDefault("allowXNAColors", false), typeof(bool));
+                    var def = mainPlacement.Data.TryGetValue(key, out var _def) && _def is string defString ? ColorHelper.Get(defString) : Color.White;
+
+                    var colorField = Fields.RGB(def);
+                    if (allowXNA)
+                        colorField.AllowXNAColors();
+
+                    field = colorField;
+                    break;
+                }
+                default:
+                    field = HandleDropdown(editable, options, mainPlacement, key);
+                    break;
+            }
+
+            if (field is IntField intField) {
+                if (min is { })
+                    intField.WithMin(Convert.ToInt32(min));
+                if (max is { })
+                    intField.WithMin(Convert.ToInt32(max));
+            }
+
+            if (field is FloatField floatField) {
+                if (min is { })
+                    floatField.WithMin(Convert.ToSingle(min));
+                if (max is { })
+                    floatField.WithMin(Convert.ToSingle(max));
+            }
+
+            if (field is { }) {
+                fieldList[key] = field;
+            }
+        }
+
+        return fieldList;
+    }
+
+    private static Field? HandleDropdown(bool editable, object? options, LonnPlacement mainPlacement, string key) {
+        if (options is { } && mainPlacement.Data.TryGetValue(key, out var def)) {
+            switch (def, editable, options) {
+                case (string str, _, List<object> dropdownOptions):
+                    if (dropdownOptions.First() is List<object>) {
+                        /*
+                         * {text, value},
+                         * {text, value2},
+                         */
+                        return Fields.Dropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable);
+                    } else {
+                        return Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList(), editable);
+                    }
+                case (string str, _, Dictionary<string, object> dropdownOptions): {
+                    var firstVal = dropdownOptions.FirstOrDefault().Value;
+
+                    return Fields.Dropdown(str, dropdownOptions.ToDictionary(v => v.Value.ToString()!, v => v.Key), editable);
+                }
+
+                default:
+                    break;
+            }
+        }
+
+        return null;
+    }
 
     private enum LonnRetrievalStrategy {
         Missing,

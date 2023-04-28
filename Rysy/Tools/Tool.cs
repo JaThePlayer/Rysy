@@ -10,7 +10,9 @@ using System;
 namespace Rysy.Tools;
 
 public abstract class Tool {
-    public HistoryHandler History;
+    public HistoryHandler History { get; internal set; }
+
+    public HotkeyHandler HotkeyHandler { get; internal set; }
 
     public abstract string Name { get; }
 

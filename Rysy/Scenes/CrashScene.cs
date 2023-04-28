@@ -24,7 +24,7 @@ public class CrashScene : Scene {
         AddWindow(new CrashWindow("Caught an unknown exception:", Exception, RenderButtons));
     }
 
-    private void RenderButtons() {
+    private void RenderButtons(CrashWindow w) {
         if (PrevScene is EditorScene { Map: { } map } editor) {
             if (LastBackupDate is { } date && ImGui.Button("Load Backup").WithTooltip($"Tries to load the most recent backup of your map.\n[{date}]\nSafest option.")) {
                 var backupMap = BackupHandler.LoadMostRecentBackup();

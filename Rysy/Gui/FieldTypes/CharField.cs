@@ -2,21 +2,19 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class CharField : IField {
-    public string? Tooltip { get; set; }
-    public string? NameOverride { get; set; }
+public record class CharField : Field {
 
     public char Default { get; set; }
 
-    public bool IsValid(object value) => value is char;
+    public override bool IsValid(object? value) => value is char && base.IsValid(value);
 
-    public object GetDefault() => Default;
+    public override object GetDefault() => Default;
 
-    public void SetDefault(object newDefault)
+    public override void SetDefault(object newDefault)
         => Default = Convert.ToChar(newDefault);
 
 
-    public object? RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object value) {
         var b = Convert.ToChar(value).ToString();
         if (ImGui.InputText(fieldName, ref b, 1).WithTooltip(Tooltip))
             return b[0];
@@ -24,5 +22,5 @@ public record class CharField : IField {
         return null;
     }
 
-    public IField CreateClone() => this with { };
+    public override Field CreateClone() => this with { };
 }

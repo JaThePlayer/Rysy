@@ -1,12 +1,11 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Mods;
 
 namespace Rysy.Gui.Windows;
 
 public class FilesystemExplorerWindow : Window {
-    //Loenn/entities/flowerField.lua
-
     private string Filename = "";
 
 
@@ -17,6 +16,7 @@ public class FilesystemExplorerWindow : Window {
 
     public FilesystemExplorerWindow() : base("Filesystem Explorer", new(800, 800)) {
         Resizable = true;
+        NoSaveData = false;
     }
 
     protected override void Render() {
@@ -42,6 +42,13 @@ public class FilesystemExplorerWindow : Window {
         }
 
         if (OpenedFile is { } opened) {
+            if (opened.Path.FileExtension() == ".bin" && ImGui.Button("Open Map")) {
+                opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
+                    EditorState.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
+                });
+               
+            }
+
             if (ImGui.Button("Save as...") && FileDialogHelper.TrySave("", out var chosenFile)) {
                 opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
                     using var filestream = File.OpenWrite(chosenFile);

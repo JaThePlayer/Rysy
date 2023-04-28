@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Mods;
 using System;
 using System.Text.Json.Serialization;
 
@@ -41,6 +42,14 @@ public record class Placement(string Name) {
     public object this[string key] {
         get => ValueOverrides[key];
         set => ValueOverrides[key] = value;
+    }
+
+    public ModMeta? GetMod() {
+        if (SID is { } sid) {
+            return EntityRegistry.GetMod(sid);
+        }
+
+        return null;
     }
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);

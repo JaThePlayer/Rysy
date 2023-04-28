@@ -9,16 +9,19 @@ public class FormWindow : Window {
 
     protected List<Prop> FieldList;
     public Dictionary<string, object> EditedValues = new();
-    private int ITEM_WIDTH = 150;
+    private int ITEM_WIDTH = 175;
 
     public FormWindowChanged OnChanged { get; set; }
 
     protected record class Prop(string Name) {
-        public IField Field;
+        public Field Field;
         public object Value;
     }
 
     public string SaveChangesButtonName = "Save Changes";
+
+    // used for deciding whether the form should be displayed in columns or not.
+    float LongestFieldSize;
 
     /// <summary>
     /// Creates a dictionary containing all values in all fields, regardless of whether they've been edited or not.
@@ -41,8 +44,9 @@ public class FormWindow : Window {
             });
         }
 
+        LongestFieldSize = FieldList.Select(p => (p.Field.NameOverride ?? p.Name).Length).Chunk(2).Max(pair => pair.Sum() + 2) * ImGui.GetFontSize();
         Size = new(
-            FieldList.Select(p => p.Name.Length).Chunk(2).Max(pair => pair.Sum() + 2) * ImGui.GetFontSize() + ITEM_WIDTH * 2f,
+            LongestFieldSize + ITEM_WIDTH * 2f,
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
         );
 
@@ -50,7 +54,7 @@ public class FormWindow : Window {
     }
 
     protected override void Render() {
-        var hasColumns = FieldList.Count > 1;
+        var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X > (LongestFieldSize + ITEM_WIDTH);
 
         if (hasColumns)
             ImGui.Columns(2);
@@ -78,6 +82,8 @@ public class FormWindow : Window {
         ImGuiManager.EndWindowBottomBar();
     }
 
+    public void RenderBody() => Render();
+
     private bool HandleProp(Prop prop) {
         var name = prop.Name;
         var val = prop.Value;
@@ -89,11 +95,15 @@ public class FormWindow : Window {
         else if (EditedValues.ContainsKey(name))
             ImGuiManager.PushEditedStyle();
 
+        object? newVal = null;
         ImGui.SetNextItemWidth(ITEM_WIDTH);
-        var newVal = prop.Field.RenderGui(prop.Field.NameOverride ??= name.Humanize(), val);
+        try {
+            newVal = prop.Field.RenderGui(prop.Field.NameOverride ??= name.Humanize(), val);
+        } finally {
+            ImGuiManager.PopInvalidStyle();
+            ImGuiManager.PopEditedStyle();
+        }
 
-        ImGuiManager.PopInvalidStyle();
-        ImGuiManager.PopEditedStyle();
 
         if (newVal != null) {
             EditedValues[name] = newVal;
