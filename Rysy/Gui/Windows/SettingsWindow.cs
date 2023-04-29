@@ -27,6 +27,7 @@ public class SettingsWindow : Window {
         if (ImGui.BeginTabBar("Tabbar")) {
             ProfileBar();
             GeneralBar();
+            ModBar();
             VisualBar();
             ThemeBar();
             HotkeyBar();
@@ -161,6 +162,20 @@ public class SettingsWindow : Window {
 
             ImGui.EndTabItem();
         }
+    }
+
+    private void ModBar() {
+        if (!ImGui.BeginTabItem("Mods")) {
+            return;
+        }
+
+        var m = Settings.Instance.ReadBlacklist;
+        if (ImGui.Checkbox("Read blacklist", ref m).WithTooltip("Whether Rysy should read the Everest blacklist file.")) {
+            Settings.Instance.ReadBlacklist = m;
+            Settings.Instance.Save();
+        }
+
+        ImGui.EndTabItem();
     }
 
     private void DebugBar() {

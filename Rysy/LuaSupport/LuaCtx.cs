@@ -286,12 +286,10 @@ public class LuaCtx {
                 return 1;
             }
 
-            /*
-             * 	return {
-		dirt = "c",
-		snow = "3",
-	}
-             */
+            /*  return {
+		            dirt = "c",
+		            snow = "3",
+	            } */
             var autotiler = layer == "tilesFg" ? map.FGAutotiler : map.BGAutotiler;
 
             var tiles = autotiler.Tilesets.Select(t => (t.Key, autotiler.GetTilesetDisplayName(t.Key)));

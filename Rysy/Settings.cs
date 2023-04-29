@@ -198,6 +198,8 @@ public sealed class Settings {
         }
     }
 
+    public bool ReadBlacklist { get; set; } = true;
+
 #warning Remove
     public string? LonnPluginPath { get; set; }
     #endregion

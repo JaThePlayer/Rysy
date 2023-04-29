@@ -43,7 +43,7 @@ public record class ColorField : Field {
         switch (Format) {
             case ColorFormat.RGB: {
                 var c = color.ToNumVec3();
-                if (ImGui.ColorEdit3(fieldName, ref c).WithTooltip(Tooltip)) {
+                if (ImGui.ColorEdit3(fieldName, ref c, ImGuiColorEditFlags.DisplayHex).WithTooltip(Tooltip)) {
                     return new Color(c).ToString(Format);
                 }
                 break;
@@ -51,7 +51,7 @@ public record class ColorField : Field {
             case ColorFormat.ARGB:
             case ColorFormat.RGBA: {
                 var c = color.ToNumVec4();
-                if (ImGui.ColorEdit4(fieldName, ref c, ImGuiColorEditFlags.AlphaBar).WithTooltip(Tooltip)) {
+                if (ImGui.ColorEdit4(fieldName, ref c, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.DisplayHex).WithTooltip(Tooltip)) {
                     return new Color(c).ToString(Format);
                 }
                 break;
