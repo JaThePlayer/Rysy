@@ -44,6 +44,9 @@ public record class Placement(string Name) {
         set => ValueOverrides[key] = value;
     }
 
+    /// <summary>
+    /// Tries to get the mod this placement comes from
+    /// </summary>
     public ModMeta? GetMod() {
         if (SID is { } sid) {
             return EntityRegistry.GetMod(sid);
@@ -51,6 +54,11 @@ public record class Placement(string Name) {
 
         return null;
     }
+
+    /// <summary>
+    /// Checks whether this placement will place a trigger.
+    /// </summary>
+    public bool IsTrigger() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.Triggers };
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);
 

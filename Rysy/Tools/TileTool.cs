@@ -40,12 +40,6 @@ public abstract class TileTool : Tool {
         if (material is char c) {
             var cAsString = c.ToString();
             if (!cache.TryGetValue(cAsString, out var name)) {
-                /*
-                if (GetAutotiler(layer)?.Tilesets.TryGetValue(c, out var tileset) ?? false) {
-                    name = tileset.Filename.Split('/').Last().TrimStart("bg").Humanize();
-                } else {
-                    name = cAsString;
-                }*/
                 name = GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? cAsString;
 
                 cache.Add(cAsString, name);

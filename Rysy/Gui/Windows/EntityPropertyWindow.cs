@@ -54,9 +54,11 @@ public class EntityPropertyWindow : FormWindow {
             }
         }
 
-        var tooltipKeyPrefix = $"entities.{main.Name}.attributes.description";
-        var nameKeyPrefix = $"entities.{main.Name}.attributes.name";
-        var defaultTooltipKeyPrefix = "entities.default.attributes.description";
+        var startPrefix = main is Trigger ? "triggers" : "entities";
+
+        var tooltipKeyPrefix = $"{startPrefix}.{main.Name}.attributes.description";
+        var nameKeyPrefix = $"{startPrefix}.{main.Name}.attributes.name";
+        var defaultTooltipKeyPrefix = $"entities.default.attributes.description";
         var defaultNameKeyPrefix = $"entities.default.attributes.name";
 
         foreach (var (name, f) in fields) {

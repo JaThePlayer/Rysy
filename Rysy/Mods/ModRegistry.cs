@@ -32,16 +32,14 @@ public static class ModRegistry {
 
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");
 
-        var blacklisted =
-            /*
-        TryHelper.Try(() => 
-            File.ReadAllLines($"{modDir}/blacklist.txt")
-            .Select(l => l.Trim())
-            .Where(l => !l.StartsWith('#'))
-            .Select(l => $"{modDir}/{l}".Unbackslash())
-            .ToHashSet()
-        ) ?? new();*/
-            new HashSet<string>();
+        var blacklisted = (Settings.Instance?.ReadBlacklist ?? true) ?
+            TryHelper.Try(() => 
+                File.ReadAllLines($"{modDir}/blacklist.txt")
+                .Select(l => l.Trim())
+                .Where(l => !l.StartsWith('#'))
+                .Select(l => $"{modDir}/{l}".Unbackslash())
+                .ToHashSet()
+            ) ?? new() : new();
 
         var allMods =
             Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache"))
