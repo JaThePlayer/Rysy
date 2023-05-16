@@ -1,4 +1,7 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+using System.Collections;
+
+namespace Rysy.Graphics;
 
 public record struct LineSprite : ISprite {
     public int? Depth { get; set; }
@@ -34,5 +37,9 @@ public record struct LineSprite : ISprite {
 
     public void Render(Camera? cam, Vector2 offset) {
         Render();
+    }
+
+    public ISelectionCollider GetCollider() {
+        return ISelectionCollider.FromRect(RectangleExt.FromPoints(Positions));
     }
 }

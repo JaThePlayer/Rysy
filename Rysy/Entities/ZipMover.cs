@@ -41,7 +41,7 @@ public class ZipMover : Entity, ISolid, IPlaceable {
         ["theme"] = Fields.EnumNamesDropdown(Themes.Normal)
     };
 
-    public static List<Placement>? GetPlacements() => new() { 
+    public static PlacementList GetPlacements() => new() { 
         new("Zip Mover")
     };
 

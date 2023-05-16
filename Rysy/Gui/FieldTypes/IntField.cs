@@ -2,13 +2,16 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class IntField : Field {
+public record class IntField : Field, ILonnField {
+    public static string Name => "integer";
+
     public int Step { get; set; } = 1;
 
     public int Min { get; set; } = int.MinValue;
     public int Max { get; set; } = int.MaxValue;
 
     public int Default { get; set; }
+
 
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault)
@@ -48,4 +51,18 @@ public record class IntField : Field {
     }
 
     public override Field CreateClone() => this with { };
+
+    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) {
+        var min = fieldInfoEntry!.GetValueOrDefault("minimumValue", null);
+        var max = fieldInfoEntry!.GetValueOrDefault("maximumValue", null);
+
+        var field = Fields.Int(Convert.ToInt32(def));
+
+        if (min is { })
+            field.WithMin(Convert.ToInt32(min));
+        if (max is { })
+            field.WithMin(Convert.ToInt32(max));
+
+        return field;
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using Rysy.Helpers;
+using System.Collections;
 
 namespace Rysy.Extensions;
 
@@ -96,6 +97,38 @@ public static class LinqExt {
         }
     }
 
+    public static Dictionary<TKey, TValue> SafeToDictionary<TIn, TKey, TValue>(this IEnumerable<TIn> values, Func<TIn, TKey> keyGetter, Func<TIn, TValue> valueGetter)
+        where TKey : notnull {
+        var dict = new Dictionary<TKey, TValue>();
+
+        foreach (var value in values) {
+            var key = keyGetter(value);
+            //if (dict.ContainsKey(key)) {
+            //    ("duplicate:", value, key, valueGetter(value)).LogAsJson();
+            //}
+
+            dict[keyGetter(value)] = valueGetter(value);
+        }
+
+        return dict;
+    }
+
+    public static Dictionary<TKey, TValue> SafeToDictionary<TIn, TKey, TValue>(this IEnumerable<TIn> values, Func<TIn, (TKey, TValue)> converter)
+    where TKey : notnull {
+        var dict = new Dictionary<TKey, TValue>();
+
+        foreach (var entry in values) {
+            var (key, val) = converter(entry);
+            //if (dict.ContainsKey(key)) {
+            //    ("duplicate:", entry, key, val).LogAsJson();
+            //}
+
+            dict[key] = val;
+        }
+
+        return dict;
+    }
+
     public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self) {
         return new(self);
     }
@@ -106,5 +139,51 @@ public static class LinqExt {
         };
     }
 
+    public static PlacementList ToPlacementList(this IEnumerable<Placement> self) {
+        return new(self);
+    }
+
+    public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
+        where TKey : notnull
+        => new(keyValuePairs);
+
     public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
+
+    public static IEnumerable<TOut> Select<T1, T2, T3, TOut>(this IEnumerable<(T1, T2, T3)> self, Func<T1, T2, T3, TOut> callback) {
+        foreach (var item in self) {
+            yield return callback(item.Item1, item.Item2, item.Item3);
+        }
+    }
+
+    /// <summary>
+    /// Converts <paramref name="self"/> to an enumerator which returns this object as the only item.
+    /// </summary>
+    public static SingleEnumerator<T> ToSelfEnumerator<T>(this T self) => new(self);
+
+    public struct SingleEnumerator<T> : IEnumerator<T> {
+        private bool _moved = false;
+        private T Item;
+
+        internal SingleEnumerator(T item) {
+            Item = item;
+        }
+
+        public T Current => Item;
+
+        object IEnumerator.Current => Item!;
+
+        public void Dispose() {
+        }
+
+        public bool MoveNext() {
+            if (!_moved) {
+                _moved = true;
+                return true;
+            }
+            return false;
+        }
+
+        public void Reset() {
+        }
+    }
 }

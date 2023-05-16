@@ -1,6 +1,4 @@
-﻿using Rysy.Extensions;
-using System.Data;
-using System.IO;
+﻿using System.Data;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -74,8 +72,8 @@ public sealed class BinaryPacker {
         headerWriter.Write(package.Name);
 
         var packer = new BinaryPacker();
-        packer.Writer = contentWriter;
         // Write the map to a different writer, as we now need the lookup table.
+        packer.Writer = contentWriter;
         packer.WriteElement(package.Data);
 
         // write lookup table
@@ -86,13 +84,22 @@ public sealed class BinaryPacker {
 
         output.Write(headerStream.ToArray());
         output.Write(contentStream.ToArray());
+        //headerStream.CopyTo(output);
+        //contentStream.CopyTo(output);
     }
 
     public static void SaveToFile(Package package, string filename) {
+        using var memStream = new MemoryStream();
+
+        SaveToStream(package, memStream);
+
+        // now that we know everything went well, time to write to file
         using var fileStream = File.Open(filename, FileMode.Create);
-        SaveToStream(package, fileStream);
+
+        fileStream.Write(memStream.ToArray());
+        //memStream.CopyTo(fileStream);
     }
-    
+
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
 
     internal void WriteElement(Element el) {
@@ -100,7 +107,7 @@ public sealed class BinaryPacker {
 
         WriteLookup(el.Name ?? "");
 
-        var attrs = el.Attributes ?? new();
+        var attrs = (el.Attributes ?? new()).Where(p => p.Value is { }).ToList();
         writer.Write((byte) attrs.Count);
         foreach (var (name, val) in attrs) {
             WriteLookup(name);
@@ -125,7 +132,7 @@ public sealed class BinaryPacker {
     internal void WriteValue(object val) {
         switch (val) {
             case bool b:
-                Writer.Write((byte)0);
+                Writer.Write((byte) 0);
                 Writer.Write(b);
                 break;
             case byte b:
@@ -136,7 +143,7 @@ public sealed class BinaryPacker {
                 WriteNumber((uint) b);
                 break;
             case int b:
-                WriteNumber((uint)b);
+                WriteNumber((uint) b);
                 break;
             case float b:
                 if (float.IsEvenInteger(b)) {
@@ -151,7 +158,7 @@ public sealed class BinaryPacker {
                     WriteNumber((uint) b);
                 } else {
                     Writer.Write((byte) 4);
-                    Writer.Write((float)b);
+                    Writer.Write((float) b);
                 }
                 break;
             case Enum e:
@@ -164,8 +171,7 @@ public sealed class BinaryPacker {
                 EncodeString(b);
                 break;
             default:
-                Console.WriteLine($"UNKNOWN OBJECT: {val}, {val.GetType()}");
-                break;
+                throw new Exception($"Can't pack object into a binary package: {val}, {val.GetType()}");
         }
 
         void WriteNumber(uint num) {
@@ -174,7 +180,7 @@ public sealed class BinaryPacker {
                     Writer.Write((byte) 1);
                     Writer.Write((byte) num);
                     break;
-                case <= (uint)short.MaxValue:
+                case <= (uint) short.MaxValue:
                     Writer.Write((byte) 2);
                     Writer.Write((short) num);
                     break;
@@ -204,7 +210,7 @@ public sealed class BinaryPacker {
         var element = new Element(ReadLookup());
 
         var attrCount = Reader.ReadByte();
-        var attrs = element._Attributes = new(attrCount, StringComparer.Ordinal);
+        var attrs = element.Attributes = new(attrCount, StringComparer.Ordinal);
         for (int i = 0; i < attrCount; i++) {
             string attrName = ReadLookup();
 
@@ -295,13 +301,8 @@ public sealed class BinaryPacker {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Name;
 
-        internal Dictionary<string, object> _Attributes;
-
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, object> Attributes {
-            get => _Attributes;
-            set => _Attributes = value.FixDict(StringComparer.Ordinal);
-        }
+        public Dictionary<string, object> Attributes { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Element[] Children = null!;

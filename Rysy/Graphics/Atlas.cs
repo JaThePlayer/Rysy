@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Rysy.Graphics;
 
 public class Atlas : IAtlas {
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -8,39 +10,76 @@ public class Atlas : IAtlas {
             if (key is null)
                 return GFX.VirtPixel;
 
-            if (Textures.TryGetValue(key, out var texture)) {
+            if (TryGet(key, out var texture))
                 return texture;
-            }
 
-            if (Textures.TryGetValue(key + "0", out texture)) {
-                return texture;
-            }
-
-            if (Textures.TryGetValue(key + "00", out texture)) {
-                return texture;
-            }
-
-            if (Settings.Instance?.LogMissingTextures ?? true)
-                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
+            Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
             return GFX.VirtPixel;
         }
     }
 
-    public bool Exists(string key) {
+    public bool TryGet(string key, [NotNullWhen(true)] out VirtTexture? texture) {
+        texture = null;
+
         if (key is null)
             return false;
 
-        if (Textures.TryGetValue(key, out var texture)) {
+        if (Textures.TryGetValue(key, out texture)) {
             return true;
         }
 
-        if (Textures.TryGetValue(key + "00", out texture)) {
-            return true;
+        for (int zeroCount = 1; zeroCount < 6; zeroCount++) {
+            key += "0";
+            if (Textures.TryGetValue(key, out texture)) {
+                return true;
+            }
         }
 
         return false;
     }
 
+    public VirtTexture this[string key, int frame] {
+        get {
+            if (key is null)
+                return GFX.VirtPixel;
+
+            if (Textures.TryGetValue(key + frame, out var texture)) {
+                return texture;
+            }
+
+            if (Textures.TryGetValue(key + "0" + frame, out texture)) {
+                return texture;
+            }
+
+            if (Settings.Instance?.LogMissingTextures ?? true)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
+            return GFX.VirtPixel;
+        }
+    }
+
+    public bool Exists(string key) => TryGet(key, out _);
+
+    public IReadOnlyList<VirtTexture> GetSubtextures(string key) {
+        var list = new List<VirtTexture>();
+
+        string padding = "";
+        for (int zeroCount = 0; zeroCount < 6; zeroCount++) {
+            int i = 0;
+            while (true) {
+                var newKey = $"{key}{padding}{i}";
+                if (!Textures.TryGetValue(newKey, out var texture)) {
+                    break;
+                }
+
+                list.Add(texture);
+                i++;
+            }
+
+            padding += "0";
+        }
+
+        return list;
+    }
 
     public Atlas() {
 
@@ -48,6 +87,7 @@ public class Atlas : IAtlas {
 
     public event Action<string> OnTextureLoad;
     public event Action OnUnload;
+    public event Action OnChanged;
 
     /// <inheritdoc/>
     public void DisposeTextures() {
@@ -56,6 +96,7 @@ public class Atlas : IAtlas {
         }
 
         OnUnload?.Invoke();
+        OnChanged?.Invoke();
     }
 
     public void AddTexture(string virtPath, VirtTexture texture) {
@@ -64,6 +105,17 @@ public class Atlas : IAtlas {
         }
 
         OnTextureLoad?.Invoke(virtPath);
+        OnChanged?.Invoke();
+    }
+
+    public void RemoveTextures(List<string> virtPaths) {
+        lock (Textures) {
+            foreach (var item in virtPaths) {
+                Textures.Remove(item);
+            }
+
+            OnChanged?.Invoke();
+        }
     }
 
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures() => Textures.Select(t => (t.Key, t.Value));

@@ -30,6 +30,11 @@ public class Window {
         }
     }
 
+    /// <summary>
+    /// Controls whether this window can be moved or not.
+    /// </summary>
+    public bool NoMove { get; set; } = false;
+
     private void GenerateID() {
         if (NoSaveData)
             WindowID = $"{Name}##{Guid.NewGuid()}";
@@ -60,6 +65,9 @@ public class Window {
 
         if (NoSaveData)
             flags |= ImGuiWindowFlags.NoSavedSettings;
+
+        if (NoMove)
+            flags |= ImGuiWindowFlags.NoMove;
 
         if (ImGui.Begin(WindowID, ref open, flags)) {
             Render();

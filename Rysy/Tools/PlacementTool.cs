@@ -9,7 +9,7 @@ namespace Rysy.Tools;
 public class PlacementTool : Tool {
     public ISelectionHandler? CurrentPlacement;
 
-    public SelectRectangleGesture RectangleGesture = new();
+    public SelectRectangleGesture RectangleGesture;
 
     private bool PickNextFrame;
 
@@ -19,7 +19,7 @@ public class PlacementTool : Tool {
         handler.AddHotkeyFromSettings("tools.pick", "mousemiddle", OnMiddleClick);
     }
 
-    public override string Name => "Placement";
+    public override string Name => "placement";
 
     public override string PersistenceGroup => "placement";
 
@@ -144,7 +144,7 @@ public class PlacementTool : Tool {
         }
     }
 
-    private static Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null, Vector2? position = null) {
+    private Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null, Vector2? position = null) {
         precise ??= Input.Keyboard.Ctrl();
 
         var pos = currentRoom.WorldToRoomPos(camera, position ?? Input.Mouse.Pos.ToVector2());
@@ -170,6 +170,8 @@ public class PlacementTool : Tool {
         base.Init();
 
         PrefabHelper.CurrentPrefabs.OnChanged += ClearMaterialListCache;
+
+        RectangleGesture = new(Input);
     }
 
     protected override void RenderMaterialListElement(object material, string name) {

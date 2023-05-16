@@ -14,7 +14,5 @@ public class FakeWall : TileEntity, ISolid, IPlaceable {
         ["tiletype"] = Fields.TileDropdown('3', bg: false)
     };
 
-    public static List<Placement>? GetPlacements() => new() {
-
-    };
+    public static PlacementList GetPlacements() => new("fake_wall");
 }

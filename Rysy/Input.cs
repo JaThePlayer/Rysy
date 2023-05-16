@@ -8,52 +8,71 @@ using System;
 using System.Buffers.Text;
 using System.IO.Compression;
 
-public static class Input {
-    internal static void Update(GameTime gameTime) => Update((float) gameTime.ElapsedGameTime.TotalSeconds);
+public class Input {
+    public static Input Global { get; private set; } = new();
+    public IMouseInput Mouse { get; private set; }
+    public IKeyboardInput Keyboard { get; private set; }
 
-    internal static void Update(float deltaSeconds) {
-        Mouse.UpdateMouseInput(deltaSeconds);
+    public Input(IMouseInput? mouse = null, IKeyboardInput? keyboard = null) {
+        Mouse = mouse ?? new MouseInput();
+        Keyboard = keyboard ?? new KeyboardInput();
+    }
+
+    //public static IMouseInput Mouse { get; private set; } = new MouseInput();
+    //public static IKeyboardInput Keyboard { get; private set; } = new KeyboardInput();
+
+    public void Update(GameTime gameTime) => Update((float) gameTime.ElapsedGameTime.TotalSeconds);
+
+    public void Update(float deltaSeconds) {
+        Mouse.Update(deltaSeconds);
         Keyboard.Update(deltaSeconds);
     }
 
-    public static class Mouse {
+    internal static void UpdateGlobal(GameTime gameTime) 
+        => Global.Update(gameTime);
+
+    public class MouseInput : IMouseInput {
         public const float DOUBLE_CLICK_TIME = .3f;
 
-        public static int ScrollDelta { get; private set; }
-        public static MouseInputState Left { get; private set; }
-        public static MouseInputState Right { get; private set; }
-        public static MouseInputState Middle { get; private set; }
-        public static MouseInputState X1 { get; private set; }
-        public static MouseInputState X2 { get; private set; }
+        public int ScrollDelta { get; private set; }
+        public MouseInputState Left { get; private set; }
+        public MouseInputState Right { get; private set; }
+        public MouseInputState Middle { get; private set; }
+        public MouseInputState X1 { get; private set; }
+        public MouseInputState X2 { get; private set; }
 
-        public static Point Pos { get; internal set; }
-        public static Point PositionDelta { get; private set; }
+        private Point RealPos { get; set; }
 
-        public static float LeftHoldTime => HoldTimes[0];
-        public static float RightHoldTime => HoldTimes[1];
-        public static float X1HoldTime => HoldTimes[3];
-        public static float X2HoldTime => HoldTimes[4];
+        public Point Offset { get; set; } = new();
 
-        public static bool LeftDoubleClicked() => TimeSinceLastClick[0] < DOUBLE_CLICK_TIME && DoubleClicks[0];
+        public Point Pos => RealPos + Offset;
+        public Point PositionDelta { get; private set; }
 
-        public static bool AnyClicked =>
+        public float LeftHoldTime => HoldTimes[0];
+        public float RightHoldTime => HoldTimes[1];
+        public float X1HoldTime => HoldTimes[3];
+        public float X2HoldTime => HoldTimes[4];
+
+        public bool LeftDoubleClicked() => TimeSinceLastClick[0] < DOUBLE_CLICK_TIME && DoubleClicks[0];
+
+        public bool AnyClicked =>
             Left is not MouseInputState.Released ||
             Right is not MouseInputState.Released ||
             Middle is not MouseInputState.Released ||
             X1 is not MouseInputState.Released ||
             X2 is not MouseInputState.Released;
 
-        private static int lastMouseScroll;
-        private static int realMouseScroll;
+        private int lastMouseScroll;
+        private int realMouseScroll;
         // GetState storage
-        private static MouseState mousePrevState, mouseState = new();
-        private static float[] HoldTimes = new float[5];
-        private static bool[] ConsumedInputs = new bool[5];
+        private MouseState mousePrevState, mouseState = new();
+        private float[] HoldTimes = new float[5];
+        private bool[] ConsumedInputs = new bool[5];
 
-        private static float[] TimeSinceLastClick = new float[5];
-        private static bool[] DoubleClicks = new bool[5];
+        private float[] TimeSinceLastClick = new float[5];
+        private bool[] DoubleClicks = new bool[5];
 
-        private static MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
+        private MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
             if (PositionDelta != Point.Zero) {
                 // if the mouse moves, cancel and prevent any double clicks
                 DoubleClicks[index] = false;
@@ -87,7 +106,7 @@ public static class Input {
             return MouseInputState.Held;
         }
 
-        public static void UpdateMouseInput(float deltaSeconds) {
+        public void Update(float deltaSeconds) {
             // From FNA wiki
             mousePrevState = mouseState;
             mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
@@ -98,9 +117,9 @@ public static class Input {
 
             ScrollDelta = realMouseScroll - lastMouseScroll;
 
-            var lastPos = Pos;
-            Pos = new(mouseState.X, mouseState.Y);
-            PositionDelta = Pos - lastPos;
+            var lastPos = RealPos;
+            RealPos = new(mouseState.X, mouseState.Y);
+            PositionDelta = RealPos - lastPos;
 
             var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
             var canInput = viewport.Bounds.Contains(new Point(mouseState.X, mouseState.Y));
@@ -119,37 +138,37 @@ public static class Input {
             X2 = GetCorrectState(x2Button, mousePrevState.XButton2, 4, delta);
         }
 
-        public static void ConsumeLeft() {
+        public void ConsumeLeft() {
             Left = MouseInputState.Released;
             HoldTimes[0] = 0f;
             ConsumedInputs[0] = true;
         }
 
-        public static void ConsumeRight() {
+        public void ConsumeRight() {
             Right = MouseInputState.Released;
             HoldTimes[1] = 0f;
             ConsumedInputs[1] = true;
         }
 
-        public static void ConsumeMiddle() {
+        public void ConsumeMiddle() {
             Right = MouseInputState.Released;
             HoldTimes[2] = 0f;
             ConsumedInputs[2] = true;
         }
 
-        public static void ConsumeX1() {
+        public void ConsumeX1() {
             X1 = MouseInputState.Released;
             HoldTimes[3] = 0f;
             ConsumedInputs[3] = true;
         }
 
-        public static void ConsumeX2() {
+        public void ConsumeX2() {
             X2 = MouseInputState.Released;
             HoldTimes[4] = 0f;
             ConsumedInputs[4] = true;
         }
 
-        public static bool Clicked(int button) {
+        public bool Clicked(int button) {
             return button switch {
                 0 => Left is MouseInputState.Clicked,
                 1 => Right is MouseInputState.Clicked,
@@ -160,7 +179,7 @@ public static class Input {
             };
         }
 
-        public static bool Held(int button) {
+        public bool Held(int button) {
             return button switch {
                 0 => Left is MouseInputState.Held,
                 1 => Right is MouseInputState.Held,
@@ -171,7 +190,7 @@ public static class Input {
             };
         }
 
-        public static bool HeldOrClicked(int button) {
+        public bool HeldOrClicked(int button) {
             return button switch {
                 0 => Left is MouseInputState.Held or MouseInputState.Clicked,
                 1 => Right is MouseInputState.Held or MouseInputState.Clicked,
@@ -182,11 +201,11 @@ public static class Input {
             };
         }
 
-        public static float HeldTime(int button) {
+        public float HeldTime(int button) {
             return HoldTimes[button];
         }
 
-        public static void Consume(int button) {
+        public void Consume(int button) {
             switch (button) {
                 case 0:
                     ConsumeLeft();
@@ -209,14 +228,14 @@ public static class Input {
         }
     }
 
-    public static class Keyboard {
-        private static KeyboardState LastState;
+    private class KeyboardInput : IKeyboardInput {
+        private KeyboardState LastState;
 
-        private static Keys[] ClickedKeys = new Keys[32];
+        private Keys[] ClickedKeys = new Keys[32];
 
-        private static Dictionary<Keys, float> HoldTimes = new();
+        private Dictionary<Keys, float> HoldTimes = new();
 
-        private static bool Contains(Keys[] keys, Keys key) {
+        private bool Contains(Keys[] keys, Keys key) {
             for (int i = 0; i < keys.Length; i++) {
                 if (keys[i] == key)
                     return true;
@@ -228,18 +247,18 @@ public static class Input {
         /// <summary>
         /// Returns whether a key has just been clicked this frame
         /// </summary>
-        public static bool IsKeyClicked(Keys key) => Contains(ClickedKeys, key); //HoldTimes.TryGetValue(key, out var time) && time < 1f / 60f;
-        public static bool IsKeyHeld(Keys key) => HoldTimes.TryGetValue(key, out var timer) && timer > 0f
+        public bool IsKeyClicked(Keys key) => Contains(ClickedKeys, key); //HoldTimes.TryGetValue(key, out var time) && time < 1f / 60f;
+        public bool IsKeyHeld(Keys key) => HoldTimes.TryGetValue(key, out var timer) && timer > 0f
             && LastState.IsKeyDown(key) && !IsKeyClicked(key);
-        public static bool HeldOrClicked(Keys key) => LastState.IsKeyDown(key);
+        public bool HeldOrClicked(Keys key) => LastState.IsKeyDown(key);
 
-        public static bool Ctrl() => IsKeyHeld(Keys.LeftControl) || IsKeyHeld(Keys.RightControl);//LastState.IsKeyDown(Keys.LeftControl) || LastState.IsKeyDown(Keys.RightControl);
-        public static bool Shift() => LastState.IsKeyDown(Keys.LeftShift) || LastState.IsKeyDown(Keys.RightShift);
-        public static bool Alt() => LastState.IsKeyDown(Keys.LeftAlt) || LastState.IsKeyDown(Keys.RightAlt);
+        public bool Ctrl() => IsKeyHeld(Keys.LeftControl) || IsKeyHeld(Keys.RightControl);//LastState.IsKeyDown(Keys.LeftControl) || LastState.IsKeyDown(Keys.RightControl);
+        public bool Shift() => LastState.IsKeyDown(Keys.LeftShift) || LastState.IsKeyDown(Keys.RightShift);
+        public bool Alt() => LastState.IsKeyDown(Keys.LeftAlt) || LastState.IsKeyDown(Keys.RightAlt);
 
-        public static bool AnyKeyHeld { get; private set; }
+        public bool AnyKeyHeld { get; private set; }
 
-        public static float GetHoldTime(Keys key) {
+        public float GetHoldTime(Keys key) {
             if (IsKeyHeld(key)) {
                 return HoldTimes[key];
             } else {
@@ -248,17 +267,17 @@ public static class Input {
         }
 
 
-        public static void ConsumeKeyClick(Keys key) {
+        public void ConsumeKeyClick(Keys key) {
             var i = Array.IndexOf(ClickedKeys, key);
             if (i != -1)
                 ClickedKeys[i] = Keys.None;
         }
 
-        public static void Setup() {
+        public void Setup() {
 
         }
 
-        public static void Update(float deltaSeconds) {
+        public void Update(float deltaSeconds) {
             var state = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var delta = deltaSeconds;
 

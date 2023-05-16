@@ -11,6 +11,8 @@ public sealed class SelectRectangleGesture {
     private Rectangle? CurrentRect = null;
     private Rectangle? LastRect = null;
 
+    public Input Input { get; private set; }
+
     /// <summary>
     /// Action to be called whenever this gesture is finished. The argument represents the area selected by the user.
     /// </summary>
@@ -21,10 +23,11 @@ public sealed class SelectRectangleGesture {
     /// </summary>
     public Func<Point, Point> Transform { get; set; } = (p) => p;
 
-    public SelectRectangleGesture(Action<Rectangle>? onSelectionFinish = null) {
+    public SelectRectangleGesture(Input input, Action<Rectangle>? onSelectionFinish = null) {
         RysyEngine.OnLoseFocus += OnLoseFocus;
 
         OnSelectionFinish = onSelectionFinish;
+        Input = input ?? Input.Global;
     }
 
     /// <summary>

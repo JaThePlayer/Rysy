@@ -1,12 +1,16 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
-using Rysy.History;
 using Rysy.Scenes;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Rysy.Mods;
 
 public static class ModRegistry {
+    public delegate void ModAssemblyScanner(ModMeta mod, Assembly? oldAssembly);
+
+    internal static ModAssemblyScanner? ModAssemblyScannerInstance;
+
     private static Dictionary<string, ModMeta> _Mods { get; set; } = new(StringComparer.Ordinal);
 
     public static IReadOnlyDictionary<string, ModMeta> Mods => _Mods.AsReadOnly();
@@ -18,6 +22,34 @@ public static class ModRegistry {
     /// Returns null if the mod is not loaded.
     /// </summary>
     public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName);
+
+    /// <summary>
+    /// Tries to get the settings of mod <paramref name="modName"/>. If the mod doesn't exist, null is returned.
+    /// </summary>
+    /// <typeparam name="T">The type of the mod's settings class.</typeparam>
+    /// <param name="modName">The name of the mod whose settings you want to get.</param>
+    /// <returns>The mod's settings, or null if the mod doesn't exist</returns>
+    public static T? GetModSettings<T>(string modName) where T : ModSettings {
+        if (GetModByName(modName) is not { } mod)
+            return null;
+
+        return (T?) mod.Settings;
+    }
+
+    public static void RegisterModAssemblyScanner(ModAssemblyScanner scanner) {
+        // make sure that the scanner is caught up with the currently loaded mods
+        foreach (var mod in Mods.Values) {
+            if (mod.PluginAssembly is { } asm) {
+                scanner(mod, mod.PluginAssembly);
+            }
+        }
+
+        ModAssemblyScannerInstance += scanner;
+    }
+
+    public static void DeregisterModAssemblyScanner(ModAssemblyScanner scanner) {
+        ModAssemblyScannerInstance -= scanner;
+    }
 
     public static async Task LoadAllAsync(string modDir) {
         LoadingScene.Text = "Scanning For Mods";
@@ -33,7 +65,7 @@ public static class ModRegistry {
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");
 
         var blacklisted = (Settings.Instance?.ReadBlacklist ?? true) ?
-            TryHelper.Try(() => 
+            TryHelper.Try(() =>
                 File.ReadAllLines($"{modDir}/blacklist.txt")
                 .Select(l => l.Trim())
                 .Where(l => !l.StartsWith('#'))
@@ -70,8 +102,6 @@ public static class ModRegistry {
             }
             _Mods[meta.Name] = meta;
         }
-
-        CreateRysyMod().Filesystem.Root.LogAsJson();
     }
 
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
@@ -102,6 +132,7 @@ public static class ModRegistry {
     private static void UnloadAllMods() {
         foreach (var (_, mod) in _Mods) {
             mod.Module?.Unload();
+            mod.PluginAssembly = null;
         }
     }
 
@@ -119,8 +150,39 @@ public static class ModRegistry {
             Logger.Error(e, $"Error loading mod: {dir}");
         }
 
+        try {
+            LoadSettings(mod, registerListener: true);
+        } catch (Exception e) {
+            Logger.Error(e, $"Error loading mod settings for {mod.Name}");
+        }
+
 
         return mod;
+    }
+
+    private static void LoadSettings(ModMeta mod, bool registerListener) {
+        if (registerListener)
+            mod.OnAssemblyReloaded += (asm) => LoadSettings(mod, registerListener: false);
+        // todo: register a file watcher for the json file
+
+        var settingsType = mod.PluginAssembly?.GetTypes().FirstOrDefault(t => t.IsSubclassOf(typeof(ModSettings))) ?? typeof(ModSettings);
+
+        var path = mod.SettingsFileLocation;
+        Directory.CreateDirectory(path.Directory()!);
+
+        if (File.Exists(path)) {
+            using var stream = File.OpenRead(path);
+
+            mod.Settings = (ModSettings) JsonSerializer.Deserialize(stream, settingsType, JsonSerializerHelper.DefaultOptions)!;
+            mod.Settings.Meta = mod;
+        } else {
+            mod.Settings = (ModSettings) Activator.CreateInstance(settingsType)!;
+            mod.Settings.Meta = mod;
+
+            // we want to save the json with default values, unless we're just using ModSettings as a fallback
+            if (mod.Settings.GetType() != typeof(ModSettings))
+                mod.Settings.Save();
+        }
     }
 
     private static void LoadModule(ModMeta mod) {
@@ -140,6 +202,7 @@ public static class ModRegistry {
         }
 
         mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
+        mod.Module.Meta = mod;
         mod.Module.Load();
     }
 
@@ -161,15 +224,19 @@ public static class ModRegistry {
             }
              */
             mod.Filesystem.RegisterFilewatch("Rysy", new() {
-                OnChanged = stream => RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false)
+                OnChanged = name => {
+                    if (name.EndsWith(".cs"))
+                        RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false);
+                }
             });
         }
 
 
         var fileInfo = files.Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}")).Where(p => p.Item1 is not null).ToList();
 
+        var hasCsproj = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "csproj").Any();
         var cachePath = SettingsHelper.GetFullPath($"CompileCache/{mod.Name.ToValidFilename()}", perProfile: true);
-        var anyFiles = CodeCompilationHelper.CompileFiles(mod.Name, fileInfo, cachePath, out var modAsm, out var emitResult);
+        var anyFiles = CodeCompilationHelper.CompileFiles(mod.Name, fileInfo, cachePath, addGlobalUsings: !hasCsproj, out var modAsm, out var emitResult);
 
         if (!anyFiles)
             return;

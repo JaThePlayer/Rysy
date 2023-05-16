@@ -1,4 +1,7 @@
-﻿namespace Rysy.Mods;
+﻿using Rysy.Helpers;
+using YamlDotNet.Core.Tokens;
+
+namespace Rysy.Mods;
 
 public class LayeredFilesystem : IModFilesystem {
     private List<ModMeta> Mods = new();
@@ -28,6 +31,51 @@ public class LayeredFilesystem : IModFilesystem {
             }
         }
     }
+
+    public void TryWatchAndOpenAll(string path, Action<Stream, ModMeta> callback, Action onChanged) {
+        WatchedAsset asset = new() {
+            OnChanged = (path) => {
+                onChanged();
+                foreach (var mod in Mods) {
+                    mod.Filesystem.TryOpenFile(path, (stream) => callback(stream, mod));
+                }
+            }
+        };
+
+        foreach (var mod in Mods) {
+            mod.Filesystem.TryOpenFile(path, (stream) => callback(stream, mod));
+            mod.Filesystem.RegisterFilewatch(path, asset);
+        }
+    }
+
+    /// <summary>
+    /// Same as TryWatchAndOpen, but the callback receives the mod the file comes form
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="callback"></param>
+    public bool TryWatchAndOpenWithMod(string path, Action<Stream, ModMeta> callback) {
+        lock (Mods) {
+            foreach (var mod in Mods) {
+                if (!mod.Filesystem.TryOpenFile(path, stream => callback(stream, mod))) {
+                    continue;
+                }
+
+                mod.Filesystem.RegisterFilewatch(path, new() {
+                    OnChanged = (path) => {
+                        mod.Filesystem.TryOpenFile(path, stream => {
+                            callback(stream, mod);
+                        });
+                    },
+                });
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
 
     public ModMeta? FindFirstModContaining(string filepath) {
         return Mods.FirstOrDefault(m => m.Filesystem.FileExists(filepath));

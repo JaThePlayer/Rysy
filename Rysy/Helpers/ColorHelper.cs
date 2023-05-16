@@ -276,14 +276,14 @@ public static class ColorHelperExtensions {
     public static Color FromARGB(this ReadOnlySpan<char> hexCode) => ColorHelper.ARGB(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.Get(string, ColorFormat)"/>
+    /// <inheritdoc cref="ColorHelper.Get"/>
     /// </summary>
     public static Color ToColor(this string str, ColorFormat format = ColorFormat.RGBA) => ColorHelper.Get(str, format);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.TryGet(string, ColorFormat, out Color)"/>
+    /// <inheritdoc cref="ColorHelper.TryGet"/>
     /// </summary>
-    public static bool TryToColor(string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
+    public static bool TryToColor(this string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
 
     /// <summary>
     /// <inheritdoc cref="ColorHelper.ToRGBAString(Color)"/>

@@ -118,26 +118,41 @@ public static class PrefabHelper {
 
             if (handler is MergedSelectionHandler h) {
                 var entitySelections = h.Selections.Select(s => s.Handler).OfType<EntitySelectionHandler>();
-                var prevPos = entitySelections.First().Entity.Pos;
+                var tileSelections = h.Selections.Select(s => s.Handler).OfType<Tilegrid.RectSelectionHandler>();
+
+                var prevPos = entitySelections.FirstOrDefault()?.Entity.Pos;
                 var delta = pos - prevPos;
+                if (entitySelections.Any())
+                    AddEntitySprites(pos, sprites, entitySelections);
 
-                foreach (var selection in entitySelections) {
-                    var e = selection.Entity;
 
-                    e.Pos += delta;
-                    if (e.Nodes is { } nodes)
-                        foreach (var item in nodes) {
-                            item.Pos += delta;
-                        }
-
-                    // todo: hacky!!!
-                    e.Selected = true;
-                    sprites.AddRange(e.GetSpritesWithNodes().OrderByDescending(x => x.Depth));
-                    e.Selected = false;
+                foreach (var item in tileSelections) {
+                    item.Rect = item.Rect.MovedBy(delta ?? (pos - item.Rect.Location.ToVector2()));
+                    sprites.AddRange(item.GetSprites(Color.Red));
                 }
             }
 
             return sprites;
+        }
+
+        private static void AddEntitySprites(Vector2 pos, List<ISprite> sprites, IEnumerable<EntitySelectionHandler> entitySelections) {
+            var prevPos = entitySelections.First().Entity.Pos;
+            var delta = pos - prevPos;
+
+            foreach (var selection in entitySelections) {
+                var e = selection.Entity;
+
+                e.Pos += delta;
+                if (e.Nodes is { } nodes)
+                    foreach (var item in nodes) {
+                        item.Pos += delta;
+                    }
+
+                // todo: hacky!!!
+                e.Selected = true;
+                sprites.AddRange(e.GetSpritesWithNodes().OrderByDescending(x => x.Depth));
+                e.Selected = false;
+            }
         }
 
         public IHistoryAction Place(ISelectionHandler handler, Room room) {
@@ -183,6 +198,7 @@ public static class PrefabHelper {
 
             public IHistoryAction PlaceClone(Room room) {
                 return Selections.Select(s => s.Handler.PlaceClone(room)).MergeActions();
+                //.Select(s => s.Handler is Tilegrid.RectSelectionHandler tile ? tile.PlaceCloneAt(room, pos) : s.Handler.PlaceClone(room)).MergeActions();
             }
 
             public void RenderSelection(Color c) {

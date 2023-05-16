@@ -255,10 +255,7 @@ public sealed class LonnEntityPlugin {
                 var dict = lua.TableToDictionary(fieldInfoLoc);
                 var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
 
-
-                var fields = LonnFieldIntoToFieldList(dict, mainPlacement);
-                plugin.FieldList = () => fields;
-
+                plugin.FieldList = () => LonnFieldIntoToFieldList(dict, mainPlacement);
                 break;
             case LuaType.Function:
                 plugin.FieldList = () => {
@@ -304,31 +301,16 @@ public sealed class LonnEntityPlugin {
 
             var editable = (bool) infoDict.GetValueOrDefault("editable", true);
             var options = infoDict!.GetValueOrDefault("options", null);
-            var fieldType = infoDict!.GetValueOrDefault("fieldType", null);
+            var fieldType = (string?)infoDict!.GetValueOrDefault("fieldType", null);
             var min = infoDict!.GetValueOrDefault("minimumValue", null);
             var max = infoDict!.GetValueOrDefault("maximumValue", null);
 
-            Field? field;
-            switch (fieldType) {
-                case "integer": {
-                    field = Fields.Int(mainPlacement.Data.TryGetValue(key, out var def) ? Convert.ToInt32(def) : 0);
-                    break;
-                }
-                case "color": {
-                    var allowXNA = (bool)Convert.ChangeType(infoDict!.GetValueOrDefault("allowXNAColors", false), typeof(bool));
-                    var def = mainPlacement.Data.TryGetValue(key, out var _def) && _def is string defString ? ColorHelper.Get(defString) : Color.White;
+            Field? field = null;
+            // ignore fields we can guess - no need to duplicate code for guessed values
+            if (fieldType is { } && fieldType is not "string" and not "number" and not "boolean" and not "anything")
+                field = Fields.CreateFromLonn(mainPlacement.Data.GetValueOrDefault(key), fieldType, infoDict);
 
-                    var colorField = Fields.RGB(def);
-                    if (allowXNA)
-                        colorField.AllowXNAColors();
-
-                    field = colorField;
-                    break;
-                }
-                default:
-                    field = HandleDropdown(editable, options, mainPlacement, key);
-                    break;
-            }
+            field ??= HandleDropdown(editable, options, mainPlacement, key);
 
             if (field is IntField intField) {
                 if (min is { })
@@ -349,21 +331,30 @@ public sealed class LonnEntityPlugin {
             }
         }
 
+        // take into account properties not defined in fieldInfo but only in the main placement
+        foreach (var (key, val) in mainPlacement.Data) {
+            if (fieldList.ContainsKey(key))
+                continue;
+
+            if (Fields.GuessFromValue(val, fromMapData: true) is { } guessed)
+                fieldList[key] = guessed;
+        }
+
         return fieldList;
     }
 
     private static Field? HandleDropdown(bool editable, object? options, LonnPlacement mainPlacement, string key) {
         if (options is { } && mainPlacement.Data.TryGetValue(key, out var def)) {
+            /*
             switch (def, editable, options) {
                 case (string str, _, List<object> dropdownOptions):
                     if (dropdownOptions.First() is List<object>) {
-                        /*
-                         * {text, value},
-                         * {text, value2},
-                         */
+
+                         // {text, value},
+                         // {text, value2},
                         return Fields.Dropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable);
                     } else {
-                        return Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList(), editable);
+                        return Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList(), editable: editable);
                     }
                 case (string str, _, Dictionary<string, object> dropdownOptions): {
                     var firstVal = dropdownOptions.FirstOrDefault().Value;
@@ -371,6 +362,24 @@ public sealed class LonnEntityPlugin {
                     return Fields.Dropdown(str, dropdownOptions.ToDictionary(v => v.Value.ToString()!, v => v.Key), editable);
                 }
 
+                default:
+                    break;
+            }
+            */
+            switch (options) {
+                case List<object> dropdownOptions:
+                    if (dropdownOptions.First() is List<object>) {
+                        // {text, value},
+                        // {text, value2},
+                        return Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable);
+                    } else {
+                        return Fields.Dropdown(def, dropdownOptions.Select(o => o).ToList(), editable: editable);
+                    }
+                case Dictionary<string, object> dropdownOptions: {
+                    var firstVal = dropdownOptions.FirstOrDefault().Value;
+
+                    return Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable);
+                }
                 default:
                     break;
             }
@@ -504,8 +513,8 @@ public sealed class LonnEntityPlugin {
             Name = "";
         }
 
-        public LonnPlacement(Lua lua) {
-            var start = lua.GetTop();
+        public LonnPlacement(Lua lua, int? loc = null) {
+            var start = loc ?? lua.GetTop();
 
             Name = lua.PeekTableStringValue(start, "name") ?? throw new Exception("Name isn't a string!");
 

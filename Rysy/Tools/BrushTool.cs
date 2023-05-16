@@ -5,7 +5,7 @@ using Rysy.History;
 namespace Rysy.Tools;
 
 public class BrushTool : TileTool {
-    public override string Name => "Brush";
+    public override string Name => "brush";
 
     public override void Render(Camera camera, Room currentRoom) {
         var mouse = currentRoom.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();

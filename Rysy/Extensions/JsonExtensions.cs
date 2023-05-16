@@ -19,6 +19,13 @@ public static class JsonExtensions {
         return obj is { } ? JsonSerializer.SerializeToUtf8Bytes(obj, Options(minified)) : Array.Empty<byte>();
     }
 
+    /// <summary>
+    /// Returns the JSON representation of this object as UTF-8 bytes
+    /// </summary>
+    public static byte[] ToJsonUTF8(this object obj, Type serializeAs, bool minified = true) {
+        return obj is { } ? JsonSerializer.SerializeToUtf8Bytes(obj, serializeAs, Options(minified)) : Array.Empty<byte>();
+    }
+
     public static T? TryDeserialize<T>(string str) {
         try {
             return JsonSerializer.Deserialize<T>(str, Options(true));
@@ -38,6 +45,8 @@ public static class JsonExtensions {
         }
     }
 
+
+    /*
     /// <summary>
     /// Fixes a object-valued dictionary after getting deserialised to not contain JsonElement values, instead replacing them with primitive types.
     /// </summary>
@@ -60,7 +69,7 @@ public static class JsonExtensions {
             }
 
             return kv.Value;
-        }) ?? dict;
+        }, comparer) ?? dict;*/
 
     private static JsonSerializerOptions Options(bool minified) => minified ? JsonSerializerHelper.DefaultOptionsMinified : JsonSerializerHelper.DefaultOptions;
 

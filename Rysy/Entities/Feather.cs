@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("infiniteStar")]
-public class Feather : SpriteEntity {
+public sealed class Feather : SpriteEntity, IPlaceable {
     public override string TexturePath => "objects/flyFeather/idle00";
 
     public override int Depth => 0;
@@ -15,4 +15,11 @@ public class Feather : SpriteEntity {
         if (Bool("shielded", false))
             yield return ISprite.Circle(Pos, 10f, Color.White, 3);
     }
+
+    public static FieldList GetFields() => new(new {
+        shielded = false,
+        singleUse = false
+    });
+
+    public static PlacementList GetPlacements() => new("normal");
 }

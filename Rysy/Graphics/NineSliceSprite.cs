@@ -28,7 +28,7 @@ public record struct NineSliceSprite : ISprite {
         var b = GFX.Batch;
         const int tileSize = 8;
 
-        ref var rect = ref Pos;
+        var rect = Pos;
         var w = rect.Width;
         var wBy8 = w / tileSize;
         var h = rect.Height;
@@ -39,11 +39,6 @@ public record struct NineSliceSprite : ISprite {
         
         var texWidth = Texture.Width;
         var texHeight = Texture.Height;
-
-        var sprite = new Sprite(Texture) with { 
-            Color = c,
-            Pos = pos,
-        };
 
         for (int x = 0; x < wBy8; x++) {
             var left = x == 0;
@@ -80,6 +75,9 @@ public record struct NineSliceSprite : ISprite {
 
         Render();
     }
+
+    public ISelectionCollider GetCollider()
+        => ISelectionCollider.FromRect(Pos);
 }
 
 public enum LoopingMode {

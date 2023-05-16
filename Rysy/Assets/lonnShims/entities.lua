@@ -1,8 +1,34 @@
-﻿local entities = {}
+﻿local utils = require("utils")
+
+local entities = {}
+
+local function createPlacementsShim(sid) 
+	return setmetatable({}, {
+		__newindex = function (self, _, value)
+			--_RYSY_log("WARNING", string.format("Tried to add placement for [%s] from outside of the source plugin!", sid))
+
+			_RYSY_INTERNAL_addPlacement(sid, value)
+		end,
+	})
+end
 
 local registeredEntitiesMt = {
 	__index = function (self, key)
-		return _RYSY_entities[key]
+		local registered = _RYSY_entities[key]
+
+		if registered then
+			local copy = utils.deepcopy(registered)
+			copy.placements = createPlacementsShim(key)
+
+			return copy
+		end
+
+		_RYSY_log("WARNING", string.format("Requested unknown entity [%s] from Lonn", key))
+
+		return {
+			name = key,
+			placements = createPlacementsShim(key)
+		}
 	end,
 }
 

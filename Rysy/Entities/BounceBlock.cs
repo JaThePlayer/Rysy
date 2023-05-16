@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("bounceBlock")]
-public class BounceBlock : Entity, ISolid {
+public class BounceBlock : Entity, ISolid, IPlaceable {
     const int SpriteSize = 64;
     const int Tiles = SpriteSize / 8 - 2;
 
@@ -48,4 +48,18 @@ public class BounceBlock : Entity, ISolid {
 
         yield return ISprite.FromTexture(Center, isIce ? "objects/BumpBlockNew/ice_center00" : "objects/BumpBlockNew/fire_center00").Centered();
     }
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
+
+    public static FieldList GetFields() => new(new {
+        notCoreMode = false
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("fire"),
+        new("ice", new {
+            notCoreMode = true,
+        }),
+    };
 }

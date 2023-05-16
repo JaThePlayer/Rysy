@@ -70,6 +70,7 @@ public static class GFX {
         using (ScopedStopwatch watch = new("Scanning Rysy assets")) {
             await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
+            Atlas.AddTexture("tilesets/subfolder/betterTemplate", Atlas["Rysy:tilesets/subfolder/betterTemplate"]);
         }
 
         LoadingScene.Text = "Scanning mod assets";
@@ -85,17 +86,39 @@ public static class GFX {
         await Atlas.LoadFromPackerAtlasAsync(path);
     }
 
-    internal static ValueTask LoadModAsync(ModMeta mod) {
+    internal static ValueTask LoadModAsync(ModMeta mod, bool registerFilewatch = true) {
         var files = mod.Filesystem.FindFilesInDirectoryRecursive("Graphics/Atlases/Gameplay", "png");
         var atlas = Atlas;
 
         foreach (var file in files) {
-            var virt = file["Graphics/Atlases/Gameplay/".Length..(^".png".Length)];
-
-            atlas.AddTexture(virt, new ModTexture(mod, file));
+            AddTexture(file);
         }
 
+        if (registerFilewatch)
+        mod.Filesystem.RegisterFilewatch("Graphics/Atlases/Gameplay", new() {
+            OnChanged = (string newPath) => {
+                var list = atlas.GetTextures()
+                    .Where(p => p.texture is ModTexture { Mod: var textureMod } && textureMod == mod)
+                    .Select(p => p.virtPath)
+                    .ToList();
+
+                // todo: make this smarter
+                atlas.RemoveTextures(list);
+                LoadModAsync(mod, registerFilewatch: false).AsTask().Wait();
+                /*
+                if (newPath.FileExtension() is ".png") {
+                    AddTexture(newPath);
+                }*/
+            }
+        });
+
         return ValueTask.CompletedTask;
+
+        void AddTexture(string path) {
+            var virt = path["Graphics/Atlases/Gameplay/".Length..(^".png".Length)];
+
+            atlas!.AddTexture(virt, new ModTexture(mod, path));
+        }
     }
 
     /// <summary>
@@ -105,8 +128,11 @@ public static class GFX {
         Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
     }
 
-    public static void BeginBatch(Camera camera) {
-        Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+    public static void BeginBatch(Camera? camera) {
+        if (camera is { })
+            Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+        else
+            BeginBatch();
     }
 
     /// <summary>

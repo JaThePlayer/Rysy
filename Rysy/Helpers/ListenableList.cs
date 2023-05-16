@@ -59,6 +59,18 @@ public class ListenableList<T> : IListenableList<T> {
         OnChanged?.Invoke();
     }
 
+    public void AddAll(IEnumerable<T> items) {
+        bool any = false;
+
+        foreach (var item in items) {
+            Inner.Add(item);
+            any = true;
+        }
+
+        if (any)
+            OnChanged?.Invoke();
+    }
+
     public void Clear() {
         Inner.Clear();
         OnChanged?.Invoke();
@@ -75,6 +87,22 @@ public class ListenableList<T> : IListenableList<T> {
     public void Insert(int index, T item) {
         Inner.Insert(index, item);
         OnChanged?.Invoke();
+    }
+
+    public void RemoveAll(Func<T, bool> predicate) {
+        bool changed = false;
+
+        for (int i = Count - 1; i >= 0; i--) {
+            var item = Inner[i];
+
+            if (predicate(item)) {
+                changed = true;
+                Inner.RemoveAt(i);
+            }
+        }
+
+        if (changed)
+            OnChanged?.Invoke();
     }
 
     public bool Remove(T item) {

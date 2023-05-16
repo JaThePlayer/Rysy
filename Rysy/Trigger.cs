@@ -3,7 +3,7 @@ using Rysy.Helpers;
 
 namespace Rysy;
 
-public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
+public class Trigger : Entity {
     public string EditorColor {
         get => EntityData.Attr("_editorColor", Color.LightSkyBlue.ToRGBAString());
         set {
@@ -22,9 +22,9 @@ public class Trigger : Entity, INodeSpriteProvider, INodePathProvider {
     public override bool ResizableY => true;
     public override Point MinimumSize => new(8, 8);
 
-    public IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => self.GetNodeRect(nodeIndex).Center.ToVector2());
+    public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => self.GetNodeRect(nodeIndex).Center.ToVector2());
 
-    public IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
+    public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var rect = GetNodeRect(nodeIndex);
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
     }

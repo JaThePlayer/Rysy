@@ -3,16 +3,17 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
-using System;
 
 namespace Rysy.Scenes;
 
 public class PersistenceMapLoadErrorScene : Scene {
-    public const string Text = "Failed to load last edited map.";
+    public string Text;
 
     public Exception Exception;
 
-    public PersistenceMapLoadErrorScene(Exception e) {
+    public PersistenceMapLoadErrorScene(Exception e, string langPostfix) {
+        Text = langPostfix.TranslateOrHumanize("rysy.mapLoadError");
+
         AddWindow(new ScriptedWindow(Text, RenderImgui));
 
         Exception = e;
@@ -30,14 +31,28 @@ public class PersistenceMapLoadErrorScene : Scene {
         ImGui.Text(Text);
         ImGui.TextColored(Color.Red.ToNumVec4(), Exception.ToString());
 
-        if (ImGui.Button("Load Last Backup")) {
-            var map = BackupHandler.LoadMostRecentBackup();
-            if (map == null) {
-                return;
-            }
-            map.Filepath = Persistence.Instance.LastEditedMap;
+        var loadBackupText = "rysy.mapLoadError.loadBackup".Translate();
 
-            RysyEngine.Scene = new EditorScene(map!);
+        if (ImGui.Button(loadBackupText)) {
+            var backups = BackupHandler.GetBackups();
+            BackupInfo? backup = backups.FirstOrDefault();
+
+            if (backup is { }) {
+                AddWindow(new ScriptedWindow(loadBackupText, (w) => {
+                    ImGui.Text("rysy.mapLoadError.selectBackup".Translate());
+
+                    ImGuiManager.Combo("", ref backup, backups, toString: (b) => $"{b.MapName} ({b.Time}) [{b.Filesize / 1024.0:n2}kb]");
+
+                    if (ImGui.Button("rysy.load".Translate())) {
+                        w.RemoveSelf();
+                        RysyEngine.Scene = new EditorScene(backup.Filepath, fromBackup: true, overrideFilepath: Persistence.Instance?.LastEditedMap);
+                    }
+                }, new(500, 100)));
+            } else {
+                AddWindow(new ScriptedWindow(loadBackupText, (w) => {
+                    ImGui.Text("rysy.mapLoadError.noBackups".Translate());
+                }));
+            }
         }
     }
 }

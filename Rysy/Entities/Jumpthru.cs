@@ -1,11 +1,14 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.Entities;
 
 [CustomEntity("jumpThru")]
-public class Jumpthru : Entity {
+public class Jumpthru : Entity, IPlaceable {
     public override int Depth => -9000;
+
+    public override bool ResizableX => true;
 
     public override IEnumerable<ISprite> GetSprites() {
         var type = Attr("texture") switch {
@@ -33,4 +36,11 @@ public class Jumpthru : Entity {
             };
         }
     }
+
+    public static FieldList GetFields() => new(new {
+        texture = Fields.AtlasPath("wood", "^objects/jumpthru/(.*)").AllowEdits(),
+        surfaceIndex = Fields.Dropdown(-1, CelesteEnums.SurfaceSounds, editable: false),
+    });
+
+    public static PlacementList GetPlacements() => new("wood");
 }

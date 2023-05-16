@@ -29,9 +29,20 @@ public static class RandomExt {
     public static int SeededRandomInclusive(this Vector2 pos, int min, int max) => min + (int) (SeededRandom(pos.X, pos.Y) % (ulong) (max - min + 1));
 
     /// <summary>
+    /// Creates a random int out of this Vector2, between min and max (inclusive)
+    /// </summary>
+    public static int SeededRandomInclusive(this Vector2 pos, Range range)
+        => SeededRandomInclusive(pos, range.Start.Value, range.End.Value);
+
+    /// <summary>
     /// Creates a random float out of this Vector2, between min and max (inclusive)
     /// </summary>
-    public static float SeededRandomInclusive(this Vector2 pos, float min, float max) => min + (int) (SeededRandom(pos.X, pos.Y) % (max - min + 1));
+    public static float SeededRandomInclusive(this Vector2 pos, float min, float max) {
+        var rand = (float) SeededRandom(pos.X, pos.Y);
+        var ret = rand.Map(0, ulong.MaxValue, min, max);
+
+        return ret;
+    }
 
     #region Splitmix64
     /*  Written in 2015 by Sebastiano Vigna (vigna@acm.org)

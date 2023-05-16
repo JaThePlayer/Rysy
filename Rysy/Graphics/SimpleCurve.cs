@@ -19,16 +19,16 @@ public record struct SimpleCurve {
         return reverse * reverse * Start + 2f * reverse * percent * Control + percent * percent * End;
     }
 
-    public IEnumerable<ISprite> GetSprites(Color color, int resolution) {
-        var start = Start;
+    public LineSprite GetSprite(Color color, int resolution) {
+        var positions = new Vector2[resolution + 1];
+        positions[0] = Start;
 
         for (int i = 1; i <= resolution; i++) {
             var end = GetPointAt(i / (float) resolution);
-
-            yield return ISprite.Line(start, end, color);
-
-            start = end;
+            positions[i] = end;
         }
+
+        return ISprite.Line(positions, color);
     }
 
     public IEnumerable<ISprite> GetSpritesForFloatyRectangle(Rectangle baseRect, Color color) {

@@ -6,7 +6,7 @@ public class RespawnTargetTrigger : Trigger, IPlaceable {
 
     public static FieldList GetFields() => new();
 
-    public static List<Placement>? GetPlacements() => new() {
+    public static PlacementList GetPlacements() => new() {
         new("Respawn Target")
     };
 }

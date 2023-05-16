@@ -7,14 +7,14 @@ using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
-public class LonnEntity : Entity, ICustomNodeHandler {
+public class LonnEntity : Entity {
     [JsonIgnore]
     public LonnEntityPlugin Plugin { get; internal set; }
 
     [JsonIgnore]
     public override int Depth => Plugin.GetDepth(Room, this);
 
-    public IEnumerable<ISprite> GetNodeSprites() {
+    public override IEnumerable<ISprite> GetAllNodeSprites() {
         //using var stackHolder = Plugin.PushToStack();
 
         return Plugin.PushToStack((pl) => {
@@ -31,7 +31,7 @@ public class LonnEntity : Entity, ICustomNodeHandler {
             }
 
             if (!pl.HasGetNodeSprite) {
-                return NodeHelper.GetGuessedNodeSpritesFor(this);
+                return base.GetAllNodeSprites();
             }
 
             var roomWrapper = new RoomLuaWrapper(Room);
@@ -57,7 +57,7 @@ public class LonnEntity : Entity, ICustomNodeHandler {
 
             lua.Pop(1); // pop the "nodeSprite" func
 
-            sprites.AddRange(NodeHelper.GetNodeConnectors(this) ?? Array.Empty<ISprite>());
+            sprites.AddRange(GetNodePathSprites() ?? Array.Empty<ISprite>());
 
             return sprites!;
         });

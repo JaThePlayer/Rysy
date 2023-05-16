@@ -175,7 +175,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         Attributes.Space = from.Bool("space", false);
         Attributes.Underwater = from.Bool("underwater", false);
         Attributes.Whisper = from.Bool("whisper", false);
-        Attributes.WindPattern = from.Enum("windPattern", WindPatterns.None);
+        Attributes.WindPattern = from.Enum("windPattern", CelesteEnums.WindPatterns.None);
 
         // Normalize room size to be an increment of a whole tile.
         if (Width % 8 != 0) {
@@ -279,41 +279,41 @@ public sealed class Room : IPackable, ILuaWrapper {
             ["windPattern"] = attr.WindPattern,
         };
 
-        var children = new List<BinaryPacker.Element>();
+        var children = new List<BinaryPacker.Element> {
+            FG.Pack("solids"),
+            BG.Pack("bg"),
+            ObjTiles,
+            new("fgtiles") {
+                Attributes = new() {
+                    ["tileset"] = "Scenery",
+                },
+            },
+            new("bgtiles") {
+                Attributes = new() {
+                    ["tileset"] = "Scenery",
+                },
+            },
 
-        children.Add(FG.Pack("solids"));
-        children.Add(BG.Pack("bg"));
-        children.Add(ObjTiles);
-        children.Add(new("fgtiles") {
-            Attributes = new() {
-                ["tileset"] = "Scenery",
+            new("entities") {
+                Children = Entities.Select(e => e.Pack()).ToArray(),
             },
-        });
-        children.Add(new("bgtiles") {
-            Attributes = new() {
-                ["tileset"] = "Scenery",
-            },
-        });
 
-        children.Add(new("entities") {
-            Children = Entities.Select(e => e.Pack()).ToArray(),
-        });
-
-        children.Add(new("triggers") {
-            Children = Triggers.Select(e => e.Pack()).ToArray(),
-        });
-        children.Add(new("fgdecals") {
-            Attributes = new() {
-                ["tileset"] = "Scenery",
+            new("triggers") {
+                Children = Triggers.Select(e => e.Pack()).ToArray(),
             },
-            Children = FgDecals.Select(d => d.Pack()).ToArray(),
-        });
-        children.Add(new("bgdecals") {
-            Attributes = new() {
-                ["tileset"] = "Scenery",
+            new("fgdecals") {
+                Attributes = new() {
+                    ["tileset"] = "Scenery",
+                },
+                Children = FgDecals.Select(d => d.Pack()).ToArray(),
             },
-            Children = BgDecals.Select(d => d.Pack()).ToArray(),
-        });
+            new("bgdecals") {
+                Attributes = new() {
+                    ["tileset"] = "Scenery",
+                },
+                Children = BgDecals.Select(d => d.Pack()).ToArray(),
+            }
+        };
 
         el.Children = children.Where(child => child is { }).ToArray();
 
@@ -343,14 +343,15 @@ public sealed class Room : IPackable, ILuaWrapper {
             ClearRenderCache();
 
         // if the room takes up extremely tiny amounts of space due to huge zoom out, there's no point in rendering the interior
-        var interiorVisible = 
-               Width * camera.Scale >= 8 
-            && Height * camera.Scale >= 8;
+        var interiorVisible = selected || (
+            Width * camera.Scale >= 8
+            && Height * camera.Scale >= 8
+        );
 
         if (!interiorVisible)
             ClearRenderCache();
 
-        if (!camera.IsRectVisible(Bounds)) {
+        if (!selected && !camera.IsRectVisible(Bounds)) {
             ClearRenderCache();
             return;
         }
@@ -629,11 +630,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         if ((layer & SelectionLayer.FGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, FG, list);
+            GetSelectionsInRectForGrid(rect, FG, list, SelectionLayer.FGTiles);
         }
 
         if ((layer & SelectionLayer.BGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, BG, list);
+            GetSelectionsInRectForGrid(rect, BG, list, SelectionLayer.BGTiles);
         }
 
 
@@ -659,12 +660,12 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into) {
+    private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
         var pos = rect.Location.ToVector2().GridPosFloor(8);
         var pos2 = (rect.Location.ToVector2() + rect.Size.ToVector2()).GridPosFloor(8);
 
 
-        var selection = grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8));
+        var selection = grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer);
 
         if (selection is { })
             into.Add(selection);

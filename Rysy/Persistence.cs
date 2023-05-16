@@ -70,7 +70,7 @@ public class Persistence {
             RecentMaps.RemoveAt(10);
         }
 
-        RecentlyEdited = true;
+        Save(this);
     }
     #endregion
 

@@ -60,6 +60,7 @@ public record struct RectangleSprite : ISprite {
         } else {
             GFX.Batch.Draw(GFX.Pixel, Pos, null, color);
         }
-
     }
+
+    public ISelectionCollider GetCollider() => ISelectionCollider.FromRect(Pos);
 }

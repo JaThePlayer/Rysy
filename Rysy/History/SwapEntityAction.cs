@@ -7,8 +7,9 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
 
         var list = Orig.GetRoomList();
 
-        if (list.IndexOf(Orig) is { } idx && idx == -1)
+        if (list.IndexOf(Orig) is { } idx && idx == -1) {
             return false;
+        }
 
         list[idx] = With;
         With.ID = Orig.ID;

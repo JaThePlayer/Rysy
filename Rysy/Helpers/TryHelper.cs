@@ -1,4 +1,4 @@
-﻿namespace Rysy.History;
+﻿namespace Rysy.Helpers;
 
 public static class TryHelper {
 
@@ -7,7 +7,7 @@ public static class TryHelper {
     /// If an exception is thrown after <paramref name="retries"/> attempts, returns null.
     /// </summary>
     public static T? Try<T>(Func<T> action, int retries = 0) where T : class {
-        start:
+    start:
         try {
             return action();
         } catch (Exception) {

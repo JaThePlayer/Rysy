@@ -5,6 +5,7 @@ using Rysy.Graphics.TextureTypes;
 
 namespace Rysy.Scenes;
 
+/*
 internal class DynamicAtlasTestScene : Scene {
     internal DynamicAtlas? _atlas;
 
@@ -61,3 +62,4 @@ internal class DynamicAtlasTestScene : Scene {
         GFX.Batch.End();
     }
 }
+*/

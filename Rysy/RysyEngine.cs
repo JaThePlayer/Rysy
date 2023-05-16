@@ -103,7 +103,7 @@ public sealed class RysyEngine : Game {
 
                 instance.ResizeWindow(monitorSize.Width, monitorSize.Height, 0, 0);
             } else {
-                instance.ResizeWindowUsingPersistence();
+                instance.ResizeWindowUsingSettings();
             }
         };
     }
@@ -119,11 +119,12 @@ public sealed class RysyEngine : Game {
     private void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
 
-        if (Persistence.Instance is { } && !Instance.Window.IsBorderless) {
-            Persistence.Instance.Set("StartingWindowWidth", GDM.GraphicsDevice.Viewport.Width);
-            Persistence.Instance.Set("StartingWindowHeight", GDM.GraphicsDevice.Viewport.Height);
-            Persistence.Instance.Set("StartingWindowX", Window.Position.X);
-            Persistence.Instance.Set("StartingWindowY", Window.Position.Y);
+        if (Settings.Instance is { } settings && !Instance.Window.IsBorderless) {
+            settings.StartingWindowWidth = GDM.GraphicsDevice.Viewport.Width;
+            settings.StartingWindowHeight = GDM.GraphicsDevice.Viewport.Height;
+            settings.StartingWindowX = Window.Position.X;
+            settings.StartingWindowY = Window.Position.Y;
+            settings.Save();
         }
     }
 
@@ -147,7 +148,14 @@ public sealed class RysyEngine : Game {
                 Scene = new LoadingScene();
             }
 
-            Task.Run(async () => await Instance.ReloadAsync());
+            Task.Run(async () => {
+                try {
+                    await Instance.ReloadAsync();
+                } catch (Exception e) {
+                    Logger.Error(e, $"Unhandled exception during (re)load!");
+                    Scene = new CrashScene(Scene, e);
+                }
+            });
         };
     }
 
@@ -158,12 +166,16 @@ public sealed class RysyEngine : Game {
         }
         var reloadTimer = new ScopedStopwatch("Loading");
 
+        Logger.Write("Reload", LogLevel.Info, $"Staring full reload...");
+
         LoadingScene.Text = "Loading settings";
         try {
             Settings.Instance = Settings.Load();
         } catch {
             return; // No point in loading any further. Error is already logged by .Load()
         }
+
+        ResizeWindowUsingSettings();
 
         try {
             Profile.Instance = Profile.Load();
@@ -177,9 +189,6 @@ public sealed class RysyEngine : Game {
             // persistence will be `new()`'d up. Oh well.
             Persistence.Instance = Persistence.Save(new());
         }
-
-        //ResizeWindow(Settings.Instance.StartingWindowWidth, Settings.Instance.StartingWindowHeight);
-        ResizeWindowUsingPersistence();
 
         if (Profile.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);
@@ -200,15 +209,15 @@ public sealed class RysyEngine : Game {
         Scene = new EditorScene();
     }
 
-    private void ResizeWindowUsingPersistence() {
-        if (Persistence.Instance is not { } persistence)
+    private void ResizeWindowUsingSettings() {
+        if (Settings.Instance is not { } settings)
             return;
 
         ResizeWindow(
-            persistence.Get("StartingWindowWidth", 800),
-            persistence.Get("StartingWindowHeight", 480),
-            persistence.Get("StartingWindowX", Window.Position.X),
-            persistence.Get("StartingWindowY", Window.Position.Y)
+            settings.StartingWindowWidth ?? 800,
+            settings.StartingWindowHeight ?? 480,
+            settings.StartingWindowX ?? Window.Position.X,
+            settings.StartingWindowY ?? Window.Position.Y
         );
     }
 
@@ -246,7 +255,7 @@ public sealed class RysyEngine : Game {
                 Time.Update(gameTime);
 
                 if (IsActive)
-                    Input.Update(gameTime);
+                    Input.UpdateGlobal(gameTime);
 
                 SmartFPSHandler.Update();
 

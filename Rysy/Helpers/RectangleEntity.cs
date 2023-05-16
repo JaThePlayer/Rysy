@@ -19,4 +19,7 @@ public abstract class RectangleEntity : Entity {
 
         yield return ISprite.OutlinedRect(rect, FillColor, OutlineColor);
     }
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
 }

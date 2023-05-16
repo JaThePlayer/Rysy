@@ -1,6 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Extensions;
+using Rysy.Helpers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 namespace Rysy.Graphics;
 
@@ -10,6 +13,19 @@ public interface IAtlas {
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures();
 
     public VirtTexture this[string key] { get; }
+    public VirtTexture this[string key, int frame] { get; }
+
+    public bool TryGet(string key, [NotNullWhen(true)] out VirtTexture? texture);
+
+    /// <summary>
+    /// Equivalent to Celeste's Atlas.GetAtlasSubtextures
+    /// Retrieve multiple textures stored under the same <paramref name="key" />.<br />
+    /// Textures should be named in the following format
+    /// <code>key0, key1, key2, key3</code>
+    /// with up to six <c>0</c>s preceeding the index.
+    /// </summary>
+    /// <param name="key">The texture name.</param>
+    public IReadOnlyList<VirtTexture> GetSubtextures(string key);
 
     public bool Exists(string key);
 
@@ -21,11 +37,44 @@ public interface IAtlas {
 
     public void AddTexture(string virtPath, VirtTexture texture);
 
+    public void RemoveTextures(List<string> paths);
+
     public event Action<string> OnTextureLoad;
     public event Action OnUnload;
+    public event Action OnChanged;
 }
 
+/// <summary>
+/// An object representing a return value from <see cref="IAtlasExt.FindTextures(IAtlas, Regex)"/>
+/// </summary>
+/// <param name="Path">The path of this texture, in full</param>
+/// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures(IAtlas, Regex)"/></param>
+public record class FoundTexture(string Path, string Captured);
+
 public static class IAtlasExt {
+
+    public static Cache<List<FoundTexture>> FindTextures(this IAtlas atlas, Regex regex) {
+        var token = new CacheToken();
+        var cache = new Cache<List<FoundTexture>>(token, () => {
+            var list = new List<FoundTexture>();
+
+            foreach (var (path, _) in atlas.GetTextures()) {
+                if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
+                    //match.Groups.Values.Select(c => c.Value).LogAsJson();
+                    list.Add(new(path, secondGroup.Value));
+                }
+            }
+
+            token.Reset();
+
+            return list;
+        });
+
+        atlas.OnChanged += cache.Token.Invalidate;
+
+        return cache;
+    }
+
     public static async Task LoadFromDirectoryAsync(this IAtlas self, string dir, string prefix = "") {
         await Task.WhenAll(
                 Directory.EnumerateFiles(dir, "*.png", SearchOption.AllDirectories)

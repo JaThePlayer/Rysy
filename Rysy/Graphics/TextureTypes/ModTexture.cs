@@ -21,7 +21,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
                     lock (this) {
                         texture?.Dispose();
-                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
                     }
                 });
             } catch (Exception e) {

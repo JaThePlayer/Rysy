@@ -263,6 +263,7 @@ public class LuaCtx {
                 _ => LogLevel.Debug,
             };
 
+            /*
             lua.GetInfo("Sn", 2);
             var debugInfoLoc = lua.GetTop();
 
@@ -272,7 +273,9 @@ public class LuaCtx {
 
             lua.Pop(1);
 
-            Logger.Write("[Lua]", logLevel, message, callerMethod: funcName, callerFile: source, lineNumber: lineNumber);
+            Logger.Write("Lua", logLevel, message, callerMethod: funcName, callerFile: source, lineNumber: lineNumber);*/
+
+            Logger.Write("Lua", logLevel, message);
 
             return 0;
         });
@@ -303,6 +306,81 @@ public class LuaCtx {
 
             return 1;
         });
+
+        lua.Register("_RYSY_INTERNAL_getModSetting", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var modName = lua.FastToString(1);
+            var settingName = lua.FastToString(2);
+
+            var mod = ModRegistry.GetModByName(modName);
+
+            if (mod is not { Settings: { } settings }) {
+                lua.PushNil();
+                return 1;
+            }
+
+            if (settings.OtherValues.TryGetValue(settingName, out var value)) {
+                lua.Push(value);
+                return 1;
+            }
+
+            var bindings = LonnBindingHelper.GetAllBindings(settings.GetType());
+            if (bindings.TryGetValue(settingName, out var prop)) {
+                lua.Push(prop.GetValue(settings));
+                return 1;
+            }
+
+            lua.PushNil();
+            return 1;
+        });
+
+        lua.Register("_RYSY_INTERNAL_setModSetting", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var modName = lua.FastToString(1);
+            var settingName = lua.FastToString(2);
+            var value = lua.ToCSharp(3);
+
+            var mod = ModRegistry.GetModByName(modName);
+
+            if (mod is not { Settings: { } settings }) {
+                return 0;
+            }
+
+            var bindings = LonnBindingHelper.GetAllBindings(settings.GetType());
+            if (bindings.TryGetValue(settingName, out var prop)) {
+                try {
+                    prop.SetValue(settings, value);
+                    settings.Save();
+                    return 0;
+                } catch (Exception e) {
+                    lua.PushString(e.ToString());
+                    return 1;
+                }
+            }
+
+            // todo: handle tables being passed here - they need to get a metatable (or we handle that in lua...)
+            settings.OtherValues[settingName] = value;
+            settings.Save();
+
+            return 0;
+        });
+
+        //(sid, value) -> void
+        lua.Register("_RYSY_INTERNAL_addPlacement", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var sid = lua.FastToString(1);
+            var placement = new LonnEntityPlugin.LonnPlacement(lua, 2);
+            var trigger = false;
+
+            if (EntityRegistry.GetTypeForSID(sid) is { } t) {
+                trigger = t.IsSubclassOf(typeof(Trigger));
+            }
+
+            EntityRegistry.RegisterLuaPlacements(sid, trigger, new() { placement });
+
+            return 0;
+        });
+
 
         RegisterAPIFuncs(lua);
 

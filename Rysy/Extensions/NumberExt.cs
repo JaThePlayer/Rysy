@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Microsoft.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Extensions;
@@ -37,5 +38,10 @@ public static class NumberExt {
     /// </summary>
     public static int MathMod(this int a, int b) {
         return (a % b + b) % b;
+    }
+
+    public static T Map<T>(this T num, T min, T max, T newMin, T newMax) where T : INumber<T> {
+        var slope = (newMax - newMin) / (max - min);
+        return min + slope * (num - min);
     }
 }

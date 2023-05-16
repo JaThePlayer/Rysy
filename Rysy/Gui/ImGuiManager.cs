@@ -1,6 +1,8 @@
-﻿using CommunityToolkit.HighPerformance;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Extensions;
+using Rysy.Graphics;
+using Rysy.Helpers;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Gui;
@@ -91,6 +93,25 @@ public static class ImGuiManager {
         }
     }
 
+    private static bool _nullStylePushed;
+    public static void PushNullStyle() {
+        var color = (Color.LightGray * 0.8f).ToNumVec4();
+
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.PushStyleColor(ImGuiCol.Border, color);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
+        _nullStylePushed = true;
+    }
+
+    public static void PopNullStyle() {
+        if (_nullStylePushed) {
+            ImGui.PopStyleColor(2);
+            ImGui.PopStyleVar(2);
+            _nullStylePushed = false;
+        }
+    }
+
     /// <summary>
     /// Creates a menu with <see cref="ImGui.BeginMenu(string)"/> using elements from the <paramref name="source"/>.
     /// </summary>
@@ -131,72 +152,128 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool Combo<T>(string name, ref T value, Dictionary<T, string> values, ref string search, string? tooltip = null) where T : notnull {
-        /*
-        var val = value;
-        if (ImGui.BeginCombo(name, values.FirstOrDefault(p => p.Value.Equals(val)).Key ?? value!.ToString())) {
-            foreach (var item in values) {
-                if (ImGui.MenuItem(item.Key)) {
-                    value = item.Value;
-                }
-            }
-            ImGui.EndCombo();
-        }*/
+    public static bool Combo<T>(string name, ref T value, IDictionary<T, string> values, ref string search, string? tooltip = null) where T : notnull {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
         }
 
-        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
-            if (ImGui.InputText("Search", ref search, 512)) {
+        bool changed = false;
 
-            }
+        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
+            ImGui.InputText("Search", ref search, 512);
 
             foreach (var item in values.SearchFilter(i => i.Value, search)) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
-                    return true;
+                    changed = true;
                 }
             }
 
             ImGui.EndCombo();
         }
 
-        return false;
+        return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, Dictionary<T, string> values, Func<string, T> stringToValue, ref string search, string? tooltip = null) 
+    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null) where T : notnull {
+        var valueName = toString(value);
+        bool changed = false;
+
+        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
+            foreach (var item in values) {
+                if (ImGui.MenuItem(toString(item))) {
+                    value = item;
+                    changed = true;
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        return changed;
+    }
+
+    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search, string? tooltip = null)
         where T : notnull {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
         }
 
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - ImGui.CalcTextSize("+").X - ImGui.GetStyle().FramePadding.X * 3);
+        bool changed = false;
+
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var buttonWidth = ImGui.GetFrameHeight();
+
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         if (ImGui.InputText($"##text{name}", ref valueName, 128).WithTooltip(tooltip)) {
             value = stringToValue(valueName);
-            return true;
+            changed = true;
         }
 
-        ImGui.SameLine(0f,0f);
+        ImGui.SameLine(0f, xPadding);
 
         if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
-            if (ImGui.InputText("Search", ref search, 512)) {
-
-            }
+            ImGui.InputText("Search", ref search, 512);
 
             foreach (var item in values.SearchFilter(i => i.Value, search)) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
-                    return true;
+                    changed = true;
                 }
             }
 
             ImGui.EndCombo();
         }
-        ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
+        ImGui.SameLine(0f, xPadding);
         ImGui.Text(name);
         true.WithTooltip(tooltip);
 
-        return false;
+        return changed;
+    }
+
+    public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip) {
+        var colorHex = ColorHelper.ToString(color, format);
+        bool edited = false;
+
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var buttonWidth = ImGui.GetFrameHeight();
+
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
+        if (ImGui.InputText($"##text{label}", ref colorHex, 24).WithTooltip(tooltip)) {
+            if (ColorHelper.TryGet(colorHex, format, out var newColor)) {
+                color = newColor;
+            }
+            edited = true;
+        }
+
+        ImGui.SameLine(0f, xPadding);
+
+        switch (format) {
+            case ColorFormat.RGB:
+                var colorN3 = color.ToNumVec3();
+                if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                    color = new Color(colorN3);
+                    edited = true;
+                }
+                break;
+            case ColorFormat.RGBA:
+            case ColorFormat.ARGB:
+                var colorN4 = color.ToNumVec4();
+                if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                    color = new Color(colorN4);
+                    edited = true;
+                }
+                break;
+            default:
+                break;
+        }
+
+
+        ImGui.SameLine(0f, xPadding);
+        ImGui.Text(label);
+        true.WithTooltip(tooltip);
+
+        return edited;
     }
 
     public static void BeginWindowBottomBar(bool valid) {
@@ -220,7 +297,7 @@ public static class ImGuiManager {
         string longest = "";
 
         foreach (var str in strings) {
-            if (str.Length > longest.Length) 
+            if (str.Length > longest.Length)
                 longest = str;
 
             i++;
@@ -232,6 +309,31 @@ public static class ImGuiManager {
             ImGui.CalcTextSize(longest).X + style.WindowPadding.X * 2 + style.ItemSpacing.X,
             ImGui.GetTextLineHeightWithSpacing() * i + ImGui.GetFrameHeightWithSpacing() * 2
         );
+    }
+
+
+    private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new();
+    public static void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null) {
+        if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
+            if (t.Target != null) {
+                GuiRenderer.UnbindTexture(t.ID);
+                t.Target.Dispose();
+            }
+
+            t.Target = new(RysyEngine.GDM.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            t.ID = GuiRenderer.BindTexture(t.Target);
+            Targets[id] = t;
+        }
+
+        ImGui.Image(t.ID, new(w, h));
+
+        var g = RysyEngine.GDM.GraphicsDevice;
+        g.SetRenderTarget(t.Target);
+        g.Clear(Color.Transparent);
+        GFX.BeginBatch(camera);
+        renderFunc();
+        GFX.EndBatch();
+        g.SetRenderTarget(null);
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

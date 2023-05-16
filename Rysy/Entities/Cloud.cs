@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("cloud")]
-public class Cloud : SpriteEntity {
+public class Cloud : SpriteEntity, IPlaceable {
     public override string TexturePath => (Bool("fragile", false), Bool("small", false)) switch {
         (true, false) => "objects/clouds/fragile00",
         (true, true) => "objects/clouds/fragileRemix00",
@@ -14,4 +14,16 @@ public class Cloud : SpriteEntity {
     public override Vector2 Origin => new(.5f, 0f);
 
     public override int Depth => 0;
+
+    public static FieldList GetFields() => new(new {
+        fragile = false,
+        small = false
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("normal"),
+        new("fragile", new {
+            fragile = true,
+        }),
+    };
 }

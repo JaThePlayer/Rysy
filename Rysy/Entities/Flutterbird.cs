@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("flutterbird")]
-public class Flutterbird : SpriteEntity {
+public class Flutterbird : SpriteEntity, IPlaceable {
     private static readonly Color[] Colors = {
         "89FBFF".FromRGB(),
         "F0FC6C".FromRGB(),
@@ -19,4 +19,8 @@ public class Flutterbird : SpriteEntity {
     public override Color Color => Colors[Pos.SeededRandomExclusive(Colors.Length)];
 
     public override Vector2 Origin => new(0.5f, 1.0f);
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("flutterbird");
 }

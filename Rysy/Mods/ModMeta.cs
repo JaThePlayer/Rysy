@@ -1,29 +1,53 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.LuaSupport;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Rysy.Mods;
 
 public sealed class ModMeta : ILuaWrapper {
+    internal ModMeta() { }
+
+    /// <summary>
+    /// The module class of this mod.
+    /// </summary>
     public ModModule? Module { get; internal set; }
 
-
     private Assembly? _PluginAssembly;
+
+    /// <summary>
+    /// The assembly containing this plugin's code.
+    /// </summary>
     public Assembly? PluginAssembly {
         get => _PluginAssembly;
         internal set {
+            var oldAsm = _PluginAssembly;
             _PluginAssembly = value;
 
-            OnAssemblyReloaded?.Invoke(value!);
+            ModRegistry.ModAssemblyScannerInstance?.Invoke(this, oldAsm);
+            OnAssemblyReloaded?.Invoke(value);
         } 
+    }
+
+    private ModSettings? _Settings;
+    public ModSettings? Settings {
+        get => _Settings;
+        internal set {
+            _Settings = value;
+            // todo: lonn bindings
+        }
     }
 
     /// <summary>
     /// Gets called whenever the <see cref="PluginAssembly"/> gets reloaded.
     /// </summary>
-    public event Action<Assembly> OnAssemblyReloaded;
+    public event Action<Assembly?> OnAssemblyReloaded;
 
+    /// <summary>
+    /// The filesystem for this mod, used for retrieving assets contained in the mod.
+    /// </summary>
     public IModFilesystem Filesystem { get; internal set; }
 
     /// <summary>
@@ -40,6 +64,9 @@ public sealed class ModMeta : ILuaWrapper {
     /// The mod version, taken from the everest.yaml
     /// </summary>
     public Version Version => EverestYaml.Version;
+
+    [JsonIgnore]
+    public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
 
     public int Lua__index(Lua lua, long key) {
         throw new NotImplementedException();

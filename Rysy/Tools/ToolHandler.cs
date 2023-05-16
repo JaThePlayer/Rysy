@@ -1,9 +1,9 @@
 ﻿using ImGuiNET;
+using Microsoft.Win32;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.History;
-using Rysy.Scenes;
 
 namespace Rysy.Tools;
 
@@ -12,16 +12,32 @@ public class ToolHandler {
 
     public readonly HistoryHandler History;
 
-    public ToolHandler(HistoryHandler history) {
-        History = history;
-        Tools = new();
+    public readonly Input Input;
 
-        // TODO: autogen
-        AddTool(new BrushTool());
-        AddTool(new TileRectTool());
-        AddTool(new PlacementTool());
-        AddTool(new SelectionTool());
-        AddTool(new ScriptTool());
+    public readonly ToolRegistry Registry;
+
+    private static Tool Create(Type type, HistoryHandler history, Input input) {
+        var t = (Tool) Activator.CreateInstance(type)!;
+
+        t.History = history;
+        t.Input = input;
+        t.Init();
+
+        t.HotkeyHandler = new(input);
+        t.InitHotkeys(t.HotkeyHandler);
+
+        return t;
+    }
+
+    private static List<string> HardcodedOrder = new() { "brush", "rectangle", "placement", "selection", "script" };
+
+    public ToolHandler(HistoryHandler history, Input input, ToolRegistry? registry = null) {
+        History = history;
+        Input = input;
+        Registry = registry ?? ToolRegistry.Global;
+
+        CreateTools();
+        Registry.Tools.OnChanged += CreateTools;
 
         HotReloadHandler.OnHotReload += () => {
             _firstGui = true;
@@ -33,6 +49,23 @@ public class ToolHandler {
         EditorState.OnCurrentRoomChanged += CancelInteraction;
 
         history.OnUndo += CancelInteraction;
+        Input = input;
+    }
+
+    private void CreateTools() {
+        Tools = new();
+        foreach (var toolType in Registry.Tools) {
+            AddTool(Create(toolType, History, Input));
+        }
+        Tools = Tools.OrderBy(t => HardcodedOrder.IndexOf(t.Name)).ThenBy(t => t.Name).ToList();
+    }
+
+    public ToolHandler UsePersistence(bool value) {
+        foreach (var tool in Tools) {
+            tool.UsePersistence = value;
+        }
+
+        return this;
     }
 
     public void CancelInteraction() {
@@ -41,8 +74,6 @@ public class ToolHandler {
 
     private void AddTool(Tool tool) {
         Tools.Add(tool);
-        tool.History = History;
-        tool.Init();
     }
 
     public List<Tool> Tools;
@@ -58,7 +89,7 @@ public class ToolHandler {
 
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {
-            tool.HotkeyHandler = new();
+            tool.HotkeyHandler = new(Input);
             tool.InitHotkeys(tool.HotkeyHandler);
         }
 
@@ -90,18 +121,16 @@ public class ToolHandler {
 
     private bool _firstGui = true;
 
-    public void RenderGui(EditorScene editor) {
-        if (editor is not { Map: { } map }) {
-            return;
-        }
+    public void RenderGui() {
+        RenderToolList(_firstGui, out float toolHeight);
+        RenderLayerList(_firstGui, toolHeight);
 
-        RenderToolList(editor, _firstGui, out float toolHeight);
-        RenderLayerList(editor, _firstGui, toolHeight);
-        CurrentTool.RenderGui(editor, _firstGui);
+        if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size)
+            CurrentTool.RenderGui(size);
         _firstGui = false;
     }
 
-    private void RenderLayerList(EditorScene editor, bool firstGui, float toolListHeight) {
+    private void RenderLayerList(bool firstGui, float toolListHeight) {
         var tool = CurrentTool;
         var currentLayer = tool.Layer;
 
@@ -133,7 +162,7 @@ public class ToolHandler {
         ImGui.End();
     }
 
-    private void RenderToolList(EditorScene editor, bool firstGui, out float height) {
+    private void RenderToolList(bool firstGui, out float height) {
         height = 0f;
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
@@ -154,7 +183,7 @@ public class ToolHandler {
 
         if (ImGui.BeginListBox("##ToolToolsBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * Tools.Count + 5))) {
             foreach (var item in Tools) {
-                if (ImGui.Selectable(item.Name, CurrentTool == item)) {
+                if (ImGui.Selectable(item.Name.TranslateOrHumanize("rysy.tools"), CurrentTool == item)) {
                     CurrentTool = item;
                 }
             }
