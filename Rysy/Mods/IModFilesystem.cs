@@ -43,7 +43,7 @@ public interface IModFilesystem {
 }
 
 public sealed class WatchedAsset {
-    public Action<Stream> OnChanged { get; set; }
+    public Action<string>? OnChanged { get; set; }
 }
 
 
@@ -107,7 +107,11 @@ public static class ModFilesystemExtensions {
     public static bool TryWatchAndOpen(this IModFilesystem filesystem, string path, Action<Stream> callback) {
         if (filesystem.TryOpenFile(path, callback)) {
             filesystem.RegisterFilewatch(path, new() {
-                OnChanged = callback,
+                OnChanged = (path) => {
+                    filesystem.TryOpenFile(path, stream => {
+                        callback(stream);
+                    });
+                },
             });
 
             return true;

@@ -264,7 +264,7 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a rectangular tile grid fully made up of a specified id
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int w, int h) {
+    public IEnumerable<ISprite> GetSprites(Vector2 position, char id, int tileWidth, int tileHeight, Color color) {
         if (!Loaded) {
             yield break;
         }
@@ -272,34 +272,45 @@ public sealed class Autotiler {
         if (id == '0')
             yield break;
 
+        AutotiledSpriteList l = new() {
+            Sprites = new AutotiledSpriteList.AutotiledSprite[tileWidth, tileHeight],
+            Pos = position,
+            Color = color
+        };
+
         if (!Tilesets.TryGetValue(id, out var data)) {
             LogUnknownTileset((int) position.X, (int) position.Y, id);
-            yield return ISprite.Rect(new((int) position.X, (int) position.Y, w * 8, h * 8), Color.Pink);
+            yield return ISprite.Rect(new((int) position.X, (int) position.Y, tileWidth * 8, tileHeight * 8), Color.Pink);
             yield break;
         }
 
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                if (!data.GetFirstMatch(x, y, w, h, out var tiles)) {
+        for (int x = 0; x < tileWidth; x++) {
+            for (int y = 0; y < tileHeight; y++) {
+                if (!data.GetFirstMatch(x, y, tileWidth, tileHeight, out var tiles)) {
                     yield return ISprite.Rect(new((int) position.X + x * 8, (int) position.Y + y * 8, 8, 8), Color.Red);
                     continue;
                 }
 
                 var pos = position + new Vector2(x * 8, y * 8);
                 var tile = tiles[RandomExt.SeededRandom(pos) % (uint) tiles.Length];
-                yield return ISprite.FromTexture(pos, data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
+                //yield return ISprite.FromTexture(pos, data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
+                l.Sprites[x, y] = new() {
+                    T = data.Texture,
+                    Subtext = ISprite.FromTexture(default, data.Texture).GetSubtextureRect(tile.X, tile.Y, 8, 8)
+                };
             }
         }
+
+        yield return l;
     }
 
     /// <summary>
     /// Generates sprites needed to render a tile grid
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid) {
+    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Color color) {
         if (!Loaded) {
             yield break;
         }
-
 
         List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
@@ -308,6 +319,7 @@ public sealed class Autotiler {
         AutotiledSpriteList l = new() {
             Sprites = new AutotiledSpriteList.AutotiledSprite[w, h],
             Pos = position,
+            Color = color,
         };
 
         for (int i = 0; i < l.Sprites.GetLength(0); i++) {
@@ -390,7 +402,7 @@ public sealed class Autotiler {
 
             int left, right, top, bot;
             if (cam is { }) {
-                var scrPos = cam.Pos - offset;
+                var scrPos = -Pos + cam.Pos - offset;
                 left = Math.Max(0, (int) scrPos.X / 8);
                 right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 1);
                 top = Math.Max(0, (int) scrPos.Y / 8);
@@ -417,6 +429,9 @@ public sealed class Autotiler {
         public void Render() {
             Render(null, default);
         }
+
+        public ISelectionCollider GetCollider()
+            => ISelectionCollider.FromRect(Pos, Sprites.GetLength(0) * 8, Sprites.GetLength(1) * 8);
 
         public struct AutotiledSprite {
             public VirtTexture T;

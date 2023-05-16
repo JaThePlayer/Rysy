@@ -3,15 +3,20 @@
 namespace Rysy.Entities;
 
 [CustomEntity("lockBlock")]
-public sealed class KeyDoor : SpriteEntity {
+public sealed class KeyDoor : SpriteBankEntity, IPlaceable {
     public override int Depth => Depths.Solids;
 
-    public override string TexturePath => Attr("sprite", "wood") switch {
-        "temple_a" => "objects/door/lockdoorTempleA00",
-        "temple_b" => "objects/door/lockdoorTempleB00",
-        "moon" => "objects/door/moonDoor11",
-        "wood" or _ => "objects/door/lockdoor00",
-    };
+    public override string SpriteBankEntry => $"lockdoor_{Attr("sprite", "wood")}";
+
+    public override string Animation => "idle";
 
     public override Vector2 Offset => new(16f);
+
+    public static FieldList GetFields() => new(new {
+        sprite = Fields.SpriteBankPath("wood", "^lockdoor_(.*)"),
+        unlock_sfx = "",
+        stepMusicProgress = false
+    });
+
+    public static PlacementList GetPlacements() => new("wood");
 }

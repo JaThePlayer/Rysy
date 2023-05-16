@@ -1,5 +1,6 @@
 ﻿namespace Rysy.Graphics;
 
+/*
 public class DynamicAtlas : IAtlas {
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.InvariantCultureIgnoreCase);
 
@@ -135,3 +136,4 @@ public class DynamicAtlas : IAtlas {
         throw new NotImplementedException();
     }
 }
+*/

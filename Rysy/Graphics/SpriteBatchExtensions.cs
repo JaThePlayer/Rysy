@@ -17,19 +17,22 @@ public static class SpriteBatchExtensions {
     }
 
     public static void DrawCircle(this SpriteBatch b, Vector2 center, float radius, int segments, Color color) {
+        if (color.A == 0)
+            return;
+
         var angle = 0f;
         var slice = MathF.PI * 2f / segments;
-        var start = center + pointOnCircle(0f);
+        var start = PointOnCircle(center, radius, 0);
 
         for (int i = 0; i < segments; i++) {
             angle += slice;
-            var end = center + pointOnCircle(angle);
+            var end = PointOnCircle(center, radius, angle);
 
             b.DrawLine(start, end, color);
 
             start = end;
         }
-
-        Vector2 pointOnCircle(float angle) => new(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius);
     }
+
+    private static Vector2 PointOnCircle(Vector2 center, float radius, float angle) => center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
 }

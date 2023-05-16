@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using KeraLua;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
@@ -47,7 +48,8 @@ public static class CodeCompilationHelper {
 
         var references = new List<MetadataReference> {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Lua).Assembly.Location),
         };
 
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -55,10 +57,12 @@ public static class CodeCompilationHelper {
         foreach (var asm in assemblies!) {
             if (!string.IsNullOrWhiteSpace(asm.Location))
                 references.Add(MetadataReference.CreateFromFile(asm.Location));
+
+            //Console.WriteLine(asm.FullName);
         }
 
         _CachedReferences = references;
-
+        
         return references;
     }
 
@@ -73,7 +77,7 @@ public static class CodeCompilationHelper {
         return MD5.HashData(asmStream);
     }
 
-    public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string cachePath, out Assembly? asm, out EmitResult? emitResult) {
+    public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string cachePath, bool addGlobalUsings, out Assembly? asm, out EmitResult? emitResult) {
         asm = null;
         emitResult = null;
 
@@ -106,7 +110,7 @@ public static class CodeCompilationHelper {
         var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
 
         IEnumerable<(string SourceCode, string Filename)> allfiles = files;
-        if (!files.Any(f => f.Filename.EndsWith("GlobalUsings.cs"))) {
+        if (addGlobalUsings && !files.Any(f => f.Filename.EndsWith("GlobalUsings.cs"))) {
             allfiles = allfiles.Append((SourceCode: GlobalUsingsCode, Filename: "GlobalUsings.gen.cs"));
         }
 

@@ -1,6 +1,8 @@
 ﻿using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.History;
 using Rysy.LuaSupport;
+using System.Linq;
 
 namespace Rysy.Helpers;
 
@@ -43,7 +45,17 @@ public static class CopypasteHelper {
                 return null;
         }
 
-        return PasteEntitylikeSelections(history, room, pasted, pos);
+        var entitySelections = CreateSelectionsFromCopied(room, pasted, out var entities);
+
+        var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(pasted)).ToList());
+
+        var entityPlaceAction = PasteEntitylikeSelections(history, room, entitySelections, entities, offset);
+        //var entitySelections = PasteEntitylikeSelections(history, room, pasted, pos);
+        var tileSelections = PasteTileSelections(history, room, pasted, offset, out var tileAction);
+
+        history?.ApplyNewAction(new MergedAction(entityPlaceAction, tileAction));
+
+        return entitySelections.Concat(tileSelections).ToList();
     }
 
     public static void CopySelectionsToClipboard(List<Selection>? selections) {
@@ -95,7 +107,7 @@ static string Compress(byte[] input) {
         return copied;
     }
 
-    private static List<Selection> PasteRoomSelections(HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2 pos) {
+    private static List<Selection> PasteRoomSelections(HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
         var rooms = pasted.Where(s => s.Layer == SelectionLayer.Rooms).Select(s => {
             var room = new Room();
             room.Map = map;
@@ -107,7 +119,7 @@ static string Compress(byte[] input) {
         var topLeft = new Vector2(rooms.Min(e => e.X), rooms.Min(e => e.Y)).Snap(8);
         var bottomRight = new Vector2(rooms.Max(e => e.X + e.Width), rooms.Max(e => e.Y + e.Height)).Snap(8);
 
-        var mousePos = EditorState.Camera.ScreenToReal(Input.Mouse.Pos).ToVector2().Snap(8);
+        var mousePos = pos ?? EditorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(8);
 
         var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f).Snap(8)).ToPoint();
 
@@ -128,16 +140,21 @@ static string Compress(byte[] input) {
         return selections;
     }
 
+    private static Vector2 GetCenteringOffset(Vector2 pos, List<Rectangle> rectangles) {
+        var topLeft = new Vector2(rectangles.Min(e => e.X), rectangles.Min(e => e.Y)).Snap(8);
+        var bottomRight = new Vector2(rectangles.Max(e => e.Right), rectangles.Max(e => e.Bottom)).Snap(8);
+
+        var offset = (-topLeft + pos - ((bottomRight - topLeft) / 2f)).Snap(8);
+
+        return offset;
+    }
+
+    /*
     private static List<Selection> PasteEntitylikeSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 pos) {
         List<Selection> newSelections = CreateSelectionsFromCopied(room, pasted, out var entities);
 
         if (entities.Count > 0) {
-            var topLeft = new Vector2(entities.Min(e => e.X), entities.Min(e => e.Y)).Snap(8);
-            var bottomRight = new Vector2(entities.Max(e => e.Rectangle.Right), entities.Max(e => e.Rectangle.Bottom)).Snap(8);
-
-            //var mousePos = room.WorldToRoomPos(EditorState.Camera, Input.Mouse.Pos).ToVector2().Snap(8);
-
-            var offset = (-topLeft + pos - ((bottomRight - topLeft) / 2f)).Snap(8);
+            var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).ToList());
 
             foreach (var entity in entities) {
                 entity.Pos += offset;
@@ -152,13 +169,78 @@ static string Compress(byte[] input) {
         }
 
         return newSelections;
+    }*/
+
+    private static IHistoryAction? PasteEntitylikeSelections(HistoryHandler? history, Room room, List<Selection> selections, List<Entity> entities, Vector2 centeringOffset) {
+        if (entities.Count > 0) {
+            var offset = centeringOffset;
+
+            foreach (var entity in entities) {
+                entity.Pos += offset;
+
+                if (entity.Nodes is { } nodes)
+                    foreach (var node in nodes) {
+                        node.Pos += offset;
+                    }
+            }
+
+            return AddEntityAction.AddAll(entities, room);
+        }
+
+        return null;
+    }
+
+    private static List<Rectangle> GetTileRectangles(List<CopiedSelection> pasted) {
+        return pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
+            var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
+            var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
+
+            var rPos = new Vector2(x, y).GridPosFloor(8);
+
+            return new Rectangle(rPos.X * 8 - 8, rPos.Y * 8 - 8, w * 8, h * 8);
+        }).ToList();
+    }
+
+    private static List<Selection> PasteTileSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 offset, out IHistoryAction action) {
+        //if (history is null)
+        //    return new();
+
+        var actions = new List<IHistoryAction>();
+
+        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
+            var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
+            var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
+
+            var dest = s.Layer switch {
+                SelectionLayer.FGTiles => room.FG,
+                _ => room.BG,
+            };
+            var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
+            var rPos = new Vector2(x, y).GridPosFloor(8);
+
+
+            //offset = GetCenteringOffset(pos, new() { new(rPos.X * 8 - 8, rPos.Y * 8 - 8, w * 8, h * 8) });
+            rPos += (offset / 8).ToPoint();
+
+
+            var handler = new Tilegrid.RectSelectionHandler(dest, new(rPos.X * 8 - 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
+            var move = handler.MoveBy(new(8, 0));
+            actions.Add(move);
+            //history?.ApplyNewAction(move);
+            //move.Apply();
+
+            return new Selection(handler);
+        }).SelectWhereNotNull(s => s).ToList();
+
+        action = actions.MergeActions();
+        return newSelections;
     }
 
     private static List<Selection> CreateSelectionsFromCopied(Room room, List<CopiedSelection> pasted, out List<Entity> entities) {
         entities = new();
         var entitiesNotRef = entities;
 
-        var newSelections = pasted.SelectMany(s => {
+        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers).SelectMany(s => {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
             e.ID = 0; // set the ID to 0 so that it gets auto-assigned later
             entitiesNotRef.Add(e);

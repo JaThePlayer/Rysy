@@ -13,7 +13,7 @@ public class EntityPropertyWindow : FormWindow {
     private HistoryHandler History;
     private Action HistoryHook;
 
-    public static FieldList GetFields(Entity main) {
+    public static (FieldList, Func<string, bool> exists) GetFields(Entity main) {
         var fieldInfo = EntityRegistry.GetFields(main);
 
         var fields = new FieldList();
@@ -49,7 +49,7 @@ public class EntityPropertyWindow : FormWindow {
                 if (fields.TryGetValue(k, out var knownFieldType)) {
                     fields[k].SetDefault(v);
                 } else {
-                    fields[k] = Fields.GuessFromValue(v)!;
+                    fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
                 }
             }
         }
@@ -66,13 +66,16 @@ public class EntityPropertyWindow : FormWindow {
             f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
         }
 
-        return fields;
+        return (fields, main.EntityData.Has);
     }
 
-    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base(GetFields(main), $"Edit Entity - {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
+    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
         Main = main;
         All = all;
         History = history;
+
+        var (fields, exists) = GetFields(main);
+        Init(fields, exists);
 
         OnChanged = (edited) => {
             History.ApplyNewAction(new EntityEditAction(All, edited));
@@ -92,15 +95,23 @@ public class EntityPropertyWindow : FormWindow {
 
         foreach (var prop in FieldList) {
             var name = prop.Name;
-            var inMain = Main.EntityData.TryGetValue(name, out var current);
+            var exists = Main.EntityData.TryGetValue(name, out var current);
+            var propValue = exists ? prop.ValueOrDefault() : prop.Value;
 
+            /*
             if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
                 current switch {
-                    string currStr => currStr != (string) prop.Value,
-                    _ => !current!.Equals(prop.Value)
+                    string currStr => currStr != (string?) prop.Value,
+                    null => prop.Value != current,
+                    _ => !current.Equals(prop.Value)
                 }
             )) {
                 EditedValues[name] = prop.Value;
+            }*/
+            if (!(current?.Equals(propValue) ?? current == propValue)) {
+
+                EditedValues[name] = propValue;
+                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }
     }

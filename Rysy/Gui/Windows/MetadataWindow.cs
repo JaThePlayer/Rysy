@@ -28,7 +28,7 @@ public sealed class MetadataWindow : Window {
         ["ForegroundTiles"] = Fields.String(map.ForegroundTiles).AllowNull(),
         ["Icon"] = Fields.String(map.Icon).AllowNull(),
         ["Interlude"] = Fields.Bool(map.Interlude ?? false),
-        ["IntroType"] = Fields.EnumNamesDropdown<IntroTypes>(map.IntroType).AllowNull(),
+        ["IntroType"] = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(map.IntroType).AllowNull(),
         ["Portraits"] = Fields.String(map.Portraits).AllowNull(),
         ["PostcardSoundID"] = Fields.String(map.PostcardSoundID).AllowNull(),
         ["Sprites"] = Fields.String(map.Sprites).AllowNull(),
@@ -41,7 +41,7 @@ public sealed class MetadataWindow : Window {
     public static FieldList GetModeFieldInfo(MapMetadata map) => AddTooltips(new() {
         ["OverrideASideMeta"] = Fields.Bool(map.OverrideASideMeta ?? false),
         ["mode:HeartIsEnd"] = Fields.Bool(map.Mode.HeartIsEnd ?? false),
-        ["mode:Inventory"] = Fields.EnumNamesDropdown<Inventories>(map.Mode.Inventory).AllowNull(),
+        ["mode:Inventory"] = Fields.EnumNamesDropdown<CelesteEnums.Inventories>(map.Mode.Inventory).AllowNull(),
         //["mode:PoemID"] = Fields.String(map.Mode.PoemID).AllowNull(),
         ["mode:SeekerSlowdown"] = Fields.Bool(map.Mode.SeekerSlowdown ?? false),
         ["mode:StartLevel"] = Fields.String(map.Mode.StartLevel).AllowNull(),

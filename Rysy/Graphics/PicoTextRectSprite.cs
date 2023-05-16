@@ -36,4 +36,6 @@ public record struct PicoTextRectSprite : ISprite {
 
         Render();
     }
+
+    public ISelectionCollider GetCollider() => ISelectionCollider.FromRect(Pos);
 }

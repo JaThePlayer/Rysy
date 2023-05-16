@@ -21,22 +21,43 @@ public static class ClutterBlockHelper {
 }
 
 [CustomEntity("yellowBlocks")]
-public sealed class YellowBlocks : Entity, ISolid {
+public sealed class YellowBlocks : Entity, ISolid, IPlaceable {
     public override int Depth => -9998;
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("yellow");
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
 
     public override IEnumerable<ISprite> GetSprites() => ClutterBlockHelper.GetSprites(this, "objects/resortclutter/yellow");
 }
 
 [CustomEntity("greenBlocks")]
-public sealed class GreenBlocks : Entity, ISolid {
+public sealed class GreenBlocks : Entity, ISolid, IPlaceable {
     public override int Depth => -9998;
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("green");
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
 
     public override IEnumerable<ISprite> GetSprites() => ClutterBlockHelper.GetSprites(this, "objects/resortclutter/green");
 }
 
 [CustomEntity("redBlocks")]
-public sealed class RedBlocks : Entity, ISolid {
+public sealed class RedBlocks : Entity, ISolid, IPlaceable {
     public override int Depth => -9998;
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("red");
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
 
     public override IEnumerable<ISprite> GetSprites() => ClutterBlockHelper.GetSprites(this, "objects/resortclutter/red");
 }

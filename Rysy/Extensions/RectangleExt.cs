@@ -7,16 +7,38 @@ public static class RectangleExt {
     public static Rectangle FromPoints(Point a, Point b) {
         //we need to figure out the top left and bottom right coordinates
         //we need to account for the fact that a and b could be any two opposite points of a rectangle, not always coming into this method as topleft and bottomright already.
-        int smallestX = Math.Min(a.X, b.X); //Smallest X
-        int smallestY = Math.Min(a.Y, b.Y); //Smallest Y
-        int largestX = Math.Max(a.X, b.X);  //Largest X
-        int largestY = Math.Max(a.Y, b.Y);  //Largest Y
+        int smallestX = Math.Min(a.X, b.X);
+        int smallestY = Math.Min(a.Y, b.Y);
+        int largestX = Math.Max(a.X, b.X);
+        int largestY = Math.Max(a.Y, b.Y);
 
-        //calc the width and height
         int width = largestX - smallestX;
         int height = largestY - smallestY;
 
-        //assuming Y is small at the top of screen
+        return new Rectangle(smallestX, smallestY, width, height);
+    }
+
+    public static Rectangle FromPoints(Vector2[] points) {
+        int smallestX = (int) points.Min(v => v.X);
+        int smallestY = (int) points.Min(v => v.Y);
+        int largestX = (int) points.Max(v => v.X);
+        int largestY = (int) points.Max(v => v.Y);
+
+        int width = largestX - smallestX;
+        int height = largestY - smallestY;
+
+        return new Rectangle(smallestX, smallestY, width, height);
+    }
+
+    public static Rectangle Merge(Rectangle a, Rectangle b) {
+        int smallestX = int.Min(a.Left, b.Left);
+        int smallestY = int.Min(a.Top, b.Top);
+        int largestX = int.Max(a.Right, b.Right);
+        int largestY = int.Max(a.Bottom, b.Bottom);
+
+        int width = largestX - smallestX;
+        int height = largestY - smallestY;
+
         return new Rectangle(smallestX, smallestY, width, height);
     }
 

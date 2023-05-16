@@ -48,6 +48,8 @@ public static class EditorState {
 
             _currentMap = value;
 
+            CurrentRoom = null;
+
             OnMapChanged?.Invoke();
         }
     }

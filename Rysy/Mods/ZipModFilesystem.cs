@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using System.Collections.Concurrent;
+using System.IO;
 using System.IO.Compression;
 
 namespace Rysy.Mods;
@@ -39,11 +40,17 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             foreach (var file in WatchedAssets) {
                 foreach (var asset in file.Value) {
+                    /*
                     TryOpenFile(file.Key, (stream) => {
                         asset.OnChanged(stream);
 
                         return true;
-                    }, out _);
+                    }, out _);*/
+                    try {
+                        asset.OnChanged?.Invoke(file.Key);
+                    } catch (Exception ex) {
+                        Logger.Error(ex, $"Error when hot reloading {file.Key}");
+                    }
                 }
             }
         };

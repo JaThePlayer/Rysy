@@ -146,6 +146,10 @@ public static partial class StringExt {
         return newName;
     }
 
+
+    /// <summary>
+    /// Converts the given string to create a string that's a valid filename, by replacing all illegal characters with an underscore.
+    /// </summary>
     public static string ToValidFilename(this string str) {
         if (str == null)
             return string.Empty;
@@ -195,6 +199,12 @@ public static partial class StringExt {
     /// If no translation is found, returns the string itself.
     /// </summary>
     public static string Translate(this string str) => LangRegistry.Translate(str);
+
+    /// <summary>
+    /// Translates the string using <see cref="LangRegistry.Translate(string)"/>, then formats it using <see cref="string.Format(string, object?[])"/>
+    /// If no translation is found, formats the string itself.
+    /// </summary>
+    public static string TranslateFormatted(this string str, params object[] args) => string.Format(LangRegistry.Translate(str), args);
 
     /// <summary>
     /// Translates the string using <see cref="LangRegistry.TranslateOrNull(string)"/>.

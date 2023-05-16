@@ -7,7 +7,7 @@ namespace Rysy;
 public abstract class Scene {
     private List<Window> Windows = new();
 
-    public HotkeyHandler Hotkeys { get; private set; } = new();
+    public HotkeyHandler Hotkeys { get; private set; }
 
     public Scene() {
         RemoveWindow = (w) => {
@@ -25,12 +25,12 @@ public abstract class Scene {
     }
 
     public virtual void SetupHotkeys() {
-        Hotkeys = new();
+        Hotkeys = new(Input.Global);
     }
 
     public virtual void Update() {
         if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantCaptureMouse)
-            Hotkeys.Update();
+            Hotkeys?.Update();
 
         TimeActive += Time.Delta;
     }

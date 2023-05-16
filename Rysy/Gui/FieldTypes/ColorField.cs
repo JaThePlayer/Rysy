@@ -1,10 +1,10 @@
-﻿using ImGuiNET;
-using Rysy.Extensions;
-using Rysy.Helpers;
+﻿using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ColorField : Field {
+public record class ColorField : Field, ILonnField {
+    public static string Name => "color";
+
     public Color Default { get; set; }
 
     public bool XnaColorsAllowed { get; set; } = true;
@@ -31,6 +31,13 @@ public record class ColorField : Field {
         return ColorHelper.TryGet(value?.ToString() ?? "", Format, out color, XnaColorsAllowed);
     }
 
+    public override string ValueToString(object? value) {
+        return value switch {
+            Color c => ColorHelper.ToString(c, Format),
+            _ => base.ValueToString(value),
+        };
+    }
+
     public override bool IsValid(object? value) {
         return ValueToColor(value, out _) && base.IsValid(value);
     }
@@ -40,22 +47,8 @@ public record class ColorField : Field {
             color = Color.White;
         }
 
-        switch (Format) {
-            case ColorFormat.RGB: {
-                var c = color.ToNumVec3();
-                if (ImGui.ColorEdit3(fieldName, ref c, ImGuiColorEditFlags.DisplayHex).WithTooltip(Tooltip)) {
-                    return new Color(c).ToString(Format);
-                }
-                break;
-            }
-            case ColorFormat.ARGB:
-            case ColorFormat.RGBA: {
-                var c = color.ToNumVec4();
-                if (ImGui.ColorEdit4(fieldName, ref c, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.DisplayHex).WithTooltip(Tooltip)) {
-                    return new Color(c).ToString(Format);
-                }
-                break;
-            }
+        if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip)) {
+            return color.ToString(Format);
         }
 
         return null;
@@ -67,5 +60,16 @@ public record class ColorField : Field {
         XnaColorsAllowed = true;
 
         return this;
+    }
+
+    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) {
+        var allowXNA = (bool) Convert.ChangeType(fieldInfoEntry.GetValueOrDefault("allowXNAColors", false), typeof(bool));
+        var defColor = def is string defString ? ColorHelper.Get(defString) : Color.White;
+
+        var colorField = Fields.RGBA(defColor);
+        if (allowXNA)
+            colorField.AllowXNAColors();
+
+        return colorField;
     }
 }

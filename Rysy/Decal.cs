@@ -121,7 +121,7 @@ public sealed class Decal : Entity, IPlaceable {
         return clone;
     }
 
-    public static List<Placement>? GetPlacements() => new();
+    public static PlacementList GetPlacements() => new();
 
     public static FieldList GetFields() => new() { 
         ["texture"] = Fields.String(""),

@@ -29,6 +29,11 @@ public abstract class SpriteEntity : Entity {
     public virtual float Rotation => 0f;
 
     /// <summary>
+    /// The scale of the sprite.
+    /// </summary>
+    public virtual Vector2 Scale => Vector2.One;
+
+    /// <summary>
     /// How many pixels to offset the sprite.
     /// </summary>
     public virtual Vector2 Offset => default;
@@ -48,6 +53,7 @@ public abstract class SpriteEntity : Entity {
             OutlineColor = OutlineColor,
             Color = Color,
             Rotation = Rotation,
+            Scale = Scale,
         };
     }
 }

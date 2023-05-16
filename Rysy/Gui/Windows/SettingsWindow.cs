@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Mods;
 using Rysy.Platforms;
 
 namespace Rysy.Gui.Windows;
@@ -7,6 +8,8 @@ public class SettingsWindow : Window {
     private const string REQUIRES_RELOAD = "Requires a reload. Changing this value might immediately reload Rysy.";
 
     private SettingWindowData Data = new();
+
+    private ModMeta? SelectedMod = null;
 
     private class SettingWindowData {
         public bool ProfileSettingsChanged = false;
@@ -106,7 +109,7 @@ public class SettingsWindow : Window {
                 hotkey = changed;
                 invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey));
             }
-            
+
             if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {
                 var edited = Data.EditedHotkeys ??= new();
 
@@ -133,46 +136,63 @@ public class SettingsWindow : Window {
     private void ThemeBar() {
         var windowData = Data;
 
-        if (ImGui.BeginTabItem("Themes")) {
-            var theme = Settings.Instance.Theme;
-
-            windowData.ThemeList ??= Directory.EnumerateFiles("Assets/themes", "*.json").Select(f => Path.GetRelativePath("Assets/themes", f).TrimEnd(".json")).ToArray();
-            
-            if (ImGui.BeginCombo("Theme", theme)) {
-                foreach (var themeName in windowData.ThemeList) {
-                    if (ImGui.Selectable(themeName)) {
-                        Settings.Instance.Theme = themeName;
-                        Settings.Instance.Save();
-
-                        ImGuiThemer.LoadTheme(themeName);
-                    }
-                }
-
-                ImGui.EndCombo();
-            }
-
-            ImGui.Separator();
-
-            var fontSize = Settings.Instance.FontSize;
-            if (ImGui.InputInt("Font Size", ref fontSize)) {
-                Settings.Instance.FontSize = fontSize;
-
-                Settings.Instance.Save();
-            }
-
-            ImGui.EndTabItem();
+        if (!ImGui.BeginTabItem("Themes")) {
+            return;
         }
+
+        var theme = Settings.Instance.Theme;
+
+        windowData.ThemeList ??= Directory.EnumerateFiles("Assets/themes", "*.json").Select(f => Path.GetRelativePath("Assets/themes", f).TrimEnd(".json")).ToArray();
+
+        if (ImGui.BeginCombo("Theme", theme)) {
+            foreach (var themeName in windowData.ThemeList) {
+                if (ImGui.Selectable(themeName)) {
+                    Settings.Instance.Theme = themeName;
+                    Settings.Instance.Save();
+
+                    ImGuiThemer.LoadTheme(themeName);
+                }
+            }
+
+            ImGui.EndCombo();
+        }
+
+        ImGui.Separator();
+
+        var fontSize = Settings.Instance.FontSize;
+        if (ImGui.InputInt("Font Size", ref fontSize)) {
+            Settings.Instance.FontSize = fontSize;
+
+            Settings.Instance.Save();
+        }
+
+        ImGui.EndTabItem();
     }
 
+    private string ModBarSearch = "";
     private void ModBar() {
         if (!ImGui.BeginTabItem("Mods")) {
             return;
         }
 
-        var m = Settings.Instance.ReadBlacklist;
-        if (ImGui.Checkbox("Read blacklist", ref m).WithTooltip("Whether Rysy should read the Everest blacklist file.")) {
-            Settings.Instance.ReadBlacklist = m;
+        var readBlacklist = Settings.Instance.ReadBlacklist;
+        if (ImGui.Checkbox("Read blacklist", ref readBlacklist).WithTooltip("Whether Rysy should read the Everest blacklist file.")) {
+            Settings.Instance.ReadBlacklist = readBlacklist;
             Settings.Instance.Save();
+        }
+
+        ImGui.Separator();
+
+        var modsWithSettings = ModRegistry.Mods.Where(m => m.Value.Settings?.HasAnyData() ?? false).ToDictionary(m => m.Value, m => m.Key);
+        var mod = SelectedMod ?? modsWithSettings.First().Key;
+        if (ImGuiManager.Combo("Selected Mod", ref mod, modsWithSettings, ref ModBarSearch)) {
+            SelectedMod = mod;
+        }
+
+        ImGui.Text(mod.ToString());
+
+        if (ImGui.Button("rysy.settings.mods.editSettings.name".Translate()).WithTooltip("rysy.settings.mods.editSettings.tooltip")) {
+            RysyEngine.Scene.AddWindow(new ModSettingsWindow(mod));
         }
 
         ImGui.EndTabItem();
@@ -217,8 +237,6 @@ public class SettingsWindow : Window {
                         SetProfile(name, isNew: false);
                     }
                 }
-                
-
 
                 if (ImGui.Button("New")) {
                     string text = "";
@@ -269,8 +287,11 @@ public class SettingsWindow : Window {
         Settings.Save(Settings.Instance);
 
         if (isNew) {
-            var profile = new Profile(Profile.Instance);
+            var profile = new Profile();
             profile.Save();
+            Profile.Instance = profile;
+            Persistence.Instance = new();
+            Persistence.Save(Persistence.Instance);
         }
 
         QueueReload();

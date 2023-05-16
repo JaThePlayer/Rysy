@@ -72,7 +72,7 @@ public abstract class TileTool : Tool {
     }
 
     public void RenderTiles(Vector2 loc, int w, int h) {
-        foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h) ?? Array.Empty<ISprite>()) {
+        foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h, Color.White) ?? Array.Empty<ISprite>()) {
             item.WithMultipliedAlpha(0.3f).Render();
         }
     }
@@ -98,7 +98,7 @@ public abstract class TileTool : Tool {
         _ => null,
     };
 
-    protected static Point GetMouseTilePos(Camera camera, Room room, bool round = false) {
+    protected Point GetMouseTilePos(Camera camera, Room room, bool round = false) {
         var pos = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2());
         if (round) {
             return pos.GridPosRound(8);

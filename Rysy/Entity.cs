@@ -7,6 +7,7 @@ using Rysy.History;
 using Rysy.LuaSupport;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -131,15 +132,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         }
 
         try {
-            var firstSprite = GetSprites().FirstOrDefault();
-
+            /*
             if (firstSprite is Sprite s) {
                 return ISelectionCollider.FromSprite(s);
             }
 
             if (firstSprite is RectangleSprite rectSprite) {
                 return ISelectionCollider.FromRect(rectSprite.Pos);
-            }
+            }*/
+            if (GetSprites().FirstOrDefault() is { } firstSprite)
+                return firstSprite.GetCollider();
         } catch { }
 
         return ISelectionCollider.FromRect(Rectangle);
@@ -149,13 +151,11 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         var node = Nodes![nodeIndex];
 
         if (Width > 0 || Height > 0) {
-            var rect = Rectangle;
-            return ISelectionCollider.FromRect(rect.MovedTo(node));
+            return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
         }
 
-        var firstSprite = NodeHelper.GetNodeSpritesForNode(this, nodeIndex).FirstOrDefault();
-        if (firstSprite is Sprite s) {
-            return ISelectionCollider.FromSprite(s);
+        if (GetNodeSprites(nodeIndex).FirstOrDefault() is { } firstSprite) {
+            return firstSprite.GetCollider();
         }
 
         return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
@@ -171,10 +171,53 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         }
     }
 
+    /// <summary>
+    /// Gets the sprites needed to render the node <paramref name="nodeIndex"/>.
+    /// </summary>
+    public virtual IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
+        var node = Nodes![nodeIndex];
+        var oldPos = Pos;
+        Pos = node;
+        try {
+            var spr = GetSprites();
+            foreach (var item in spr) {
+                yield return item.WithMultipliedAlpha(.5f);
+            }
+        } finally {
+            Pos = oldPos;
+        }
+    }
+
+    /// <summary>
+    /// Gets the sprites needed to render lines which connect the nodes to the entity.
+    /// </summary>
+    public virtual IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this);
+
+    /// <summary>
+    /// Gets the sprites needed to render all of the nodes of this entity.
+    /// By default, this calls <see cref="GetNodePathSprites"/> and <see cref="GetNodeSprites(int)"/>
+    /// </summary>
+    public virtual IEnumerable<ISprite> GetAllNodeSprites() {
+        if (Nodes is null or []) {
+            yield break;
+        }
+
+        foreach (var item in GetNodePathSprites()) {
+            yield return item;
+        }
+
+        for (int i = 0; i < Nodes.Count; i++) {
+            foreach (var item in GetNodeSprites(i)) {
+                yield return item;
+            }
+        }
+    }
+
     public IEnumerable<ISprite> GetSpritesWithNodes() {
         try {
             if (Nodes is { }) {
-                return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this)).WithErrorCatch(LogError).SetDepth(Depth);
+                //return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this)).WithErrorCatch(LogError).SetDepth(Depth);
+                return GetSprites().Concat(GetAllNodeSprites()).WithErrorCatch(LogError).SetDepth(Depth);
             }
 
             return GetSprites().WithErrorCatch(LogError).SetDepth(Depth);
@@ -310,6 +353,15 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         if (ID == 0) {
             el.Attributes.Remove("id");
         }
+        if (Width == 0) {
+            el.Attributes.Remove("width");
+        }
+        if (Height == 0) {
+            el.Attributes.Remove("height");
+        }
+        if (EditorLayer == 0) {
+            el.Attributes.Remove("_editorLayer");
+        }
 
         el.Children = Nodes is { Count: > 0 } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
             Attributes = new() {
@@ -317,6 +369,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
                 ["y"] = n.Y,
             }
         }).ToArray() : null!;
+
         return el;
     }
 
@@ -425,6 +478,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
 
         public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
             throw new LuaException(lua, $"Tried to index NodeWrapper with non-number key: {key} [{typeof(ReadOnlySpan<char>)}]");
+        }
+
+        public int Lua__len(Lua lua) {
+            lua.PushInteger(Entity.Nodes?.Count ?? 0);
+
+            return 1;
         }
     }
     #endregion

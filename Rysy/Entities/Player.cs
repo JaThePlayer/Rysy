@@ -10,9 +10,7 @@ public class Player : SpriteEntity, IPlaceable {
 
     public static FieldList GetFields() => new();
 
-    public static List<Placement>? GetPlacements() => new() {
-        new Placement("Player (Spawn Point)").WithTooltip("Defines a spawnpoint for this room")
-    };
+    public static PlacementList GetPlacements() => new("player");
 
     // vanilla maps have "width" defined on spawnpoints for some reason, breaking automatic selections...
     public override ISelectionCollider GetMainSelection() 

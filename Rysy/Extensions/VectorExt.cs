@@ -36,9 +36,8 @@ public static class VectorExt {
 
         float tx = v.X;
         float ty = v.Y;
-        v.X = cos * tx - sin * ty;
-        v.Y = sin * tx + cos * ty;
-        return v;
+
+        return new(cos * tx - sin * ty, sin * tx + cos * ty);
     }
 
     //public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);

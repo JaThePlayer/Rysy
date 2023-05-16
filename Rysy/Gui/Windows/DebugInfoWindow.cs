@@ -40,7 +40,7 @@ public class DebugInfoWindow : Window {
 
         if (RysyEngine.Scene is EditorScene editor) {
             if (ImGui.CollapsingHeader("Lonn Entity stats:")) {
-                var lonnEntities = editor.CurrentRoom.Entities.OfType<LonnEntity>().ToList();
+                var lonnEntities = editor.CurrentRoom?.Entities.OfType<LonnEntity>().ToList() ?? new();
                 var cachedAmt = lonnEntities.Count(e => e.CachedSprites is { });
                 var uncachedSids = lonnEntities.Where(e => e.CachedSprites is not { }).Select(e => e.Name).Distinct();
 

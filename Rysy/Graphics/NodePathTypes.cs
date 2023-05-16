@@ -31,7 +31,10 @@ public static class NodePathTypes {
         }
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Nodes are connected in one line, going from the main entity to the last node while passing by each other node.
+    /// <paramref name="nodeToPos"/> gets called with the entity and node index for each node to calculate its position
+    /// </summary>
     public static IEnumerable<ISprite> Line<TEntity>(TEntity entity, Func<TEntity, int, Vector2> nodeToPos)
         where TEntity : Entity {
         var nodes = entity.Nodes!;

@@ -7,6 +7,22 @@ using System.Text.Json.Serialization;
 namespace Rysy;
 
 public record class Placement(string Name) {
+    /// <summary>
+    /// Creates a placement with value overrides using an anonymous object of the style of { fieldName = value, field2 = value2, ...}
+    /// </summary>
+    /// <param name="name">The name of this placement</param>
+    /// <param name="overridesLonnDecl">The object to use to create overrides</param>
+    public Placement(string name, object overridesLonnDecl) : this(name) {
+        var props = overridesLonnDecl.GetType().GetProperties();
+
+        foreach (var prop in props) {
+            var value = prop.GetValue(overridesLonnDecl);
+
+            if (value is { })
+                this[prop.Name] = value;
+        }
+    }
+
     public string? SID;
 
     public string? Tooltip;
@@ -20,6 +36,8 @@ public record class Placement(string Name) {
     public Dictionary<string, object> ValueOverrides { get; set; } = new();
 
     public Vector2[]? Nodes { get; set; }
+
+    internal bool FromLonn;
 
     public Placement ForSID(string sid) {
         SID = sid;
@@ -39,9 +57,25 @@ public record class Placement(string Name) {
         return this;
     }
 
+    /// <summary>
+    /// Sets/gets a value from <see cref="ValueOverrides"/>
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
     public object this[string key] {
         get => ValueOverrides[key];
         set => ValueOverrides[key] = value;
+    }
+
+    /// <summary>
+    /// Adds additional value overrides from <paramref name="newOverrides"/> on top of the existing ones.
+    /// Mutates and returns this instance.
+    /// </summary>
+    /// <returns>this</returns>
+    public Placement WithOverrides(Dictionary<string, object> newOverrides) {
+        ValueOverrides = new(ValueOverrides.Concat(newOverrides));
+
+        return this;
     }
 
     /// <summary>
@@ -68,6 +102,24 @@ public record class Placement(string Name) {
         IConvertibleToPlacement convertible => convertible.ToPlacement(),
         _ => null,
     };
+}
+
+public class PlacementList : List<Placement> {
+    public PlacementList() { }
+
+    public PlacementList(string defaultPlacementName) {
+        Add(new(defaultPlacementName));
+    }
+
+    public PlacementList(IEnumerable<Placement> placements) : base(placements) {
+
+    }
+
+    public static PlacementList FromEnum<T>(Func<string, Placement> generator) where T : struct, Enum {
+        var values = Enum.GetNames<T>();
+
+        return new(values.Select(x => generator(x)));
+    }
 }
 
 public interface IPlacementHandler {
@@ -161,5 +213,10 @@ public interface IConvertibleToPlacement {
 
 public interface IPlaceable {
     public static abstract FieldList GetFields();
-    public static abstract List<Placement>? GetPlacements();
+    public static abstract PlacementList GetPlacements();
+}
+
+public interface IMultiSIDPlaceable {
+    public static abstract FieldList GetFields(string sid);
+    public static abstract PlacementList GetPlacements(string sid);
 }

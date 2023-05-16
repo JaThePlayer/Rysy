@@ -12,7 +12,7 @@ public record class EntityResizeAction(Entity Entity, Point Delta) : IHistoryAct
 
         if (Entity.ResizableX && Delta.X != 0) {
             var prevW = Entity.Width;
-            Entity.Width = (Entity.Width + Delta.X).AtLeast(minSize.Y);
+            Entity.Width = (Entity.Width + Delta.X).AtLeast(minSize.X);
             RealDelta.X = Entity.Width - prevW;
             changed = true;
         }

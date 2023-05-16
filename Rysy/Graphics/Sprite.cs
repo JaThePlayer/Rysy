@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
 
-public record struct Sprite : ISprite, IEnumerable<ISprite> {
+public record struct Sprite : ISprite {
     public int? Depth { get; set; }
 
     public Vector2 Pos;
@@ -36,7 +36,9 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
     private Vector2 _multOrigin;
 
-    public Vector2 SubtextureOffset;
+    private Vector2 SubtextureOffset;
+
+    private bool Prepared;
 
     public Sprite(VirtTexture text) {
         Texture = text;
@@ -123,6 +125,8 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         Color = old;
     }
 
+    public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
+
     public Rectangle? GetRenderRect() {
         if (Texture.Texture is not { } texture) {
             return null;
@@ -134,7 +138,7 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
         Vector2 pos;
         if (Rotation == 0f) {
-            pos = Pos - _multOrigin * scale;
+            pos = Pos - _multOrigin * scale + SubtextureOffset;
             if (OutlineColor != default) {
                 return new Rectangle((int) pos.X - 1, (int) pos.Y - 1, (int) size.X + 2, (int) size.Y + 2);
             } else {
@@ -153,11 +157,11 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         var r1 = Pos + new Vector2(
             Math.Min(p4.X, Math.Min(p3.X, Math.Min(p1.X, p2.X))),
             Math.Min(p4.Y, Math.Min(p3.Y, Math.Min(p1.Y, p2.Y)))
-        );
+        ) + SubtextureOffset.Rotate(Rotation);
         var r2 = Pos + new Vector2(
             Math.Max(p4.X, Math.Max(p3.X, Math.Max(p1.X, p2.X))),
             Math.Max(p4.Y, Math.Max(p3.Y, Math.Max(p1.Y, p2.Y)))
-        );
+        ) + SubtextureOffset.Rotate(Rotation);
 
         if (OutlineColor != default) {
             r1 -= new Vector2(1);
@@ -171,8 +175,12 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
     private void CacheFields() {
         ClipRect ??= Texture.ClipRect;
-        if (Width == 0) {
-            LoadSizeFromTexture();
+        //if (Width == 0) {
+        if (!Prepared) {
+            Prepared = true;
+
+            if (Width == 0)
+                LoadSizeFromTexture();
 
             // Fixup properties now, at this point nothing should try to get stuff from the sprite...
             Flip = SpriteEffects.None;
@@ -202,17 +210,19 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
         };
     }
 
-    public Sprite Offset(Vector2 offset) {
+    public Sprite MovedBy(Vector2 offset) {
         return this with {
             Pos = Pos + offset
         };
     }
 
-    public Sprite Offset(float x, float y) {
+    public Sprite MovedBy(float x, float y) {
         return this with {
             Pos = Pos + new Vector2(x, y),
         };
     }
+
+    public Sprite CreateSubtexture(Rectangle subtext) => CreateSubtexture(subtext.X, subtext.Y, subtext.Width, subtext.Height);
 
     public Sprite CreateSubtexture(int x, int y, int w, int h) {
         var clip = Texture.GetSubtextureRect(x, y, w, h, out var offset, ClipRect);
@@ -250,29 +260,7 @@ public record struct Sprite : ISprite, IEnumerable<ISprite> {
 
     public Rectangle GetSubtextureRect(int x, int y, int w, int h) => Texture.GetSubtextureRect(x, y, w, h, out _, ClipRect);
 
-    public IEnumerator<ISprite> GetEnumerator() => new SingleSpriteEnumerator(this);
+    public IEnumerator<ISprite> GetEnumerator() => this.ToSelfEnumerator<ISprite>();
 
-    IEnumerator IEnumerable.GetEnumerator() => new SingleSpriteEnumerator(this);
-
-    private record struct SingleSpriteEnumerator(Sprite Sprite) : IEnumerator<ISprite> {
-        private bool _moved = false;
-
-        public ISprite Current => Sprite;
-
-        object IEnumerator.Current => Sprite;
-
-        public void Dispose() {
-        }
-
-        public bool MoveNext() {
-            if (!_moved) {
-                _moved = true;
-                return true;
-            }
-            return false;
-        }
-
-        public void Reset() {
-        }
-    }
+    IEnumerator IEnumerable.GetEnumerator() => this.ToSelfEnumerator();
 }

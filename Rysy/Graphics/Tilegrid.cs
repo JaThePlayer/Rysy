@@ -1,15 +1,19 @@
 ﻿using KeraLua;
+using Rysy;
 using Rysy.Extensions;
-using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
 using System.Text;
 
-namespace Rysy;
+namespace Rysy.Graphics;
 
 public class Tilegrid : ILuaWrapper {
     public Tilegrid() { }
+
+    public Tilegrid(char[,] tiles) {
+        Tiles = tiles;
+    }
 
     public Tilegrid(int widthPixels, int heightPixels) {
         Tiles = new char[widthPixels / 8, heightPixels / 8];
@@ -84,9 +88,8 @@ public class Tilegrid : ILuaWrapper {
 
         ref var currentTile = ref Tiles[x, y];
         oldTile = currentTile;
-        if (currentTile == tile) {
+        if (currentTile == tile)
             return false;
-        }
         currentTile = tile;
         RenderCacheToken?.Invalidate();
         return true;
@@ -98,17 +101,17 @@ public class Tilegrid : ILuaWrapper {
     }
 
     public IEnumerable<ISprite> GetSprites() {
-        return Autotiler?.GetSprites(Vector2.Zero, Tiles).Select(s => {
+        return Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White).Select(s => {
             s.Depth = Depth;
             return s;
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
     }
 
-    public Selection? GetSelectionForArea(Rectangle area) {
-        var handler = new RectSelectionHandler(this, area);
+    public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {
+        var handler = new RectSelectionHandler(this, area, layer);
 
         if (handler.AnyTileWithin())
-            return new Selection() { 
+            return new Selection() {
                 Handler = handler,
             };
 
@@ -136,9 +139,8 @@ public class Tilegrid : ILuaWrapper {
                     }
                     x = 0;
                     y++;
-                    if (y >= h) {
+                    if (y >= h)
                         return g;
-                    }
                     break;
                 default:
                     if (x < w) {
@@ -152,24 +154,28 @@ public class Tilegrid : ILuaWrapper {
         return g;
     }
 
-    private string GetSaveString() {
+    public string GetSaveString() => GetSaveString(Tiles);
+
+    public static string GetSaveString(char[,] tiles) {
         StringBuilder saveString = new();
 
+        var width = tiles.GetLength(0);
+        var height = tiles.GetLength(1);
+
         // stores 1 line of text + the newline character, to reduce heap allocations
-        Span<char> line = stackalloc char[Width + 1];
-        for (int y = 0; y < Height; y++) {
+        Span<char> line = stackalloc char[width + 1];
+        for (int y = 0; y < height; y++) {
             line.Clear();
-            for (int x = 0; x < Width; x++) {
-                var tile = Tiles[x, y];
+            for (int x = 0; x < width; x++) {
+                var tile = tiles[x, y];
                 line[x] = tile;
             }
 
-            var endIdx = Width;
+            var endIdx = width;
 
             // Trim the line if it ends in air tiles
-            while (endIdx > 0 && line[endIdx - 1] == '0') {
+            while (endIdx > 0 && line[endIdx - 1] == '0')
                 endIdx--;
-            }
 
             line[endIdx] = '\n';
             var slice = line[0..(endIdx + 1)];
@@ -205,17 +211,32 @@ public class Tilegrid : ILuaWrapper {
         return 0;
     }
 
-    internal class RectSelectionHandler : ISelectionHandler, ISelectionCollider {
+    internal class RectSelectionHandler : ISelectionHandler, ISelectionCollider, ISelectionFlipHandler {
         public Tilegrid Grid;
         public Rectangle Rect;
+
+        private List<(bool Exclude, Rectangle)> ToMoveRects = new();
 
         private char[,] ToMove;
         private char[,]? Orig;
 
         private Vector2 RemainderOffset;
 
-        public RectSelectionHandler(Tilegrid grid, Rectangle rectPixels) {
+        private SelectionLayer SelectionLayer;
+
+        public RectSelectionHandler(Tilegrid grid, Rectangle rectPixels, SelectionLayer layer) {
             (Grid, Rect) = (grid, rectPixels);
+            ToMoveRects.Add((false, Rect));
+            SelectionLayer = layer;
+        }
+
+        internal RectSelectionHandler(Tilegrid grid, Rectangle rectPixels, char[,] toMove, SelectionLayer layer) {
+            (Grid, Rect) = (grid, rectPixels);
+            ToMoveRects.Add((false, Rect));
+
+            ToMove = toMove;
+            Orig = (char[,]) Grid.Tiles.Clone();
+            SelectionLayer = layer;
         }
 
         public bool AnyTileWithin() {
@@ -234,41 +255,60 @@ public class Tilegrid : ILuaWrapper {
             return new TileRectChangeAction('0', Rect.Div(8), Grid);
         }
 
+        private void HandleToMove(char[,] toMove, Rectangle rect, bool exclude, int offX, int offY) {
+            for (int x = rect.X; x < rect.Right; x++)
+                for (int y = rect.Y; y < rect.Bottom; y++)
+                    toMove[x - offX, y - offY] = exclude ? '0' : Grid.SafeTileAt(x, y);
+        }
+
         public IHistoryAction MoveBy(Vector2 offset) {
             var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
 
             // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
-            RemainderOffset += offset - (tileOffset.ToVector2() * 8);
+            RemainderOffset += offset - tileOffset.ToVector2() * 8;
 
-            if (tileOffset.X == 0 && tileOffset.Y == 0) {
+            if (tileOffset.X == 0 && tileOffset.Y == 0)
                 return new MergedAction(Array.Empty<IHistoryAction>());
-            }
 
-            if (Orig is null) {
-                Orig ??= (char[,])Grid.Tiles.Clone();
-                var rect = Rect.Div(8);
-                var (w, h) = (rect.Width, rect.Height);
-
-                var toMove = new char[w, h];
-                for (int x = rect.X; x < rect.Right; x++)
-                    for (int y = rect.Y; y < rect.Bottom; y++)
-                        toMove[x - rect.X, y - rect.Y] = Grid.SafeTileAt(x, y);
-                ToMove = toMove;
-
-                for (int x = rect.X; x < rect.Right; x++)
-                    for (int y = rect.Y; y < rect.Bottom; y++) {
-                        if (x >= 0 && y >= 0 && x < Grid.Width && y < Grid.Height)
-                            Orig[x, y] = '0';
-                    }
-            }
+            ConsumeTilesIfNeeded();
 
             var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig, ToMove, tileOffset);
-            Rect = Rect.MovedBy(tileOffset.ToVector2() * 8);
+            var moveOffset = tileOffset.ToVector2() * 8;
+
+            Rect = Rect.MovedBy(moveOffset);
+            for (int i = 0; i < ToMoveRects.Count; i++)
+                ToMoveRects[i] = (ToMoveRects[i].Exclude, ToMoveRects[i].Item2.MovedBy(moveOffset));
             return action;
         }
 
-        // collider:
+        private void ConsumeTilesIfNeeded() {
+            if (Orig is null) {
+                Orig ??= (char[,]) Grid.Tiles.Clone();
+                var rect = Rect.Div(8);
 
+                var toMove = ToMove ??= CreateToMove();
+
+                for (int x = rect.X; x < rect.Right; x++)
+                    for (int y = rect.Y; y < rect.Bottom; y++)
+                        if (x >= 0 && y >= 0 && x < Grid.Width && y < Grid.Height
+                            && toMove[x - rect.X, y - rect.Y] != '0')
+                            Orig[x, y] = '0';
+            }
+        }
+
+        private char[,] CreateToMove() {
+            var rect = Rect.Div(8);
+            var (w, h) = (rect.Width, rect.Height);
+
+            var toMove = new char[w, h];
+            toMove.Fill('0');
+            foreach (var (exclude, r) in ToMoveRects)
+                HandleToMove(toMove, r.Div(8), exclude, rect.X, rect.Y);
+
+            return toMove;
+        }
+
+        // collider:
         public bool IsWithinRectangle(Rectangle roomPos) {
             if (!Rect.Intersects(roomPos))
                 return false;
@@ -277,48 +317,50 @@ public class Tilegrid : ILuaWrapper {
             rect.Width = rect.Width.AtLeast(1);
             rect.Height = rect.Height.AtLeast(1);
 
-            if (ToMove is { } toMove) {
-                // if we've moved the tiles, make sure to render ToMove instead of the current grid,
-                // as otherwise we might render an outline on a tile that's within range, but not actually selected
-                for (int x = 0; x < ToMove.GetLength(0); x++)
-                    for (int y = 0; y < ToMove.GetLength(1); y++) {
-                        if (ToMove[x, y] != '0') {
-                            return true;
-                        }
-                    }
-            } else {
-                for (int x = rect.X; x < rect.Right; x++)
-                    for (int y = rect.Y; y < rect.Bottom; y++) {
-                        if (Grid.SafeTileAt(x, y) != '0') {
-                            return true;
-                        }
-                    }
-            }
+            if (ToMove is not { } toMove)
+                toMove = CreateToMove();
+            var offX = Rect.Div(8).X;
+            var offY = Rect.Div(8).Y;
+            for (int x = rect.X; x < rect.Right; x++)
+                for (int y = rect.Y; y < rect.Bottom; y++)
+                    if (toMove.GetOrDefault(x - offX, y - offY, '0') != '0')
+                        return true;
 
             return false;
         }
 
         public void Render(Color c) {
+            foreach (var item in GetSprites(c))
+                item.Render();
+        }
+
+        internal IEnumerable<ISprite> GetSprites(Color c, Vector2? pos = null) {
             var rect = Rect.Div(8);
 
-            if (ToMove is { } toMove) {
+            Vector2 rPos = pos ?? new(rect.X * 8, rect.Y * 8);
+
+            ToMove ??= CreateToMove();
+
+            if (ToMove is { } toMove)                 
                 // if we've moved the tiles, make sure to render ToMove instead of the current grid,
                 // as otherwise we might render an outline on a tile that's within range, but not actually selected
-                for (int x = 0; x < ToMove.GetLength(0); x++)
-                    for (int y = 0; y < ToMove.GetLength(1); y++) {
-                        if (ToMove[x, y] != '0') {
-                            ISprite.OutlinedRect(new((x + rect.X) * 8, (y + rect.Y) * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
-                        }
-                    }
-            } else {
-                for (int x = rect.X; x < rect.Right; x++)
-                    for (int y = rect.Y; y < rect.Bottom; y++) {
-                        if (Grid.SafeTileAt(x, y) != '0') {
-                            ISprite.OutlinedRect(new((x) * 8, (y) * 8), 8, 8, c * 0.3f, c * 0.7f).Render();
-                        }
-                    }
-            }
+                for (int x = 0; x < toMove.GetLength(0); x++)
+                    for (int y = 0; y < toMove.GetLength(1); y++)
+                        if (toMove[x, y] != '0')
+                            yield return ISprite.OutlinedRect(new(x * 8 + rPos.X, y * 8 + rPos.Y), 8, 8, c * 0.3f, c * 0.7f);
+        }
 
+        public void MergeWith(Rectangle rectPixels, bool exclude) {
+            rectPixels = rectPixels.Div(8).AddSize(1, 1).Mult(8);
+
+            var merged = RectangleExt.Merge(Rect, rectPixels);
+            Rect = merged;
+            ToMoveRects.Add((exclude, rectPixels));
+
+            if (ToMove is { }) {
+                ToMove = null!;
+                Orig = null;
+            }
         }
 
         public IHistoryAction? TryResize(Point delta) {
@@ -330,23 +372,60 @@ public class Tilegrid : ILuaWrapper {
         }
 
         public BinaryPacker.Element? PackParent() {
-            return null;
+            var toMove = ToMove ?? CreateToMove();
+
+            return new("tiles") {
+                Attributes = new() {
+                    ["text"] = GetSaveString(toMove),
+                    ["w"] = toMove.GetLength(0),
+                    ["h"] = toMove.GetLength(1),
+                    ["x"] = Rect.X,
+                    ["y"] = Rect.Y,
+                }
+            };
         }
 
         public void RenderSelection(Color c) => Render(c);
 
         public void ClearCollideCache() {
-            
+
         }
 
         public void OnRightClicked(IEnumerable<Selection> selections) {
         }
 
         public IHistoryAction PlaceClone(Room room) {
-            throw new NotImplementedException();
+            Console.WriteLine(Rect.Div(8).Location);
+            return new TilePasteAction(new(ToMove), Grid, Rect.Div(8).Location);
         }
 
-        public SelectionLayer Layer => SelectionLayer.None;
+        public IHistoryAction PlaceCloneAt(Room room, Point tilePos) {
+            return new TilePasteAction(new(ToMove), Grid, tilePos);
+        }
+
+        public IHistoryAction? TryFlipHorizontal() {
+            ConsumeTilesIfNeeded();
+
+            var newToMove = ToMove.CreateFlippedHorizontally();
+
+            var action = new TileSwapAction(Grid, Rect.Div(8), Orig!, newToMove);
+            ToMove = newToMove;
+
+            return action;
+        }
+
+        public IHistoryAction? TryFlipVertical() {
+            ConsumeTilesIfNeeded();
+
+            var newToMove = ToMove.CreateFlippedVertically();
+
+            var action = new TileSwapAction(Grid, Rect.Div(8), Orig!, newToMove);
+            ToMove = newToMove;
+
+            return action;
+        }
+
+        public SelectionLayer Layer => SelectionLayer;
     }
 
     private record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {

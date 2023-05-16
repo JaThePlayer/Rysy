@@ -18,37 +18,38 @@ public sealed class EditorScene : Scene {
         set => EditorState.History = value;
     }
 
-    public Map Map {
-        get => EditorState.Map!;
+    public Map? Map {
+        get => EditorState.Map;
         set => EditorState.Map = value;
     }
 
     private void OnMapChanged() {
-        var map = EditorState.Map!;
+        var map = EditorState.Map;
 
         SwapMapPreserveState(map);
 
         Camera = new();
 
-        if (map.Rooms.Count > 0) {
+        if (map?.Rooms.Count > 0) {
             CurrentRoom = map.Rooms.First();
             CenterCameraOnRoom(CurrentRoom);
         }
 
-        Persistence.Instance.PushRecentMap(map);
+        if (map is { })
+            Persistence.Instance.PushRecentMap(map);
 
         RysyEngine.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
     }
 
-    private void SwapMapPreserveState(Map map) {
+    private void SwapMapPreserveState(Map? map) {
         EditorState.Map = map;
 
         // history has to be cleared, as it might contain references to specific entity instances
         HistoryHandler.Clear();
     }
 
-    public Room CurrentRoom {
-        get => EditorState.CurrentRoom!;
+    public Room? CurrentRoom {
+        get => EditorState.CurrentRoom;
         set => EditorState.CurrentRoom = value;
     }
 
@@ -59,11 +60,14 @@ public sealed class EditorScene : Scene {
 
     public EditorScene(bool loadFromPersistence = true) {
         HistoryHandler = new();
-        ToolHandler = new(HistoryHandler);
+        ToolHandler = new(HistoryHandler, Input.Global);
 
         // Try to load the last edited map.
         if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
             LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
+        else {
+            Map = null;
+        }
 
         EditorState.OnMapChanged += OnMapChanged;
     }
@@ -72,10 +76,13 @@ public sealed class EditorScene : Scene {
         Map = map;
     }
 
+    public EditorScene(string mapFilepath, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) : this(false) {
+        LoadMapFromBin(mapFilepath, fromPersistence, fromBackup, overrideFilepath);
+    }
+
     public override void SetupHotkeys() {
         base.SetupHotkeys();
 
-        // not trusting rysy enough rn
         Hotkeys.AddHotkeyFromSettings("saveMap", "ctrl+s", () => Save());
         Hotkeys.AddHotkeyFromSettings("openMap", "ctrl+o", Open);
         Hotkeys.AddHotkeyFromSettings("newMap", "ctrl+shift+n", () => LoadNewMap());
@@ -97,7 +104,7 @@ public sealed class EditorScene : Scene {
     }
 
     public void ClearMapRenderCache() {
-        Map.Rooms.ForEach(r => r.ClearRenderCache());
+        Map?.Rooms.ForEach(r => r.ClearRenderCache());
     }
 
     public void ChangeEditorLayer(int by) {
@@ -115,7 +122,7 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    public void LoadMapFromBin(string file, bool fromPersistence = false) {
+    public void LoadMapFromBin(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
         if (!File.Exists(file))
             return;
 
@@ -130,20 +137,32 @@ public sealed class EditorScene : Scene {
                 // Just to make this run async, so we can see the loading screen.
                 await Task.Delay(1);
 
-
                 var mapBin = BinaryPacker.FromBinary(file);
 
                 var map = Map.FromBinaryPackage(mapBin);
+                if (overrideFilepath is { }) {
+                    map.Filepath = overrideFilepath;
+                }
                 Map = map;
 
                 RysyEngine.Scene = this;
+
+                //if (fromPersistence)
+                //    throw new Exception("yo");
             } catch (Exception e) {
                 Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
 
                 if (fromPersistence) {
-                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e);
+                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromPersistence");
+                } else if (fromBackup) {
+                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromBackup");
                 } else {
                     RysyEngine.Scene = this;
+                    AddWindow(new CrashWindow("rysy.mapLoadError.other".TranslateFormatted(file.Censor()), e, (w) => {
+                        if (ImGui.Button("rysy.ok".Translate())) {
+                            w.RemoveSelf();
+                        }
+                    }));
                 }
             }
         };
@@ -177,6 +196,9 @@ public sealed class EditorScene : Scene {
     }
 
     public void Save(bool saveAs = false) {
+        if (Map is not { })
+            return;
+
         if (saveAs || string.IsNullOrWhiteSpace(Map.Filepath)) {
             if (!FileDialogHelper.TrySave("bin", out var filepath)) {
                 return;
@@ -200,6 +222,9 @@ public sealed class EditorScene : Scene {
     }
 
     public void AddNewRoom() {
+        if (Map is not { })
+            return;
+
         var current = CurrentRoom;
         var room = new Room(Map, current?.Width ?? 40 * 8, current?.Height ?? 23 * 8);
         if (current is { }) {
@@ -251,17 +276,17 @@ public sealed class EditorScene : Scene {
         }
 
         if (Map is { } && CurrentRoom is { }) {
-            Camera.HandleMouseMovement();
+            Camera.HandleMouseMovement(Input.Global);
 
-            HandleRoomSwapInputs();
+            HandleRoomSwapInputs(Input.Global);
 
             ToolHandler.Update(Camera, CurrentRoom);
         }
     }
 
-    private void HandleRoomSwapInputs() {
-        if (ToolHandler.CurrentTool.AllowSwappingRooms && Input.Mouse.Left.Clicked()) {
-            var mousePos = Input.Mouse.Pos.ToVector2();
+    private void HandleRoomSwapInputs(Input input) {
+        if (Map is { } && ToolHandler.CurrentTool.AllowSwappingRooms && input.Mouse.Left.Clicked()) {
+            var mousePos = input.Mouse.Pos.ToVector2();
             foreach (var room in Map.Rooms) {
                 if (room == CurrentRoom)
                     continue;
@@ -270,7 +295,7 @@ public sealed class EditorScene : Scene {
                 if (room.IsInBounds(pos)) {
                     CurrentRoom = room;
 
-                    Input.Mouse.ConsumeLeft();
+                    input.Mouse.ConsumeLeft();
                     break;
                 }
             }
@@ -306,20 +331,22 @@ public sealed class EditorScene : Scene {
         PicoFont.Print(RysyEngine.CurrentFPS.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
         GFX.EndBatch();
 
-        if (Input.Keyboard.Ctrl()) {
+        var input = Input.Global;
+
+        if (input.Keyboard.Ctrl()) {
             // Reload everything
-            if (Input.Keyboard.IsKeyClicked(Keys.F5)) {
+            if (input.Keyboard.IsKeyClicked(Keys.F5)) {
                 RysyEngine.QueueReload();
             }
         } else {
             // clear render cache
-            if (Input.Keyboard.IsKeyClicked(Keys.F4)) {
+            if (input.Keyboard.IsKeyClicked(Keys.F4)) {
                 foreach (var room in Map.Rooms)
                     room.ClearRenderCache();
             }
 
             // Reload textures
-            if (Input.Keyboard.IsKeyClicked(Keys.F5)) {
+            if (input.Keyboard.IsKeyClicked(Keys.F5)) {
                 GFX.Atlas.DisposeTextures();
                 foreach (var room in Map.Rooms)
                     room.ClearRenderCache();
@@ -327,7 +354,7 @@ public sealed class EditorScene : Scene {
             }
 
             // Re-register entities
-            if (Input.Keyboard.IsKeyClicked(Keys.F6)) {
+            if (input.Keyboard.IsKeyClicked(Keys.F6)) {
                 EntityRegistry.RegisterAsync().AsTask().Wait();
                 CurrentRoom.ClearRenderCache();
                 GC.Collect(3);
@@ -340,7 +367,7 @@ public sealed class EditorScene : Scene {
 
         Menubar.Render(this);
         RoomList.Render(this);
-        ToolHandler.RenderGui(this);
+        ToolHandler.RenderGui();
     }
 
     public void CenterCameraOnRoom(Room room) {

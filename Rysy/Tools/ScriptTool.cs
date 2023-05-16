@@ -11,7 +11,7 @@ public class ScriptTool : Tool {
     public const string CURRENT_ROOM_LAYER = "Current Room";
     public const string ALL_ROOMS_LAYER = "All Rooms";
 
-    public override string Name => "Scripts";
+    public override string Name => "script";
 
     public override string PersistenceGroup => "Scripts";
 
@@ -71,7 +71,9 @@ public class ScriptTool : Tool {
 
             // if we're calling Run, we need to clone rooms, so that we can create a history action
             var clonedRooms = rooms.Select(r => r.Clone()).ToList();
-            args.Rooms = clonedRooms;
+            args = args with {
+                Rooms = clonedRooms,
+            };
 
             for (int i = 0; i < rooms.Count; i++) {
                 var room = rooms[i];

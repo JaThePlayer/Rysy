@@ -5,8 +5,9 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("cobweb")]
-public class Cobweb : Entity, ICustomNodeHandler {
+public class Cobweb : Entity, IPlaceable {
     public override int Depth => -1;
+    public override Range NodeLimits => 1..;
 
     public override IEnumerable<ISprite> GetSprites() {
         var nodes = Nodes!;
@@ -19,21 +20,29 @@ public class Cobweb : Entity, ICustomNodeHandler {
 
             if (offshoots) {
                 for (int i = 1; i < nodes.Count; i++) {
-                    foreach (var s in GetCobwebSprites(nodes[i], curve.GetPointAt((float) Pos.SeededRandom() * .4f).Rounded(), 4, false)) {
+                    foreach (var s in GetCobwebSprites(nodes[i], curve.GetPointAt(0.5f).Rounded(), 4, false)) {
                         yield return s;
                     }
                 }
             }
 
-            foreach (var item in curve.GetSprites(colors[0], steps)) {
+            foreach (var item in curve.GetSprite(colors[0], steps)) {
                 yield return item;
             }
         }
     }
 
-    public IEnumerable<ISprite> GetNodeSprites() {
-        yield break;
-    }
+    public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) => Array.Empty<ISprite>();
+    public override IEnumerable<ISprite> GetNodePathSprites() => Array.Empty<ISprite>();
 
-    public override Range NodeLimits => 1..;
+    public override ISelectionCollider GetMainSelection()
+        => ISelectionCollider.FromRect(Pos.Add(-2, -2), 4, 4);
+
+    public override ISelectionCollider GetNodeSelection(int nodeIndex)
+        => ISelectionCollider.FromRect(Nodes[nodeIndex].Pos.Add(-2, -2), 4, 4);
+    public static FieldList GetFields() => new(new {
+        color = Fields.RGB("696A6A")
+    });
+
+    public static PlacementList GetPlacements() => new("cobweb");
 }

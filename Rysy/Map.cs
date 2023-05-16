@@ -22,6 +22,8 @@ public sealed class Map : IPackable {
     public Autotiler BGAutotiler = new();
     public Autotiler FGAutotiler = new();
 
+    public SpriteBank Sprites = new();
+
     /// <summary>
     /// Stylegrounds. Currently unparsed :(
     /// </summary>
@@ -105,6 +107,13 @@ public sealed class Map : IPackable {
                             Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
                         }
                     }
+
+                    if (Meta.Sprites is { } sprites) {
+                        if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), Sprites.Load)) {
+                            Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {sprites}");
+                        }
+                    }
+
                     break;
                 case "levels":
                     foreach (var room in child.Children) {
@@ -142,6 +151,10 @@ public sealed class Map : IPackable {
 
         if (!FGAutotiler.Loaded) {
             ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FGAutotiler.ReadFromXml);
+        }
+
+        ModRegistry.Filesystem.TryWatchAndOpenAll("Graphics/Sprites.xml", Sprites.Load, Sprites.Clear);
+        if (!Sprites.Loaded) {
         }
     }
 

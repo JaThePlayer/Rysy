@@ -50,8 +50,8 @@ public static class LonnDrawables {
         var layer = lua.PeekTableStringValue(top, "layer") ?? "tilesFg";
 
         var sprites = layer switch {
-            "tilesFg" => room.FG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8),
-            "tilesBg" => room.BG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8),
+            "tilesFg" => room.FG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
+            "tilesBg" => room.BG.Autotiler?.GetSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
             _ => null
         };
         return sprites;

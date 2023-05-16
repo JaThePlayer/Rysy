@@ -5,7 +5,7 @@ namespace Rysy.LuaSupport;
 
 public record class ListWrapper<T>(IList<T> Inner) : ILuaWrapper {
     public int Lua__index(Lua lua, long i) {
-        var intI = (int)i;
+        var intI = (int)i - 1;
         var inner = Inner;
 
         if (intI < inner.Count)
@@ -30,7 +30,7 @@ public record class ListWrapper<T>(IList<T> Inner) : ILuaWrapper {
 public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
     where T : ILuaWrapper {
     public int Lua__index(Lua lua, long i) {
-        var intI = (int) i;
+        var intI = (int) i - 1;
         var inner = Inner;
 
         if (intI < inner.Count)
@@ -54,7 +54,7 @@ public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
 
 public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapper {
     public int Lua__index(Lua lua, long i) {
-        var intI = (int) i;
+        var intI = (int) i - 1;
         var inner = Inner;
 
         if (intI < inner.Count)

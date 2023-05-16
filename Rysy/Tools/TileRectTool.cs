@@ -5,7 +5,7 @@ using Rysy.History;
 namespace Rysy.Tools;
 
 internal class TileRectTool : TileTool {
-    public override string Name => "Rectangle";
+    public override string Name => "rectangle";
 
     private Point? startPos = null;
 

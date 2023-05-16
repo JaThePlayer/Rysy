@@ -53,10 +53,7 @@ public static class SettingsHelper {
             }
         }
 
-        return settings ?? Save<T>(new() {
-            // there's no UI yet, so no way to change this in-game
-            // there's also no automatic instal detection, so you'll have to edit it manually. Oh well
-        }, filename, perProfile);
+        return settings ?? Save<T>(new() { }, filename, perProfile);
     }
 
     public static T Save<T>(T settings, string filename, bool perProfile = false) where T : class, new() {
@@ -112,7 +109,18 @@ public sealed class Settings {
         return hotkey;
     }
 
-    public static Settings Instance { get; internal set; } = null!;
+    public static event Action<Settings> OnLoaded;
+
+    private static Settings _Instance = null!;
+    public static Settings Instance {
+        get => _Instance;
+        internal set {
+            if (_Instance != value) {
+                _Instance = value;
+                OnLoaded?.Invoke(value);
+            }
+        }
+    }
 
     #region Serialized
     public string Profile { get; set; } = "Default";
@@ -199,6 +207,13 @@ public sealed class Settings {
     }
 
     public bool ReadBlacklist { get; set; } = true;
+
+    public int? StartingWindowWidth { get; set; } = null;
+    public int? StartingWindowHeight { get; set; } = null;
+    public int? StartingWindowX { get; set; } = null;
+    public int? StartingWindowY { get; set; } = null;
+
+    public string? FontFile { get; set; } = null;
 
 #warning Remove
     public string? LonnPluginPath { get; set; }

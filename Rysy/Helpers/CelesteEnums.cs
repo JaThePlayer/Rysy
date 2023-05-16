@@ -104,47 +104,142 @@ public static class CelesteEnums {
         ["music_farewell_granny"] = "event:/new_content/music/lvl10/granny_farewell",
         ["music_farewell_golden_room"] = "event:/new_content/music/lvl10/golden_room",
     };
-}
 
-public enum WindPatterns {
-    None,
-    Left,
-    Right,
-    LeftStrong,
-    RightStrong,
-    LeftOnOff,
-    RightOnOff,
-    LeftOnOffFast,
-    RightOnOffFast,
-    Alternating,
-    LeftGemsOnly,
-    RightCrazy,
-    Down,
-    Up,
-    Space
-}
+    public enum WindPatterns {
+        None,
+        Left,
+        Right,
+        LeftStrong,
+        RightStrong,
+        LeftOnOff,
+        RightOnOff,
+        LeftOnOffFast,
+        RightOnOffFast,
+        Alternating,
+        LeftGemsOnly,
+        RightCrazy,
+        Down,
+        Up,
+        Space
+    }
 
-public enum Inventories {
-    Prologue,
-    Default,
-    OldSite,
-    CH6End,
-    TheSummit,
-    Core,
-    Farewell,
-}
+    public enum Inventories {
+        Prologue,
+        Default,
+        OldSite,
+        CH6End,
+        TheSummit,
+        Core,
+        Farewell,
+    }
 
-public enum IntroTypes {
-    Transition,
-    Respawn,
-    WalkInRight,
-    WalkInLeft,
-    Jump,
-    WakeUp,
-    Fall,
-    TempleMirrorVoid,
-    None,
-    ThinkForABit
+    public enum IntroTypes {
+        Transition,
+        Respawn,
+        WalkInRight,
+        WalkInLeft,
+        Jump,
+        WakeUp,
+        Fall,
+        TempleMirrorVoid,
+        None,
+        ThinkForABit
+    }
+
+    public static List<int> BadelineBossShootingPatterns = new() {
+        0, 1, 2, 3, 4,
+        5, 6, 7, 8, 9,
+        10, 11, 12, 13,
+        14, 15
+    };
+
+    public enum BirdNPCModes {
+        ClimbingTutorial,
+        DashingTutorial,
+        DreamJumpTutorial,
+        SuperWallJumpTutorial,
+        HyperJumpTutorial,
+        FlyAway,
+        Sleeping,
+        MoveToNodes,
+        WaitForLightningOff,
+        None
+    };
+
+    public enum BonfireModes {
+        Unlit,
+        Lit,
+        Smoking
+    }
+
+    public enum ClutterColors {
+        Red,
+        Green,
+        Yellow,
+        Lightning
+    }
+
+    public enum ConditionBlockModes {
+        Key,
+        Button,
+        Strawberry
+    }
+
+    public static List<string> BirdTutorials = new() {
+        "TUTORIAL_CLIMB",
+        "TUTORIAL_HOLD",
+        "TUTORIAL_DASH",
+        "TUTORIAL_DREAMJUMP",
+        "TUTORIAL_CARRY",
+        "hyperjump/tutorial00",
+        "hyperjump/tutorial01"
+    };
+
+    public enum HeartColors {
+        Normal,
+        BSide,
+        CSide,
+        Random
+    }
+
+    public static Dictionary<int, string> SurfaceSounds = new() {
+        [-1] = "Default",
+        [0] = "Null",
+        [1] = "Asphalt",
+        [2] = "Car",
+        [3] = "Dirt",
+        [4] = "Snow",
+        [5] = "Wood",
+        [6] = "Bridge",
+        [7] = "Girder",
+        [8] = "Brick",
+        [9] = "Zip Mover",
+        [11] = "Space Jam (Inactive)",
+        [12] = "Space Jam (Active)",
+        [13] = "Resort Wood",
+        [14] = "Resort Roof",
+        [15] = "Resort Platform",
+        [16] = "Resort Basement",
+        [17] = "Resort Laundry",
+        [18] = "Resort Boxes",
+        [19] = "Resort Books",
+        [20] = "Resort Forcefield",
+        [21] = "Resort Clutterswitch",
+        [22] = "Resort Elevator",
+        [23] = "Cliffside Snow",
+        [25] = "Cliffside Grass",
+        [27] = "Cliffside Whiteblock",
+        [28] = "Gondola",
+        [32] = "Glass",
+        [33] = "Grass",
+        [35] = "Cassette Block",
+        [36] = "Core Ice",
+        [37] = "Core Rock",
+        [40] = "Glitch",
+        [42] = "Internet Café",
+        [43] = "Cloud",
+        [44] = "Moon"
+    };
 }
 
 public static class Depths {

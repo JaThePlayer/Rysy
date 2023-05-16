@@ -10,6 +10,10 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
         Actions = new(actions.Where(act => act is not null)!);
     }
 
+    public MergedAction(params IHistoryAction?[] actions) {
+        Actions = new(actions.Where(act => act is not null)!);
+    }
+
     private bool[] Applied;
 
     public bool Apply() {

@@ -1,24 +1,34 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.History;
+using System.Reflection;
 
 namespace Rysy.Gui.Windows;
 
 public class FormWindow : Window {
     public delegate void FormWindowChanged(Dictionary<string, object> edited);
 
-    protected List<Prop> FieldList;
+    internal List<Prop> FieldList = new();
     public Dictionary<string, object> EditedValues = new();
     private int ITEM_WIDTH = 175;
 
     public FormWindowChanged OnChanged { get; set; }
 
-    protected record class Prop(string Name) {
+    internal record class Prop(string Name) {
         public Field Field;
-        public object Value;
+
+        /// <summary>
+        /// The value of this property, which is only set once the user changes the value.
+        /// </summary>
+        public object? Value;
+
+        public object ValueOrDefault() => Value ?? Field.GetDefault();
     }
 
     public string SaveChangesButtonName = "Save Changes";
+
+    public Func<string, bool> Exists;
+
 
     // used for deciding whether the form should be displayed in columns or not.
     float LongestFieldSize;
@@ -28,25 +38,32 @@ public class FormWindow : Window {
     /// </summary>
     /// <returns></returns>
     public Dictionary<string, object> GetAllValues() {
-        return FieldList.ToDictionary(p => p.Name, p => p.Value);
+        return FieldList.ToDictionary(p => p.Name, p => p.ValueOrDefault());
     }
 
-    public FormWindow(FieldList fields, string name) : base(name, null) {
-        FieldList = new();
+    public FormWindow(string name) : base(name, null) {
+    }
+
+    public FormWindow(FieldList fields, string name, Func<string, bool>? exists = null) : base(name, null) {
+        Init(fields, exists);
+    }
+
+    public void Init(FieldList fields, Func<string, bool>? exists = null) {
+        Exists = exists ?? ((_) => true);
 
         foreach (var f in fields) {
             var fieldName = f.Key;
             var field = f.Value;
 
-            FieldList.Add(new(fieldName) { 
+            FieldList.Add(new(fieldName) {
                 Field = field,
-                Value = field.GetDefault()
+                //Value = field.GetDefault()
             });
         }
 
-        LongestFieldSize = FieldList.Select(p => (p.Field.NameOverride ?? p.Name).Length).Chunk(2).Max(pair => pair.Sum() + 2) * ImGui.GetFontSize();
+        LongestFieldSize = FieldList.Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X).Chunk(2).Max(pair => pair.Sum());
         Size = new(
-            LongestFieldSize + ITEM_WIDTH * 2f,
+            LongestFieldSize + ITEM_WIDTH * 2.5f,
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
         );
 
@@ -54,15 +71,17 @@ public class FormWindow : Window {
     }
 
     protected override void Render() {
-        var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X > (LongestFieldSize + ITEM_WIDTH);
+        var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
 
         if (hasColumns)
             ImGui.Columns(2);
 
         bool valid = true;
 
+        FormContext ctx = new(this);
+
         foreach (var prop in FieldList) {
-            if (!HandleProp(prop)) {
+            if (!HandleProp(prop, ctx)) {
                 valid = false;
             }
 
@@ -84,9 +103,9 @@ public class FormWindow : Window {
 
     public void RenderBody() => Render();
 
-    private bool HandleProp(Prop prop) {
+    private bool HandleProp(Prop prop, FormContext ctx) {
         var name = prop.Name;
-        var val = prop.Value;
+        var val = prop.ValueOrDefault();
 
         // determine color
         var valid = prop.Field.IsValid(val);
@@ -94,22 +113,52 @@ public class FormWindow : Window {
             ImGuiManager.PushInvalidStyle();
         else if (EditedValues.ContainsKey(name))
             ImGuiManager.PushEditedStyle();
+        else if (!Exists(prop.Name))
+            ImGuiManager.PushNullStyle();
 
         object? newVal = null;
         ImGui.SetNextItemWidth(ITEM_WIDTH);
         try {
-            newVal = prop.Field.RenderGui(prop.Field.NameOverride ??= name.Humanize(), val);
+            var field = prop.Field;
+            field.Context = ctx;
+            newVal = field.RenderGui(field.NameOverride ??= name.Humanize(), val);
+        } catch (Exception) {
+            throw;
         } finally {
             ImGuiManager.PopInvalidStyle();
             ImGuiManager.PopEditedStyle();
+            ImGuiManager.PopNullStyle();
         }
 
-
         if (newVal != null) {
-            EditedValues[name] = newVal;
-            prop.Value = newVal;
+            Set(prop, newVal);
         }
 
         return valid;
+    }
+
+    internal void Set(Prop prop, object newVal) {
+        EditedValues[prop.Name] = newVal;
+        prop.Value = newVal;
+    }
+}
+
+public class FormContext {
+    private FormWindow Window;
+
+    public FormContext(FormWindow window) => Window = window;
+
+    /// <summary>
+    /// Gets the value of the field of name <paramref name="fieldName"/>, or null if the field does not exist
+    /// </summary>
+    public object? GetValue(string fieldName)
+        => Window.FieldList.FirstOrDefault(f => f.Name == fieldName)?.ValueOrDefault();
+
+    /// <summary>
+    /// Sets the value of the field of name <paramref name="fieldName"/>
+    /// </summary>
+    public void SetValue(string fieldName, object newValue) {
+        if (Window.FieldList.FirstOrDefault(f => f.Name == fieldName) is { } prop)
+            Window.Set(prop, newValue);
     }
 }

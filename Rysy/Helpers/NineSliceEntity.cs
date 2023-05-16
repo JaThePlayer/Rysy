@@ -17,6 +17,9 @@ public abstract class NineSliceEntity : Entity {
     public virtual Color CenterSpriteColor => Color.White;
     public virtual Color CenterSpriteOutlineColor => Color.Transparent;
 
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
+
     public override IEnumerable<ISprite> GetSprites() {
         var w = Math.Max(Width, 8);
         var h = Math.Max(Height, 8);

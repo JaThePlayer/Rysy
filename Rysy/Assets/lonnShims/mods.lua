@@ -158,12 +158,39 @@ function modHandler.getCurrentModName(maxDepth)
     _RYSY_unimplemented()
 end
 
+
+local _modSettingMt = {}
+
+function _modSettingMt.__index(self, key)
+	local modName = rawget(self, "__mod")
+
+	--print("get", modName, key, _RYSY_INTERNAL_getModSetting(modName, key))
+	return _RYSY_INTERNAL_getModSetting(modName, key)
+end
+
+function _modSettingMt.__newindex(self, key, value)
+	local modName = rawget(self, "__mod")
+
+	print("set", modName, key, value)
+	local err = _RYSY_INTERNAL_setModSetting(modName, key, value)
+	if err then
+		error(err)
+	end
+end
+
+
 -- Defaults to current mod
 function modHandler.getModSettings(modName)
+	modName = modName or _RYSY_CURRENT_MOD
     --_RYSY_unimplemented()
 
 	--print("WARN: getting mod settings doesn't do anything rn!'")
-	return {}
+	local t = {
+		__mod = modName
+	}
+	t = setmetatable(t, _modSettingMt)
+
+	return t
 end
 
 -- Defaults to current mod

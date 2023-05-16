@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Helpers;
 
 namespace Rysy.Entities;
@@ -46,7 +47,7 @@ public class MoveBlock : Entity, IPlaceable {
 
                         // left sprite
                         yield return subSprite with {
-                            Pos = subSprite.Pos + new Vector2(-3, y * 8),
+                            Pos = subSprite.Pos + new Vector2(-1, y * 8),
                             Rotation = MathHelper.PiOver2,
                             Scale = new Vector2(1f, -1f)
                         };
@@ -86,7 +87,12 @@ public class MoveBlock : Entity, IPlaceable {
         ["fast"] = Fields.Bool(false),
     };
 
-    public static List<Placement>? GetPlacements() => new() {
-        new("Move Block")
-    };
+    public static PlacementList GetPlacements() => 
+        IterationHelper.EachPair(System.Enum.GetNames<Directions>(), IterationHelper.BoolValues, IterationHelper.BoolValues)
+        .Select((dir, steerable, fast) => new Placement($"{dir.ToLowerInvariant()}_{(steerable ? "steer" : "nosteer")}_{(fast ? "fast" : "slow")}", new {
+            direction = dir,
+            canSteer = steerable,
+            fast = fast
+        }))
+        .ToPlacementList();
 }

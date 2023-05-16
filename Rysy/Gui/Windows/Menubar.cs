@@ -3,6 +3,8 @@ using Rysy.Extensions;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Scenes;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Gui.Windows;
 
@@ -168,11 +170,11 @@ public static class Menubar {
             }));
         }
 
-        if (ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
+        if (editor.Map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
             editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
         }
 
-        if (ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {
+        if (editor.Map is { } && ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {
             ImGui.SetClipboardText(editor.Map.Pack().ToJson());
         }
 
@@ -180,10 +182,45 @@ public static class Menubar {
             GCHelper.VeryAggressiveGC();
         }
 
+        /*
+#if WINDOWS
+
+        if (ImGui.MenuItem("focus")) {
+            FocusProcess();
+        }
+#endif*/
+
         bool b = DebugInfoWindow.Enabled;
         if (ImGui.Checkbox("Debug Info Window", ref b))
             DebugInfoWindow.Enabled = b;
     }
+/*
+#if WINDOWS
+    [DllImport("user32.dll")]
+    internal static extern IntPtr SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    private static void FocusProcess() {
+        Process[] processRunning = Process.GetProcesses();
+        foreach (Process pr in processRunning) {
+            if (pr.ProcessName.Equals("Celeste", StringComparison.OrdinalIgnoreCase)) {
+                FocusProcess(pr);
+            }
+        }
+
+        Thread.Sleep(1000);
+
+        FocusProcess(Process.GetCurrentProcess());
+    }
+
+    private static void FocusProcess(Process pr) {
+        var hWnd = pr.MainWindowHandle;
+        ShowWindow(hWnd, 3);
+        SetForegroundWindow(hWnd);
+    }
+#endif*/
 
     private static void EditMenu() {
         if (RysyEngine.Scene is not EditorScene editor)

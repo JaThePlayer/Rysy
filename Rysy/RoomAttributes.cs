@@ -18,7 +18,7 @@ public record class RoomAttributes {
     /// Debug color
     /// </summary>
     public int C;
-    public WindPatterns WindPattern;
+    public CelesteEnums.WindPatterns WindPattern;
     public bool Space;
     public string AmbienceProgress = "";
     public bool DisableDownTransition;

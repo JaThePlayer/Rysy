@@ -11,6 +11,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rysy.Tools;
 
 internal class SelectionTool : Tool {
+    public override string Name => "selection";
+
     private enum States {
         Idle,
         MoveGesture,
@@ -18,7 +20,7 @@ internal class SelectionTool : Tool {
 
     private States State = States.Idle;
 
-    private SelectRectangleGesture SelectionGestureHandler = new();
+    private SelectRectangleGesture SelectionGestureHandler;
 
     private Point? MoveGestureStart, MoveGestureLastMousePos;
     private Vector2 MoveGestureFinalDelta;
@@ -30,6 +32,12 @@ internal class SelectionTool : Tool {
     private int ClickInPlaceIdx;
 
     public SelectionTool() {
+    }
+
+    public override void Init() {
+        base.Init();
+
+        SelectionGestureHandler = new(Input);
     }
 
     public override void InitHotkeys(HotkeyHandler handler) {
@@ -248,8 +256,6 @@ internal class SelectionTool : Tool {
         CurrentSelections = null;
     }
 
-    public override string Name => "Selection";
-
     public override string PersistenceGroup => "Selection";
 
     private static readonly List<string> _ValidLayers = new() {
@@ -413,7 +419,7 @@ internal class SelectionTool : Tool {
         return delta;
     }
 
-    private static Vector2 SnapToGridIfNeeded(Vector2 pos) {
+    private Vector2 SnapToGridIfNeeded(Vector2 pos) {
         if (!Input.Keyboard.Ctrl()) {
             pos = pos.GridPosRound(8).ToVector2() * 8f;
         }
@@ -458,15 +464,27 @@ internal class SelectionTool : Tool {
         }
 
         if (Input.Keyboard.Shift() && CurrentSelections is { }) {
+            foreach (var h in CurrentSelections.SelectWhereNotNull(s => s.Handler as Tilegrid.RectSelectionHandler))
+                h.MergeWith(rect, exclude: false);
+
             CurrentSelections = CurrentSelections
                 .Concat(finalSelections)
                 .DistinctBy(x => x.Handler.Parent)
                 .ToList();
         } else if (Input.Keyboard.Ctrl() && CurrentSelections is { }) {
-            CurrentSelections = CurrentSelections
-                .Except(finalSelections, new HandlerParentEqualityComparer())
-                .DistinctBy(x => x.Handler.Parent)
-                .ToList();
+            var newSelections = CurrentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
+
+            // tile selections are unique - they need to remain in the selection list, and we need to call MergeWith
+            foreach (var tileSelection in CurrentSelections.Where(s => s.Handler is Tilegrid.RectSelectionHandler)) {
+                if (tileSelection is { Handler: Tilegrid.RectSelectionHandler tileHandler }) {
+                    tileHandler.MergeWith(rect, exclude: true);
+
+                    newSelections = newSelections.Append(tileSelection);
+                }
+            }
+
+            CurrentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
+            ;
         } else {
             Deselect();
             CurrentSelections = finalSelections.ToList();
@@ -483,8 +501,8 @@ internal class SelectionTool : Tool {
         }
     }
 
-    public override void RenderGui(EditorScene editor, bool firstGui) {
-        BeginMaterialListGUI(firstGui);
+    public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
+        showSearchBar = false;
 
         if (Layer == LayerNames.CUSTOM_LAYER) {
             var c = (int) CustomLayer;
@@ -497,7 +515,5 @@ internal class SelectionTool : Tool {
 
             CustomLayer = (SelectionLayer) c;
         }
-
-        EndMaterialListGUI(searchBar: false);
     }
 }

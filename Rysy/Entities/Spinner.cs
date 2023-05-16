@@ -96,7 +96,7 @@ public sealed class Spinner : Entity, IPlaceable {
         ["dust"] = Fields.Bool(false),
     };
 
-    public static List<Placement>? GetPlacements() => new() {
+    public static PlacementList GetPlacements() => new() {
         new("Spinner")
     };
 }

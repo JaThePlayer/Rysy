@@ -36,6 +36,13 @@ public static class EntityRegistry {
         return new();
     }
 
+    public static Type? GetTypeForSID(string sid) {
+        if (SIDToType.TryGetValue(sid, out var type))
+            return type;
+
+        return null;
+    }
+
     public static ModMeta? GetMod(string sid) {
         return SIDToMod.GetValueOrDefault(sid);
     }
@@ -55,6 +62,7 @@ public static class EntityRegistry {
         LoadingScene.Text = baseText;
         using var watch = new ScopedStopwatch("Registering entities");
 
+        /*
         if (loadLuaPlugins && Settings.Instance.LonnPluginPath is { } path) {
             using var w = new ScopedStopwatch("Registering Lua entities");
             LoadingScene.Text = $"{baseText} Loenn";
@@ -66,12 +74,35 @@ public static class EntityRegistry {
             foreach (var item in Directory.EnumerateFiles(Path.Combine(path, "triggers"), "*.lua")) {
                 RegisterFromLua(File.ReadAllText(item), Path.GetFileName(item), trigger: true);
             }
-        }
+        }*/
 
         foreach (var (_, mod) in ModRegistry.Mods) {
             LoadingScene.Text = $"{baseText} {mod.Name}";
 
             LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins);
+        }
+
+        ModRegistry.RegisterModAssemblyScanner(ModScanner);
+    }
+
+    private static void ModScanner(ModMeta mod, Assembly? oldAsm) {
+        if (oldAsm is { }) {
+            foreach (var t in GetEntityTypesFromAsm(oldAsm)) {
+                foreach (var sid in GetSIDsForType(t)) {
+                    SIDToType.Remove(sid);
+                    SIDToMod.Remove(sid);
+                    EntityPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
+                }
+            }
+        }
+
+        if (mod.PluginAssembly is { } asm) {
+            RegisterFrom(asm, mod);
+        }
+
+        // perform a quick reload to make entities use their new C# type.
+        if (RysyEngine.Scene is EditorScene editor) {
+            editor.QuickReload();
         }
     }
 
@@ -85,24 +116,6 @@ public static class EntityRegistry {
                     LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
                 }
             }
-
-        if (loadCSharpPlugins)
-            LoadRysyPlugins(mod);
-    }
-
-    private static void LoadRysyPlugins(ModMeta mod) {
-        mod.OnAssemblyReloaded += (asm) => {
-            RegisterFrom(asm, mod);
-
-            // perform a quick reload to make entities use their new C# type.
-            if (RysyEngine.Scene is EditorScene editor) {
-                editor.QuickReload();
-            }
-        };
-
-        if (mod.PluginAssembly is { } asm) {
-            RegisterFrom(asm, mod);
-        }
     }
 
     private static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
@@ -150,18 +163,7 @@ public static class EntityRegistry {
                             SIDToMod[pl.Name] = mod;
                     }
 
-                var placements = trigger ? TriggerPlacements : EntityPlacements;
-
-                lock (placements) {
-                    foreach (var palcement in pl.Placements) {
-                        placements.Add(new(palcement.Name) {
-                            ValueOverrides = palcement.Data,
-                            SID = pl.Name,
-                            //Tooltip = mod is { } ? $"{mod.Name}\n[From Lonn]" : "[From Lonn]",
-                            PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity
-                        });
-                    }
-                }
+                RegisterLuaPlacements(pl.Name, trigger, pl.Placements);
 
                 if (pl.FieldList is { } fields) {
                     lock (SIDToFields) {
@@ -175,11 +177,32 @@ public static class EntityRegistry {
         }
     }
 
-    public static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
-        foreach (var t in asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity) && t != typeof(Trigger))) {
-            var sids = t.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToArray();
+    internal static void RegisterLuaPlacements(string sid, bool trigger, List<LonnEntityPlugin.LonnPlacement> placements) {
+        var placementsRegistry = trigger ? TriggerPlacements : EntityPlacements;
 
-            if (sids.Length == 0) {
+        lock (placementsRegistry) {
+            foreach (var palcement in placements) {
+                placementsRegistry.Add(new(palcement.Name) {
+                    ValueOverrides = palcement.Data,
+                    SID = sid,
+                    PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
+                    FromLonn = true,
+                });
+            }
+        }
+    }
+
+    private static IEnumerable<Type> GetEntityTypesFromAsm(Assembly asm) 
+        => asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity) && t != typeof(Trigger));
+
+    private static List<string> GetSIDsForType(Type type)
+        => type.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToList();
+
+    public static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
+        foreach (var t in GetEntityTypesFromAsm(asm)) {
+            var sids = GetSIDsForType(t);
+
+            if (sids.Count == 0) {
                 Logger.Write("EntityRegistry", LogLevel.Warning, $"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
                 continue;
             }
@@ -199,17 +222,26 @@ public static class EntityRegistry {
                 }
 
             var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
-            if (getPlacementsMethod is { } && (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null) is { } placements) {
-                var isTrigger = t.IsSubclassOf(typeof(Trigger));
-                var placementsRegistry = isTrigger ? TriggerPlacements : EntityPlacements;
-
-                lock (placementsRegistry) {
-                    foreach (var placement in placements) {
-                        placement.SID ??= sids.Length == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
-                        placement.PlacementHandler = isTrigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
-                    }
-                    placementsRegistry.AddRange(placements);
+            try {
+                if (getPlacementsMethod is { } && (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null) is { } placements) {
+                    AddPlacements(t, sids, placements);
                 }
+            } catch (Exception e) {
+                Logger.Error(e, $"Failed to get placements for entity {string.Join(',', sids)}");
+            }
+
+            var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
+            try {
+                if (getPlacementsForSIDMethod is { }) {
+                    foreach (var sid in sids) {
+                        var placements = (IEnumerable<Placement>?) getPlacementsForSIDMethod.Invoke(null, new object[] { sid });
+
+                        if (placements is { })
+                            AddPlacements(t, new() { sid }, placements);
+                    }
+                }
+            } catch (Exception e) {
+                Logger.Error(e, $"Failed to get placements for entity {string.Join(',', sids)}");
             }
 
             var getFieldsMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
@@ -219,9 +251,32 @@ public static class EntityRegistry {
                     SIDToFields[sid] = dele;
                 }
             }
+
+            var getFieldsForSIDMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
+            if (getFieldsForSIDMethod is { }) {
+                var dele = getFieldsForSIDMethod.CreateDelegate<Func<string, FieldList>>();
+                foreach (var sid in sids) {
+                    SIDToFields[sid] = () => dele(sid);
+                }
+            }
         }
     }
 
+    private static void AddPlacements(Type? t, List<string> sids, IEnumerable<Placement> placements) {
+        if (t is null)
+            return;
+
+        var isTrigger = t.IsSubclassOf(typeof(Trigger));
+        var placementsRegistry = isTrigger ? TriggerPlacements : EntityPlacements;
+
+        lock (placementsRegistry) {
+            foreach (var placement in placements) {
+                placement.SID ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
+                placement.PlacementHandler = isTrigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
+            }
+            placementsRegistry.AddRange(placements);
+        }
+    }
 
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");

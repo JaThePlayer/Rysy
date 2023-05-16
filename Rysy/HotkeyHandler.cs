@@ -5,7 +5,11 @@ namespace Rysy;
 public class HotkeyHandler {
     private List<Hotkey> Hotkeys = new();
 
-    public HotkeyHandler() { }
+    public Input Input { get; private set; }
+
+    public HotkeyHandler(Input input) {
+        Input = input;
+    }
 
     /// <summary>
     /// Adds a new hotkey, loading it from settings using <paramref name="name"/>, saving the hotkey to the settings file using <paramref name="defaultKeybind"/> if it doesn't exist.

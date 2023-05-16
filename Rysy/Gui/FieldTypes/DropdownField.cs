@@ -1,12 +1,16 @@
 ﻿using ImGuiNET;
 using Rysy.Helpers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
 
 static class DropdownHelper {
     public static Dictionary<Type, object> DefaultStringToT = new() {
         [typeof(string)] = (Func<string?, string>) ((string? s) => s ?? ""),
+        [typeof(char)] = (Func<string?, char>) ((string? s) => s is [char c] ? c : '\0'),
         [typeof(object)] = (Func<string?, object>) ((string? s) => s ?? ""),
+        [typeof(int)] = (Func<string?, int>) ((string? s) => s is { } ? int.Parse(s) : 0),
+        [typeof(float)] = (Func<string?, float>) ((string? s) => s is { } ? float.Parse(s) : 0),
     };
 }
 
@@ -14,7 +18,7 @@ public record class DropdownField<T> : Field
     where T : notnull {
     public bool NullAllowed { get; set; }
 
-    public Func<Dictionary<T, string>> Values;
+    public Func<IDictionary<T, string>> Values;
 
     public Func<string?, T> StringToT;
 
@@ -30,6 +34,16 @@ public record class DropdownField<T> : Field
         StringToT = (Func<string?, T>) obj;
     }
 
+    private IDictionary<T, string> GetValues() {
+        if (typeof(T) == typeof(object)) {
+            // the value we get might be an int, but dropdown values might be floats etc.
+            // to avoid issues with finding the dropdown values in those cases, we'll compare the string representations...
+            return new Dictionary<T, string>(Values(), new ToStringEqualityComparer());
+        }
+
+        return Values();
+    }
+
     public override object GetDefault() => Default!;
     public override void SetDefault(object newDefault)
         => Default = (T) Convert.ChangeType(newDefault, typeof(T));
@@ -39,68 +53,47 @@ public record class DropdownField<T> : Field
             return (NullAllowed && value is null) && base.IsValid(value);
         }
 
-        return (Editable || Values().TryGetValue(val, out _)) && base.IsValid(value);
+        return (Editable || GetValues().TryGetValue(val, out _)) && base.IsValid(value);
     }
 
     public override object? RenderGui(string fieldName, object value) {
         if (value is not T val) {
-            //return null;
-            val = StringToT(null);
+            val = StringToT(value is string s ? s : null);
         }
 
         var prevVal = val;
 
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref val, Values(), StringToT, ref Search, Tooltip) ? val : null;
+            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip) ? val : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref val, Values(), ref Search, Tooltip) ? val : null;
-            /*
-            string? humanizedName = null;
-            if (value is T val)
-                Values().TryGetValue(val, out humanizedName);
-
-            humanizedName ??= value?.ToString() ?? "";
-
-            object? ret = null;
-
-            if (ImGui.BeginCombo(fieldName, humanizedName).WithTooltip(Tooltip)) {
-                foreach (var (key, name) in Values()) {
-                    if (ImGui.MenuItem(name)) {
-                        ret = key;
-                    }
-                }
-
-                ImGui.EndCombo();
-            }
-
-            return ret;*/
+            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip) ? val : null;
         }
     }
 
-    public DropdownField<T> SetValues(Cache<Dictionary<T, string>> cache) {
+    public DropdownField<T> SetValues(Cache<IDictionary<T, string>> cache) {
         Values = () => cache.Value;
 
         return this;
     }
 
-    public DropdownField<T> SetValues(Dictionary<T, string> values) {
+    public DropdownField<T> SetValues(IDictionary<T, string> values) {
         Values = () => values;
 
         return this;
     }
 
-    public DropdownField<T> SetValues(Func<Dictionary<T, string>> values) {
+    public DropdownField<T> SetValues(Func<IDictionary<T, string>> values) {
         Values = values;
 
         return this;
     }
 
     /// <summary>
-    /// Allows the field's value to be edited beyond the values from the dropdown.
+    /// Allows or disallows the field's value to be edited beyond the values from the dropdown.
     /// </summary>
     /// <returns>this</returns>
-    public DropdownField<T> AllowEdits() {
-        Editable = true;
+    public DropdownField<T> AllowEdits(bool editable = true) {
+        Editable = editable;
 
         return this;
     }
@@ -116,4 +109,21 @@ public record class DropdownField<T> : Field
     }
 
     public override Field CreateClone() => this with { };
+
+    private struct ToStringEqualityComparer : IEqualityComparer<T> {
+        public bool Equals(T? x, T? y) {
+            if (x is null) {
+                return y is null;
+            }
+            if (y is null) {
+                return x is null;
+            }
+
+            return x.ToString() == y.ToString();
+        }
+
+        public int GetHashCode([DisallowNull] T obj) {
+            return obj.ToString()!.GetHashCode();
+        }
+    }
 }

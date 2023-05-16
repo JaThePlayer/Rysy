@@ -146,6 +146,20 @@ function drawableSpriteMt.__index:useRelativeQuad(x, y, width, height, hideOverf
     self._RYSYqY = y
     self._RYSYqW = width
     self._RYSYqH = height
+
+	self.quad = {
+		x=x,y=y,w=width,h=height
+	}
+end
+
+function drawableSpriteMt.__newindex(self, key, value)
+	rawset(self, key, value)
+	if value and key == "quad" then
+		self._RYSYqX = value.x
+		self._RYSYqY = value.y
+		self._RYSYqW = value.w
+		self._RYSYqH = value.h
+	end
 end
 
 function RYSY_UNPACKSPR(drawableSprite)

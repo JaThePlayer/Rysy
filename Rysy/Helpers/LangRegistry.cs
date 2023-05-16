@@ -78,7 +78,7 @@ public static class LangRegistry {
             }
 
             lock (lang)
-                lang.Translations[key] = value.Replace(@"\n", "\n");
+                lang.Translations[key] = value.Replace(@"\n", "\n").Trim();
         }
     }
 }

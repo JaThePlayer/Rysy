@@ -17,13 +17,25 @@ public class Camera {
     }
 
     private Viewport _Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
-    public Viewport Viewport => _Viewport;
+    public Viewport Viewport {
+        get => _Viewport;
+        set {
+            _Viewport = value;
+            RecalculateMatrix();
+        }
+    }
 
     public Camera() {
         RysyEngine.OnViewportChanged += (v) => {
             _Viewport = v;
             RecalculateMatrix();
         };
+
+        RecalculateMatrix();
+    }
+
+    public Camera(Viewport viewport) {
+        _Viewport = viewport;
 
         RecalculateMatrix();
     }
@@ -73,21 +85,25 @@ public class Camera {
         CenterOnRealPos(ScreenToReal(position));
     }
 
-    public void CenterOnMousePos() {
-        CenterOnScreenPos(Input.Mouse.Pos.ToVector2());
+    public void CenterOnMousePos(Input? input = null) {
+        input ??= Input.Global;
+
+        CenterOnScreenPos(input.Mouse.Pos.ToVector2());
     }
 
     /// <summary>
     /// Zooms the camera in.
     /// </summary>
-    public void ZoomIn() {
-        DoZoom(Scale * 2f);
+    public void ZoomIn(Input? input = null) {
+        DoZoom(Scale * 2f, input);
     }
 
-    private void DoZoom(float newZoom) {
-        var rp = ScreenToReal(Input.Mouse.Pos.ToVector2());
+    private void DoZoom(float newZoom, Input? input = null) {
+        input ??= Input.Global;
+
+        var rp = ScreenToReal(input.Mouse.Pos.ToVector2());
         Scale = newZoom;
-        var rp2 = ScreenToReal(Input.Mouse.Pos.ToVector2());
+        var rp2 = ScreenToReal(input.Mouse.Pos.ToVector2());
 
         _pos += rp - rp2;
 
@@ -97,8 +113,8 @@ public class Camera {
     /// <summary>
     /// Zooms the camera out.
     /// </summary>
-    public void ZoomOut() {
-        DoZoom(Scale / 2f);
+    public void ZoomOut(Input? input = null) {
+        DoZoom(Scale / 2f, input);
     }
 
     /// <summary>
@@ -152,19 +168,19 @@ public class Camera {
         return Viewport.Bounds.Intersects(new Rectangle((int) x, (int) y, (int) w, (int) h));
     }
 
-    public void HandleMouseMovement() {
+    public void HandleMouseMovement(Input input) {
         // Right click drag - move camera
-        if (Input.Mouse.Right.Held() && Input.Mouse.PositionDelta != default) {
-            Move(-Input.Mouse.PositionDelta.ToNVector2() / Scale);
+        if (input.Mouse.Right.Held() && input.Mouse.PositionDelta != default) {
+            Move(-input.Mouse.PositionDelta.ToNVector2() / Scale);
         }
 
         // Scrolled - zoom camera
-        switch (Input.Mouse.ScrollDelta) {
+        switch (input.Mouse.ScrollDelta) {
             case > 0:
-                ZoomIn();
+                ZoomIn(input);
                 break;
             case < 0:
-                ZoomOut();
+                ZoomOut(input);
                 break;
         }
     }

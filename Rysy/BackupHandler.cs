@@ -3,12 +3,34 @@ using Rysy.Platforms;
 
 namespace Rysy;
 
+public record class BackupInfo(string MapName, DateTime Time, string Filepath, long Filesize) {
+    public static BackupInfo FromFilepath(string path) {
+        var relative = Path.GetRelativePath(BackupHandler.BackupFolder, path);
+
+        var mapName = Path.GetDirectoryName(relative)!;
+        var time = File.GetLastWriteTime(path);
+        
+        return new(mapName, time, path, new FileInfo(path).Length);
+    }
+}
+
 public static class BackupHandler {
-    private static string BackupFolder => $"{RysyPlatform.Current.GetSaveLocation()}/Backups";
+    public static string BackupFolder => $"{RysyPlatform.Current.GetSaveLocation()}/Backups";
 
-    private const string IndexPath = "Backups/index.json";
+    public const string IndexPath = "Backups/index.json";
 
-    private static Dictionary<int, string> LoadIndex() => SettingsHelper.Load<Dictionary<int, string>>(IndexPath, false);
+    public static Dictionary<int, string> LoadIndex() => SettingsHelper.Load<Dictionary<int, string>>(IndexPath, false);
+
+    public static List<BackupInfo> GetBackups() {
+        var index = LoadIndex();
+        var backupFolder = BackupFolder;
+
+        return index
+            .Where(p => File.Exists(p.Value))
+            .OrderByDescending(p => p.Key)
+            .Select(p => BackupInfo.FromFilepath(p.Value))
+            .ToList();
+    }
 
     public static DateTime? GetMostRecentBackupDate() {
         var index = LoadIndex();
@@ -32,6 +54,18 @@ public static class BackupHandler {
         }
 
         var package = BinaryPacker.FromBinary(latest);
+
+        return Map.FromBinaryPackage(package);
+    }
+
+    public static Map? LoadBackup(BackupInfo backup) {
+        var file = backup.Filepath;
+
+        if (!File.Exists(file)) {
+            return null;
+        }
+
+        var package = BinaryPacker.FromBinary(file);
 
         return Map.FromBinaryPackage(package);
     }

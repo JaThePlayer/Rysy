@@ -80,8 +80,6 @@ public class HistoryHandler {
 
             var m = type?.GetMethod(nameof(ISerializableAction.FromSerializable));
 
-            Data = Data.FixDict(StringComparer.Ordinal);
-
             var act = (ISerializableAction) m.Invoke(null, new object[] { map, Data })!;
 
             return act;

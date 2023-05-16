@@ -1,10 +1,12 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Helpers;
+using System;
 
 namespace Rysy.Entities;
 
 [CustomEntity("cassetteBlock")]
-public class CassetteBlock : Entity, ISolid {
+public class CassetteBlock : Entity, ISolid, IPlaceable {
     public override int Depth => Depths.Solids;
 
     public virtual string Sprite => "objects/cassetteblock/solid";
@@ -46,4 +48,22 @@ public class CassetteBlock : Entity, ISolid {
         var index = Index;
         return ConnectedEntityHelper.GetSprites(this, Room.Entities[typeof(CassetteBlock)].Where(e => e is CassetteBlock b && b.Index == index), GetSprite, handleInnerCorners: true);
     }
+
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
+
+    public static FieldList GetFields() => new(new {
+        index = Fields.Dropdown(0, Indexes),
+        tempo = 1.0,
+    });
+
+    public static PlacementList GetPlacements() => Enumerable.Range(0, 4)
+        .Select(i => new Placement($"cassette_block_{i}", new {
+            index = i
+        }))
+        .ToPlacementList();
+
+    private static TranslatedDictionary<int> Indexes = new("rysy.cassetteBlockIndex") {
+        0, 1, 2, 3
+    };
 }

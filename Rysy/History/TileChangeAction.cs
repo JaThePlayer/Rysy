@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Graphics;
+
+namespace Rysy.History;
 
 /// <summary>
 /// An action where one tile gets changed in a tile grid. Calls SafeSetTile.

@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
-using Rysy.History;
+using Rysy.Helpers;
+using System.IO;
 
 namespace Rysy.Mods;
 
@@ -18,32 +19,74 @@ public sealed class FolderModFilesystem : IModFilesystem {
         Watcher.Changed += (s, e) => {
             if (e.Name is null)
                 return;
-
+            e.LogAsJson();
             var path = e.Name.Unbackslash();
-            if (!WatchedAssets.TryGetValue(path, out var watched)) {
-                // handle cases where you're editing a folder - all files in that folder need to be updated
-                if (WatchedAssets.FirstOrDefault(w => !Path.GetRelativePath(relativeTo: w.Key, path).StartsWith("..")) is not { Value: { } } watchedDir)
-                    return;
-
-                watched ??= watchedDir.Value;
-            }
-
-            RysyEngine.OnEndOfThisFrame += () => {
-                foreach (var asset in watched) {
-                    using var stream = OpenFile(path);
-                    if (stream is null)
-                        return;
-                    try {
-                        asset.OnChanged(stream);
-                    } catch (Exception ex) {
-                        Logger.Error(ex, $"Error when hot reloading {path}");
-                    }
+            switch (e.ChangeType) {
+                case WatcherChangeTypes.Created: {
+                    break;
                 }
-            };
+                case WatcherChangeTypes.Deleted:
+                    break;
+                case WatcherChangeTypes.Changed: {
+                    WatchedAssets.Keys.LogAsJson();
+                    /*
+                    if (!WatchedAssets.TryGetValue(path, out var watched)) {
+                        // handle cases where you're editing a folder - all files in that folder need to be updated
+                        if (WatchedAssets.FirstOrDefault(w => !Path.GetRelativePath(relativeTo: w.Key, path).StartsWith("..")) is not { Value: { } } watchedDir)
+                            return;
+                        Console.WriteLine(watchedDir.Key);
+                        watched ??= watchedDir.Value;
+                    }
 
+                    CallWatchers(path, watched);*/
+                    if (WatchedAssets.TryGetValue(path, out var watched)) {
+                        CallWatchers(path, watched);
+                    }
+
+                    // handle directory watchers
+                    foreach (var directoryWatchers in WatchedAssets.Where(w => path.StartsWith(w.Key) && path != w.Key)) {
+                        if (Directory.Exists(VirtToRealPath(path))) {
+                            foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
+                                CallWatchers(item, directoryWatchers.Value);
+                            }
+                        } else {
+                            CallWatchers(path, directoryWatchers.Value);
+                        }
+
+                    }
+
+                    break;
+                }
+                case WatcherChangeTypes.Renamed:
+                    break;
+                default:
+                    break;
+            }
         };
         Watcher.IncludeSubdirectories = true;
         Watcher.EnableRaisingEvents = true;
+    }
+
+    private void CallWatchers(string path, List<WatchedAsset>? watched) {
+        RysyEngine.OnEndOfThisFrame += () => {
+            foreach (var asset in watched?.ToList() ?? new()) {
+                /*
+                using var stream = OpenFile(path);
+                if (stream is null)
+                    return;
+                try {
+                    asset.OnChanged?.Invoke(stream);
+                } catch (Exception ex) {
+                    Logger.Error(ex, $"Error when hot reloading {path}");
+                }*/
+                Console.WriteLine($"reloading {path}");
+                try {
+                    asset.OnChanged?.Invoke(path);
+                } catch (Exception ex) {
+                    Logger.Error(ex, $"Error when hot reloading {path}");
+                }
+            }
+        };
     }
 
     public Task InitialScan() {

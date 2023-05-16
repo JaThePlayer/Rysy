@@ -20,10 +20,12 @@ public static class SmartFPSHandler {
         if (!Enabled)
             return;
 
-        if (Input.Mouse.PositionDelta == Point.Zero 
-        && Input.Mouse.ScrollDelta == 0 
-        && !Input.Keyboard.AnyKeyHeld 
-        && !Input.Mouse.AnyClicked
+        var input = Input.Global;
+
+        if (input.Mouse.PositionDelta == Point.Zero 
+        && input.Mouse.ScrollDelta == 0 
+        && !input.Keyboard.AnyKeyHeld 
+        && !input.Mouse.AnyClicked
         && !ImGui.GetIO().WantCaptureMouse) {
             if (InactiveTimer > 2f && !LoweredFps) {
 

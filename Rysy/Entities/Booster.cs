@@ -7,14 +7,15 @@ public class Booster : SpriteEntity, IPlaceable {
     public override int Depth => -8500;
     public override string TexturePath => Bool("red", false) ? "objects/booster/boosterRed00" : "objects/booster/booster00";
 
-    public static FieldList GetFields() => new() { 
-        ["red"] = Fields.Bool(false),
-    };
+    public static FieldList GetFields() => new(new {
+        red = false,
+        ch9_hub_booster = false
+    });
 
-    public static List<Placement>? GetPlacements() => new() {
-        new("Booster (Green)"),
-        new("Booster (Red)") {
-            ["red"] = true,
-        }
+    public static PlacementList GetPlacements() => new() {
+        new("green"),
+        new("red", new {
+            red = true,
+        }),
     };
 }
