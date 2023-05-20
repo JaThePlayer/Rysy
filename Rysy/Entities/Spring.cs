@@ -41,10 +41,13 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         WallRight
     }
 
-    public static FieldList GetFields() => new();
+    public static FieldList GetFields() => new(new {
+        playerCanUse = true
+    });
+
     public static PlacementList GetPlacements() => new() {
-        new Placement("Spring (Up)").ForSID("spring"),
-        new Placement("Spring (Left)").ForSID("wallSpringLeft"),
-        new Placement("Spring (Right)").ForSID("wallSpringRight"),
+        new Placement("up").ForSID("spring"),
+        new Placement("right").ForSID("wallSpringLeft"),
+        new Placement("left").ForSID("wallSpringRight"),
     };
 }

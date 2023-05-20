@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("refill")]
-public class Refill : SpriteEntity {
+public class Refill : SpriteEntity, IPlaceable {
     public override int Depth => -100;
 
     public override Color OutlineColor => Color.Black;
@@ -12,4 +12,16 @@ public class Refill : SpriteEntity {
         Bool("twoDash", false)
             ? "objects/refillTwo/idle00"
             : "objects/refill/idle00";
+
+    public static FieldList GetFields() => new(new {
+        oneUse = false,
+        twoDash = false
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("one_dash"),
+        new("two_dashes", new {
+            twoDash = true
+        })
+    };
 }

@@ -23,7 +23,7 @@ public class ToolHandler {
         t.Input = input;
         t.Init();
 
-        t.HotkeyHandler = new(input);
+        t.HotkeyHandler = new(input, updateInImgui: false);
         t.InitHotkeys(t.HotkeyHandler);
 
         return t;
@@ -89,7 +89,7 @@ public class ToolHandler {
 
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {
-            tool.HotkeyHandler = new(Input);
+            tool.HotkeyHandler = new(Input, handler.UpdateInImgui);
             tool.InitHotkeys(tool.HotkeyHandler);
         }
 

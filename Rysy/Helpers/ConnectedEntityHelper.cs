@@ -1,148 +1,132 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Helpers;
 
 public static class ConnectedEntityHelper {
-    public delegate Sprite ConnectedEntityHelperSpriteGetter(NineSliceLocation loc);
+    public delegate Sprite ConnectedEntityHelperSpriteGetter(Vector2 pos, NineSliceLocation loc);
+    public delegate NineSliceLocation MaskToLocation(bool upLeft, bool up, bool upRight, bool left, bool mid, bool right, bool botLeft, bool botMid, bool botRight);
 
-    public static IEnumerable<ISprite> GetSprites(Entity self, IEnumerable<Entity> otherEntities, ConnectedEntityHelperSpriteGetter getTexture, bool ignoreMiddle = false, bool handleInnerCorners = false) {
-        var w = self.Width;
-        var h = self.Height;
+    public static IEnumerable<ISprite> GetSprites(Entity self, IEnumerable<Entity> allEntities, ConnectedEntityHelperSpriteGetter getTexture, Func<Entity, Rectangle>? getRectangle = null, MaskToLocation? maskToLocation = null, bool ignoreMiddle = false, bool handleInnerCorners = false) {
+        getRectangle ??= (entity) => entity.Rectangle;
+        maskToLocation ??= DefaultMaskToLocation;
 
-        var others = otherEntities.ToList();
+        var selfRect = getRectangle(self);
+        var w = selfRect.Width;
+        var h = selfRect.Height;
+        var selfPos = selfRect.Location.ToVector2();
 
-        // topmiddle and botmiddle
-        for (int x = 8; x < w - 8; x += 8) {
-            if (Open(self, others, x, -8f)) {
-                yield return GetTexture(NineSliceLocation.TopMiddle, x, 0f);
-            } else if (handleInnerCorners) {
-                if (Open(self, others, x + 8, -8f)) {
-                    yield return GetTexture(NineSliceLocation.InnerCorner_UpRight, x, 0f);
-                } else if (Open(self, others, x - 8, -8f)) {
-                    yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, x, 0f);
-                } else
-                    yield return GetTexture(NineSliceLocation.Middle, x, 0f);
+        var bounds = selfRect.AddSize(16, 16).MovedBy(-8, -8);
+
+        // only grab the entities we have a chance of connecting to
+        var others = allEntities.Select(e => getRectangle(e)).Where(bounds.Intersects).ToList();
+
+        Sprite spr;
+
+        if (ignoreMiddle) {
+            if (GetSprite(selfPos, others, getTexture, 0, 0, ignoreMiddle, handleInnerCorners, maskToLocation, out spr)) 
+                yield return spr;
+
+            if (GetSprite(selfPos, others, getTexture, w - 8, h - 8, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                yield return spr;
+
+            if (GetSprite(selfPos, others, getTexture, w - 8, 0, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                yield return spr;
+
+            if (GetSprite(selfPos, others, getTexture, 0, h - 8, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                yield return spr;
+
+            for (int x = 8; x < w - 8; x += 8) {
+                if (GetSprite(selfPos, others, getTexture, x, 0, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                    yield return spr;
+
+                if (GetSprite(selfPos, others, getTexture, x, h - 8, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                    yield return spr;
             }
 
+            for (int y = 8; y < h - 8; y += 8) {
+                if (GetSprite(selfPos, others, getTexture, 0, y, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                    yield return spr;
 
-            if (Open(self, others, x, h)) {
-                yield return GetTexture(NineSliceLocation.BottomMiddle, x, h - 8f);
-            } else if (handleInnerCorners) {
-                if (Open(self, others, x + 8, h)) {
-                    yield return GetTexture(NineSliceLocation.InnerCorner_DownRight, x, h - 8f);
-                } else if (Open(self, others, x - 8, h)) {
-                    yield return GetTexture(NineSliceLocation.InnerCorner_DownLeft, x, h - 8f);
-                } else
-                    yield return GetTexture(NineSliceLocation.Middle, x, h - 8f);
-            }
-        }
-
-        // leftmid, rightmid
-        for (int y = 8; y < h - 8; y += 8) {
-            if (Open(self, others, -8f, y)) {
-                yield return GetTexture(NineSliceLocation.Left, 0f, y);
-            } else if (handleInnerCorners) {
-                if (Open(self, others, -8f, y - 8))
-                    yield return GetTexture(NineSliceLocation.InnerCorner_UpLeft, 0f, y);
-                else if (Open(self, others, -8f, y + 8))
-                    yield return GetTexture(NineSliceLocation.InnerCorner_DownLeft, 0f, y);
-                else
-                    yield return GetTexture(NineSliceLocation.Middle, 0f, y);
+                if (GetSprite(selfPos, others, getTexture, w - 8, y, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                    yield return spr;
             }
 
+            yield break;
+        }
 
-            if (Open(self, others, w, y)) {
-                yield return GetTexture(NineSliceLocation.Right, w - 8f, y);
-            } else if (handleInnerCorners) {
-                if (Open(self, others, w + 8, y - 8))
-                    yield return GetTexture(NineSliceLocation.InnerCorner_UpRight, w - 8f, y);
-                else if (Open(self, others, w + 8, y + 8))
-                    yield return GetTexture(NineSliceLocation.InnerCorner_DownRight, w - 8f, y);
-                else
-                    yield return GetTexture(NineSliceLocation.Middle, w - 8f, y);
+        for (int x = 0; x < w; x += 8) {
+            for (int y = 0; y < h; y += 8) {
+                if (GetSprite(selfPos, others, getTexture, x, y, ignoreMiddle, handleInnerCorners, maskToLocation, out spr))
+                    yield return spr;
             }
-        }
-
-        if (!ignoreMiddle) {
-            for (int x = 8; x < w - 8; x++) {
-                for (int y = 8; y < h - 8; y++) {
-                    yield return GetTexture(NineSliceLocation.Middle, x, y);
-                }
-            }
-        }
-
-        // CORNERS
-
-        // leftTop
-        {
-            var top = Open(self, others, 0, -8f);
-            var left = Open(self, others, -8, 0f);
-
-            yield return GetTexture((top, left) switch {
-                (true, true) => NineSliceLocation.TopLeft,
-                (true, false) => NineSliceLocation.TopMiddle,
-                (false, true) => NineSliceLocation.Left,
-                (false, false) => NineSliceLocation.InnerCorner_UpLeft, // todo - unchecked
-            }, 0f, 0f);
-        }
-
-        // rightTop
-        {
-            var top = Open(self, others, w - 8, -8f);
-            var right = Open(self, others, w, 0f);
-
-            yield return GetTexture((top, right) switch {
-                (true, true) => NineSliceLocation.TopRight,
-                (true, false) => NineSliceLocation.TopMiddle,
-                (false, true) => NineSliceLocation.Right,
-                (false, false) => NineSliceLocation.InnerCorner_UpRight,
-            }, w - 8f, 0f);
-        }
-
-        // leftBot
-        {
-            var bot = Open(self, others, 0, h + 8f);
-            var left = Open(self, others, -8, h - 8);
-
-            yield return GetTexture((bot, left) switch {
-                (true, true) => NineSliceLocation.BottomLeft,
-                (true, false) => NineSliceLocation.BottomMiddle,
-                (false, true) => NineSliceLocation.Left,
-                (false, false) => NineSliceLocation.InnerCorner_DownLeft,
-            }, 0f, h - 8f);
-        }
-
-        // rightBot
-        {
-            var bot = Open(self, others, w - 8, h + 8f);
-            var right = Open(self, others, w, h - 8);
-
-            yield return GetTexture((bot, right) switch {
-                (true, true) => NineSliceLocation.BottomRight,
-                (true, false) => NineSliceLocation.BottomMiddle,
-                (false, true) => NineSliceLocation.Right,
-                (false, false) => NineSliceLocation.InnerCorner_DownRight, // todo - unchecked
-            }, w - 8f, h - 8f);
-        }
-
-
-        Sprite GetTexture(NineSliceLocation loc, float offX, float offY) {
-            var s = getTexture(loc);
-            return s with {
-                Pos = self.Pos + s.Pos + new Vector2(offX, offY)
-            };
         }
     }
 
-    private static bool Open(Entity self, List<Entity> blocks, float offX, float offY) {
-        var selfRect = new Rectangle((int) (self.X + offX + 4f), (int) (self.Y + offY + 4f), 1, 1);
+    public static (bool upLeft, bool up, bool upRight, bool left, bool mid, bool right, bool botLeft, bool botMid, bool botRight) GetOpen(Vector2 pos, List<Rectangle> allRectangles, float x, float y) {
+        var others = CollectionsMarshal.AsSpan(allRectangles);
+
+        var (upLeft, up, upRight) = (Open(pos, others, x - 8, y - 8), Open(pos, others, x, y - 8), Open(pos, others, x + 8, y - 8));
+        var (left, mid, right) = (Open(pos, others, x - 8, y), Open(pos, others, x, y), Open(pos, others, x + 8, y));
+        var (botLeft, botMid, botRight) = (Open(pos, others, x - 8, y + 8), Open(pos, others, x, y + 8), Open(pos, others, x + 8, y + 8));
+
+        return (upLeft, up, upRight, left, mid, right, botLeft, botMid, botRight);
+    }
+
+    private static bool GetSprite(Vector2 pos, List<Rectangle> allEntities, ConnectedEntityHelperSpriteGetter getTexture, float x, float y, bool ignoreMiddle, bool handleInnerCorners, MaskToLocation maskToLocation, out Sprite spr) {
+        var others = CollectionsMarshal.AsSpan(allEntities);
+
+        (bool upLeft, bool up, bool upRight, bool left, bool mid, bool right, bool botLeft, bool botMid, bool botRight) = GetOpen(pos, allEntities, x, y);
+
+        NineSliceLocation loc = maskToLocation(upLeft, up, upRight, left, mid, right, botLeft, botMid, botRight);
+
+        if (ignoreMiddle && loc == NineSliceLocation.Middle) {
+            spr = default;
+            return false;
+        }
+
+        if (!handleInnerCorners && loc is NineSliceLocation.InnerCorner_UpRight or NineSliceLocation.InnerCorner_UpLeft or NineSliceLocation.InnerCorner_DownLeft or NineSliceLocation.InnerCorner_DownRight) {
+            spr = default;
+            return false;
+        }
+
+        spr = GetTexture(pos, loc, getTexture, x, y);
+        return true;
+    }
+
+    private static NineSliceLocation DefaultMaskToLocation(bool upLeft, bool up, bool upRight, bool left, bool mid, bool right, bool botLeft, bool botMid, bool botRight) {
+        return (upLeft, up, upRight, left, mid, right, botLeft, botMid, botRight) switch {
+            (true, false, _, false, _, _, _, _, _) => NineSliceLocation.InnerCorner_UpLeft,
+            (_, false, true, _, _, false, _, _, _) => NineSliceLocation.InnerCorner_UpRight,
+
+            (_, _, _, false, _, _, true, false, _) => NineSliceLocation.InnerCorner_DownLeft,
+            (_, _, _, _, _, false, _, false, true) => NineSliceLocation.InnerCorner_DownRight,
+
+            (_, true, _, true, _, false, _, _, _) => NineSliceLocation.TopLeft,
+            (_, true, _, false, _, true, _, _, _) => NineSliceLocation.TopRight,
+            (_, true, _, false, _, false, _, _, _) => NineSliceLocation.TopMiddle,
+
+            (_, _, _, true, _, false, _, true, _) => NineSliceLocation.BottomLeft,
+            (_, _, _, false, _, true, _, true, _) => NineSliceLocation.BottomRight,
+            (_, _, _, false, _, false, _, true, _) => NineSliceLocation.BottomMiddle,
+
+            (_, _, _, true, _, _, _, _, _) => NineSliceLocation.Left,
+            (_, _, _, _, _, true, _, _, _) => NineSliceLocation.Right,
+
+            _ => NineSliceLocation.Middle,
+        };
+    }
+
+    static Sprite GetTexture(Vector2 pos, NineSliceLocation loc, ConnectedEntityHelperSpriteGetter getTexture, float offX, float offY) {
+        return getTexture(pos + new Vector2(offX, offY), loc);
+    }
+
+    private static bool Open(Vector2 pos, Span<Rectangle> blocks, float offX, float offY) {
+        var selfRect = new Rectangle((int) (pos.X + offX + 4f), (int) (pos.Y + offY + 4f), 1, 1);
 
         foreach (var other in blocks) {
-            if (other == self) {
-                continue;
-            }
-
-            if (selfRect.Intersects(other.Rectangle)) {
+            if (selfRect.Intersects(other)) {
                 return false;
             }
         }

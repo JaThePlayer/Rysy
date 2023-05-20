@@ -20,7 +20,7 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
         _ => "49aaf0",
     }).FromRGB();
 
-    private Sprite GetSprite(NineSliceLocation loc) {
+    private Sprite GetSprite(Vector2 pos, NineSliceLocation loc) {
         var (sx, sy) = loc switch {
             NineSliceLocation.TopLeft => (0, 0),
             NineSliceLocation.TopMiddle => (8, 0),
@@ -39,7 +39,7 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
             _ => throw new NotImplementedException(),
         };
 
-        return ISprite.FromTexture(Sprite).CreateSubtexture(sx, sy, 8, 8) with {
+        return ISprite.FromTexture(pos, Sprite).CreateSubtexture(sx, sy, 8, 8) with {
             Color = Color,
         };
     }

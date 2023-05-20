@@ -129,6 +129,8 @@ public static class LonnDrawables {
                 lua.PeekTableIntValue(top, "_RYSYqW") ?? 0,
                 lua.PeekTableIntValue(top, "_RYSYqH") ?? 0
             );
+
+            sprite.Origin = default; // lonn ignores origin when using a subtexture...
         }
 
         return sprite;

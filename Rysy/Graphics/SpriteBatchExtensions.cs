@@ -11,9 +11,11 @@ public static class SpriteBatchExtensions {
         var angle = VectorExt.Angle(start, end);
         var len = Vector2.Distance(start, end) + magnitudeOffset;
 
+        //offset = offset;
+
         var rOffset = new Vector2(offset.X / len, (0.5f + offset.Y) / thickness);
 
-        b.DrawLine(start + rOffset, angle, len, color, thickness);
+        b.DrawLine(start + rOffset.Floored().Rotate(angle), angle, len, color, thickness);
     }
 
     public static void DrawCircle(this SpriteBatch b, Vector2 center, float radius, int segments, Color color) {

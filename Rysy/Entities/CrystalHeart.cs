@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 public class CrystalHeart : SpriteEntity, IPlaceable {
     public override string TexturePath => "collectables/heartGem/0/00";
 
-    public override int Depth => -2000000;
+    public override int Depth => 0;
 
     public static FieldList GetFields() => new(new {
         fake = false,

@@ -8,25 +8,17 @@ namespace Rysy.Entities;
 public sealed class Spinner : Entity, IPlaceable {
     public override int Depth => -8500;
 
-    private static Dictionary<string, string> SpinnerColors = new(StringComparer.OrdinalIgnoreCase) {
-        ["blue"] = "Blue",
-        ["red"] = "Red",
-        ["purple"] = "Purple",
-        ["core"] = "Core",
-        ["rainbow"] = "Rainbow"
-    };
-
-    private static string ColorToTexturePath(string color) => color switch {
-        "purple" or "Purple" => "danger/crystal/fg_purple00",
-        "rainbow" or "Rainbow" => "danger/crystal/fg_white00",
-        "blue" or "Blue" => "danger/crystal/fg_blue00",
+    private static string ColorToTexturePath(SpinnerColors color) => color switch {
+        SpinnerColors.Purple => "danger/crystal/fg_purple00",
+        SpinnerColors.Rainbow => "danger/crystal/fg_white00",
+        SpinnerColors.Blue => "danger/crystal/fg_blue00",
         _ => "danger/crystal/fg_red00",
     };
 
-    private static string ColorToConnectorPath(string color) => color switch {
-        "purple" or "Purple" => "danger/crystal/bg_purple00",
-        "rainbow" or "Rainbow" => "danger/crystal/bg_white00",
-        "blue" or "Blue" => "danger/crystal/bg_blue00",
+    private static string ColorToConnectorPath(SpinnerColors color) => color switch {
+        SpinnerColors.Purple => "danger/crystal/bg_purple00",
+        SpinnerColors.Rainbow => "danger/crystal/bg_white00",
+        SpinnerColors.Blue => "danger/crystal/bg_blue00",
         _ => "danger/crystal/bg_red00",
     };
 
@@ -43,8 +35,8 @@ public sealed class Spinner : Entity, IPlaceable {
             yield break;
         }
 
-        var color = Attr("color", "blue");
-        var rainbow = color.Equals("rainbow", StringComparison.OrdinalIgnoreCase);
+        var color = Enum("color", SpinnerColors.Blue);
+        var rainbow = color == SpinnerColors.Rainbow;
         var pos = Pos;
 
         var sprite = ISprite.FromTexture(pos, ColorToTexturePath(color)).Centered();
@@ -90,13 +82,19 @@ public sealed class Spinner : Entity, IPlaceable {
         }
     }
 
-    public static FieldList GetFields() => new() {
-        ["color"] = Fields.Dropdown("blue", SpinnerColors),
-        ["attachToSolid"] = Fields.Bool(false),
-        ["dust"] = Fields.Bool(false),
-    };
+    public static FieldList GetFields() => new(new {
+        color = SpinnerColors.Blue,
+        attachToSolid = false,
+        dust = false,
+    });
 
-    public static PlacementList GetPlacements() => new() {
-        new("Spinner")
-    };
+    public static PlacementList GetPlacements() => IterationHelper.EachNameToLower<SpinnerColors>()
+        .Select(n => new Placement(n, new {
+            color = n
+        }))
+        .ToPlacementList();
+
+    private enum SpinnerColors {
+        Blue, Red, Purple, Core, Rainbow
+    }
 }

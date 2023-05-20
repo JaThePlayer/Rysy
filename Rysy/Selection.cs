@@ -38,6 +38,7 @@ public interface ISelectionCollider {
     public static ISelectionCollider FromRect(float x, float y, float w, float h) => FromRect(new((int) x, (int) y, (int) w, (int) h));
     public static ISelectionCollider FromRect(Vector2 pos, int w, int h) => FromRect(new((int) pos.X, (int) pos.Y, w, h));
     public static ISelectionCollider FromSprite(Sprite s) => new SpriteSelection(s);
+    public static ISelectionCollider FromSprites(IEnumerable<ISprite> s) => new MergedSpriteSelection(s);
 }
 
 /// <summary>
@@ -137,5 +138,40 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
             ISprite.OutlinedRect(r.MovedBy(DrawOffset), c * 0.4f, c).Render();
         }
             
+    }
+}
+
+public class MergedSpriteSelection : ISelectionCollider {
+    List<Sprite> Sprites;
+
+    public MergedSpriteSelection(IEnumerable<ISprite> sprites) {
+        Sprites = sprites.OfType<Sprite>().ToList();
+    }
+
+    private Vector2 DrawOffset;
+    private Point SizeOffset;
+
+    public void MoveBy(Vector2 offset) {
+        DrawOffset += offset;
+    }
+
+    public void ResizeBy(Point offset) {
+        SizeOffset += offset;
+    }
+
+    private Rectangle GetRectangle() {
+        var rects = Sprites.SelectWhereNotNull(s => s.GetRenderRect());
+
+        return RectangleExt.Merge(rects);
+    }
+
+    public bool IsWithinRectangle(Rectangle roomPos) {
+        return GetRectangle().MovedBy(DrawOffset).AddSize(SizeOffset).Intersects(roomPos);
+    }
+
+    public void Render(Color c) {
+        if (GetRectangle() is { } r) {
+            ISprite.OutlinedRect(r.MovedBy(DrawOffset), c * 0.4f, c).Render();
+        }
     }
 }

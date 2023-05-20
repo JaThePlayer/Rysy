@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("templeCrackedBlock")]
-public class TempleCrackedBlock : Entity, ISolid {
+public class TempleCrackedBlock : Entity, ISolid, IPlaceable {
     public override int Depth => Depths.SolidsBelow;
 
     private static Sprite GetSprite(NineSliceLocation loc, int tx, int ty) {
@@ -26,4 +26,10 @@ public class TempleCrackedBlock : Entity, ISolid {
     }
 
     public override IEnumerable<ISprite> GetSprites() => NineSliceHelper.GetSprites(this, GetSprite);
+
+    public static FieldList GetFields() => new(new {
+        persistent = false
+    });
+
+    public static PlacementList GetPlacements() => new("temple_block");
 }

@@ -28,6 +28,7 @@ public interface IAtlas {
     public IReadOnlyList<VirtTexture> GetSubtextures(string key);
 
     public bool Exists(string key);
+    public bool Exists(string key, int frame);
 
     /// <summary>
     /// Disposes all currently loaded textures. This does *not* clear textures, and instead just disposes of any native data.
@@ -49,14 +50,14 @@ public interface IAtlas {
 /// </summary>
 /// <param name="Path">The path of this texture, in full</param>
 /// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures(IAtlas, Regex)"/></param>
-public record class FoundTexture(string Path, string Captured);
+public record class FoundPath(string Path, string Captured);
 
 public static class IAtlasExt {
 
-    public static Cache<List<FoundTexture>> FindTextures(this IAtlas atlas, Regex regex) {
+    public static Cache<List<FoundPath>> FindTextures(this IAtlas atlas, Regex regex) {
         var token = new CacheToken();
-        var cache = new Cache<List<FoundTexture>>(token, () => {
-            var list = new List<FoundTexture>();
+        var cache = new Cache<List<FoundPath>>(token, () => {
+            var list = new List<FoundPath>();
 
             foreach (var (path, _) in atlas.GetTextures()) {
                 if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {

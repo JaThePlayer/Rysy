@@ -25,6 +25,20 @@ public record struct LineSprite : ISprite {
         Positions = positions;
     }
 
+    public LineSprite MovedBy(Vector2 by) => MovedBy(by.X, by.Y);
+
+    public LineSprite MovedBy(float x, float y) {
+        var positions = Positions;
+        var newPositions = new Vector2[positions.Length];
+        for (int i = 0; i < newPositions.Length; i++) {
+            newPositions[i] = positions[i].Add(x, y);
+        }
+
+        return this with {
+            Positions = newPositions,
+        };
+    }
+
     public void Render() {
         var b = GFX.Batch;
         var c = Color;

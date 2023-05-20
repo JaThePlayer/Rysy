@@ -1,6 +1,12 @@
 ﻿namespace Rysy.Helpers;
 
 public static class IterationHelper {
+    public static string[] EachName<TEnum>() where TEnum : struct, Enum 
+        => Enum.GetNames<TEnum>();
+
+    public static IEnumerable<string> EachNameToLower<TEnum>() where TEnum : struct, Enum
+        => Enum.GetNames<TEnum>().Select(n => n.ToLowerInvariant());
+
     public static IEnumerable<(T1, T2)> EachPair<T1, T2>(IEnumerable<T1> a, IEnumerable<T2> b) {
         return a.SelectMany(a1 => b.Select(b1 => (a1, b1)));
     }

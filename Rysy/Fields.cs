@@ -86,8 +86,8 @@ public static class Fields {
     /// <param name="def">The default value to use for this field</param>
     /// <param name="regex">The regex to use to find texture paths</param>
     /// <param name="captureConverter">A function which converts a texture found by the regex into the key to use to save to mapdata. By default, it returns texture.Captured</param>
-    public static PathField AtlasPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundTexture, string>? captureConverter = null)
-        => new(def, GFX.Atlas, regex, captureConverter);
+    public static PathField AtlasPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundPath, string>? captureConverter = null)
+        => new PathField(def, GFX.Atlas, regex, captureConverter).AllowEdits();
 
     /// <summary>
     /// Creates a field with a dropdown that automatically gets populated with possible sprite bank paths matching the provided <paramref name="regex"/>.
@@ -97,8 +97,19 @@ public static class Fields {
     /// <param name="def">The default value to use for this field</param>
     /// <param name="regex">The regex to use to find texture paths</param>
     /// <param name="captureConverter">A function which converts a texture found by the regex into the key to use to save to mapdata. By default, it returns texture.Captured</param>
-    public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundTexture, string>? captureConverter = null)
-        => new(def, EditorState.Map?.Sprites!, regex, captureConverter);
+    public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundPath, string>? captureConverter = null)
+        => new PathField(def, EditorState.Map?.Sprites!, regex, captureConverter).AllowEdits();
+
+    /// <summary>
+    /// Creates a field with a dropdown that automatically gets populated with all files located at <paramref name="directory"/> in all mods (including vanilla).
+    /// </summary>
+    /// <param name="def"></param>
+    /// <param name="directory"></param>
+    /// <param name="fileExtension"></param>
+    /// <param name="filesystem"></param>
+    /// <returns></returns>
+    public static PathField Path(string def, string directory, string fileExtension, IModFilesystem? filesystem = null)
+        => new PathField(def, filesystem ?? ModRegistry.Filesystem, directory, fileExtension, null).AllowEdits();
 
     public static ColorField RGBA(Color def) => new() { 
         Default = def,

@@ -1,6 +1,10 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Graphics;
 
 public static class NodePathTypes {
+    public static Color Color => Color.White * .5f;
+
     /// <summary>
     /// Each node has a line connecting it to the main entity.
     /// </summary>
@@ -11,7 +15,7 @@ public static class NodePathTypes {
         for (int i = 0; i < nodes.Count; i++) {
             var end = entity.GetNodeCentered(i);
 
-            yield return ISprite.Line(start, end, Color.White * .5f);
+            yield return ISprite.Line(start, end, Color);
         }
     }
 
@@ -25,7 +29,7 @@ public static class NodePathTypes {
         for (int i = 0; i < nodes.Count; i++) {
             var end = entity.GetNodeCentered(i);
 
-            yield return ISprite.Line(start, end, Color.White * .5f);
+            yield return ISprite.Line(start, end, Color);
 
             start = end;
         }
@@ -43,14 +47,24 @@ public static class NodePathTypes {
         for (int i = 0; i < nodes.Count; i++) {
             var end = nodeToPos(entity, i);
 
-            yield return ISprite.Line(start, end, Color.White * .5f);
+            yield return ISprite.Line(start, end, Color);
 
             start = end;
         }
     }
 
+    public static IEnumerable<ISprite> Circle(Entity entity) {
+        if (entity.Nodes is not [var node, ..])
+            yield break;
+
+        var pos = entity.Pos;
+        var radius = Vector2.Distance(pos, node);
+
+        yield return ISprite.Circle(pos, radius, Color, ((int) radius).AtLeast(12));
+    }
+
     /// <summary>
     /// Nodes don't have any path connecting them.
     /// </summary>
-    public static IEnumerable<ISprite> None = Array.Empty<ISprite>();
+    public static IEnumerable<ISprite> None => Array.Empty<ISprite>();
 }

@@ -9,13 +9,16 @@ using System.Text.RegularExpressions;
 
 namespace Rysy.Gui.FieldTypes;
 
-using TextureCache = Lazy<Cache<Dictionary<string, string>>>;
-using RawTextureCache = Cache<List<FoundTexture>>;
+using TextureCache = Cache<Dictionary<string, string>>;
+using RawTextureCache = Cache<List<FoundPath>>;
 
 public record class PathField : Field {
     private static ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
 
+    private RawTextureCache RawPaths;
     private TextureCache KnownPaths;
+
+    private ComboCache<string> ComboCache = new();
 
     public string Default { get; set; }
 
@@ -23,30 +26,33 @@ public record class PathField : Field {
 
     private string Search = "";
 
-    private Func<FoundTexture, string> _CaptureConverter = (s) => s.Captured;
-    public Func<FoundTexture, string> CaptureConverter {
+    private Func<FoundPath, string> _CaptureConverter = (s) => s.Captured;
+    public Func<FoundPath, string> CaptureConverter {
         get => _CaptureConverter;
         set {
             _CaptureConverter = value;
-            if (KnownPaths.IsValueCreated) {
-                KnownPaths.Value.Clear();
-            }
+            KnownPaths.Clear();
+            CreateKnownPathsCache();
         }
     }
 
 
-    private Func<FoundTexture, bool> _Filter = (t) => true;
-    public Func<FoundTexture, bool> Filter {
+    private Func<FoundPath, bool> _Filter = (t) => true;
+    public Func<FoundPath, bool> Filter {
         get => _Filter;
         set {
             _Filter = value;
-            if (KnownPaths.IsValueCreated) {
-                KnownPaths.Value.Clear();
-            }
+            KnownPaths.Clear();
+            CreateKnownPathsCache();
         }
     }
 
-    private void Init(object cacheObject, string regexStr, Func<FoundTexture, string>? captureConverter, Func<RawTextureCache> textureFinder, Func<string, ModMeta?> modResolver) {
+    private Func<string, ModMeta?> ModResolver;
+
+    private void Init(object cacheObject, string regexStr, Func<FoundPath, string>? captureConverter, Func<RawTextureCache> textureFinder, Func<string, ModMeta?> modResolver) {
+        ModResolver = modResolver;
+        
+
         if (captureConverter is { })
             CaptureConverter = captureConverter;
 
@@ -59,17 +65,20 @@ public record class PathField : Field {
             textureCache = textureFinder();
             cache[regexStr] = textureCache;
         }
+        RawPaths = textureCache;
 
-        KnownPaths = new(() => {
-            return textureCache.Chain(textures => textures.Where(Filter).SafeToDictionary(p => {
-                var name = CaptureConverter(p);
-                var mod = modResolver(p.Path);
-                return (name, mod is { } ? $"{name} [{mod.Name}]" : name);
-            }));
-        });
+        CreateKnownPathsCache();
     }
 
-    public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundTexture, string>? captureConverter = null) {
+    private void CreateKnownPathsCache() {
+        KnownPaths = RawPaths.Chain(textures => textures.Where(Filter).SafeToDictionary(p => {
+            var name = CaptureConverter(p);
+            var mod = ModResolver(p.Path);
+            return (name, mod is { } ? $"{name} [{mod.Name}]" : name);
+        }));
+    }
+
+    public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
 
         var regex = new Regex(regexStr, RegexOptions.Compiled);
@@ -79,7 +88,7 @@ public record class PathField : Field {
         );
     }
 
-    public PathField(string @default, SpriteBank bank, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundTexture, string>? captureConverter = null) {
+    public PathField(string @default, SpriteBank bank, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
 
         var regex = new Regex(regexStr, RegexOptions.Compiled);
@@ -87,6 +96,24 @@ public record class PathField : Field {
             () => bank.FindTextures(regex),
             (path) => bank.Get(path)?.Mod
         );
+    }
+
+    public PathField(string @default, IModFilesystem filesystem, string directory, string extension, Func<FoundPath, string>? captureConverter = null) {
+        Default = @default;
+
+        var token = new CacheToken();
+        RawTextureCache cache = new(token, () => {
+            return filesystem.FindFilesInDirectoryRecursive(directory, extension).Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}"))).ToList();
+        });
+
+        filesystem.RegisterFilewatch(directory, new() { 
+            OnChanged = (f) => token.Invalidate()
+        });
+
+
+        Init(filesystem, directory + extension, captureConverter,
+            () => cache,
+            (p) => ModRegistry.Filesystem.FindFirstModContaining(p));
     }
 
     public override Field CreateClone() {
@@ -99,12 +126,12 @@ public record class PathField : Field {
     public override object? RenderGui(string fieldName, object value) {
         var strValue = value.ToString() ?? "";
 
-        var paths = KnownPaths.Value.Value;
+        var paths = KnownPaths.Value;
 
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref strValue, paths, (s) => s, ref Search, Tooltip) ? strValue : null;
+            return ImGuiManager.EditableCombo(fieldName, ref strValue, paths, (s) => s, ref Search, Tooltip, ComboCache) ? strValue : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref strValue, paths, ref Search, Tooltip) ? strValue : null;
+            return ImGuiManager.Combo(fieldName, ref strValue, paths, ref Search, Tooltip, ComboCache) ? strValue : null;
         }
     }
 
@@ -118,13 +145,13 @@ public record class PathField : Field {
         return this;
     }
 
-    public PathField WithConverter(Func<FoundTexture, string> captureConverter) {
+    public PathField WithConverter(Func<FoundPath, string> captureConverter) {
         CaptureConverter = captureConverter;
 
         return this;
     }
 
-    public PathField WithFilter(Func<FoundTexture, bool> filter) {
+    public PathField WithFilter(Func<FoundPath, bool> filter) {
         Filter = filter;
 
         return this;

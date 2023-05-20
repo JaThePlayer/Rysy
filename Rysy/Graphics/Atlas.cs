@@ -38,26 +38,41 @@ public class Atlas : IAtlas {
         return false;
     }
 
+    public bool TryGet(string key, int frame, [NotNullWhen(true)] out VirtTexture? texture) {
+        texture = null;
+
+        if (key is null)
+            return false;
+
+        if (Textures.TryGetValue(key + frame, out texture)) {
+            return true;
+        }
+
+        for (int zeroCount = 2; zeroCount < 6; zeroCount++) {
+            key += "0";
+            if (Textures.TryGetValue(key + frame, out texture)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public VirtTexture this[string key, int frame] {
         get {
             if (key is null)
                 return GFX.VirtPixel;
 
-            if (Textures.TryGetValue(key + frame, out var texture)) {
+            if (TryGet(key, frame, out var texture))
                 return texture;
-            }
 
-            if (Textures.TryGetValue(key + "0" + frame, out texture)) {
-                return texture;
-            }
-
-            if (Settings.Instance?.LogMissingTextures ?? true)
-                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
+            Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
             return GFX.VirtPixel;
         }
     }
 
     public bool Exists(string key) => TryGet(key, out _);
+    public bool Exists(string key, int frame) => TryGet(key, frame, out _);
 
     public IReadOnlyList<VirtTexture> GetSubtextures(string key) {
         var list = new List<VirtTexture>();

@@ -90,8 +90,14 @@ public static class Menubar {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
 
-        if (EditorState.Map is { } map && EditorState.History is { } history && ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-            editor.AddWindowIfNeeded(() => new MetadataWindow(history, map));
+        if (EditorState.Map is { } map && EditorState.History is { } history) {
+            if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindowIfNeeded(() => new MetadataWindow(history, map));
+            }
+
+            if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindowIfNeeded(() => new StylegroundWindow(history, map));
+            }
         }
     }
 

@@ -13,6 +13,16 @@ public class SpriteBank {
 
     public Dictionary<string, SpriteDef> Entries = new();
 
+    public bool Exists(string key, string anim, IAtlas atlas) {
+        if (!Entries.TryGetValue(key, out var spriteDef)) 
+            return false;
+
+        if (!spriteDef.Animations.TryGetValue(anim, out var animDef))
+            return false;
+
+        return animDef.TextureExists(atlas);
+    }
+
     public bool Loaded = false;
 
     public SpriteDef? Get(string id) {
@@ -50,6 +60,18 @@ public class SpriteBank {
             spr.Mod = mod;
             spr.Path = path.Value;
 
+            if (spriteXml.Attributes["copy"] is { } copyXml) {
+                if (!Entries.TryGetValue(copyXml.Value, out var copyFrom)) {
+                    Logger.Write("SpriteBank", LogLevel.Warning, $"Sprite {spriteXml.Name} tried to copy from {copyFrom}, which doesn't exist!");
+                    continue;
+                }
+
+                spr.Animations = copyFrom.Animations.ToDictionary(kv => kv.Key, kv => new SpriteDef.Animation() {
+                    FirstFrame = kv.Value.FirstFrame,
+                    Path = spr.Path + kv.Value.Path.TrimStart(copyFrom.Path),
+                });
+            }
+
             foreach (var inner in spriteXml.OfType<XmlElement>()) {
                 switch (inner.Name) {
                     case "Justify":
@@ -61,10 +83,10 @@ public class SpriteBank {
                         if (inner.Attributes["id"] is { } idXml) {
                             var pathXml = inner.Attributes["path"];
 
-                            spr.Animations.Add(idXml.Value, new() {
+                            spr.Animations[idXml.Value] = new() {
                                 Path = spr.Path + pathXml?.Value ?? "",
                                 FirstFrame = inner.Attributes["frames"] is { } framesXml ? int.Parse(framesXml.Value.Split('-', '*', ',')[0]) : 0,
-                            });
+                            };
                         }
                         break;
                     default:
@@ -81,10 +103,10 @@ public class SpriteBank {
         LoadToken.Reset();
     }
 
-    public Cache<List<FoundTexture>> FindTextures(Regex regex) {
+    public Cache<List<FoundPath>> FindTextures(Regex regex) {
         var token = new CacheToken();
-        var cache = new Cache<List<FoundTexture>>(token, () => {
-            var list = new List<FoundTexture>();
+        var cache = new Cache<List<FoundPath>>(token, () => {
+            var list = new List<FoundPath>();
 
             foreach (var (path, _) in Entries) {
                 if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
@@ -118,6 +140,10 @@ public class SpriteBank {
 
             public VirtTexture GetTexture(IAtlas atlas) {
                 return atlas[Path, FirstFrame];
+            }
+
+            public bool TextureExists(IAtlas atlas) {
+                return atlas.Exists(Path, FirstFrame);
             }
         }
     }
