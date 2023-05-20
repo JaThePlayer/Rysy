@@ -19,6 +19,11 @@ public static class RandomExt {
     public static ulong SeededRandom(this Vector2 pos) => SeededRandom(pos.X, pos.Y);
 
     /// <summary>
+    /// Creates a random bool out of this vector
+    /// </summary>
+    public static bool SeededRandomBool(this Vector2 pos) => SeededRandom(pos.X, pos.Y) >= ulong.MaxValue / 2;
+
+    /// <summary>
     /// Creates a random int out of this Vector2
     /// </summary>
     public static int SeededRandomExclusive(this Vector2 pos, int max) => (int) (SeededRandom(pos.X, pos.Y) % (ulong) max);
@@ -42,6 +47,24 @@ public static class RandomExt {
         var ret = rand.Map(0, ulong.MaxValue, min, max);
 
         return ret;
+    }
+
+    public static T SeededRandomFrom<T>(this Vector2 pos, IReadOnlyList<T> values) {
+        var len = values.Count;
+
+        return values[pos.SeededRandomInclusive(0, len - 1)];
+    }
+
+    public static T SeededRandomFrom<T>(this Vector2 pos, IList<T> values) {
+        var len = values.Count;
+
+        return values[pos.SeededRandomInclusive(0, len - 1)];
+    }
+
+    public static T SeededRandomFrom<T>(this Vector2 pos, params T[] values) {
+        var len = values.Length;
+
+        return values[pos.SeededRandomInclusive(0, len - 1)];
     }
 
     #region Splitmix64

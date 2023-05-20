@@ -25,7 +25,7 @@ public abstract class Scene {
     }
 
     public virtual void SetupHotkeys() {
-        Hotkeys = new(Input.Global);
+        Hotkeys = new(Input.Global, updateInImgui: false);
     }
 
     public virtual void Update() {

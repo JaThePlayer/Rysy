@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("wallBooster")]
-public class WallBooster : Entity {
+public class WallBooster : Entity, IPlaceable {
     public override int Depth => 1999;
 
     public virtual string GetSprite(bool ice, SliceLocation loc) => (ice, loc) switch {
@@ -17,6 +17,8 @@ public class WallBooster : Entity {
 
     public virtual bool Ice => Bool("notCoreMode", false);
     public virtual bool Left => Bool("left", false);
+
+    public override bool ResizableY => true;
 
     public override IEnumerable<ISprite> GetSprites() {
         var ice = Ice;
@@ -32,16 +34,34 @@ public class WallBooster : Entity {
         }
     }
 
-    // todo: consider using this stuff
     public static SliceLocation GetSliceLocation(int current, int max, int sliceSize = 8) {
-        return current == 0 ? SliceLocation.Left
+        return current == 0 ? SliceLocation.Top
              : (current + sliceSize < max) ? SliceLocation.Middle
-             : SliceLocation.Right;
+             : SliceLocation.Bottom;
     }
 
+    public static FieldList GetFields() => new(new {
+        left = false,
+        notCoreMode = false
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("booster_right", new {
+            left = true,
+        }),
+        new("booster_left"),
+        new("ice_right", new {
+            notCoreMode = true,
+            left = true,
+        }),
+        new("ice_left", new {
+            notCoreMode = true,
+        }),
+    };
+
     public enum SliceLocation {
-        Left = 0, Top = 0,
+        Top = 0,
         Middle = 1,
-        Right = 2, Bottom = 2,
+        Bottom = 2,
     }
 }

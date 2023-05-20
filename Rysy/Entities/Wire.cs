@@ -4,8 +4,10 @@ using Rysy.Graphics;
 namespace Rysy.Entities;
 
 [CustomEntity("wire")]
-public class Wire : Entity {
+public class Wire : Entity, IPlaceable {
     public override int Depth => Bool("above") ? -8500 : 2000;
+
+    public override Range NodeLimits => 1..1;
 
     public Color Color => RGB("color", "595866");
 
@@ -21,5 +23,10 @@ public class Wire : Entity {
     public override ISelectionCollider GetNodeSelection(int nodeIndex)
         => ISelectionCollider.FromRect(Nodes[nodeIndex].Pos.Add(-2, -2), 4, 4);
 
-    public override Range NodeLimits => 1..1;
+    public static FieldList GetFields() => new(new {
+        above = false,
+        color = Fields.RGB("595866")
+    });
+
+    public static PlacementList GetPlacements() => new("wire");
 }

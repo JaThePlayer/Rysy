@@ -1,14 +1,18 @@
-﻿using Microsoft.Xna.Framework.Input;
+﻿using ImGuiNET;
+using Microsoft.Xna.Framework.Input;
 
 namespace Rysy;
 
 public class HotkeyHandler {
     private List<Hotkey> Hotkeys = new();
 
+    public bool UpdateInImgui = false;
+
     public Input Input { get; private set; }
 
-    public HotkeyHandler(Input input) {
+    public HotkeyHandler(Input input, bool updateInImgui) {
         Input = input;
+        UpdateInImgui = updateInImgui;
     }
 
     /// <summary>
@@ -42,6 +46,10 @@ public class HotkeyHandler {
     }
 
     public void Update() {
+        if (!UpdateInImgui && (ImGui.GetIO().WantCaptureKeyboard || ImGui.GetIO().WantCaptureMouse)) {
+            return;
+        }
+        
         var ctrl = Input.Keyboard.Ctrl();
         var shift = Input.Keyboard.Shift();
         var alt = Input.Keyboard.Alt();

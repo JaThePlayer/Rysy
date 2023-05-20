@@ -567,8 +567,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public bool IsTileAt(Vector2 roomPos) {
-        int x = (int) roomPos.X / 8;
-        int y = (int) roomPos.Y / 8;
+        int x = (int) float.Floor(roomPos.X / 8f);
+        int y = (int) float.Floor(roomPos.Y / 8f);
 
         return FG.SafeTileAt(x, y) != '0';
     }

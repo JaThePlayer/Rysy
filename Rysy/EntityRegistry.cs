@@ -5,7 +5,6 @@ using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
 using System.Reflection;
-using System.Security.Cryptography;
 
 namespace Rysy;
 
@@ -21,6 +20,7 @@ public static class EntityRegistry {
 
     public static List<Placement> EntityPlacements { get; set; } = new();
     public static List<Placement> TriggerPlacements { get; set; } = new();
+    public static List<Placement> StylegroundPlacements { get; set; } = new();
 
     private static LuaCtx? _LuaCtx = null;
     private static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
@@ -28,8 +28,11 @@ public static class EntityRegistry {
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
-    public static FieldList GetFields(Entity entity) {
-        if (SIDToFields.TryGetValue(entity.Name, out var getter)) {
+    public static FieldList GetFields(Entity entity)
+        => GetFields(entity.Name);
+
+    public static FieldList GetFields(string sid) {
+        if (SIDToFields.TryGetValue(sid, out var getter)) {
             return getter();
         }
 
@@ -193,7 +196,7 @@ public static class EntityRegistry {
     }
 
     private static IEnumerable<Type> GetEntityTypesFromAsm(Assembly asm) 
-        => asm.GetTypes().Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(Entity)) && t != typeof(UnknownEntity) && t != typeof(Trigger));
+        => asm.GetTypes().Where(t => !t.IsAbstract && (t.IsSubclassOf(typeof(Entity)) || t.IsSubclassOf(typeof(Style))) && t != typeof(UnknownEntity) && t != typeof(Trigger));
 
     private static List<string> GetSIDsForType(Type type)
         => type.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToList();
@@ -203,7 +206,7 @@ public static class EntityRegistry {
             var sids = GetSIDsForType(t);
 
             if (sids.Count == 0) {
-                Logger.Write("EntityRegistry", LogLevel.Warning, $"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
+                //Logger.Write("EntityRegistry", LogLevel.Warning, $"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
                 continue;
             }
 
@@ -223,8 +226,13 @@ public static class EntityRegistry {
 
             var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
             try {
-                if (getPlacementsMethod is { } && (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null) is { } placements) {
-                    AddPlacements(t, sids, placements);
+                if (getPlacementsMethod is { }) {
+                    foreach (var sid in sids) {
+                        var placements = (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null);
+
+                        if (placements is { })
+                            AddPlacements(t, new() { sid }, placements);
+                    }
                 }
             } catch (Exception e) {
                 Logger.Error(e, $"Failed to get placements for entity {string.Join(',', sids)}");
@@ -267,7 +275,9 @@ public static class EntityRegistry {
             return;
 
         var isTrigger = t.IsSubclassOf(typeof(Trigger));
-        var placementsRegistry = isTrigger ? TriggerPlacements : EntityPlacements;
+        var isStyle = t.IsSubclassOf(typeof(Style));
+
+        var placementsRegistry = isStyle ? StylegroundPlacements : isTrigger ? TriggerPlacements : EntityPlacements;
 
         lock (placementsRegistry) {
             foreach (var placement in placements) {

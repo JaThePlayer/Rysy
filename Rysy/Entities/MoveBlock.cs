@@ -89,7 +89,7 @@ public class MoveBlock : Entity, IPlaceable {
 
     public static PlacementList GetPlacements() => 
         IterationHelper.EachPair(System.Enum.GetNames<Directions>(), IterationHelper.BoolValues, IterationHelper.BoolValues)
-        .Select((dir, steerable, fast) => new Placement($"{dir.ToLowerInvariant()}_{(steerable ? "steer" : "nosteer")}_{(fast ? "fast" : "slow")}", new {
+        .SelectTuple((dir, steerable, fast) => new Placement($"{dir.ToLowerInvariant()}_{(steerable ? "steer" : "nosteer")}_{(fast ? "fast" : "slow")}", new {
             direction = dir,
             canSteer = steerable,
             fast = fast

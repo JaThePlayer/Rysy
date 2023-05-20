@@ -4,18 +4,17 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("strawberry")]
-[CustomEntity("goldenBerry")]
-[CustomEntity("memorialTextController")]
-public class Strawberry : SpriteEntity {
-    public override string TexturePath =>
-          Moon ? "collectables/moonBerry/normal00"
-        : Golden ? $"collectables/goldberry/{(Winged ? "wings" : "idle")}00"
+public class Strawberry : SpriteEntity, IPlaceable {
+    public override string TexturePath => Moon 
+        ? "collectables/moonBerry/normal00"
         : $"collectables/strawberry/{(Winged ? "wings" : "normal")}00";
 
     public override int Depth => Depths.Top;
 
-    public bool Winged => Bool("winged") || EntityData.SID == "memorialTextController";
-    public bool Golden => EntityData.SID is "memorialTextController" or "goldenBerry";
+    public override Range NodeLimits => 0..;
+
+    public bool Winged => Bool("winged");
+
     public bool Moon => Bool("moon");
 
     public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Fan(this);
@@ -26,5 +25,20 @@ public class Strawberry : SpriteEntity {
         };
     }
 
-    public override Range NodeLimits => 0..;
+    public static FieldList GetFields() => new(new {
+        winged = false,
+        moon = false,
+        checkpointID = -1,
+        order = -1
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("normal"),
+        new("normal_winged", new {
+            winged = true
+        }),
+        new("moon", new {
+            moon = true,
+        }),
+    };
 }

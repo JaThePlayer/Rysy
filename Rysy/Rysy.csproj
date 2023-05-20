@@ -188,6 +188,7 @@
 
   <ItemGroup>
     <Folder Include="Assets\Graphics\tilesets\subfolder\" />
+    <Folder Include="Stylegrounds\" />
   </ItemGroup>
 
 </Project>

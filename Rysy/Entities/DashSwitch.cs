@@ -21,7 +21,7 @@ public class DashSwitchV : Entity, IMultiSIDPlaceable {
         switch (Direction) {
             case Directions.Ceiling:
                 sprite = sprite with {
-                    Pos = sprite.Pos + new Vector2(0f, 8f),
+                    Pos = sprite.Pos + new Vector2(8f, 0f),
                     Rotation = -MathHelper.Pi / 2,
                 };
                 break;

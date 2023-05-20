@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Helpers;
 
 namespace Rysy.Entities;
@@ -11,7 +12,9 @@ public class ZipMover : Entity, ISolid, IPlaceable {
 
     public override int Depth => Depths.Solids;
 
-    private bool Moon => Attr("theme", "Normal").Equals("moon", StringComparison.OrdinalIgnoreCase);
+    public override Range NodeLimits => 1..1;
+
+    private bool Moon => Enum("theme", Themes.Normal) == Themes.Moon;
 
     public virtual string BaseDirectory => Moon ? "objects/zipmover/moon" : "objects/zipmover";
     public virtual Color FillColor => Moon ? Color.Transparent : Color.Black;
@@ -37,13 +40,13 @@ public class ZipMover : Entity, ISolid, IPlaceable {
 
     public override Point MinimumSize => new(8, 8);
 
-    public static FieldList GetFields() => new() {
-        ["theme"] = Fields.EnumNamesDropdown(Themes.Normal)
-    };
+    public static FieldList GetFields() => new(new {
+        theme = Themes.Normal
+    });
 
-    public static PlacementList GetPlacements() => new() { 
-        new("Zip Mover")
-    };
-
-    public override Range NodeLimits => 1..1;
+    public static PlacementList GetPlacements() => IterationHelper.EachName<Themes>()
+        .Select(theme => new Placement(theme.ToLowerInvariant(), new {
+            theme = theme
+        }))
+        .ToPlacementList();
 }

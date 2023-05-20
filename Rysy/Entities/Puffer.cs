@@ -5,7 +5,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("eyebomb")]
-public class Puffer : SpriteEntity {
+public class Puffer : SpriteEntity, IPlaceable {
     public override int Depth => 0;
 
     public override string TexturePath => "objects/puffer/idle00";
@@ -16,6 +16,17 @@ public class Puffer : SpriteEntity {
     public virtual int MaxIndicatorIndex => 28;
 
     public virtual Color IndicatorColor => Color.White * 0.75f;
+
+    public static FieldList GetFields() => new(new {
+        right = false
+    });
+
+    public static PlacementList GetPlacements() => new() {
+        new("left"),
+        new("right", new {
+            right = true
+        }),
+    };
 
     public override IEnumerable<ISprite> GetSprites() {
         yield return GetSprite() with {

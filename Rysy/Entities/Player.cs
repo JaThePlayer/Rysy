@@ -8,7 +8,9 @@ public class Player : SpriteEntity, IPlaceable {
     public override string TexturePath => "characters/player/sitDown00";
     public override Vector2 Origin => new(.5f, 1f);
 
-    public static FieldList GetFields() => new();
+    public static FieldList GetFields() => new(new {
+        isDefaultSpawn = false
+    });
 
     public static PlacementList GetPlacements() => new("player");
 

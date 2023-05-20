@@ -5,7 +5,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("touchSwitch")]
-public class TouchSwitch : SpriteEntity {
+public class TouchSwitch : SpriteEntity, IPlaceable {
     public override string TexturePath => "objects/touchswitch/icon00";
 
     public override int Depth => 2000;
@@ -22,4 +22,8 @@ public class TouchSwitch : SpriteEntity {
         };
         yield return GetSprite("objects/touchswitch/icon00");
     }
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("touch_switch");
 }

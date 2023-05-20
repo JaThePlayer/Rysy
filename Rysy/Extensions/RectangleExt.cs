@@ -42,6 +42,32 @@ public static class RectangleExt {
         return new Rectangle(smallestX, smallestY, width, height);
     }
 
+    public static Rectangle Merge(IEnumerable<Rectangle> rectangles) {
+        bool any = false;
+        int smallestX = int.MaxValue;
+        int smallestY = int.MaxValue;
+        int largestX = int.MinValue;
+        int largestY = int.MinValue;
+
+        foreach (var r in rectangles) {
+            any = true;
+
+            smallestX = int.Min(smallestX, r.X);
+            smallestY = int.Min(smallestY, r.Y);
+            largestX = int.Max(largestX, r.Right);
+            largestY = int.Max(largestY, r.Bottom);
+        }
+
+        if (!any) {
+            return new Rectangle(0, 0, 0, 0);
+        }
+
+        int width = largestX - smallestX;
+        int height = largestY - smallestY;
+
+        return new Rectangle(smallestX, smallestY, width, height);
+    }
+
     public static Rectangle MultSize(this Rectangle r, int mult) {
         return new(r.X, r.Y, r.Width * mult, r.Height * mult);
     }

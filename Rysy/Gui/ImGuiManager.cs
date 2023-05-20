@@ -152,7 +152,7 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool Combo<T>(string name, ref T value, IDictionary<T, string> values, ref string search, string? tooltip = null) where T : notnull {
+    public static bool Combo<T>(string name, ref T value, IDictionary<T, string> values, ref string search, string? tooltip = null, ComboCache<T>? cache = null) where T : notnull {
         if (!values.TryGetValue(value, out var valueName)) {
             valueName = value!.ToString();
         }
@@ -162,7 +162,10 @@ public static class ImGuiManager {
         if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
             ImGui.InputText("Search", ref search, 512);
 
-            foreach (var item in values.SearchFilter(i => i.Value, search)) {
+            cache ??= new();
+            var filtered = cache.GetValue(values, search);
+
+            foreach (var item in filtered) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
                     changed = true;
@@ -193,35 +196,42 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search, string? tooltip = null)
+    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search, 
+        string? tooltip = null, ComboCache<T>? cache = null)
         where T : notnull {
-        if (!values.TryGetValue(value, out var valueName)) {
-            valueName = value!.ToString();
-        }
 
         bool changed = false;
-
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
+        var valueToString = value.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText($"##text{name}", ref valueName, 128).WithTooltip(tooltip)) {
-            value = stringToValue(valueName);
+        if (ImGui.InputText($"##text{name}", ref valueToString, 128).WithTooltip(tooltip)) {
+            value = stringToValue(valueToString);
             changed = true;
         }
 
+        cache ??= new();
+
         ImGui.SameLine(0f, xPadding);
 
-        if (ImGui.BeginCombo($"##combo{name}", valueName, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
+        var size = cache.Size ??= CalcListSize(values.Values);
+        ImGui.SetNextWindowSize(new(size.X, (ImGui.GetTextLineHeightWithSpacing() + ImGui.GetFrameHeight()) * 120.AtMost(values.Count)));
+        if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
+
             ImGui.InputText("Search", ref search, 512);
 
-            foreach (var item in values.SearchFilter(i => i.Value, search)) {
+            ImGui.BeginChild($"comboInner{name}");
+
+            var filtered = cache.GetValue(values, search);
+
+            foreach (var item in filtered) {
                 if (ImGui.MenuItem(item.Value)) {
                     value = item.Key;
                     changed = true;
                 }
             }
-
+            ImGui.EndChild();
             ImGui.EndCombo();
         }
         ImGui.SameLine(0f, xPadding);

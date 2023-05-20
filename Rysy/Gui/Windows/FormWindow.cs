@@ -13,6 +13,7 @@ public class FormWindow : Window {
     private int ITEM_WIDTH = 175;
 
     public FormWindowChanged OnChanged { get; set; }
+    public FormWindowChanged OnLiveUpdate { get; set; }
 
     internal record class Prop(string Name) {
         public Field Field;
@@ -61,7 +62,7 @@ public class FormWindow : Window {
             });
         }
 
-        LongestFieldSize = FieldList.Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X).Chunk(2).Max(pair => pair.Sum());
+        LongestFieldSize = fields.Count > 0 ? FieldList.Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X).Chunk(2).Max(pair => pair.Sum()) : 50;
         Size = new(
             LongestFieldSize + ITEM_WIDTH * 2.5f,
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
@@ -140,6 +141,8 @@ public class FormWindow : Window {
     internal void Set(Prop prop, object newVal) {
         EditedValues[prop.Name] = newVal;
         prop.Value = newVal;
+
+        OnLiveUpdate?.Invoke(EditedValues);
     }
 }
 

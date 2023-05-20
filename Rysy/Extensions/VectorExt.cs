@@ -23,7 +23,7 @@ public static class VectorExt {
 
     public static Vector2 Floored(this Vector2 v) => Vector2.Floor(v);
     public static Vector2 Rounded(this Vector2 v) => Vector2.Round(v);
-    public static Vector2 Normalized(this Vector2 v) => Vector2.Normalize(v);
+    public static Vector2 Normalized(this Vector2 v) => v == default ? default : Vector2.Normalize(v);
 
     public static Vector2 Snap(this Vector2 v, int gridSize) => (v / gridSize).Floored() * gridSize;
 

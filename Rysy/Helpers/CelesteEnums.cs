@@ -1,4 +1,5 @@
 ﻿namespace Rysy.Helpers;
+
 public static class CelesteEnums {
     public static Color[] RoomColors = new Color[] {
         Color.White,
@@ -20,7 +21,7 @@ public static class CelesteEnums {
         "Red"
     };
 
-    public static Dictionary<string, string> Music = new(StringComparer.Ordinal) {
+    public static readonly Dictionary<string, string> Music = new Dictionary<string, string>(StringComparer.Ordinal) {
         ["music_levelselect"] = "event:/music/menu/level_select",
         ["music_credits"] = "event:/music/menu/credits",
         ["music_complete_area"] = "event:/music/menu/complete_area",
@@ -103,6 +104,32 @@ public static class CelesteEnums {
         ["music_farewell_secondbirdcrash_cinematic"] = "event:/new_content/music/lvl10/cinematic/bird_crash_second",
         ["music_farewell_granny"] = "event:/new_content/music/lvl10/granny_farewell",
         ["music_farewell_golden_room"] = "event:/new_content/music/lvl10/golden_room",
+    };
+
+    public static readonly Dictionary<string, string> Ambience = new Dictionary<string, string>(StringComparer.Ordinal) {
+        ["env_amb_00_main"] = "event:/env/amb/00_prologue",
+        ["env_amb_01_main"] = "event:/env/amb/01_main",
+        ["env_amb_02_awake"] = "event:/env/amb/02_awake",
+        ["env_amb_02_dream"] = "event:/env/amb/02_dream",
+        ["env_amb_03_exterior"] = "event:/env/amb/03_exterior",
+        ["env_amb_03_interior"] = "event:/env/amb/03_interior",
+        ["env_amb_03_pico8_closeup"] = "event:/env/amb/03_pico8_closeup",
+        ["env_amb_04_main"] = "event:/env/amb/04_main",
+        ["env_amb_05_interior_dark"] = "event:/env/amb/05_interior_dark",
+        ["env_amb_05_interior_main"] = "event:/env/amb/05_interior_main",
+        ["env_amb_05_mirror_sequence"] = "event:/env/amb/05_mirror_sequence",
+        ["env_amb_06_lake"] = "event:/env/amb/06_lake",
+        ["env_amb_06_main"] = "event:/env/amb/06_main",
+        ["env_amb_06_prehug"] = "event:/env/amb/06_prehug",
+        ["env_amb_09_main"] = "event:/env/amb/09_main",
+        ["env_amb_worldmap"] = "event:/env/amb/worldmap",
+        ["env_amb_10_rain"] = "event:/new_content/env/10_rain",
+        ["env_amb_10_electricity"] = "event:/new_content/env/10_electricity",
+        ["env_amb_10_endscene"] = "event:/new_content/env/10_endscene",
+        ["env_amb_10_rushingvoid"] = "event:/new_content/env/10_rushingvoid",
+        ["env_amb_10_space_underwater"] = "event:/new_content/env/10_space_underwater",
+        ["env_amb_10_voidspiral"] = "event:/new_content/env/10_voidspiral",
+        ["env_amb_10_grannyclouds"] = "event:/new_content/env/10_grannyclouds",
     };
 
     public enum WindPatterns {
@@ -240,6 +267,97 @@ public static class CelesteEnums {
         [43] = "Cloud",
         [44] = "Moon"
     };
+
+    public enum SeekerStatueHatches {
+        Distance,
+        PlayerRightOfX
+    }
+
+    public enum SliderSurfaces {
+        Ceiling,
+        LeftWall,
+        RightWall,
+        Floor
+    }
+
+    public static readonly Dictionary<string, string> EnvironmentalSounds = new() {
+        ["event:/env/local/02_old_site/phone_lamp"] = "env_loc_02_lamp",
+        ["event:/env/local/03_resort/broken_window_large"] = "env_loc_03_brokenwindow_large_loop",
+        ["event:/env/local/03_resort/broken_window_small"] = "env_loc_03_brokenwindow_small_loop",
+        ["event:/env/local/03_resort/pico8_machine"] = "env_loc_03_pico8machine_loop",
+        ["event:/env/local/07_summit/flag_flap"] = "env_loc_07_flag_flap",
+        ["event:/env/local/09_core/conveyor_idle"] = "env_loc_09_conveyer_idle",
+        ["event:/env/local/09_core/fireballs_idle"] = "env_loc_09_fireball_idle",
+        ["event:/env/local/09_core/lavagate_idle"] = "env_loc_09_lavagate_idle",
+        ["event:/env/local/campfire_loop"] = "env_loc_campfire_loop",
+        ["event:/env/local/campfire_start"] = "env_loc_campfire_start",
+        ["event:/env/local/waterfall_big_in"] = "env_loc_waterfall_big_in",
+        ["event:/env/local/waterfall_big_main"] = "env_loc_waterfall_big_main",
+        ["event:/env/local/waterfall_small_in_deep"] = "env_loc_waterfall_small_in_deep",
+        ["event:/env/local/waterfall_small_in_shallow"] = "env_loc_waterfall_small_in_shallow",
+        ["event:/env/local/waterfall_small_main"] = "env_loc_waterfall_small_main",
+        ["event:/new_content/env/local/cafe_computer"] = "env_loc_10_cafe_computer",
+        ["event:/new_content/env/local/cafe_sign"] = "env_loc_10_cafe_sign",
+        ["event:/new_content/env/local/tutorial_static_left"] = "env_loc_10_tutorial_static_left",
+        ["event:/new_content/env/local/tutorial_static_right"] = "env_loc_10_tutorial_static_right",
+        ["event:/new_content/env/local/kevinpc"] = "env_loc_10_kevinpc",
+    };
+
+    public enum TempleGateModes {
+        NearestSwitch,
+        CloseBehindPlayer,
+        CloseBehindPlayerAlways,
+        HoldingTheo,
+        TouchSwitches,
+        CloseBehindPlayerAndTheo
+    }
+
+    public enum PositionModes {
+        HorizontalCenter,
+        VerticalCenter,
+        TopToBottom,
+        BottomToTop,
+        LeftToRight,
+        RightToLeft,
+        NoEffect
+    }
+
+    public enum BlackHoleStrengths {
+        Mild,
+        Medium,
+        High,
+        Wild
+    }
+
+    public static readonly List<string> EventTriggerEvents = new() {
+        "end_city",
+        "end_oldsite_dream",
+        "end_oldsite_awake",
+        "ch5_see_theo",
+        "ch5_found_theo",
+        "ch5_mirror_reflection",
+        "cancel_ch5_see_theo",
+        "ch6_boss_intro",
+        "ch6_reflect",
+        "ch7_summit",
+        "ch8_door",
+        "ch9_goto_the_future",
+        "ch9_goto_the_past",
+        "ch9_moon_intro",
+        "ch9_hub_intro",
+        "ch9_hub_transition_out",
+        "ch9_badeline_helps",
+        "ch9_farewell",
+        "ch9_ending",
+        "ch9_end_golden",
+        "ch9_final_room",
+        "ch9_ding_ding_ding",
+        "ch9_golden_snapshot",
+    };
+
+    public enum CoreModes {
+        None, Cold, Hot,
+    }
 }
 
 public static class Depths {

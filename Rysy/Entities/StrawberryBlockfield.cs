@@ -3,8 +3,14 @@
 namespace Rysy.Entities;
 
 [CustomEntity("blockField")]
-public sealed class StrawberryBlockfield : Entity {
+public sealed class StrawberryBlockfield : Entity, IPlaceable {
     public override int Depth => 0;
+    public override bool ResizableX => true;
+    public override bool ResizableY => true;
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("block_field");
 
     public override IEnumerable<ISprite> GetSprites() {
         yield return ISprite.OutlinedRect(Rectangle, Color.LightSkyBlue * 0.45f, Color.LightSkyBlue * 0.75f);

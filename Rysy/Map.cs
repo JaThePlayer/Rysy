@@ -24,10 +24,7 @@ public sealed class Map : IPackable {
 
     public SpriteBank Sprites = new();
 
-    /// <summary>
-    /// Stylegrounds. Currently unparsed :(
-    /// </summary>
-    public BinaryPacker.Element Style;
+    public MapStylegrounds Style;
     /// <summary>
     /// Filler rooms. Currently unparsed :(
     /// </summary>
@@ -69,7 +66,7 @@ public sealed class Map : IPackable {
 
         el.Children[0] = levels;
         el.Children[1] = Meta.Pack();
-        el.Children[2] = Style;
+        el.Children[2] = Style.Pack();
         el.Children[3] = Filler;
 
         return el;
@@ -130,7 +127,10 @@ public sealed class Map : IPackable {
                     Filler = child;
                     break;
                 case "Style":
-                    Style = child;
+                    //Style = child;
+                    //Style.LogAsJson();
+                    Style = new MapStylegrounds();
+                    Style.Unpack(child);
                     break;
             }
         }
@@ -140,7 +140,7 @@ public sealed class Map : IPackable {
     }
 
     private void InitStyleAndFillerIfNeeded() {
-        Style ??= new("Style");
+        Style ??= new();
         Filler ??= new("Filler");
     }
 

@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("waterfall")]
-public class Waterfall : Entity {
+public class Waterfall : Entity, IPlaceable {
     public virtual Color SurfaceColor => Color.LightSkyBlue * 0.8f;
     public virtual Color FillColor => Color.LightSkyBlue * 0.3f;
 
@@ -39,4 +39,8 @@ public class Waterfall : Entity {
 
         return h;
     }
+
+    public static FieldList GetFields() => new();
+
+    public static PlacementList GetPlacements() => new("waterfall");
 }

@@ -11,7 +11,8 @@ public abstract class SpriteBankEntity : Entity {
     public virtual SpriteBank? SpriteBank => null;
     public virtual Vector2 Offset => default;
 
-    public override IEnumerable<ISprite> GetSprites() {
-        yield return ISprite.FromSpriteBank(Pos + Offset, SpriteBankEntry, Animation, SpriteBank);
-    }
+    public override IEnumerable<ISprite> GetSprites() => GetSprite();
+
+    public ISprite GetSprite() 
+        => ISprite.FromSpriteBank(Pos + Offset, SpriteBankEntry, Animation, SpriteBank);
 }

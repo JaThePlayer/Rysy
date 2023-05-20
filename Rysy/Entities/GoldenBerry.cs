@@ -7,7 +7,7 @@ namespace Rysy.Entities;
 public sealed class GoldenBerry : SpriteEntity, IPlaceable {
     public override int Depth => 0;
 
-    public override string TexturePath => (Bool("winged"), Nodes is [..]) switch {
+    public override string TexturePath => (Bool("winged"), Nodes is [_, ..]) switch {
         (true, true) => "collectables/ghostgoldberry/wings01",
         (true, false) => "collectables/goldberry/wings01",
         (false, true) => "collectables/ghostgoldberry/idle00",

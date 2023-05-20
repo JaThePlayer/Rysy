@@ -77,7 +77,17 @@ public static class LinqExt {
         return self.ToList();
     }
 
-    public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb) {
+    public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb)
+        where TTo : struct {
+        foreach (var item in self) {
+            var selected = cb(item);
+            if (selected != null)
+                yield return selected.Value;
+        }
+    }
+
+    public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb)
+    where TTo : class {
         foreach (var item in self) {
             var selected = cb(item);
             if (selected != null)
@@ -149,7 +159,13 @@ public static class LinqExt {
 
     public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
 
-    public static IEnumerable<TOut> Select<T1, T2, T3, TOut>(this IEnumerable<(T1, T2, T3)> self, Func<T1, T2, T3, TOut> callback) {
+    public static IEnumerable<TOut> SelectTuple<T1, T2, TOut>(this IEnumerable<(T1, T2)> self, Func<T1, T2, TOut> callback) {
+        foreach (var item in self) {
+            yield return callback(item.Item1, item.Item2);
+        }
+    }
+
+    public static IEnumerable<TOut> SelectTuple<T1, T2, T3, TOut>(this IEnumerable<(T1, T2, T3)> self, Func<T1, T2, T3, TOut> callback) {
         foreach (var item in self) {
             yield return callback(item.Item1, item.Item2, item.Item3);
         }

@@ -18,11 +18,6 @@ public class EntityPropertyWindow : FormWindow {
 
         var fields = new FieldList();
 
-        //if (false && all.Count == 1) {
-        //    fields["x"] = Fields.Int(main.X);
-        //    fields["y"] = Fields.Int(main.Y);
-        //}
-
         var minSize = main.MinimumSize;
         if (main.Width != 0) {
             fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X);

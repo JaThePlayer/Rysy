@@ -96,6 +96,9 @@ rysy.mapLoadError.loadBackup=Load Backup
 rysy.mapLoadError.selectBackup=Please select which backup you want to load:
 rysy.mapLoadError.noBackups=No backups found.
 
+# Styleground window
+rysy.stylegrounds.windowName=Stylegrounds
+
 # Enums
 rysy.cassetteBlockIndex.0=Blue
 rysy.cassetteBlockIndex.1=Rose
@@ -273,7 +276,7 @@ entities.resortLantern.placements.name.lantern=Resort Lantern
 entities.resortRoofEnding.placements.name.resort_roof_ending=Resort Roof Ending
 
 # Dream Block
-entities.dreamBlock.placements.name.dream_block=Space Jam
+entities.dreamBlock.placements.name.dream_block=Dream Block
 entities.dreamBlock.attributes.description.fastMoving=Changes the dream block between two speeds.
 entities.dreamBlock.attributes.description.oneUse=Determines whether the dream block should disappear after one use.
 entities.dreamBlock.attributes.description.below=Determines whether the dream block should render in the background or foreground.
@@ -580,11 +583,11 @@ entities.slider.placements.name.clockwise=Slider (Clockwise)
 entities.slider.attributes.description.clockwise=Whether the slider will run clockwise or counter-clockwise.
 entities.slider.attributes.description.surface=Attaches the slider to a surface.
 
-# Lock Block
-entities.lockBlock.placements.name.wood=Lock Block (Wood)
-entities.lockBlock.placements.name.temple_a=Lock Block (Temple A)
-entities.lockBlock.placements.name.temple_b=Lock Block (Temple B)
-entities.lockBlock.placements.name.moon=Lock Block (Moon)
+# Key Door
+entities.lockBlock.placements.name.wood=Key Door (Wood)
+entities.lockBlock.placements.name.temple_a=Key Door (Temple A)
+entities.lockBlock.placements.name.temple_b=Key Door (Temple B)
+entities.lockBlock.placements.name.moon=Key Door (Moon)
 entities.lockBlock.attributes.description.sprite=Changes the visual appearance of the locked door.
 entities.lockBlock.attributes.description.unlock_sfx=The sound to play when unlocking the door. Leave empty for default.
 entities.lockBlock.attributes.description.stepMusicProgress=Whether unlocking the door should increment the music progress by one.
@@ -1041,10 +1044,10 @@ triggers.eventTrigger.placements.name.event=Event
 triggers.eventTrigger.attributes.description.event=Upon activation, plays the event selected.
 triggers.eventTrigger.attributes.description.onSpawn=If the event should automatically play when the player enters the room.
 
-# Activate Space Jams (Everest)
-triggers.everest/activateDreamBlocksTrigger.placements.name.activate_dream_blocks=Activate Space Jams
-triggers.everest/activateDreamBlocksTrigger.attributes.description.fullRoutine=Whether the Space Jam should play the whole animation, rather than just instantly looking ready.
-triggers.everest/activateDreamBlocksTrigger.attributes.description.activate=Whether the Space Jam should become usable or not.
+# Activate Dream Blocks (Everest)
+triggers.everest/activateDreamBlocksTrigger.placements.name.activate_dream_blocks=Activate Dream Blocks
+triggers.everest/activateDreamBlocksTrigger.attributes.description.fullRoutine=Whether the Dream Blocks should play the whole animation, rather than just instantly looking ready.
+triggers.everest/activateDreamBlocksTrigger.attributes.description.activate=Whether the Dream Blocks should become usable or not.
 triggers.everest/activateDreamBlocksTrigger.attributes.description.fastAnimation=Whether a faster animation should be used.
 
 # Change Inventory (Everest)
@@ -1121,8 +1124,8 @@ triggers.lightFadeTrigger.attributes.description.lightAddTo=Determines how the l
 triggers.lightFadeTrigger.attributes.description.lightAddFrom=Determines how the lighting changes passing through the trigger backwards.
 triggers.lightFadeTrigger.attributes.description.positionMode=Determines which direction the light fades towards.
 
-# Lookout Blocker
-triggers.lookoutBlocker.placements.name.lookout_blocker=Lookout Blocker
+# Watchtower Blocker
+triggers.lookoutBlocker.placements.name.lookout_blocker=Watchtower Blocker
 
 # Mini Textbox
 triggers.minitextboxTrigger.placements.name.mini_text_box=Mini Textbox
@@ -1184,3 +1187,180 @@ triggers.windTrigger.placements.name.wind=Wind Pattern
 
 # Wind Trigger
 triggers.windTrigger.attributes.description.pattern=Changes the abilities of the room's current wind type.
+
+# -- Parallax --
+# style.parallax.attribute.Attribute=Attribute Display Name
+# style.parallax.description.Attribute=Tooltip
+
+style.effects.parallax.attribute.alpha=Alpha
+style.effects.parallax.attribute.color=Colour
+style.effects.parallax.attribute.exclude=Exclude
+style.effects.parallax.attribute.only=Only
+style.effects.parallax.attribute.scrollx=Scroll X
+style.effects.parallax.attribute.scrolly=Scroll Y
+style.effects.parallax.attribute.speedx=Speed X
+style.effects.parallax.attribute.speedy=Speed Y
+style.effects.parallax.attribute.x=X
+style.effects.parallax.attribute.y=Y
+style.effects.parallax.attribute.blendmode=Blend Mode
+style.effects.parallax.attribute.texture=Texture
+style.effects.parallax.attribute.fadeIn=Fade In
+style.effects.parallax.attribute.flipx=Flip X
+style.effects.parallax.attribute.flipy=Flip Y
+style.effects.parallax.attribute.fadex=Fade X
+style.effects.parallax.attribute.fadey=Fade Y
+style.effects.parallax.attribute.instantOut=Instant Out
+style.effects.parallax.attribute.instantIn=Instant In
+style.effects.parallax.attribute.loopx=Loop X
+style.effects.parallax.attribute.loopy=Loop Y
+style.effects.parallax.attribute.fg=Foreground
+style.effects.parallax.attribute.flag=Flag
+style.effects.parallax.attribute.notflag=Not Flag
+style.effects.parallax.attribute.tag=Tag
+
+style.effects.parallax.description.alpha=Determines opacity between 0 (Translucent) and 1 (Opaque).
+style.effects.parallax.description.color=Using hex colour code, the code tints a styleground that colour.
+style.effects.parallax.description.exclude=Exludes specific rooms from taking stylegrounds and/or effects, taking priority over Only. Use * as a wildcard character.
+style.effects.parallax.description.only=Adds rooms to a styleground or effect. Use * as a wildcard character.
+style.effects.parallax.description.scrollx=Determines the parallax scrolling of a styleground along the X axis.
+style.effects.parallax.description.scrolly=Determines the parallax scrolling of a styleground along the Y axis.
+style.effects.parallax.description.speedx=Automatically moves the styleground along the X axis in-game.
+style.effects.parallax.description.speedy=Automatically moves the styleground along the Y axis in-game.
+style.effects.parallax.description.x=Determines the position of the styleground's appearance on screen in-game on the X axis.
+style.effects.parallax.description.y=Determines the position of the styleground's appearance on screen in-game on the Y axis.
+style.effects.parallax.description.blendmode=Determines whether the colours from overlapping stylegrounds should be added on top of each other or multiplied.
+style.effects.parallax.description.texture=The texture that the styleground should use.
+style.effects.parallax.description.fadeIn=Determines whether the styleground should fade in when transitioning to it.
+style.effects.parallax.description.flipx=Flips the styleground on the X axis.
+style.effects.parallax.description.flipy=Flips the styleground on the Y axis.
+style.effects.parallax.description.fadex=Advanced horizontal fading zones.\nFormat is "FromPosition-ToPosition,FromAlpha-ToAlpha". Example "n500-500,1-0".\nNegative numbers in position are denoted with "n" rather than minus. Position numbers are in pixels and use map coordinates.\nMultiple zones can be set up by using ":" as separator.
+style.effects.parallax.description.fadey=Advanced vertical fading zones.\nFormat is "FromPosition-ToPosition,FromAlpha-ToAlpha". Example "n500-500,1-0".\nNegative numbers in position are denoted with "n" rather than minus. Position numbers are in pixels and use map coordinates.\nMultiple zones can be set up by using ":" as separator.
+style.effects.parallax.description.instantOut=Determines whether the styleground should instantly fade out when transitioning away from it.
+style.effects.parallax.description.instantIn=Determines whether the styleground should instantly fade in when transitioning away from it.
+style.effects.parallax.description.loopx=Loops the styleground on the X axis.
+style.effects.parallax.description.loopy=Loops the styleground on the Y axis.
+style.effects.parallax.description.fg=Whether the styleground is in the foreground or background.
+style.effects.parallax.description.flag=Flag to make the backdrop visible. Leave empty to disable.
+style.effects.parallax.description.notflag=Flag to make the backdrop not visible. Leave empty to disable. Overrides the Flag field if set.
+style.effects.parallax.description.tag=A tag to make it easier to access given backdrops from code.
+
+
+# -- Effects --
+# style.effects.effectName.name=Effect Display Name
+# style.effects.effectName.attribute.Attribute=Attribute Display Name
+# style.effects.effectName.description.Attribute=Attribute Display Name
+
+# Defaults
+style.effects.default.attribute.name=Name
+style.effects.default.attribute.only=Rooms
+style.effects.default.attribute.exclude=Exclude
+style.effects.default.attribute.fg=Foreground
+style.effects.default.attribute.flag=Flag
+style.effects.default.attribute.notflag=Not Flag
+style.effects.default.attribute.tag=Tag
+
+style.effects.default.description.name=The name of the effect.
+style.effects.default.description.only=Which rooms the effect will be visible in. Room names can be comma seperated and wildcards are supported.\nExample: "a00,b00,c*".
+style.effects.default.description.exclude=Which rooms the effect will not be visible in. Room names can be comma seperated and wildcards are supported.\nExample: "a00,b00,c*".
+style.effects.default.description.fg=Whether the effect should be in the foreground or background.
+style.effects.default.description.flag=Flag to make the effect visible. Leave empty to disable.
+style.effects.default.description.notflag=Flag to make the effect not visible. Leave empty to disable. Overrides the Flag field if set.
+style.effects.default.description.tag=A tag to make it easier to access given backdrops from code.
+
+# Black Hole
+style.effects.blackhole.name=Black Hole
+
+# Boss Star Field
+style.effects.bossStarField.name=Boss Star field
+
+# Core Stars Foeground
+style.effects.corestarsfg.name=Core Stars
+
+# Dream Stars
+style.effects.dreamstars.name=Dream Stars
+
+# God Rays
+style.effects.godrays.name=God Rays
+
+# Heatwave
+style.effects.heatwave.name=Heatwave
+
+# Mirror Foreground
+style.effects.mirrorfg.name=Mirror Foreground
+
+# Northern Lights
+style.effects.northernlights.name=Northern Lights
+
+# Petals
+style.effects.petals.name=Petals
+
+# Reflection Foreground
+style.effects.reflectionfg.name=Reflection Foreground
+
+# Snow Foreground
+style.effects.snowfg.name=Snow Foreground
+
+# Snow Background
+style.effects.snowbg.name=Snow Background
+
+# Star Dust
+style.effects.stardust.name=Star Dust
+
+# Star Field
+style.effects.starfield.name=Starfield
+
+# Stars
+style.effects.stars.name=Stars
+
+# Tentacles
+style.effects.tentacles.name=Tentacles
+
+style.effects.tentacles.attribute.sides=Sides
+style.effects.tentacles.attribute.offset=Offset
+style.effects.tentacles.attribute.color=Colour
+
+style.effects.tentacles.description.sides=The side of the screen that the tentacles should attach to.
+style.effects.tentacles.description.offset=Determines the lerp strength of the tentacles, and their offset compared to the player's position.
+style.effects.tentacles.description.color=The colour of the tentacles.
+
+# Starfield
+style.effects.starfield.name=Starfield
+
+style.effects.starfield.attribute.color=Colour
+style.effects.starfield.attribute.scrollx=Scroll X
+style.effects.starfield.attribute.scrolly=Scroll Y
+style.effects.starfield.attribute.speed=Speed
+
+style.effects.starfield.description.color=The colour of the stars.
+style.effects.starfield.description.scrollx=Determines the parallax scrolling of the stars along the X axis.
+style.effects.starfield.description.scrolly=Determines the parallax scrolling of the stars along the Y axis.
+style.effects.starfield.description.speed=Speed multiplier for the stars.
+
+# Rain
+style.effects.rain.name=Rain
+
+style.effects.rain.attribute.color=Colour
+
+style.effects.rain.description.color=The colour of the rain.
+
+# Planets
+style.effects.planets.name=Planets
+
+style.effects.planets.attribute.count=Count
+style.effects.planets.attribute.size=Size
+style.effects.planets.attribute.color=Colour
+style.effects.planets.attribute.scrollx=Scroll X
+style.effects.planets.attribute.scrolly=Scroll Y
+
+style.effects.planets.description.count=The amount of planets to render.
+style.effects.planets.description.color=The colour of the planets.
+style.effects.planets.description.size=The sprite to use for the planets.\nLocated at "Gameplay/bgs/10/$size00", where "$size" is the size attribute value.
+style.effects.planets.description.scrollx=Determines the parallax scrolling of the planets along the X axis.
+style.effects.planets.description.scrolly=Determines the parallax scrolling of the planets along the Y axis.
+
+# Windsnow
+style.effects.windsnow.name=Wind Snow
+
+style.effects.windsnow.attribute.color=Colour
+
+style.effects.windsnow.description.color=The colour of the snow.
