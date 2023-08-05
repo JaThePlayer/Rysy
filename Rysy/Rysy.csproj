@@ -43,6 +43,9 @@
     <None Update="Assets\Graphics\tilesets\subfolder\betterTemplate.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Graphics\__fallback.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\lang\en_gb.lang">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -188,7 +191,6 @@
 
   <ItemGroup>
     <Folder Include="Assets\Graphics\tilesets\subfolder\" />
-    <Folder Include="Stylegrounds\" />
   </ItemGroup>
 
 </Project>

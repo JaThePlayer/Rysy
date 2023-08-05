@@ -19,7 +19,7 @@ public sealed class FolderModFilesystem : IModFilesystem {
         Watcher.Changed += (s, e) => {
             if (e.Name is null)
                 return;
-            e.LogAsJson();
+            //e.LogAsJson();
             var path = e.Name.Unbackslash();
             switch (e.ChangeType) {
                 case WatcherChangeTypes.Created: {
@@ -28,7 +28,7 @@ public sealed class FolderModFilesystem : IModFilesystem {
                 case WatcherChangeTypes.Deleted:
                     break;
                 case WatcherChangeTypes.Changed: {
-                    WatchedAssets.Keys.LogAsJson();
+                    //WatchedAssets.Keys.LogAsJson();
                     /*
                     if (!WatchedAssets.TryGetValue(path, out var watched)) {
                         // handle cases where you're editing a folder - all files in that folder need to be updated
@@ -94,6 +94,9 @@ public sealed class FolderModFilesystem : IModFilesystem {
     }
 
     public bool FileExists(string path) {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
         var realPath = VirtToRealPath(path);
 
         return File.Exists(realPath);

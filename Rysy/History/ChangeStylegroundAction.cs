@@ -7,7 +7,10 @@ public record class ChangeStylegroundAction(Style Style, Dictionary<string, obje
         Old = new(Style.Data.Inner);
 
         foreach (var (key, val) in Edited) {
-            Style.Data[key] = val;
+            if (val is { })
+                Style.Data[key] = val;
+            else
+                Style.Data.Remove(key);
         }
 
         return true;

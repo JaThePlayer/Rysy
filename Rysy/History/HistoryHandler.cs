@@ -11,13 +11,36 @@ public class HistoryHandler {
     public Action? OnUndo { get; set; }
     public Action? OnApply { get; set; }
 
-    public void ApplyNewAction(IHistoryAction action) {
-        if (action.Apply()) {
-            Actions.Add(action);
-            UndoneActions.Clear();
-            OnApply?.Invoke();
+    public void ApplyNewAction(IEnumerable<IHistoryAction?> actions) {
+        if (actions is MergedAction merged) {
+            ApplyNewAction((IHistoryAction)merged);
+            return;
         }
 
+        List<IHistoryAction> actionList = new();
+        foreach (var action in actions) {
+            if (action?.Apply() ?? false) {
+                actionList.Add(action);
+            }
+        }
+
+        if (actionList.Count > 0)
+            InsertAction(MergedAction.Preapplied(actionList));
+    }
+
+    public void ApplyNewAction(MergedAction action)
+        => ApplyNewAction((IHistoryAction) action);
+
+    public void ApplyNewAction(IHistoryAction? action) {
+        if (action?.Apply() ?? false) {
+            InsertAction(action);
+        }
+    }
+
+    private void InsertAction(IHistoryAction action) {
+        Actions.Add(action);
+        UndoneActions.Clear();
+        OnApply?.Invoke();
     }
 
     public void Undo() {

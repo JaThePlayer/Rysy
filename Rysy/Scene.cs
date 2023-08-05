@@ -8,6 +8,7 @@ public abstract class Scene {
     private List<Window> Windows = new();
 
     public HotkeyHandler Hotkeys { get; private set; }
+    public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
 
     public Scene() {
         RemoveWindow = (w) => {
@@ -26,11 +27,12 @@ public abstract class Scene {
 
     public virtual void SetupHotkeys() {
         Hotkeys = new(Input.Global, updateInImgui: false);
+        HotkeysIgnoreImGui = new(Input.Global, updateInImgui: true);
     }
 
     public virtual void Update() {
-        if (!ImGui.GetIO().WantCaptureKeyboard && !ImGui.GetIO().WantCaptureMouse)
-            Hotkeys?.Update();
+        Hotkeys?.Update();
+        HotkeysIgnoreImGui?.Update();
 
         TimeActive += Time.Delta;
     }
@@ -61,6 +63,18 @@ public abstract class Scene {
     /// </summary>
     public void AddWindowIfNeeded<T>() where T : Window, new() {
         if (!Windows.Any(w => w is T))
+            AddWindow(new T());
+    }
+
+    /// <summary>
+    /// Toggles the window of type <typeparamref name="T"/>
+    /// </summary>
+    public void ToggleWindow<T>() where T : Window, new() {
+        var existing = Windows.FirstOrDefault(w => w is T);
+
+        if (existing is { })
+            RemoveWindow(existing);
+        else
             AddWindow(new T());
     }
 

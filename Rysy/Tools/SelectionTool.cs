@@ -6,16 +6,18 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
+using Rysy.Selections;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Tools;
 
-internal class SelectionTool : Tool {
+public class SelectionTool : Tool {
     public override string Name => "selection";
 
     private enum States {
         Idle,
         MoveGesture,
+        RotationGesture,
     }
 
     private States State = States.Idle;
@@ -26,10 +28,17 @@ internal class SelectionTool : Tool {
     private Vector2 MoveGestureFinalDelta;
 
     private List<Selection>? CurrentSelections;
+    private List<Selection> SelectionsToHighlight = new();
 
     private SelectionLayer CustomLayer;
 
     private int ClickInPlaceIdx;
+
+    private Point? RotationGestureStart;
+    private Rectangle? RotationGestureRect;
+    private float? RotationGestureLastAngle;
+
+
 
     public SelectionTool() {
     }
@@ -52,20 +61,20 @@ internal class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.moveUpPixel", "ctrl+up", CreateMoveHandler(new(0, -1)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.moveDownPixel", "ctrl+down", CreateMoveHandler(new(0, 1)), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.upsizeLeft",   "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeRight",  "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeTop",    "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeTop", "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 8), new()), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.downsizeLeft",   "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.downsizeRight",  "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.downsizeTop",    "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeLeft", "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeRight", "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeTop", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
 
         handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", HorizontalFlipSelections);
         handler.AddHotkeyFromSettings("selection.flipVertical", "v", VerticalFlipSelections);
 
-        handler.AddHotkeyFromSettings("selection.delete", "delete", DeleteSelections);
+        handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
 
         handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => AddNodeKeybind(at: null));
         handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => AddNodeKeybind(at: GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom!).ToVector2().Snap(8)));
@@ -214,7 +223,7 @@ internal class SelectionTool : Tool {
         if (move != default) {
             actions = actions.Concat(selections.Select(s => s.Handler.MoveBy(move)));
         }
-            
+
         var merged = actions.MergeActions();
 
         if (merged.Any()) {
@@ -231,7 +240,7 @@ internal class SelectionTool : Tool {
         }
     }
 
-    private void DeleteSelections() {
+    public void DeleteSelections() {
         if (CurrentSelections is { } selections) {
             var action = selections.Select(s => s.Handler.DeleteSelf()).MergeActions();
             Deselect();
@@ -243,17 +252,28 @@ internal class SelectionTool : Tool {
 
     private void ClearColliderCachesInSelections() => CurrentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
-    private void Deselect() {
+    public void Deselect() {
         if (CurrentSelections is null)
             return;
 
-        // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
         foreach (var selection in CurrentSelections) {
             selection.Handler.OnDeselected();
         }
 
+        // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
         CurrentSelections?.Clear();
         CurrentSelections = null;
+    }
+
+    public void Deselect(ISelectionHandler handler) {
+        if (CurrentSelections is null)
+            return;
+
+        var selection = CurrentSelections.Find(s => s.Handler == handler);
+        if (selection is { }) {
+            CurrentSelections.Remove(selection);
+            selection.Handler.OnDeselected();
+        }
     }
 
     public override string PersistenceGroup => "Selection";
@@ -282,7 +302,9 @@ internal class SelectionTool : Tool {
         if (Layer == LayerNames.ROOM)
             return;
 
-        DoRender();
+        DoRender(camera, room);
+
+        SelectionContextWindowRegistry.Render(this, room);
     }
 
     public override void RenderOverlay() {
@@ -292,17 +314,52 @@ internal class SelectionTool : Tool {
         GFX.EndBatch();
         GFX.BeginBatch(EditorState.Camera!);
 
-        DoRender();
+        DoRender(EditorState.Camera, null);
     }
 
-    private void DoRender() {
+    private void DoRender(Camera camera, Room? room) {
         if (SelectionGestureHandler.CurrentRectangle is { } rect) {
             DrawSelectionRect(rect);
         }
+
+        var mousePos = GetMouseRoomPos(camera, room!);
+
         if (CurrentSelections is { } selections)
             foreach (var selection in selections) {
-                selection.Render(Color.Red);
+                if (selection.Check(new(mousePos, new(1)))) {
+                    SelectionsToHighlight.Add(selection);
+                } else {
+                    selection.Render(Color.Red);
+                }
             }
+
+        if (SelectionsToHighlight is { Count: > 0}) {
+            foreach (var selection in SelectionsToHighlight) {
+                selection.Render(Color.Gold);
+            }
+
+            SelectionsToHighlight.Clear();
+        }
+    }
+
+    private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
+        mouseRoomPos = GetMouseRoomPos(camera, room);
+        return new Rectangle(GetMouseRoomPos(camera, room), new(1, 1));
+    }
+
+    private Selection? GetHoveredSelection(Camera camera, Room room) {
+        if (CurrentSelections is null)
+            return null;
+
+        var mouseRect = CreateMousePosRect(camera, room, out _);
+
+        foreach (var selection in CurrentSelections) {
+            if (selection.Check(mouseRect)) {
+                return selection;
+            }
+        }
+
+        return null;
     }
 
     public override void Update(Camera camera, Room room) {
@@ -341,6 +398,9 @@ internal class SelectionTool : Tool {
             case States.MoveGesture:
                 UpdateMoveGesture(camera, room);
                 break;
+            case States.RotationGesture:
+                UpdateRotationGesture(camera, room);
+                break;
             default:
                 break;
         }
@@ -355,6 +415,82 @@ internal class SelectionTool : Tool {
     }
 
     public override bool AllowSwappingRooms => Layer != LayerNames.ROOM;
+
+    private void EndRotationGesture(float angle) {
+        if (CurrentSelections is null) {
+            return;
+        }
+
+        var actions = CurrentSelections.Select(s => s.Handler).OfType<ISelectionPreciseRotationHandler>().Select(h => h.TryPreciseRotate(angle, isSimulation: false));
+
+        History.ApplyNewAction(actions);
+        ClearColliderCachesInSelections();
+        RotationGestureStart = null;
+    }
+
+    private void UpdateRotationGesture(Camera camera, Room room) {
+        if (CurrentSelections is null) {
+            State = States.Idle;
+            EndRotationGesture(0f);
+            return;
+        }
+
+        if (RotationGestureStart is null) {
+            CreateMousePosRect(camera, room, out var start);
+            RotationGestureStart = start;
+            RotationGestureLastAngle = null;
+            RotationGestureRect = null;
+        }
+
+        CreateMousePosRect(camera, room, out var currentPos);
+        var angle = VectorExt.Angle(RotationGestureStart.Value.ToVector2(), currentPos.ToVector2()) + (MathF.PI / 2f);
+        //Console.WriteLine((angle, RotationGestureLastAngle));
+        if (RotationGestureLastAngle is null) {
+            RotationGestureLastAngle = angle;
+            angle = 0f;
+        } else {
+            (angle, RotationGestureLastAngle) = (angle - RotationGestureLastAngle.Value, angle);
+        }
+        // RotationGestureLastAngle = angle;
+        //angle -= RotationGestureLastAngle;
+        //RotationGestureRect ??= RectangleExt.Merge(CurrentSelections.Select(s => s.Handler.Rect));
+        //var rect = RotationGestureRect.Value;
+        //var center = rect.Center;
+
+        if (!Input.Keyboard.Shift() || CurrentSelections is null) {
+            EndRotationGesture(angle);
+            State = States.MoveGesture;
+            return;
+        }
+
+        switch (Input.Mouse.Left) {
+            case MouseInputState.Held: {
+                foreach (var s in CurrentSelections) {
+                    if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
+                        rotationHandler.TryPreciseRotate(angle, isSimulation: true)?.Apply();
+                        //var offset = (center - s.Handler.Rect.Center).ToVector2().Rotate(angle);
+                        //s.Handler.MoveBy(offset).Apply();
+                        s.Handler.ClearCollideCache();
+                    }
+                }
+
+                break;
+            }
+            case MouseInputState.Released: {
+                EndRotationGesture(angle);
+                State = States.Idle;
+
+
+                //foreach (var s in CurrentSelections) {
+                //    if (s is ISelectionPreciseRotationHandler rotationHandler) {
+                //        rotationHandler.TryPreciseRotate(angle);
+                //    }
+                //}
+
+                break;
+            }
+        }
+    }
 
     private void EndMoveGesture(bool simulate) {
         if (State != States.MoveGesture)
@@ -371,6 +507,12 @@ internal class SelectionTool : Tool {
 
     private void UpdateMoveGesture(Camera camera, Room room) {
         var left = Input.Mouse.Left;
+
+        if (Input.Keyboard.Shift()) {
+            EndMoveGesture(false);
+            State = States.RotationGesture;
+            return;
+        }
 
         switch (left) {
             case MouseInputState.Released: {
@@ -464,7 +606,7 @@ internal class SelectionTool : Tool {
         }
 
         if (Input.Keyboard.Shift() && CurrentSelections is { }) {
-            foreach (var h in CurrentSelections.SelectWhereNotNull(s => s.Handler as Tilegrid.RectSelectionHandler))
+            foreach (var h in CurrentSelections.SelectWhereNotNull(s => s.Handler as TileSelectionHandler))
                 h.MergeWith(rect, exclude: false);
 
             CurrentSelections = CurrentSelections
@@ -475,8 +617,8 @@ internal class SelectionTool : Tool {
             var newSelections = CurrentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
 
             // tile selections are unique - they need to remain in the selection list, and we need to call MergeWith
-            foreach (var tileSelection in CurrentSelections.Where(s => s.Handler is Tilegrid.RectSelectionHandler)) {
-                if (tileSelection is { Handler: Tilegrid.RectSelectionHandler tileHandler }) {
+            foreach (var tileSelection in CurrentSelections.Where(s => s.Handler is TileSelectionHandler)) {
+                if (tileSelection is { Handler: TileSelectionHandler tileHandler }) {
                     tileHandler.MergeWith(rect, exclude: true);
 
                     newSelections = newSelections.Append(tileSelection);
@@ -489,6 +631,13 @@ internal class SelectionTool : Tool {
             Deselect();
             CurrentSelections = finalSelections.ToList();
         }
+    }
+
+    public void AddSelection(Selection selection) {
+        CurrentSelections = CurrentSelections?
+        .Append(selection)
+        .DistinctBy(x => x.Handler.Parent)
+        .ToList() ?? new() { selection };
     }
 
     private struct HandlerParentEqualityComparer : IEqualityComparer<Selection> {
@@ -514,6 +663,63 @@ internal class SelectionTool : Tool {
             ImGui.CheckboxFlags(LayerNames.FG, ref c, (int) SelectionLayer.FGTiles);
 
             CustomLayer = (SelectionLayer) c;
+
+            ImGui.Separator();
         }
+
+        ImGui.Text("Selections");
+
+        if (!ImGui.BeginTable("Selections", 2, ImGuiManager.TableFlags)) {
+            return;
+        }
+
+        var textBaseWidth = ImGui.CalcTextSize("A").X;
+
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 100f);
+        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableHeadersRow();
+
+        if (CurrentSelections is { })
+            foreach (var selection in CurrentSelections) {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+
+                var parent = selection.Handler.Parent;
+
+                switch (selection.Handler) {
+                    case EntitySelectionHandler entity:
+                        ImGui.Text(entity.Entity.Name);
+                        break;
+                    case NodeSelectionHandler node:
+                        ImGui.Text($"{node.Entity.Name}[{node.NodeIdx}]");
+                        break;
+                    case RoomSelectionHandler room:
+                        ImGui.Text(room.Room.Name);
+                        break;
+                    case TileSelectionHandler tiles:
+                        ImGui.Text(tiles.Layer.FastToString());
+                        break;
+                    default:
+                        break;
+                }
+                HighlightIfHovered(selection);
+                ImGui.TableNextColumn();
+
+                ImGuiManager.PushNullStyle();
+                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Deselect...##{selection.GetHashCode()}")) {
+                    RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
+                }
+                HighlightIfHovered(selection);
+
+                ImGuiManager.PopNullStyle();
+
+                void HighlightIfHovered(Selection selection) {
+                    if (ImGui.IsItemHovered()) {
+                        SelectionsToHighlight.Add(selection);
+                    }
+                }
+            }
+
+        ImGui.EndTable();
     }
 }

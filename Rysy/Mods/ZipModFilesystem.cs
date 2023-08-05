@@ -169,6 +169,9 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public bool FileExists(string path) {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
         var zip = OpenZipIfNeeded();
 
         var exists = zip.Archive.GetEntry(path) is { };

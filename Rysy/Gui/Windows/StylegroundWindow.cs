@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Gui.Windows;
@@ -13,35 +14,172 @@ public class StylegroundWindow : Window {
 
     private bool FG = false;
 
-    private Style? _Selected = null;
+    private ComboCache<Placement> PlacementComboCache = new();
+
     private Dictionary<string, object>? SelectedAlteredValues;
 
-    private Style? Selected {
-        get => _Selected;
-        set {
-            SelectedAlteredValues = null;
-            _Selected = value;
-
-            CreateForm(value);
-        }
-    }
+    private readonly ListenableList<Style> Selections;
 
     private FormWindow? Form;
+    // the style used for the form window
+    private Style? FormStyle;
 
-    public StylegroundWindow(HistoryHandler history, Map map) : base("rysy.stylegrounds.windowName".Translate(), new(1000, 800)) {
+    private HotkeyHandler HotkeyHandler;
+
+    public StylegroundWindow(HistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
         History = history;
-        Map = map;
+
+        Map = EditorState.Map!;
+        EditorState.OnMapChanged += () => {
+            //Map = EditorState.Map!;
+            //if (Map is null) {
+                RemoveSelf();
+            //}
+        };
+
+        var historyHook = () => {
+            Form?.ReevaluateChanged(FormStyle!.Data.Inner);
+        };
+        history.OnApply += historyHook;
+        history.OnUndo += historyHook;
+        SetRemoveAction((w) => {
+            History.OnApply -= historyHook;
+            History.OnUndo -= historyHook;
+        });
 
         NoSaveData = false;
+
+        HotkeyHandler = new(Input.Global, updateInImgui: true);
+        HotkeyHandler.AddHotkeyFromSettings("delete", "delete", () => EditAll(s => Delete(s)));
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => EditAll(s => Move(s, -1)), HotkeyModes.OnHoldSmoothInterval);
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDown", "down", () => EditAll(s => Move(s, 1), true), HotkeyModes.OnHoldSmoothInterval);
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUpInFolders", "up+shift", () => EditAll(s => MoveInOutFolder(s, -1)), HotkeyModes.OnHoldSmoothInterval);
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDownInFolders", "down+shift", () => EditAll(s => MoveInOutFolder(s, 1), true), HotkeyModes.OnHoldSmoothInterval);
+        HotkeyHandler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
+        HotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
+        HotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
+
+        Selections = new();
+        Selections.OnChanged += () => {
+            if (Selections is [var main, ..]) {
+                CreateForm(main);
+            } else {
+                Form = null;
+            }
+        };
+    }
+
+    private void CopySelections() {
+        if (Selections is [])
+            return;
+
+        Input.Clipboard.SetAsJson(Selections.Select(s => s.Pack()).ToArray());
+    }
+
+    private void PasteSelections() {
+        if (Input.Clipboard.TryGetFromJson<BinaryPacker.Element[]>() is not { } data) {
+            return;
+        }
+
+        var newStyles = data.Select(Style.FromElement).ToList();
+        if (Selections is [var first, ..]) {
+            var styles = GetStyleListContaining(first);
+            var folder = GetFolderContaining(first);
+
+            var startIdx = styles.IndexOf(first) - 1;
+            var actions = newStyles.Select(s => CreateAddAction(s, styles, folder, startIdx.SnapBetween(0, styles.Count - 1)));
+
+            History.ApplyNewAction(actions);
+        } else {
+            var styles = GetStyleListContaining();
+
+            var actions = newStyles.Select(s => CreateAddAction(s, styles, null));
+
+            History.ApplyNewAction(actions);
+        }
+
+        Selections.Clear();
+        Selections.AddAll(newStyles);
+    }
+
+    private void CutSelections() {
+        CopySelections();
+        EditAll(Delete);
+    }
+
+    private void EditAll(Func<Style, IHistoryAction?> styleToAction, bool descending = false) {
+        RysyEngine.OnEndOfThisFrame += () => {
+            var ordered = descending
+            ? Selections.OrderByDescending(s => GetStyleListContaining(s).IndexOf(s))
+            : Selections.OrderBy(s => GetStyleListContaining(s).IndexOf(s));
+
+            History.ApplyNewAction(ordered.Select(s => styleToAction(s)));
+        };
+    }
+
+    private IHistoryAction CreateAddAction(Style newStyle, IList<Style> styles, StyleFolder? folder, int? index = null) {
+        return new AddStyleAction(styles, newStyle, index, folder).WithHook(onUndo: () => Selections.Remove(newStyle));
+    }
+
+    private void Add(Style newStyle, IList<Style> styles, StyleFolder? folder) {
+        History.ApplyNewAction(CreateAddAction(newStyle, styles, folder));
+        SetOrAddSelection(newStyle);
+    }
+
+    private IHistoryAction? Move(Style? toMove, int offset) {
+        if (toMove is null)
+            return null;
+
+        var styles = GetStyleListContaining(toMove);
+        var idx = styles.IndexOf(toMove);
+
+        while (Selections.Contains(styles.ElementAtOrDefault(idx + offset))) {
+            offset += int.Sign(offset);
+        }
+
+        return new ReorderStyleAction(styles, toMove, offset);
+    }
+
+    public IHistoryAction? MoveInOutFolder(Style? toMove, int offset) {
+        if (toMove is null)
+            return null;
+
+        var styles = GetStyleListContaining(toMove);
+        var indexInThisList = styles.IndexOf(toMove);
+        var parent = toMove.Parent;
+
+        if (toMove is not StyleFolder { CanBeNested: false } && styles.ElementAtOrDefault(indexInThisList + offset) is StyleFolder folderInThisList) {
+            return new MoveStyleIntoFolderAction(toMove, folderInThisList, styles, offset > 0);
+        }
+
+        if (parent is { } && (indexInThisList + offset < 0 || indexInThisList + offset >= styles.Count)) {
+            var newFolder = GetFolderContaining(parent);
+            var newStyles = GetStyleListContaining(parent);
+
+            return new MoveStyleOutOfFolderAction(toMove, newStyles, newFolder, parent, offset < 0);
+        }
+
+        return Move(toMove, offset);
+    }
+
+    private IHistoryAction? Delete(Style? toRemove) {
+        if (toRemove is null)
+            return null;
+
+        Selections.Remove(toRemove);
+
+        return new RemoveStyleAction(GetStyleListContaining(toRemove), toRemove, GetFolderContaining(toRemove));
     }
 
     public static FieldList GetFields(Style main) {
         var fieldInfo = EntityRegistry.GetFields(main.Name);
 
-        var fields = new FieldList();
+        var fields = Style.GetDefaultFields();
+        var order = new List<string>(fields.Order!(main));
 
-        foreach (var (k, f) in fieldInfo) {
+        foreach (var (k, f) in fieldInfo.OrderedEnumerable(main)) {
             fields[k] = f.CreateClone();
+            order.Add(k);
         }
 
         // Take into account properties defined on this style, even if not present in FieldInfo
@@ -50,9 +188,9 @@ public class StylegroundWindow : Window {
                 fields[k].SetDefault(v);
             } else {
                 fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
+                order.Add(k);
             }
         }
-
 
         var tooltipKeyPrefix = $"style.effects.{main.Name}.description";
         var nameKeyPrefix = $"style.effects.{main.Name}.attribute";
@@ -64,8 +202,21 @@ public class StylegroundWindow : Window {
             f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
         }
 
-        return fields;
+        return fields.Ordered(order);
     }
+
+    private StyleFolder? GetFolderContaining(Style? style) {
+        return style switch {
+            //StyleFolder folder => folder, 
+            { Parent: { } parent } => parent,
+            _ => null,
+        };
+    }
+
+    private IList<Style> GetStyleListContaining(Style? style = null)
+        => style is { Parent: { } parent }
+        ? parent.Styles
+        : FG ? Map.Style.Foregrounds : Map.Style.Backgrounds;
 
     private void CreateForm(Style? style) {
         if (style is null) {
@@ -78,17 +229,88 @@ public class StylegroundWindow : Window {
         var form = new FormWindow(fields, style.Name);
         form.Exists = style.Data.Has;
         form.OnChanged = (edited) => {
-            History.ApplyNewAction(new ChangeStylegroundAction(style, edited));
+            var action = Selections.Select(s => new ChangeStylegroundAction(s, edited)).MergeActions();
+
+            History.ApplyNewAction(action);
+            SelectedAlteredValues = null;
         };
         form.OnLiveUpdate = (edited) => {
-            SelectedAlteredValues = form.GetAllValues();
+            SelectedAlteredValues = edited;
         };
 
+        FormStyle = style;
         Form = form;
     }
 
+    private string GetPlacementName(Placement placement) {
+        var prefix = $"style.effects.{placement.SID}.name";
+        var name = placement.Name.TranslateOrNull(prefix)
+            ?? LangRegistry.TranslateOrNull(prefix)
+            ?? placement.SID!.Split('/')[^1].Humanize();
+
+        if (placement.GetMod() is { } mod) {
+            return $"{name} [{mod.Name}]";
+        }
+
+        return name;
+    }
+
+    private void SetOrAddSelection(Style style) {
+        if (Input.Global.Keyboard.Shift()) {
+            if (!Selections.Contains(style))
+                Selections.Add(style);
+        } else {
+            //Selections = new() { style };
+            Selections.Clear();
+            Selections.Add(style);
+        }
+    }
+
+    private void RenderAddNewEntry(StyleFolder? folder) {
+        ImGuiManager.PushNullStyle();
+        ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        ImGuiManager.PopNullStyle();
+
+        var hashString = folder?.GetHashCode().ToString() ?? "";
+        var id = $"new_{hashString}";
+        ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonLeft);
+
+        if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            var placements = EntityRegistry.StylegroundPlacements;
+            ImGuiManager.List(placements, GetPlacementName, PlacementComboCache, (pl) => {
+                var newStyle = Style.FromPlacement(pl);
+                var styles = folder?.Styles ?? GetStyleListContaining();
+
+                Add(newStyle, styles, folder);
+
+                ImGui.CloseCurrentPopup();
+            }, new() { "Parallax" });
+
+            ImGui.EndPopup();
+        }
+    }
+
+    private void RenderAddNewFolder() {
+        ImGuiManager.PushNullStyle();
+        ImGui.TreeNodeEx("New Folder...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        ImGuiManager.PopNullStyle();
+
+        if (!ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+            return;
+        }
+
+        var newStyle = Style.FromName("apply");
+
+        Add(newStyle, GetStyleListContaining(), null);
+        //History.ApplyNewAction(new AddStyleAction(GetStyleListContaining(), newStyle, null, null));
+        //SetOrAddSelection(newStyle);
+    }
+
     protected override void Render() {
-        ImGui.ShowDemoWindow();
+        //ImGui.ShowDemoWindow();
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows) && !ImGui.GetIO().WantCaptureKeyboard) {
+            HotkeyHandler.Update();
+        }
 
         var size = ImGui.GetWindowSize();
 
@@ -99,6 +321,9 @@ public class StylegroundWindow : Window {
 
         if (ImGui.BeginTabBar("Layer")) {
             if (ImGui.BeginTabItem("BG")) {
+                if (FG) {
+                    Selections.Clear();
+                }
                 FG = false;
                 RenderList(FG);
 
@@ -106,6 +331,9 @@ public class StylegroundWindow : Window {
             }
 
             if (ImGui.BeginTabItem("FG")) {
+                if (!FG) {
+                    Selections.Clear();
+                }
                 FG = true;
                 RenderList(FG);
 
@@ -114,22 +342,21 @@ public class StylegroundWindow : Window {
 
             ImGui.EndTabBar();
         }
-        
 
         ImGui.NextColumn();
 
-        var previewW = (int)ImGui.GetColumnWidth();
+        var previewW = (int) ImGui.GetColumnWidth();
         ImGuiManager.XnaWidget("styleground_preview", previewW, 300, () => {
-            if (Selected is { } selected) {
+            if (Selections is [var selected, ..]) {
                 IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
                 var oldData = selected.Data.Inner;
 
                 try {
                     if (SelectedAlteredValues is { } altered) {
-                        selected.Data.Inner = SelectedAlteredValues;
-                        sprites = Selected.GetPreviewSprites().ToList();
+                        selected.Data.Inner = selected.Data.Inner.CreateMerged(SelectedAlteredValues);
+                        sprites = selected.GetPreviewSprites().ToList();
                     } else {
-                        sprites = Selected.GetPreviewSprites();
+                        sprites = selected.GetPreviewSprites();
                     }
                 } finally {
                     selected.Data.Inner = oldData;
@@ -152,10 +379,10 @@ public class StylegroundWindow : Window {
     }
 
     private void RenderList(bool fg) {
-        if (!ImGui.BeginChild("list"))
+        if (!ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f)))
             return;
 
-        var flags = ImGuiTableFlags.BordersV | ImGuiTableFlags.BordersOuterH | ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg | ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.Hideable;
+        var flags = ImGuiManager.TableFlags;
         var textBaseWidth = ImGui.CalcTextSize("A").X;
         var styles = fg ? Map.Style.Foregrounds : Map.Style.Backgrounds;
 
@@ -168,62 +395,102 @@ public class StylegroundWindow : Window {
         ImGui.TableSetupColumn("Rooms", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 12f);
         ImGui.TableHeadersRow();
 
-        var id = 0;
         foreach (var style in styles) {
-            RenderStyleImgui(style, ref id);
+            RenderStyleImgui(style);
         }
+
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        RenderAddNewEntry(null);
+
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        RenderAddNewFolder();
 
         ImGui.EndTable();
         ImGui.EndChild();
     }
 
-    private void RenderStyleImgui(Style style, ref int id) {
-        var name = $"{(style is Parallax parallax ? parallax.Texture : style.Name)}##{id++}";
+    private void RenderStyleImgui(Style style) {
+        var id = style.GetHashCode();
 
         ImGui.TableNextRow();
 
         ImGui.TableNextColumn();
-        if (style is Apply apply) {
+        if (style is StyleFolder apply) {
             var flags = ImGuiTreeNodeFlags.SpanFullWidth;
-            if (Selected == style) {
+            if (Selections.Contains(style)) {
                 flags |= ImGuiTreeNodeFlags.Selected;
             }
 
-            var open = ImGui.TreeNodeEx(name, flags);
+            var open = ImGui.TreeNodeEx($"##{id}", flags);
             var clicked = ImGui.IsItemClicked();
+            AddStyleContextWindow(style, id);
+
+            ImGui.SameLine();
+            ImGui.Text(style.DisplayName);
 
             RenderOtherTabs(style);
 
             if (open) {
                 foreach (var innerStyle in apply.Styles) {
-                    RenderStyleImgui(innerStyle, ref id);
+                    RenderStyleImgui(innerStyle);
                 }
 
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                RenderAddNewEntry(apply);
+
                 ImGui.TreePop();
-            } else {
-                id += apply.Styles.Count; // increase the id to make sure that they stay consistent regardless of how many tree nodes are open
             }
 
             if (clicked) {
-                Selected = style;
+                SetOrAddSelection(style);
             }
         } else {
             var flags = ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth;
-            if (Selected == style) {
+            if (Selections.Contains(style)) {
                 flags |= ImGuiTreeNodeFlags.Selected;
             }
 
-            var open = ImGui.TreeNodeEx(name, flags);
+            var open = ImGui.TreeNodeEx($"##{id}", flags);
             var clicked = ImGui.IsItemClicked();
-
             if (clicked) {
-                Selected = style;
+                SetOrAddSelection(style);
             }
+            AddStyleContextWindow(style, id);
+
+            ImGui.SameLine();
+            ImGui.Text(style.DisplayName);
 
             RenderOtherTabs(style);
         }
+    }
+
+    private void AddStyleContextWindow(Style style, int id) {
+        ImGui.OpenPopupOnItemClick($"style_ctx_{id}", ImGuiPopupFlags.MouseButtonRight);
+
+        if (ImGui.BeginPopupContextWindow($"style_ctx_{id}", ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            if (ImGui.Button("Remove")) {
+                RysyEngine.OnEndOfThisFrame += () => History.ApplyNewAction(Delete(style));
+                ImGui.CloseCurrentPopup();
+            }
+
+            if (ImGui.Button("Clone")) {
+                RysyEngine.OnEndOfThisFrame += () => {
+                    var newStyle = Style.FromElement(style.Pack());
+                    var styles = GetStyleListContaining(style);
+                    var folder = GetFolderContaining(style);
+
+                    Add(newStyle, styles, folder);
+                };
+
+                ImGui.CloseCurrentPopup();
+            }
 
 
+            ImGui.EndPopup();
+        }
     }
 
     private void RenderOtherTabs(Style style) {

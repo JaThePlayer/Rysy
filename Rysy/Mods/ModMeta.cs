@@ -1,6 +1,8 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
@@ -50,20 +52,68 @@ public sealed class ModMeta : ILuaWrapper {
     /// </summary>
     public IModFilesystem Filesystem { get; internal set; }
 
+    public LayeredFilesystem GetAllDependenciesFilesystem(bool includeOptionalDeps = true) {
+        var fs = new LayeredFilesystem();
+        var addedMods = new HashSet<string>() { Name };
+        var mods = new List<ModMeta>();
+
+        fs.AddMod(this);
+
+        foreach (var yaml in EverestYaml) {
+            AppendDependencies(mods, addedMods, yaml, includeOptionalDeps);
+            foreach (var mod in mods) {
+                fs.AddMod(mod);
+            }
+        }
+
+
+        return fs;
+    }
+
+    public IEnumerable<ModMeta> GetAllDependenciesRecursive(bool includeOptionalDeps = false) {
+        var addedMods = new HashSet<string>() { Name };
+        var mods = new List<ModMeta>();
+
+        foreach (var yaml in EverestYaml)
+            AppendDependencies(mods, addedMods, yaml, includeOptionalDeps);
+
+        return mods;
+    }
+
+    private static void AppendDependencies(List<ModMeta> mods, HashSet<string> addedMods, EverestModuleMetadata meta, bool includeOptionalDeps = false) {
+        var deps = includeOptionalDeps ? meta.Dependencies.Concat(meta.OptionalDependencies) : meta.Dependencies;
+
+        foreach (var dep in deps) {
+            if (addedMods.Contains(dep.Name))
+                continue;
+
+            var mod = ModRegistry.GetModByName(dep.Name);
+            if (mod is null)
+                continue;
+
+            mods.Add(mod);
+            addedMods.Add(dep.Name);
+
+            AppendDependencies(mods, addedMods, mod.EverestYaml.Find(meta => meta.Name == dep.Name)!);
+        }
+    }
+
     /// <summary>
     /// The metadata stored in the everest.yaml for this mod
     /// </summary>
-    public EverestModuleMetadata EverestYaml { get; internal set; }
+    public List<EverestModuleMetadata> EverestYaml { get; internal set; }
 
     /// <summary>
     /// The mod name, taken from the everest.yaml
     /// </summary>
-    public string Name => EverestYaml.Name;
+    public string Name => EverestYaml.First().Name;
 
     /// <summary>
     /// The mod version, taken from the everest.yaml
     /// </summary>
-    public Version Version => EverestYaml.Version;
+    public Version Version => EverestYaml.First().Version;
+
+    public bool IsVanilla => Name is "Rysy" or "Celeste";
 
     [JsonIgnore]
     public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
@@ -86,7 +136,7 @@ public sealed class ModMeta : ILuaWrapper {
         return 1;
     }
 
-    public override string ToString() => EverestYaml.ToString();
+    public override string ToString() => EverestYaml.ToString()!;
 }
 
 /// <summary>
@@ -100,6 +150,13 @@ public sealed class EverestModuleMetadata {
     public string Name { get; set; }
 
     /// <summary>
+    /// The path to the dll of the mod.
+    /// Unused by Rysy, but still read to not break the yaml upon saving.
+    /// </summary>
+    [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
+    public string DLL { get; set; }
+
+    /// <summary>
     /// The mod version.
     /// </summary>
     [YamlIgnore]
@@ -107,7 +164,7 @@ public sealed class EverestModuleMetadata {
     private string _VersionString;
     [YamlMember(Alias = "Version")]
     public string VersionString {
-        get => _VersionString;
+        get => _VersionString ?? Version.ToString();
         set {
             _VersionString = value;
             int versionSplitIndex = value.IndexOf('-');
@@ -121,14 +178,51 @@ public sealed class EverestModuleMetadata {
     /// <summary>
     /// The dependencies of the mod.
     /// </summary>
-    public List<EverestModuleMetadata> Dependencies { get; set; } = new List<EverestModuleMetadata>();
+    [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
+    public List<EverestDependency> Dependencies { get; set; } = new List<EverestDependency>();
 
     /// <summary>
     /// The optional dependencies of the mod. This mod will load after the mods listed here if they are installed; if they aren't, the mod will load anyway.
     /// </summary>
-    public List<EverestModuleMetadata> OptionalDependencies { get; set; } = new List<EverestModuleMetadata>();
+    [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
+    public List<EverestDependency> OptionalDependencies { get; set; } = new List<EverestDependency>();
 
     public override string ToString() {
         return Name + " " + Version;
     }
+}
+
+public class EverestDependency {
+    /// <summary>
+    /// The name of the mod.
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    /// The mod version.
+    /// </summary>
+    [YamlIgnore]
+    public Version Version { get; set; } = new Version(1, 0);
+    private string _VersionString;
+    [YamlMember(Alias = "Version")]
+    public string VersionString {
+        get => _VersionString ?? Version.ToString();
+        set {
+            _VersionString = value;
+            int versionSplitIndex = value.IndexOf('-');
+            if (versionSplitIndex == -1)
+                Version = new Version(value);
+            else
+                Version = new Version(value[..versionSplitIndex]);
+        }
+    }
+
+    public override string ToString() {
+        return Name + " " + Version;
+    }
+
+    public EverestModuleMetadata ToModuleMetadata() => new() {
+        Name = Name,
+        Version = Version,
+    };
 }

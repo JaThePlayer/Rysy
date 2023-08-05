@@ -45,6 +45,9 @@ public static class ColorHelper {
     /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.RGB"/> as the second parameter if this is needed
     /// </summary>
     public static Color RGB(ReadOnlySpan<char> hexCode) {
+        if (hexCode.IsEmpty)
+            return Color.White;
+
         hexCode = PrepareSpan(hexCode);
         var packedValue = GetPacked(hexCode);
         return hexCode.Length switch {

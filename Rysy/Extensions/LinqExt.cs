@@ -1,5 +1,6 @@
 ﻿using Rysy.Helpers;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Rysy.Extensions;
 
@@ -13,6 +14,16 @@ public static class LinqExt {
             return self[index];
 
         return def;
+    }
+
+    public static Dictionary<TKey, TValue> CreateMerged<TKey, TValue>(this Dictionary<TKey, TValue> self, Dictionary<TKey, TValue> other)
+        where TKey : notnull {
+        var merged = new Dictionary<TKey, TValue>(self);
+        foreach (var (key, val) in other) {
+            merged[key] = val;
+        }
+
+        return merged;
     }
 
 
@@ -156,6 +167,10 @@ public static class LinqExt {
     public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
         where TKey : notnull
         => new(keyValuePairs);
+
+    public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs, IEqualityComparer<TKey>? comparer = null)
+        where TKey : notnull
+        => new(keyValuePairs, comparer);
 
     public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
 

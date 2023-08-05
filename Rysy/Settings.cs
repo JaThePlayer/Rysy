@@ -96,6 +96,14 @@ public sealed class Settings {
         return Save(Instance);
     }
 
+    public string GetHotkey(string name) {
+        if (!Hotkeys.TryGetValue(name, out var hotkey)) {
+            return "";
+        }
+
+        return hotkey;
+    }
+
     public string GetOrCreateHotkey(string name, string? defaultHotkey = null) {
         if (!Hotkeys.TryGetValue(name, out var hotkey)) {
             if (defaultHotkey is { }) {

@@ -42,10 +42,11 @@ public class ScriptTool : Tool {
     public override void RenderOverlay() {
     }
 
-    private void RunScript(Script script, Dictionary<string, object>? fieldValues = null) {
+    private void RunScript(Script script, Dictionary<string, object>? fieldValues, Vector2 roomPos) {
         var args = new ScriptArgs();
 
         args.Args = fieldValues ?? new();
+        args.RoomPos = roomPos;
 
         var rooms = Layer switch {
             CURRENT_ROOM_LAYER => EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null,
@@ -128,17 +129,19 @@ public class ScriptTool : Tool {
 
         if (Input.Mouse.Left.Clicked()) {
             var fields = script.Parameters;
+            var roomPos = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8);
+
             if (fields is { }) {
                 var form = new FormWindow(fields, $"Script Parameters: {script.Name}");
                 form.SaveChangesButtonName = "Run Script";
 
                 form.OnChanged = (edited) => {
-                    RunScript(script, form.GetAllValues());
+                    RunScript(script, form.GetAllValues(), roomPos);
                 };
 
                 RysyEngine.Scene.AddWindow(form);
             } else {
-                RunScript(script);
+                RunScript(script, fieldValues: null, roomPos);
             }
         }
     }

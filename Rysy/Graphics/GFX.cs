@@ -11,10 +11,15 @@ public static class GFX {
 
     public static SpriteBatch Batch { get; private set; } = null!;
 
+    public static VirtTexture UnknownTexture { get; private set; } = null!;
+
     public static Texture2D Pixel { get; private set; } = null!;
     public static VirtTexture VirtPixel { get; private set; } = null!;
 
     private static List<string> _ValidDecalPaths;
+
+    private static BasicEffect BasicEffect;
+
     public static List<string> ValidDecalPaths {
         get {
             if (_ValidDecalPaths is { } p)
@@ -46,7 +51,19 @@ public static class GFX {
         Pixel.SetData(new Color[1] { Color.White });
         VirtPixel = VirtTexture.FromTexture(Pixel);
 
+        if (File.Exists("Assets/Graphics/__fallback.png"))
+            UnknownTexture = VirtTexture.FromFile("Assets/Graphics/__fallback.png");
+        else
+            UnknownTexture = VirtTexture.FromTexture(Pixel);
+
         PicoFont.Init();
+
+        BasicEffect = new BasicEffect(eng.GraphicsDevice);
+        BasicEffect.World = Matrix.Identity;
+        BasicEffect.View = Matrix.Identity;
+        BasicEffect.Projection = Matrix.Identity;
+        BasicEffect.TextureEnabled = false;
+        BasicEffect.VertexColorEnabled = true;
     }
 
     /// <summary>
@@ -129,14 +146,52 @@ public static class GFX {
     }
 
     public static void BeginBatch(Camera? camera) {
-        if (camera is { })
-            Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
-        else
+        PushBatchBegin(() => {
+            if (camera is { })
+                Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+            else
+                BeginBatch();
+        });
+    }
+
+    private static Action? LastBatchBegin;
+
+    public static void PushBatchBegin(Action beginAction) {
+        LastBatchBegin = beginAction;
+
+        beginAction();
+    }
+
+    public static void BeginBatchWithPreviousSettings() {
+        if (LastBatchBegin is { }) {
+            LastBatchBegin.Invoke();
+        } else {
             BeginBatch();
+        }
     }
 
     /// <summary>
     /// Ends the sprite batch.
     /// </summary>
     public static void EndBatch() { Batch.End(); }
+
+    public static void DrawVertices<T>(Matrix matrix, T[] vertices, int vertexCount, BasicEffect? effect = null, BlendState? blendState = null, RasterizerState? rasterizerState = null) where T : struct, IVertexType {
+        effect ??= BasicEffect;
+        blendState ??= BlendState.AlphaBlend;
+        rasterizerState ??= RasterizerState.CullNone;
+
+        Vector2 vector = new Vector2(RysyEngine.GDM.GraphicsDevice.Viewport.Width, RysyEngine.GDM.GraphicsDevice.Viewport.Height);
+        matrix *= Matrix.CreateScale(1f / vector.X * 2f, -(1f / vector.Y) * 2f, 1f);
+        matrix *= Matrix.CreateTranslation(-1f, 1f, 0f);
+
+        RysyEngine.Instance.GraphicsDevice.RasterizerState = rasterizerState;
+        RysyEngine.Instance.GraphicsDevice.BlendState = blendState;
+
+        //effect.Parameters["World"].SetValue(matrix);
+        effect.World = matrix;
+        foreach (EffectPass effectPass in effect.CurrentTechnique.Passes) {
+            effectPass.Apply();
+            RysyEngine.Instance.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount / 3);
+        }
+    }
 }

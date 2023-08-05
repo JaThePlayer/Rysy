@@ -23,6 +23,7 @@ public static class CodeCompilationHelper {
         global using Rysy.Entities;
         global using Rysy.Mods;
         global using Rysy.Scenes;
+        global using Rysy.Selections;
         global using Rysy;
 
         global using System;

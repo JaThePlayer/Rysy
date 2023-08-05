@@ -12,13 +12,21 @@ public abstract class TileEntity : Entity {
         => GetSprites(Pos, Layer, Tiletype);
 
     public IEnumerable<ISprite> GetSprites(Vector2 pos, TileLayer layer, char tiletype)
-        => GetTilegrid(layer).Autotiler!.GetSprites(pos, tiletype, Width / 8, Height / 8, Color);
+        => GetTilegrid(Room, layer).Autotiler!.GetSprites(pos, tiletype, Width / 8, Height / 8, Color);
 
-    public Tilegrid GetTilegrid(TileLayer layer) {
+    public static Tilegrid GetTilegrid(Room room, TileLayer layer) {
         return layer switch {
-            TileLayer.BG => Room.BG,
-            TileLayer.FG => Room.FG,
-            _ => throw new Exception($"Unknown TileLayer: {Layer}")
+            TileLayer.BG => room.BG,
+            TileLayer.FG => room.FG,
+            _ => throw new Exception($"Unknown TileLayer: {layer}")
+        };
+    }
+
+    public static Autotiler GetAutotiler(Map map, TileLayer layer) {
+        return layer switch {
+            TileLayer.BG => map.BGAutotiler,
+            TileLayer.FG => map.FGAutotiler,
+            _ => throw new Exception($"Unknown TileLayer: {layer}")
         };
     }
 
@@ -27,8 +35,4 @@ public abstract class TileEntity : Entity {
 
     public override Point MinimumSize => new(8, 8);
 
-    public enum TileLayer {
-        BG,
-        FG
-    }
 }

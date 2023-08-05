@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Decal : Entity, IPlaceable {
+public sealed class Decal : Entity, IPlaceable, IPreciseRotatable {
     //[GeneratedRegex("\\d+$|\\.png")]
     internal static Regex NumberTrimEnd { get; set; } = new("\\d+$|\\.png", RegexOptions.Compiled);
 
@@ -17,6 +17,8 @@ public sealed class Decal : Entity, IPlaceable {
     public void OnCreated() {
         Texture = Texture.TrimStart("decals/");
     }
+
+    public VirtTexture GetVirtTexture() => GFX.Atlas[MapTextureToPath(Texture)];
 
     public string Texture {
         get => Attr("texture");
@@ -118,6 +120,12 @@ public sealed class Decal : Entity, IPlaceable {
     public sealed override Entity? TryFlipVertical() {
         var clone = Clone().AsDecal()!;
         clone.ScaleY = -clone.ScaleY;
+        return clone;
+    }
+
+    public Entity? RotatePreciseBy(float angle) {
+        var clone = Clone().AsDecal()!;
+        clone.Rotation += angle.RadToDegrees().Floor();
         return clone;
     }
 

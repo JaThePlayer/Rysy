@@ -60,9 +60,9 @@ public class SpriteBank {
             spr.Mod = mod;
             spr.Path = path.Value;
 
-            if (spriteXml.Attributes["copy"] is { } copyXml) {
+            if (spriteXml.Attributes["copy"] is { Value: not null } copyXml) {
                 if (!Entries.TryGetValue(copyXml.Value, out var copyFrom)) {
-                    Logger.Write("SpriteBank", LogLevel.Warning, $"Sprite {spriteXml.Name} tried to copy from {copyFrom}, which doesn't exist!");
+                    Logger.Write("SpriteBank", LogLevel.Warning, $"Sprite {spriteXml.Name} tried to copy from {copyXml.Value}, which doesn't exist!");
                     continue;
                 }
 

@@ -10,6 +10,13 @@ entities.default.attributes.description._editorColor=The color of this trigger i
 rysy.ok=OK
 rysy.load=Load
 
+# Analyzers
+rysy.analyzers.window.name=Map Analyzers
+rysy.analyzers.window.cant_save=Errors detected by map analyzers!\nMap can't be saved until they are resolved!
+rysy.analyzers.dependency.missing='{0}' missing from everest.yaml
+rysy.analyzers.dependency.missing.unknown=Unknown assets used, can't verify everest.yaml
+rysy.analyzers.dependency.not_in_mod=Map is unpackaged, dependency checks disabled
+
 # Menubar
 rysy.menubar.tab.file=File
 
@@ -104,6 +111,9 @@ rysy.cassetteBlockIndex.0=Blue
 rysy.cassetteBlockIndex.1=Rose
 rysy.cassetteBlockIndex.2=Bright Sun
 rysy.cassetteBlockIndex.3=Malachite
+
+# Quick Action Window
+rysy.quick_actions.window_name=Add Quick Action
 
 # FROM LONN:
 

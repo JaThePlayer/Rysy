@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
 using Rysy.History;
 using System.Reflection;
 
@@ -39,7 +40,7 @@ public class FormWindow : Window {
     /// </summary>
     /// <returns></returns>
     public Dictionary<string, object> GetAllValues() {
-        return FieldList.ToDictionary(p => p.Name, p => p.ValueOrDefault());
+        return FieldList.Where(f => f.Field is not PaddingField).ToDictionary(p => p.Name, p => p.ValueOrDefault());
     }
 
     public FormWindow(string name) : base(name, null) {
@@ -52,7 +53,7 @@ public class FormWindow : Window {
     public void Init(FieldList fields, Func<string, bool>? exists = null) {
         Exists = exists ?? ((_) => true);
 
-        foreach (var f in fields) {
+        foreach (var f in fields.OrderedEnumerable(null!)) {
             var fieldName = f.Key;
             var field = f.Value;
 
@@ -71,6 +72,37 @@ public class FormWindow : Window {
         Resizable = true;
     }
 
+    public void ReevaluateChanged(Dictionary<string, object> newDefaults) {
+        EditedValues.Clear();
+
+        foreach (var prop in FieldList) {
+            var name = prop.Name;
+            var exists = newDefaults.TryGetValue(name, out var current);
+            var propValue = exists ? prop.ValueOrDefault() : prop.Value;
+
+            /*
+            if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
+                current switch {
+                    string currStr => currStr != (string?) prop.Value,
+                    null => prop.Value != current,
+                    _ => !current.Equals(prop.Value)
+                }
+            )) {
+                EditedValues[name] = prop.Value;
+            }*/
+            if (!(current?.Equals(propValue) ?? current == propValue)
+                && (current, propValue) switch {
+                    (float f, int i) => f != i,
+                    (int i, float f) => f != i,
+                    _ => true,
+                }) {
+
+                EditedValues[name] = propValue;
+                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
+            }
+        }
+    }
+
     protected override void Render() {
         var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
 
@@ -82,6 +114,16 @@ public class FormWindow : Window {
         FormContext ctx = new(this);
 
         foreach (var prop in FieldList) {
+            if (prop.Field is PaddingField) {
+
+                if (ImGui.GetColumnIndex() != 0)
+                    ImGui.NextColumn();
+
+                ImGui.Separator();
+
+                continue;
+            }
+
             if (!HandleProp(prop, ctx)) {
                 valid = false;
             }
@@ -139,8 +181,10 @@ public class FormWindow : Window {
     }
 
     internal void Set(Prop prop, object newVal) {
-        EditedValues[prop.Name] = newVal;
-        prop.Value = newVal;
+        var val = newVal is FieldNullReturn ? null : newVal;
+
+        EditedValues[prop.Name] = val;
+        prop.Value = val;
 
         OnLiveUpdate?.Invoke(EditedValues);
     }

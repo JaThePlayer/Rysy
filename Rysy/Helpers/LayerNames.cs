@@ -1,4 +1,6 @@
-﻿namespace Rysy.Helpers;
+﻿using Rysy.Selections;
+
+namespace Rysy.Helpers;
 
 public static class LayerNames {
     public const string FG = "FG";

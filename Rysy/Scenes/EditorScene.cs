@@ -6,6 +6,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.MapAnalyzers;
 using Rysy.Tools;
 
 namespace Rysy.Scenes;
@@ -60,7 +61,7 @@ public sealed class EditorScene : Scene {
 
     public EditorScene(bool loadFromPersistence = true) {
         HistoryHandler = new();
-        ToolHandler = new(HistoryHandler, Input.Global);
+        ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
 
         // Try to load the last edited map.
         if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
@@ -83,12 +84,12 @@ public sealed class EditorScene : Scene {
     public override void SetupHotkeys() {
         base.SetupHotkeys();
 
-        Hotkeys.AddHotkeyFromSettings("saveMap", "ctrl+s", () => Save());
+        HotkeysIgnoreImGui.AddHotkeyFromSettings("saveMap", "ctrl+s", () => Save());
         Hotkeys.AddHotkeyFromSettings("openMap", "ctrl+o", Open);
         Hotkeys.AddHotkeyFromSettings("newMap", "ctrl+shift+n", () => LoadNewMap());
 
-        Hotkeys.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
+        HotkeysIgnoreImGui.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
+        HotkeysIgnoreImGui.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
 
         Hotkeys.AddHotkeyFromSettings("newRoom", "ctrl+n", AddNewRoom);
 
@@ -101,6 +102,8 @@ public sealed class EditorScene : Scene {
         Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
 
         ToolHandler.InitHotkeys(Hotkeys);
+
+        _ = new QuickActionHandler(Hotkeys, ToolHandler);
     }
 
     public void ClearMapRenderCache() {
@@ -210,9 +213,16 @@ public sealed class EditorScene : Scene {
 
         BackupHandler.Backup(Map);
 
-        using var watch = new ScopedStopwatch("Saving");
-        var pack = Map.IntoBinary();
-        BinaryPacker.SaveToFile(pack, pack.Filename!);
+        var analyzerCtx = MapAnalyzerRegistry.Global.Analyze(Map);
+        //analyzerCtx.Results.LogAsJson();
+
+        if (analyzerCtx.Results.Any(r => r.Level == LogLevel.Error)) {
+            AddWindowIfNeeded<MapAnalyzerWindow>();
+        } else {
+            using var watch = new ScopedStopwatch("Saving");
+            var pack = Map.IntoBinary();
+            BinaryPacker.SaveToFile(pack, pack.Filename!);
+        }
     }
 
     public void Open() {

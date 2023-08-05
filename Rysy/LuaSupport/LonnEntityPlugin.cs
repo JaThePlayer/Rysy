@@ -1,7 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
-using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 
@@ -37,10 +36,12 @@ public sealed class LonnEntityPlugin {
 
     public Func<ILuaWrapper, Entity, Rectangle>? GetRectangle;
 
+    public Func<Entity, List<string>?> GetAssociatedMods;
+
     public bool HasSelectionFunction;
 
     public List<LonnPlacement> Placements { get; set; } = new();
-    public Func<FieldList>? FieldList;
+    public Func<FieldList>? FieldList { get; set; }
 
     public LuaStackHolder? StackHolder { get; private set; }
 
@@ -222,15 +223,21 @@ public sealed class LonnEntityPlugin {
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
 
-        
+
         plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle",
             def: null,
             funcGetter: static (lua, top) => lua.ToRectangle(top)
         );
 
+        plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods",
+            def: (List<string>)null!,
+            funcGetter: (lua, top) => lua.ToList<string>(top));
+
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
         plugin.HasGetNodeSprite = lua.PeekTableType(top, "nodeSprite") is LuaType.Function;
         plugin.HasSelectionFunction = lua.PeekTableType(top, "selection") is LuaType.Function;
+
+        LonnPlacement? defaultPlacement = null;
 
         if (lua.GetTable(top, "placements") == LuaType.Table) {
             var placement1loc = lua.GetTop();
@@ -241,6 +248,12 @@ public sealed class LonnEntityPlugin {
                     plugin.Placements.Add(new(lua));
                     break;
                 default:
+                    if (lua.GetTable(placement1loc, "default") == LuaType.Table) {
+                        //plugin.Placements.Add(new(lua));
+                        defaultPlacement = new(lua);
+                    }
+                    lua.Pop(1);
+
                     lua.IPairs((lua, i, loc) => {
                         plugin.Placements.Add(new(lua));
                     });
@@ -253,7 +266,7 @@ public sealed class LonnEntityPlugin {
             case LuaType.Table:
                 var fieldInfoLoc = lua.GetTop();
                 var dict = lua.TableToDictionary(fieldInfoLoc);
-                var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
+                var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
                 plugin.FieldList = () => LonnFieldIntoToFieldList(dict, mainPlacement);
                 break;
@@ -269,7 +282,7 @@ public sealed class LonnEntityPlugin {
 
                         var fields = lua.PCallFunction((lua, i) => {
                             var dict = lua.TableToDictionary(i);
-                            var mainPlacement = plugin.Placements.FirstOrDefault() ?? new();
+                            var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
                             return LonnFieldIntoToFieldList(dict, mainPlacement);
                         }) ?? new();
@@ -278,6 +291,56 @@ public sealed class LonnEntityPlugin {
                         return fields;
                     });
                 };
+                break;
+            default:
+                if (defaultPlacement is { }) {
+                    plugin.FieldList = () => LonnFieldIntoToFieldList(new(), defaultPlacement);
+                } else {
+                    plugin.FieldList = () => new();
+                }
+                break;
+        }
+        lua.Pop(1);
+
+        switch (lua.GetTable(top, "fieldOrder")) {
+            case LuaType.Table: {
+                var order = lua.ToList(lua.GetTop())?.OfType<string>().ToList();
+                if (order is { }) {
+                    var origFieldListGetter = plugin.FieldList;
+                    plugin.FieldList = () => origFieldListGetter().Ordered(order);
+                }
+            }
+            break;
+            case LuaType.Function: {
+                Console.WriteLine($"Field Order is a function: {plugin.Name}");
+                var origFieldListGetter = plugin.FieldList;
+
+                plugin.FieldList = () => {
+                    var fields = origFieldListGetter();
+
+                    fields.Ordered((entity) => {
+                        return plugin.PushToStack((plugin) => {
+                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder");
+
+                            if (type != LuaType.Function) {
+                                lua.Pop(1);
+                                return new();
+                            }
+
+                            var order = lua.PCallFunction(entity, (lua, i) => {
+                                return lua.ToList(i)?.OfType<string>().ToList();
+                            }) ?? new();
+                            lua.Pop(1);
+
+                            return order;
+                        });
+                    });
+
+                    return fields;
+                };
+            }
+            break;
+            default:
                 break;
         }
         lua.Pop(1);
@@ -291,7 +354,10 @@ public sealed class LonnEntityPlugin {
         return plugin;
     }
 
-    private static FieldList LonnFieldIntoToFieldList(Dictionary<string, object> dict, LonnPlacement mainPlacement) {
+    private static FieldList LonnFieldIntoToFieldList(Dictionary<string, object> dict, LonnPlacement mainPlacement)
+        => LonnFieldIntoToFieldList(dict, mainPlacement.Data);
+
+    public static FieldList LonnFieldIntoToFieldList(Dictionary<string, object> dict, Dictionary<string, object> mainPlacement) {
         var fieldList = new FieldList();
 
         foreach (var (key, val) in dict) {
@@ -301,16 +367,14 @@ public sealed class LonnEntityPlugin {
 
             var editable = (bool) infoDict.GetValueOrDefault("editable", true);
             var options = infoDict!.GetValueOrDefault("options", null);
-            var fieldType = (string?)infoDict!.GetValueOrDefault("fieldType", null);
+            var fieldType = (string?) infoDict!.GetValueOrDefault("fieldType", null);
             var min = infoDict!.GetValueOrDefault("minimumValue", null);
             var max = infoDict!.GetValueOrDefault("maximumValue", null);
 
             Field? field = null;
             // ignore fields we can guess - no need to duplicate code for guessed values
             if (fieldType is { } && fieldType is not "string" and not "number" and not "boolean" and not "anything")
-                field = Fields.CreateFromLonn(mainPlacement.Data.GetValueOrDefault(key), fieldType, infoDict);
-
-            field ??= HandleDropdown(editable, options, mainPlacement, key);
+                field = Fields.CreateFromLonn(mainPlacement.GetValueOrDefault(key), fieldType, infoDict);
 
             if (field is IntField intField) {
                 if (min is { })
@@ -326,13 +390,18 @@ public sealed class LonnEntityPlugin {
                     floatField.WithMin(Convert.ToSingle(max));
             }
 
+            if (options is { }) {
+                field = HandleDropdown(editable, options, mainPlacement, key, fieldType) ?? field;
+            }
+            
+
             if (field is { }) {
                 fieldList[key] = field;
             }
         }
 
         // take into account properties not defined in fieldInfo but only in the main placement
-        foreach (var (key, val) in mainPlacement.Data) {
+        foreach (var (key, val) in mainPlacement) {
             if (fieldList.ContainsKey(key))
                 continue;
 
@@ -343,42 +412,30 @@ public sealed class LonnEntityPlugin {
         return fieldList;
     }
 
-    private static Field? HandleDropdown(bool editable, object? options, LonnPlacement mainPlacement, string key) {
-        if (options is { } && mainPlacement.Data.TryGetValue(key, out var def)) {
-            /*
-            switch (def, editable, options) {
-                case (string str, _, List<object> dropdownOptions):
-                    if (dropdownOptions.First() is List<object>) {
-
-                         // {text, value},
-                         // {text, value2},
-                        return Fields.Dropdown(str, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable);
-                    } else {
-                        return Fields.Dropdown(str, dropdownOptions.Select(o => o.ToString()!).ToList(), editable: editable);
-                    }
-                case (string str, _, Dictionary<string, object> dropdownOptions): {
-                    var firstVal = dropdownOptions.FirstOrDefault().Value;
-
-                    return Fields.Dropdown(str, dropdownOptions.ToDictionary(v => v.Value.ToString()!, v => v.Key), editable);
-                }
-
-                default:
-                    break;
-            }
-            */
+    private static Field? HandleDropdown(bool editable, object? options, Dictionary<string, object> mainPlacement, string key, string? fieldType) {
+        if (options is { } && mainPlacement.TryGetValue(key, out var def)) {
             switch (options) {
                 case List<object> dropdownOptions:
                     if (dropdownOptions.First() is List<object>) {
                         // {text, value},
                         // {text, value2},
-                        return Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable);
+                        return fieldType switch {
+                            "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.Cast<List<object>>().ToDictionary(l => Convert.ToInt32(l[1]), l => l[0].ToString()!), editable),
+                            _ => Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable)
+                        };
                     } else {
-                        return Fields.Dropdown(def, dropdownOptions.Select(o => o).ToList(), editable: editable);
+                        return fieldType switch {
+                            "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.Select(o => Convert.ToInt32(o)).ToList(), editable: editable),
+                            _ => Fields.Dropdown(def, dropdownOptions.Select(o => o).ToList(), editable: editable),
+                        };
                     }
                 case Dictionary<string, object> dropdownOptions: {
                     var firstVal = dropdownOptions.FirstOrDefault().Value;
 
-                    return Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable);
+                    return fieldType switch {
+                        "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.ToDictionary(v => Convert.ToInt32(v.Value), v => v.Key), editable),
+                        _ => Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable),
+                    };
                 }
                 default:
                     break;
@@ -505,28 +562,28 @@ public sealed class LonnEntityPlugin {
         }
     }
 
-    public class LonnPlacement {
-        public string Name;
-        public Dictionary<string, object> Data = new();
+}
+public class LonnPlacement {
+    public string Name;
+    public Dictionary<string, object> Data = new();
 
-        internal LonnPlacement() {
-            Name = "";
-        }
+    internal LonnPlacement() {
+        Name = "";
+    }
 
-        public LonnPlacement(Lua lua, int? loc = null) {
-            var start = loc ?? lua.GetTop();
+    public LonnPlacement(Lua lua, int? loc = null) {
+        var start = loc ?? lua.GetTop();
 
-            Name = lua.PeekTableStringValue(start, "name") ?? throw new Exception("Name isn't a string!");
+        Name = lua.PeekTableStringValue(start, "name") ?? "default";
 
 
-            if (lua.GetTable(start, "data") is LuaType.Table)
-                Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist);
+        if (lua.GetTable(start, "data") is LuaType.Table)
+            Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist);
 
-            // pop the "data" table
-            lua.Pop(1);
-        }
+        // pop the "data" table
+        lua.Pop(1);
+    }
 
 #warning Remove, once placements support nodes and TableToDictionary supports tables in tables...
-        private static readonly HashSet<string> DataKeyBlacklist = new() { "nodes" };
-    }
+    private static readonly HashSet<string> DataKeyBlacklist = new() { "nodes" };
 }

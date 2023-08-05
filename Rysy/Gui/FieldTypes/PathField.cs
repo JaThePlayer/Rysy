@@ -20,6 +20,8 @@ public record class PathField : Field {
 
     private ComboCache<string> ComboCache = new();
 
+    public bool NullAllowed = false;
+
     public string Default { get; set; }
 
     public bool Editable { get; set; }
@@ -34,6 +36,13 @@ public record class PathField : Field {
             KnownPaths.Clear();
             CreateKnownPathsCache();
         }
+    }
+
+    public override bool IsValid(object? value) {
+        if (value is null && !NullAllowed)
+            return false;
+
+        return true;
     }
 
 
@@ -124,7 +133,7 @@ public record class PathField : Field {
     public override void SetDefault(object newDefault) => Default = newDefault.ToString()!;
 
     public override object? RenderGui(string fieldName, object value) {
-        var strValue = value.ToString() ?? "";
+        var strValue = value?.ToString() ?? "";
 
         var paths = KnownPaths.Value;
 
@@ -153,6 +162,12 @@ public record class PathField : Field {
 
     public PathField WithFilter(Func<FoundPath, bool> filter) {
         Filter = filter;
+
+        return this;
+    }
+
+    public PathField AllowNull() {
+        NullAllowed = true;
 
         return this;
     }

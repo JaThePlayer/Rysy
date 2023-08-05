@@ -1,10 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
-using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Scenes;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Rysy.Gui.Windows;
 
@@ -21,7 +18,7 @@ public static class Menubar {
     }
 
     private static List<Tab> Tabs = new() {
-        new("file") { 
+        new("file") {
             Render = FileMenu,
         },
         new("edit") {
@@ -96,7 +93,7 @@ public static class Menubar {
             }
 
             if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindowIfNeeded(() => new StylegroundWindow(history, map));
+                editor.AddWindowIfNeeded(() => new StylegroundWindow(history));
             }
         }
     }
@@ -160,7 +157,11 @@ public static class Menubar {
         }
 
         if (ImGui.Button("Filesystem Explorer")) {
-            RysyEngine.Scene.AddWindow(new FilesystemExplorerWindow());
+            RysyEngine.Scene.ToggleWindow<FilesystemExplorerWindow>();
+        }
+
+        if (ImGui.Button(MapAnalyzerWindow.Name)) {
+            RysyEngine.Scene.ToggleWindow<MapAnalyzerWindow>();
         }
 
         ImGui.EndMenu();
@@ -200,33 +201,33 @@ public static class Menubar {
         if (ImGui.Checkbox("Debug Info Window", ref b))
             DebugInfoWindow.Enabled = b;
     }
-/*
-#if WINDOWS
-    [DllImport("user32.dll")]
-    internal static extern IntPtr SetForegroundWindow(IntPtr hWnd);
+    /*
+    #if WINDOWS
+        [DllImport("user32.dll")]
+        internal static extern IntPtr SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")]
+        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    private static void FocusProcess() {
-        Process[] processRunning = Process.GetProcesses();
-        foreach (Process pr in processRunning) {
-            if (pr.ProcessName.Equals("Celeste", StringComparison.OrdinalIgnoreCase)) {
-                FocusProcess(pr);
+        private static void FocusProcess() {
+            Process[] processRunning = Process.GetProcesses();
+            foreach (Process pr in processRunning) {
+                if (pr.ProcessName.Equals("Celeste", StringComparison.OrdinalIgnoreCase)) {
+                    FocusProcess(pr);
+                }
             }
+
+            Thread.Sleep(1000);
+
+            FocusProcess(Process.GetCurrentProcess());
         }
 
-        Thread.Sleep(1000);
-
-        FocusProcess(Process.GetCurrentProcess());
-    }
-
-    private static void FocusProcess(Process pr) {
-        var hWnd = pr.MainWindowHandle;
-        ShowWindow(hWnd, 3);
-        SetForegroundWindow(hWnd);
-    }
-#endif*/
+        private static void FocusProcess(Process pr) {
+            var hWnd = pr.MainWindowHandle;
+            ShowWindow(hWnd, 3);
+            SetForegroundWindow(hWnd);
+        }
+    #endif*/
 
     private static void EditMenu() {
         if (RysyEngine.Scene is not EditorScene editor)
@@ -247,7 +248,7 @@ public static class Menubar {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
 
-        if (ImGui.MenuItem("New", Settings.Instance.GetOrCreateHotkey("newMap"))) {
+        if (ImGui.MenuItem("New Map", Settings.Instance.GetOrCreateHotkey("newMap"))) {
             editor.LoadNewMap();
         }
 
@@ -267,6 +268,12 @@ public static class Menubar {
         if (ImGui.MenuItem("Save as")) {
             editor.Save(true);
         }
+
+        ImGuiManager.DropdownMenu("Load Backup", BackupHandler.GetBackups(), 
+            (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]",
+            onClick: (b) => {
+                RysyEngine.Scene = new EditorScene(b.BackupFilepath, fromBackup: true, overrideFilepath: b.OrigFilepath);
+            });
 
         if (ImGui.MenuItem("Exit"))
             RysyEngine.Instance.Exit();

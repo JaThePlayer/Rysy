@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
+using Rysy.Selections;
 
 namespace Rysy.Helpers;
 
@@ -15,7 +16,7 @@ public static class SpikeHelper {
         Color.Lerp("f21067".FromRGB(), Color.DarkSlateBlue, 0.4f),
     };
 
-    public static IEnumerable<ISprite> GetDustSprites(Entity e, Direction dir, IList<Color>? colors = null) {
+    public static IEnumerable<ISprite> GetDustSprites(Entity e, Direction dir, IReadOnlyList<Color>? colors = null) {
         colors ??= DustColors;
 
         var size = dir switch {

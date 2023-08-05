@@ -51,6 +51,21 @@ public static class ModRegistry {
         ModAssemblyScannerInstance -= scanner;
     }
 
+    public static ModMeta? GetModContainingRealPath(string? realPath) {
+        if (realPath is null)
+            return null;
+
+        realPath = realPath.Unbackslash();
+
+        foreach (var (_, mod) in Mods) {
+            if (realPath.StartsWith(mod.Filesystem.Root.Unbackslash())) {
+                return mod;
+            }
+        }
+
+        return null;
+    }
+
     public static async Task LoadAllAsync(string modDir) {
         LoadingScene.Text = "Scanning For Mods";
 
@@ -106,16 +121,20 @@ public static class ModRegistry {
 
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
         EverestYaml = new() {
-            Name = "Celeste",
-            Version = new(1, 4, 0, 0),
+            new() {
+                Name = "Celeste",
+                Version = new(1, 4, 0, 0),
+            }
         },
         Filesystem = new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content"),
     };
 
     private static ModMeta CreateRysyMod() => new() {
         EverestYaml = new() {
-            Name = "Rysy",
-            Version = new(1, 0, 0, 0), // todo: auto-fill
+            new() {
+                Name = "Rysy",
+                Version = new(1, 0, 0, 0), // todo: auto-fill
+            }
         },
         PluginAssembly = typeof(RysyEngine).Assembly,
         Filesystem =
@@ -223,10 +242,17 @@ public static class ModRegistry {
                 });
             }
              */
+            bool reloading = false;
+
             mod.Filesystem.RegisterFilewatch("Rysy", new() {
                 OnChanged = name => {
-                    if (name.EndsWith(".cs"))
-                        RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false);
+                    if (!reloading && name.EndsWith(".cs")) {
+                        reloading = true;
+                        RysyEngine.OnEndOfThisFrame += () => {
+                            LoadModRysyPlugins(mod, registerFilewatch: false);
+                            reloading = false;
+                        };
+                    }
                 }
             });
         }
@@ -265,22 +291,24 @@ public static class ModRegistry {
 
         if (parsedYaml is { }) {
             // todo: handle multiple mods in one yaml
-            mod.EverestYaml = parsedYaml[0];
+            mod.EverestYaml = parsedYaml;
             return;
         }
 
         var guessedName = guessedNameGetter?.Invoke() ?? $"<unknown:{Guid.NewGuid()}>";
         Logger.Write("ModRegistry", LogLevel.Info, $"Found mod with no everest.yaml: {guessedName} [{filesystem.Root}]");
         mod.EverestYaml = new() {
-            Name = guessedName,
-            Version = new(1, 0, 0, 0),
+            new() {
+                Name = guessedName,
+                Version = new(1, 0, 0, 0),
+            }
         };
     }
 
-    private static EverestModuleMetadata[]? ParseEverestYaml(Stream stream) {
+    private static List<EverestModuleMetadata>? ParseEverestYaml(Stream stream) {
         using var everestYamlReader = new StreamReader(stream);
-        var yamls = YamlHelper.Deserializer.Deserialize<EverestModuleMetadata[]>(everestYamlReader);
-        if (yamls.Length != 0) {
+        var yamls = YamlHelper.Deserializer.Deserialize<List<EverestModuleMetadata>>(everestYamlReader);
+        if (yamls.Count != 0) {
             return yamls;
         }
 

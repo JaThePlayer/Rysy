@@ -5,13 +5,15 @@ namespace Rysy.Gui.FieldTypes;
 public record class ColorField : Field, ILonnField {
     public static string Name => "color";
 
-    public Color Default { get; set; }
+    public Color? Default { get; set; }
 
     public bool XnaColorsAllowed { get; set; } = true;
 
     public ColorFormat Format { get; set; }
 
-    public override object GetDefault() => Default.ToString(Format);
+    public bool NullAllowed;
+
+    public override object GetDefault() => Default?.ToString(Format)!;
 
     public override void SetDefault(object newDefault) {
         if (newDefault is Color c) {
@@ -39,10 +41,13 @@ public record class ColorField : Field, ILonnField {
     }
 
     public override bool IsValid(object? value) {
+        if (value is null && !NullAllowed) 
+            return false;
+
         return ValueToColor(value, out _) && base.IsValid(value);
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object? value) {
         if (!ValueToColor(value, out var color)) {
             color = Color.White;
         }
@@ -58,6 +63,12 @@ public record class ColorField : Field, ILonnField {
 
     public ColorField AllowXNAColors() {
         XnaColorsAllowed = true;
+
+        return this;
+    }
+
+    public ColorField AllowNull() {
+        NullAllowed = true;
 
         return this;
     }

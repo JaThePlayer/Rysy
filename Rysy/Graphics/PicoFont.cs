@@ -77,6 +77,9 @@ public static class PicoFont {
     /// Doesn't support newlines.
     /// </summary>
     public static void Print(ReadOnlySpan<char> txt, Rectangle bounds, Color color, float scale = 1f) {
+        if (scale == 0f)
+            return;
+
         var rw = W * scale;
         var boundWidth = bounds.Width - 2;
         var maxPerLine = (int) (boundWidth / rw).AtLeast(1);

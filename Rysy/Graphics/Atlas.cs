@@ -8,13 +8,13 @@ public class Atlas : IAtlas {
     public VirtTexture this[string key] {
         get {
             if (key is null)
-                return GFX.VirtPixel;
+                return GFX.UnknownTexture;
 
             if (TryGet(key, out var texture))
                 return texture;
 
             Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
-            return GFX.VirtPixel;
+            return GFX.UnknownTexture;
         }
     }
 
@@ -61,13 +61,13 @@ public class Atlas : IAtlas {
     public VirtTexture this[string key, int frame] {
         get {
             if (key is null)
-                return GFX.VirtPixel;
+                return GFX.UnknownTexture;
 
             if (TryGet(key, frame, out var texture))
                 return texture;
 
             Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
-            return GFX.VirtPixel;
+            return GFX.UnknownTexture;
         }
     }
 
