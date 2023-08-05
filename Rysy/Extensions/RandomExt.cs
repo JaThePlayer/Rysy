@@ -55,17 +55,17 @@ public static class RandomExt {
         return values[pos.SeededRandomInclusive(0, len - 1)];
     }
 
-    public static T SeededRandomFrom<T>(this Vector2 pos, IList<T> values) {
-        var len = values.Count;
+    //public static T SeededRandomFrom<T>(this Vector2 pos, IList<T> values) {
+    //    var len = values.Count;
+//
+    //    return values[pos.SeededRandomInclusive(0, len - 1)];
+    //}
 
-        return values[pos.SeededRandomInclusive(0, len - 1)];
-    }
-
-    public static T SeededRandomFrom<T>(this Vector2 pos, params T[] values) {
-        var len = values.Length;
-
-        return values[pos.SeededRandomInclusive(0, len - 1)];
-    }
+    //public static T SeededRandomFrom<T>(this Vector2 pos, params T[] values) {
+    //    var len = values.Length;
+    //
+    //    return values[pos.SeededRandomInclusive(0, len - 1)];
+    //}
 
     #region Splitmix64
     /*  Written in 2015 by Sebastiano Vigna (vigna@acm.org)

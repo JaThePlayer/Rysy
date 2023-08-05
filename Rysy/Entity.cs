@@ -5,6 +5,7 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
+using Rysy.Selections;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -14,7 +15,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -258,6 +259,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     [JsonIgnore]
     public virtual Range NodeLimits => 0..0;
 
+    [JsonIgnore]
+    public virtual List<string>? AssociatedMods => null;
 
     /// <summary>
     /// Whether this entity is currently selected.
@@ -393,6 +396,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
         _ => SelectionLayer.Entities,
     };
 
+    public Selection CreateSelection() => new() {
+        Handler = new EntitySelectionHandler(this)
+    };
+
     public void InitializeNodePositions() {
         if (Nodes is { } nodes) {
             var (x, y) = (X, Y);
@@ -489,130 +496,6 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth {
     #endregion
 }
 
-internal class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler {
-    public EntitySelectionHandler(Entity entity) {
-        Entity = entity;
-        entity.Selected = true;
-        Entity.ClearRoomRenderCache();
-    }
-
-    public void OnDeselected() {
-        Entity.ClearRoomRenderCache();
-        Entity.Selected = false;
-    }
-
-    public Entity Entity { get; set; }
-
-    public object Parent => Entity;
-
-    public SelectionLayer Layer => Entity.GetSelectionLayer();
-
-    private ISelectionCollider? _Collider;
-    private ISelectionCollider Collider => _Collider ??= Entity.GetMainSelection();
-
-    public IHistoryAction DeleteSelf() {
-        return new RemoveEntityAction(Entity, Entity.Room);
-    }
-
-    public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
-
-    public IHistoryAction MoveBy(Vector2 offset) {
-        return new MoveEntityAction(Entity, offset);
-    }
-
-    public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
-        var nodeLimitsEnd = Entity.NodeLimits.End;
-        if (!nodeLimitsEnd.IsFromEnd && (Entity.Nodes?.Count ?? 0) == nodeLimitsEnd.Value)
-            return null;
-
-        var node = new Node(pos ?? (Entity.Pos + new Vector2(16f, 0)));
-
-        return (
-            new AddNodeAction(Entity, node, 0),
-            new NodeSelectionHandler(Entity, node)
-        );
-    }
-
-    public void RenderSelection(Color c) {
-        Collider.Render(c);
-    }
-
-    public IHistoryAction? TryResize(Point delta) {
-        var resizableX = Entity.ResizableX;
-        var resizableY = Entity.ResizableY;
-
-        if ((resizableX && delta.X != 0) || (resizableY && delta.Y != 0)) {
-            return new EntityResizeAction(Entity, delta);
-        }
-
-        return null;
-    }
-
-    public void ClearCollideCache() {
-        _Collider = null;
-    }
-
-    private IHistoryAction? FlipImpl(Entity? flipped, string funcName) {
-        var orig = Entity;
-
-        if (flipped is null)
-            return null;
-
-        if (orig == flipped)
-            throw new Exception($"When implementing Entity.{funcName}, don't return or manipulate 'this'!");
-
-        Entity = flipped;
-        return new SwapEntityAction(orig, flipped);
-    }
-
-    IHistoryAction? ISelectionFlipHandler.TryFlipHorizontal() {
-        var flipped = Entity.TryFlipHorizontal();
-
-        return FlipImpl(flipped, "TryFlipHorizontal");
-    }
-
-    IHistoryAction? ISelectionFlipHandler.TryFlipVertical() {
-        var flipped = Entity.TryFlipVertical();
-
-        return FlipImpl(flipped, "TryFlipVertical");
-    }
-
-    public void OnRightClicked(IEnumerable<Selection> selections) {
-        CreateEntityPropertyWindow(Entity, selections);
-    }
-
-    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections) {
-        var history = EditorState.History;
-
-        if (history is { }) {
-            var allEntities = selections.SelectWhereNotNull(s => {
-                switch (s.Handler) {
-                    case EntitySelectionHandler entitySelect:
-                        if (entitySelect.Entity.GetType() == main.GetType())
-                            return entitySelect.Entity;
-                        break;
-                    case NodeSelectionHandler entitySelect:
-                        if (entitySelect.Entity.GetType() == main.GetType())
-                            return entitySelect.Entity;
-                        break;
-                    default:
-                        break;
-                }
-
-                return null;
-            }).Distinct().ToList();
-            RysyEngine.Scene.AddWindow(new EntityPropertyWindow(history, main, allEntities));
-        }
-    }
-
-    public BinaryPacker.Element? PackParent() {
-        return Entity.Pack();
-    }
-
-    public IHistoryAction PlaceClone(Room room) {
-        return new AddEntityAction(Entity.Clone(), room);
-    }
-}
 
 public class EntityData : IDictionary<string, object> {
     public string SID { get; init; }
@@ -734,7 +617,7 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public string Attr(string attrName, string def = "") {
-        if (Inner.TryGetValue(attrName, out var obj)) {
+        if (Inner.TryGetValue(attrName, out var obj) && obj is { }) {
             return obj.ToString()!;
         }
 

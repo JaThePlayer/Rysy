@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 
@@ -17,25 +18,35 @@ public class EntityPropertyWindow : FormWindow {
         var fieldInfo = EntityRegistry.GetFields(main);
 
         var fields = new FieldList();
+        var order = new List<string>();
 
         var minSize = main.MinimumSize;
         if (main.Width != 0) {
             fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X);
+            order.Add("width");
         }
 
         if (main.Height != 0) {
             fields["height"] = Fields.Int(main.Height).WithStep(8).WithMin(minSize.Y);
+            order.Add("height");
         }
 
         fields["_editorLayer"] = Fields.Int(main.EditorLayer);
+        order.Add("_editorLayer");
 
         if (main is Trigger tr) {
             fields["_editorColor"] = Fields.RGBA(tr.EditorColor.ToColor(ColorFormat.RGBA));
+            order.Add("_editorColor");
         }
 
-        foreach (var (k, f) in fieldInfo) {
-            if (!BlacklistedKeys.Contains(k))
+        fields["__padding"] = new PaddingField();
+        order.Add("__padding");
+
+        foreach (var (k, f) in fieldInfo.OrderedEnumerable(main)) {
+            if (!BlacklistedKeys.Contains(k)) {
                 fields[k] = f.CreateClone();
+                order.Add(k);
+            }
         }
 
         // Take into account properties defined on this entity, even if not present in FieldInfo
@@ -45,6 +56,7 @@ public class EntityPropertyWindow : FormWindow {
                     fields[k].SetDefault(v);
                 } else {
                     fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
+                    order.Add(k);
                 }
             }
         }
@@ -61,7 +73,7 @@ public class EntityPropertyWindow : FormWindow {
             f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
         }
 
-        return (fields, main.EntityData.Has);
+        return (fields.Ordered(order), main.EntityData.Has);
     }
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {

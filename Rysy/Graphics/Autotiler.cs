@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Selections;
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
@@ -79,7 +80,7 @@ public sealed class Autotiler {
             }
         }
 
-        public bool GetFirstMatch(char[,] t, int x, int y, int w, int h, [NotNullWhen(true)] out Point[]? tiles) {
+        public bool GetFirstMatch(char[,] t, int x, int y, int w, int h, bool tilesOOB, [NotNullWhen(true)] out Point[]? tiles) {
             Span<bool> tileData = stackalloc bool[9];
             char middleTile = t[x, y];
             tileData[0] = IsTileAt(x - 1, y - 1);
@@ -132,7 +133,7 @@ public sealed class Autotiler {
                     var tile = t[x, y];
                     return tile != '0' && (!IgnoreAll || tile == middleTile) && (!Ignores?.Contains(tile) ?? true);
                 }
-                return true;
+                return tilesOOB;
             }
         }
 
@@ -307,7 +308,7 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a tile grid
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Color color) {
+    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOOB = true) {
         if (!Loaded) {
             yield break;
         }
@@ -345,7 +346,7 @@ public sealed class Autotiler {
                     continue;
                 }
 
-                if (!data.GetFirstMatch(tileGrid, x, y, w, h, out var tiles)) {
+                if (!data.GetFirstMatch(tileGrid, x, y, w, h, tilesOOB, out var tiles)) {
                     yield return ISprite.Rect(new((int) position.X + x * 8, (int) position.Y + y * 8, 8, 8), Color.Red);
                     continue;
                 }

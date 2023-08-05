@@ -13,11 +13,13 @@ public sealed class SummitCloud : Entity, IPlaceable {
 
     public override int Depth => -10550;
 
+    private static readonly List<int> Scales = new List<int> { -1, 1 };
+
     public override IEnumerable<ISprite> GetSprites() {
         var pos = Pos;
 
         yield return ISprite.FromTexture(pos, pos.SeededRandomFrom(Textures)).Centered() with {
-            Scale = new(pos.SeededRandomFrom(-1, 1), 1),
+            Scale = new(pos.SeededRandomFrom(Scales), 1),
         };
     }
 

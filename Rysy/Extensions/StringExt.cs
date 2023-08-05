@@ -123,7 +123,7 @@ public static partial class StringExt {
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static string Humanize(this string text) => text.TrimStart('_').SplitPascalCase().UppercaseFirst();
+    public static string Humanize(this string text) => text?.TrimStart('_').SplitPascalCase().UppercaseFirst() ?? "";
 
     /// <summary>
     /// Returns the string <paramref name="formatted"/> with all color formatting removed.

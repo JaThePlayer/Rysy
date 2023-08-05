@@ -14,10 +14,21 @@ public sealed class Map : IPackable {
     /// </summary>
     public string? Filepath;
 
-    //public Dictionary<string, Room> Rooms { get; set; } = new();
     public List<Room> Rooms { get; set; } = new();
 
-    public MapMetadata Meta = new();
+    private MapMetadata _Meta = new();
+    public MapMetadata Meta { 
+        get => _Meta; 
+        set {
+            OnMetaChanged?.Invoke(_Meta, value);
+            _Meta = value;
+        }
+    }
+
+    /// <summary>
+    /// (old, new)
+    /// </summary>
+    public Action<MapMetadata, MapMetadata>? OnMetaChanged { get; set; }
 
     public Autotiler BGAutotiler = new();
     public Autotiler FGAutotiler = new();
@@ -30,8 +41,12 @@ public sealed class Map : IPackable {
     /// </summary>
     public BinaryPacker.Element Filler;
 
-    private Map() {
+    public ModMeta? Mod => ModRegistry.GetModContainingRealPath(Filepath);
 
+    private Map() {
+        OnMetaChanged += (old, @new) => {
+            LoadAutotiler(old, @new);
+        };
     }
 
     public static Map NewMap(string packageName) {
@@ -58,12 +73,10 @@ public sealed class Map : IPackable {
     public BinaryPacker.Element Pack() {
         BinaryPacker.Element el = new("Map");
 
-        el.Children = new BinaryPacker.Element[4];
-
         var levels = new BinaryPacker.Element("levels");
         levels.Children = Rooms.Select(r => r.Pack()).ToArray();
 
-
+        el.Children = new BinaryPacker.Element[4];
         el.Children[0] = levels;
         el.Children[1] = Meta.Pack();
         el.Children[2] = Style.Pack();
@@ -83,6 +96,26 @@ public sealed class Map : IPackable {
         return pack;
     }
 
+    private void LoadAutotiler(MapMetadata? oldMeta, MapMetadata meta) {
+        if (meta.BackgroundTiles is { } moddedBgTiles && oldMeta?.BackgroundTiles != meta.BackgroundTiles) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), BGAutotiler.ReadFromXml)) {
+                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
+            }
+        }
+
+        if (meta.ForegroundTiles is { } moddedFgTiles && oldMeta?.ForegroundTiles != meta.ForegroundTiles) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), FGAutotiler.ReadFromXml)) {
+                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
+            }
+        }
+
+        if (meta.Sprites is { } sprites && oldMeta?.Sprites != meta.Sprites) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), Sprites.Load)) {
+                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {sprites}");
+            }
+        }
+    }
+
     public void Unpack(BinaryPacker.Element from) {
         foreach (var child in from.Children) {
             if (child is null) {
@@ -91,26 +124,7 @@ public sealed class Map : IPackable {
             }
             switch (child.Name) {
                 case "meta":
-                    Meta.Unpack(child);
-
-                    if (Meta.BackgroundTiles is { } moddedBgTiles) {
-                        if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), BGAutotiler.ReadFromXml)) {
-                            Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
-                        }
-                    }
-
-                    if (Meta.ForegroundTiles is { } moddedFgTiles) {
-                        if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), FGAutotiler.ReadFromXml)) {
-                            Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
-                        }
-                    }
-
-                    if (Meta.Sprites is { } sprites) {
-                        if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), Sprites.Load)) {
-                            Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {sprites}");
-                        }
-                    }
-
+                    Meta = new MapMetadata().Unpack(child);
                     break;
                 case "levels":
                     foreach (var room in child.Children) {
@@ -127,8 +141,6 @@ public sealed class Map : IPackable {
                     Filler = child;
                     break;
                 case "Style":
-                    //Style = child;
-                    //Style.LogAsJson();
                     Style = new MapStylegrounds();
                     Style.Unpack(child);
                     break;
@@ -159,6 +171,8 @@ public sealed class Map : IPackable {
     }
 
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);
+
+    public Rectangle GetBounds() => RectangleExt.Merge(Rooms.Select(r => r.Bounds));
 }
 
 public sealed record class MapMetadata {

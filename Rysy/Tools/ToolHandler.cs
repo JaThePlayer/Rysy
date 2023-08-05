@@ -87,6 +87,32 @@ public class ToolHandler {
         }
     }
 
+    public T? GetTool<T>() where T : Tool {
+        return (T?)Tools.FirstOrDefault(t => t is T);
+    }
+
+    public Tool? GetToolByName(string name) {
+        return Tools.FirstOrDefault(t => t.Name == name);
+    }
+
+    public T? SetTool<T>() where T : Tool {
+        var tool = GetTool<T>();
+
+        if (tool is { })
+            CurrentTool = tool;
+
+        return tool;
+    }
+
+    public Tool? SetToolByName(string name) {
+        var tool = GetToolByName(name);
+
+        if (tool is { })
+            CurrentTool = tool;
+
+        return tool;
+    }
+
     public void InitHotkeys(HotkeyHandler handler) {
         foreach (var tool in Tools) {
             tool.HotkeyHandler = new(Input, handler.UpdateInImgui);

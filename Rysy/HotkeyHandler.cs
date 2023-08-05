@@ -32,6 +32,9 @@ public class HotkeyHandler {
     /// </summary>
     /// <returns>this</returns>
     public HotkeyHandler AddHotkey(string hotkeyString, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
+        if (hotkeyString is null)
+            return this;
+
         foreach (var splitHotkey in hotkeyString.Split('|')) {
             var hotkey = new Hotkey(splitHotkey) {
                 OnPress = onPress,
@@ -124,7 +127,10 @@ public class HotkeyHandler {
         double NextInterval(float holdTime) => 0.50 - (holdTime / 2.5f);
     }
 
-    public static bool IsValid(string hotkeyString) {
+    public static bool IsValid(string? hotkeyString) {
+        if (hotkeyString is null)
+            return false;
+
         foreach (var hotkey in hotkeyString.Split('|')) {
             foreach (var item in hotkey.Replace(" ", "").Split('+')) {
                 var lower = item.ToLowerInvariant();

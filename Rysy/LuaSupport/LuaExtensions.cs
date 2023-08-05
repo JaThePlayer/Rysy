@@ -656,6 +656,18 @@ where TArg1 : class, ILuaWrapper {
         return list;
     }
 
+    public static List<T>? ToList<T>(this Lua lua, int index, int depth = 0) {
+        List<T> list = new();
+
+        lua.IPairs((lua, index, loc) => {
+            var obj = ToCSharp(lua, loc, depth + 1);
+            if (obj is T t)
+                list.Add(t);
+        });
+
+        return list;
+    }
+
     public static object ToCSharp(this Lua s, int index, int depth = 0) {
         object val = s.Type(index) switch {
             LuaType.Nil => null!,

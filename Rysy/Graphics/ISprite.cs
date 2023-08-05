@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Selections;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -123,9 +124,9 @@ public interface ISprite : IEnumerable<ISprite> {
          Color = color,
      };
 
-    public static LineSprite Line(Vector2[] positions, Color color)
+    public static LineSprite Line(IEnumerable<Vector2> positions, Color color)
      => new(positions) {
-         Color = color,
+         Color = color
      };
 
     /// <summary>

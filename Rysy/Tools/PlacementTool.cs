@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Scenes;
+using Rysy.Selections;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool {
@@ -39,6 +40,7 @@ public class PlacementTool : Tool {
             LayerNames.FG_DECALS => GFX.ValidDecalPaths,
             LayerNames.BG_DECALS => GFX.ValidDecalPaths,
             LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => s.Key),
+            null => null,
             _ => throw new NotImplementedException(layer)
         };
     }
@@ -116,7 +118,8 @@ public class PlacementTool : Tool {
 
 
         if (Material is Placement place) {
-            CurrentPlacement = place.PlacementHandler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
+            var handler = place.PlacementHandler;
+            CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
         }
     }
 

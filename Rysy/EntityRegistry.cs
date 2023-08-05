@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis;
 using Rysy.Entities;
 using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Rysy;
@@ -16,7 +18,8 @@ public static class EntityRegistry {
     private static Dictionary<string, Type> SIDToType { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, Func<FieldList>> SIDToFields { get; set; } = new(StringComparer.Ordinal);
-    private static Dictionary<string, ModMeta> SIDToMod { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, ModMeta> SIDToDefiningMod { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, List<ModMeta>> SIDToAssociatedMods { get; set; } = new(StringComparer.Ordinal);
 
     public static List<Placement> EntityPlacements { get; set; } = new();
     public static List<Placement> TriggerPlacements { get; set; } = new();
@@ -27,6 +30,11 @@ public static class EntityRegistry {
 
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
+
+    public static Placement? GetMainPlacement(string sid) =>
+        EntityPlacements.Find(x => x.SID == sid)
+        ?? TriggerPlacements.Find(x => x.SID == sid)
+        ?? StylegroundPlacements.Find(x => x.SID == sid);
 
     public static FieldList GetFields(Entity entity)
         => GetFields(entity.Name);
@@ -46,8 +54,16 @@ public static class EntityRegistry {
         return null;
     }
 
-    public static ModMeta? GetMod(string sid) {
-        return SIDToMod.GetValueOrDefault(sid);
+    public static ModMeta? GetDefiningMod(string sid) {
+        return SIDToDefiningMod.GetValueOrDefault(sid);
+    }
+
+    public static List<string> GetAssociatedMods(Entity entity) {
+        return entity.AssociatedMods ?? SIDToAssociatedMods.GetValueOrDefault(entity.Name)?.Select(m => m.Name).ToList() ?? new() { DependencyCheker.UnknownModName };
+    }
+
+    public static List<string> GetAssociatedMods(Style style) {
+        return style.AssociatedMods ?? SIDToAssociatedMods.GetValueOrDefault(style.Name)?.Select(m => m.Name).ToList() ?? new() { DependencyCheker.UnknownModName };
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
@@ -57,7 +73,9 @@ public static class EntityRegistry {
         SIDToFields.Clear();
         EntityPlacements.Clear();
         TriggerPlacements.Clear();
-        SIDToMod.Clear();
+        StylegroundPlacements.Clear();
+        SIDToDefiningMod.Clear();
+        SIDToAssociatedMods.Clear();
 
         RegisterHardcoded();
 
@@ -93,8 +111,9 @@ public static class EntityRegistry {
             foreach (var t in GetEntityTypesFromAsm(oldAsm)) {
                 foreach (var sid in GetSIDsForType(t)) {
                     SIDToType.Remove(sid);
-                    SIDToMod.Remove(sid);
+                    SIDToDefiningMod.Remove(sid);
                     EntityPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
+                    StylegroundPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
                 }
             }
         }
@@ -117,8 +136,47 @@ public static class EntityRegistry {
 
                 } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
                     LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
+                } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
+                    LoadLuaEffectPlugin(mod, pluginPath);
                 }
             }
+    }
+
+    private static void LoadLuaEffectPlugin(ModMeta mod, string pluginPath) {
+        mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
+            var plugin = stream.ReadAllText();
+
+            RegisterStyleFromLua(plugin, pluginPath, mod);
+        });
+    }
+
+    private static void RegisterStyleFromLua(string lua, string chunkName, ModMeta? mod = null) {
+        try {
+            LuaCtx.Lua.SetCurrentModName(mod);
+            LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
+            var plugins = LonnStylePlugin.FromCtx(LuaCtx);
+
+            foreach (var plugin in plugins) {
+                if (!HandleAssociatedMods(plugin.Name, Array.Empty<string>(), mod)) {
+                    continue;
+                }
+
+                SIDToType[plugin.Name] = typeof(LuaStyle);
+                if (mod is { })
+                    SIDToDefiningMod[plugin.Name] = mod;
+                if (plugin.FieldList is { })
+                    SIDToFields[plugin.Name] = () => plugin.FieldList(Style.FromName("parallax"));
+
+                foreach (var pl in plugin.Placements) {
+                    pl.SID ??= plugin.Name;
+
+                    StylegroundPlacements.Add(pl);
+                }
+            }
+        } catch (Exception ex) {
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua style {chunkName} [{mod?.Name}]: {ex}");
+            return;
+        }
     }
 
     private static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
@@ -139,7 +197,7 @@ public static class EntityRegistry {
         SIDToFields[BGDecalSID] = () => decalFields;
     }
 
-    public static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
+    private static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
         try {
             LuaCtx.Lua.SetCurrentModName(mod);
             LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
@@ -154,16 +212,20 @@ public static class EntityRegistry {
             foreach (var pl in plugins) {
                 pl.ParentMod = mod;
 
+                if (!HandleAssociatedMods(pl.Name, Array.Empty<string>(), mod)) {
+                    continue;
+                }
+
                 lock (SIDToType) {
                     SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 }
                 lock (SIDToLonnPlugin) {
                     SIDToLonnPlugin[pl.Name] = pl;
                 }
-                if (mod is { })
-                    lock (SIDToMod) {
-                        if (!SIDToMod.ContainsKey(pl.Name))
-                            SIDToMod[pl.Name] = mod;
+                if (mod is { } && !mod.IsVanilla)
+                    lock (SIDToDefiningMod) {
+                        if (!SIDToDefiningMod.ContainsKey(pl.Name))
+                            SIDToDefiningMod[pl.Name] = mod;
                     }
 
                 RegisterLuaPlacements(pl.Name, trigger, pl.Placements);
@@ -180,7 +242,7 @@ public static class EntityRegistry {
         }
     }
 
-    internal static void RegisterLuaPlacements(string sid, bool trigger, List<LonnEntityPlugin.LonnPlacement> placements) {
+    internal static void RegisterLuaPlacements(string sid, bool trigger, List<LonnPlacement> placements) {
         var placementsRegistry = trigger ? TriggerPlacements : EntityPlacements;
 
         lock (placementsRegistry) {
@@ -195,77 +257,85 @@ public static class EntityRegistry {
         }
     }
 
-    private static IEnumerable<Type> GetEntityTypesFromAsm(Assembly asm) 
+    private static IEnumerable<Type> GetEntityTypesFromAsm(Assembly asm)
         => asm.GetTypes().Where(t => !t.IsAbstract && (t.IsSubclassOf(typeof(Entity)) || t.IsSubclassOf(typeof(Style))) && t != typeof(UnknownEntity) && t != typeof(Trigger));
 
     private static List<string> GetSIDsForType(Type type)
         => type.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToList();
 
-    public static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
+    private static bool HandleAssociatedMods(string sid, string[] associated, ModMeta? mod) {
+        if (associated.Length == 0 && mod is { }) {
+            associated = new[] { mod.Name };
+        }
+
+        var missingAssociatedMods = associated.Where(s => ModRegistry.GetModByName(s) is null).ToList();
+        if (missingAssociatedMods.Count > 0) {
+            Logger.Write("EntityRegistry", LogLevel.Info, $"Not loading entity {sid}, as the following associated mods are not loaded: {string.Join(',', missingAssociatedMods)}");
+            return false;
+        }
+
+        lock (SIDToAssociatedMods)
+            SIDToAssociatedMods[sid] = associated.Select(s => ModRegistry.GetModByName(s)!).ToList();
+
+        return true;
+    }
+
+    private static void RegisterType(Type t, CustomEntityAttribute attr, ModMeta? mod = null) {
+        var sid = attr.Name;
+
+        if (!HandleAssociatedMods(sid, attr.AssociatedMods, mod))
+            return;
+
+        lock (SIDToType)
+            SIDToType[sid] = t;
+
+        if (mod is { IsVanilla: false })
+            lock (SIDToDefiningMod) {
+                if (!SIDToDefiningMod.ContainsKey(sid))
+                    SIDToDefiningMod[sid] = mod;
+            }
+
+        var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
+        try {
+            if (getPlacementsMethod is { }) {
+                var placements = (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null);
+
+                if (placements is { })
+                    AddPlacements(t, new() { sid }, placements);
+            }
+        } catch (Exception e) {
+            Logger.Error(e, $"Failed to get placements for entity {sid}");
+        }
+
+        var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
+        try {
+            if (getPlacementsForSIDMethod is { }) {
+                var placements = (IEnumerable<Placement>?) getPlacementsForSIDMethod.Invoke(null, new object[] { sid });
+
+                if (placements is { })
+                    AddPlacements(t, new() { sid }, placements);
+            }
+        } catch (Exception e) {
+            Logger.Error(e, $"Failed to get placements for entity {sid}");
+        }
+
+        var getFieldsMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
+        if (getFieldsMethod is { }) {
+            var dele = getFieldsMethod.CreateDelegate<Func<FieldList>>();
+            SIDToFields[sid] = dele;
+        }
+
+        var getFieldsForSIDMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
+        if (getFieldsForSIDMethod is { }) {
+            var dele = getFieldsForSIDMethod.CreateDelegate<Func<string, FieldList>>();
+            SIDToFields[sid] = () => dele(sid);
+        }
+    }
+
+    private static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
         foreach (var t in GetEntityTypesFromAsm(asm)) {
-            var sids = GetSIDsForType(t);
-
-            if (sids.Count == 0) {
-                //Logger.Write("EntityRegistry", LogLevel.Warning, $"Non-abstract type {t} extends {typeof(Entity)}, but doesn't have the {typeof(CustomEntityAttribute)} attribute!");
-                continue;
-            }
-
-            lock (SIDToType) {
-                foreach (var sid in sids) {
-                    SIDToType[sid] = t;
-                }
-            }
-
-            if (mod is { })
-                lock (SIDToMod) {
-                    foreach (var sid in sids) {
-                        if (!SIDToMod.ContainsKey(sid))
-                            SIDToMod[sid] = mod;
-                    }
-                }
-
-            var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
-            try {
-                if (getPlacementsMethod is { }) {
-                    foreach (var sid in sids) {
-                        var placements = (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null);
-
-                        if (placements is { })
-                            AddPlacements(t, new() { sid }, placements);
-                    }
-                }
-            } catch (Exception e) {
-                Logger.Error(e, $"Failed to get placements for entity {string.Join(',', sids)}");
-            }
-
-            var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
-            try {
-                if (getPlacementsForSIDMethod is { }) {
-                    foreach (var sid in sids) {
-                        var placements = (IEnumerable<Placement>?) getPlacementsForSIDMethod.Invoke(null, new object[] { sid });
-
-                        if (placements is { })
-                            AddPlacements(t, new() { sid }, placements);
-                    }
-                }
-            } catch (Exception e) {
-                Logger.Error(e, $"Failed to get placements for entity {string.Join(',', sids)}");
-            }
-
-            var getFieldsMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
-            if (getFieldsMethod is { }) {
-                var dele = getFieldsMethod.CreateDelegate<Func<FieldList>>();
-                foreach (var sid in sids) {
-                    SIDToFields[sid] = dele;
-                }
-            }
-
-            var getFieldsForSIDMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
-            if (getFieldsForSIDMethod is { }) {
-                var dele = getFieldsForSIDMethod.CreateDelegate<Func<string, FieldList>>();
-                foreach (var sid in sids) {
-                    SIDToFields[sid] = () => dele(sid);
-                }
+            foreach (var attr in t.GetCustomAttributes<CustomEntityAttribute>()) {
+                RegisterType(t, attr, mod);
             }
         }
     }
@@ -288,7 +358,7 @@ public static class EntityRegistry {
         }
     }
 
-    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
+    public static Dictionary<string, object> GetDataFromPlacement(Placement from) {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
         Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
 
@@ -298,6 +368,15 @@ public static class EntityRegistry {
                     data.Add(name, field.GetDefault());
             }
         }
+
+        data = data.Where(kv => kv.Value is { }).ToDictionary(StringComparer.Ordinal);
+
+        return data;
+    }
+
+    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
+        var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
+        var data = GetDataFromPlacement(from);
 
         var entity = Create(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger);
 
@@ -320,6 +399,23 @@ public static class EntityRegistry {
         var sid = from.Name ?? throw new Exception($"Entity SID is null in entity element???");
 
         return Create(sid, new(from.Int("x"), from.Int("y")), from.Int("id"), new(sid, from), room, trigger);
+    }
+
+    public static Entity CreateFromMainPlacement(string sid, Vector2 pos, Room room, Dictionary<string, object>? overrides = null, bool isTrigger = false) {
+        var main = GetMainPlacement(sid);
+
+        if (main is { }) {
+            var entity = Create(main, pos, room, true, main.IsTrigger());
+            if (overrides is { }) {
+                foreach (var (key, value) in overrides) {
+                    entity.EntityData[key] = value;
+                }
+            }
+
+            return entity;
+        }
+
+        return Create(sid, pos, null, new(sid, overrides ?? new()), room, isTrigger);
     }
 
     private static Entity Create(string sid, Vector2 pos, int? id, EntityData entityData, Room room, bool trigger) {

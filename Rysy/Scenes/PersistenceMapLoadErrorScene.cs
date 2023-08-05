@@ -41,11 +41,11 @@ public class PersistenceMapLoadErrorScene : Scene {
                 AddWindow(new ScriptedWindow(loadBackupText, (w) => {
                     ImGui.Text("rysy.mapLoadError.selectBackup".Translate());
 
-                    ImGuiManager.Combo("", ref backup, backups, toString: (b) => $"{b.MapName} ({b.Time}) [{b.Filesize / 1024.0:n2}kb]");
+                    ImGuiManager.Combo("", ref backup, backups, toString: (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]");
 
                     if (ImGui.Button("rysy.load".Translate())) {
                         w.RemoveSelf();
-                        RysyEngine.Scene = new EditorScene(backup.Filepath, fromBackup: true, overrideFilepath: Persistence.Instance?.LastEditedMap);
+                        RysyEngine.Scene = new EditorScene(backup.BackupFilepath, fromBackup: true, overrideFilepath: backup.OrigFilepath);
                     }
                 }, new(500, 100)));
             } else {

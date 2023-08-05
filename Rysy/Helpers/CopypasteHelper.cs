@@ -2,6 +2,7 @@
 using Rysy.Graphics;
 using Rysy.History;
 using Rysy.LuaSupport;
+using Rysy.Selections;
 using System.Linq;
 
 namespace Rysy.Helpers;
@@ -121,11 +122,11 @@ static string Compress(byte[] input) {
 
         var mousePos = pos ?? EditorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(8);
 
-        var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f).Snap(8)).ToPoint();
+        var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f)).Snap(8);
 
         foreach (var room in rooms) {
-            room.X += offset.X;
-            room.Y += offset.Y;
+            room.Pos += offset;
+
             room.Name = room.Name.GetDeduplicatedIn(map.Rooms.Select(s => s.Name));
         }
 
@@ -141,6 +142,10 @@ static string Compress(byte[] input) {
     }
 
     private static Vector2 GetCenteringOffset(Vector2 pos, List<Rectangle> rectangles) {
+        if (rectangles.Count == 0) {
+            return pos;
+        }
+
         var topLeft = new Vector2(rectangles.Min(e => e.X), rectangles.Min(e => e.Y)).Snap(8);
         var bottomRight = new Vector2(rectangles.Max(e => e.Right), rectangles.Max(e => e.Bottom)).Snap(8);
 
@@ -223,7 +228,7 @@ static string Compress(byte[] input) {
             rPos += (offset / 8).ToPoint();
 
 
-            var handler = new Tilegrid.RectSelectionHandler(dest, new(rPos.X * 8 - 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
+            var handler = new TileSelectionHandler(dest, new(rPos.X * 8 - 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
             var move = handler.MoveBy(new(8, 0));
             actions.Add(move);
             //history?.ApplyNewAction(move);
@@ -240,7 +245,7 @@ static string Compress(byte[] input) {
         entities = new();
         var entitiesNotRef = entities;
 
-        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers).SelectMany(s => {
+        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FGDecals or SelectionLayer.BGDecals).SelectMany(s => {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
             e.ID = 0; // set the ID to 0 so that it gets auto-assigned later
             entitiesNotRef.Add(e);

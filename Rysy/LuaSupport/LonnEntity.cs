@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.Selections;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -174,6 +175,8 @@ public class LonnEntity : Entity {
 
         CachedSprites = null;
     }
+
+    public override List<string>? AssociatedMods => Plugin.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
     #region Sprites
     private static byte[] _typeASCII = Encoding.ASCII.GetBytes("_type");

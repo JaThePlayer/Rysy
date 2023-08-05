@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Selections;
 
 namespace Rysy.Graphics;
 
@@ -18,7 +19,7 @@ public record struct PicoTextRectSprite : ISprite {
 
     public string Text;
     public Rectangle Pos;
-    public float Scale;
+    public float Scale = 1f;
 
     public PicoTextRectSprite(string text) {
         Text = text;

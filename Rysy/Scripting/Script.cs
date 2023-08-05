@@ -38,5 +38,10 @@ public record class ScriptArgs {
 
     public IReadOnlyDictionary<string, object> Args { get; internal set; }
 
+    /// <summary>
+    /// The location in the room in which the script got ran
+    /// </summary>
+    public Vector2 RoomPos { get; internal set; }
+
     public T Get<T>(string name) => (T)Args[name];
 }

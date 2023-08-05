@@ -21,7 +21,7 @@ public class StarJumpBlock : Entity, IPlaceable {
             NineSliceLocation.TopMiddle => (EdgeH(pos), 1f, 1f),
             NineSliceLocation.TopRight => (Corner(pos), 1f, 1f),
             NineSliceLocation.Left => (EdgeV(pos), -1f, 1f),
-            NineSliceLocation.Middle => (null, 1f, 1f),
+            NineSliceLocation.Middle => ("", 1f, 1f),
             NineSliceLocation.Right => (EdgeV(pos), 1f, 1f),
             NineSliceLocation.BottomLeft => (Corner(pos), -1f, -1f),
             NineSliceLocation.BottomMiddle => (EdgeH(pos), 1f, -1f),
@@ -29,14 +29,14 @@ public class StarJumpBlock : Entity, IPlaceable {
             _ => throw new NotImplementedException(),
         };
 
-        return ISprite.FromTexture(pos.Add(4, 4), texture ?? "") with {
+        return ISprite.FromTexture(pos.Add(4, 4), texture) with {
             Scale = new(sx, sy),
             Origin = new(.5f, .5f),
         };
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        return ConnectedEntityHelper.GetSprites(this, Room.Entities[typeof(StarJumpBlock)], GetSprite, ignoreMiddle: true, handleInnerCorners: false);
+        return ConnectedEntityHelper.GetSprites(this, Room.Entities["starJumpBlock"], GetSprite, ignoreMiddle: true, handleInnerCorners: false);
     }
 
     public static FieldList GetFields() => new(new {

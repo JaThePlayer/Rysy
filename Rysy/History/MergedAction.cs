@@ -8,16 +8,27 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
 
     public MergedAction(IEnumerable<IHistoryAction?> actions) {
         Actions = new(actions.Where(act => act is not null)!);
+        Applied = new bool[Actions.Count];
     }
 
     public MergedAction(params IHistoryAction?[] actions) {
         Actions = new(actions.Where(act => act is not null)!);
+        Applied = new bool[Actions.Count];
     }
 
     private bool[] Applied;
 
+    internal static MergedAction Preapplied(List<IHistoryAction> actions) {
+        var act = new MergedAction();
+        act.Actions = actions;
+        act.Applied = new bool[act.Actions.Count];
+        Array.Fill(act.Applied, true);
+
+        return act;
+    }
+
     public bool Apply() {
-        Applied = new bool[Actions.Count];
+        Array.Clear(Applied);
         var ret = false;
 
         for (int i = 0; i < Actions.Count; i++) {
@@ -32,7 +43,7 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
     }
 
     public void Undo() {
-        for (int i = 0; i < Actions.Count; i++) {
+        for (int i = Actions.Count - 1; i >= 0; i--) {
             if (Applied[i]) {
                 Actions[i].Undo();
             }

@@ -4,6 +4,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using System.Runtime.InteropServices;
+using YamlDotNet.Core.Tokens;
 
 namespace Rysy.Gui;
 
@@ -29,6 +30,11 @@ public static class ImGuiManager {
         //ImGuiWindowFlags.NoTitleBar |
         //ImGuiWindowFlags.NoMove |
         ImGuiWindowFlags.None;
+
+    public static ImGuiTableFlags TableFlags =>
+        ImGuiTableFlags.BordersV | ImGuiTableFlags.BordersOuterH | 
+        ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg | 
+        ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.Hideable;
 
     public static unsafe void Load(RysyEngine game) {
         GuiRenderer = new ImGuiRenderer(game);
@@ -112,6 +118,64 @@ public static class ImGuiManager {
         }
     }
 
+    public struct StyleHolder {
+        public bool Null { get; set; }
+        public bool Edited { get; set; }
+        public bool Invalid { get; set; }
+    }
+
+    public static void PushAllStyles(StyleHolder holder) {
+        if (holder.Null) {
+            PushNullStyle();
+        } else {
+            PopNullStyle();
+        }
+
+        if (holder.Edited) {
+            PushEditedStyle();
+        } else {
+            PopEditedStyle();
+        }
+
+        if (holder.Invalid) {
+            PushInvalidStyle();
+        } else {
+            PopInvalidStyle();
+        }
+    }
+
+    public static StyleHolder PopAllStyles() {
+        var holder = new StyleHolder() {
+            Null = _nullStylePushed,
+            Edited = _editedStylePushed,
+            Invalid = _invalidStyleEnabled,
+        };
+
+        PopEditedStyle();
+        PopInvalidStyle();
+        PopNullStyle();
+
+        return holder;
+    }
+
+    public static void List<T>(IEnumerable<T> source, Func<T, string> itemNameGetter, ComboCache<T>? cache, Action<T> onClick, HashSet<string>? favorites = null) {
+        cache ??= new();
+        var search = cache.Search;
+
+        if (ImGui.InputText("Search", ref search, 512)) {
+            cache.Search = search;
+        }
+
+        var filtered = cache.GetValue(source, itemNameGetter, search, favorites);
+
+        foreach (var item in filtered) {
+            var name = itemNameGetter(item);
+            if (ImGui.MenuItem(favorites?.Contains(name) ?? false ? $"* {name}" : name)) {
+                onClick(item);
+            }
+        }
+    }
+
     /// <summary>
     /// Creates a menu with <see cref="ImGui.BeginMenu(string)"/> using elements from the <paramref name="source"/>.
     /// </summary>
@@ -178,11 +242,11 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null) where T : notnull {
+    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null, ImGuiComboFlags flags = ImGuiComboFlags.None) where T : notnull {
         var valueName = toString(value);
         bool changed = false;
 
-        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
+        if (ImGui.BeginCombo(name, valueName, flags).WithTooltip(tooltip)) {
             foreach (var item in values) {
                 if (ImGui.MenuItem(toString(item))) {
                     value = item;
@@ -324,6 +388,9 @@ public static class ImGuiManager {
 
     private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new();
     public static void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null) {
+        if (w <= 0 || h <= 0)
+            return;
+
         if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
             if (t.Target != null) {
                 GuiRenderer.UnbindTexture(t.ID);
@@ -643,8 +710,6 @@ public static class ImGuiManager {
                         GraphicsDevice.DrawIndexedPrimitives(
                             primitiveType: PrimitiveType.TriangleList,
                             baseVertex: vtxOffset,
-                            minVertexIndex: 0,
-                            numVertices: cmdList.VtxBuffer.Size,
                             startIndex: idxOffset,
                             primitiveCount: (int) cmd.ElemCount / 3
                         );

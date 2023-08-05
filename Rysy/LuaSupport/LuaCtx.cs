@@ -369,7 +369,7 @@ public class LuaCtx {
         lua.Register("_RYSY_INTERNAL_addPlacement", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
             var sid = lua.FastToString(1);
-            var placement = new LonnEntityPlugin.LonnPlacement(lua, 2);
+            var placement = new LonnPlacement(lua, 2);
             var trigger = false;
 
             if (EntityRegistry.GetTypeForSID(sid) is { } t) {

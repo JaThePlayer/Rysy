@@ -1,6 +1,7 @@
 ﻿using KeraLua;
 using Rysy.History;
 using Rysy.LuaSupport;
+using Rysy.Selections;
 
 namespace Rysy;
 
@@ -46,6 +47,13 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public NodeSelectionHandler(Entity entity, Node node) {
         Entity = entity;
         Node = node;
+        Entity.Selected = true;
+        Entity.ClearRoomRenderCache();
+    }
+
+    public void OnDeselected() {
+        Entity.ClearRoomRenderCache();
+        Entity.Selected = false;
     }
 
     public int NodeIdx => Entity.Nodes!.IndexOf(Node);
@@ -56,6 +64,8 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
     private ISelectionCollider? _Collider;
     private ISelectionCollider Collider => _Collider ??= Entity.GetNodeSelection(NodeIdx);
+
+    public Rectangle Rect => Collider.Rect;
 
     public IHistoryAction MoveBy(Vector2 offset) {
         Entity.OnChanged();
@@ -90,7 +100,14 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
         );
     }
 
-    public void RenderSelection(Color c) => Collider.Render(c);
+    public void RenderSelection(Color c) {
+        Collider.Render(c);
+
+        if (!Entity.Selected) {
+            Entity.Selected = true;
+            Entity.ClearRoomRenderCache();
+        }
+    }
 
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
 

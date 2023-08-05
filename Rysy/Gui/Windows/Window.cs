@@ -9,6 +9,13 @@ public class Window {
     public NumVector2? Size;
     public bool Resizable;
 
+    private bool _ForceResize = false;
+
+    public void ForceSetSize(NumVector2 size) {
+        Size = size;
+        _ForceResize = true;
+    }
+
     /// <summary>
     /// The ID used for ImGui.Begin, which guarantees that multiple windows with the same name with pop up seperately.
     /// </summary>
@@ -56,15 +63,17 @@ public class Window {
             return;
 
         if (Size is { } size)
-            ImGui.SetNextWindowSize(size);
+            ImGui.SetNextWindowSize(size, _ForceResize ? ImGuiCond.Always : ImGuiCond.Once);
+        
 
         ImGuiManager.PushWindowStyle();
         var open = true;
 
-        var flags = Resizable ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable;
+        var flags = (Resizable && !_ForceResize) ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable;
 
-        if (NoSaveData)
+        if (NoSaveData || _ForceResize)
             flags |= ImGuiWindowFlags.NoSavedSettings;
+        _ForceResize = false;
 
         if (NoMove)
             flags |= ImGuiWindowFlags.NoMove;

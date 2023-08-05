@@ -54,6 +54,8 @@ public abstract record class Field {
     public abstract Field CreateClone();
 }
 
+public record struct FieldNullReturn;
+
 /// <summary>
 /// Defines how to convert a field from lonn's fieldInformation into a Rysy field
 /// </summary>
@@ -135,6 +137,19 @@ public sealed class FieldList : Dictionary<string, Field> {
 
     }
 
+    public Func<object, List<string>>? Order;
+
+    public IEnumerable<KeyValuePair<string, Field>> OrderedEnumerable(object functionArg) {
+        if (Order is null || Order?.Invoke(functionArg) is not { } order)
+            return this.OrderBy(p => p.Key);
+
+        return this.OrderBy(p => {
+            var i = order.IndexOf(p.Key);
+
+            return i == -1 ? int.MaxValue : i;
+        });
+    }
+
     /// <summary>
     /// Creates a field list by using an anonymous object of the style of { fieldName = value, field2 = value2, ...}
     /// Values can also be fields, which will be used directly.
@@ -143,21 +158,50 @@ public sealed class FieldList : Dictionary<string, Field> {
     /// <param name="lonnStyleDecl">The object to use to create fields</param>
     public FieldList(object lonnStyleDecl) {
         var props = lonnStyleDecl.GetType().GetProperties();
+        var order = new List<string>();
 
         foreach (var prop in props) {
             var value = prop.GetValue(lonnStyleDecl);
+
             if (value is Field f) {
+                order.Add(prop.Name);
                 Add(prop.Name, f);
                 continue;
             }
 
             if (prop.PropertyType.IsEnum && value is { }) {
+                order.Add(prop.Name);
                 Add(prop.Name, Fields.EnumNamesDropdown(value, prop.PropertyType));
                 continue;
             }
 
-            if (Fields.GuessFromValue(value, fromMapData: false) is { } field)
+            if (Fields.GuessFromValue(value, fromMapData: false) is { } field) {
+                order.Add(prop.Name);
                 Add(prop.Name, field);
+            }
         }
+
+        Order = (e) => order;
     }
+
+    public FieldList Ordered(List<string> strings) {
+        Order = (_) => strings;
+
+        return this;
+    }
+
+    public FieldList Ordered(Func<Entity, List<string>> getter) {
+        Order = (arg) => getter((Entity) arg!);
+
+        return this;
+    }
+
+    public FieldList Ordered<T>(Func<T, List<string>> getter) {
+        Order = (arg) => getter((T) arg!);
+
+        return this;
+    }
+
+    public FieldList Ordered(params string[] strings)
+        => Ordered(new List<string>(strings));
 }

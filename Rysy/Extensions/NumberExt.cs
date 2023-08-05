@@ -20,6 +20,14 @@ public static class NumberExt {
         return T.Max(min, T.Min(num, max));
     }
 
+    public static int SnapToGrid(this int num, int gridSize) {
+        return num / gridSize * gridSize;
+    }
+
+    public static float SnapToGrid(this float num, float gridSize) {
+        return float.Floor(num / gridSize) * gridSize;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Div<T>(this T num, T by) where T : INumber<T>
         => num / by;
@@ -44,4 +52,7 @@ public static class NumberExt {
         var slope = (newMax - newMin) / (max - min);
         return min + slope * (num - min);
     }
+
+    public static T Floor<T>(this T num) where T : IFloatingPoint<T>
+        => T.Floor(num);
 }

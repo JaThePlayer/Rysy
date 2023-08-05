@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Selections;
+
+namespace Rysy.Graphics;
 
 public record struct CircleSprite : ISprite {
     public int? Depth { get; set; }

@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Selections;
 using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
@@ -118,7 +119,7 @@ public static class PrefabHelper {
 
             if (handler is MergedSelectionHandler h) {
                 var entitySelections = h.Selections.Select(s => s.Handler).OfType<EntitySelectionHandler>();
-                var tileSelections = h.Selections.Select(s => s.Handler).OfType<Tilegrid.RectSelectionHandler>();
+                var tileSelections = h.Selections.Select(s => s.Handler).OfType<TileSelectionHandler>();
 
                 var prevPos = entitySelections.FirstOrDefault()?.Entity.Pos;
                 var delta = pos - prevPos;
@@ -169,6 +170,8 @@ public static class PrefabHelper {
             public object Parent => throw new NotImplementedException();
 
             public SelectionLayer Layer => throw new NotImplementedException();
+
+            public Rectangle Rect => RectangleExt.Merge(Selections.Select(s => s.Handler.Rect));
 
             public void ClearCollideCache() {
                 foreach (var s in Selections) {

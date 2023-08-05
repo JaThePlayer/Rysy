@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Selections;
 using System.Collections;
 
 namespace Rysy.Graphics;
@@ -14,23 +15,23 @@ public record struct LineSprite : ISprite {
 
     public bool IsLoaded => true;
 
-    public Vector2[] Positions { get; set; }
+    public List<Vector2> Positions { get; set; }
 
     public int Thickness { get; set; } = 1;
     public float MagnitudeOffset { get; set; } = 0f;
 
     public Vector2 Offset { get; set; } = default;
 
-    public LineSprite(Vector2[] positions) {
-        Positions = positions;
+    public LineSprite(IEnumerable<Vector2> positions) {
+        Positions = positions.ToListIfNotList();
     }
 
     public LineSprite MovedBy(Vector2 by) => MovedBy(by.X, by.Y);
 
     public LineSprite MovedBy(float x, float y) {
         var positions = Positions;
-        var newPositions = new Vector2[positions.Length];
-        for (int i = 0; i < newPositions.Length; i++) {
+        var newPositions = new List<Vector2>(positions.Count);
+        for (int i = 0; i < newPositions.Count; i++) {
             newPositions[i] = positions[i].Add(x, y);
         }
 
@@ -42,7 +43,7 @@ public record struct LineSprite : ISprite {
     public void Render() {
         var b = GFX.Batch;
         var c = Color;
-        for (int i = 0; i < Positions.Length - 1; i++) {
+        for (int i = 0; i < Positions.Count - 1; i++) {
             var start = Positions[i];
             var end = Positions[i + 1];
             b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);

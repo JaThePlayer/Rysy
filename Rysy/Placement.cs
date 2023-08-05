@@ -1,12 +1,13 @@
 ﻿using Rysy.Graphics;
 using Rysy.History;
 using Rysy.Mods;
+using Rysy.Selections;
 using System;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public record class Placement(string Name) {
+public record class Placement {
     /// <summary>
     /// Creates a placement with value overrides using an anonymous object of the style of { fieldName = value, field2 = value2, ...}
     /// </summary>
@@ -23,6 +24,16 @@ public record class Placement(string Name) {
         }
     }
 
+    public Placement(string name) {
+        Name = name;
+    }
+
+    public Placement() {
+        Name = "";
+    }
+
+    public string Name;
+
     public string? SID;
 
     public string? Tooltip;
@@ -31,7 +42,44 @@ public record class Placement(string Name) {
     public Action<Entity>? Finalizer;
 
     // set in entity registry
-    public IPlacementHandler PlacementHandler { get; internal set; }
+    private IPlacementHandler? _PlacementHandler;
+
+    [JsonIgnore]
+    public IPlacementHandler PlacementHandler {
+        get => _PlacementHandler ??= GuessHandler()!;
+        internal set => _PlacementHandler = value;
+    }
+
+    private IPlacementHandler? GuessHandler() {
+        if (SID == null)
+            return null;
+
+        var trivial = SID switch {
+            EntityRegistry.BGDecalSID => EntityPlacementHandler.BGDecals,
+            EntityRegistry.FGDecalSID => EntityPlacementHandler.FGDecals,
+            _ => null,
+        };
+
+        if (trivial is { }) {
+            return trivial;
+        };
+
+        var t = EntityRegistry.GetTypeForSID(SID);
+
+        if (t is not { }) {
+            return null;
+        }
+
+        if (t.IsAssignableTo(typeof(Trigger))) {
+            return EntityPlacementHandler.Trigger;
+        }
+
+        if (t.IsAssignableTo(typeof(Entity))) {
+            return EntityPlacementHandler.Entity;
+        }
+
+        return null;
+    }
 
     public Dictionary<string, object> ValueOverrides { get; set; } = new();
 
@@ -83,7 +131,7 @@ public record class Placement(string Name) {
     /// </summary>
     public ModMeta? GetMod() {
         if (SID is { } sid) {
-            return EntityRegistry.GetMod(sid);
+            return EntityRegistry.GetDefiningMod(sid);
         }
 
         return null;

@@ -7,6 +7,7 @@ using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using Rysy.Selections;
 
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
@@ -190,11 +191,18 @@ public sealed class RysyEngine : Game {
             Persistence.Instance = Persistence.Save(new());
         }
 
+        var celesteDir = Profile.Instance.CelesteDirectory;
+        if (!string.IsNullOrWhiteSpace(celesteDir) && !Path.Exists(celesteDir)) {
+            Profile.Instance.CelesteDirectory = "";
+        }
+
         if (Profile.Instance.CelesteDirectory is null or "") {
             var picker = new PickCelesteInstallScene(Scene);
             Scene = picker;
             await picker.AwaitInstallPickedAsync();
         }
+
+        SelectionContextWindowRegistry.Init();
 
         await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory);
 

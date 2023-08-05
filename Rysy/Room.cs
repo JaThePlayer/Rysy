@@ -7,6 +7,7 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
+using Rysy.Selections;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -66,14 +67,20 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public int X {
         get => Attributes.X;
-        set => Attributes.X = value;
+        set => Attributes.X = value.SnapToGrid(8);
     }
     public int Y {
         get => Attributes.Y;
-        set => Attributes.Y = value;
+        set => Attributes.Y = value.SnapToGrid(8);
     }
 
-    public Vector2 Pos => new(X, Y);
+    public Vector2 Pos {
+        get => new(X, Y);
+        set {
+            X = (int) value.X;
+            Y = (int) value.Y;
+        }
+    }
 
     public int Width {
         get => Attributes.Width;
@@ -332,7 +339,9 @@ public sealed class Room : IPackable, ILuaWrapper {
            );
 
     internal void StartBatch(Camera camera) {
-        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)));
+        GFX.PushBatchBegin(() => 
+            GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)))
+        );
     }
 
     public void Render(Camera camera, bool selected) {
@@ -805,6 +814,8 @@ public class RoomSelectionHandler : ISelectionHandler {
     public object Parent => Room;
 
     public SelectionLayer Layer => SelectionLayer.Rooms;
+
+    public Rectangle Rect => Bounds;
 
     public void ClearCollideCache() {
     }

@@ -21,6 +21,8 @@ public static class VectorExt {
 
     public static float ToRad(this float angle) => angle / 180f * MathF.PI;
 
+    public static float RadToDegrees(this float angleRadians) => angleRadians * 180f / MathF.PI;
+
     public static Vector2 Floored(this Vector2 v) => Vector2.Floor(v);
     public static Vector2 Rounded(this Vector2 v) => Vector2.Round(v);
     public static Vector2 Normalized(this Vector2 v) => v == default ? default : Vector2.Normalize(v);

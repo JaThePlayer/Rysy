@@ -170,6 +170,14 @@ public static class LogLevelExtensions {
             LogLevel.Error => "\u001b[91mError\u001b[0m",
             _ => "unknown",
         };
+
+    public static NumVector4 ToColorNumVec(this LogLevel logLevel) => (logLevel switch {
+        LogLevel.Debug => Color.LightGray,
+        LogLevel.Info => Color.White,
+        LogLevel.Warning => Color.Yellow,
+        LogLevel.Error => Color.Red,
+        _ => Color.White,
+    }).ToNumVec4();
 }
 
 internal static class FancyTextHelper {

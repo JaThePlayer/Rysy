@@ -6,10 +6,14 @@ using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public static class Fields {
+public static partial class Fields {
+    [GeneratedRegex("^[0-9a-fA-F]{6,8},(?:[0-9a-fA-F]{6,8},?){1,}$")]
+    private static partial Regex HexColorListRegex();
+
     private delegate Field? FieldGenerator(object? def, Dictionary<string, object> fieldInfo);
 
     private static Dictionary<string, FieldGenerator>? LonnFieldGenerators;
@@ -117,7 +121,7 @@ public static class Fields {
     };
 
     public static ColorField RGBA(string def) => new() {
-        Default = def.FromRGBA(),
+        Default = def?.FromRGBA(),
         Format = ColorFormat.RGBA,
     };
 
@@ -126,8 +130,8 @@ public static class Fields {
         Format = ColorFormat.RGB,
     };
 
-    public static ColorField RGB(string def) => new() {
-        Default = def.FromRGB(),
+    public static ColorField RGB(string? def) => new() {
+        Default = def?.FromRGB(),
         Format = ColorFormat.RGB,
     };
 
@@ -137,7 +141,7 @@ public static class Fields {
     };
 
     public static ColorField ARGB(string def) => new() {
-        Default = def.FromARGB(),
+        Default = def?.FromARGB(),
         Format = ColorFormat.ARGB,
     };
 
@@ -152,7 +156,7 @@ public static class Fields {
             : Int(i),
         long l => Int((int)l),
         char c => Char(c),
-        string s => String(s),
+        string s => HexColorListRegex().IsMatch(s) ? new ListField(RGB(Color.White), s) : String(s),
         _ => null,
     };
 

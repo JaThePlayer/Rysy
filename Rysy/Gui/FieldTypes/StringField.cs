@@ -6,18 +6,34 @@ public record class StringField : Field {
     public string Default { get; set; }
 
     public bool NullAllowed { get; set; }
+    public bool EmptyIsNull { get; set; }
 
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
         => Default = Convert.ToString(newDefault) ?? "";
 
-    public override bool IsValid(object? value) => (value is string || (NullAllowed && value is null)) && base.IsValid(value);
+    private string? RealValue(string from)
+        => (EmptyIsNull && string.IsNullOrWhiteSpace(from)) ? null : from;
+
+    public override bool IsValid(object? value) {
+        if (value is string s) {
+            string? str = RealValue(s);
+
+            return (str is string || (NullAllowed && str is null)) && base.IsValid(value);
+        }
+
+        return (NullAllowed && value is null) && base.IsValid(value);
+    }
 
     public override object? RenderGui(string fieldName, object value) {
         var b = (value ?? "").ToString();
-        if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip))
-            return b;
+        if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip)) {
+            if (RealValue(b) is { } ret)
+                return ret;
+
+            return new FieldNullReturn();
+        }
 
         return null;
     }
@@ -28,6 +44,21 @@ public record class StringField : Field {
     /// <returns>this</returns>
     public StringField AllowNull() {
         NullAllowed = true;
+
+        return this;
+    }
+
+    public StringField ConvertEmptyToNull() {
+        EmptyIsNull = true;
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a validator to this field, which disallows saving the property if it returns false
+    /// </summary>
+    public StringField WithValidator(Func<string?, bool> validator) {
+        Validator += (v) => validator(v?.ToString());
 
         return this;
     }
