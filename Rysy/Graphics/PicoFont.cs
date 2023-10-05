@@ -15,6 +15,9 @@ public static class PicoFont {
     public static VirtTexture? Texture { get; private set; }
 
     internal static VirtTexture Init() {
+        if (Texture is { })
+            return Texture;
+
         Texture = VirtTexture.FromTexture(Texture2D.FromFile(RysyEngine.GDM.GraphicsDevice, "Assets/font.png"));
 
         // The font is slightly edited in Rysy to include ,/\<>
@@ -77,6 +80,8 @@ public static class PicoFont {
     /// Doesn't support newlines.
     /// </summary>
     public static void Print(ReadOnlySpan<char> txt, Rectangle bounds, Color color, float scale = 1f) {
+        Init();
+
         if (scale == 0f)
             return;
 
@@ -91,7 +96,7 @@ public static class PicoFont {
             lines++;
         }
 
-        if ((txt.Length % lines == 0 || EqualWordSizes(txt)) && txt.Length / lines * rw < boundWidth) {
+        if (lines > 0 && (txt.Length % lines == 0 || EqualWordSizes(txt)) && txt.Length / lines * rw < boundWidth) {
             // If we can fit an equal amount of chars on each line, do so.
             maxPerLine = txt.Length / lines;
         }

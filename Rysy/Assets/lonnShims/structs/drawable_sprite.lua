@@ -215,7 +215,9 @@ function drawableSpriteStruct.fromTexture(texture, data)
 		return nil
 	end
 
-    local spr = drawableSpriteStruct.fromMeta(spriteMeta, data)
+	local meta = nil --spriteMeta - todo: figure this out, this might've been a bug?
+
+    local spr = drawableSpriteStruct.fromMeta(meta, data)
     spr._RYSY_INTERNAL_texture = texture
 	rawset(spr.meta, "_RYSY_INTERNAL_texture", texture)
 

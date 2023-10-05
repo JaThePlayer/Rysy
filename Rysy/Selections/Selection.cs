@@ -80,9 +80,15 @@ public interface ISelectionHandler {
     public virtual void OnDeselected() { }
 }
 
+public enum RotationDirection {
+    Left = -1,
+    Right = 1
+}
+
 public interface ISelectionFlipHandler {
     public IHistoryAction? TryFlipHorizontal();
     public IHistoryAction? TryFlipVertical();
+    public IHistoryAction? TryRotate(RotationDirection dir);
 }
 
 public interface ISelectionPreciseRotationHandler {

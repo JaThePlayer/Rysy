@@ -23,7 +23,7 @@ local registeredEntitiesMt = {
 			return copy
 		end
 
-		_RYSY_log("WARNING", string.format("Requested unknown entity [%s] from Lonn", key))
+		--_RYSY_log("WARNING", string.format("Requested unknown entity [%s] from Lonn", key))
 
 		return {
 			name = key,

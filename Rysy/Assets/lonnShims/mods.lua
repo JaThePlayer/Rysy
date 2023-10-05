@@ -1,4 +1,5 @@
 ﻿local utils = require("utils")
+local logging = require("logging")
 
 local modHandler = {}
 
@@ -127,6 +128,10 @@ local loadedFromPlugins = {}
 function modHandler.requireFromPlugin(lib, modName)
 	modName = modName or _RYSY_CURRENT_MOD
 
+	if NEO_LUA then
+		return _RYSY_INTERNAL_requireFromPlugin(lib, modName)
+	end
+
 	if not loadedFromPlugins[modName] then
 		loadedFromPlugins[modName] = {}
 	end
@@ -134,13 +139,20 @@ function modHandler.requireFromPlugin(lib, modName)
     if not loadedFromPlugins[modName][lib] then
 		local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName)
 		if not required then
-			error(string.format("library %s [%s] not found!", lib, modName))
+			logging.error(string.format("library %s [%s] not found!", lib, modName))
+			loadedFromPlugins[modName][lib] = "__nil"
+			return nil
 		end
 
 		loadedFromPlugins[modName][lib] = loadstring(required)()
 	end
 
+	if loadedFromPlugins[modName][lib] == "__nil" then
+		return nil
+	end
+
 	return loadedFromPlugins[modName][lib]
+	
 end
 
 -- Defaults to current mod directory
@@ -171,7 +183,7 @@ end
 function _modSettingMt.__newindex(self, key, value)
 	local modName = rawget(self, "__mod")
 
-	print("set", modName, key, value)
+	--print("set", modName, key, value)
 	local err = _RYSY_INTERNAL_setModSetting(modName, key, value)
 	if err then
 		error(err)

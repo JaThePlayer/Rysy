@@ -1,8 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Rysy.Graphics.TextureTypes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Graphics;
 
 public class Atlas : IAtlas {
+    public bool LogMissingTextures => Settings.Instance.LogMissingTextures;
+
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public VirtTexture this[string key] {
@@ -13,7 +16,8 @@ public class Atlas : IAtlas {
             if (TryGet(key, out var texture))
                 return texture;
 
-            Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
+            if (LogMissingTextures)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
             return GFX.UnknownTexture;
         }
     }
@@ -66,7 +70,8 @@ public class Atlas : IAtlas {
             if (TryGet(key, frame, out var texture))
                 return texture;
 
-            Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
+            if (LogMissingTextures)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
             return GFX.UnknownTexture;
         }
     }
@@ -116,6 +121,11 @@ public class Atlas : IAtlas {
 
     public void AddTexture(string virtPath, VirtTexture texture) {
         lock (Textures) {
+            // Don't allow replacing non-modded assets - vanilla and rysy built-ins
+            // as it breaks the dependency checker...
+            if (Textures.TryGetValue(virtPath, out var prevTexture) && prevTexture is not ModTexture { Mod.IsVanilla: false }) {
+                return;
+            }
             Textures[virtPath] = texture;
         }
 

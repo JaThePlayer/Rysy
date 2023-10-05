@@ -232,6 +232,11 @@ public class TileSelectionHandler : ISelectionHandler, ISelectionCollider, ISele
         return action;
     }
 
+    public IHistoryAction? TryRotate(RotationDirection dir) {
+#warning TODO: Tile Rotations
+        return null;
+    }
+
     public SelectionLayer Layer => SelectionLayer;
 
     Rectangle ISelectionHandler.Rect => Rect;

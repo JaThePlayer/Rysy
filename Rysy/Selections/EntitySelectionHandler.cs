@@ -103,6 +103,12 @@ public class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, 
         return FlipImpl(flipped, "TryFlipVertical");
     }
 
+    public IHistoryAction? TryRotate(RotationDirection dir) {
+        var rotated = Entity.TryRotate(dir);
+
+        return FlipImpl(rotated, nameof(TryRotate));
+    }
+
     public void OnRightClicked(IEnumerable<Selection> selections) {
         CreateEntityPropertyWindow(Entity, selections);
     }

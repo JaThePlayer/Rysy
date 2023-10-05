@@ -115,10 +115,15 @@ public class EntityPropertyWindow : FormWindow {
             )) {
                 EditedValues[name] = prop.Value;
             }*/
-            if (!(current?.Equals(propValue) ?? current == propValue)) {
+            var equal = (current, propValue) switch {
+                (int c, float val) => val == c,
+                (float c, int val) => val == c,
+                _ => (current?.Equals(propValue) ?? current == propValue)
+            };
 
+            if (!equal) {
                 EditedValues[name] = propValue;
-                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
+                Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }
     }
