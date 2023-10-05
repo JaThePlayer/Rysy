@@ -21,6 +21,6 @@ public sealed class Memorial : SpriteEntity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => new() {
-        new Placement("memorial").ForSID("everest/memorial")
+        new Placement("memorial").WithSID("everest/memorial")
     };
 }

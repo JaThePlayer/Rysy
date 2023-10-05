@@ -1,5 +1,8 @@
 ﻿namespace Rysy.Helpers;
 
 public interface IPreciseRotatable {
-    public Entity? RotatePreciseBy(float angle);
+    /// <summary>
+    /// Rotates this entity by <paramref name="angleRad"/> degrees (in radians)
+    /// </summary>
+    public Entity? RotatePreciseBy(float angleRad);
 }

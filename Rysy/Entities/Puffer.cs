@@ -28,6 +28,8 @@ public class Puffer : SpriteEntity, IPlaceable {
         }),
     };
 
+    public override Entity? TryFlipHorizontal() => CloneWith(pl => pl["right"] = !Bool("right"));
+
     public override IEnumerable<ISprite> GetSprites() {
         yield return GetSprite() with {
             Scale = new(Bool("right", false) ? 1 : -1, 1),

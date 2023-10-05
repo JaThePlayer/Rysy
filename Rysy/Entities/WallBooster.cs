@@ -34,6 +34,8 @@ public class WallBooster : Entity, IPlaceable {
         }
     }
 
+    public override Entity? TryFlipHorizontal() => CloneWith(pl => pl["left"] = !Left);
+
     public static SliceLocation GetSliceLocation(int current, int max, int sliceSize = 8) {
         return current == 0 ? SliceLocation.Top
              : (current + sliceSize < max) ? SliceLocation.Middle

@@ -35,6 +35,13 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         _ => throw new NotImplementedException()
     };
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Orientation) switch {
+        Orientations.Floor => "spring",
+        Orientations.WallLeft => "wallSpringLeft",
+        Orientations.WallRight => "wallSpringRight",
+        var v => throw new NotImplementedException(v.ToString()),
+    }));
+
     public enum Orientations {
         Floor,
         WallLeft,
@@ -46,8 +53,8 @@ public sealed class Spring : SpriteEntity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => new() {
-        new Placement("up").ForSID("spring"),
-        new Placement("right").ForSID("wallSpringLeft"),
-        new Placement("left").ForSID("wallSpringRight"),
+        new Placement("up").WithSID("spring"),
+        new Placement("right").WithSID("wallSpringLeft"),
+        new Placement("left").WithSID("wallSpringRight"),
     };
 }

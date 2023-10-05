@@ -1,12 +1,11 @@
 ﻿using Rysy.Graphics;
-using Rysy.Gui.FieldTypes;
-using System;
+using Rysy.Helpers;
 
 namespace Rysy.Entities;
 
 [CustomEntity("dashSwitchV")]
 [CustomEntity("dashSwitchH")]
-public class DashSwitchV : Entity, IMultiSIDPlaceable {
+public class DashSwitch : Entity, IMultiSIDPlaceable {
     public override int Depth => 0;
 
     Directions Direction => Name switch {
@@ -14,6 +13,36 @@ public class DashSwitchV : Entity, IMultiSIDPlaceable {
         "dashSwitchH" => Bool("leftSide") ? Directions.Left : Directions.Right,
         _ => throw new NotImplementedException(Name)
     };
+
+    public override Entity? TryFlipHorizontal() => Direction switch {
+        Directions.Left => CloneWith(pl => pl["leftSide"] = false),
+        Directions.Right => CloneWith(pl => pl["leftSide"] = true),
+        _ => null,
+    };
+
+    public override Entity? TryFlipVertical() => Direction switch {
+        Directions.Ceiling => CloneWith(pl => pl["ceiling"] = false),
+        Directions.Floor => CloneWith(pl => pl["ceiling"] = true),
+        _ => null,
+    };
+
+    public override Entity? TryRotate(RotationDirection dir) {
+        var newDir = dir.AddRotationTo(Direction);
+
+        var (sid, field, val) = newDir switch {
+            Directions.Floor => ("dashSwitchV", "ceiling", false),
+            Directions.Ceiling => ("dashSwitchV", "ceiling", true),
+            Directions.Right => ("dashSwitchH", "leftSide", false),
+            _ => ("dashSwitchH", "leftSide", true),
+        };
+
+        return CloneWith(pl => {
+            pl.SID = sid;
+            pl["ceiling"] = null;
+            pl["leftSide"] = null;
+            pl[field] = val;
+        });
+    }
 
     public override IEnumerable<ISprite> GetSprites() {
         var sprite = ISprite.FromSpriteBank(Pos, $"dashSwitch_{Attr("sprite", "default")}", "idle");
@@ -84,6 +113,9 @@ public class DashSwitchV : Entity, IMultiSIDPlaceable {
     };
 
     private enum Directions {
-        Ceiling, Floor, Left, Right
+        Floor = 0,
+        Left = 1,
+        Ceiling = 2,
+        Right = 3,
     }
 }

@@ -1,11 +1,12 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Selections;
 
 namespace Rysy.Entities;
 
 [CustomEntity("lightbeam")]
-public sealed class Lightbeam : Entity, IPlaceable {
+public sealed class Lightbeam : Entity, IPlaceable, IPreciseRotatable {
     public override int Depth => 0;
 
     public override bool ResizableX => true;
@@ -35,4 +36,6 @@ public sealed class Lightbeam : Entity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => new("lightbeam");
+
+    public Entity? RotatePreciseBy(float angle) => CloneWith(pl => pl["rotation"] = Float("rotation") + angle.RadToDegrees());
 }

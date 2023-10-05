@@ -23,5 +23,7 @@ public sealed class EverestBirdTutorial : SpriteEntity, IPlaceable {
         controls = "DownRight,+,Dash,tinyarrow,Jump"
     });
 
+    public override Entity? TryFlipHorizontal() => CloneWith(pl => pl["faceLeft"] = !Bool("faceLeft"));
+
     public static PlacementList GetPlacements() => new("bird");
 }

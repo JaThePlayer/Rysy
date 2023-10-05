@@ -25,6 +25,14 @@ public sealed class TriggerSpikesDust : Entity, IMultiSIDPlaceable {
         _ => null,
     };
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Direction(Name)) switch {
+        SpikeHelper.Direction.Up => "triggerSpikesUp",
+        SpikeHelper.Direction.Down => "triggerSpikesDown",
+        SpikeHelper.Direction.Left => "triggerSpikesLeft",
+        SpikeHelper.Direction.Right => "triggerSpikesRight",
+        _ => throw new NotImplementedException(),
+    }).SwapWidthAndHeight());
+
     public override IEnumerable<ISprite> GetSprites()
         => SpikeHelper.GetDustSprites(this, Direction(Name));
 

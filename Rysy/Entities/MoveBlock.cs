@@ -10,9 +10,11 @@ public class MoveBlock : Entity, IPlaceable {
 
     public override int Depth => Depths.Solids;
 
+    public Directions Direction => Enum("direction", Directions.Left);
+
     public override IEnumerable<ISprite> GetSprites() {
         var canSteer = Bool("canSteer", true);
-        var direction = Enum("direction", Directions.Left);
+        var direction = Direction;
         var w = Width;
         var h = Height;
         var center = Center;
@@ -72,14 +74,21 @@ public class MoveBlock : Entity, IPlaceable {
         yield return ISprite.FromTexture(center, arrowPath).Centered();
     }
 
-    public enum Directions {
-        Left,
-        Right,
-        Up,
-        Down
-    }
-
     public override Point MinimumSize => new(8, 8);
+
+    public override Entity? TryFlipHorizontal() => Direction switch {
+        Directions.Right => CloneWith(pl => pl["direction"] = Directions.Left),
+        Directions.Left => CloneWith(pl => pl["direction"] = Directions.Right),
+        _ => null,
+    };
+
+    public override Entity? TryFlipVertical() => Direction switch {
+        Directions.Up => CloneWith(pl => pl["direction"] = Directions.Down),
+        Directions.Down => CloneWith(pl => pl["direction"] = Directions.Up),
+        _ => null,
+    };
+
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl["direction"] = dir.AddRotationTo(Direction));
 
     public static FieldList GetFields() => new() {
         ["direction"] = Fields.EnumNamesDropdown(Directions.Left),
@@ -95,4 +104,11 @@ public class MoveBlock : Entity, IPlaceable {
             fast = fast
         }))
         .ToPlacementList();
+
+    public enum Directions {
+        Up,
+        Right,
+        Down,
+        Left,
+    }
 }

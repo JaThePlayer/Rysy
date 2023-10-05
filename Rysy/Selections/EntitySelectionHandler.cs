@@ -1,4 +1,5 @@
-﻿using Rysy.Extensions;
+﻿using Rysy;
+using Rysy.Extensions;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;

@@ -13,6 +13,10 @@ public sealed class SpikesUp : Entity, IPlaceable {
 
     public override Entity? TryFlipVertical() => CloneWith(pl => pl.SID = "spikesDown");
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl
+        .SwapWidthAndHeight()
+        .WithSID(dir == RotationDirection.Left ? "spikesLeft" : "spikesRight"));
+
     public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X, Y - 8, Width, 8);
 
     public static FieldList GetFields() => new(new {
@@ -31,6 +35,9 @@ public sealed class SpikesDown : Entity, IPlaceable {
 
     public override Entity? TryFlipVertical() => CloneWith(pl => pl.SID = "spikesUp");
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl
+        .SwapWidthAndHeight()
+        .WithSID(dir == RotationDirection.Left ? "spikesRight" : "spikesLeft"));
 
     public static FieldList GetFields() => new(new {
         type = SpikeHelper.GetTypeField()
@@ -48,6 +55,10 @@ public sealed class SpikesRight : Entity, IPlaceable {
 
     public override Entity? TryFlipHorizontal() => CloneWith(pl => pl.SID = "spikesLeft");
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl
+        .SwapWidthAndHeight()
+        .WithSID(dir == RotationDirection.Left ? "spikesUp" : "spikesDown"));
+
     public static FieldList GetFields() => new(new {
         type = SpikeHelper.GetTypeField()
     });
@@ -63,6 +74,10 @@ public sealed class SpikesLeft : Entity, IPlaceable {
     public override IEnumerable<ISprite> GetSprites() => SpikeHelper.GetSprites(this, SpikeHelper.Direction.Left, Attr("type", "default"));
 
     public override Entity? TryFlipHorizontal() => CloneWith(pl => pl.SID = "spikesRight");
+
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl
+        .SwapWidthAndHeight()
+        .WithSID(dir == RotationDirection.Left ? "spikesDown" : "spikesUp"));
 
     public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X - 8, Y, 8, Height);
 

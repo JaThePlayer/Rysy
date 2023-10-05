@@ -14,7 +14,8 @@ public class QuickActionHandler {
                 tool.Layer = action.Layer;
 
                 if (action.Material is { } material) {
-                    tool.Material = material.Deserialize(Type.GetType(action.MaterialTypeName!)!, JsonSerializerHelper.DefaultOptions);
+                    var t = Type.GetType(action.MaterialTypeName!)!;
+                    tool.Material = material.Deserialize(t, JsonSerializerHelper.DefaultOptions);
                 } else {
                     tool.Material = null;
                 }
