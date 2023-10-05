@@ -87,7 +87,7 @@ public record class Placement {
 
     internal bool FromLonn;
 
-    public Placement ForSID(string sid) {
+    public Placement WithSID(string sid) {
         SID = sid;
 
         return this;
@@ -105,14 +105,32 @@ public record class Placement {
         return this;
     }
 
+    public Placement SwapWidthAndHeight() {
+        (this["width"], this["height"]) = (this["height"], this["width"]);
+
+        return this;
+    }
+
     /// <summary>
-    /// Sets/gets a value from <see cref="ValueOverrides"/>
+    /// Sets/gets a value from <see cref="ValueOverrides"/>. Enums get converted to strings via ToString.
+    /// Setting a field to null removes that field instead.
+    /// Trying to get a field that doesn't exist returns null.
     /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    public object this[string key] {
-        get => ValueOverrides[key];
-        set => ValueOverrides[key] = value;
+    public object? this[string key] {
+        get => ValueOverrides.TryGetValue(key, out var v) ? v : null;
+        set {
+            switch (value) {
+                case Enum e:
+                    ValueOverrides[key] = e.ToString();
+                    break;
+                case null:
+                    ValueOverrides.Remove(key);
+                    break;
+                default:
+                    ValueOverrides[key] = value;
+                    break;
+            }
+        }
     }
 
     /// <summary>

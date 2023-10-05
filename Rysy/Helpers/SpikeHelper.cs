@@ -7,7 +7,10 @@ namespace Rysy.Helpers;
 
 public static class SpikeHelper {
     public enum Direction {
-        Up, Down, Left, Right
+        Up, 
+        Right,
+        Down, 
+        Left, 
     }
 
     public static Color[] DustColors = new[] {

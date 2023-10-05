@@ -33,6 +33,14 @@ public sealed class TriggerSpikes : Entity, IMultiSIDPlaceable {
         _ => null,
     };
 
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Direction(Name)) switch {
+        SpikeHelper.Direction.Up => "triggerSpikesOriginalUp",
+        SpikeHelper.Direction.Down => "triggerSpikesOriginalDown",
+        SpikeHelper.Direction.Left => "triggerSpikesOriginalLeft",
+        SpikeHelper.Direction.Right => "triggerSpikesOriginalRight",
+        _ => throw new NotImplementedException(),
+    }).SwapWidthAndHeight());
+
     public override IEnumerable<ISprite> GetSprites()
         => SpikeHelper.GetSprites(this, Direction(Name), Attr("type", "default"), triggerSpikes: true);
 

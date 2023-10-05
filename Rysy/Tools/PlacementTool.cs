@@ -118,6 +118,12 @@ public class PlacementTool : Tool {
 
 
         if (Material is Placement place) {
+            // quick actions might not serialize this properly
+            if (place.PlacementHandler is null) {
+                Material = place.Name;
+                return;
+            }
+
             var handler = place.PlacementHandler;
             CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
         }
