@@ -228,7 +228,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     private IEnumerable<ISprite> LogError(Exception ex) {
-        Logger.Error(ex, $"Erroring entity definition for {Name} at {ToJson()}");
+        Logger.Error(ex, $"Erroring entity definition for {Name}: {ToJson()}");
 
         var w = Width;
         var h = Height;
@@ -348,6 +348,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
     /// </summary>
     public virtual Entity? TryFlipVertical() => null;
+
+    /// <summary>
+    /// Tries to rotate the entity in the given direction. Returning null means that the entity cannot be flipped.
+    /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
+    /// </summary>
+    public virtual Entity? TryRotate(RotationDirection dir) => null;
 
     public virtual BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.SID);

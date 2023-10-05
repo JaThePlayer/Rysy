@@ -5,6 +5,11 @@ namespace Rysy.Gui.FieldTypes;
 public record class ColorField : Field, ILonnField {
     public static string Name => "color";
 
+    // stores the original string passed to SetDefault.
+    // this is so that if the map stored a non-lowercase hex color, the field won't get marked as edited due to the string->Color->string roundtrip which will make it all lowercase.
+    // set to null as soon as the field gets edited.
+    private string? ValueString;
+
     public Color? Default { get; set; }
 
     public bool XnaColorsAllowed { get; set; } = true;
@@ -13,7 +18,7 @@ public record class ColorField : Field, ILonnField {
 
     public bool NullAllowed;
 
-    public override object GetDefault() => Default?.ToString(Format)!;
+    public override object GetDefault() => ValueString ?? Default?.ToString(Format)!;
 
     public override void SetDefault(object newDefault) {
         if (newDefault is Color c) {
@@ -21,7 +26,8 @@ public record class ColorField : Field, ILonnField {
             return;
         }
 
-        if (newDefault is string && ValueToColor(newDefault, out c)) {
+        if (newDefault is string str && ValueToColor(newDefault, out c)) {
+            ValueString = str;
             Default = c;
             return;
         }
@@ -52,7 +58,11 @@ public record class ColorField : Field, ILonnField {
             color = Color.White;
         }
 
+        if (value is string str)
+            ValueString = str;
+
         if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip)) {
+            ValueString = null;
             return color.ToString(Format);
         }
 

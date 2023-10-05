@@ -13,9 +13,11 @@ public class Trigger : Entity {
         }
     }
 
-    public virtual Color Color => EditorColor.FromARGB();
+    public virtual Color Color => EditorColor.FromRGBA();
 
     public virtual Color FillColor => Color * 0.15f;
+
+    public virtual string Text => TriggerHelpers.Humanize(EntityData.SID);
 
     public override int Depth => Depths.Top;
 
@@ -34,7 +36,7 @@ public class Trigger : Entity {
         var rect = new Rectangle(X, Y, Width, Height);
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
         yield return new PicoTextRectSprite() {
-            Text = TriggerHelpers.Humanize(EntityData.SID),
+            Text = Text,
             Pos = rect,
             Color = Color.White,
             Scale = 0.5f,

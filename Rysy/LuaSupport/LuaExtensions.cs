@@ -474,6 +474,28 @@ where TArg2 : class, ILuaWrapper {
         return ret;
     }
 
+    public static TOut? PCallFunction<TOut>(this Lua lua, Func<Lua, int, TOut?> retGetter, int results, params object[] args) {
+        TOut? ret;
+
+        foreach (var arg in args) {
+            lua.Push(arg);
+        }
+
+        var result = lua.PCall(args.Length, results, 0);
+        if (result != LuaStatus.OK) {
+            var ex = new LuaException(lua);
+            lua.Pop(results);
+            throw ex;
+        }
+
+        ret = retGetter(lua, lua.GetTop());
+        lua.Pop(results);
+
+        ClearLuaResources();
+
+        return ret;
+    }
+
     public static TOut? PCallFunction<TOut>(this Lua lua, Func<Lua, int, TOut?> retGetter, int results = 1) {
         TOut? ret;
 
@@ -733,8 +755,23 @@ where TArg1 : class, ILuaWrapper {
         state.PushCFunction(static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
-            var wrapper = lua.UnboxWrapper(1);
-            // todo: implement
+            var wrapper = lua.UnboxWrapper(1) ?? throw new LuaException(lua, $"Tried to index null wrapper");
+            var value = lua.ToCSharp(3);
+            const int keyPos = 2;
+            //var top = lua.GetTop();
+
+            switch (lua.Type(keyPos)) {
+                case LuaType.Number:
+                    wrapper.Lua__newindex(lua, lua.ToInteger(keyPos), value);
+                    break;
+                case LuaType.String:
+                    Span<char> buffer = SharedToStringBuffer.AsSpan();
+                    var str = lua.ToStringInto(keyPos, buffer, callMetamethod: false);
+                    wrapper.Lua__newindex(lua, str, value);
+                    break;
+                default:
+                    throw new NotImplementedException($"Can't newindex LuaWrapper with {lua.FastToString(keyPos)} [type: {lua.Type(keyPos)}].");
+            }
 
             return 0;
         });
@@ -777,6 +814,10 @@ where TArg1 : class, ILuaWrapper {
         });
         state.SetTable(metatableStackLoc);
 
+        // used to identify the metatable as a wrapper
+        state.PushString("_rysyWrapper");
+        state.PushBoolean(true);
+        state.SetTable(metatableStackLoc);
 
         // set the table to be a metatable of itself
         // this way, pushing a wrapper is very cheap, as it doesn't create any tables

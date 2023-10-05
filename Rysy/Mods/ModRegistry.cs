@@ -86,17 +86,17 @@ public static class ModRegistry {
                 .Where(l => !l.StartsWith('#'))
                 .Select(l => $"{modDir}/{l}".Unbackslash())
                 .ToHashSet()
-            ) ?? new() : new();
+            ) ?? new(StringComparer.Ordinal) : new(StringComparer.Ordinal);
 
         var allMods =
-            Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache"))
+            Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache", StringComparison.Ordinal))
             .Concat(Directory.GetFiles(modDir, "*.zip"))
             .Select(f => f.Unbackslash())
             .Where(f => !blacklisted.Contains(f))
             // add Rysy global plugins
             .Concat(Directory.GetDirectories(rysyPluginPath))
             .Select(async f => {
-                if (f.EndsWith(".zip"))
+                if (f.EndsWith(".zip", StringComparison.Ordinal))
                     return await CreateModAsync(f, zip: true);
 
                 return await CreateModAsync(f, zip: false);

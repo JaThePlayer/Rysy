@@ -7,7 +7,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("playbackBillboard")]
 public sealed class PlaybackBillboard : Entity, IPlaceable {
-    public override int Depth => 0;
+    public override int Depth => Depths.BGDecals;
 
     public override bool ResizableX => true;
     public override bool ResizableY => true;

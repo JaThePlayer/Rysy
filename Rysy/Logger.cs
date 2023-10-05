@@ -1,4 +1,5 @@
-﻿using Rysy.Extensions;
+﻿using Neo.IronLua;
+using Rysy.Extensions;
 using Rysy.Platforms;
 using System;
 using System.Runtime.CompilerServices;
@@ -93,7 +94,13 @@ public static class Logger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-        var txt = $"[{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exception.ToString()}\n";
+
+        var exString = exception switch {
+            LuaRuntimeException luaEx => $"{luaEx.Message} at {luaEx.FileName}:{luaEx.Line}:{luaEx.Column}: {luaEx.StackTrace}",
+            _ => exception.ToString()
+        };
+
+        var txt = $"[{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exString}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -131,8 +138,9 @@ public static class Logger {
     }
 
     private static void WriteImpl(string str) {
+        var unformatted = str.UnformatColors();
+
         lock (FILE_LOCK) {
-            var unformatted = str.UnformatColors();
             if (UseColorsInConsole) {
                 Console.Write(str.Censor());
             } else {

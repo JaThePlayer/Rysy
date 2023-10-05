@@ -73,6 +73,8 @@ public class SelectionTool : Tool {
 
         handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", HorizontalFlipSelections);
         handler.AddHotkeyFromSettings("selection.flipVertical", "v", VerticalFlipSelections);
+        handler.AddHotkeyFromSettings("selection.rotateRight", "r", () => RotateSelections(RotationDirection.Right));
+        handler.AddHotkeyFromSettings("selection.rotateLeft", "l", () => RotateSelections(RotationDirection.Left));
 
         handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
 
@@ -204,6 +206,18 @@ public class SelectionTool : Tool {
         }
 
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipVertical() : null).MergeActions();
+        if (action.Any())
+            ClearColliderCachesInSelections();
+
+        History.ApplyNewAction(action);
+    }
+
+    private void RotateSelections(RotationDirection dir) {
+        if (CurrentSelections is not { } selections) {
+            return;
+        }
+
+        var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryRotate(dir) : null).MergeActions();
         if (action.Any())
             ClearColliderCachesInSelections();
 
@@ -669,13 +683,14 @@ public class SelectionTool : Tool {
 
         ImGui.Text("Selections");
 
-        if (!ImGui.BeginTable("Selections", 2, ImGuiManager.TableFlags)) {
+        if (!ImGui.BeginTable("Selections", 3, ImGuiManager.TableFlags)) {
             return;
         }
 
-        var textBaseWidth = ImGui.CalcTextSize("A").X;
+        var textBaseWidth = ImGui.CalcTextSize("m").X;
 
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 100f);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 30f);
+        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
@@ -708,6 +723,12 @@ public class SelectionTool : Tool {
                 ImGuiManager.PushNullStyle();
                 if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Deselect...##{selection.GetHashCode()}")) {
                     RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
+                }
+                HighlightIfHovered(selection);
+                ImGui.TableNextColumn();
+
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable($"Edit...##{selection.GetHashCode()}")) {
+                    RysyEngine.OnEndOfThisFrame += () => selection.Handler.OnRightClicked(new Selection[] { selection });
                 }
                 HighlightIfHovered(selection);
 

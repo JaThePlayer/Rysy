@@ -619,7 +619,7 @@ function utils.sign(n)
 end
 
 function utils.isApprox(v1, v2, tolerance)
-    tolerance = tolerance or 10^-6
+    tolerance = tolerance or math.pow(10, -6)--10^-6
 
     return math.abs(v1 - v2) <= tolerance
 end

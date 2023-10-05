@@ -24,4 +24,7 @@ public interface ILuaWrapper {
 
         return 1;
     }
+
+    public virtual void Lua__newindex(Lua lua, ReadOnlySpan<char> key, object value) { }
+    public virtual void Lua__newindex(Lua lua, long key, object value) { }
 }

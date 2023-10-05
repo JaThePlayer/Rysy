@@ -38,6 +38,11 @@ public sealed class LonnEntityPlugin {
 
     public Func<Entity, List<string>?> GetAssociatedMods;
 
+    //flip(room, entity, horizontal, vertical) -> success?
+    public Func<ILuaWrapper, ILuaWrapper, bool, bool, bool>? Flip;
+    // rotate(room, entity, direction) -> success?
+    public Func<ILuaWrapper, ILuaWrapper, int, bool>? Rotate;
+
     public bool HasSelectionFunction;
 
     public List<LonnPlacement> Placements { get; set; } = new();
@@ -62,7 +67,8 @@ public sealed class LonnEntityPlugin {
             if (Plugin.StackLoc < lua.GetTop()) {
                 Logger.Write("LonnEntity", LogLevel.Warning, $"Lua stack grew after using {Plugin.Name}! Previous: {Plugin.StackLoc}, now: {lua.GetTop()}.");
                 lua.PrintStack();
-                Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.TableToDictionary(lua.GetTop()).ToJson()}");
+                //Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.TableToDictionary(lua.GetTop()).ToJson()}");
+                Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.ToCSharp(lua.GetTop()).ToJson()}");
             }
             lua.Pop(Amt);
 
@@ -232,6 +238,28 @@ public sealed class LonnEntityPlugin {
         plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods",
             def: (List<string>)null!,
             funcGetter: (lua, top) => lua.ToList<string>(top));
+
+        if (lua.PeekTableType(top, "flip") is LuaType.Function) {
+            plugin.Flip = (room, entity, horizontal, vertical) => {
+                return plugin.PushToStack((pl) => {
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, "flip");
+                    return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, horizontal, vertical);
+                });
+            };
+        }
+
+        if (lua.PeekTableType(top, "rotate") is LuaType.Function) {
+            plugin.Rotate = (room, entity, dir) => {
+                return plugin.PushToStack((pl) => {
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, "rotate");
+                    return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, dir);
+                });
+            };
+        }
 
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
         plugin.HasGetNodeSprite = lua.PeekTableType(top, "nodeSprite") is LuaType.Function;
@@ -433,7 +461,7 @@ public sealed class LonnEntityPlugin {
                     var firstVal = dropdownOptions.FirstOrDefault().Value;
 
                     return fieldType switch {
-                        "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.ToDictionary(v => Convert.ToInt32(v.Value), v => v.Key), editable),
+                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def), dropdownOptions.ToDictionary(v => (int) Convert.ToDouble(v.Value), v => v.Key), editable),
                         _ => Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable),
                     };
                 }

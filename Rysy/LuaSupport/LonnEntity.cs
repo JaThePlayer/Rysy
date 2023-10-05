@@ -53,7 +53,12 @@ public class LonnEntity : Entity {
                 var node = Nodes[i];
 
                 lua.PushCopy(spriteFuncLoc);
-                sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, (lua, idx) => SpritesFromLonn(lua, idx)) ?? new());
+                try {
+                    sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, (lua, idx) => SpritesFromLonn(lua, idx)) ?? new());
+                } catch {
+                    lua.Pop(1); // pop the "nodeSprite" func
+                    throw;
+                }
             }
 
             lua.Pop(1); // pop the "nodeSprite" func
@@ -168,12 +173,51 @@ public class LonnEntity : Entity {
 
     public override Range NodeLimits => Plugin.GetNodeLimits(Room, this);
 
-    public override Point MinimumSize => Plugin.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+    public override Point MinimumSize {
+        get {
+            if (Plugin is null)
+                Name.LogAsJson();
+
+            return Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+        }
+    }
 
     public override void OnChanged() {
         base.OnChanged();
 
         CachedSprites = null;
+    }
+
+    public override Entity? TryFlipVertical() {
+        return FlipImpl(false, true);
+    }
+
+    public override Entity? TryFlipHorizontal() {
+        return FlipImpl(true, false);
+    }
+
+    public override Entity? TryRotate(RotationDirection dir) {
+        if (Plugin.Rotate is null) {
+            return null;
+        }
+
+        var selfWrapper = new CloneEntityWrapper(this);
+
+        return Plugin.Rotate(Room, selfWrapper, (int)dir)
+            ? selfWrapper.CreateMutatedClone()
+            : null;
+    }
+
+    private Entity? FlipImpl(bool horizontal, bool vertical) {
+        if (Plugin.Flip is null) {
+            return null;
+        }
+
+        var selfWrapper = new CloneEntityWrapper(this);
+
+        return Plugin.Flip(Room, selfWrapper, horizontal, vertical) 
+            ? selfWrapper.CreateMutatedClone() 
+            : null;
     }
 
     public override List<string>? AssociatedMods => Plugin.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;

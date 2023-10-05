@@ -1,4 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+﻿#define KERA_LUA
+#if !KERA_LUA
+using Rysy.NeoLuaSupport;
+#endif
+
+using Microsoft.CodeAnalysis;
 using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Helpers;
@@ -16,7 +21,14 @@ public static class EntityRegistry {
     }
 
     private static Dictionary<string, Type> SIDToType { get; set; } = new(StringComparer.Ordinal);
+
+#if KERA_LUA
     private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
+#else
+    private static Dictionary<string, NeoLonnEntityHandler> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, LonnEntityPlugin> LegacySIDToLonnPlugin = new(StringComparer.Ordinal);
+#endif
+
     private static Dictionary<string, Func<FieldList>> SIDToFields { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, ModMeta> SIDToDefiningMod { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, List<ModMeta>> SIDToAssociatedMods { get; set; } = new(StringComparer.Ordinal);
@@ -130,7 +142,7 @@ public static class EntityRegistry {
 
     private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins) {
         if (loadLuaPlugins)
-            foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToList()) {
+            foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToListIfNotList()) {
                 if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
                     LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
 
@@ -199,6 +211,23 @@ public static class EntityRegistry {
 
     private static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
         try {
+#if !KERA_LUA
+            LuaLoader.CurrentMod = mod?.Name;
+            var handlers = NeoLonnEntityHandler.FromLua(lua, chunkName);
+
+            foreach (var pl in handlers) {
+                pl.Mod = mod;
+
+                lock (SIDToType) {
+                    SIDToType[pl.Name] = trigger ? typeof(NeoLonnTrigger) : typeof(NeoLonnEntity);
+                }
+                lock (SIDToLonnPlugin) {
+                    SIDToLonnPlugin[pl.Name] = pl;
+                }
+            }
+#endif
+
+#if KERA_LUA
             LuaCtx.Lua.SetCurrentModName(mod);
             LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
             List<LonnEntityPlugin>? plugins = null;
@@ -236,6 +265,7 @@ public static class EntityRegistry {
                     }
                 }
             }
+#endif
         } catch (Exception ex) {
             Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName} [{mod?.Name}]: {ex}");
             return;
@@ -438,6 +468,7 @@ public static class EntityRegistry {
         e.OnChanged();
         entityData.OnChanged += e.OnChanged;
 
+#if KERA_LUA
         if (e is LonnEntity lonnEntity) {
             if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
                 plugin = LonnEntityPlugin.Default(LuaCtx, sid);
@@ -454,6 +485,34 @@ public static class EntityRegistry {
 
             lonnTrigger.Plugin = plugin;
         }
+#else
+        if (e is INeoLonnObject lonnObject) {
+            if (!SIDToLonnPlugin.TryGetValue(sid, out var handler)) {
+                handler = NeoLonnEntityHandler.Default(sid);
+                SIDToLonnPlugin[sid] = handler;
+            }
+            lonnObject.Handler = handler;
+        }
+
+        if (e is LonnEntity lonnEntity) {
+            if (!LegacySIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+                plugin = LonnEntityPlugin.Default(LuaCtx, sid);
+                LegacySIDToLonnPlugin[sid] = plugin;
+            }
+
+            lonnEntity.Plugin = plugin;
+        }
+        if (e is LonnTrigger lonnTrigger) {
+            if (!LegacySIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+                plugin = LonnEntityPlugin.Default(LuaCtx, sid);
+                LegacySIDToLonnPlugin[sid] = plugin;
+            }
+
+            lonnTrigger.Plugin = plugin;
+        }
+#endif
+
+
 
         var min = e.MinimumSize;
 
