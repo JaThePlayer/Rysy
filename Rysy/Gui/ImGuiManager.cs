@@ -326,7 +326,7 @@ public static class ImGuiManager {
             case ColorFormat.RGB:
                 var colorN3 = color.ToNumVec3();
                 if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
-                    color = new Color(colorN3);
+                    color = new Color(colorN3.ToXna());
                     edited = true;
                 }
                 break;
@@ -334,7 +334,7 @@ public static class ImGuiManager {
             case ColorFormat.ARGB:
                 var colorN4 = color.ToNumVec4();
                 if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
-                    color = new Color(colorN4);
+                    color = new Color(colorN4.ToXna());
                     edited = true;
                 }
                 break;
@@ -555,7 +555,7 @@ public static class ImGuiManager {
             unsafe {
                 io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(ClipboardDelegates.SDL_Get);
             }*/
-
+#if !FNA
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => {
                 const char VOLUME_UP = (char) 128;
                 const char VOLUME_DOWN = (char) 129;
@@ -566,6 +566,7 @@ public static class ImGuiManager {
 
                 io.AddInputCharacter(c);
             };
+#endif
 
             io.Fonts.AddFontDefault();
         }
@@ -712,6 +713,10 @@ public static class ImGuiManager {
                             baseVertex: vtxOffset,
                             startIndex: idxOffset,
                             primitiveCount: (int) cmd.ElemCount / 3
+#if FNA
+                            ,minVertexIndex: 0,
+                            numVertices: (int) cmd.ElemCount
+#endif
                         );
                     }
 

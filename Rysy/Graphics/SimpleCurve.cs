@@ -1,4 +1,6 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Extensions;
+
+namespace Rysy.Graphics;
 
 public record struct SimpleCurve {
     public Vector2 Start, End, Control;
@@ -37,7 +39,7 @@ public record struct SimpleCurve {
         var height = baseRect.Height;
         for (float i = 1f; i <= len; i++) {
             var clothSliceEnd = GetPointAt(i / len);
-            clothSliceEnd.Floor();
+            clothSliceEnd.Floored();
             if (clothStart.X < clothSliceEnd.X) {
                 yield return ISprite.Rect(clothStart, (int) (clothSliceEnd.X - clothStart.X + 1f), height, color);
                 clothStart = clothSliceEnd;
@@ -56,7 +58,7 @@ public record struct SimpleCurve {
         for (float i = 1f; i <= len; i++) {
             var p = i / len;
             var clothSliceEnd = GetPointAt(p);
-            clothSliceEnd.Floor();
+            clothSliceEnd.Floored();
             if (clothStart.X < clothSliceEnd.X) {
                 var w = (int) (clothSliceEnd.X - clothStart.X + 2f);
                 if (w + i >= len) {

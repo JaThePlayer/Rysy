@@ -316,7 +316,7 @@ public sealed class EditorScene : Scene {
         base.Render();
 
         if (Map is not { }) {
-            var windowSize = RysyEngine.Instance.Window.ClientBounds.Size;
+            var windowSize = RysyEngine.Instance.Window.ClientBounds.Size();
             var height = 4 * 6;
             var center = windowSize.Y / 2;
 

@@ -86,4 +86,6 @@ public static class RectangleExt {
     public static Rectangle MovedBy(this Rectangle r, Vector2 offset) => new(r.X + (int) offset.X, r.Y + (int) offset.Y, r.Width, r.Height);
     public static Rectangle MovedBy(this Rectangle r, int x, int y) => new(r.X + x, r.Y + y, r.Width, r.Height);
     public static Rectangle MovedTo(this Rectangle r, Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
+
+    public static Point Size(this Rectangle r) => new(r.Width, r.Height);
 }

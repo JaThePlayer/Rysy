@@ -335,7 +335,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     public Rectangle WorldToRoomPos(Camera camera, Rectangle world)
         => RectangleExt.FromPoints(
             camera.ScreenToReal(world.Location.ToVector2()) - new Vector2(X, Y),
-            camera.ScreenToReal((world.Location + world.Size).ToVector2()) - new Vector2(X, Y)
+            camera.ScreenToReal((world.Location + world.Size()).ToVector2()) - new Vector2(X, Y)
            );
 
     internal void StartBatch(Camera camera) {
@@ -598,7 +598,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public bool IsInBounds(Vector2 roomPos)
-        => new Rectangle(0, 0, Width, Height).Contains(roomPos);
+        => new Rectangle(0, 0, Width, Height).Contains(roomPos.ToPoint());
 
     /// <summary>
     /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
@@ -671,7 +671,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
         var pos = rect.Location.ToVector2().GridPosFloor(8);
-        var pos2 = (rect.Location.ToVector2() + rect.Size.ToVector2()).GridPosFloor(8);
+        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
 
 
         var selection = grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer);

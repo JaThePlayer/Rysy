@@ -18,7 +18,7 @@ public static class PicoFont {
         if (Texture is { })
             return Texture;
 
-        Texture = VirtTexture.FromTexture(Texture2D.FromFile(RysyEngine.GDM.GraphicsDevice, "Assets/font.png"));
+        Texture = VirtTexture.FromTexture(FnaMonogameCompat.Texture2DFromFile(RysyEngine.GDM.GraphicsDevice, "Assets/font.png"));
 
         // The font is slightly edited in Rysy to include ,/\<>
         var fontMap = @"abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+-=?:.,/\<> ";

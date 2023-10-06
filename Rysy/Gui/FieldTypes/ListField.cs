@@ -45,7 +45,7 @@ public record class ListField : Field {
         ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var oh, out var os, out var ov);
         ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), out cv.X, out cv.Y, out cv.Z);
 
-        return new(cv);
+        return new(cv.ToXna());
     }
 
     private bool TypeSpecificGui(string[] split) {

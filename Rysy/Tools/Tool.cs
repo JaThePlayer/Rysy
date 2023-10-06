@@ -152,7 +152,7 @@ public abstract class Tool {
     public abstract string? GetMaterialTooltip(string layer, object material);
 
     public static void DrawSelectionRect(Rectangle rect) {
-        var c = ColorHelper.HSVToColor(rect.Size.ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
+        var c = ColorHelper.HSVToColor(rect.Size().ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
         ISprite.OutlinedRect(rect, c * 0.3f, c, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
     }
 
@@ -240,7 +240,7 @@ public abstract class Tool {
         }
         ImGuiManager.PopWindowStyle();
 
-        return ImGui.GetWindowSize();
+        return ImGui.GetWindowSize().ToXna();
     }
 
     protected void BeginMaterialListGUI(string id, Vector2 windowSize) {

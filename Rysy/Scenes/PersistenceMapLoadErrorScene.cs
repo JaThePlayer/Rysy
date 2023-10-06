@@ -23,7 +23,8 @@ public class PersistenceMapLoadErrorScene : Scene {
         base.Render();
 
         GFX.BeginBatch();
-        PicoFont.Print(Text, new Rectangle(new(0, 0), RysyEngine.Instance.Window.ClientBounds.Size), Color.LightSkyBlue, 4f);
+        var size = RysyEngine.Instance.Window.ClientBounds;
+        PicoFont.Print(Text, new Rectangle(0, 0, size.Width, size.Height), Color.LightSkyBlue, 4f);
         GFX.EndBatch();
     }
 

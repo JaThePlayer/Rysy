@@ -98,7 +98,7 @@ public class PlacementTool : Tool {
 
             if (RectangleGesture.Delta is { } delta) {
                 var offset = delta.Location.ToVector2();
-                var resize = delta.Size;
+                var resize = delta.Size();
 
                 if (offset.X != 0 || offset.Y != 0) {
                     selection.MoveBy(offset).Apply();
@@ -135,7 +135,7 @@ public class PlacementTool : Tool {
 
     private Placement? GetPlacementUnderCursor(Camera camera, Room currentRoom) {
         var mouse = GetMousePos(camera, currentRoom, precise: true);
-        var selections = currentRoom.GetSelectionsInRect(new(mouse, new(1, 1)), LayerNames.ToolLayerToEnum(Layer));
+        var selections = currentRoom.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer));
 
         if (selections.FirstOrDefault()?.Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
             return placement;

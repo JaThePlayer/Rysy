@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Extensions;
+using Rysy.Graphics;
 
 namespace Rysy.Scenes;
 
@@ -13,7 +14,8 @@ public class LoadErrorScene : Scene {
         base.Render();
 
         GFX.BeginBatch();
-        PicoFont.Print(Text, new Rectangle(new(0, 0), RysyEngine.Instance.Window.ClientBounds.Size), Color.LightSkyBlue, 4f);
+        var bounds = RysyEngine.Instance.Window.ClientBounds.Size();
+        PicoFont.Print(Text, new Rectangle(0, 0, bounds.X, bounds.Y), Color.LightSkyBlue, 4f);
         GFX.EndBatch();
     }
 }
