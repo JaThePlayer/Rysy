@@ -76,7 +76,7 @@ public class Camera {
     /// </summary>
     /// <param name="position">The position to center on.</param>
     public void CenterOnRealPos(XnaVector2 position) {
-        _pos = XnaVector2.Floor(position - new Vector2(Viewport.Width / 2, Viewport.Height / 2) / Scale);
+        _pos = (position - new Vector2(Viewport.Width / 2, Viewport.Height / 2) / Scale).Floored();
 
         RecalculateMatrix();
     }

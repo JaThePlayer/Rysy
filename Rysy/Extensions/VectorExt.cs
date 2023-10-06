@@ -23,8 +23,18 @@ public static class VectorExt {
 
     public static float RadToDegrees(this float angleRadians) => angleRadians * 180f / MathF.PI;
 
-    public static Vector2 Floored(this Vector2 v) => Vector2.Floor(v);
-    public static Vector2 Rounded(this Vector2 v) => Vector2.Round(v);
+    public static Vector2 Floored(this Vector2 v) =>
+#if FNA
+        new(float.Floor(v.X), float.Floor(v.Y));
+#else
+        Vector2.Floor(v);
+#endif
+    public static Vector2 Rounded(this Vector2 v) =>
+#if FNA
+        new(float.Round(v.X), float.Round(v.Y));
+#else
+        Vector2.Round(v);
+#endif
     public static Vector2 Normalized(this Vector2 v) => v == default ? default : Vector2.Normalize(v);
 
     public static Vector2 Snap(this Vector2 v, int gridSize) => (v / gridSize).Floored() * gridSize;
@@ -42,5 +52,8 @@ public static class VectorExt {
         return new(cos * tx - sin * ty, sin * tx + cos * ty);
     }
 
+    public static Vector2 ToXna(this NumVector2 v) => new(v.X, v.Y);
+    public static Vector3 ToXna(this NumVector3 v) => new(v.X, v.Y, v.Z);
+    public static Vector4 ToXna(this NumVector4 v) => new(v.X, v.Y, v.Z, v.W);
     //public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);
 }

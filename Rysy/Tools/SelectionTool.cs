@@ -341,7 +341,7 @@ public class SelectionTool : Tool {
 
         if (CurrentSelections is { } selections)
             foreach (var selection in selections) {
-                if (selection.Check(new(mousePos, new(1)))) {
+                if (selection.Check(new(mousePos.X, mousePos.Y, 1, 1))) {
                     SelectionsToHighlight.Add(selection);
                 } else {
                     selection.Render(Color.Red);
@@ -359,7 +359,7 @@ public class SelectionTool : Tool {
 
     private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
         mouseRoomPos = GetMouseRoomPos(camera, room);
-        return new Rectangle(GetMouseRoomPos(camera, room), new(1, 1));
+        return new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
     }
 
     private Selection? GetHoveredSelection(Camera camera, Room room) {
@@ -381,7 +381,7 @@ public class SelectionTool : Tool {
         if (CurrentSelections is { } selections) {
             if (Input.Mouse.Left.Clicked()) {
                 var mouseRoomPos = GetMouseRoomPos(camera, room);
-                var mouseRect = new Rectangle(mouseRoomPos, new(1, 1));
+                var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
 
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
@@ -394,7 +394,7 @@ public class SelectionTool : Tool {
 
             if (Input.Mouse.Right.Clicked()) {
                 var mouseRoomPos = GetMouseRoomPos(camera, room);
-                var mouseRect = new Rectangle(mouseRoomPos, new(1, 1));
+                var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
 
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
@@ -537,7 +537,7 @@ public class SelectionTool : Tool {
 
                     if (delta.LengthSquared() <= 0) {
                         // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
-                        SelectWithin(room, new Rectangle(mousePos, new(1, 1)));
+                        SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
                     } else {
                         SimulateMoveSelectionsBy(-delta, selections);
                         MoveSelectionsBy(delta, selections);
@@ -600,7 +600,7 @@ public class SelectionTool : Tool {
         var selections = room.GetSelectionsInRect(rect, LayerNames.ToolLayerToEnum(Layer, CustomLayer));
         IEnumerable<Selection> finalSelections = null!;
 
-        if (rect.Size.X <= 1 && rect.Size.Y <= 1 && selections.Count > 0) {
+        if (rect.Width <= 1 && rect.Height <= 1 && selections.Count > 0) {
             // you just clicked in place, select only 1 selection
             if (selections.Count > 1) {
                 int idx = ClickInPlaceIdx % selections.Count;

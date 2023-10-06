@@ -26,15 +26,16 @@ public class DebugInfoWindow : Window {
             ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
         }
 
+#if !FNA
         if (ImGui.CollapsingHeader("Metrics")) {
             var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
             ImGui.Text(metrics.ToJson());
         }
+#endif
 
         HistoryTab();
 
         if (ImGui.CollapsingHeader("GC")) {
-            var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
             ImGui.Text($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
         }
 

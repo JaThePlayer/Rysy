@@ -11,7 +11,7 @@ public class BrushTool : TileTool {
         var mouse = currentRoom.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
 
         RenderTiles(mouse.ToVector2(), 1, 1);
-        ISprite.OutlinedRect(new Rectangle(mouse, new Point(8, 8)), Color.Transparent, DefaultColor).Render();
+        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, DefaultColor).Render();
     }
 
     public override void Update(Camera camera, Room room) {

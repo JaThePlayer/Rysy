@@ -66,7 +66,10 @@ public sealed class RysyEngine : Game {
         IsMouseVisible = true;
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
+
+#if !FNA
         Window.FileDrop += Window_FileDrop;
+#endif
 
         SetTargetFps(60);
         ToggleVSync(false);
@@ -97,6 +100,7 @@ public sealed class RysyEngine : Game {
             return;
         }
 
+#if !FNA
         OnEndOfThisFrame += () => {
             instance.Window.IsBorderless = toggle;
             if (toggle) {
@@ -107,24 +111,27 @@ public sealed class RysyEngine : Game {
                 instance.ResizeWindowUsingSettings();
             }
         };
+#endif
     }
 
+#if !FNA
     private void Window_FileDrop(object? sender, FileDropEventArgs e) {
         Console.WriteLine(string.Join(' ', e.Files));
 
         Scene?.OnFileDrop(e);
     }
+#endif
 
     public static Action<Viewport>? OnViewportChanged { get; set; }
 
     private void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
 
-        if (Settings.Instance is { } settings && !Instance.Window.IsBorderless) {
+        if (Settings.Instance is { } settings && !Instance.Window.IsBorderlessShared()) {
             settings.StartingWindowWidth = GDM.GraphicsDevice.Viewport.Width;
             settings.StartingWindowHeight = GDM.GraphicsDevice.Viewport.Height;
-            settings.StartingWindowX = Window.Position.X;
-            settings.StartingWindowY = Window.Position.Y;
+            settings.StartingWindowX = Window.GetPosition().X;
+            settings.StartingWindowY = Window.GetPosition().Y;
             settings.Save();
         }
     }
@@ -224,8 +231,8 @@ public sealed class RysyEngine : Game {
         ResizeWindow(
             settings.StartingWindowWidth ?? 800,
             settings.StartingWindowHeight ?? 480,
-            settings.StartingWindowX ?? Window.Position.X,
-            settings.StartingWindowY ?? Window.Position.Y
+            settings.StartingWindowX ?? Window.GetPosition().X,
+            settings.StartingWindowY ?? Window.GetPosition().Y
         );
     }
 
@@ -241,11 +248,10 @@ public sealed class RysyEngine : Game {
                 x = 0;
 
             // todo: get rid of that hardcoded 32, though that's not easy cross-platform...
-            var minY = Window.IsBorderless ? 0 : 32;
+            var minY = Window.IsBorderlessShared() ? 0 : 32;
             if (!y.IsInRange(minY, monitorSize.Height - h - 32))
                 y = 32;
-
-            Window.Position = new(x, y);
+            Window.SetPosition(new (x, y));
             Window_ClientSizeChanged(null, new());
             GDM.ApplyChanges();
         };

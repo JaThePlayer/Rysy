@@ -18,7 +18,7 @@ public sealed class ZipVirtTexture : VirtTexture {
             try {
 
                 var arch = SharedZipArchive.Get(archivePath);
-#if DirectX
+#if DirectX && !FNA
                 // DirectX is super fast at loading textures it seems, so this is more performant than reading to an intermediate buffer
                 lock (arch) {
                     using var stream = arch.GetEntry(entryName)!.Open();
