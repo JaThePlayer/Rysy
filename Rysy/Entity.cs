@@ -342,18 +342,77 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Tries to flip the entity horizontally. Returning null means that the entity cannot be flipped.
     /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
     /// </summary>
-    public virtual Entity? TryFlipHorizontal() => null;
+    public virtual Entity? TryFlipHorizontal() {
+        if (Nodes is not { Count: > 0 } nodes) {
+            return null;
+        }
+
+        // flip all nodes horizontally along the entity pos
+        return CloneWith(pl => {
+            var pos = Pos;
+            for (int i = 0; i < nodes.Count; i++) {
+                pl.Nodes![i] = nodes[i].Pos.FlipHorizontalAlong(pos);
+            }
+        });
+    }
     /// <summary>
     /// Tries to flip the entity vertically. Returning null means that the entity cannot be flipped.
     /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
     /// </summary>
-    public virtual Entity? TryFlipVertical() => null;
+    public virtual Entity? TryFlipVertical() {
+        if (Nodes is not { Count: > 0 } nodes) {
+            return null;
+        }
+
+        // flip all nodes vertically along the entity pos
+        return CloneWith(pl => {
+            var pos = Pos;
+            for (int i = 0; i < nodes.Count; i++) {
+                pl.Nodes![i] = nodes[i].Pos.FlipVerticalAlong(pos);
+            }
+        });
+    }
 
     /// <summary>
     /// Tries to rotate the entity in the given direction. Returning null means that the entity cannot be flipped.
     /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
     /// </summary>
-    public virtual Entity? TryRotate(RotationDirection dir) => null;
+    public virtual Entity? TryRotate(RotationDirection dir) {
+        if (Nodes is not { Count: > 0 } nodes) {
+            return null;
+        }
+
+        // rotate all nodes along the entity pos
+        return CloneWith(pl => {
+            var pos = Pos;
+            var angle = dir.ToAndleRad();
+            for (int i = 0; i < nodes.Count; i++) {
+                pl.Nodes![i] = nodes[i].Pos.RotateAround(pos, angle);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Rotates this entity by <paramref name="angleRad"/> degrees (in radians).
+    /// A clone of the entity should be returned, and 'this' should not be manipulated in any way here, or history will break.
+    /// </summary>
+    public virtual Entity? RotatePreciseBy(float angleRad, Vector2 origin) {
+        if (Nodes is not { Count: > 0 } nodes) {
+            return null;
+        }
+
+        // rotate all nodes along the entity pos
+        var clone = CloneWith(pl => {
+            //var pos = Pos;
+            for (int i = 0; i < nodes.Count; i++) {
+                pl.Nodes![i] = nodes[i].Pos.RotateAround(origin, angleRad).Floored();
+            }
+        });
+
+        clone.Pos = Pos.RotateAround(origin, angleRad).Floored();
+
+        return clone;
+    }
 
     public virtual BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.SID);
@@ -402,9 +461,22 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         _ => SelectionLayer.Entities,
     };
 
+    internal EntitySelectionHandler? _SelectionHandler;
     public Selection CreateSelection() => new() {
-        Handler = new EntitySelectionHandler(this)
+        Handler = _SelectionHandler ??= new EntitySelectionHandler(this)
     };
+
+    /// <summary>
+    /// Transfers the selection handler from this entity to <paramref name="newEntity"/>, used by <see cref="SwapEntityAction"/>
+    /// </summary>
+    internal void TransferHandlersTo(Entity newEntity) {
+        if (_SelectionHandler is { } handler) {
+            newEntity._SelectionHandler = handler;
+            _SelectionHandler = null;
+
+            handler.Entity = newEntity;
+        }
+    }
 
     public void InitializeNodePositions() {
         if (Nodes is { } nodes) {
@@ -422,6 +494,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// </summary>
     public virtual void OnChanged() {
         _pos = new(EntityData.X, EntityData.Y);
+        _SelectionHandler?.ClearCollideCache();
     }
 
     public string ToJson() {

@@ -2,16 +2,12 @@
 using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Graphics;
-using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Selections;
-using System.Diagnostics;
-using System.Linq;
 using System.Text.Json.Serialization;
-using YamlDotNet.Core.Tokens;
 
 namespace Rysy;
 
@@ -689,23 +685,23 @@ public sealed class Room : IPackable, ILuaWrapper {
 
 
             var mainSelect = entity.GetMainSelection();
+            var selection = entity.CreateSelection();
+
             if (mainSelect.IsWithinRectangle(rect)) {
-                into.Add(CreateSelectionFrom(entity));
+                into.Add(selection);
             }
 
             if (entity.Nodes is { } nodes)
                 for (int i = 0; i < nodes.Count; i++) {
                     var nodeSelect = entity.GetNodeSelection(i);
                     if (nodeSelect.IsWithinRectangle(rect)) {
-                        into.Add(new Selection(new NodeSelectionHandler(entity, nodes[i])));
+                        into.Add(new Selection(new NodeSelectionHandler((EntitySelectionHandler)selection.Handler, nodes[i])));
                     }
                 }
         }
     }
 
-    private static Selection CreateSelectionFrom(Entity entity) {
-        return new Selection(new EntitySelectionHandler(entity));
-    }
+    private static Selection CreateSelectionFrom(Entity entity) => entity.CreateSelection();
 
     private void GetSelectionsInRectForDecals(Rectangle rect, ListenableList<Entity> decals, List<Selection> into) {
         var layer = Persistence.Instance.EditorLayer;
@@ -717,7 +713,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             var selection = decal.GetMainSelection();
 
             if (selection.IsWithinRectangle(rect)) {
-                into.Add(new Selection() { Handler = new EntitySelectionHandler(decal)});
+                into.Add(decal.CreateSelection());
             }
         }
     }

@@ -249,10 +249,10 @@ static string Compress(byte[] input) {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
             e.ID = 0; // set the ID to 0 so that it gets auto-assigned later
             entitiesNotRef.Add(e);
+            var handler = e.CreateSelection().Handler as EntitySelectionHandler;
+            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? Array.Empty<ISelectionHandler>();
 
-            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(e, n)) ?? Array.Empty<ISelectionHandler>();
-
-            return selections.Append(new EntitySelectionHandler(e));
+            return selections.Append(handler);
         }).Select(h => new Selection() { Handler = h }).ToList();
 
         return newSelections;

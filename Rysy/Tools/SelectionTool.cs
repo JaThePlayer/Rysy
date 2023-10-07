@@ -38,7 +38,7 @@ public class SelectionTool : Tool {
     private Point? RotationGestureStart;
     private Rectangle? RotationGestureRect;
     private float? RotationGestureLastAngle;
-
+    private List<IHistoryAction> RotationGestureActions = new();
 
 
     public SelectionTool() {
@@ -435,10 +435,11 @@ public class SelectionTool : Tool {
         if (CurrentSelections is null) {
             return;
         }
-
-        var actions = CurrentSelections.Select(s => s.Handler).OfType<ISelectionPreciseRotationHandler>().Select(h => h.TryPreciseRotate(angle, isSimulation: false));
-
-        History.ApplyNewAction(actions);
+        foreach (var item in RotationGestureActions.AsEnumerable().Reverse()) {
+            item.Undo();
+        }
+        History.ApplyNewAction(RotationGestureActions);
+        RotationGestureActions.Clear();
         ClearColliderCachesInSelections();
         RotationGestureStart = null;
     }
@@ -458,8 +459,8 @@ public class SelectionTool : Tool {
         }
 
         CreateMousePosRect(camera, room, out var currentPos);
-        var angle = VectorExt.Angle(RotationGestureStart.Value.ToVector2(), currentPos.ToVector2()) + (MathF.PI / 2f);
-        //Console.WriteLine((angle, RotationGestureLastAngle));
+        var angle = VectorExt.Angle(RotationGestureStart.Value.ToVector2(), currentPos.ToVector2());
+        var realAngle = angle;
         if (RotationGestureLastAngle is null) {
             RotationGestureLastAngle = angle;
             angle = 0f;
@@ -480,11 +481,17 @@ public class SelectionTool : Tool {
 
         switch (Input.Mouse.Left) {
             case MouseInputState.Held: {
+                foreach (var item in RotationGestureActions.AsEnumerable().Reverse()) {
+                    item.Undo();
+                }
+                RotationGestureActions = new();
+
                 foreach (var s in CurrentSelections) {
                     if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
-                        rotationHandler.TryPreciseRotate(angle, isSimulation: true)?.Apply();
-                        //var offset = (center - s.Handler.Rect.Center).ToVector2().Rotate(angle);
-                        //s.Handler.MoveBy(offset).Apply();
+                        if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart.Value.ToVector2().Snap(8)) is { } act) {
+                            if (act.Apply())
+                                RotationGestureActions.Add(act);
+                        }
                         s.Handler.ClearCollideCache();
                     }
                 }
@@ -494,13 +501,6 @@ public class SelectionTool : Tool {
             case MouseInputState.Released: {
                 EndRotationGesture(angle);
                 State = States.Idle;
-
-
-                //foreach (var s in CurrentSelections) {
-                //    if (s is ISelectionPreciseRotationHandler rotationHandler) {
-                //        rotationHandler.TryPreciseRotate(angle);
-                //    }
-                //}
 
                 break;
             }

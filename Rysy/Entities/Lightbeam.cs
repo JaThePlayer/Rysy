@@ -6,7 +6,7 @@ using Rysy.Selections;
 namespace Rysy.Entities;
 
 [CustomEntity("lightbeam")]
-public sealed class Lightbeam : Entity, IPlaceable, IPreciseRotatable {
+public sealed class Lightbeam : Entity, IPlaceable {
     public override int Depth => 0;
 
     public override bool ResizableX => true;
@@ -37,5 +37,5 @@ public sealed class Lightbeam : Entity, IPlaceable, IPreciseRotatable {
 
     public static PlacementList GetPlacements() => new("lightbeam");
 
-    public Entity? RotatePreciseBy(float angle) => CloneWith(pl => pl["rotation"] = Float("rotation") + angle.RadToDegrees());
+    public override Entity? RotatePreciseBy(float angle, Vector2 origin) => CloneWith(pl => pl["rotation"] = Float("rotation") + angle.RadToDegrees());
 }

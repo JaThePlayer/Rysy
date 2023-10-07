@@ -87,7 +87,7 @@ public interface ISelectionFlipHandler {
 }
 
 public interface ISelectionPreciseRotationHandler {
-    public IHistoryAction? TryPreciseRotate(float angle, bool isSimulation);
+    public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin);
 }
 
 [Flags]

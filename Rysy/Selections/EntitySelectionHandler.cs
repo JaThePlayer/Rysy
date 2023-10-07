@@ -6,8 +6,8 @@ using Rysy.History;
 
 namespace Rysy.Selections;
 
-public class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, ISelectionPreciseRotationHandler {
-    public EntitySelectionHandler(Entity entity) {
+public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, ISelectionPreciseRotationHandler {
+    internal EntitySelectionHandler(Entity entity) {
         Entity = entity;
         entity.Selected = true;
         Entity.ClearRoomRenderCache();
@@ -18,9 +18,23 @@ public class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, 
         Entity.Selected = false;
     }
 
-    public Entity Entity { get; set; }
+    private Entity _Entity;
 
-    private Entity? PreSimulationEntity { get; set; }
+    public Entity Entity {
+        get => _Entity;
+        internal set {
+            if (_Entity != value) {
+                if (_Entity is { }) {
+                    // transfer the handler to the new entity, to make node selections aware of this change
+                    //_Entity._SelectionHandler = null;
+                    value._SelectionHandler = this;
+                }
+
+                _Entity = value;
+                ClearCollideCache();
+            }
+        }
+    }
 
     public object Parent => Entity;
 
@@ -50,7 +64,7 @@ public class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, 
 
         return (
             new AddNodeAction(Entity, node, 0),
-            new NodeSelectionHandler(Entity, node)
+            new NodeSelectionHandler(this, node)
         );
     }
 
@@ -146,20 +160,11 @@ public class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, 
         return new AddEntityAction(Entity.Clone(), room);
     }
 
-    public IHistoryAction? TryPreciseRotate(float angle, bool isSimulation) {
-        if (Entity is not IPreciseRotatable rotatable) {
+    public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
+        if (Entity.RotatePreciseBy(angle, origin) is not { } rotated) {
             return null;
         }
 
-        var rotated = rotatable.RotatePreciseBy(angle);
-        if (isSimulation) {
-            PreSimulationEntity ??= Entity;
-        } else {
-            new SwapEntityAction(Entity, PreSimulationEntity!).Apply();
-            Entity = PreSimulationEntity!;
-            PreSimulationEntity = null;
-        }
-
-        return FlipImpl(rotated, nameof(IPreciseRotatable.RotatePreciseBy));
+        return FlipImpl(rotated, nameof(Entity.RotatePreciseBy));
     }
 }

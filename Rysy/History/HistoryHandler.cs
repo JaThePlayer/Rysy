@@ -37,7 +37,7 @@ public class HistoryHandler {
         }
     }
 
-    private void InsertAction(IHistoryAction action) {
+    internal void InsertAction(IHistoryAction action) {
         Actions.Add(action);
         UndoneActions.Clear();
         OnApply?.Invoke();
