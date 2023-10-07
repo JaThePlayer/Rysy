@@ -138,12 +138,13 @@ public interface ISprite : IEnumerable<ISprite> {
     /// <summary>
     /// Returns a sprite which renders a circle. The arguments mean the exact same thing as Draw.Circle in Monocle
     /// </summary>
-    public static CircleSprite Circle(Vector2 center, float radius, Color color, int resolution)
+    public static CircleSprite Circle(Vector2 center, float radius, Color color, int resolution, float thickness = 1f)
     => new() {
         Pos = center,
         Radius = radius,
         Color = color,
         Resulution = resolution,
+        Thickness = thickness,
     };
 
     public static LineSprite GetCurveSprite(Vector2 start, Vector2 end, Vector2 middleOffset, Color color, int segments = 16)

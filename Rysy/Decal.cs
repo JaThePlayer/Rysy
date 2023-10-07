@@ -131,7 +131,7 @@ public sealed class Decal : Entity, IPlaceable {
 
     public override Entity? RotatePreciseBy(float angle, Vector2 origin) {
         var clone = Clone().AsDecal()!;
-        clone.Rotation += angle.RadToDegrees().Floor();
+        clone.Rotation = (clone.Rotation + angle.RadToDegrees().Floor()).SnapAngleToRightAnglesDegrees(5f);
         return clone;
     }
 

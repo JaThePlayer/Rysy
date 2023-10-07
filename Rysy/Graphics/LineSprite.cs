@@ -17,7 +17,7 @@ public record struct LineSprite : ISprite {
 
     public List<Vector2> Positions { get; set; }
 
-    public int Thickness { get; set; } = 1;
+    public float Thickness { get; set; } = 1;
     public float MagnitudeOffset { get; set; } = 0f;
 
     public Vector2 Offset { get; set; } = default;
