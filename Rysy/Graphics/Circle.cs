@@ -27,14 +27,19 @@ public record struct CircleSprite : ISprite {
 
     public float Radius;
     public Vector2 Pos;
+    public float Thickness = 1;
+
+    public CircleSprite() {
+    }
 
     public void Render() {
-        GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color);
+        GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color, Thickness);
     }
 
     public void Render(Camera? cam, Vector2 offset) {
         if (cam is { }) {
-            if (!cam.IsRectVisible(Pos + offset - new Vector2(Radius), (int) Radius * 2, (int) Radius * 2))
+            var r = Radius + Thickness;
+            if (!cam.IsRectVisible(Pos + offset - new Vector2(r), (int) r * 2, (int) r * 2))
                 return;
         }
         Render();

@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Extensions;
@@ -55,4 +54,35 @@ public static class NumberExt {
 
     public static T Floor<T>(this T num) where T : IFloatingPoint<T>
         => T.Floor(num);
+
+    /// <summary>
+    /// Snaps the angle (in degrees) to right angles (0, 90, 180, 270)
+    /// </summary>
+    public static float SnapAngleToRightAnglesDegrees(this float angleDegrees, float toleranceDegrees) {
+        return angleDegrees.ToRad().SnapAngleToRightAnglesRad(toleranceDegrees.ToRad()).RadToDegrees();
+    }
+
+    /// <summary>
+    /// Snaps the angle (in radians) to right angles (0, 90.ToRad(), 180.ToRad(), 270.ToRad())
+    /// </summary>
+    public static float SnapAngleToRightAnglesRad(this float angleRad, float toleranceRad) {
+        if (toleranceRad < 0f) {
+            toleranceRad = 0f;
+        }
+
+        angleRad %= 360f.ToRad();
+
+        return Check(0f.ToRad())
+            ?? Check(90f.ToRad())
+            ?? Check(180f.ToRad())
+            ?? Check(270f.ToRad())
+            ?? angleRad;
+
+        float? Check(float angleToCheck) {
+            if (Math.Abs(angleToCheck - angleRad) <= toleranceRad) {
+                return angleToCheck;
+            }
+            return null;
+        }
+    }
 }

@@ -355,6 +355,14 @@ public class SelectionTool : Tool {
 
             SelectionsToHighlight.Clear();
         }
+
+        if (RotationGestureStart is { } rotStart) {
+            ISprite.Circle(rotStart.ToVector2(), 8, Color.Gray, 32, thickness: 0.5f).Render();
+            ISprite.Circle(rotStart.ToVector2(), 1, Color.Gold, 8).Render();
+            (ISprite.Line(rotStart.ToVector2(), mousePos.ToVector2(), Color.Gold) with {
+                Thickness = 0.25f,
+            }).Render();
+        }
     }
 
     private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
@@ -488,7 +496,7 @@ public class SelectionTool : Tool {
 
                 foreach (var s in CurrentSelections) {
                     if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
-                        if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart.Value.ToVector2().Snap(8)) is { } act) {
+                        if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart.Value.ToVector2()) is { } act) {
                             if (act.Apply())
                                 RotationGestureActions.Add(act);
                         }

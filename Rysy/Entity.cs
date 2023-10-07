@@ -401,6 +401,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             return null;
         }
 
+        // find the anchor the closest to the origin
+        origin = Nodes.Select(n => n.Pos).Append(Pos).OrderBy(p => Vector2.DistanceSquared(p, origin)).First();
+
         // rotate all nodes along the entity pos
         var clone = CloneWith(pl => {
             //var pos = Pos;
