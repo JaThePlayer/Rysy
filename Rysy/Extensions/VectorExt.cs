@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 
 namespace Rysy.Extensions;
 
@@ -50,6 +51,19 @@ public static class VectorExt {
         float ty = v.Y;
 
         return new(cos * tx - sin * ty, sin * tx + cos * ty);
+    }
+
+    public static Vector2 FlipHorizontalAlong(this Vector2 v, Vector2 origin)
+        => new(v.X + 2 * (origin.X - v.X), v.Y);
+
+    public static Vector2 FlipVerticalAlong(this Vector2 v, Vector2 origin)
+        => new(v.X, v.Y + 2 * (origin.Y - v.Y));
+
+    public static Vector2 RotateAround(this Vector2 v, Vector2 origin, float angleRad) {
+        var diff = v - origin;
+        var diffRotated = diff.Rotate(angleRad);
+
+        return origin + diffRotated;
     }
 
     public static Vector2 ToXna(this NumVector2 v) => new(v.X, v.Y);

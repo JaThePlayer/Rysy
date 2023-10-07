@@ -39,16 +39,22 @@ public sealed class Node : IDepth, ILuaWrapper {
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler {
-    //public Node Node => Entity.Nodes![NodeIdx];
-    public Entity Entity;
+    private EntitySelectionHandler Handler;
+    private int LastNodeId;
+    private Entity LastEntity;
+
+    public Entity Entity => Handler.Entity;
 
     public Node Node;
 
-    public NodeSelectionHandler(Entity entity, Node node) {
-        Entity = entity;
+    public NodeSelectionHandler(EntitySelectionHandler entity, Node node) {
+        Handler = entity;
         Node = node;
         Entity.Selected = true;
         Entity.ClearRoomRenderCache();
+
+        LastNodeId = NodeIdx;
+        LastEntity = Entity;
     }
 
     public void OnDeselected() {
@@ -63,7 +69,13 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public SelectionLayer Layer => Entity.GetSelectionLayer(); 
 
     private ISelectionCollider? _Collider;
-    private ISelectionCollider Collider => _Collider ??= Entity.GetNodeSelection(NodeIdx);
+    private ISelectionCollider Collider {
+        get {
+            EnsureValid();
+
+            return _Collider ??= Entity.GetNodeSelection(LastNodeId);
+        }
+    }
 
     public Rectangle Rect => Collider.Rect;
 
@@ -96,7 +108,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),
-            new NodeSelectionHandler(Entity, node)
+            new NodeSelectionHandler(Handler, node)
         );
     }
 
@@ -113,6 +125,18 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
     public void ClearCollideCache() {
         _Collider = null;
+
+        if (LastEntity != Entity) {
+            // transfer over to the node instance on the new entity
+            Node = Entity.Nodes[LastNodeId];
+            LastNodeId = NodeIdx;
+            LastEntity = Entity;
+        }
+    }
+
+    private void EnsureValid() {
+        if (LastEntity != Entity)
+            ClearCollideCache();
     }
 
     public void OnRightClicked(IEnumerable<Selection> selections) {

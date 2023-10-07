@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Decal : Entity, IPlaceable, IPreciseRotatable {
+public sealed class Decal : Entity, IPlaceable {
     //[GeneratedRegex("\\d+$|\\.png")]
     internal static Regex NumberTrimEnd { get; set; } = new("\\d+$|\\.png", RegexOptions.Compiled);
 
@@ -123,7 +123,13 @@ public sealed class Decal : Entity, IPlaceable, IPreciseRotatable {
         return clone;
     }
 
-    public Entity? RotatePreciseBy(float angle) {
+    public override Entity? TryRotate(RotationDirection dir) {
+        var clone = Clone().AsDecal()!;
+        clone.Rotation += dir.ToAndleRad().RadToDegrees();
+        return clone;
+    }
+
+    public override Entity? RotatePreciseBy(float angle, Vector2 origin) {
         var clone = Clone().AsDecal()!;
         clone.Rotation += angle.RadToDegrees().Floor();
         return clone;

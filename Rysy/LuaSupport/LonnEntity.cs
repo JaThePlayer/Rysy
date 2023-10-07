@@ -73,7 +73,7 @@ public class LonnEntity : Entity {
             return cached;
 
         return Plugin.PushToStack((pl) => {
-            // TODO: push a RoomWrapper instead of the room, so that we can see whether the room ever got accessed or not
+            // push a RoomWrapper instead of the room, so that we can see whether the room ever got accessed or not
             // if the room never got accessed, we can cache, if it did, we cannot
             var roomWrapper = new RoomLuaWrapper(Room);
 
@@ -140,7 +140,7 @@ public class LonnEntity : Entity {
 
                 if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
                     var rect = lua.ToRectangle(lua.GetTop());
-                    ;
+                    
                     lua.Pop(1);
                     return rect;
                 }
@@ -197,7 +197,7 @@ public class LonnEntity : Entity {
 
     public override Entity? TryRotate(RotationDirection dir) {
         if (Plugin.Rotate is null) {
-            return null;
+            return base.TryRotate(dir);
         }
 
         var selfWrapper = new CloneEntityWrapper(this);
@@ -209,7 +209,7 @@ public class LonnEntity : Entity {
 
     private Entity? FlipImpl(bool horizontal, bool vertical) {
         if (Plugin.Flip is null) {
-            return null;
+            return horizontal ? base.TryFlipHorizontal() : base.TryFlipVertical();
         }
 
         var selfWrapper = new CloneEntityWrapper(this);

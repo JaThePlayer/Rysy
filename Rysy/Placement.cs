@@ -269,7 +269,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room) {
         var entity = CreateFromPlacement(placement, pos, room);
 
-        return new EntitySelectionHandler(entity);
+        return entity.CreateSelection().Handler;
     }
 }
 

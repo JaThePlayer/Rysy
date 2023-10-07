@@ -20,4 +20,12 @@ public static class RotationDirectionExtensions {
         var newVal = (Convert.ToInt32(enumVal) + (int) rotDir).MathMod(count);
         return (T) Enum.ToObject(typeof(T), newVal);
     }
+
+    /// <summary>
+    /// Converts this direction into an angle in radians.
+    /// </summary>
+    public static float ToAndleRad(this RotationDirection rotDir) => rotDir switch {
+        RotationDirection.Left => -90f.ToRad(),
+        _ => 90f.ToRad(),
+    };
 }
