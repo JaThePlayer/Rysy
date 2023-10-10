@@ -10,7 +10,8 @@ jobs:
   build:
 
     runs-on: windows-latest
-
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET
@@ -23,14 +24,20 @@ jobs:
     - name: Build with .NET Core
       run: dotnet build "/p:Configuration=Release"
 
-    - name: Upload windows artifact
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        name: main
-        path: Rysy/bin/Release/net7.0-windows
-    
     - name: Upload universal artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: main
+        name: Rysy
         path: Rysy/bin/Release/net7.0
+
+    - name: Create Zip for release
+      uses: thedoctor0/zip-release@0.7.1
+      with:
+        type: 'zip'
+        directory: 'Rysy/bin/Release/net7.0'
+        filename: 'Rysy.zip'
+        exclusions: '*.git* /*node_modules/* .editorconfig'
+    - name: Create release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "Rysy.zip"
