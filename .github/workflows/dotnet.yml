@@ -29,15 +29,3 @@ jobs:
       with:
         name: Rysy
         path: Rysy/bin/Release/net7.0
-
-    - name: Create Zip for release
-      uses: thedoctor0/zip-release@0.7.1
-      with:
-        type: 'zip'
-        directory: 'Rysy/bin/Release/net7.0'
-        filename: 'Rysy.zip'
-        exclusions: '*.git* /*node_modules/* .editorconfig'
-    - name: Create release
-      uses: ncipollo/release-action@v1
-      with:
-        artifacts: "Rysy.zip"
