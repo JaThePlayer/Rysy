@@ -147,6 +147,13 @@ public static partial class Fields {
 
     public static ListField List(string def, Field baseField) => new(baseField, def);
 
+    private static Field GuessStringFormat(string s) {
+        if (HexColorListRegex().IsMatch(s))
+            return new ListField(RGB(Color.White), s);
+
+        return String(s);
+    }
+
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),
         float b => Float(b),
@@ -156,7 +163,7 @@ public static partial class Fields {
             : Int(i),
         long l => Int((int)l),
         char c => Char(c),
-        string s => HexColorListRegex().IsMatch(s) ? new ListField(RGB(Color.White), s) : String(s),
+        string s => GuessStringFormat(s),
         _ => null,
     };
 
@@ -164,13 +171,17 @@ public static partial class Fields {
         RegisterScannerIfNeeded();
 
         if (fieldType is null)
-            return null;
+            return GuessFromValue(val, fromMapData: true);
 
         if (LonnFieldGenerators!.TryGetValue(fieldType, out var generator)) {
-            return generator(val, fieldInfoEntry);
+            try {
+                return generator(val, fieldInfoEntry);
+            } catch (Exception ex) {
+                Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
+            }
+        } else {
+            Logger.Write("Fields", LogLevel.Warning, $"Unknown field type: {fieldType}");
         }
-
-        Logger.Write("Fields", LogLevel.Warning, $"Unknown field type: {fieldType}");
 
         return GuessFromValue(val, fromMapData: true);
     }

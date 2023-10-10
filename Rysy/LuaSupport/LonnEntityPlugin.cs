@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime;
 
 namespace Rysy.LuaSupport;
 
@@ -399,10 +400,25 @@ public sealed class LonnEntityPlugin {
             var min = infoDict!.GetValueOrDefault("minimumValue", null);
             var max = infoDict!.GetValueOrDefault("maximumValue", null);
 
+            var list = infoDict!.GetValueOrDefault("ext:list##todo", null); // for now, the spec is still undefined for this, but I'll leave in the code for later
+            var (listSeparator, listMin, listMax) = list switch {
+                true => (",", 1, -1),
+                Dictionary<string, object> listInfo => (
+                    listInfo.GetValueOrDefault("separator", ",").ToString()!,
+                    Convert.ToInt32(listInfo.GetValueOrDefault("minElements", 1)),
+                    Convert.ToInt32(listInfo.GetValueOrDefault("maxElements", -1))
+                ),
+                _ => (",", -1, -1),
+            };
+
+            var defVal = mainPlacement.GetValueOrDefault(key);
+            if (list is { } && defVal is string defAsString)
+                defVal = defAsString.Split(listSeparator).FirstOrDefault();
+
             Field? field = null;
             // ignore fields we can guess - no need to duplicate code for guessed values
-            if (fieldType is { } && fieldType is not "string" and not "number" and not "boolean" and not "anything")
-                field = Fields.CreateFromLonn(mainPlacement.GetValueOrDefault(key), fieldType, infoDict);
+            //if (fieldType is { } && fieldType is not "string" and not "number" and not "boolean" and not "anything")
+                field = Fields.CreateFromLonn(defVal, fieldType, infoDict);
 
             if (field is IntField intField) {
                 if (min is { })
@@ -421,7 +437,14 @@ public sealed class LonnEntityPlugin {
             if (options is { }) {
                 field = HandleDropdown(editable, options, mainPlacement, key, fieldType) ?? field;
             }
-            
+
+            if (list is { } && field is { }) {
+                field = new ListField(field) {
+                    Separator = listSeparator,
+                    MinElements = listMin,
+                    MaxElements = listMax,
+                };
+            }
 
             if (field is { }) {
                 fieldList[key] = field;

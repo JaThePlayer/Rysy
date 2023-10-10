@@ -42,7 +42,7 @@ public static class MiscExtensions {
     public static NumVector3 ToNumVec3(this Color color) => color.ToVector3().ToNumerics();
 
     /// <summary>
-    /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
+    /// Converts this color to a <see cref="NumVector4"/>[R, G, B, A]
     /// </summary>
     public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
 

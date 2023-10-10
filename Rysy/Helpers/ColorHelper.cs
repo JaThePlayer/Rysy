@@ -1,4 +1,7 @@
-﻿namespace Rysy.Helpers;
+﻿using ImGuiNET;
+using Rysy.Extensions;
+
+namespace Rysy.Helpers;
 
 public static class ColorHelper {
     static Dictionary<string, Color> cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -297,4 +300,21 @@ public static class ColorHelperExtensions {
     /// <inheritdoc cref="ColorHelper.ToString(Color, ColorFormat)"/>
     /// </summary>
     public static string ToString(this Color color, ColorFormat format) => ColorHelper.ToString(color, format);
+
+    /// <summary>
+    /// Adds an HSV value to this color, returning a new color.
+    /// </summary>
+    /// <param name="c">The color to add to</param>
+    /// <param name="h">The hue value (0-180f)</param>
+    /// <param name="s">The saturation value (0, 100f)</param>
+    /// <param name="v">The value value (0, 100f)</param>
+    /// <returns></returns>
+    public static Color AddHSV(this Color c, float h, float s, float v) {
+        var cv = c.ToNumVec4();
+
+        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var oh, out var os, out var ov);
+        ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), out cv.X, out cv.Y, out cv.Z);
+
+        return new(cv.ToXna());
+    }
 }
