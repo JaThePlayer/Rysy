@@ -26,7 +26,7 @@ public sealed class Autotiler {
 
         /// <summary>
         /// Stores a tilegrid bitmask -> possible tiles.
-        /// Used for speeding up <see cref="GetFirstMatch(char[,], int, int, int, int, out Point[])"/>
+        /// Used for speeding up GetFirstMatch
         /// </summary>
         private Dictionary<long, Point[]> FastTileDataToTiles = new();
 

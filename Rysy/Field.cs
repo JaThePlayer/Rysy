@@ -125,7 +125,13 @@ public static class FieldExtensions {
     /// <summary>
     /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
     /// </summary>
-    public static ListField ToList(this Field field, char separator = ',') {
+    public static ListField ToList(this Field field, char separator = ',')
+        => ToList(field, separator.ToString());
+
+    /// <summary>
+    /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
+    /// </summary>
+    public static ListField ToList(this Field field, string separator = ",") {
         return new(field) {
             Separator = separator,
         };

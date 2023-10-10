@@ -44,6 +44,7 @@ public class ComboCache<T> {
 
         CachedValue ??= values.SearchFilter(i => toString(i), search, favorites).ToList();
         CachedSearch = search;
+        CachedFavorites = favorites;
 
         Token.Reset();
 

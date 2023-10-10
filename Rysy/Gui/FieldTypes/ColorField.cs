@@ -1,8 +1,11 @@
-﻿using Rysy.Helpers;
+﻿using CommunityToolkit.HighPerformance;
+using ImGuiNET;
+using Rysy.Extensions;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ColorField : Field, ILonnField {
+public record class ColorField : Field, ILonnField, IListFieldExtender {
     public static string Name => "color";
 
     // stores the original string passed to SetDefault.
@@ -92,5 +95,53 @@ public record class ColorField : Field, ILonnField {
             colorField.AllowXNAColors();
 
         return colorField;
+    }
+
+    NumVector3 HsvFilterStorage = default;
+
+    public void RenderPostListElementsGui(ListFieldContext ctx) {
+        if (!ImGui.BeginMenu("HSV Filter")) {
+            HsvFilterStorage = default;
+            return;
+        }
+
+        var values = ctx.Values;
+
+        ImGui.Text("From:");
+        foreach (var item in values) {
+            ImGui.SameLine();
+
+            if (ColorHelper.TryGet(item, Format, out var color)) {
+                ImGui.ColorButton(item, color.ToNumVec4(), ImGuiColorEditFlags.NoTooltip);
+            }
+        }
+
+        ImGui.Text("To:");
+        foreach (var item in values) {
+            ImGui.SameLine();
+
+            if (ColorHelper.TryGet(item, Format, out var color)) {
+                var cv = color.ToNumVec4();
+                ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var h, out var s, out var v);
+                ImGui.ColorConvertHSVtoRGB(h + HsvFilterStorage.X.Div(180f), s + HsvFilterStorage.Y.Div(100f), v + HsvFilterStorage.Z.Div(100f), out cv.X, out cv.Y, out cv.Z);
+
+                ImGui.ColorButton(item, cv, ImGuiColorEditFlags.NoTooltip);
+            }
+        }
+
+        ImGui.DragFloat("H", ref HsvFilterStorage.X, 1f, v_min: -180f, v_max: 180f);
+        ImGui.DragFloat("S", ref HsvFilterStorage.Y, 1f, v_min: -100f, v_max: 100f);
+        ImGui.DragFloat("V", ref HsvFilterStorage.Z, 1f, v_min: -100f, v_max: 100f);
+
+        if (ImGui.Button("Apply")) {
+            for (int i = 0; i < values.Count; i++) {
+                if (ColorHelper.TryGet(values[i], Format, out var color)) {
+                    ctx.SetValue(i, ColorHelper.ToString(color.AddHSV(HsvFilterStorage.X, HsvFilterStorage.Y, HsvFilterStorage.Z), Format));
+                }
+            }
+            HsvFilterStorage = default;
+        }
+
+        ImGui.EndMenu();
     }
 }

@@ -1,19 +1,23 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
-using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
 public record class ListField : Field {
-    public char Separator = ',';
+    public string Separator = ",";
 
     public Field BaseField;
 
     public Func<object, string> InnerObjToString;
 
+    public int MinElements = 1;
+    public int MaxElements = -1;
+
     public string? Default { get; set; }
 
     public ListField(Field baseField) {
+        ArgumentNullException.ThrowIfNull(baseField);
+
         BaseField = baseField;
         InnerObjToString = BaseField.ValueToString;
 
@@ -21,10 +25,33 @@ public record class ListField : Field {
     }
 
     public ListField(Field baseField, string @default) {
+        ArgumentNullException.ThrowIfNull(baseField);
+
         BaseField = baseField;
         InnerObjToString = BaseField.ValueToString;
 
         Default = @default;
+    }
+
+    public override bool IsValid(object? value) {
+        if (value is not string str) {
+            return base.IsValid(value);
+        }
+        var split = Split(str);
+
+        if (split.Length < MinElements) {
+            return false;
+        }
+        if (MaxElements > -1 && split.Length > MaxElements) {
+            return false;
+        }
+
+        foreach (var item in split) {
+            if (!BaseField.IsValid(item))
+                return false;
+        }
+
+        return base.IsValid(value);
     }
 
     public override Field CreateClone() {
@@ -37,66 +64,33 @@ public record class ListField : Field {
         Default = (string?)newDefault ?? "";
     }
 
-    NumVector3 HsvFilter = default;
-
-    private Color AddHSV(Color c, float h, float s, float v) {
-        var cv = c.ToNumVec4();
-
-        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var oh, out var os, out var ov);
-        ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), out cv.X, out cv.Y, out cv.Z);
-
-        return new(cv.ToXna());
+    public ListField WithSeparator(char separator) {
+        Separator = separator.ToString();
+        return this;
     }
 
-    private bool TypeSpecificGui(string[] split) {
+    public ListField WithSeparator(string separator) {
+        Separator = separator;
+        return this;
+    }
+
+    private string[] Split(string value) {
+        var split = value.Split(Separator);
+        if (split is [""])
+            split = Array.Empty<string>();
+
+        return split;
+    }
+
+    private bool TypeSpecificGui(ref string[] split) {
         bool ret = false;
 
-        switch (BaseField) {
-            case ColorField colorField: {
-                if (!ImGui.BeginMenu("HSV Filter")) {
-                    HsvFilter = default;
-                    break;
-                }
-
-                ImGui.Text("From:");
-                foreach (var item in split) {
-                    ImGui.SameLine();
-
-                    if (ColorHelper.TryGet(item, colorField.Format, out var color)) {
-                        ImGui.ColorButton(item, color.ToNumVec4(), ImGuiColorEditFlags.NoTooltip);
-                    }
-                }
-
-                ImGui.Text("To:");
-                foreach (var item in split) {
-                    ImGui.SameLine();
-
-                    if (ColorHelper.TryGet(item, colorField.Format, out var color)) {
-                        var cv = color.ToNumVec4();
-                        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var h, out var s, out var v);
-                        ImGui.ColorConvertHSVtoRGB(h + HsvFilter.X.Div(180f), s + HsvFilter.Y.Div(100f), v + HsvFilter.Z.Div(100f), out cv.X, out cv.Y, out cv.Z);
-
-                        ImGui.ColorButton(item, cv, ImGuiColorEditFlags.NoTooltip);
-                    }
-                }
-
-                ImGui.DragFloat("H", ref HsvFilter.X, 1f, v_min: -180f, v_max: 180f);
-                ImGui.DragFloat("S", ref HsvFilter.Y, 1f, v_min: -100f, v_max: 100f);
-                ImGui.DragFloat("V", ref HsvFilter.Z, 1f, v_min: -100f, v_max: 100f);
-
-                if (ImGui.Button("Apply")) {
-                    for (int i = 0; i < split.Length; i++) {
-                        if (ColorHelper.TryGet(split[i], colorField.Format, out var color)) {
-                            split[i] = ColorHelper.ToString(AddHSV(color, HsvFilter.X, HsvFilter.Y, HsvFilter.Z), colorField.Format);
-                        }
-                    }
-                    HsvFilter = default;
-                    ret = true;
-                }
-
-                ImGui.EndMenu();
-
-                break;
+        if (BaseField is IListFieldExtender ext) {
+            var ctx = new ListFieldContext(this, split);
+            ext.RenderPostListElementsGui(ctx);
+            if (ctx.Changed) {
+                ret = true;
+                split = ctx.ValuesArray;
             }
         }
 
@@ -109,9 +103,7 @@ public record class ListField : Field {
         }
 
         string? ret = null;
-        var split = str.Split(Separator);
-        if (split is [ "" ])
-            split = Array.Empty<string>();
+        var split = Split(str);
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
@@ -145,6 +137,8 @@ public record class ListField : Field {
                 }
 
                 ImGui.SameLine();
+
+                ImGui.BeginDisabled(split.Length <= MinElements);
                 if (ImGui.Button($"-##{i}")) {
                     // remove this item
                     var tempList = split.ToList();
@@ -152,8 +146,10 @@ public record class ListField : Field {
                     split = tempList.ToArray();
                     anyChanged = true;
                 }
+                ImGui.EndDisabled();
 
                 ImGui.SameLine();
+                ImGui.BeginDisabled(MaxElements > -1 && split.Length >= MaxElements);
                 if (ImGui.Button($"+##{i}")) {
                     // insert a new item at this location
                     var tempList = split.ToList();
@@ -161,9 +157,10 @@ public record class ListField : Field {
                     split = tempList.ToArray();
                     anyChanged = true;
                 }
+                ImGui.EndDisabled();
             }
 
-            anyChanged |= TypeSpecificGui(split);
+            anyChanged |= TypeSpecificGui(ref split);
 
             ImGui.EndCombo();
             ImGuiManager.PushAllStyles(oldStyles);
