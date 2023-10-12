@@ -67,6 +67,8 @@ public static class CopypasteHelper {
 
     public static string? CopySelectionsToString(List<Selection>? selections) {
         if (CopySelections(selections) is { } copied) {
+            if (LuaSerializer.ConvertSelectionsToLonnString(copied) is { } lonnString)
+                return lonnString;
             return copied.ToJson(minified: true);
         }
 

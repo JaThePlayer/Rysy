@@ -36,13 +36,13 @@ public static partial class Fields {
 
         return new DropdownField<string>() {
             Default = def.ToString()!,
-        }.SetValues(Enum.GetNames(enumType).ToDictionary(k => k, v => v));
+        }.SetValues(Enum.GetNames(enumType).ToDictionary(k => k, v => v, StringComparer.OrdinalIgnoreCase));
     }
 
     public static DropdownField<string> EnumNamesDropdown<T>(string def) where T : struct, Enum
     => new DropdownField<string>() {
         Default = def,
-    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => v));
+    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => v, StringComparer.OrdinalIgnoreCase));
 
     public static DropdownField<T> Dropdown<T>(T def, IDictionary<T, string> values, bool editable = false) where T : notnull
     => new DropdownField<T>() {

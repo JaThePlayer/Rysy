@@ -119,11 +119,11 @@ public record class DropdownField<T> : Field
                 return x is null;
             }
 
-            return x.ToString() == y.ToString();
+            return x.ToString()?.ToLowerInvariant() == y.ToString()?.ToLowerInvariant();
         }
 
         public int GetHashCode([DisallowNull] T obj) {
-            return obj.ToString()!.GetHashCode();
+            return obj.ToString()!.ToLowerInvariant().GetHashCode();
         }
     }
 }
