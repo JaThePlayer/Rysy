@@ -1,12 +1,112 @@
 ﻿using KeraLua;
+using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Selections;
+using System.Globalization;
+using System.Text;
 
 namespace Rysy.LuaSupport;
 
 public static class LuaSerializer {
     private static Lua GetSandboxedLua() => new(openLibs: false);
 
+    private static string CorrectDecalPathForLonn(string rysyPath) {
+        // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...
+        if (GFX.Atlas.TryGet($"decals/{rysyPath}00", out _)) {
+            return $"{rysyPath}00";
+        }
+
+        return rysyPath;
+    }
+
+    public static string? ConvertSelectionsToLonnString(List<CopypasteHelper.CopiedSelection> copied) {
+        if (copied is not { Count: > 0 })
+            return null;
+
+        var builder = new StringBuilder();
+        builder.AppendLine("{");
+        foreach (var item in copied) {
+            switch (item.Layer) {
+                case SelectionLayer.FGDecals:
+                case SelectionLayer.BGDecals:
+                    builder.AppendLine($$"""
+                            {
+                                _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
+                                texture = "decals/{{CorrectDecalPathForLonn(item.Data.Attr("texture").TrimStart("decals/"))}}",
+                                scaleX = {{ToLuaString(item.Data.Float("scaleX", 1))}},
+                                scaleY = {{ToLuaString(item.Data.Float("scaleY", 1))}},
+                                rotation = {{ToLuaString(item.Data.Float("rotation", 0))}},
+                                x = {{ToLuaString(item.Data.Float("x", 0))}},
+                                y = {{ToLuaString(item.Data.Float("y", 0))}},
+                                color = {{ToLuaString(item.Data.Attr("color", "ffffff"))}}
+                        """);
+                    AppendData(builder, item, blacklistedKeys: new() { "texture", "scaleX", "scaleY", "rotation", "x", "y" });
+                    builder.AppendLine("""
+                            },
+                        """);
+                    break;
+                case SelectionLayer.Entities:
+                case SelectionLayer.Triggers:
+                    builder.AppendLine($$"""
+                            {
+                                _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
+                                _name = "{{item.Data.Name}}",
+                                _id = {{item.Data.Int("id", 0)}},
+                        """);
+                    if (SelectionLayerToLonnType(item.Layer) is { } type) {
+                        builder.AppendLine($"""
+                                    _type = "{type}",
+                            """);
+                    }
+
+                    if (item.Data.Children is { Length: > 0} nodes) {
+                        builder.AppendLine($$"""
+                                    nodes = {{{string.Join(",", nodes.Select(n => $$"""
+                                            {x={{n.Int("x")}},y={{n.Int("y")}}}
+                                            """))}}},
+                            """);
+                    }
+                    AppendData(builder, item, blacklistedKeys: new() { "id" });
+                    builder.AppendLine("""
+                            },
+                        """);
+                    break;
+                case SelectionLayer.FGTiles:
+                case SelectionLayer.BGTiles:
+#warning Support copying tiles to lonn format once its not broken in lonn
+                    return null;
+                case SelectionLayer.Rooms:
+                    return null;
+            }
+        }
+
+        builder.Append('}');
+        return builder.ToString();
+
+        static void AppendData(StringBuilder builder, CopypasteHelper.CopiedSelection item, HashSet<string> blacklistedKeys) {
+            foreach (var (k, v) in item.Data.Attributes) {
+                if (blacklistedKeys.Contains(k))
+                    continue;
+
+                builder.AppendLine($$"""
+                                    ["{{k}}"] = {{ToLuaString(v)}},
+                            """);
+            }
+        }
+    }
+
+    private static string ToLuaString(object obj) => obj switch {
+        string s => $"""
+        "{s.Replace("\"", "\\\"")}"
+        """,
+        int i => i.ToString(CultureInfo.InvariantCulture),
+        long i => i.ToString(CultureInfo.InvariantCulture),
+        float f => f.ToString(CultureInfo.InvariantCulture),
+        double f => f.ToString(CultureInfo.InvariantCulture),
+        bool b => b ? "true" : "false",
+        _ => obj.ToString()!,
+    };
 
     /// <summary>
     /// Tries to convert lonn-copied placements into Rysy placements.
@@ -18,20 +118,21 @@ public static class LuaSerializer {
             foreach (var obj in luaSelections) {
                 if (obj is not Dictionary<string, object> selection)
                     continue;
-                
-                var layer = LonnLayerToSelectionLayer(selection.GetValueOrDefault("layer") as string);
 
-                if (!selection.TryGetValue("item", out var itemObj) || itemObj is not Dictionary<string, object> item)
-                    continue;
+                var layer = LonnLayerToSelectionLayer(selection.GetValueOrDefault("_fromLayer") as string);
 
-                var name = item.GetValueOrDefault("_name") as string;
+                var name = selection.GetValueOrDefault("_name") as string;
                 // bg and fg decals don't have _name set, let's grab the hardcoded SID instead
                 name ??= DefaultSIDForLayer(layer);
+
+                var tiles = selection.GetValueOrDefault("tiles") as string;
+                if (layer is SelectionLayer.FGTiles or SelectionLayer.BGTiles && tiles is null)
+                    continue;
 
                 if (layer == SelectionLayer.None || name is not { })
                     continue;
 
-                var nodes = (item.GetValueOrDefault("nodes") as List<object>)?
+                var nodes = (selection.GetValueOrDefault("nodes") as List<object>)?
                             .OfType<Dictionary<string, object>>()
                             .Select(o => new BinaryPacker.Element() {
                                 Attributes = o,
@@ -40,7 +141,16 @@ public static class LuaSerializer {
 
                 var data = new BinaryPacker.Element() {
                     Name = name,
-                    Attributes = item.Where(kv => kv.Key is not "_type" and not "_name" and not "nodes" and not "_id").ToDictionary(kv => kv.Key, kv => kv.Value),
+                    Attributes = layer switch {
+                        SelectionLayer.FGTiles or SelectionLayer.BGTiles => new() {
+                            ["text"] = tiles!,
+                            ["x"] = Convert.ToInt32(selection["x"]) * 8 - 8,
+                            ["y"] = Convert.ToInt32(selection["y"]) * 8 - 8,
+                            ["w"] = selection["width"],
+                            ["h"] = selection["height"],
+                        },
+                        _ => selection.Where(kv => kv.Key is not "_type" and not "_name" and not "nodes" and not "_id" and not "_fromLayer").ToDictionary(kv => kv.Key, kv => kv.Value)
+                    },
                     Children = nodes!,
                 };
 
@@ -62,12 +172,31 @@ public static class LuaSerializer {
         "triggers" => SelectionLayer.Triggers,
         "decalsBg" => SelectionLayer.BGDecals,
         "decalsFg" => SelectionLayer.FGDecals,
+        "tilesFg" => SelectionLayer.FGTiles,
+        "tilesBg" => SelectionLayer.BGTiles,
         _ => SelectionLayer.None,
+    };
+
+    public static string? SelectionLayerToLonnLayer(SelectionLayer layer) => layer switch {
+        SelectionLayer.Entities => "entities",
+        SelectionLayer.Triggers => "triggers",
+        SelectionLayer.BGDecals => "decalsBg",
+        SelectionLayer.FGDecals => "decalsFg",
+        SelectionLayer.FGTiles => "tilesFg",
+        SelectionLayer.BGTiles => "tilesBg",
+        _ => null,
+    };
+
+    public static string? SelectionLayerToLonnType(SelectionLayer layer) => layer switch {
+        SelectionLayer.Entities => "entity",
+        SelectionLayer.Triggers => "trigger",
+        _ => null,
     };
 
     public static string? DefaultSIDForLayer(SelectionLayer layer) => layer switch {
         SelectionLayer.BGDecals => EntityRegistry.BGDecalSID,
         SelectionLayer.FGDecals => EntityRegistry.FGDecalSID,
+        SelectionLayer.FGTiles or SelectionLayer.BGTiles => "tiles",
         _ => null,
     };
 

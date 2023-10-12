@@ -21,15 +21,15 @@ public sealed class Parallax : Style, IPlaceable {
         speedy = 0f,
         x = 0f,
         y = 0f,
-        fadeIn = false,
         flipx = false,
         flipy = false,
         fadex = Fields.String(null!).AllowNull(), // todo: custom field
         fadey = Fields.String(null!).AllowNull(), // todo: custom field
-        instantOut = false,
         instantIn = false,
+        instantOut = false,
         loopx = false,
         loopy = false,
+        fadeIn = false,
 
     });
 
