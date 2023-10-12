@@ -424,14 +424,14 @@ public sealed class LonnEntityPlugin {
                 if (min is { })
                     intField.WithMin(Convert.ToInt32(min));
                 if (max is { })
-                    intField.WithMin(Convert.ToInt32(max));
+                    intField.WithMax(Convert.ToInt32(max));
             }
 
             if (field is FloatField floatField) {
                 if (min is { })
                     floatField.WithMin(Convert.ToSingle(min));
                 if (max is { })
-                    floatField.WithMin(Convert.ToSingle(max));
+                    floatField.WithMax(Convert.ToSingle(max));
             }
 
             if (options is { }) {
