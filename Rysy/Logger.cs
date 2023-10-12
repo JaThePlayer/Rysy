@@ -26,6 +26,9 @@ public static class Logger {
     public static void Init([CallerFilePath] string filePath = "") {
         CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
 
+        if (Path.GetDirectoryName(LogFile) is { } dir)
+            Directory.CreateDirectory(dir);
+
         if (File.Exists(LogFile)) {
             File.Copy(LogFile, LastLogFile, true);
             File.Delete(LogFile);
