@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
+using System;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Extensions;
@@ -104,26 +105,46 @@ public static partial class StringExt {
     public static string RegexReplace(this string from, Regex regex, string with)
         => regex.Replace(from, with);
 
+    /// <summary>
+    /// Makes each word in the given string start with an lowercase char
+    /// </summary>
     public static string LowercaseFirst(this string from) {
         return string.Create(from.Length, from, static (newstr, from) => {
             from.TryCopyTo(newstr);
             newstr[0] = char.ToLower(from[0]);
+
+            int i;
+            while ((i = newstr.IndexOf(' ') + 1) != 0 && i < newstr.Length) {
+                newstr[i] = char.ToLower(newstr[i]);
+                newstr = newstr[i..];
+            }
         });
     }
 
+    /// <summary>
+    /// Makes each word in the given string start with an uppercase char
+    /// </summary>
     public static string UppercaseFirst(this string from) {
         return string.Create(from.Length, from, static (newstr, from) => {
             from.TryCopyTo(newstr);
             newstr[0] = char.ToUpper(from[0]);
+
+            int i;
+            while ((i = newstr.IndexOf(' ') + 1) != 0 && i < newstr.Length) {
+                newstr[i] = char.ToUpper(newstr[i]);
+                newstr = newstr[i..];
+            }
         });
     }
+
+    private static char[] HumanizeReplacedChars = new[] { '.', '_'}; 
 
     /// <summary>
     /// Combines <see cref="SplitPascalCase(string)"/> and <see cref="UppercaseFirst(string)"/>
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static string Humanize(this string text) => text?.TrimStart('_').SplitPascalCase().UppercaseFirst() ?? "";
+    public static string Humanize(this string text) => text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "";
 
     /// <summary>
     /// Returns the string <paramref name="formatted"/> with all color formatting removed.

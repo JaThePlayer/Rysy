@@ -79,7 +79,11 @@ public class Window {
             flags |= ImGuiWindowFlags.NoMove;
 
         if (ImGui.Begin(WindowID, ref open, flags)) {
-            Render();
+            if (HasBottomBar) {
+                ImGuiManager.WithBottomBar(Render, RenderBottomBar);
+            } else {
+                Render();
+            }
         }
         ImGui.End();
 
@@ -91,6 +95,12 @@ public class Window {
     }
 
     protected virtual void Render() {
+
+    }
+
+    protected virtual bool HasBottomBar => false;
+
+    protected virtual void RenderBottomBar() {
 
     }
 

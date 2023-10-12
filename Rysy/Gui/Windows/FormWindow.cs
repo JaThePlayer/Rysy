@@ -103,6 +103,8 @@ public class FormWindow : Window {
         }
     }
 
+    private bool AllFieldsValid;
+
     protected override void Render() {
         var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
 
@@ -135,13 +137,21 @@ public class FormWindow : Window {
         if (hasColumns)
             ImGui.Columns();
 
-        ImGuiManager.BeginWindowBottomBar(valid);
+        AllFieldsValid = valid;
+    }
+
+    protected override bool HasBottomBar => true;
+
+    protected override void RenderBottomBar() {
+        ImGui.BeginDisabled(!AllFieldsValid);
+
         if (ImGui.Button(SaveChangesButtonName)) {
             OnChanged?.Invoke(EditedValues);
 
             EditedValues = new();
         }
-        ImGuiManager.EndWindowBottomBar();
+
+        ImGui.EndDisabled();
     }
 
     public void RenderBody() => Render();

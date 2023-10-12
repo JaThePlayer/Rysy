@@ -366,6 +366,17 @@ public static class ImGuiManager {
         ImGui.EndChild();
     }
 
+    public static void WithBottomBar(Action renderMain, Action renderBottomBar) {
+        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 3f;
+        var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
+
+        ImGui.BeginChild(124, new(0, posy), false, ImGuiWindowFlags.NoResize);
+        renderMain();
+        ImGui.EndChild();
+        ImGui.Separator();
+        renderBottomBar();
+    }
+
     public static NumVector2 CalcListSize(IEnumerable<string> strings) {
         int i = 1;
         string longest = "";

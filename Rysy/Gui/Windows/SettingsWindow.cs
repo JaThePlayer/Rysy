@@ -103,32 +103,39 @@ public class SettingsWindow : Window {
             return;
 
         var invalid = false;
-        foreach (var (name, origHotkey) in Settings.Instance.Hotkeys) {
-            var hotkey = origHotkey;
-            if (Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
-                hotkey = changed;
-                invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey));
+
+        ImGuiManager.WithBottomBar(
+            renderMain: () => {
+                foreach (var (name, origHotkey) in Settings.Instance.Hotkeys) {
+                    var hotkey = origHotkey;
+                    if (Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
+                        hotkey = changed;
+                        invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey));
+                    }
+
+                    if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {
+                        var edited = Data.EditedHotkeys ??= new();
+
+                        edited[name] = hotkey;
+                    }
+                    ImGuiManager.PopInvalidStyle();
+                }
+            },
+            renderBottomBar: () => {
+                ImGui.BeginDisabled(invalid || Data.EditedHotkeys is not { });
+
+                if (ImGui.Button("Apply Changes") && Data.EditedHotkeys is { } hotkeys) {
+                    foreach (var (name, newVal) in hotkeys) {
+                        Settings.Instance.Hotkeys[name] = newVal;
+                        Settings.Instance.Save();
+
+                        RysyEngine.Scene.SetupHotkeys();
+                    }
+                    Data.EditedHotkeys = null;
+                }
+                ImGui.EndDisabled();
             }
-
-            if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {
-                var edited = Data.EditedHotkeys ??= new();
-
-                edited[name] = hotkey;
-            }
-            ImGuiManager.PopInvalidStyle();
-        }
-
-        ImGuiManager.BeginWindowBottomBar(!invalid && Data.EditedHotkeys is { });
-        if (ImGui.Button("Apply Changes") && Data.EditedHotkeys is { } hotkeys) {
-            foreach (var (name, newVal) in hotkeys) {
-                Settings.Instance.Hotkeys[name] = newVal;
-                Settings.Instance.Save();
-
-                RysyEngine.Scene.SetupHotkeys();
-            }
-            Data.EditedHotkeys = null;
-        }
-        ImGuiManager.EndWindowBottomBar();
+        );
 
         ImGui.EndTabItem();
     }
@@ -189,7 +196,7 @@ public class SettingsWindow : Window {
             SelectedMod = mod;
         }
 
-        ImGui.Text(mod.ToString());
+        ImGui.Text(mod.EverestYaml.First().ToString());
 
         if (ImGui.Button("rysy.settings.mods.editSettings.name".Translate()).WithTooltip("rysy.settings.mods.editSettings.tooltip")) {
             RysyEngine.Scene.AddWindow(new ModSettingsWindow(mod));
