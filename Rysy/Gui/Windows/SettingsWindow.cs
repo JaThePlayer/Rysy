@@ -237,57 +237,64 @@ public sealed class SettingsWindow : Window {
     }
 
     private void ProfileBar() {
-        var windowData = Data;
-
-        if (ImGui.BeginTabItem("Profile")) {
-            if (ImGui.BeginCombo("Current Profile", Settings.Instance.Profile)) {
-                #region Profile Picker
-                var profileDir = $"{RysyPlatform.Current.GetSaveLocation()}/Profiles";
-                var dirs = windowData.ProfileListDirectories ??= Directory.GetDirectories(profileDir);
-                foreach (var dir in dirs) {
-                    var name = Path.GetRelativePath(profileDir, dir);
-                    if (ImGui.Selectable(name).WithTooltip(REQUIRES_RELOAD)) {
-                        SetProfile(name, isNew: false);
-                    }
-                }
-
-                if (ImGui.Button("New")) {
-                    string text = "";
-                    RysyEngine.Scene.AddWindow(new ScriptedWindow("New Profile Name", (w) => {
-                        ImGui.InputText("Name", ref text, 64);
-                        if (ImGui.Button("Create").WithTooltip(REQUIRES_RELOAD)) {
-                            SetProfile(text, isNew: true);
-                            w.RemoveSelf();
-                        }
-                    }, new(300, ImGui.GetFrameHeight() * 2 + ImGui.GetTextLineHeightWithSpacing() * 3)));
-                }
-                ImGui.EndCombo();
-                #endregion
-            }
-
-            ImGui.Separator();
-            ImGui.Text("Profile Settings");
-
-            ImGui.Checkbox("Show paths", ref ShowPaths);
-
-            windowData.ProfileCelesteDir ??= Profile.Instance.CelesteDirectory;
-            ref var celesteDir = ref windowData.ProfileCelesteDir;
-            if (ImGui.InputText("Celeste Install", ref celesteDir, 512, ShowPaths ? ImGuiInputTextFlags.None : ImGuiInputTextFlags.Password)) {
-                windowData.ProfileSettingsChanged = true;
-            }
-
-
-            ImGuiManager.BeginWindowBottomBar(windowData.ProfileSettingsChanged);
-            if (ImGui.Button("Apply Changes")) {
-                Profile.Instance.CelesteDirectory = celesteDir;
-                Profile.Instance.Save();
-
-                QueueReload();
-            }
-            ImGuiManager.EndWindowBottomBar();
-
-            ImGui.EndTabItem();
+        if (!ImGui.BeginTabItem("Profile")) {
+            return;
         }
+
+        var windowData = Data;
+        var celesteDir = windowData.ProfileCelesteDir;
+        ImGuiManager.WithBottomBar(
+            () => {
+                if (ImGui.BeginCombo("Current Profile", Settings.Instance.Profile)) {
+                    #region Profile Picker
+                    var profileDir = $"{RysyPlatform.Current.GetSaveLocation()}/Profiles";
+                    var dirs = windowData.ProfileListDirectories ??= Directory.GetDirectories(profileDir);
+                    foreach (var dir in dirs) {
+                        var name = Path.GetRelativePath(profileDir, dir);
+                        if (ImGui.Selectable(name).WithTooltip(REQUIRES_RELOAD)) {
+                            SetProfile(name, isNew: false);
+                        }
+                    }
+
+                    if (ImGui.Button("New")) {
+                        string text = "";
+                        RysyEngine.Scene.AddWindow(new ScriptedWindow("New Profile Name", (w) => {
+                            ImGui.InputText("Name", ref text, 64);
+                            if (ImGui.Button("Create").WithTooltip(REQUIRES_RELOAD)) {
+                                SetProfile(text, isNew: true);
+                                w.RemoveSelf();
+                            }
+                        }, new(300, ImGui.GetFrameHeight() * 2 + ImGui.GetTextLineHeightWithSpacing() * 3)));
+                    }
+                    ImGui.EndCombo();
+                    #endregion
+                }
+
+                ImGui.Separator();
+                ImGui.Text("Profile Settings");
+
+                ImGui.Checkbox("Show paths", ref ShowPaths);
+
+                windowData.ProfileCelesteDir ??= Profile.Instance.CelesteDirectory;
+                celesteDir = windowData.ProfileCelesteDir;
+                if (ImGui.InputText("Celeste Install", ref celesteDir, 512, ShowPaths ? ImGuiInputTextFlags.None : ImGuiInputTextFlags.Password)) {
+                    windowData.ProfileSettingsChanged = true;
+                }
+            },
+            renderBottomBar: () => {
+                ImGui.BeginDisabled(!windowData.ProfileSettingsChanged);
+                if (ImGui.Button("Apply Changes")) {
+                    Profile.Instance.CelesteDirectory = celesteDir!;
+                    Profile.Instance.Save();
+
+                    QueueReload();
+                }
+                ImGui.EndDisabled();
+            }
+            );
+        
+
+        ImGui.EndTabItem();
     }
 
     private static bool ShowPaths;

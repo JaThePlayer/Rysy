@@ -114,8 +114,19 @@ public class Window {
 public class ScriptedWindow : Window {
     public Action<Window> RenderFunc;
 
-    public ScriptedWindow(string name, Action<Window> renderFunc, NumVector2? size = null) : base(name, size) {
+    public Action<Window>? BottomBarRenderFunc;
+
+    public ScriptedWindow(string name, Action<Window> renderFunc, NumVector2? size = null, Action<Window>? bottomBarFunc = null) : base(name, size) {
         RenderFunc = renderFunc;
+        BottomBarRenderFunc = bottomBarFunc;
+    }
+
+    protected override bool HasBottomBar => BottomBarRenderFunc is { };
+
+    protected override void RenderBottomBar() {
+        base.RenderBottomBar();
+
+        BottomBarRenderFunc?.Invoke(this);
     }
 
     protected override void Render() {

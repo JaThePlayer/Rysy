@@ -588,7 +588,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #endregion
 }
 
-public struct EntityDataChangeCtx {
+public readonly struct EntityDataChangeCtx {
     public string? ChangedFieldName { get; init; }
     public object? NewValue { get; init; }
 

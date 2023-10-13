@@ -186,14 +186,16 @@ public sealed class EditorScene : Scene {
             ImGui.TextWrapped("Please enter the Package Name for your map.");
             ImGui.TextWrapped("This name is only used internally, and is not visible in-game.");
             ImGui.InputText("Package Name", ref wData, 512);
-
-            ImGuiManager.BeginWindowBottomBar(!string.IsNullOrWhiteSpace(wData));
+        }, 
+        bottomBarFunc: (w) => {
+            ImGui.BeginDisabled(string.IsNullOrWhiteSpace(wData));
             if (ImGui.Button("Create Map")) {
                 LoadNewMap(wData);
                 w.RemoveSelf();
             }
-            ImGuiManager.EndWindowBottomBar();
-        }, new(350, ImGui.GetTextLineHeightWithSpacing() * 8));
+            ImGui.EndDisabled();
+        },
+        size: new(350, ImGui.GetTextLineHeightWithSpacing() * 8));
 
         AddWindow(window);
     }
