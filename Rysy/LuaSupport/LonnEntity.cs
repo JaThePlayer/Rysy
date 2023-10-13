@@ -22,7 +22,7 @@ public class LonnEntity : Entity {
 
             var visible = visibility switch {
                 "always" => true,
-                "selected" => Selected,
+                "selected" => pl.HasGetNodeSprite ? Selected : true,
                 var other => false,
             };
 

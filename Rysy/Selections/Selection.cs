@@ -150,7 +150,22 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
     private Vector2 DrawOffset;
     private Point SizeOffset;
 
-    public Rectangle Rect => GetRect() ?? new Rectangle((int) Sprite.Pos.X, (int) Sprite.Pos.Y, 2, 2);
+    private Rectangle? _Rect;
+
+    public Rectangle Rect {
+        get {
+            if (_Rect is { } r)
+                return r;
+
+            if (GetSpriteRenderRect() is { } correctRect) {
+                _Rect = correctRect;
+                return correctRect;
+            }
+
+            // the sprite is not ready yet, let's not cache the selection size
+            return new Rectangle((int) Sprite.Pos.X, (int) Sprite.Pos.Y, 2, 2);
+        }
+    }
 
     public void MoveBy(Vector2 offset) {
         DrawOffset += offset;
@@ -160,18 +175,16 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
         SizeOffset += offset;
     }
 
-    private Rectangle? GetRect() {
-        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).AddSize(SizeOffset);
-    }
-
     public bool IsWithinRectangle(Rectangle roomPos) {
-        return (GetRect() ?? new Rectangle((int) Sprite.Pos.X, (int) Sprite.Pos.Y, 2, 2)).Intersects(roomPos);
+        return Rect.Intersects(roomPos);
     }
 
     public void Render(Color c) {
-        if (GetRect() is { } r)
-            ISprite.OutlinedRect(r, c * 0.4f, c).Render();
+        ISprite.OutlinedRect(Rect, c * 0.4f, c).Render();
+    }
 
+    private Rectangle? GetSpriteRenderRect() {
+        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).AddSize(SizeOffset);
     }
 }
 

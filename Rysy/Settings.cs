@@ -136,6 +136,9 @@ public sealed class Settings {
     public bool LogMissingEntities { get; set; } = false;
     public bool LogTextureLoadTimes { get; set; } = false;
 
+    public bool LogSpriteCachingTimes { get; set; } = false;
+
+
     private string _theme = "dark";
     public string Theme {
         get => _theme;

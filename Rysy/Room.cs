@@ -397,7 +397,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     internal void CacheSpritesIfNeeded() {
         if (CachedSprites is null) {
-            //using var w = new ScopedStopwatch($"Generating sprites for {Name}");
+            using var w = Settings.Instance.LogSpriteCachingTimes ? new ScopedStopwatch($"Generating sprites for {Name}") : null;
 
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
@@ -684,10 +684,11 @@ public sealed class Room : IPackable, ILuaWrapper {
                 continue;
 
 
-            var mainSelect = entity.GetMainSelection();
+            //var mainSelect = entity.GetMainSelection();
             var selection = entity.CreateSelection();
 
-            if (mainSelect.IsWithinRectangle(rect)) {
+            //if (mainSelect.IsWithinRectangle(rect)) {
+            if (selection.Check(rect)) {
                 into.Add(selection);
             }
 

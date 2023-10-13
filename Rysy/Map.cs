@@ -240,7 +240,7 @@ public sealed record class MapMetadata {
 
     Dictionary<string, object> SerializeAttrs<T>(T obj) {
         return typeof(T).GetProperties()
-            .Where(p => p.PropertyType.Namespace!.Contains("System"))
+            .Where(p => p.PropertyType.Namespace!.Contains("System", StringComparison.Ordinal))
             .Select(p => (p, p.GetValue(obj)!))
             .Where(p => p.Item2 is { })
             .ToDictionary(p => p.p.Name, p => p.Item2);

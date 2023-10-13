@@ -332,8 +332,10 @@ public sealed class EditorScene : Scene {
             return;
 
         foreach (var room in Map.Rooms) {
-            room.Render(Camera, room == CurrentRoom);
+            if (room != CurrentRoom)
+                room.Render(Camera, selected: false);
         }
+        CurrentRoom.Render(Camera, selected: true);
 
         ToolHandler.Render(Camera, CurrentRoom);
 
