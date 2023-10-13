@@ -9,3 +9,7 @@ global using NumVector3 = System.Numerics.Vector3;
 global using NumVector4 = System.Numerics.Vector4;
 
 global using XnaVector2 = Microsoft.Xna.Framework.Vector2;
+
+using System.Diagnostics.CodeAnalysis;
+
+[assembly: SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "Assembly scanning for entities uses these", Scope = "module")]

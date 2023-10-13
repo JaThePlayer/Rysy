@@ -348,6 +348,13 @@ public class SelectionTool : Tool {
                 }
             }
 
+        var selectionsUnderCursor = room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer, CustomLayer));
+        if (selectionsUnderCursor is { Count: > 0 }) {
+            foreach (var selection in selectionsUnderCursor) {
+                selection.Render(Color.Pink);
+            }
+        }
+
         if (SelectionsToHighlight is { Count: > 0}) {
             foreach (var selection in SelectionsToHighlight) {
                 selection.Render(Color.Gold);
@@ -699,8 +706,8 @@ public class SelectionTool : Tool {
         var textBaseWidth = ImGui.CalcTextSize("m").X;
 
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 30f);
-        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Deselect", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Edit", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
         if (CurrentSelections is { })
@@ -730,13 +737,13 @@ public class SelectionTool : Tool {
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Deselect...##{selection.GetHashCode()}")) {
+                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Deselect##{selection.GetHashCode()}")) {
                     RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
                 }
                 HighlightIfHovered(selection);
                 ImGui.TableNextColumn();
 
-                if (RysyEngine.Scene is EditorScene && ImGui.Selectable($"Edit...##{selection.GetHashCode()}")) {
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable($"Edit##{selection.GetHashCode()}")) {
                     RysyEngine.OnEndOfThisFrame += () => selection.Handler.OnRightClicked(new Selection[] { selection });
                 }
                 HighlightIfHovered(selection);

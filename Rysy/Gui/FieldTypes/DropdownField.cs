@@ -123,7 +123,7 @@ public record class DropdownField<T> : Field
         }
 
         public int GetHashCode([DisallowNull] T obj) {
-            return obj.ToString()!.ToLowerInvariant().GetHashCode();
+            return obj.ToString()!.ToLowerInvariant().GetHashCode(StringComparison.Ordinal);
         }
     }
 }

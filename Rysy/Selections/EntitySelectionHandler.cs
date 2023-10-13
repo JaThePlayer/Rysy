@@ -9,13 +9,9 @@ namespace Rysy.Selections;
 public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHandler, ISelectionPreciseRotationHandler {
     internal EntitySelectionHandler(Entity entity) {
         Entity = entity;
-        entity.Selected = true;
-        Entity.ClearRoomRenderCache();
     }
 
     public void OnDeselected() {
-        Entity.ClearRoomRenderCache();
-        Entity.Selected = false;
     }
 
     private Entity _Entity;
@@ -70,12 +66,6 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
     public void RenderSelection(Color c) {
         Collider.Render(c);
-
-        if (!Entity.Selected) {
-
-            Entity.Selected = true;
-            Entity.ClearRoomRenderCache();
-        }
     }
 
     public IHistoryAction? TryResize(Point delta) {

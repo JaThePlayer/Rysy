@@ -50,16 +50,12 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public NodeSelectionHandler(EntitySelectionHandler entity, Node node) {
         Handler = entity;
         Node = node;
-        Entity.Selected = true;
-        Entity.ClearRoomRenderCache();
 
         LastNodeId = NodeIdx;
         LastEntity = Entity;
     }
 
     public void OnDeselected() {
-        Entity.ClearRoomRenderCache();
-        Entity.Selected = false;
     }
 
     public int NodeIdx => Entity.Nodes!.IndexOf(Node);
@@ -114,11 +110,6 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
     public void RenderSelection(Color c) {
         Collider.Render(c);
-
-        if (!Entity.Selected) {
-            Entity.Selected = true;
-            Entity.ClearRoomRenderCache();
-        }
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);

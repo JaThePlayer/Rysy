@@ -7,6 +7,7 @@ using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -304,6 +305,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// </summary>
     public virtual void ClearRoomRenderCache() {
         if (Room is { } r) {
+            //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }
     }

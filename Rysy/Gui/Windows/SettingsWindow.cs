@@ -225,6 +225,12 @@ public class SettingsWindow : Window {
                 Settings.Instance.Save();
             }
 
+            m = Settings.Instance.LogSpriteCachingTimes;
+            if (ImGui.Checkbox("Log Sprite Caching Times", ref m).WithTooltip("Logs time spent calling GetSprites on entities during rendering.")) {
+                Settings.Instance.LogSpriteCachingTimes = m;
+                Settings.Instance.Save();
+            }
+
 
             ImGui.EndTabItem();
         }
