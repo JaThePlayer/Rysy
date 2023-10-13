@@ -22,7 +22,7 @@ public static class MovingSpinnerHelper {
         yield return ISprite.FromTexture(pos, "danger/blade00").Centered();
     }
 
-    public static List<PlacementTemplate> PlacementTemplates = new() {
+    public static List<PlacementTemplate> PlacementTemplates { get; } = new() {
         new() { Name = "blade", Dust = false, Star = false },
         new() { Name = "dust", Dust = true, Star = false },
         new() { Name = "starfish", Dust = false, Star = true }

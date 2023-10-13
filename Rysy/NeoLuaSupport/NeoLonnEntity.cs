@@ -96,6 +96,6 @@ public class NeoLonnEntity : Entity, INeoLonnObject {
     }
 }
 
-internal class NeoLonnTrigger : Trigger, INeoLonnObject {
+internal sealed class NeoLonnTrigger : Trigger, INeoLonnObject {
     public NeoLonnEntityHandler Handler { get; set; }
 }

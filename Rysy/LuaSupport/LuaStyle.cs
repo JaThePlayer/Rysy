@@ -1,4 +1,4 @@
 ﻿namespace Rysy.LuaSupport;
 
-internal class LuaStyle : Style {
+internal sealed class LuaStyle : Style {
 }

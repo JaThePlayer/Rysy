@@ -7,7 +7,7 @@ using System.IO.Compression;
 namespace Rysy.Mods;
 
 public sealed class ZipModFilesystem : IModFilesystem {
-    private class ZipArchiveWrapper {
+    private sealed class ZipArchiveWrapper {
         public ZipArchive Archive { get; set; }
         public bool Used { get; set; }
     }

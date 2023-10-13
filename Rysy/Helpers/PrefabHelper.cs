@@ -27,7 +27,8 @@ public static class PrefabHelper {
         if (!File.Exists(path))
             return;
 
-        if (await JsonExtensions.TryDeserializeAsync<Prefab>(File.Open(path, FileMode.Open)) is not { } prefab)
+        using var stream = File.Open(path, FileMode.Open);
+        if (await JsonExtensions.TryDeserializeAsync<Prefab>(stream) is not { } prefab)
             return;
 
         lock (_CurrentPrefabs) {
@@ -104,7 +105,7 @@ public static class PrefabHelper {
         public string Filename { get; internal set; }
     }
 
-    private record class PrefabPlacementHandler(Prefab prefab) : IPlacementHandler {
+    private sealed record class PrefabPlacementHandler(Prefab prefab) : IPlacementHandler {
         public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room) {
             var selections = CopypasteHelper.PasteSelections(prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
             if (pastedRooms) {
@@ -121,9 +122,11 @@ public static class PrefabHelper {
                 var entitySelections = h.Selections.Select(s => s.Handler).OfType<EntitySelectionHandler>();
                 var tileSelections = h.Selections.Select(s => s.Handler).OfType<TileSelectionHandler>();
 
-                var prevPos = entitySelections.FirstOrDefault()?.Entity.Pos;
+                var firstEntitySelection = entitySelections.FirstOrDefault();
+
+                var prevPos = firstEntitySelection?.Entity.Pos;
                 var delta = pos - prevPos;
-                if (entitySelections.Any())
+                if (firstEntitySelection is { })
                     AddEntitySprites(pos, sprites, entitySelections);
 
 
@@ -137,10 +140,17 @@ public static class PrefabHelper {
         }
 
         private static void AddEntitySprites(Vector2 pos, List<ISprite> sprites, IEnumerable<EntitySelectionHandler> entitySelections) {
-            var prevPos = entitySelections.First().Entity.Pos;
-            var delta = pos - prevPos;
+            bool isFirst = true;
+            Vector2 prevPos = default;
+            Vector2 delta = default;
 
             foreach (var selection in entitySelections) {
+                if (isFirst) {
+                    prevPos = selection.Entity.Pos;
+                    delta = pos - prevPos;
+                    isFirst = false;
+                }
+
                 var e = selection.Entity;
 
                 e.Pos += delta;
@@ -160,7 +170,7 @@ public static class PrefabHelper {
             return handler.PlaceClone(room);
         }
 
-        private class MergedSelectionHandler : ISelectionHandler {
+        private sealed class MergedSelectionHandler : ISelectionHandler {
             public List<Selection> Selections;
 
             public MergedSelectionHandler(List<Selection> selections) {

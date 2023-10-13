@@ -13,7 +13,7 @@ using System.Text;
 namespace Rysy.Helpers;
 
 public static class CodeCompilationHelper {
-    private static readonly string GlobalUsingsCode = """
+    private const string GlobalUsingsCode = """
         global using Rysy.Extensions;
         global using Rysy.Graphics;
         global using Rysy.LuaSupport;
@@ -75,7 +75,9 @@ public static class CodeCompilationHelper {
         var loc = asm.Location;
         using var asmStream = File.OpenRead(loc);
 
+#pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms - not used for crypto
         return MD5.HashData(asmStream);
+#pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
     }
 
     public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string cachePath, bool addGlobalUsings, out Assembly? asm, out EmitResult? emitResult) {
@@ -111,7 +113,7 @@ public static class CodeCompilationHelper {
         var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
 
         IEnumerable<(string SourceCode, string Filename)> allfiles = files;
-        if (addGlobalUsings && !files.Any(f => f.Filename.EndsWith("GlobalUsings.cs"))) {
+        if (addGlobalUsings && !files.Any(f => f.Filename.EndsWith("GlobalUsings.cs", StringComparison.Ordinal))) {
             allfiles = allfiles.Append((SourceCode: GlobalUsingsCode, Filename: "GlobalUsings.gen.cs"));
         }
 
@@ -157,7 +159,7 @@ public static class CodeCompilationHelper {
 
         var failures = diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
         foreach (var diagnostic in failures) {
-            str.AppendLine($"[{diagnostic.Location.GetLineSpan()}] {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}");
+            str.AppendLine(CultureInfo.InvariantCulture, $"[{diagnostic.Location.GetLineSpan()}] {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}");
         }
 
         return str.ToString();

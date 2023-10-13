@@ -17,7 +17,7 @@ public static class RotationDirectionExtensions {
     public static T AddRotationTo<T>(this RotationDirection rotDir, T enumVal) where T : struct, Enum {
         var count = Enum.GetValues<T>().Length;
 
-        var newVal = (Convert.ToInt32(enumVal) + (int) rotDir).MathMod(count);
+        var newVal = (Convert.ToInt32(enumVal, CultureInfo.InvariantCulture) + (int) rotDir).MathMod(count);
         return (T) Enum.ToObject(typeof(T), newVal);
     }
 

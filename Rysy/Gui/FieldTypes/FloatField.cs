@@ -11,7 +11,7 @@ public record class FloatField : Field {
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToSingle(newDefault);
+        => Default = Convert.ToSingle(newDefault, CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) => (value switch {
         int i when i >= Min && i <= Max => true,
@@ -20,7 +20,7 @@ public record class FloatField : Field {
     }) && base.IsValid(value);
 
     public override object? RenderGui(string fieldName, object value) {
-        float b = Convert.ToSingle(value);
+        float b = Convert.ToSingle(value, CultureInfo.InvariantCulture);
         if (ImGui.InputFloat(fieldName, ref b).WithTooltip(Tooltip))
             return b;
 

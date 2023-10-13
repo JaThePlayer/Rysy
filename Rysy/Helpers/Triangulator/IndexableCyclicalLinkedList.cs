@@ -5,7 +5,7 @@
     /// indexing into the list with an out-of-bounds index will automatically cycle
     /// around the list to find a valid node.
     /// </summary>
-    class IndexableCyclicalLinkedList<T> : LinkedList<T> {
+    sealed class IndexableCyclicalLinkedList<T> : LinkedList<T> {
         /// <summary>
         /// Gets the LinkedListNode at a particular index.
         /// </summary>
@@ -20,11 +20,11 @@
                     index %= Count;
 
                 //find the proper node
-                LinkedListNode<T> node = First;
+                LinkedListNode<T> node = First!;
                 for (int i = 0; i < index; i++)
-                    node = node.Next;
+                    node = node.Next!;
 
-                return node;
+                return node!;
             }
         }
 

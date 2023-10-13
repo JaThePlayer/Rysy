@@ -9,6 +9,8 @@ using Rysy.Platforms;
 using Rysy.Scenes;
 using Rysy.Selections;
 
+namespace Rysy;
+
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
 
@@ -172,7 +174,9 @@ public sealed class RysyEngine : Game {
             GFX.LoadEssencials(this);
             Scene = new LoadingScene();
         }
+#pragma warning disable CA2000 // Dispose objects before losing scope - not critical here
         var reloadTimer = new ScopedStopwatch("Loading");
+#pragma warning restore CA2000
 
         Logger.Write("Reload", LogLevel.Info, $"Staring full reload...");
 
@@ -324,7 +328,7 @@ public sealed class RysyEngine : Game {
     }
 
     //https://stackoverflow.com/a/44689035
-    class SmartFramerate {
+    sealed class SmartFramerate {
         double currentFrametimes;
         double weight;
         int numerator;

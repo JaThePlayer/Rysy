@@ -122,7 +122,7 @@ public static class SelectionLayerExt {
     }
 }
 
-public record class RectangleSelection : ISelectionCollider {
+public sealed record class RectangleSelection : ISelectionCollider {
     public Rectangle Rect;
 
     Rectangle ISelectionCollider.Rect => Rect;
@@ -146,7 +146,7 @@ public record class RectangleSelection : ISelectionCollider {
     }
 }
 
-public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
+public sealed record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
     private Vector2 DrawOffset;
     private Point SizeOffset;
 
@@ -188,7 +188,7 @@ public record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
     }
 }
 
-public class MergedSpriteSelection : ISelectionCollider {
+public sealed class MergedSpriteSelection : ISelectionCollider {
     List<Sprite> Sprites;
 
     public MergedSpriteSelection(IEnumerable<ISprite> sprites) {

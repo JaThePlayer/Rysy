@@ -4,7 +4,7 @@ using Rysy.Mods;
 
 namespace Rysy.Gui.Windows;
 
-internal class ModSettingsWindow : Window {
+internal sealed class ModSettingsWindow : Window {
     public ModMeta Mod { get; set; }
 
     public static (FieldList? Main, FieldList? OtherValues) GetFields(ModMeta mod) {

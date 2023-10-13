@@ -19,7 +19,7 @@ public static partial class TriggerHelpers {
         result = name.TrimEnd("trigger", StringComparison.InvariantCultureIgnoreCase);
 
         // trim mod name
-        var modSplit = result.IndexOf('/');
+        var modSplit = result.IndexOf('/', StringComparison.Ordinal);
         if (modSplit != -1) {
             result = result[(modSplit + 1)..];
         }

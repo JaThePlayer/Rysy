@@ -44,7 +44,7 @@ public sealed class FolderModFilesystem : IModFilesystem {
                     }
 
                     // handle directory watchers
-                    foreach (var directoryWatchers in WatchedAssets.Where(w => path.StartsWith(w.Key) && path != w.Key)) {
+                    foreach (var directoryWatchers in WatchedAssets.Where(w => path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
                         if (Directory.Exists(VirtToRealPath(path))) {
                             foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
                                 CallWatchers(item, directoryWatchers.Value);
@@ -112,6 +112,8 @@ public sealed class FolderModFilesystem : IModFilesystem {
     }
 
     public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value) {
+        ArgumentNullException.ThrowIfNull(callback);
+
         using var stream = OpenFile(path);
         if (stream is { }) {
             value = callback(stream);

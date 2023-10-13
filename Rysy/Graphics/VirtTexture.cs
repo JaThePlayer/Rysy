@@ -15,8 +15,8 @@ public class VirtTexture : IDisposable {
 
     public static VirtTexture FromTexture(Texture2D text) {
         return new UndisposableVirtTexture() {
-            texture = text,
-            state = State.Loaded,
+            _texture = text,
+            _state = State.Loaded,
             ClipRect = new(0, 0, text.Width, text.Height)
         };
     }
@@ -26,8 +26,8 @@ public class VirtTexture : IDisposable {
     /// </summary>
     internal static VirtTexture FromAtlasSubtexture(Texture2D parent, Rectangle clipRect, int width, int height) {
         return new VanillaTexture() {
-            texture = parent,
-            state = State.Loaded,
+            _texture = parent,
+            _state = State.Loaded,
             ClipRect = clipRect,
             W = width,
             H = height,
@@ -35,8 +35,8 @@ public class VirtTexture : IDisposable {
     }
 
     protected Task? LoadTask;
-    protected Texture2D? texture;
-    protected State state = State.Unloaded;
+    protected Texture2D? _texture;
+    protected State _state = State.Unloaded;
 
     private Rectangle? _clipRect;
 
@@ -85,9 +85,9 @@ public class VirtTexture : IDisposable {
 
     public Vector2 DrawOffset;
 
-    public Texture2D? Texture => state switch {
+    public Texture2D? Texture => _state switch {
         State.Unloaded => StartLoadingIfNeeded(),
-        State.Loaded => texture!,
+        State.Loaded => _texture!,
         State.Loading => null,
         _ => null,
     };
@@ -103,8 +103,8 @@ public class VirtTexture : IDisposable {
     }
 
     private Texture2D? StartLoadingIfNeeded() {
-        if (state == State.Unloaded) {
-            state = State.Loading;
+        if (_state == State.Unloaded) {
+            _state = State.Loading;
             LoadTask = QueueLoad()?.ContinueWith((old) => LoadTask = null);
         }
 
@@ -122,8 +122,8 @@ public class VirtTexture : IDisposable {
     }
 
     public virtual void Dispose() {
-        state = State.Unloaded;
-        texture?.Dispose();
+        _state = State.Unloaded;
+        _texture?.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -137,9 +137,9 @@ public class VirtTexture : IDisposable {
     /// <returns></returns>
     public async ValueTask<Texture2D> ForceGetTexture() {
 
-        switch (state) {
+        switch (_state) {
             case State.Loaded:
-                return texture!;
+                return _texture!;
             case State.Unloaded:
                 StartLoadingIfNeeded();
                 goto loading;
@@ -149,14 +149,14 @@ public class VirtTexture : IDisposable {
                 if (LoadTask is { } && (!LoadTask.IsCompleted))
                     await LoadTask;
 
-                return texture!;
+                return _texture!;
         }
-        throw new Exception($"Unknown state: {state}");
+        throw new Exception($"Unknown state: {_state}");
 
-        while (Texture is not { } texture) {
+        //while (Texture is not { } texture) {
             //    Task.Delay(100).Wait();
-        }
+        //}
 
-        return texture!;
+        //return _texture!;
     }
 }

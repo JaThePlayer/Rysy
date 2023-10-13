@@ -9,7 +9,7 @@ namespace Rysy.Gui.Windows;
 public static class RoomList {
     private static bool _firstGui = true;
 
-    public static string Search = "";
+    internal static string Search = "";
 
     static RoomList() {
         RysyEngine.OnViewportChanged += OnViewportChanged;

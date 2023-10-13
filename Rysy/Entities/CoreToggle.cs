@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("coreModeToggle")]
-internal class CoreToggle : SpriteEntity, IPlaceable {
+internal sealed class CoreToggle : SpriteEntity, IPlaceable {
     public override int Depth => 2000;
 
     public override string TexturePath => Bool("onlyFire", false) ? "objects/coreFlipSwitch/switch15"

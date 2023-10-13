@@ -405,8 +405,8 @@ public sealed class LonnEntityPlugin {
                 true => (",", 1, -1),
                 Dictionary<string, object> listInfo => (
                     listInfo.GetValueOrDefault("separator", ",").ToString()!,
-                    Convert.ToInt32(listInfo.GetValueOrDefault("minElements", 1)),
-                    Convert.ToInt32(listInfo.GetValueOrDefault("maxElements", -1))
+                    Convert.ToInt32(listInfo.GetValueOrDefault("minElements", 1), CultureInfo.InvariantCulture),
+                    Convert.ToInt32(listInfo.GetValueOrDefault("maxElements", -1), CultureInfo.InvariantCulture)
                 ),
                 _ => (",", -1, -1),
             };
@@ -422,16 +422,16 @@ public sealed class LonnEntityPlugin {
 
             if (field is IntField intField) {
                 if (min is { })
-                    intField.WithMin(Convert.ToInt32(min));
+                    intField.WithMin(Convert.ToInt32(min, CultureInfo.InvariantCulture));
                 if (max is { })
-                    intField.WithMax(Convert.ToInt32(max));
+                    intField.WithMax(Convert.ToInt32(max, CultureInfo.InvariantCulture));
             }
 
             if (field is FloatField floatField) {
                 if (min is { })
-                    floatField.WithMin(Convert.ToSingle(min));
+                    floatField.WithMin(Convert.ToSingle(min, CultureInfo.InvariantCulture));
                 if (max is { })
-                    floatField.WithMax(Convert.ToSingle(max));
+                    floatField.WithMax(Convert.ToSingle(max, CultureInfo.InvariantCulture));
             }
 
             if (options is { }) {
@@ -471,12 +471,12 @@ public sealed class LonnEntityPlugin {
                         // {text, value},
                         // {text, value2},
                         return fieldType switch {
-                            "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.Cast<List<object>>().ToDictionary(l => Convert.ToInt32(l[1]), l => l[0].ToString()!), editable),
+                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Cast<List<object>>().ToDictionary(l => Convert.ToInt32(l[1], CultureInfo.InvariantCulture), l => l[0].ToString()!), editable),
                             _ => Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable)
                         };
                     } else {
                         return fieldType switch {
-                            "integer" => Fields.Dropdown(Convert.ToInt32(def), dropdownOptions.Select(o => Convert.ToInt32(o)).ToList(), editable: editable),
+                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Select(o => Convert.ToInt32(o, CultureInfo.InvariantCulture)).ToList(), editable: editable),
                             _ => Fields.Dropdown(def, dropdownOptions.Select(o => o).ToList(), editable: editable),
                         };
                     }
@@ -484,7 +484,7 @@ public sealed class LonnEntityPlugin {
                     var firstVal = dropdownOptions.FirstOrDefault().Value;
 
                     return fieldType switch {
-                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def), dropdownOptions.ToDictionary(v => (int) Convert.ToDouble(v.Value), v => v.Key), editable),
+                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def, CultureInfo.InvariantCulture), dropdownOptions.ToDictionary(v => (int) Convert.ToDouble(v.Value, CultureInfo.InvariantCulture), v => v.Key), editable),
                         _ => Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable),
                     };
                 }

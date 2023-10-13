@@ -271,7 +271,7 @@ public class StylegroundWindow : Window {
         ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
         ImGuiManager.PopNullStyle();
 
-        var hashString = folder?.GetHashCode().ToString() ?? "";
+        var hashString = folder?.GetHashCode().ToString(CultureInfo.InvariantCulture) ?? "";
         var id = $"new_{hashString}";
         ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonLeft);
 

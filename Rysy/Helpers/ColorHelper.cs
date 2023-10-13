@@ -197,7 +197,7 @@ public static Color HsvToColor(float h, float s, float v) {
     }
 
     private static uint GetPacked(ReadOnlySpan<char> s)
-        => uint.Parse(s, System.Globalization.NumberStyles.HexNumber);
+        => uint.Parse(s, System.Globalization.NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
     private static ReadOnlySpan<char> PrepareSpan(ReadOnlySpan<char> s) {
         s = s.Trim();

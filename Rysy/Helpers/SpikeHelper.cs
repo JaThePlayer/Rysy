@@ -13,14 +13,14 @@ public static class SpikeHelper {
         Left, 
     }
 
-    public static Color[] DustColors = new[] {
+    public static Color[] DefaultDustColors { get; } = new[] {
         Color.Lerp("f25a10".FromRGB(), Color.DarkSlateBlue, 0.4f),
         Color.Lerp("ff0000".FromRGB(), Color.DarkSlateBlue, 0.4f),
         Color.Lerp("f21067".FromRGB(), Color.DarkSlateBlue, 0.4f),
     };
 
     public static IEnumerable<ISprite> GetDustSprites(Entity e, Direction dir, IReadOnlyList<Color>? colors = null) {
-        colors ??= DustColors;
+        colors ??= DefaultDustColors;
 
         var size = dir switch {
             Direction.Up or Direction.Down => e.Width,

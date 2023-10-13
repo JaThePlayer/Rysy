@@ -143,10 +143,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     /// <returns></returns>
     public int NextEntityID() {
-        var collection = Entities.Concat(Triggers);
-
-        if (collection.Any())
-            return collection.Max(e => e.ID) + 1;
+        if (Entities.Count > 0 || Triggers.Count > 0)
+            return Entities.Concat(Triggers).Max(e => e.ID) + 1;
 
         return 1;
     }
@@ -730,11 +728,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         return room;
     }
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "entities":
                 lua.PushWrapper(new EntityListWrapper(Entities));
@@ -786,19 +784,19 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
         Room = room;
     }
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         Used = true;
 
-        Reasons.Add(key.ToString());
+        Reasons.Add(key.ToString(CultureInfo.InvariantCulture));
 
-        return Room.Lua__index(lua, key);
+        return Room.LuaIndex(lua, key);
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         Used = true;
         Reasons.Add(key.ToString());
 
-        return Room.Lua__index(lua, key);
+        return Room.LuaIndex(lua, key);
     }
 }
 

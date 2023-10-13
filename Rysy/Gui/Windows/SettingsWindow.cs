@@ -4,14 +4,14 @@ using Rysy.Mods;
 using Rysy.Platforms;
 
 namespace Rysy.Gui.Windows;
-public class SettingsWindow : Window {
+public sealed class SettingsWindow : Window {
     private const string REQUIRES_RELOAD = "Requires a reload. Changing this value might immediately reload Rysy.";
 
     private SettingWindowData Data = new();
 
     private ModMeta? SelectedMod = null;
 
-    private class SettingWindowData {
+    private sealed class SettingWindowData {
         public bool ProfileSettingsChanged = false;
         public string[]? ProfileListDirectories = null;
         public string? ProfileCelesteDir;

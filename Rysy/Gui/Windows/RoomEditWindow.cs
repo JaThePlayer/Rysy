@@ -103,7 +103,7 @@ public sealed class RoomEditWindow : Window {
         var colorNames = CelesteEnums.RoomColorNames;
         ImGui.ColorButton(colorNames[Attrs.C], colors[Attrs.C].ToNumVec4());
         ImGui.SameLine();
-        if (ImGui.BeginCombo("Color", Attrs.C.ToString(), ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo("Color", Attrs.C.ToString(CultureInfo.InvariantCulture), ImGuiComboFlags.NoPreview)) {
             for (int i = 0; i < colors.Length; i++) {
                 if (ImGui.ColorButton(colorNames[i], colors[i].ToNumVec4())) {
                     Attrs.C = i;

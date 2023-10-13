@@ -5,19 +5,7 @@ using System.Text;
 namespace Rysy.LuaSupport;
 
 public static class LonnDrawables {
-    private static byte[] xASCII = Encoding.ASCII.GetBytes("x");
-    private static byte[] yASCII = Encoding.ASCII.GetBytes("y");
-    private static byte[] scaleXASCII = Encoding.ASCII.GetBytes("scaleX");
-    private static byte[] scaleYASCII = Encoding.ASCII.GetBytes("scaleY");
-    private static byte[] justificationXASCII = Encoding.ASCII.GetBytes("justificationX");
-    private static byte[] justificationYASCII = Encoding.ASCII.GetBytes("justificationY");
-    private static byte[] colorASCII = Encoding.ASCII.GetBytes("color");
-    private static byte[] rotationASCII = Encoding.ASCII.GetBytes("rotation");
-    private static byte[] depthASCII = Encoding.ASCII.GetBytes("depth");
-    private static byte[] _RYSY_quadXASCII = Encoding.ASCII.GetBytes("_RYSYqX");
-    private static byte[] _RYSY_INTERNAL_textureASCII = Encoding.ASCII.GetBytes("_RYSY_INTERNAL_texture");
     private static byte[] RYSY_UNPACKSPRASCII = Encoding.ASCII.GetBytes("RYSY_UNPACKSPR");
-
 
     public static RectangleSprite LuaToRect(Lua lua, int top) {
         var x = lua.PeekTableFloatValue(top, "x") ?? 0f;

@@ -42,7 +42,7 @@ public static class FileDialogHelper {
 
     private static string AddExtIfNeeded(string filterList, string chosenFile) {
         var extString = $".{filterList}";
-        if (!chosenFile.EndsWith(extString))
+        if (!chosenFile.EndsWith(extString, StringComparison.Ordinal))
             chosenFile += extString;
 
         return chosenFile;

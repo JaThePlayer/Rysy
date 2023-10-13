@@ -8,14 +8,14 @@ using Rysy.Extensions;
 namespace Rysy.Tools;
 
 public class ScriptTool : Tool {
-    public const string CURRENT_ROOM_LAYER = "Current Room";
-    public const string ALL_ROOMS_LAYER = "All Rooms";
+    public const string CurrentRoomLayer = "Current Room";
+    public const string AllRoomsLayer = "All Rooms";
 
     public override string Name => "script";
 
     public override string PersistenceGroup => "Scripts";
 
-    public override List<string> ValidLayers => new() { CURRENT_ROOM_LAYER, ALL_ROOMS_LAYER };
+    public override List<string> ValidLayers => new() { CurrentRoomLayer, AllRoomsLayer };
 
     public override string GetMaterialDisplayName(string layer, object material) {
         if (material is Script s) {
@@ -49,8 +49,8 @@ public class ScriptTool : Tool {
         args.RoomPos = roomPos;
 
         var rooms = Layer switch {
-            CURRENT_ROOM_LAYER => EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null,
-            ALL_ROOMS_LAYER => EditorState.Map?.Rooms,
+            CurrentRoomLayer => EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null,
+            AllRoomsLayer => EditorState.Map?.Rooms,
             _ => throw new NotImplementedException(Layer),
         };
 

@@ -1,7 +1,7 @@
 ﻿namespace Rysy.Helpers;
 
 public static class CelesteEnums {
-    public static Color[] RoomColors = new Color[] {
+    public static Color[] RoomColors { get; } = new Color[] {
         Color.White,
         "f6735e".FromRGB(),
         "85f65e".FromRGB(),
@@ -11,7 +11,7 @@ public static class CelesteEnums {
         "e33773".FromRGB()
     };
 
-    public static string[] RoomColorNames = new string[] {
+    public static string[] RoomColorNames { get; } = new string[] {
         "White",
         "Orange",
         "Green",
@@ -173,7 +173,7 @@ public static class CelesteEnums {
         ThinkForABit
     }
 
-    public static List<int> BadelineBossShootingPatterns = new() {
+    public static List<int> BadelineBossShootingPatterns { get; } = new() {
         0, 1, 2, 3, 4,
         5, 6, 7, 8, 9,
         10, 11, 12, 13,
@@ -212,7 +212,7 @@ public static class CelesteEnums {
         Strawberry
     }
 
-    public static List<string> BirdTutorials = new() {
+    public static List<string> BirdTutorials { get; } = new() {
         "TUTORIAL_CLIMB",
         "TUTORIAL_HOLD",
         "TUTORIAL_DASH",
@@ -229,7 +229,7 @@ public static class CelesteEnums {
         Random
     }
 
-    public static Dictionary<int, string> SurfaceSounds = new() {
+    public static Dictionary<int, string> SurfaceSounds { get; } = new() {
         [-1] = "Default",
         [0] = "Null",
         [1] = "Asphalt",

@@ -7,11 +7,11 @@ public record class CloneEntityWrapper(Entity Entity) : ILuaWrapper {
     public Dictionary<string, object> Changes = new(StringComparer.Ordinal);
     public string? NewSID;
 
-    public int Lua__index(Lua lua, long key) {
-        return Entity.Lua__index(lua, key);
+    public int LuaIndex(Lua lua, long key) {
+        return Entity.LuaIndex(lua, key);
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         if (NewSID is { } newSid && key is "_name") {
             lua.PushString(newSid);
             return 1;
@@ -22,10 +22,10 @@ public record class CloneEntityWrapper(Entity Entity) : ILuaWrapper {
             return 1;
         }
 
-        return Entity.Lua__index(lua, key);
+        return Entity.LuaIndex(lua, key);
     }
 
-    public void Lua__newindex(Lua lua, ReadOnlySpan<char> key, object value) {
+    public void LuaNewIndex(Lua lua, ReadOnlySpan<char> key, object value) {
         switch (key) {
             case "_name":
                 NewSID = value.ToString();

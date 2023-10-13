@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("cutsceneNode")]
-internal class CutsceneNode : SpriteEntity, IPlaceable {
+internal sealed class CutsceneNode : SpriteEntity, IPlaceable {
     public override string TexturePath => "Rysy:cutscene_node";
 
     public override int Depth => 0;

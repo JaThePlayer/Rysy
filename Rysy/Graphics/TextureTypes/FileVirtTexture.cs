@@ -13,9 +13,9 @@ internal sealed class FileVirtTexture : VirtTexture {
     protected override Task? QueueLoad() {
         return Task.Run(() => {
             try {
-                texture = FnaMonogameCompat.Texture2DFromFile(RysyEngine.GDM.GraphicsDevice, Filename);
-                ClipRect = new(0, 0, texture.Width, texture.Height);
-                state = State.Loaded;
+                _texture = FnaMonogameCompat.Texture2DFromFile(RysyEngine.GDM.GraphicsDevice, Filename);
+                ClipRect = new(0, 0, _texture.Width, _texture.Height);
+                _state = State.Loaded;
             } catch (Exception e) {
                 Logger.Write("FileVirtTexture", LogLevel.Error, $"Failed loading file texture {this}, {e}");
                 throw;

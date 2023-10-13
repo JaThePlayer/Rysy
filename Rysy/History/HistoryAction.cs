@@ -15,6 +15,8 @@ public interface ISerializableAction : IHistoryAction {
 
 public static class SerializableActionExt {
     public static ActionData? GetSerializable(this ISerializableAction action) {
+        ArgumentNullException.ThrowIfNull(action);
+
         var data = action.GetSerializableData();
         if (data is { })
             return new ActionData() { 

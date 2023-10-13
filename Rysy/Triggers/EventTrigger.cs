@@ -3,7 +3,7 @@
 namespace Rysy.Triggers;
 
 [CustomEntity("eventTrigger")]
-public sealed class Event : Trigger, IPlaceable {
+public sealed class EventTrigger : Trigger, IPlaceable {
     public static FieldList GetFields() => new() {
         ["event"] = Fields.Dropdown("", CelesteEnums.EventTriggerEvents, editable: true),
     };

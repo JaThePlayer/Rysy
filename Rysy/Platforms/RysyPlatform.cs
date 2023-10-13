@@ -3,7 +3,7 @@
 namespace Rysy.Platforms;
 
 public abstract class RysyPlatform {
-    public static RysyPlatform Current =
+    public static RysyPlatform Current { get; } =
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new Windows() :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new Linux() :
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new MacOS() :

@@ -57,7 +57,7 @@ public static class EditorState {
     /// <summary>
     /// Called whenever <see cref="Map"/> gets changed.
     /// </summary>
-    public static Action? OnMapChanged;
+    public static Action? OnMapChanged { get; set; }
 
     /// <summary>
     /// The currently used history handler

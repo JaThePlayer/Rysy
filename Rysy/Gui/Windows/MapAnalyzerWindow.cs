@@ -4,7 +4,7 @@ using Rysy.MapAnalyzers;
 
 namespace Rysy.Gui.Windows;
 
-internal class MapAnalyzerWindow : Window {
+internal sealed class MapAnalyzerWindow : Window {
     private AnalyzerCtx? Ctx;
     private List<IAnalyzerResult>? Results;
 

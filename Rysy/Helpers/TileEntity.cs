@@ -15,6 +15,8 @@ public abstract class TileEntity : Entity {
         => GetTilegrid(Room, layer).Autotiler!.GetSprites(pos, tiletype, Width / 8, Height / 8, Color);
 
     public static Tilegrid GetTilegrid(Room room, TileLayer layer) {
+        ArgumentNullException.ThrowIfNull(room);
+
         return layer switch {
             TileLayer.BG => room.BG,
             TileLayer.FG => room.FG,
@@ -23,6 +25,7 @@ public abstract class TileEntity : Entity {
     }
 
     public static Autotiler GetAutotiler(Map map, TileLayer layer) {
+        ArgumentNullException.ThrowIfNull(map);
         return layer switch {
             TileLayer.BG => map.BGAutotiler,
             TileLayer.FG => map.FGAutotiler,

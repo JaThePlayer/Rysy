@@ -6,6 +6,7 @@ using Rysy.Selections;
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Xml;
 
@@ -43,7 +44,7 @@ public sealed class Autotiler {
             return false;
         }
 
-        public bool GetFirstMatch(int x, int y, int w, int h, [NotNullWhen(true)] out Point[]? tiles) {
+        internal bool GetFirstMatch(int x, int y, int w, int h, [NotNullWhen(true)] out Point[]? tiles) {
             Span<bool> mask = stackalloc bool[9];
             mask[0] = IsTileAt(w, h, x - 1, y - 1);
             mask[1] = IsTileAt(w, h, x, y - 1);
@@ -80,7 +81,7 @@ public sealed class Autotiler {
             }
         }
 
-        public bool GetFirstMatch(char[,] t, int x, int y, int w, int h, bool tilesOOB, [NotNullWhen(true)] out Point[]? tiles) {
+        internal bool GetFirstMatch(char[,] t, int x, int y, int w, int h, bool tilesOOB, [NotNullWhen(true)] out Point[]? tiles) {
             Span<bool> tileData = stackalloc bool[9];
             char middleTile = t[x, y];
             tileData[0] = IsTileAt(x - 1, y - 1);
@@ -137,7 +138,7 @@ public sealed class Autotiler {
             }
         }
 
-        public static bool MatchingMask(string mask, Span<bool> tileData) {
+        internal static bool MatchingMask(string mask, Span<bool> tileData) {
             var tl = tileData.Length;
             var sl = mask.Length;
 
@@ -233,7 +234,7 @@ public sealed class Autotiler {
                             autotilerData.Center = ParseTiles(tiles);
                             return (null!, null!);
                         default:
-                            return (mask.Replace("-", ""), ParseTiles(tiles));
+                            return (mask.Replace("-", "", StringComparison.Ordinal), ParseTiles(tiles));
                     }
                 }).Where(x => x.Item1 is { }).ToList();
 
@@ -250,7 +251,7 @@ public sealed class Autotiler {
     private static Point[] ParseTiles(string tiles) {
         return tiles.Split(';').Select(x => {
             var split = x.Split(',');
-            return new Point(int.Parse(split[0]) * 8, int.Parse(split[1]) * 8);
+            return new Point(int.Parse(split[0], CultureInfo.InvariantCulture) * 8, int.Parse(split[1], CultureInfo.InvariantCulture) * 8);
         }).ToArray();
     }
 
@@ -368,7 +369,7 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
 
-    internal record class AutotiledSpriteList : ISprite {
+    internal sealed record class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
 

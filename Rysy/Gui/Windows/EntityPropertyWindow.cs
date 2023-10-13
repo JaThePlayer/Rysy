@@ -8,13 +8,15 @@ namespace Rysy.Gui.Windows;
 public class EntityPropertyWindow : FormWindow {
     private static readonly HashSet<string> BlacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorLayer", "_editorColor" };
 
-    public readonly Entity Main;
-    public readonly List<Entity> All;
+    public Entity Main { get; }
+    public List<Entity> All { get; }
 
     private HistoryHandler History;
     private Action HistoryHook;
 
     public static (FieldList, Func<string, bool> exists) GetFields(Entity main) {
+        ArgumentNullException.ThrowIfNull(main);
+
         var fieldInfo = EntityRegistry.GetFields(main);
 
         var fields = new FieldList();
@@ -77,6 +79,10 @@ public class EntityPropertyWindow : FormWindow {
     }
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
+        ArgumentNullException.ThrowIfNull(history);
+        ArgumentNullException.ThrowIfNull(main);
+        ArgumentNullException.ThrowIfNull(all);
+
         Main = main;
         All = all;
         History = history;

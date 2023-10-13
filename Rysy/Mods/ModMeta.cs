@@ -118,11 +118,11 @@ public sealed class ModMeta : ILuaWrapper {
     [JsonIgnore]
     public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "Name":
                 lua.PushString(Name);
@@ -166,8 +166,10 @@ public sealed class EverestModuleMetadata {
     public string VersionString {
         get => _VersionString ?? Version.ToString();
         set {
+            ArgumentNullException.ThrowIfNull(value);
+
             _VersionString = value;
-            int versionSplitIndex = value.IndexOf('-');
+            int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);
             else
@@ -208,8 +210,10 @@ public class EverestDependency {
     public string VersionString {
         get => _VersionString ?? Version.ToString();
         set {
+            ArgumentNullException.ThrowIfNull(value);
+
             _VersionString = value;
-            int versionSplitIndex = value.IndexOf('-');
+            int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);
             else

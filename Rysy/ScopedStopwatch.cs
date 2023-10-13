@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+namespace Rysy;
+
 /// <summary>
 /// A class that runs a stopwatch, and stops it when it gets disposed, logging how much time elapsed
 /// </summary>

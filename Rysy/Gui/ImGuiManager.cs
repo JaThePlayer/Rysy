@@ -4,16 +4,15 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using System.Runtime.InteropServices;
-using YamlDotNet.Core.Tokens;
 
 namespace Rysy.Gui;
 
 public static class ImGuiManager {
-    public static ImGuiRenderer GuiRenderer;
+    public static ImGuiRenderer GuiRenderer { get; private set; }
 
-    public static float MenubarHeight;
+    public static float MenubarHeight { get; set; }
 
-    public static uint CentralDockingSpaceID;
+    public static uint CentralDockingSpaceID { get; private set; }
 
     public static ImGuiWindowFlags WindowFlagsResizable =>
         //ImGuiWindowFlags.NoDecoration |
@@ -32,8 +31,8 @@ public static class ImGuiManager {
         ImGuiWindowFlags.None;
 
     public static ImGuiTableFlags TableFlags =>
-        ImGuiTableFlags.BordersV | ImGuiTableFlags.BordersOuterH | 
-        ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg | 
+        ImGuiTableFlags.BordersV | ImGuiTableFlags.BordersOuterH |
+        ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg |
         ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.Hideable;
 
     public static unsafe void Load(RysyEngine game) {
@@ -260,7 +259,7 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search, 
+    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search,
         string? tooltip = null, ComboCache<T>? cache = null)
         where T : notnull {
 
@@ -740,21 +739,12 @@ public static class ImGuiManager {
     }
 
     public static class DrawVertDeclaration {
-        public static readonly VertexDeclaration Declaration;
-
-        public static readonly int Size;
-
-        static DrawVertDeclaration() {
-            unsafe {
-                Size = sizeof(ImDrawVert);
-            }
-
-            Declaration = new VertexDeclaration(
-                Size,
-                new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 0), // Position
-                new VertexElement(8, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0), // UV
-                new VertexElement(16, VertexElementFormat.Color, VertexElementUsage.Color, 0)
-            );
-        }
+        public static unsafe readonly int Size = sizeof(ImDrawVert);
+        public static readonly VertexDeclaration Declaration = new VertexDeclaration(
+            Size,
+            new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 0), // Position
+            new VertexElement(8, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0), // UV
+            new VertexElement(16, VertexElementFormat.Color, VertexElementUsage.Color, 0)
+        );
     }
 }

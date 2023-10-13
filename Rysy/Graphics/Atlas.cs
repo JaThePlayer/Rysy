@@ -133,9 +133,9 @@ public class Atlas : IAtlas {
         OnChanged?.Invoke();
     }
 
-    public void RemoveTextures(List<string> virtPaths) {
+    public void RemoveTextures(List<string> paths) {
         lock (Textures) {
-            foreach (var item in virtPaths) {
+            foreach (var item in paths) {
                 Textures.Remove(item);
             }
 

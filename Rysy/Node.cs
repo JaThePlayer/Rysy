@@ -17,13 +17,15 @@ public sealed class Node : IDepth, ILuaWrapper {
     public int Depth => int.MinValue; // TODO: grab from entity
 
     public static implicit operator Vector2(Node node) => node.Pos;
+#pragma warning disable CA2225 // Operator overloads have named alternates - doesn't really make sense to make nodes that way
     public static implicit operator Node(Vector2 node) => new(node);
+#pragma warning restore CA2225
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "x":
                 lua.PushNumber(X);
@@ -36,6 +38,8 @@ public sealed class Node : IDepth, ILuaWrapper {
                 return 1;
         }
     }
+
+    public Vector2 ToVector2() => this;
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler {

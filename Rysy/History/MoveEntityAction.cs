@@ -26,8 +26,8 @@ public record class MoveEntityAction(Entity Entity, Vector2 By) : IHistoryAction
 
     public static ISerializableAction FromSerializable(Map map, Dictionary<string, object> data) {
         var room = map.TryGetRoomByName((string) data["room"]);
-        var entity = room?.TryGetEntityById(Convert.ToInt32(data["id"]));
-        var by = new Vector2(Convert.ToSingle(data["x"]), Convert.ToSingle(data["y"]));
+        var entity = room?.TryGetEntityById(Convert.ToInt32(data["id"], CultureInfo.InvariantCulture));
+        var by = new Vector2(Convert.ToSingle(data["x"], CultureInfo.InvariantCulture), Convert.ToSingle(data["y"], CultureInfo.InvariantCulture));
 
         return new MoveEntityAction(entity!, by);
     }

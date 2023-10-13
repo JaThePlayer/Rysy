@@ -11,7 +11,7 @@ public record class StringField : Field {
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToString(newDefault) ?? "";
+        => Default = Convert.ToString(newDefault, CultureInfo.InvariantCulture) ?? "";
 
     private string? RealValue(string from)
         => (EmptyIsNull && string.IsNullOrWhiteSpace(from)) ? null : from;

@@ -134,7 +134,9 @@ public static class GFX {
         void AddTexture(string path) {
             var virt = path["Graphics/Atlases/Gameplay/".Length..(^".png".Length)];
 
+#pragma warning disable CA2000 // Dispose objects before losing scope - scope is not lost here
             atlas!.AddTexture(virt, new ModTexture(mod, path));
+#pragma warning restore CA2000
         }
     }
 

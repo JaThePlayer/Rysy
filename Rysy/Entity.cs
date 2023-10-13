@@ -282,11 +282,15 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public Vector2 GetNodeCentered(int index) {
         return Nodes![index] + new Vector2(Width / 2, Height / 2);
     }
+
+
+#pragma warning disable CA1720 // Identifier contains type name
     public int Int(string attrName, int def = 0) => EntityData.Int(attrName, def);
     public string Attr(string attrName, string def = "") => EntityData.Attr(attrName, def);
     public float Float(string attrName, float def = 0f) => EntityData.Float(attrName, def);
     public bool Bool(string attrName, bool def = false) => EntityData.Bool(attrName, def);
     public char Char(string attrName, char def = '0') => EntityData.Char(attrName, def);
+#pragma warning restore CA1720 // Identifier contains type name
 
     public Color RGB(string attrName, Color def) => EntityData.RGB(attrName, def);
     public Color RGB(string attrName, string def = "ffffff") => EntityData.RGB(attrName, def);
@@ -512,11 +516,11 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #region ILuaWrapper
     private byte[]? _NameAsASCII = null;
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException($"Can't index entity via number key: {key}");
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "x":
                 lua.PushNumber(X);
@@ -546,8 +550,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
-    private record class NodesWrapper(Entity Entity) : ILuaWrapper {
-        public int Lua__index(Lua lua, long i) {
+    private sealed record class NodesWrapper(Entity Entity) : ILuaWrapper {
+        public int LuaIndex(Lua lua, long i) {
             var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
             if (node is { } n) {
                 lua.CreateTable(0, 2);
@@ -567,11 +571,11 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             }
         }
 
-        public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+        public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
             throw new LuaException(lua, $"Tried to index NodeWrapper with non-number key: {key} [{typeof(ReadOnlySpan<char>)}]");
         }
 
-        public int Lua__len(Lua lua) {
+        public int LuaLen(Lua lua) {
             lua.PushInteger(Entity.Nodes?.Count ?? 0);
 
             return 1;
@@ -694,7 +698,7 @@ public class EntityData : IDictionary<string, object> {
 
     public int Int(string attrName, int def = 0) {
         if (Inner.TryGetValue(attrName, out var obj)) {
-            return obj is int i ? i : Convert.ToInt32(obj);
+            return obj is int i ? i : Convert.ToInt32(obj, CultureInfo.InvariantCulture);
         }
 
         return def;
@@ -710,14 +714,14 @@ public class EntityData : IDictionary<string, object> {
 
     public float Float(string attrName, float def = 0f) {
         if (Inner.TryGetValue(attrName, out var obj))
-            return Convert.ToSingle(obj);
+            return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
 
         return def;
     }
 
     public bool Bool(string attrName, bool def) {
         if (Inner.TryGetValue(attrName, out var obj))
-            return Convert.ToBoolean(obj);
+            return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
 
         return def;
     }

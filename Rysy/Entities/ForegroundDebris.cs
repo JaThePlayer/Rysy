@@ -5,7 +5,7 @@ using Rysy.Selections;
 namespace Rysy.Entities;
 
 [CustomEntity("foregroundDebris")]
-internal class ForegroundDebris : Entity, IPlaceable {
+internal sealed class ForegroundDebris : Entity, IPlaceable {
     public override int Depth => -999900;
 
     public override IEnumerable<ISprite> GetSprites() {

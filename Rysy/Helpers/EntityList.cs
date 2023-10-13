@@ -9,7 +9,9 @@ public sealed class EntityList : TypeTrackedList<Entity> {
         };
     }
 
+#pragma warning disable CA1002 // Do not expose generic lists - performance is needed here
     public List<Entity> this[string sid] {
+#pragma warning restore CA1002
         get {
             if (SIDToEntities.TryGetValue(sid, out var cached))
                 return cached;

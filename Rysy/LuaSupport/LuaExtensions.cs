@@ -49,7 +49,7 @@ public static partial class LuaExt {
     }
 
 
-    public static char[] SharedToStringBuffer = new char[4098];
+    private static char[] SharedToStringBuffer = new char[4098];
 
     public static unsafe Span<char> ToStringInto(this Lua state, int index, Span<char> buffer, bool callMetamethod = true) {
         UIntPtr num;
@@ -713,7 +713,6 @@ where TArg1 : class, ILuaWrapper {
     }
 
 
-    private static byte[] WrapperThisASCII = Encoding.ASCII.GetBytes("__this");
     private static int WrapperIDLoc = -1;
     private static List<LuaFunction> WrapperFuncs = new();
     private static List<byte[]> WrapperMetatableNames = new();
@@ -762,12 +761,12 @@ where TArg1 : class, ILuaWrapper {
 
             switch (lua.Type(keyPos)) {
                 case LuaType.Number:
-                    wrapper.Lua__newindex(lua, lua.ToInteger(keyPos), value);
+                    wrapper.LuaNewIndex(lua, lua.ToInteger(keyPos), value);
                     break;
                 case LuaType.String:
                     Span<char> buffer = SharedToStringBuffer.AsSpan();
                     var str = lua.ToStringInto(keyPos, buffer, callMetamethod: false);
-                    wrapper.Lua__newindex(lua, str, value);
+                    wrapper.LuaNewIndex(lua, str, value);
                     break;
                 default:
                     throw new NotImplementedException($"Can't newindex LuaWrapper with {lua.FastToString(keyPos)} [type: {lua.Type(keyPos)}].");
@@ -784,7 +783,7 @@ where TArg1 : class, ILuaWrapper {
 
             var wrapper = lua.UnboxWrapper(1);
 
-            return wrapper.Lua__len(lua);
+            return wrapper.LuaLen(lua);
         });
         state.SetTable(metatableStackLoc);
 
@@ -849,12 +848,12 @@ where TArg1 : class, ILuaWrapper {
             int ret;
             switch (t) {
                 case LuaType.Number:
-                    ret = obj.Lua__index(lua, lua.ToInteger(top));
+                    ret = obj.LuaIndex(lua, lua.ToInteger(top));
                     break;
                 case LuaType.String:
                     Span<char> buffer = SharedToStringBuffer.AsSpan();
                     var str = lua.ToStringInto(top, buffer, callMetamethod: false);
-                    ret = obj.Lua__index(lua, str);
+                    ret = obj.LuaIndex(lua, str);
                     break;
                 default:
                     throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");

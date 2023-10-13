@@ -9,8 +9,8 @@ static class DropdownHelper {
         [typeof(string)] = (Func<string?, string>) ((string? s) => s ?? ""),
         [typeof(char)] = (Func<string?, char>) ((string? s) => s is [char c] ? c : '\0'),
         [typeof(object)] = (Func<string?, object>) ((string? s) => s ?? ""),
-        [typeof(int)] = (Func<string?, int>) ((string? s) => s is { } ? int.Parse(s) : 0),
-        [typeof(float)] = (Func<string?, float>) ((string? s) => s is { } ? float.Parse(s) : 0),
+        [typeof(int)] = (Func<string?, int>) ((string? s) => s is { } ? int.Parse(s, CultureInfo.InvariantCulture) : 0),
+        [typeof(float)] = (Func<string?, float>) ((string? s) => s is { } ? float.Parse(s, CultureInfo.InvariantCulture) : 0),
     };
 }
 
@@ -46,7 +46,7 @@ public record class DropdownField<T> : Field
 
     public override object GetDefault() => Default!;
     public override void SetDefault(object newDefault)
-        => Default = (T) Convert.ChangeType(newDefault, typeof(T));
+        => Default = (T) Convert.ChangeType(newDefault, typeof(T), CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) {
         if (value is not T val) {
@@ -119,11 +119,11 @@ public record class DropdownField<T> : Field
                 return x is null;
             }
 
-            return x.ToString()?.ToLowerInvariant() == y.ToString()?.ToLowerInvariant();
+            return x.ToString()?.ToUpperInvariant() == y.ToString()?.ToUpperInvariant();
         }
 
         public int GetHashCode([DisallowNull] T obj) {
-            return obj.ToString()!.ToLowerInvariant().GetHashCode(StringComparison.Ordinal);
+            return obj.ToString()!.ToUpperInvariant().GetHashCode(StringComparison.Ordinal);
         }
     }
 }

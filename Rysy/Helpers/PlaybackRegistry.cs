@@ -69,7 +69,7 @@ public static class PlaybackRegistry {
         Left = -1
     }
 
-    public struct ChaserState {
+    public record struct ChaserState {
         public Vector2 Position;
 
         public float TimeStamp;
