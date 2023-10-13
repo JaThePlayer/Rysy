@@ -181,8 +181,8 @@ public class LonnEntity : Entity {
         }
     }
 
-    public override void OnChanged() {
-        base.OnChanged();
+    public override void OnChanged(EntityDataChangeCtx changed) {
+        base.OnChanged(changed);
 
         CachedSprites = null;
     }

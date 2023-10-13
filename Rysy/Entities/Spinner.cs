@@ -8,22 +8,42 @@ namespace Rysy.Entities;
 public sealed class Spinner : Entity, IPlaceable {
     public override int Depth => -8500;
 
-    private static string ColorToTexturePath(SpinnerColors color) => color switch {
-        SpinnerColors.Purple => "danger/crystal/fg_purple00",
-        SpinnerColors.Rainbow => "danger/crystal/fg_white00",
-        SpinnerColors.Blue => "danger/crystal/fg_blue00",
-        _ => "danger/crystal/fg_red00",
+    private static readonly Sprite[] FgSprites = new[] {
+        ISprite.FromTexture("danger/crystal/fg_blue00").Centered(),
+        ISprite.FromTexture("danger/crystal/fg_red00").Centered(),
+        ISprite.FromTexture("danger/crystal/fg_purple00").Centered(),
+        ISprite.FromTexture("danger/crystal/fg_red00").Centered(),
+        ISprite.FromTexture("danger/crystal/fg_white00").Centered(),
     };
 
-    private static string ColorToConnectorPath(SpinnerColors color) => color switch {
-        SpinnerColors.Purple => "danger/crystal/bg_purple00",
-        SpinnerColors.Rainbow => "danger/crystal/bg_white00",
-        SpinnerColors.Blue => "danger/crystal/bg_blue00",
-        _ => "danger/crystal/bg_red00",
+    private static readonly Sprite[] FgBorderSprites = FgSprites.Select(s => s with {
+        Color = Color.Transparent,
+        OutlineColor = Color.Black,
+        Depth = -8500 + 2,
+    }).ToArray();
+
+    private static readonly Sprite[] BgSprites = new[] {
+        ISprite.FromTexture("danger/crystal/bg_blue00").Centered() with { Depth = -8500 + 1, },
+        ISprite.FromTexture("danger/crystal/bg_red00").Centered() with { Depth = -8500 + 1, },
+        ISprite.FromTexture("danger/crystal/bg_purple00").Centered() with { Depth = -8500 + 1, },
+        ISprite.FromTexture("danger/crystal/bg_red00").Centered() with { Depth = -8500 + 1, },
+        ISprite.FromTexture("danger/crystal/bg_white00").Centered() with { Depth = -8500 + 1, },
     };
 
-    public bool AttachToSolid => Bool("attachToSolid");
-    public bool Dust => Bool("dust");
+    private static readonly Sprite[] BgBorderSprites = BgSprites.Select(s => s with {
+        Color = Color.Transparent,
+        OutlineColor = Color.Black,
+        Depth = -8500 + 2,
+    }).ToArray();
+
+    [Bind("attachToSolid")]
+    public bool AttachToSolid;
+
+    [Bind("dust")]
+    public bool Dust;
+
+    [Bind("color")]
+    private SpinnerColors SpinnerColor;
 
     public override IEnumerable<ISprite> GetSprites() {
         if (Dust) {
@@ -35,51 +55,49 @@ public sealed class Spinner : Entity, IPlaceable {
             yield break;
         }
 
-        var color = Enum("color", SpinnerColors.Blue);
+        var color = SpinnerColor;
         var rainbow = color == SpinnerColors.Rainbow;
         var pos = Pos;
 
-        var sprite = ISprite.FromTexture(pos, ColorToTexturePath(color)).Centered();
-        if (rainbow)
-            sprite.Color = ColorHelper.GetRainbowColor(Room, pos);
-
-        yield return sprite;
+        yield return FgSprites[(int) color] with {
+            Pos = pos,
+            Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : Color.White,
+        };
         // the border has to be a seperate sprite to render it at a different depth
-        yield return sprite with {
-            Color = Color.Transparent,
-            OutlineColor = Color.Black,
-            Depth = Depth + 2,
+        yield return FgBorderSprites[(int) color] with {
+            Pos = pos,
         };
 
         // connectors
-        var attachToSolid = AttachToSolid;
-        var baseConnectorSprite = ISprite.FromTexture(ColorToConnectorPath(color)) with {
-            Depth = Depth + 1,
-            Origin = new(.5f, .5f),
-        };
-
         foreach (Spinner spinner in Room.Entities[typeof(Spinner)]) {
             if (spinner == this)
                 break;
 
-            var otherPos = spinner.Pos;
-            if (Vector2.DistanceSquared(pos, otherPos) < 24f * 24f && !spinner.Dust && spinner.AttachToSolid == attachToSolid) {
-                var connectorPos = (pos + otherPos) / 2f;
+            if (DistanceSquaredLessThan(pos, spinner.Pos, 24*24)
+                && !spinner.Dust && spinner.AttachToSolid == AttachToSolid) {
+                var connectorPos = (pos + spinner.Pos) / 2f;
 
-                yield return baseConnectorSprite with {
+                yield return BgSprites[(int) color] with {
                     Pos = connectorPos,
                     Color = rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.White,
                 };
 
                 // the border has to be a seperate sprite to render it at a different depth
-                yield return baseConnectorSprite with {
+                yield return BgBorderSprites[(int) color] with {
                     Pos = connectorPos,
-                    OutlineColor = Color.Black,
-                    Color = Color.Transparent,
-                    Depth = Depth + 2,
                 };
             }
         }
+    }
+
+    public static bool DistanceSquaredLessThan(Vector2 value1, Vector2 value2, float maxDist) {
+        float xDiff = value1.X - value2.X;
+        float xDiffSq = xDiff * xDiff;
+        if (xDiffSq > maxDist)
+            return false;
+
+        float yDiff = value1.Y - value2.Y;
+        return xDiffSq + yDiff * yDiff < maxDist;
     }
 
     public static FieldList GetFields() => new(new {

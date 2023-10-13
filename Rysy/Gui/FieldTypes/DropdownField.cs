@@ -14,7 +14,7 @@ static class DropdownHelper {
     };
 }
 
-public record class DropdownField<T> : Field
+public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConvertible
     where T : notnull {
     public bool NullAllowed { get; set; }
 
@@ -49,7 +49,10 @@ public record class DropdownField<T> : Field
         => Default = (T) Convert.ChangeType(newDefault, typeof(T), CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) {
-        if (value is not T val) {
+        var val = ConvertMapDataValue(value);
+
+        //if (value is not T val) {
+        if (val is not { }) {
             return (NullAllowed && value is null) && base.IsValid(value);
         }
 
@@ -57,9 +60,7 @@ public record class DropdownField<T> : Field
     }
 
     public override object? RenderGui(string fieldName, object value) {
-        if (value is not T val) {
-            val = StringToT(value is string s ? s : null);
-        }
+        var val = ConvertMapDataValue(value);
 
         var prevVal = val;
 
@@ -109,6 +110,22 @@ public record class DropdownField<T> : Field
     }
 
     public override Field CreateClone() => this with { };
+
+    public T ConvertMapDataValue(object value) {
+        if (value is not T val) {
+            val = StringToT(value is string s ? s : null);
+        }
+
+        return val;
+    }
+
+    T1 IFieldConvertible.ConvertMapDataValue<T1>(object value) {
+        if (!typeof(T1).IsEnum) {
+            throw new Exception($"{typeof(DropdownField<T>)} can't convert to {typeof(T1)} as its not {typeof(T)} or an enum type");
+        }
+
+        return (T1)Enum.Parse(typeof(T1), value?.ToString() ?? "", ignoreCase: true);
+    }
 
     private struct ToStringEqualityComparer : IEqualityComparer<T> {
         public bool Equals(T? x, T? y) {

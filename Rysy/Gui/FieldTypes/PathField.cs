@@ -12,7 +12,7 @@ namespace Rysy.Gui.FieldTypes;
 using TextureCache = Cache<Dictionary<string, string>>;
 using RawTextureCache = Cache<List<FoundPath>>;
 
-public record class PathField : Field {
+public record class PathField : Field, IFieldConvertible<string> {
     private static ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
 
     private RawTextureCache RawPaths;
@@ -171,4 +171,6 @@ public record class PathField : Field {
 
         return this;
     }
+
+    public string ConvertMapDataValue(object value) => value?.ToString() ?? "";
 }

@@ -5,7 +5,7 @@ using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ColorField : Field, ILonnField, IListFieldExtender {
+public sealed record class ColorField : Field, ILonnField, IListFieldExtender, IFieldConvertible<string>, IFieldConvertible<Color> {
     public static string Name => "color";
 
     // stores the original string passed to SetDefault.
@@ -143,5 +143,16 @@ public record class ColorField : Field, ILonnField, IListFieldExtender {
         }
 
         ImGui.EndMenu();
+    }
+
+    string IFieldConvertible<string>.ConvertMapDataValue(object value) 
+        => ValueToString(value);
+
+    Color IFieldConvertible<Color>.ConvertMapDataValue(object value) {
+        if (ValueToColor(value, out var color)) {
+            return color;
+        }
+
+        return Default ?? default;
     }
 }

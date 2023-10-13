@@ -2,7 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class IntField : Field, ILonnField {
+public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>, IFieldConvertible<float> {
     public static string Name => "integer";
 
     public int Step { get; set; } = 1;
@@ -65,4 +65,8 @@ public record class IntField : Field, ILonnField {
 
         return field;
     }
+
+    int IFieldConvertible<int>.ConvertMapDataValue(object value) => Convert.ToInt32(value, CultureInfo.InvariantCulture);
+
+    float IFieldConvertible<float>.ConvertMapDataValue(object value) => Convert.ToSingle(value, CultureInfo.InvariantCulture);
 }

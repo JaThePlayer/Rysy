@@ -80,7 +80,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public Rectangle Rect => Collider.Rect;
 
     public IHistoryAction MoveBy(Vector2 offset) {
-        Entity.OnChanged();
+        //Entity.OnChanged();
         return new MoveNodeAction(Node, Entity, offset);
     }
 
@@ -104,7 +104,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
         var node = new Node(pos ?? (Node.Pos + new Vector2(16f, 0)));
 
-        Entity.OnChanged();
+        //Entity.OnChanged();
 
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),

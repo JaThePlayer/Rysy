@@ -2,7 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class FloatField : Field {
+public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldConvertible<float> {
     public float Default { get; set; }
 
     public float Min { get; set; } = float.MinValue;
@@ -38,4 +38,8 @@ public record class FloatField : Field {
         Max = max;
         return this;
     }
+
+    int IFieldConvertible<int>.ConvertMapDataValue(object value) => Convert.ToInt32(value, CultureInfo.InvariantCulture);
+
+    float IFieldConvertible<float>.ConvertMapDataValue(object value) => Convert.ToSingle(value, CultureInfo.InvariantCulture);
 }
