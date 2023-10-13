@@ -73,46 +73,6 @@ public sealed class BindAttribute : Attribute {
 
                 ctx.UpdateFuncs[attr.FieldName] = method.CreateDelegate<Action<Entity>>();
             }
-
-            /*
-            var method = new DynamicMethod($"Rysy.Attributes.BindAttribute.Glue<{entityType.Name}>", null, new Type[] { typeof(Entity) });
-            var il = method.GetILGenerator();
-
-            foreach (var bind in bindAttrs) {
-                var fieldInfo = bind.Item1!;
-                var attr = bind.Item2!;
-                if (!fieldList.TryGetValue(attr.FieldName, out var field)) {
-                    throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName}, which is not defined by {nameof(IPlaceable.GetFields)}");
-                }
-
-                MethodInfo? converterMethod = FindConverterMethod(entityType, fieldInfo, attr, field);
-
-                var loadValueFromEntity = LoadValueFromEntity;
-                var loadField = LoadFieldFromEntity;
-
-                _boundFields.Add(field);
-
-                il.Emit(OpCodes.Ldarg_0);
-
-                // load right Field instance
-                il.Emit(OpCodes.Ldc_I4, _boundFields.Count - 1);
-                il.Emit(OpCodes.Call, loadField.Method);
-
-                // load right value
-                il.Emit(OpCodes.Dup);
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Ldstr, attr.FieldName);
-                il.Emit(OpCodes.Call, loadValueFromEntity.Method);
-
-                il.Emit(OpCodes.Callvirt, converterMethod);
-
-
-                il.Emit(OpCodes.Stfld, fieldInfo);
-            }
-
-            il.Emit(OpCodes.Ret);
-
-            ctx._Update = method.CreateDelegate<Action<Entity>>();*/
         }
 
         ContextCache[entity.Name] = ctx;
@@ -173,8 +133,6 @@ public sealed class BindAttribute : Attribute {
     }
 
     internal class Ctx {
-
-        //internal Action<Entity>? _Update;
         internal Dictionary<string, Action<Entity>> UpdateFuncs = new(StringComparer.Ordinal);
 
         internal Type Type;
@@ -184,14 +142,12 @@ public sealed class BindAttribute : Attribute {
 
             if (changed.AllChanged) {
                 foreach (var (f, v) in UpdateFuncs) {
-                    ("updating field", f).LogAsJson();
                     v(entity);
                 }
                 return;
             }
 
             if (changed.ChangedFieldName is { } field && UpdateFuncs.TryGetValue(field, out var updater)) {
-                ("updating field", field).LogAsJson();
                 updater(entity);
             }
         }

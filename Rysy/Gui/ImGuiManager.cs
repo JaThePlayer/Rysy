@@ -349,22 +349,6 @@ public static class ImGuiManager {
         return edited;
     }
 
-    public static void BeginWindowBottomBar(bool valid) {
-        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y;
-        var posy = ImGui.GetWindowHeight() - height - ImGui.GetStyle().FramePadding.Y * 2f;
-
-        ImGui.SetNextWindowPos(ImGui.GetWindowPos() + new NumVector2(ImGui.GetStyle().FramePadding.X * 2, posy));
-
-        ImGui.BeginChild(1, new(0, height - ImGui.GetStyle().FramePadding.Y), false, ImGuiWindowFlags.Modal);
-        ImGui.Separator();
-        ImGui.BeginDisabled(!valid);
-    }
-
-    public static void EndWindowBottomBar() {
-        ImGui.EndDisabled();
-        ImGui.EndChild();
-    }
-
     public static void WithBottomBar(Action renderMain, Action renderBottomBar) {
         var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 3f;
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
@@ -375,6 +359,8 @@ public static class ImGuiManager {
         ImGui.Separator();
         renderBottomBar();
     }
+
+    public static float CalcListHeight(int count) => ImGui.GetTextLineHeightWithSpacing() * count + ImGui.GetFrameHeightWithSpacing() * 2;
 
     public static NumVector2 CalcListSize(IEnumerable<string> strings) {
         int i = 1;
@@ -391,7 +377,7 @@ public static class ImGuiManager {
 
         return new(
             ImGui.CalcTextSize(longest).X + style.WindowPadding.X * 2 + style.ItemSpacing.X,
-            ImGui.GetTextLineHeightWithSpacing() * i + ImGui.GetFrameHeightWithSpacing() * 2
+            CalcListHeight(i)
         );
     }
 

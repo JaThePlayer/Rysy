@@ -15,7 +15,7 @@ public sealed class RoomEditWindow : Window {
 
     private bool NewRoom;
 
-    public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}", new(WIDTH, 250)) {
+    public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}", new(WIDTH, /*250*/ ImGuiManager.CalcListHeight(12))) {
         Room = room;
 
         Attrs = room.Attributes.Copy();
@@ -30,6 +30,7 @@ public sealed class RoomEditWindow : Window {
 
         ImGui.EndTabBar();
 
+        /*
         var valid = Valid(Room.Map) && Attrs != Room.Attributes;
         ImGuiManager.BeginWindowBottomBar(valid);
 
@@ -41,7 +42,23 @@ public sealed class RoomEditWindow : Window {
             }
         }
 
-        ImGuiManager.EndWindowBottomBar();
+        ImGuiManager.EndWindowBottomBar();*/
+    }
+
+    protected override bool HasBottomBar => true;
+
+    protected override void RenderBottomBar() {
+        var valid = Valid(Room.Map) && Attrs != Room.Attributes;
+
+        ImGui.BeginDisabled(!valid);
+        if (ImGui.Button("Apply Changes")) {
+            var newRoom = NewRoom;
+            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
+            if (newRoom) {
+                EditorState.CurrentRoom = Room;
+            }
+        }
+        ImGui.EndDisabled();
     }
 
     private string MusicDropdownSearch = "";
