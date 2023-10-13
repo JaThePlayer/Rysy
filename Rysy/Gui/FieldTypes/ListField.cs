@@ -1,9 +1,10 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using System;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ListField : Field {
+public record class ListField : Field, IFieldConvertibleToList {
     public string Separator = ",";
 
     public Field BaseField;
@@ -116,14 +117,6 @@ public record class ListField : Field {
 
         bool anyChanged = false;
 
-        /*
-        ImGui.SameLine(0f, xPadding);
-        if (ImGui.Button($"+##{fieldName}", new(buttonWidth, 0f))) {
-            Array.Resize(ref split, split.Length + 1);
-            split[^1] = InnerObjToString(BaseField.GetDefault());
-            anyChanged = true;
-        }*/
-
         ImGui.SameLine(0f, xPadding);
 
         if (ImGui.BeginCombo($"##lcombo{fieldName}", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
@@ -131,10 +124,15 @@ public record class ListField : Field {
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
 
+
+                if (!BaseField.IsValid(item))
+                    ImGuiManager.PushInvalidStyle();
+
                 if (BaseField.RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
                     split[i] = InnerObjToString(newValue);
                     anyChanged = true;
                 }
+                ImGuiManager.PopInvalidStyle();
 
                 ImGui.SameLine();
 
@@ -177,4 +175,26 @@ public record class ListField : Field {
         return ret;
     }
 
+
+    public IReadOnlyList<T> ConvertMapDataValueToList<T>(object value) {
+        var split = Split(value?.ToString() ?? "");
+        var list = new List<T>(split.Length);
+
+        switch (BaseField) {
+            case IFieldConvertible<T> convertible:
+                for (int i = 0; i < split.Length; i++) {
+                    list.Add(convertible.ConvertMapDataValue(split[i]));
+                }
+                break;
+            case IFieldConvertible convertible:
+                for (int i = 0; i < split.Length; i++) {
+                    list.Add(convertible.ConvertMapDataValue<T>(split[i]));
+                }
+                break;
+            default:
+                throw new Exception($"Can't convert {nameof(ListField)}[{BaseField.GetType().Name}] to {typeof(T)}, as {BaseField.GetType().Name} does not implement {typeof(IFieldConvertible<T>)} or {typeof(IFieldConvertible)}");
+        }
+
+        return list;
+    }
 }

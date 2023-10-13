@@ -468,10 +468,6 @@ public static class EntityRegistry {
         e.EntityData = entityData;
         e.ID = id ?? room.NextEntityID();
         e.Room = room;
-        e.Pos = pos;
-        e.OnChanged();
-        entityData.OnChanged += e.OnChanged;
-
 #if KERA_LUA
         if (e is LonnEntity lonnEntity) {
             if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
@@ -515,8 +511,11 @@ public static class EntityRegistry {
             lonnTrigger.Plugin = plugin;
         }
 #endif
-
-
+        e.Pos = pos;
+        e.OnChanged(new EntityDataChangeCtx { 
+            AllChanged = true,
+        });
+        entityData.OnChanged += e.OnChanged;
 
         var min = e.MinimumSize;
 

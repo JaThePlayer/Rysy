@@ -2,7 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class CharField : Field {
+public record class CharField : Field, IFieldConvertible<char> {
 
     public char Default { get; set; }
 
@@ -11,7 +11,7 @@ public record class CharField : Field {
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToChar(newDefault, CultureInfo.InvariantCulture);
+        => Default = ConvertMapDataValue(newDefault);
 
 
     public override object? RenderGui(string fieldName, object value) {
@@ -23,4 +23,6 @@ public record class CharField : Field {
     }
 
     public override Field CreateClone() => this with { };
+
+    public char ConvertMapDataValue(object value) => Convert.ToChar(value, CultureInfo.InvariantCulture);
 }

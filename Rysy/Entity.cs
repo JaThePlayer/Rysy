@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
+using YamlDotNet.Core.Tokens;
 
 namespace Rysy;
 
@@ -501,9 +502,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// <summary>
     /// Gets fired whenever the EntityData for this entity gets changed in any way.
     /// </summary>
-    public virtual void OnChanged() {
+    public virtual void OnChanged(EntityDataChangeCtx changed) {
         _pos = new(EntityData.X, EntityData.Y);
         _SelectionHandler?.ClearCollideCache();
+
+        if (!changed.OnlyPositionChanged)
+            BindAttribute.GetBindContext(this).UpdateBoundFields(this, changed);
     }
 
     public string ToJson() {
@@ -584,13 +588,23 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #endregion
 }
 
+public struct EntityDataChangeCtx {
+    public string? ChangedFieldName { get; init; }
+    public object? NewValue { get; init; }
+
+    public bool NodesChanged { get; init; }
+
+    public bool AllChanged { get; init; }
+
+    public bool OnlyPositionChanged => !AllChanged && ChangedFieldName is "x" or "y";
+}
 
 public class EntityData : IDictionary<string, object> {
     public string SID { get; init; }
 
     public ListenableList<Node> Nodes { get; private set; }
 
-    public Action? OnChanged { get; set; }
+    public Action<EntityDataChangeCtx>? OnChanged { get; set; }
 
     private int? _X;
     private int? _Y;
@@ -618,13 +632,17 @@ public class EntityData : IDictionary<string, object> {
         SID = sid;
 
         Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
-        Nodes.OnChanged = () => OnChanged?.Invoke();
+        Nodes.OnChanged = () => OnChanged?.Invoke(new EntityDataChangeCtx {
+            NodesChanged = true,
+        });
 
         Inner = new(attributes);
     }
 
     public void InitializeNodes(int capacity) {
-        Nodes = new(() => OnChanged?.Invoke(), capacity: capacity);
+        Nodes = new(() => OnChanged?.Invoke(new EntityDataChangeCtx {
+            NodesChanged = true,
+        }), capacity: capacity);
     }
 
     internal Dictionary<string, object> Inner { get; set; } = new();
@@ -636,7 +654,10 @@ public class EntityData : IDictionary<string, object> {
             _X = null;
             _Y = null;
 
-            OnChanged?.Invoke();
+            OnChanged?.Invoke(new EntityDataChangeCtx {
+                NewValue = value,
+                ChangedFieldName = key
+            });
         }
     }
 
@@ -651,13 +672,25 @@ public class EntityData : IDictionary<string, object> {
 
     public void Add(string key, object value) {
         Inner.Add(key, value);
+        OnChanged?.Invoke(new() {
+            ChangedFieldName = key,
+            NewValue = value,
+        });
     }
 
     public void Add(KeyValuePair<string, object> item) {
         ((ICollection<KeyValuePair<string, object>>) Inner).Add(item);
+
+        OnChanged?.Invoke(new() {
+            ChangedFieldName = item.Key,
+            NewValue = item.Value,
+        });
     }
 
     public void Clear() {
+        OnChanged?.Invoke(new() {
+            AllChanged = true,
+        });
         ((ICollection<KeyValuePair<string, object>>) Inner).Clear();
     }
 
@@ -678,11 +711,25 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public bool Remove(string key) {
-        return Inner.Remove(key);
+        if (Inner.Remove(key)) {
+            OnChanged?.Invoke(new() {
+                ChangedFieldName = key,
+            });
+            return true;
+        }
+
+        return false;
     }
 
     public bool Remove(KeyValuePair<string, object> item) {
-        return ((ICollection<KeyValuePair<string, object>>) Inner).Remove(item);
+        if (((ICollection<KeyValuePair<string, object>>) Inner).Remove(item)) {
+            OnChanged?.Invoke(new() {
+                ChangedFieldName = item.Key,
+            });
+            return true;
+        }
+
+        return false;
     }
 
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value) {

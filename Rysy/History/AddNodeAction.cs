@@ -8,7 +8,10 @@ public record class AddNodeAction(Entity Entity, Node Node, int NodeIdx) : IHist
         nodes.Insert(NodeIdx, node);
 
         Entity.ClearRoomRenderCache();
-        Entity.OnChanged();
+        Entity.OnChanged(new()
+        {
+            NodesChanged = true
+        });
 
         return true;
     }
@@ -19,6 +22,9 @@ public record class AddNodeAction(Entity Entity, Node Node, int NodeIdx) : IHist
         nodes.Remove(Node);
 
         Entity.ClearRoomRenderCache();
-        Entity.OnChanged();
+        Entity.OnChanged(new()
+        {
+            NodesChanged = true
+        });
     }
 }

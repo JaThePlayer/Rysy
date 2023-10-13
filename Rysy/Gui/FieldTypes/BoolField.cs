@@ -2,12 +2,12 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class BoolField : Field {
+public record class BoolField : Field, IFieldConvertible<bool> {
     public bool Default { get; set; }
 
     public override object GetDefault() => Default;
-    public override void SetDefault(object newDefault) 
-        => Default = Convert.ToBoolean(newDefault, CultureInfo.InvariantCulture);
+    public override void SetDefault(object newDefault)
+        => Default = ConvertMapDataValue(newDefault);
 
     public override bool IsValid(object? value) => value is bool && base.IsValid(value);
 
@@ -20,4 +20,6 @@ public record class BoolField : Field {
     }
 
     public override Field CreateClone() => this with { };
+
+    public bool ConvertMapDataValue(object value) => Convert.ToBoolean(value, CultureInfo.InvariantCulture);
 }

@@ -2,7 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class StringField : Field {
+public record class StringField : Field, IFieldConvertible<string> {
     public string Default { get; set; }
 
     public bool NullAllowed { get; set; }
@@ -64,4 +64,6 @@ public record class StringField : Field {
     }
 
     public override Field CreateClone() => this with { };
+
+    public string ConvertMapDataValue(object value) => RealValue((value ?? "").ToString()!)!;
 }
