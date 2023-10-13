@@ -22,7 +22,7 @@ public sealed class ZipVirtTexture : VirtTexture {
                 // DirectX is super fast at loading textures it seems, so this is more performant than reading to an intermediate buffer
                 lock (arch) {
                     using var stream = arch.GetEntry(entryName)!.Open();
-                    texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                    _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
                     SharedZipArchive.Release(archivePath);
                 }
 #else
@@ -40,15 +40,15 @@ public sealed class ZipVirtTexture : VirtTexture {
                     SharedZipArchive.Release(archivePath);
                 }
                 using var memStr = new MemoryStream(buffer);
-                texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
+                _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
 #endif
             } catch (Exception e) {
                 Logger.Write("ZipVirtTexture", LogLevel.Error, $"Failed loading zip texture {this}, {e}");
                 throw;
             }
 
-            ClipRect = new(0, 0, texture.Width, texture.Height);
-            state = State.Loaded;
+            ClipRect = new(0, 0, _texture.Width, _texture.Height);
+            _state = State.Loaded;
         }
         );
     }
@@ -78,7 +78,7 @@ public sealed class ZipVirtTexture : VirtTexture {
 /// but keeping them open forever blocks mod updates.
 /// </summary>
 internal static class SharedZipArchive {
-    class SharedZip {
+    sealed class SharedZip {
         public long UseCount;
         public ZipArchive Zip = null!;
     }

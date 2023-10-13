@@ -37,5 +37,5 @@ public sealed class Lightbeam : Entity, IPlaceable {
 
     public static PlacementList GetPlacements() => new("lightbeam");
 
-    public override Entity? RotatePreciseBy(float angle, Vector2 origin) => CloneWith(pl => pl["rotation"] = Float("rotation") + angle.RadToDegrees());
+    public override Entity? RotatePreciseBy(float angleRad, Vector2 origin) => CloneWith(pl => pl["rotation"] = Float("rotation") + angleRad.RadToDegrees());
 }

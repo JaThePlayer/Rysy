@@ -22,11 +22,13 @@ public interface ISprite : IEnumerable<ISprite> {
 
     public ISelectionCollider GetCollider();
 
-    public static ISpriteDepthComparer DepthDescendingComparer = new();
+    public static ISpriteDepthComparer DepthDescendingComparer => new();
 
+#pragma warning disable CA1033 // Interface methods should be callable by child types
     IEnumerator<ISprite> IEnumerable<ISprite>.GetEnumerator() => this.ToSelfEnumerator<ISprite>();
 
     IEnumerator IEnumerable.GetEnumerator() => this.ToSelfEnumerator();
+#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     public static Sprite FromTexture(string texturePath)
     => new(GFX.Atlas[texturePath]) {

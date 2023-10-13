@@ -30,7 +30,7 @@ public static class LuaSerializer {
             switch (item.Layer) {
                 case SelectionLayer.FGDecals:
                 case SelectionLayer.BGDecals:
-                    builder.AppendLine($$"""
+                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                             {
                                 _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
                                 texture = "decals/{{CorrectDecalPathForLonn(item.Data.Attr("texture").TrimStart("decals/"))}}",
@@ -48,20 +48,20 @@ public static class LuaSerializer {
                     break;
                 case SelectionLayer.Entities:
                 case SelectionLayer.Triggers:
-                    builder.AppendLine($$"""
+                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                             {
                                 _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
                                 _name = "{{item.Data.Name}}",
                                 _id = {{item.Data.Int("id", 0)}},
                         """);
                     if (SelectionLayerToLonnType(item.Layer) is { } type) {
-                        builder.AppendLine($"""
+                        builder.AppendLine(CultureInfo.InvariantCulture, $"""
                                     _type = "{type}",
                             """);
                     }
 
                     if (item.Data.Children is { Length: > 0} nodes) {
-                        builder.AppendLine($$"""
+                        builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                                     nodes = {{{string.Join(",", nodes.Select(n => $$"""
                                             {x={{n.Int("x")}},y={{n.Int("y")}}}
                                             """))}}},
@@ -89,7 +89,7 @@ public static class LuaSerializer {
                 if (blacklistedKeys.Contains(k))
                     continue;
 
-                builder.AppendLine($$"""
+                builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                                     ["{{k}}"] = {{ToLuaString(v)}},
                             """);
             }
@@ -98,7 +98,7 @@ public static class LuaSerializer {
 
     private static string ToLuaString(object obj) => obj switch {
         string s => $"""
-        "{s.Replace("\"", "\\\"")}"
+        "{s.Replace("\"", "\\\"", StringComparison.Ordinal)}"
         """,
         int i => i.ToString(CultureInfo.InvariantCulture),
         long i => i.ToString(CultureInfo.InvariantCulture),
@@ -144,8 +144,8 @@ public static class LuaSerializer {
                     Attributes = layer switch {
                         SelectionLayer.FGTiles or SelectionLayer.BGTiles => new() {
                             ["text"] = tiles!,
-                            ["x"] = Convert.ToInt32(selection["x"]) * 8 - 8,
-                            ["y"] = Convert.ToInt32(selection["y"]) * 8 - 8,
+                            ["x"] = Convert.ToInt32(selection["x"], CultureInfo.InvariantCulture) * 8 - 8,
+                            ["y"] = Convert.ToInt32(selection["y"], CultureInfo.InvariantCulture) * 8 - 8,
                             ["w"] = selection["width"],
                             ["h"] = selection["height"],
                         },
@@ -218,7 +218,7 @@ public static class LuaSerializer {
     /// Deserializes a lua value from a string, using <paramref name="valueGetter"/> to convert lua state into a c# object.
     /// </summary>
     public static T? Deserialize<T>(string str, Func<Lua, T?> valueGetter) where T : class {
-        var lua = GetSandboxedLua();
+        using var lua = GetSandboxedLua();
 
         var sanitized = SanitizeCode(str);
 

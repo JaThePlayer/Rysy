@@ -87,7 +87,7 @@ public record class ColorField : Field, ILonnField, IListFieldExtender {
     }
 
     public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) {
-        var allowXNA = (bool) Convert.ChangeType(fieldInfoEntry.GetValueOrDefault("allowXNAColors", false), typeof(bool));
+        var allowXNA = (bool) Convert.ChangeType(fieldInfoEntry.GetValueOrDefault("allowXNAColors", false), typeof(bool), CultureInfo.InvariantCulture);
         var defColor = def is string defString ? ColorHelper.Get(defString) : Color.White;
 
         var colorField = Fields.RGBA(defColor);

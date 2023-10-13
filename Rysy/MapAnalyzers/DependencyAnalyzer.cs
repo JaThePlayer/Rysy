@@ -37,7 +37,7 @@ public class DependencyAnalyzer : MapAnalyzer {
         };
     }
 
-    record class NotInModResult() : IAnalyzerResult {
+    sealed record class NotInModResult() : IAnalyzerResult {
         public LogLevel Level => LogLevel.Info;
 
         public string Message => "rysy.analyzers.dependency.not_in_mod".Translate();
@@ -53,7 +53,7 @@ public class DependencyAnalyzer : MapAnalyzer {
         }
     }
 
-    record class MissingDepResult(ModMeta BaseMod, string DepModName, ModMeta? DepModMeta, List<IGrouping<(Type Type, string Name), object>> Sources) : IAnalyzerResult {
+    sealed record class MissingDepResult(ModMeta BaseMod, string DepModName, ModMeta? DepModMeta, List<IGrouping<(Type Type, string Name), object>> Sources) : IAnalyzerResult {
         private bool IsUnknown => DepModName == DependencyCheker.UnknownModName;
 
         public LogLevel Level => IsUnknown ? LogLevel.Warning : LogLevel.Error;

@@ -8,7 +8,7 @@ namespace Rysy.Gui.Windows;
 public static class Menubar {
     private const string TabNameLangPrefix = "rysy.menubar.tab";
 
-    private record class Tab {
+    private sealed record class Tab {
         public string Name;
         public Action Render;
 

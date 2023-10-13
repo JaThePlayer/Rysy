@@ -2,7 +2,7 @@
     /// <summary>
     /// A basic triangle structure that holds the three vertices that make up a given triangle.
     /// </summary>
-    struct Triangle {
+    struct Triangle : IEquatable<Triangle> {
         public readonly Vertex A;
         public readonly Vertex B;
         public readonly Vertex C;
@@ -63,12 +63,7 @@
         }
 
         public override int GetHashCode() {
-            unchecked {
-                int result = A.GetHashCode();
-                result = (result * 397) ^ B.GetHashCode();
-                result = (result * 397) ^ C.GetHashCode();
-                return result;
-            }
+            return HashCode.Combine(A, B, C);
         }
     }
 }

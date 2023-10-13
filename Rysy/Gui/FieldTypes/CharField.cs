@@ -11,11 +11,11 @@ public record class CharField : Field {
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToChar(newDefault);
+        => Default = Convert.ToChar(newDefault, CultureInfo.InvariantCulture);
 
 
     public override object? RenderGui(string fieldName, object value) {
-        var b = Convert.ToChar(value).ToString();
+        var b = Convert.ToChar(value, CultureInfo.InvariantCulture).ToString();
         if (ImGui.InputText(fieldName, ref b, 1).WithTooltip(Tooltip))
             return b[0];
 

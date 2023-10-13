@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Entities;
 
 [CustomEntity("finalBossMovingBlock")]
-internal class BadelineBossMovingBlock : TileEntity, IPlaceable {
+internal sealed class BadelineBossMovingBlock : TileEntity, IPlaceable {
     public override char Tiletype => 'G';
 
     public override TileLayer Layer => TileLayer.FG;

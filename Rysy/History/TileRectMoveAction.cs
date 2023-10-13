@@ -1,7 +1,7 @@
 ﻿using Rysy.Graphics;
 
 namespace Rysy.History;
-internal record class TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] Orig, char[,] ToMove, Point Offset) : IHistoryAction {
+internal sealed record class TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] Orig, char[,] ToMove, Point Offset) : IHistoryAction {
     char[,] Old;
 
     public bool Apply() {

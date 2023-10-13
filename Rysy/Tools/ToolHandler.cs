@@ -4,6 +4,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.History;
+using System.Diagnostics;
 
 namespace Rysy.Tools;
 
@@ -80,7 +81,7 @@ public class ToolHandler {
 
     private Tool _currentTool;
     public Tool CurrentTool {
-        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new Exception("No tools registered?");
+        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
         set {
             CancelInteraction();
             _currentTool = value;

@@ -21,7 +21,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
             try {
                 Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
                     lock (this) {
-                        texture?.Dispose();
+                        _texture?.Dispose();
 
 #if FNA
                         if (Mod.Filesystem is FolderModFilesystem) {
@@ -35,7 +35,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
 
 #else
-                            texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+                            _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
 #endif
                     }
                 });
@@ -44,8 +44,8 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 throw;
             }
 
-            ClipRect = new(0, 0, texture.Width, texture.Height);
-            state = State.Loaded;
+            ClipRect = new(0, 0, _texture!.Width, _texture.Height);
+            _state = State.Loaded;
         }
         );
     }

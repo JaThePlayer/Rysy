@@ -7,8 +7,8 @@ namespace Rysy.Tools;
 public class BrushTool : TileTool {
     public override string Name => "brush";
 
-    public override void Render(Camera camera, Room currentRoom) {
-        var mouse = currentRoom.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
+    public override void Render(Camera camera, Room room) {
+        var mouse = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
 
         RenderTiles(mouse.ToVector2(), 1, 1);
         ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, DefaultColor).Render();

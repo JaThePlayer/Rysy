@@ -7,12 +7,12 @@ public record class BoolField : Field {
 
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault) 
-        => Default = Convert.ToBoolean(newDefault);
+        => Default = Convert.ToBoolean(newDefault, CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) => value is bool && base.IsValid(value);
 
     public override object? RenderGui(string fieldName, object value) {
-        bool b = Convert.ToBoolean(value);
+        bool b = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
         if (ImGui.Checkbox(fieldName, ref b).WithTooltip(Tooltip))
             return b;
 

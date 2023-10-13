@@ -25,8 +25,8 @@ public class ModSettings {
 /// Allows lonn plugins to interact with this property by using modSettings[<see cref="LonnName"/>]
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class LonnBindingAttribute : Attribute {
-    public string LonnName { get; set; }
+public sealed class LonnBindingAttribute : Attribute {
+    public string LonnName { get; }
 
     public LonnBindingAttribute(string lonnName) {
         LonnName = lonnName;

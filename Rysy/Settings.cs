@@ -10,7 +10,7 @@ namespace Rysy;
 
 
 public static class SettingsHelper {
-    public static bool ReadSettings = true;
+    public static bool ReadSettings { get; set; } = true;
 
     public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
     ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{Settings.Instance.Profile}/{settingFileName}"
@@ -77,7 +77,7 @@ public static class SettingsHelper {
 }
 
 public sealed class Settings {
-    public static string SettingsFileLocation = $"settings.json";
+    public static string SettingsFileLocation { get; } = $"settings.json";
 
     public static Settings Load(bool setInstance = true) {
         var settings = SettingsHelper.Load<Settings>(SettingsFileLocation);

@@ -121,7 +121,7 @@ public class Tilegrid : ILuaWrapper {
 
     #region Saving
     public static unsafe Tilegrid FromString(int widthPixels, int heightPixels, string tilesString) {
-        tilesString = tilesString.Replace("\r", "");
+        tilesString = tilesString.Replace("\r", "", StringComparison.Ordinal);
         var w = widthPixels / 8;
         var h = heightPixels / 8;
 
@@ -198,11 +198,11 @@ public class Tilegrid : ILuaWrapper {
 
     #endregion
 
-    public int Lua__index(Lua lua, long key) {
+    public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
 
-    public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "matrix":
                 lua.PushWrapper(new MatrixLuaWrapper(this));
@@ -212,7 +212,7 @@ public class Tilegrid : ILuaWrapper {
         return 0;
     }
 
-    private record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
+    private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
         private static int Get(nint n) {
             var lua = Lua.FromIntPtr(n);
 
@@ -228,11 +228,11 @@ public class Tilegrid : ILuaWrapper {
             return 1;
         }
 
-        public int Lua__index(Lua lua, long key) {
+        public int LuaIndex(Lua lua, long key) {
             throw new NotImplementedException();
         }
 
-        public int Lua__index(Lua lua, ReadOnlySpan<char> key) {
+        public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
             switch (key) {
                 case "get":
                     lua.PushCFunction(Get);

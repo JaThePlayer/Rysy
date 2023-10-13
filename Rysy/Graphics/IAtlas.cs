@@ -120,6 +120,7 @@ public static class IAtlasExt {
 
         int textureCount = metaReader.ReadInt16();
         for (int m = 0; m < textureCount; m++) {
+#pragma warning disable CA2000 // Dispose objects before losing scope - the scope is not lost
             var texture = ReadVanillaAtlasDataFile(path, metaReader.ReadString());
 
             int subtextureCount = metaReader.ReadInt16();
@@ -136,6 +137,7 @@ public static class IAtlasExt {
                 short height = metaReader.ReadInt16();
 
                 var vTexture = VirtTexture.FromAtlasSubtexture(texture, new(clipX, clipY, clipWidth, clipHeight), width, height);
+#pragma warning restore CA2000
                 vTexture.DrawOffset = new Vector2(offsetX, offsetY);
 
                 self.AddTexture(subtextPath, vTexture);

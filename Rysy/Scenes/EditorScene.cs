@@ -340,7 +340,7 @@ public sealed class EditorScene : Scene {
         ToolHandler.Render(Camera, CurrentRoom);
 
         GFX.BeginBatch();
-        PicoFont.Print(RysyEngine.CurrentFPS.ToString("FPS:0"), new Vector2(4, 68), Color.Pink, 4);
+        PicoFont.Print(RysyEngine.CurrentFPS.ToString("FPS:0", CultureInfo.CurrentCulture), new Vector2(4, 68), Color.Pink, 4);
         GFX.EndBatch();
 
         var input = Input.Global;

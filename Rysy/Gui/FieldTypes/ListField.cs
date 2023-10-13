@@ -131,7 +131,7 @@ public record class ListField : Field {
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
 
-                if (BaseField.RenderGui(i.ToString(), item) is { } newValue) {
+                if (BaseField.RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
                     split[i] = InnerObjToString(newValue);
                     anyChanged = true;
                 }

@@ -8,7 +8,7 @@ using System.Linq;
 namespace Rysy.Helpers;
 
 public static class CopypasteHelper {
-    public struct CopiedSelection {
+    public record struct CopiedSelection {
         public CopiedSelection() { }
 
         public BinaryPacker.Element Data;

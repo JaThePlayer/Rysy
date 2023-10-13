@@ -25,7 +25,7 @@ internal sealed class Env : LuaGlobal {
         return r;
     }
 
-    public class MissingGlobalException : Exception {
+    public sealed class MissingGlobalException : Exception {
         public object Key;
 
         public MissingGlobalException(object key) : base() {
@@ -52,7 +52,9 @@ public static class LuaLoader {
     public static LuaGlobal G {
         get {
             if (_G is null) {
+#pragma warning disable CA2000 // Dispose objects before losing scope - the lua instance here doesn't lose scope
                 Init();
+#pragma warning restore CA2000
             }
 
             return _G!;
@@ -105,7 +107,7 @@ public static class LuaLoader {
                 throw e;
             }
 
-            string CalcPath(string searchPath) => searchPath.Replace("?", fixedModule);
+            string CalcPath(string searchPath) => searchPath.Replace("?", fixedModule, StringComparison.Ordinal);
         });
 
         G.DefineFunction("_RYSY_INTERNAL_requireFromPlugin", (string lib, string modName) => {
@@ -336,10 +338,10 @@ public static class LuaLoader {
                         break;
                     case 'b':
                         if (index >= regEx.Length - 2)
-                            throw new ArgumentOutOfRangeException();
+                            throw new Exception();
                         char ch2 = regEx[index + 1];
                         char ch3 = regEx[index + 2];
-                        stringBuilder.Append("(");
+                        stringBuilder.Append('(');
                         stringBuilder.Append(Regex.Escape(ch2.ToString()));
                         stringBuilder.Append("(?>(?<n>");
                         stringBuilder.Append(Regex.Escape(ch2.ToString()));

@@ -129,9 +129,9 @@ public sealed class Decal : Entity, IPlaceable {
         return clone;
     }
 
-    public override Entity? RotatePreciseBy(float angle, Vector2 origin) {
+    public override Entity? RotatePreciseBy(float angleRad, Vector2 origin) {
         var clone = Clone().AsDecal()!;
-        clone.Rotation = (clone.Rotation + angle.RadToDegrees().Floor()).SnapAngleToRightAnglesDegrees(5f);
+        clone.Rotation = (clone.Rotation + angleRad.RadToDegrees().Floor()).SnapAngleToRightAnglesDegrees(5f);
         return clone;
     }
 

@@ -5,12 +5,12 @@ using ClutterColors = Rysy.Helpers.CelesteEnums.ClutterColors;
 namespace Rysy.Entities;
 
 [CustomEntity("clutterDoor")]
-internal class ClutterDoor : Entity, IPlaceable {
+internal sealed class ClutterDoor : Entity, IPlaceable {
     public override int Depth => 0;
 
     public override IEnumerable<ISprite> GetSprites() {
         yield return ISprite.FromTexture(Pos, "objects/door/ghost_door00").Centered();
-        yield return ISprite.FromTexture(Pos, $"objects/resortclutter/icon_{Attr("type", "green").ToLower()}").Centered();
+        yield return ISprite.FromTexture(Pos, $"objects/resortclutter/icon_{Attr("type", "green").ToLowerInvariant()}").Centered();
     }
 
     public static FieldList GetFields() => new(new {
@@ -18,7 +18,7 @@ internal class ClutterDoor : Entity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => System.Enum.GetNames<ClutterColors>()
-        .Select(variant => new Placement(variant.ToLower(), new {
+        .Select(variant => new Placement(variant.ToLowerInvariant(), new {
             type = variant
         }))
         .ToPlacementList();

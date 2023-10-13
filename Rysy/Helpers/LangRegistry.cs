@@ -5,7 +5,7 @@ using Rysy.Scenes;
 namespace Rysy.Helpers;
 
 public static class LangRegistry {
-    public static Dictionary<string, Lang> Languages = new();
+    public static Dictionary<string, Lang> Languages { get; } = new();
 
     public static Lang FallbackLang { get; set; } = new("en_gb");
 
@@ -78,7 +78,7 @@ public static class LangRegistry {
             }
 
             lock (lang)
-                lang.Translations[key] = value.Replace(@"\n", "\n").Trim();
+                lang.Translations[key] = value.Replace(@"\n", "\n", StringComparison.Ordinal).Trim();
         }
     }
 }

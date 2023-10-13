@@ -55,8 +55,8 @@ public sealed class NeoLonnEntityHandler {
 
         Name = table["name"].ToString() ?? throw new Exception("Entity handler has no name!");
 
-        GetTexture = LoadFromPlugin("texture", null, (r) => r.ToString(), returnNullIfMissing: true);
-        GetRotation = LoadFromPlugin("rotation", 0f, (r) => r.ToSingle());
+        GetTexture = LoadFromPlugin("texture", null, (r) => r.ToString(CultureInfo.InvariantCulture), returnNullIfMissing: true);
+        GetRotation = LoadFromPlugin("rotation", 0f, (r) => r.ToSingle(CultureInfo.InvariantCulture));
         GetOrigin = LoadFromPlugin("justification", Vector2.One / 2f, (r) => r.ToVector2(Vector2.One / 2f));
         GetScale = LoadFromPlugin("scale", Vector2.One, (r) => r.ToVector2(Vector2.One));
         GetColor = LoadFromPlugin("color", Color.White, (r) => r.ToColor(Color.White));

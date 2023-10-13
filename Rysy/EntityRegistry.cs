@@ -405,7 +405,9 @@ public static class EntityRegistry {
     }
 
     public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
-        var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
+        ArgumentNullException.ThrowIfNull(from);
+
+        var sid = from.SID ?? throw new ArgumentException($"Placement.SID is null");
         var data = GetDataFromPlacement(from);
 
         var entity = Create(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger);
@@ -426,7 +428,9 @@ public static class EntityRegistry {
     }
 
     public static Entity Create(BinaryPacker.Element from, Room room, bool trigger) {
-        var sid = from.Name ?? throw new Exception($"Entity SID is null in entity element???");
+        ArgumentNullException.ThrowIfNull(from);
+
+        var sid = from.Name ?? throw new ArgumentException($"Entity SID is null in entity element???");
 
         return Create(sid, new(from.Int("x"), from.Int("y")), from.Int("id"), new(sid, from), room, trigger);
     }

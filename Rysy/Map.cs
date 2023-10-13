@@ -255,7 +255,7 @@ public sealed record class MapMetadata {
             var prop = props[attrName];
 
             if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) {
-                prop.SetValue(into, Convert.ToSingle(val));
+                prop.SetValue(into, Convert.ToSingle(val, CultureInfo.InvariantCulture));
             } else {
                 prop.SetValue(into, val);
             }

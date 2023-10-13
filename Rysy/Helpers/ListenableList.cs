@@ -76,7 +76,7 @@ public class ListenableList<T> : IListenableList<T> {
         OnChanged?.Invoke();
     }
 
-    public bool Contains(T item) => Inner.Contains(item);
+    public bool Contains(T? item) => Inner.Contains(item!);
 
     public void CopyTo(T[] array, int arrayIndex) {
         Inner.CopyTo(array, arrayIndex);

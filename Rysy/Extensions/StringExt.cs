@@ -1,18 +1,19 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Extensions;
 
 public static partial class StringExt {
     //[GeneratedRegex("[a-z][A-Z]")]
-    public static Regex PascalCaseRegex = new("[a-z][A-Z]", RegexOptions.Compiled);
+    public static Regex PascalCaseRegex { get; } = new("[a-z][A-Z]", RegexOptions.Compiled);
 
     //[GeneratedRegex(@"[A-Z]:[/\\]Users[/\\](.*?)[/\\]")]
-    public static Regex UserNameRegex = new(@"[A-Z]:[/\\]Users[/\\](.*?)[/\\]", RegexOptions.Compiled);
+    public static Regex UserNameRegex { get; } = new(@"[A-Z]:[/\\]Users[/\\](.*?)[/\\]", RegexOptions.Compiled);
 
-    private static Regex UnformatRegex = new(@"\u001b\[[^m]{1,2}m", RegexOptions.Compiled);
+    private static Regex UnformatRegex { get; } = new(@"\u001b\[[^m]{1,2}m", RegexOptions.Compiled);
 
     /// <summary>
     /// Splits the string on [a-z][A-Z] patterns, inserting a space between them.
@@ -37,7 +38,7 @@ public static partial class StringExt {
     /// Trims a piece of text from the start of the string
     /// </summary>
     public static string TrimStart(this string from, string elem) {
-        if (from.StartsWith(elem))
+        if (from.StartsWith(elem, StringComparison.Ordinal))
             return from[elem.Length..];
         return from;
     }
@@ -69,7 +70,7 @@ public static partial class StringExt {
 
         if (UserNameRegex.Matches(path) is { } matches) {
             for (int i = 0; i < matches.Count; i++)
-                path = path.Replace(matches[i].Groups[1].Value, "<USER>");
+                path = path.Replace(matches[i].Groups[1].Value, "<USER>", StringComparison.Ordinal);
             return path;
         }
 
@@ -111,11 +112,11 @@ public static partial class StringExt {
     public static string LowercaseFirst(this string from) {
         return string.Create(from.Length, from, static (newstr, from) => {
             from.TryCopyTo(newstr);
-            newstr[0] = char.ToLower(from[0]);
+            newstr[0] = char.ToLowerInvariant(from[0]);
 
             int i;
             while ((i = newstr.IndexOf(' ') + 1) != 0 && i < newstr.Length) {
-                newstr[i] = char.ToLower(newstr[i]);
+                newstr[i] = char.ToLowerInvariant(newstr[i]);
                 newstr = newstr[i..];
             }
         });
@@ -127,11 +128,11 @@ public static partial class StringExt {
     public static string UppercaseFirst(this string from) {
         return string.Create(from.Length, from, static (newstr, from) => {
             from.TryCopyTo(newstr);
-            newstr[0] = char.ToUpper(from[0]);
+            newstr[0] = char.ToUpperInvariant(from[0]);
 
             int i;
             while ((i = newstr.IndexOf(' ') + 1) != 0 && i < newstr.Length) {
-                newstr[i] = char.ToUpper(newstr[i]);
+                newstr[i] = char.ToUpperInvariant(newstr[i]);
                 newstr = newstr[i..];
             }
         });
@@ -159,7 +160,9 @@ public static partial class StringExt {
         var origName = possiblyDuplicated;
         var newName = origName;
 
-        while (strings.Contains(newName)) {
+        var stringsHashSet = strings.ToHashSet(StringComparer.Ordinal);
+
+        while (stringsHashSet.Contains(newName)) {
             newName = $"{origName}-{i}";
             i++;
         }
@@ -225,7 +228,7 @@ public static partial class StringExt {
     /// Translates the string using <see cref="LangRegistry.Translate(string)"/>, then formats it using <see cref="string.Format(string, object?[])"/>
     /// If no translation is found, formats the string itself.
     /// </summary>
-    public static string TranslateFormatted(this string str, params object[] args) => string.Format(LangRegistry.Translate(str), args);
+    public static string TranslateFormatted(this string str, params object[] args) => string.Format(CultureInfo.CurrentCulture, LangRegistry.Translate(str), args);
 
     /// <summary>
     /// Translates the string using <see cref="LangRegistry.TranslateOrNull(string)"/>.
@@ -244,4 +247,16 @@ public static partial class StringExt {
     /// If no translation is found, returns the result of calling <see cref="Humanize(string)"/> on <paramref name="str"/>
     /// </summary>
     public static string TranslateOrHumanize(this string str, string prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}") ?? Humanize(str);
+
+    public static int ToInt(this string s) => Convert.ToInt32(s, CultureInfo.InvariantCulture);
+    public static int ToIntHex(this string s) => int.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+    public static uint ToUInt(this string s) => Convert.ToUInt32(s, CultureInfo.InvariantCulture);
+    public static uint ToUIntHex(this string s) => uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+    public static short ToShort(this string s) => Convert.ToInt16(s, CultureInfo.InvariantCulture);
+    public static ushort ToUShort(this string s) => Convert.ToUInt16(s, CultureInfo.InvariantCulture);
+    public static byte ToByte(this string s) => Convert.ToByte(s, CultureInfo.InvariantCulture);
+    public static sbyte ToSByte(this string s) => Convert.ToSByte(s, CultureInfo.InvariantCulture);
+    public static float ToSingle(this string s) => Convert.ToSingle(s, CultureInfo.InvariantCulture);
+    public static double ToDouble(this string s) => Convert.ToDouble(s, CultureInfo.InvariantCulture);
+    public static decimal ToDecimal(this string s) => Convert.ToDecimal(s, CultureInfo.InvariantCulture);
 }

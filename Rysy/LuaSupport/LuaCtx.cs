@@ -57,7 +57,7 @@ public class LuaCtx {
 
             return 2;
 
-            string CalcPath(string searchPath) => searchPath.Replace("?", modName);
+            string CalcPath(string searchPath) => searchPath.Replace("?", modName, StringComparison.Ordinal);
         });
 
         // loads lua from a direct filepath

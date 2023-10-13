@@ -1,5 +1,5 @@
 ﻿namespace Triangulator {
-    struct Vertex {
+    struct Vertex : IEquatable<Vertex> {
         public readonly Vector2 Position;
         public readonly int Index;
 
@@ -27,7 +27,7 @@
         }
 
         public override string ToString() {
-            return string.Format("{0} ({1})", Position, Index);
+            return string.Format(CultureInfo.InvariantCulture, "{0} ({1})", Position, Index);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace Rysy.History;
 
-internal class EntityEditAction : IHistoryAction {
+internal sealed class EntityEditAction : IHistoryAction {
     List<Entity> Entities;
     Dictionary<string, object> Changed;
     

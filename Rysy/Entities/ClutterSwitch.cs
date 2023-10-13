@@ -12,7 +12,7 @@ public class ClutterSwitch : Entity, IPlaceable {
         yield return ISprite.FromTexture(Pos + new Vector2(16, 16), "objects/resortclutter/clutter_button00") with {
             Origin = new(0.5f, 1.0f)
         };
-        yield return ISprite.FromTexture(Pos + new Vector2(16, 8), $"objects/resortclutter/icon_{Attr("type", "green").ToLower()}").Centered();
+        yield return ISprite.FromTexture(Pos + new Vector2(16, 8), $"objects/resortclutter/icon_{Attr("type", "green").ToLowerInvariant()}").Centered();
     }
 
     public static FieldList GetFields() => new(new {
@@ -20,7 +20,7 @@ public class ClutterSwitch : Entity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => System.Enum.GetNames<ClutterColors>()
-        .Select(variant => new Placement(variant.ToLower(), new {
+        .Select(variant => new Placement(variant.ToLowerInvariant(), new {
             type = variant
         }))
         .ToPlacementList();

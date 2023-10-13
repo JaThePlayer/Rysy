@@ -103,7 +103,7 @@ public class SelectionTool : Tool {
 
         var name = "";
         RysyEngine.Scene.AddWindow(new ScriptedWindow("Create Prefab", (w) => {
-            bool invalid = name == "" || PrefabHelper.CurrentPrefabs.ContainsKey(name);
+            bool invalid = string.IsNullOrWhiteSpace(name) || PrefabHelper.CurrentPrefabs.ContainsKey(name);
 
             ImGuiManager.PushInvalidStyleIf(invalid);
             if (ImGui.InputText("Name", ref name, 64, ImGuiInputTextFlags.EnterReturnsTrue)) {

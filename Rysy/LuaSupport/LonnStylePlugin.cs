@@ -3,7 +3,7 @@ using Rysy.Extensions;
 using Rysy.Mods;
 
 namespace Rysy.LuaSupport;
-internal class LonnStylePlugin {
+internal sealed class LonnStylePlugin {
     public ModMeta? ParentMod { get; internal set; }
 
     public string Name { get; internal set; }

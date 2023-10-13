@@ -3,7 +3,7 @@
 namespace Rysy.Entities;
 
 [CustomEntity("checkpoint")]
-internal class Checkpoint : Entity {
+internal sealed class Checkpoint : Entity {
     public override int Depth => 9990;
 
     public override IEnumerable<ISprite> GetSprites() {

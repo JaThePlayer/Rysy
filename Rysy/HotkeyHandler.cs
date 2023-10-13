@@ -132,7 +132,7 @@ public class HotkeyHandler {
             return false;
 
         foreach (var hotkey in hotkeyString.Split('|')) {
-            foreach (var item in hotkey.Replace(" ", "").Split('+')) {
+            foreach (var item in hotkey.Replace(" ", "", StringComparison.Ordinal).Split('+')) {
                 var lower = item.ToLowerInvariant();
                 if (lower is not ("shift" or "ctrl" or "alt" or "mouseleft" or "mouseright" or "mousemiddle" or (['m', 'o', 'u', 's', 'e', _]))) {
                     if (!Enum.TryParse<Keys>(lower, true, out var key))
@@ -165,7 +165,9 @@ public class Hotkey {
     internal double SmoothIntervalTime;
 
     public Hotkey(string hotkeyString) {
-        var inputs = hotkeyString.Replace(" ", "").Split("+");
+        ArgumentNullException.ThrowIfNull(hotkeyString);
+
+        var inputs = hotkeyString.Replace(" ", "", StringComparison.Ordinal).Split("+");
         foreach (var item in inputs) {
             var lower = item.ToLowerInvariant();
             switch (lower) {
@@ -188,7 +190,7 @@ public class Hotkey {
                     MouseButton = 2;
                     break;
                 case ['m', 'o', 'u', 's', 'e', var button]:
-                    MouseButton = int.Parse(button.ToString());
+                    MouseButton = int.Parse(button.ToString(), CultureInfo.InvariantCulture);
                     break;
                 default:
                     if (!Enum.TryParse<Keys>(lower, true, out var key)) {

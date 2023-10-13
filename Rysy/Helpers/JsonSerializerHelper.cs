@@ -51,8 +51,8 @@ public static class JsonSerializerHelper {
 
         public override void Write(
             Utf8JsonWriter writer,
-            object objectToWrite,
+            object value,
             JsonSerializerOptions options) =>
-            JsonSerializer.Serialize(writer, objectToWrite, objectToWrite.GetType(), options);
+            JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
 }

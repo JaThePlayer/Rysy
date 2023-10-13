@@ -9,7 +9,7 @@ using System.Linq;
 namespace Rysy.Gui.Windows;
 
 public class DebugInfoWindow : Window {
-    public static DebugInfoWindow Instance = new();
+    public static DebugInfoWindow Instance { get; } = new();
 
     public static bool Enabled { get; set; } = false;
 

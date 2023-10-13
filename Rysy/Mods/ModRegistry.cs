@@ -58,7 +58,7 @@ public static class ModRegistry {
         realPath = realPath.Unbackslash();
 
         foreach (var (_, mod) in Mods) {
-            if (realPath.StartsWith(mod.Filesystem.Root.Unbackslash())) {
+            if (realPath.StartsWith(mod.Filesystem.Root.Unbackslash(), StringComparison.Ordinal)) {
                 return mod;
             }
         }
@@ -246,7 +246,7 @@ public static class ModRegistry {
 
             mod.Filesystem.RegisterFilewatch("Rysy", new() {
                 OnChanged = name => {
-                    if (!reloading && name.EndsWith(".cs")) {
+                    if (!reloading && name.EndsWith(".cs", StringComparison.Ordinal)) {
                         reloading = true;
                         RysyEngine.OnEndOfThisFrame += () => {
                             LoadModRysyPlugins(mod, registerFilewatch: false);

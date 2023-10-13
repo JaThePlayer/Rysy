@@ -6,7 +6,7 @@ using Rysy.Selections;
 namespace Rysy.Entities;
 
 [CustomEntity("clothesline")]
-internal class Clothesline : Entity, IPlaceable {
+internal sealed class Clothesline : Entity, IPlaceable {
     public override int Depth => 8999;
 
     public override Range NodeLimits => 1..1;

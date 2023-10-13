@@ -4,7 +4,7 @@ using ConditionBlockModes = Rysy.Helpers.CelesteEnums.ConditionBlockModes;
 namespace Rysy.Entities;
 
 [CustomEntity("conditionBlock")]
-internal class ConditionBlock : TileEntity, IPlaceable {
+internal sealed class ConditionBlock : TileEntity, IPlaceable {
     public override char Tiletype => Char("tileType", '3');
 
     public override TileLayer Layer => TileLayer.FG;

@@ -4,7 +4,7 @@ using Rysy.Graphics;
 using Rysy.History;
 
 namespace Rysy.Selections;
-public class TileSelectionHandler : ISelectionHandler, ISelectionCollider, ISelectionFlipHandler {
+public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider, ISelectionFlipHandler {
     public Tilegrid Grid;
     public Rectangle Rect;
 
@@ -78,7 +78,7 @@ public class TileSelectionHandler : ISelectionHandler, ISelectionCollider, ISele
 
         ConsumeTilesIfNeeded();
 
-        var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig, ToMove, tileOffset);
+        var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig!, ToMove, tileOffset);
         var moveOffset = tileOffset.ToVector2() * 8;
 
         Rect = Rect.MovedBy(moveOffset);

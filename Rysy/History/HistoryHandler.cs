@@ -84,7 +84,9 @@ public class HistoryHandler {
     public static List<IHistoryAction> Deserialize(string json) {
         var d = JsonSerializer.Deserialize<List<DeserializedAction>>(json);
 
-        var map = (RysyEngine.Scene as EditorScene)!.Map;
+        var map = (RysyEngine.Scene as EditorScene)?.Map;
+        if (map is null)
+            return new();
 
         List<IHistoryAction> list = new();
         foreach (var item in d!) {
@@ -103,7 +105,7 @@ public class HistoryHandler {
 
             var m = type?.GetMethod(nameof(ISerializableAction.FromSerializable));
 
-            var act = (ISerializableAction) m.Invoke(null, new object[] { map, Data })!;
+            var act = (ISerializableAction) m!.Invoke(null, new object[] { map, Data })!;
 
             return act;
         }

@@ -16,7 +16,7 @@ public class FormWindow : Window {
     public FormWindowChanged OnChanged { get; set; }
     public FormWindowChanged OnLiveUpdate { get; set; }
 
-    internal record class Prop(string Name) {
+    internal sealed record class Prop(string Name) {
         public Field Field;
 
         /// <summary>

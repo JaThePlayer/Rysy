@@ -2,7 +2,7 @@
 
 namespace Rysy.Extensions;
 
-public static class _2DArrayExt {
+public static class TwoDimensionalArrayExt {
     /// <summary>
     /// Fills the given 2d array with the specified value
     /// </summary>

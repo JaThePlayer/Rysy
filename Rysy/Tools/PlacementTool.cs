@@ -73,17 +73,17 @@ public class PlacementTool : Tool {
         };
     }
 
-    public override void Update(Camera camera, Room currentRoom) {
+    public override void Update(Camera camera, Room room) {
         if (PickNextFrame) {
             PickNextFrame = false;
-            if (GetPlacementUnderCursor(camera, currentRoom) is { } underCursor) {
+            if (GetPlacementUnderCursor(camera, room) is { } underCursor) {
                 Material = underCursor;
             }
             CurrentPlacement = null;
         }
 
         if (CurrentPlacement is not { } selection) {
-            CreatePlacementFromMaterial(camera, currentRoom);
+            CreatePlacementFromMaterial(camera, room);
             return;
         }
 
@@ -91,9 +91,9 @@ public class PlacementTool : Tool {
             //Input.Mouse.ConsumeLeft();
 
             //History.ApplyNewAction(place.PlacementHandler.Place(selection, currentRoom));
-            if (RectangleGesture.Update((p) => GetMousePos(camera, currentRoom, position: p.ToVector2())) is { } rect) {
+            if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
                 //Console.WriteLine(rect);
-                History.ApplyNewAction(place.PlacementHandler.Place(selection, currentRoom));
+                History.ApplyNewAction(place.PlacementHandler.Place(selection, room));
             }
 
             if (RectangleGesture.Delta is { } delta) {
@@ -143,11 +143,11 @@ public class PlacementTool : Tool {
         return null;
     }
 
-    public override void Render(Camera camera, Room currentRoom) {
-        var mouse = GetMousePos(camera, currentRoom);
+    public override void Render(Camera camera, Room room) {
+        var mouse = GetMousePos(camera, room);
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
-            foreach (var item in placement.GetPreviewSprites(selection, RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2(), currentRoom)) {
+            foreach (var item in placement.GetPreviewSprites(selection, RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2(), room)) {
                 item.WithMultipliedAlpha(0.4f).Render();
             }
         }

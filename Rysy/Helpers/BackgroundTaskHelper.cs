@@ -1,7 +1,7 @@
 ﻿namespace Rysy.Helpers;
 
 public static class BackgroundTaskHelper {
-    private class TimerInfo {
+    private sealed class TimerInfo {
         public PeriodicTimer Timer;
         public Action OnElapsed;
         public CancellationTokenSource CancellationToken;

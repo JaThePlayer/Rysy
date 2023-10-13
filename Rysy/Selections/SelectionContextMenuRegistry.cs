@@ -12,7 +12,7 @@ public struct PopupCtx {
 }
 
 public static class SelectionContextWindowRegistry {
-    private class PopupInfo {
+    private sealed class PopupInfo {
         public SelectionLayer Layer;
         public string PopupID;
 

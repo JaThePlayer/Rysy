@@ -228,7 +228,7 @@ public class Input {
         }
     }
 
-    private class KeyboardInput : IKeyboardInput {
+    private sealed class KeyboardInput : IKeyboardInput {
         private KeyboardState LastState;
 
         private Keys[] ClickedKeys = new Keys[32];

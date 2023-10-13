@@ -15,12 +15,12 @@ public record class IntField : Field, ILonnField {
 
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToInt32(newDefault);
+        => Default = Convert.ToInt32(newDefault, CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) => value is int i && i >= Min && i <= Max && base.IsValid(value);
 
     public override object? RenderGui(string fieldName, object value) {
-        int b = Convert.ToInt32(value);
+        int b = Convert.ToInt32(value, CultureInfo.InvariantCulture);
         if (ImGui.InputInt(fieldName, ref b, Step).WithTooltip(Tooltip))
             return b;
 
@@ -56,12 +56,12 @@ public record class IntField : Field, ILonnField {
         var min = fieldInfoEntry!.GetValueOrDefault("minimumValue", null);
         var max = fieldInfoEntry!.GetValueOrDefault("maximumValue", null);
 
-        var field = Fields.Int(Convert.ToInt32(def));
+        var field = Fields.Int(Convert.ToInt32(def, CultureInfo.InvariantCulture));
 
         if (min is { })
-            field.WithMin(Convert.ToInt32(min));
+            field.WithMin(Convert.ToInt32(min, CultureInfo.InvariantCulture));
         if (max is { })
-            field.WithMin(Convert.ToInt32(max));
+            field.WithMin(Convert.ToInt32(max, CultureInfo.InvariantCulture));
 
         return field;
     }

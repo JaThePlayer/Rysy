@@ -288,7 +288,7 @@ public sealed class BinaryPacker {
         /// <summary>
         /// The file this package comes from
         /// </summary>
-        public string? Filename { get; init; } = null;
+        public string? Filename { get; init; }
     }
 
     public class Element {
@@ -307,9 +307,10 @@ public sealed class BinaryPacker {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Element[] Children = null!;
 
+#pragma warning disable CA1720 // Identifier contains type name
         public int Int(string attrName, int def = 0) {
             if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToInt32(obj);
+                return Convert.ToInt32(obj, CultureInfo.InvariantCulture);
             }
 
             return def;
@@ -317,7 +318,7 @@ public sealed class BinaryPacker {
 
         public bool Bool(string attrName, bool def = false) {
             if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToBoolean(obj);
+                return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
             }
 
             return def;
@@ -333,7 +334,7 @@ public sealed class BinaryPacker {
 
         public float Float(string attrName, float def = 0f) {
             if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToSingle(obj);
+                return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
             }
 
             return def;
@@ -346,5 +347,6 @@ public sealed class BinaryPacker {
 
             return def;
         }
+#pragma warning restore CA1720 // Identifier contains type name
     }
 }

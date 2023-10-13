@@ -199,10 +199,10 @@ public interface IPlacementHandler {
 }
 
 public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHandler {
-    public static EntityPlacementHandler Entity = new(SelectionLayer.Entities);
-    public static EntityPlacementHandler Trigger = new(SelectionLayer.Triggers);
-    public static EntityPlacementHandler FGDecals = new(SelectionLayer.FGDecals);
-    public static EntityPlacementHandler BGDecals = new(SelectionLayer.BGDecals);
+    public static readonly EntityPlacementHandler Entity = new(SelectionLayer.Entities);
+    public static readonly EntityPlacementHandler Trigger = new(SelectionLayer.Triggers);
+    public static readonly EntityPlacementHandler FGDecals = new(SelectionLayer.FGDecals);
+    public static readonly EntityPlacementHandler BGDecals = new(SelectionLayer.BGDecals);
 
     private Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
         placement.ValueOverrides["_editorLayer"] = Persistence.Instance?.EditorLayer ?? 0;

@@ -2,8 +2,8 @@
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
 public sealed class CustomEntityAttribute : Attribute {
-    public readonly string Name;
-    public readonly string[] AssociatedMods;
+    public string Name { get; }
+    public string[] AssociatedMods { get; }
 
     public CustomEntityAttribute(string name, string[]? associatedMods = null) {
         Name = name;

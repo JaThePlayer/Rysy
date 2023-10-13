@@ -40,7 +40,7 @@ public sealed class Parallax : Style, IPlaceable {
             Color = Color,
         };
 
-    public static List<string> BlendModes = new() {
+    public static List<string> BlendModes { get; } = new() {
         "alphablend", "additive"
     };
 }
