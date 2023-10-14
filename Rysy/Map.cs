@@ -6,6 +6,11 @@ namespace Rysy;
 
 public sealed class Map : IPackable {
     /// <summary>
+    /// An empty map that can be used for mocking
+    /// </summary>
+    public static Map DummyMap { get; } = Map.NewMap("DUMMY");
+
+    /// <summary>
     /// The package name of the map.
     /// </summary>
     public string? Package;
@@ -111,7 +116,7 @@ public sealed class Map : IPackable {
 
         if (meta.Sprites is { } sprites && oldMeta?.Sprites != meta.Sprites) {
             if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), Sprites.Load)) {
-                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {sprites}");
+                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find sprites xml {sprites}");
             }
         }
     }

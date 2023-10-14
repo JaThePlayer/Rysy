@@ -248,7 +248,7 @@ public class StylegroundWindow : Window {
             ?? LangRegistry.TranslateOrNull(prefix)
             ?? placement.SID!.Split('/')[^1].Humanize();
 
-        if (placement.GetMod() is { } mod) {
+        if (placement.GetDefiningMod() is { } mod) {
             return $"{name} [{mod.Name}]";
         }
 

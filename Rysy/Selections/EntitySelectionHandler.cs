@@ -60,7 +60,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
         return (
             new AddNodeAction(Entity, node, 0),
-            new NodeSelectionHandler(this, node)
+            new NodeSelectionHandler(this, node, 0)
         );
     }
 

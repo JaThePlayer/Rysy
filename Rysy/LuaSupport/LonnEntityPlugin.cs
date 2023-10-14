@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Mods;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 
@@ -58,10 +59,16 @@ public sealed class LonnEntityPlugin {
             if (Plugin is null)
                 return;
 
+            /*
             var lua = Plugin.LuaCtx.Lua;
 
             if (lua.GetTop() < Amt) {
-                Console.WriteLine("SKIPPING");
+                //Console.WriteLine("SKIPPING");
+                Logger.Write("LonnEntity", LogLevel.Warning, $"Lua stack shrunk after using {Plugin.Name}! Previous: {Plugin.StackLoc}, now: {lua.GetTop()}.");
+                lua.PrintStack();
+                lua.Pop(lua.GetTop());
+                Console.WriteLine(new StackTrace());
+                //Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.ToCSharp(lua.GetTop()).ToJson()}");
                 return;
             }
 
@@ -70,10 +77,13 @@ public sealed class LonnEntityPlugin {
                 lua.PrintStack();
                 //Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.TableToDictionary(lua.GetTop()).ToJson()}");
                 Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.ToCSharp(lua.GetTop()).ToJson()}");
+                Console.WriteLine(new StackTrace());
             }
             lua.Pop(Amt);
 
-            Plugin.StackHolder = null;
+            Plugin.StackHolder = null;*/
+            var lua = Plugin.LuaCtx.Lua;
+            lua.Pop(lua.GetTop());
         }
     }
 
@@ -315,7 +325,6 @@ public sealed class LonnEntityPlugin {
 
                             return LonnFieldIntoToFieldList(dict, mainPlacement);
                         }) ?? new();
-                        lua.Pop(1);
 
                         return fields;
                     });
@@ -471,8 +480,8 @@ public sealed class LonnEntityPlugin {
                         // {text, value},
                         // {text, value2},
                         return fieldType switch {
-                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Cast<List<object>>().ToDictionary(l => Convert.ToInt32(l[1], CultureInfo.InvariantCulture), l => l[0].ToString()!), editable),
-                            _ => Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().ToDictionary(l => l[1], l => l[0].ToString()!), editable)
+                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Cast<List<object>>().SafeToDictionary(l => Convert.ToInt32(l[1], CultureInfo.InvariantCulture), l => l[0].ToString()!), editable),
+                            _ => Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().SafeToDictionary(l => l[1], l => l[0].ToString()!), editable)
                         };
                     } else {
                         return fieldType switch {
@@ -484,8 +493,8 @@ public sealed class LonnEntityPlugin {
                     var firstVal = dropdownOptions.FirstOrDefault().Value;
 
                     return fieldType switch {
-                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def, CultureInfo.InvariantCulture), dropdownOptions.ToDictionary(v => (int) Convert.ToDouble(v.Value, CultureInfo.InvariantCulture), v => v.Key), editable),
-                        _ => Fields.Dropdown(def, dropdownOptions.ToDictionary(v => v.Value, v => v.Key), editable),
+                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def, CultureInfo.InvariantCulture), dropdownOptions.SafeToDictionary(v => (int) Convert.ToDouble(v.Value, CultureInfo.InvariantCulture), v => v.Key), editable),
+                        _ => Fields.Dropdown(def, dropdownOptions.SafeToDictionary(v => v.Value, v => v.Key), editable),
                     };
                 }
                 default:

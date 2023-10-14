@@ -59,6 +59,10 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
         LastEntity = Entity;
     }
 
+    internal NodeSelectionHandler(EntitySelectionHandler entity, Node node, int nodeId) : this(entity, node) {
+        LastNodeId = nodeId;
+    }
+
     public void OnDeselected() {
     }
 
@@ -104,11 +108,9 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
         var node = new Node(pos ?? (Node.Pos + new Vector2(16f, 0)));
 
-        //Entity.OnChanged();
-
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),
-            new NodeSelectionHandler(Handler, node)
+            new NodeSelectionHandler(Handler, node, NodeIdx + 1)
         );
     }
 

@@ -462,7 +462,7 @@ where TArg2 : class, ILuaWrapper {
         var result = lua.PCall(2, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(results);
+            lua.Pop(1);
             throw ex;
         }
 
@@ -484,7 +484,7 @@ where TArg2 : class, ILuaWrapper {
         var result = lua.PCall(args.Length, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(results);
+            lua.Pop(1);
             throw ex;
         }
 
@@ -502,7 +502,7 @@ where TArg2 : class, ILuaWrapper {
         var result = lua.PCall(0, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(results);
+            lua.Pop(1);
             throw ex;
         }
 
@@ -526,7 +526,7 @@ where TArg2 : class, ILuaWrapper {
         var result = lua.PCall(4, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(results);
+            lua.Pop(1);
             throw ex;
         }
 
@@ -543,11 +543,10 @@ where TArg1 : class, ILuaWrapper {
         TOut? ret;
 
         lua.PushWrapper(arg1);
-
         var result = lua.PCall(1, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(results);
+            lua.Pop(1);
             throw ex;
         }
 

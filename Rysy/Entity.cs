@@ -229,7 +229,15 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
+    /// <summary>
+    /// Whether rendering erors should be logged to the console.
+    /// </summary>
+    public static bool LogErrors { get; set; } = true;
+
     private IEnumerable<ISprite> LogError(Exception ex) {
+        if (!LogErrors)
+            return Array.Empty<ISprite>();
+
         Logger.Error(ex, $"Erroring entity definition for {Name}: {ToJson()}");
 
         var w = Width;

@@ -20,7 +20,7 @@ public static class ConnectedEntityHelper {
         var bounds = selfRect.AddSize(16, 16).MovedBy(-8, -8);
 
         // only grab the entities we have a chance of connecting to
-        var others = allEntities.Select(e => getRectangle(e)).Where(bounds.Intersects).ToList();
+        var others = allEntities.Append(self).Select(e => getRectangle(e)).Where(bounds.Intersects).ToList();
 
         Sprite spr;
 

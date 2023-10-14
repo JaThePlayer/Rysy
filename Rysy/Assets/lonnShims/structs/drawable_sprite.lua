@@ -20,6 +20,9 @@ function __metaMt.__index(self, key)
 		rawset(self, "offsetX", offsetX)
 		rawset(self, "offsetY", offsetY)
         rawset(self, "_RYSY_loaded", true)
+
+		rawset(self, "realWidth", width)
+		rawset(self, "realHeight", height)
     end
 
     local raw = rawget(self, key)
@@ -212,7 +215,8 @@ end
 
 function drawableSpriteStruct.fromTexture(texture, data)
 	if not _RYSY_DRAWABLE_exists(texture) then
-		return nil
+		--print("missing", texture)
+		return nil--drawableSpriteStruct.fromTexture("Rysy:missingTexture", data)
 	end
 
 	local meta = nil --spriteMeta - todo: figure this out, this might've been a bug?

@@ -50,7 +50,8 @@ public class VirtTexture : IDisposable {
                 return _clipRect.Value;
             }
 
-            Logger.Write("VirtTexture.Preload", LogLevel.Info, $"Requested ClipRect, preloading {this}");
+            if (Settings.Instance?.LogPreloadingTextures ?? false)
+                Logger.Write("VirtTexture.Preload", LogLevel.Info, $"Preloading {this}");
             if (TryPreloadClipRect()) {
                 return _clipRect!.Value;
             }

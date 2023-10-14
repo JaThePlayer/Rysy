@@ -138,6 +138,10 @@ public sealed class Settings {
 
     public bool LogSpriteCachingTimes { get; set; } = false;
 
+    public bool LogMissingTextures { get; set; } = true;
+
+    public bool LogPreloadingTextures { get; set; } = false;
+
 
     private string _theme = "dark";
     public string Theme {
@@ -203,8 +207,6 @@ public sealed class Settings {
 
     public bool MinifyClipboard { get; set; } = true;
 
-    public bool LogMissingTextures { get; set; } = true;
-
 
     private bool _BorderlessFullscreen = false;
     // has issues with mouse positions
@@ -226,7 +228,6 @@ public sealed class Settings {
 
     public string? FontFile { get; set; } = null;
 
-#warning Remove
-    public string? LonnPluginPath { get; set; }
+    public bool ShowPlacementIcons { get; set; } = true;
     #endregion
 }

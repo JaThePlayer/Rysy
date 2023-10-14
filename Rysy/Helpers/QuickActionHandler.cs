@@ -74,6 +74,9 @@ public class QuickActionHandler {
 
     private static List<QuickActionInfo> LoadActions(string file) {
         try {
+            if (Path.GetDirectoryName(file) is { } dir)
+                Directory.CreateDirectory(dir);
+
             return JsonSerializer.Deserialize<List<QuickActionInfo>>(File.ReadAllText(file), JsonSerializerHelper.DefaultOptions) ?? new();
         } catch (Exception e) {
             Logger.Error(e, $"Error loading quick actions");

@@ -1,9 +1,9 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Helpers;
-using Rysy.History;
-using Rysy.Scenes;
+using Rysy.Mods;
 using Rysy.Selections;
 
 namespace Rysy.Tools;
@@ -33,12 +33,15 @@ public class PlacementTool : Tool {
     };
     public override List<string> ValidLayers => _validLayers;
 
+    private static Cache<List<Placement>> FGDecalPlacements = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, LayerNames.FG_DECALS)!).ToList());
+    private static Cache<List<Placement>> BGDecalPlacements = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, LayerNames.BG_DECALS)!).ToList());
+
     public override IEnumerable<object>? GetMaterials(string layer) {
         return layer switch {
             LayerNames.ENTITIES => EntityRegistry.EntityPlacements,
             LayerNames.TRIGGERS => EntityRegistry.TriggerPlacements,
-            LayerNames.FG_DECALS => GFX.ValidDecalPaths,
-            LayerNames.BG_DECALS => GFX.ValidDecalPaths,
+            LayerNames.FG_DECALS => FGDecalPlacements.Value,
+            LayerNames.BG_DECALS => BGDecalPlacements.Value,
             LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => s.Key),
             null => null,
             _ => throw new NotImplementedException(layer)
@@ -47,8 +50,8 @@ public class PlacementTool : Tool {
 
     public override string GetMaterialDisplayName(string layer, object material) {
         if (material is Placement pl) {
-            var name = pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
-            return pl.GetMod() is { } mod ? $"{name} [{mod.Name}]" : name;
+            var name = LayerNames.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
+            return pl.GetDefiningMod() is { } mod ? $"{name} [{mod.Name}]" : name;
         }
 
         return material switch {
@@ -64,12 +67,25 @@ public class PlacementTool : Tool {
         };
     }
 
-    private Placement? PlacementFromString(string str) {
-        return Layer switch {
+    private static Placement? PlacementFromString(string str, string layer) {
+        return layer switch {
             LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One, Color.White, rotation: 0f),
             LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One, Color.White, rotation: 0f),
             LayerNames.PREFABS => PrefabHelper.PlacementFromName(str),
             _ => null,
+        };
+    }
+
+    protected override void OnLayerChanged() {
+        base.OnLayerChanged();
+
+        var cache = MaterialPreviewCache;
+        MaterialPreviewCache = new(StringComparer.Ordinal);
+        RysyEngine.OnEndOfThisFrame += () => {
+            foreach (var (k, v) in cache) {
+                ImGuiManager.DisposeXnaWidget(k);
+            }
+            cache.Clear();
         };
     }
 
@@ -113,7 +129,7 @@ public class PlacementTool : Tool {
 
     private void CreatePlacementFromMaterial(Camera camera, Room currentRoom) {
         if (Material is string strPlacement) {
-            Material = PlacementFromString(strPlacement);
+            Material = PlacementFromString(strPlacement, Layer);
         }
 
 
@@ -183,8 +199,131 @@ public class PlacementTool : Tool {
         RectangleGesture = new(Input);
     }
 
+    const int PreviewSize = 32;
+
+    public override float MaterialListElementHeight()
+        => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
+
+    private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache = new(StringComparer.Ordinal);
+
+    protected override XnaWidgetDef? GetMaterialPreview(object material) {
+        if (material is string)
+            return null;
+
+        if (material is not Placement placement)
+            return base.GetMaterialPreview(material);
+
+        var key = $"pl_{placement.Name}_{placement.SID}";
+        if (MaterialPreviewCache.TryGetValue(key, out var value)) {
+            return value;
+        }
+
+        if (EditorState.Map is not { })
+            return null;
+
+        XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
+            ? CreateWidgetForDecal(placement, key, PreviewSize)
+            : CreateWidget(placement, key);
+        MaterialPreviewCache[key] = def;
+
+        return def;
+    }
+
+    protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
+        if (material is Placement placement && placement.IsDecal()) {
+            var texture = GFX.Atlas[Decal.GetTexturePathFromPlacement(placement)];
+            var maxSize = Math.Max(texture.Width, texture.Height);
+
+            return CreateWidgetForDecal(placement, "", maxSize);
+        }
+
+        return base.CreateTooltipPreview(materialPreview, material);
+    }
+
+    private XnaWidgetDef CreateWidgetForDecal(Placement placement, string key, int size) {
+        var texture = Decal.GetTexturePathFromPlacement(placement);
+        var scale = size < PreviewSize ? 2 : 1;
+        size *= scale;
+
+        if (size == PreviewSize) {
+            // optimised version with less locals getting captured into the lambda
+            return new(key, PreviewSize, PreviewSize, () => {
+                ISprite.FromTexture(new(PreviewSize / 2), texture, origin: new(.5f, .5f)).Render();
+            });
+        }
+
+        return new(key, size, size, () => {
+            (ISprite.FromTexture(new(size / 2), texture, origin: new(.5f, .5f)) with {
+                Scale = new(scale),
+            }).Render();
+        });
+    }
+
+    private XnaWidgetDef CreateWidget(Placement placement, string key) {
+        List<ISprite>? sprites = null;
+        var def = new XnaWidgetDef(key, PreviewSize, PreviewSize, () => {
+            if (sprites is null) {
+                var prevLogErrors = Entity.LogErrors;
+                Entity.LogErrors = false;
+
+                var map = Map.DummyMap;
+                var r = Room.DummyRoom;
+                var s = placement.PlacementHandler.CreateSelection(placement, default, r);
+
+                var offset = new Vector2(PreviewSize / 2, PreviewSize / 2);
+                var rect = s.Rect;
+                if (s.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
+                    resizeAct.Apply();
+                    resizeAct = null;
+                    offset = default;
+                }
+
+                sprites = placement.GetPreviewSprites(s, offset, r).ToList();
+                Entity.LogErrors = prevLogErrors;
+                // clear old references to let them get GC'd
+                map = null;
+                r = null;
+                s = null;
+                placement = null!;
+            }
+            
+            foreach (var item in sprites) {
+                item.Render();
+            }
+        }, Rerender: true);
+        return def;
+    }
+
+    protected override void RenderMaterialTooltipExtraInfo(object material) {
+        base.RenderMaterialTooltipExtraInfo(material);
+
+        if (material is Placement placement && placement.GetDefiningMod() is { } definingMod && placement.GetAssociatedMods() is { Count: > 0} associated) {
+            ImGui.BeginTooltip();
+
+            var currentMod = EditorState.Map?.Mod;
+            ImGui.Text("Associated:");
+            if (associated.Count == 1)
+                ImGui.SameLine();
+            foreach (var mod in associated) {
+                if (currentMod is { } && !currentMod.DependencyMet(mod)) {
+                    ImGui.TextColored(Color.Red.ToNumVec4(), mod);
+                } else {
+                    ImGui.Text(mod);
+                }
+            }
+
+            ImGui.TextDisabled($"Defined by: {definingMod.Name}");
+            ImGui.EndTooltip();
+        }
+    }
+
     protected override void RenderMaterialListElement(object material, string name) {
+        if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap(out ModMeta? missingDep)) {
+            ImGuiManager.PushNullStyle();
+        }
+
         base.RenderMaterialListElement(material, name);
+        ImGuiManager.PopNullStyle();
 
         if (Layer == LayerNames.PREFABS) {
             if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {

@@ -146,11 +146,12 @@ public static class Logger {
         lock (FILE_LOCK) {
             if (UseColorsInConsole) {
                 Console.Write(str.Censor());
+                File.AppendAllText(LogFile, unformatted.Censor());
             } else {
-                Console.Write(unformatted.Censor());
+                var censored = unformatted.Censor();
+                Console.Write(censored);
+                File.AppendAllText(LogFile, censored);
             }
-
-            File.AppendAllText(LogFile, unformatted); 
         }
 
     }

@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Graphics;
 
 namespace Rysy.Gui.Windows;
 
@@ -16,6 +17,13 @@ public class CrashWindow : Window {
         Message = message;
 
         ExceptionString = Exception.ToString().Censor();
+
+        try {
+            // avoid future crashes
+            GFX.EndBatch();
+        } catch {
+
+        }
     }
 
     protected override void Render() {

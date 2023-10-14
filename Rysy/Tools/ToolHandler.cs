@@ -17,6 +17,17 @@ public class ToolHandler {
 
     public readonly ToolRegistry Registry;
 
+    public List<Tool> Tools;
+
+    private Tool _currentTool;
+    public Tool CurrentTool {
+        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
+        set {
+            CancelInteraction();
+            _currentTool = value;
+        }
+    }
+
     private static Tool Create(Type type, HistoryHandler history, Input input) {
         var t = (Tool) Activator.CreateInstance(type)!;
 
@@ -53,12 +64,32 @@ public class ToolHandler {
         Input = input;
     }
 
+    public void Unload() {
+        UnloadAllTools();
+    }
+
+    ~ToolHandler() {
+        UnloadAllTools();
+    }
+
     private void CreateTools() {
+        UnloadAllTools();
+
         Tools = new();
         foreach (var toolType in Registry.Tools) {
             AddTool(Create(toolType, History, Input));
         }
         Tools = Tools.OrderBy(t => HardcodedOrder.IndexOf(t.Name)).ThenBy(t => t.Name).ToList();
+    }
+
+    private void UnloadAllTools() {
+        if (Tools is { }) {
+            foreach (var t in Tools) {
+                t.Unload();
+            }
+            Tools.Clear();
+        }
+
     }
 
     public ToolHandler UsePersistence(bool value) {
@@ -75,17 +106,6 @@ public class ToolHandler {
 
     private void AddTool(Tool tool) {
         Tools.Add(tool);
-    }
-
-    public List<Tool> Tools;
-
-    private Tool _currentTool;
-    public Tool CurrentTool {
-        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
-        set {
-            CancelInteraction();
-            _currentTool = value;
-        }
     }
 
     public T? GetTool<T>() where T : Tool {
