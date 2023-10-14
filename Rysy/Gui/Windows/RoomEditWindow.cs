@@ -45,9 +45,9 @@ public sealed class RoomEditWindow : Window {
         ImGuiManager.EndWindowBottomBar();*/
     }
 
-    protected override bool HasBottomBar => true;
+    public override bool HasBottomBar => true;
 
-    protected override void RenderBottomBar() {
+    public override void RenderBottomBar() {
         var valid = Valid(Room.Map) && Attrs != Room.Attributes;
 
         ImGui.BeginDisabled(!valid);

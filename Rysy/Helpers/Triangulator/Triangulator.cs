@@ -36,19 +36,30 @@ namespace Triangulator {
         /// <param name="desiredWindingOrder">The desired output winding order.</param>
         /// <param name="outputVertices">The resulting vertices that include any reversals of winding order and holes.</param>
         /// <param name="indices">The resulting indices for rendering the shape as a triangle list.</param>
+        /// <param name="inputWindingOrder">The winding order of the input vertices. Null makes the triangular determine the correct order manually.</param>
         public static void Triangulate(
             Vector2[] inputVertices,
             WindingOrder desiredWindingOrder,
+            WindingOrder? inputWindingOrder,
             out Vector2[] outputVertices,
             out int[] indices) {
 
             List<Triangle> triangles = new List<Triangle>();
 
+            /*
             //make sure we have our vertices wound properly
             if (DetermineWindingOrder(inputVertices) == WindingOrder.Clockwise)
                 outputVertices = ReverseWindingOrder(inputVertices);
             else
-                outputVertices = (Vector2[]) inputVertices.Clone();
+                outputVertices = (Vector2[]) inputVertices.Clone();*/
+            //make sure we have our vertices wound properly
+            inputWindingOrder ??= DetermineWindingOrder(inputVertices);
+
+            outputVertices = inputWindingOrder switch {
+                WindingOrder.Clockwise => ReverseWindingOrder(inputVertices),
+                WindingOrder.CounterClockwise => (Vector2[]) inputVertices.Clone(),
+                _ => throw new NotImplementedException(),
+            };
 
             //clear all of the lists
             polygonVertices.Clear();

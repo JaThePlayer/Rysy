@@ -98,9 +98,9 @@ public class Window {
 
     }
 
-    protected virtual bool HasBottomBar => false;
+    public virtual bool HasBottomBar => false;
 
-    protected virtual void RenderBottomBar() {
+    public virtual void RenderBottomBar() {
 
     }
 
@@ -121,9 +121,9 @@ public class ScriptedWindow : Window {
         BottomBarRenderFunc = bottomBarFunc;
     }
 
-    protected override bool HasBottomBar => BottomBarRenderFunc is { };
+    public override bool HasBottomBar => BottomBarRenderFunc is { };
 
-    protected override void RenderBottomBar() {
+    public override void RenderBottomBar() {
         base.RenderBottomBar();
 
         BottomBarRenderFunc?.Invoke(this);

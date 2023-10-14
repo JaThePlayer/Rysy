@@ -52,7 +52,7 @@ public sealed class MetadataWindow : Window {
     });
 
     public static FieldList GetCassetteFieldInfo(MapMetadata meta) => AddTooltips(new() {
-        ["CassetteSong"] = Fields.String(meta.CassetteSong).AllowNull(),
+        ["CassetteSong"] = Fields.Dropdown(meta.CassetteSong, CelesteEnums.Music).AllowNull().AllowEdits(),
         ["cassettemodifier:BeatIndexOffset"] = Fields.Int(meta.CassetteModifier.BeatIndexOffset),
         ["cassettemodifier:BeatsMax"] = Fields.Int(meta.CassetteModifier.BeatsMax),
         ["cassettemodifier:BeatsPerTick"] = Fields.Int(meta.CassetteModifier.BeatsPerTick),
@@ -64,7 +64,9 @@ public sealed class MetadataWindow : Window {
     });
 
     public static FieldList GetMusicFieldInfo(MapMetadata meta) => AddTooltips(new() {
-        ["mode:audiostate:Music"] = Fields.Dropdown(meta.Mode.AudioState.Music, CelesteEnums.Music).AllowNull().AllowEdits(),
+        ["mode:audiostate:Music"] = Fields.Dropdown(meta.Mode.AudioState.Music, 
+            CelesteEnums.Music.Where(kv => kv.Key.StartsWith("event:/music/cassette/", StringComparison.Ordinal)).ToDictionary())
+            .AllowNull().AllowEdits(),
         ["mode:audiostate:Ambience"] = Fields.String(meta.Mode.AudioState.Ambience).AllowNull(), // todo: dropdown
     });
 
