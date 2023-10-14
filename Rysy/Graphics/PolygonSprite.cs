@@ -8,8 +8,9 @@ public record struct PolygonSprite : ISprite {
 
     private VertexPositionColor[]? VertexPositionColors;
 
-    public PolygonSprite(IEnumerable<Vector2> nodes) {
+    public PolygonSprite(IEnumerable<Vector2> nodes, WindingOrder? windingOrder = null) {
         Nodes = nodes.ToArray();
+        Order = windingOrder;
     }
 
     public int? Depth { get; set; }
@@ -17,13 +18,16 @@ public record struct PolygonSprite : ISprite {
 
     public bool IsLoaded => true;
 
+    public WindingOrder? Order { get; set; }
+
     public ISelectionCollider GetCollider() 
         => ISelectionCollider.FromRect(0, 0, 0, 0);
+
     public void Render() {
         if (Nodes.Length < 3)
             return;
         
-        VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color);
+        VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
 
         if (VertexPositionColors.Length < 3)
             return;
@@ -36,7 +40,7 @@ public record struct PolygonSprite : ISprite {
             return;
 
         if (cam is { }) {
-            VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color);
+            VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
 
             if (VertexPositionColors.Length < 3)
                 return;
@@ -54,8 +58,12 @@ public record struct PolygonSprite : ISprite {
         };
     }
 
-    public static VertexPositionColor[] GetFillVertsFromNodes(Vector2[] nodes, Color color) {
-        Triangulator.Triangulator.Triangulate(nodes, WindingOrder.CounterClockwise, out var verts, out var indices);
+    public PolygonSprite WithWindingOrder(WindingOrder? order) => this with {
+        Order = order,
+    };
+
+    public static VertexPositionColor[] GetFillVertsFromNodes(Vector2[] nodes, Color color, WindingOrder? inputWindingOrder) {
+        Triangulator.Triangulator.Triangulate(nodes, WindingOrder.CounterClockwise, inputWindingOrder, out var verts, out var indices);
 
         var fill = new VertexPositionColor[indices.Length];
         for (int i = 0; i < indices.Length; i++) {

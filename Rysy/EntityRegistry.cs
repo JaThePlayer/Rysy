@@ -379,14 +379,16 @@ public static class EntityRegistry {
         var isTrigger = t.IsSubclassOf(typeof(Trigger));
         var isStyle = t.IsSubclassOf(typeof(Style));
 
+        var plcementList = placements.ToListIfNotList();
+
         var placementsRegistry = isStyle ? StylegroundPlacements : isTrigger ? TriggerPlacements : EntityPlacements;
 
         lock (placementsRegistry) {
-            foreach (var placement in placements) {
+            foreach (var placement in plcementList) {
                 placement.SID ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
                 placement.PlacementHandler = isTrigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
             }
-            placementsRegistry.AddRange(placements);
+            placementsRegistry.AddRange(plcementList);
         }
     }
 

@@ -1,8 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
-using Rysy.History;
-using System.Reflection;
 
 namespace Rysy.Gui.Windows;
 
@@ -140,9 +138,9 @@ public class FormWindow : Window {
         AllFieldsValid = valid;
     }
 
-    protected override bool HasBottomBar => true;
+    public override bool HasBottomBar => true;
 
-    protected override void RenderBottomBar() {
+    public override void RenderBottomBar() {
         ImGui.BeginDisabled(!AllFieldsValid);
 
         if (ImGui.Button(SaveChangesButtonName)) {
@@ -154,7 +152,12 @@ public class FormWindow : Window {
         ImGui.EndDisabled();
     }
 
-    public void RenderBody() => Render();
+    public void RenderBody() {
+        ImGuiManager.WithBottomBar(
+            renderMain: Render,
+            renderBottomBar: RenderBottomBar
+        );
+    }
 
     private bool HandleProp(Prop prop, FormContext ctx) {
         var name = prop.Name;
