@@ -137,6 +137,30 @@ public sealed class ModMeta : ILuaWrapper {
     }
 
     public override string ToString() => EverestYaml.ToString()!;
+
+    public bool DependencyMet(ModMeta other) {
+        foreach (var meta in EverestYaml) {
+            foreach (var dep in meta.Dependencies) {
+                if (dep.Name == other.Name && dep.Version <= other.Version) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public bool DependencyMet(string otherName) {
+        foreach (var meta in EverestYaml) {
+            foreach (var dep in meta.Dependencies) {
+                if (dep.Name == otherName) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>

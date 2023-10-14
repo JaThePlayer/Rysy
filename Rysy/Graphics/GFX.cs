@@ -16,26 +16,7 @@ public static class GFX {
     public static Texture2D Pixel { get; private set; } = null!;
     public static VirtTexture VirtPixel { get; private set; } = null!;
 
-    private static List<string> _ValidDecalPaths;
-
     private static BasicEffect BasicEffect;
-
-    public static List<string> ValidDecalPaths {
-        get {
-            if (_ValidDecalPaths is { } p)
-                return p;
-            _ValidDecalPaths = Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal)).Select(p => {
-                return p.virtPath["decals/".Length..].RegexReplace(Decal.NumberTrimEnd, string.Empty);
-
-
-            }).Distinct().ToList();
-
-            Atlas.OnTextureLoad += (a) => _ValidDecalPaths = null!;
-            Atlas.OnUnload += () => _ValidDecalPaths = null!;
-
-            return _ValidDecalPaths;
-        }
-    }
 
     /// <summary>
     /// Loads the bare minimum needed to render anything.
@@ -88,6 +69,7 @@ public static class GFX {
             await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
             Atlas.AddTexture("tilesets/subfolder/betterTemplate", Atlas["Rysy:tilesets/subfolder/betterTemplate"]);
+            Atlas.AddTexture("Rysy:missingTexture", UnknownTexture);
         }
 
         LoadingScene.Text = "Scanning mod assets";

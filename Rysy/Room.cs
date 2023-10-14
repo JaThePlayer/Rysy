@@ -12,6 +12,11 @@ using System.Text.Json.Serialization;
 namespace Rysy;
 
 public sealed class Room : IPackable, ILuaWrapper {
+    /// <summary>
+    /// An empty room that can be used for mocking
+    /// </summary>
+    public static Room DummyRoom { get; } = new Room(Map.DummyMap, 10, 10);
+
     public Room() {
         RenderCacheToken = new(ClearRenderCache);
         EntityRenderCacheToken = new(ClearEntityRenderCache);

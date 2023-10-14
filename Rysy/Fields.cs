@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -170,17 +171,20 @@ public static partial class Fields {
     public static Field? CreateFromLonn(object? val, string? fieldType, Dictionary<string, object> fieldInfoEntry) {
         RegisterScannerIfNeeded();
 
-        if (fieldType is null)
+        if (fieldType is "string" or "number" or "boolean" or "anything" or null)
             return GuessFromValue(val, fromMapData: true);
 
         if (LonnFieldGenerators!.TryGetValue(fieldType, out var generator)) {
             try {
                 return generator(val, fieldInfoEntry);
             } catch (Exception ex) {
-                Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
+                if (Entity.LogErrors)
+                    Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
             }
         } else {
-            Logger.Write("Fields", LogLevel.Warning, $"Unknown field type: {fieldType}");
+            if (Entity.LogErrors) {
+                Logger.Write("Fields", LogLevel.Warning, $"Unknown field type: {fieldType}");
+            }
         }
 
         return GuessFromValue(val, fromMapData: true);

@@ -46,6 +46,13 @@ public interface ISprite : IEnumerable<ISprite> {
         Color = Color.White,
     };
 
+    public static Sprite FromTexture(Vector2 pos, string texturePath, Vector2 origin)
+    => new(GFX.Atlas[texturePath]) {
+        Pos = pos.Floored(),
+        Color = Color.White,
+        Origin = origin,
+    };
+
     public static Sprite FromTexture(Vector2 pos, VirtTexture texture)
     => new(texture) {
         Pos = pos.Floored(),

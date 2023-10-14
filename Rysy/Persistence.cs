@@ -45,6 +45,7 @@ public class Persistence {
             }
             return (T) ret!;
         }
+        Set(key, defaultValue);
 
         return defaultValue;
     }

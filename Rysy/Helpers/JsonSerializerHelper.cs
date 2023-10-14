@@ -12,6 +12,7 @@ public static class JsonSerializerHelper {
         IncludeFields = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
         Converters = {
             new ObjectToInferredTypesConverter(),
         }

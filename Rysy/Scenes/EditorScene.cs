@@ -61,7 +61,6 @@ public sealed class EditorScene : Scene {
 
     public EditorScene(bool loadFromPersistence = true) {
         HistoryHandler = new();
-        ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
 
         // Try to load the last edited map.
         if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
@@ -70,7 +69,7 @@ public sealed class EditorScene : Scene {
             Map = null;
         }
 
-        EditorState.OnMapChanged += OnMapChanged;
+        //EditorState.OnMapChanged += OnMapChanged;
     }
 
     public EditorScene(Map map) : this(false) {
@@ -386,5 +385,20 @@ public sealed class EditorScene : Scene {
 
     public void CenterCameraOnRoom(Room room) {
         Camera.CenterOnRealPos(room.Bounds.Center.ToVector2());
+    }
+
+    public override void OnEnd() {
+        base.OnEnd();
+
+        ToolHandler?.Unload();
+        //ToolHandler = null!;
+        EditorState.OnMapChanged -= OnMapChanged;
+    }
+
+    public override void OnBegin() {
+        ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
+        EditorState.OnMapChanged += OnMapChanged;
+
+        base.OnBegin();
     }
 }

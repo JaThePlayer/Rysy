@@ -234,8 +234,9 @@ public class LonnEntity : Entity {
 
         switch (lua.PeekTableType(top, "_type")) {
             case LuaType.String:
-                // name is provided, so there's 1 placement
+                // name is provided, so there's 1 sprite
                 NextSprite(top, list);
+                lua.Pop(1);
                 break;
             default:
                 var prevTop = lua.GetTop();

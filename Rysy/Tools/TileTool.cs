@@ -1,8 +1,10 @@
-﻿using Rysy.Extensions;
+﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Scenes;
 using System.Runtime.CompilerServices;
+using Rysy.Gui;
 
 namespace Rysy.Tools;
 
@@ -27,7 +29,7 @@ public abstract class TileTool : Tool {
             return null;
 
         autotiler.TilesetDataCacheToken.OnNextInvalidate += ClearMaterialListCache;
-        return autotiler.Tilesets.Keys.Where(k => k is not 'z' or 'y').Select(k => (object) k);
+        return autotiler.Tilesets.Keys.Where(k => k is not 'z' or 'y').Append('0').Select(k => (object) k);
     }
 
     private static Dictionary<string, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
@@ -38,6 +40,9 @@ public abstract class TileTool : Tool {
         }
 
         if (material is char c) {
+            if (c is '0') {
+                return "Air";
+            }
             var cAsString = c.ToString();
             if (!cache.TryGetValue(cAsString, out var name)) {
                 name = GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? cAsString;
@@ -119,5 +124,31 @@ public abstract class TileTool : Tool {
                 (not '0', _) => (LayerNames.FG, fg), // fg tile exists, swap to that.
             };
         }
+    }
+
+    const int PreviewSize = 32;
+
+    public override float MaterialListElementHeight() 
+        => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
+
+    protected override XnaWidgetDef? GetMaterialPreview(object material) {
+        var autotiler = GetAutotiler(Layer);
+        if (autotiler is { } && material is char c) {
+            var tileGrid = new char[PreviewSize / 8, PreviewSize / 8];
+            tileGrid.Fill(c);
+            var sprites = autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOOB: false).ToList();
+
+            return new($"tile_{c}_{autotiler.GetTilesetDisplayName(c)}", PreviewSize, PreviewSize, () => {
+                foreach (var item in sprites) {
+                    item.Render();
+                }
+            });
+        }
+
+        return base.GetMaterialPreview(material);
+    }
+
+    protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
+        return materialPreview;
     }
 }

@@ -25,6 +25,13 @@ public abstract class Scene {
         SetupHotkeys();
     }
 
+    /// <summary>
+    /// Called when this scene is unset from <see cref="RysyEngine.Scene"/>
+    /// </summary>
+    public virtual void OnEnd() {
+
+    }
+
     public virtual void SetupHotkeys() {
         Hotkeys = new(Input.Global, updateInImgui: false);
         HotkeysIgnoreImGui = new(Input.Global, updateInImgui: true);

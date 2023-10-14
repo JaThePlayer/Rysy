@@ -348,10 +348,12 @@ public class SelectionTool : Tool {
                 }
             }
 
-        var selectionsUnderCursor = room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer, CustomLayer));
-        if (selectionsUnderCursor is { Count: > 0 }) {
-            foreach (var selection in selectionsUnderCursor) {
-                selection.Render(Color.Pink);
+        if (!ImGui.GetIO().WantCaptureMouse) {
+            var selectionsUnderCursor = room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer, CustomLayer));
+            if (selectionsUnderCursor is { Count: > 0 }) {
+                foreach (var selection in selectionsUnderCursor) {
+                    selection.Render(Color.Pink);
+                }
             }
         }
 

@@ -24,7 +24,7 @@ public sealed class MetadataWindow : Window {
             ["BloomBase"] = Fields.Float(meta.BloomBase ?? 0f),
             ["BloomStrength"] = Fields.Float(meta.BloomStrength ?? 1f),
             ["ColorGrade"] = Fields.Path(meta.ColorGrade, "Graphics/ColorGrading", "png").AllowNull(),
-            ["CoreMode"] = Fields.String(meta.CoreMode).AllowNull(), // todo: dropdown
+            ["CoreMode"] = Fields.EnumNamesDropdown(CelesteEnums.CoreModes.None).AllowNull(),//Fields.String(meta.CoreMode).AllowNull(), // todo: dropdown
             ["DarknessAlpha"] = Fields.Float(meta.DarknessAlpha ?? 0.05f),
             ["Dreaming"] = Fields.Bool(meta.Dreaming ?? false),
             ["ForegroundTiles"] = Fields.Path(meta.ForegroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),

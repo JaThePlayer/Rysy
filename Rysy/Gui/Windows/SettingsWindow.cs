@@ -50,15 +50,21 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.Save();
         }
 
-        var vsync = Settings.Instance.VSync;
-        if (ImGui.Checkbox("VSync", ref vsync).WithTooltip("Whether to use VSync or not")) {
-            Settings.Instance.VSync = vsync;
+        var b = Settings.Instance.VSync;
+        if (ImGui.Checkbox("VSync", ref b).WithTooltip("Whether to use VSync or not")) {
+            Settings.Instance.VSync = b;
             Settings.Instance.Save();
         }
 
-        var smart = Settings.Instance.SmartFramerate;
-        if (ImGui.Checkbox("Smart Framerate", ref smart).WithTooltip("Reduces target FPS when you haven't moved the mouse or pressed any keys for 1 second, to reduce CPU/GPU usage.")) {
-            Settings.Instance.SmartFramerate = smart;
+        b = Settings.Instance.SmartFramerate;
+        if (ImGui.Checkbox("Smart Framerate", ref b).WithTooltip("Reduces target FPS when you haven't moved the mouse or pressed any keys for 1 second, to reduce CPU/GPU usage.")) {
+            Settings.Instance.SmartFramerate = b;
+            Settings.Instance.Save();
+        }
+
+        b = Settings.Instance.ShowPlacementIcons;
+        if (ImGui.Checkbox("Show Placement Icons", ref b).WithTooltip("Whether to show icons next to placements in the material list.")) {
+            Settings.Instance.ShowPlacementIcons = b;
             Settings.Instance.Save();
         }
 
@@ -228,6 +234,12 @@ public sealed class SettingsWindow : Window {
             m = Settings.Instance.LogSpriteCachingTimes;
             if (ImGui.Checkbox("Log Sprite Caching Times", ref m).WithTooltip("Logs time spent calling GetSprites on entities during rendering.")) {
                 Settings.Instance.LogSpriteCachingTimes = m;
+                Settings.Instance.Save();
+            }
+
+            m = Settings.Instance.LogPreloadingTextures;
+            if (ImGui.Checkbox("Log Texture Preloading", ref m).WithTooltip("Logs whenever a sprite has to be preloaded due to requesting its size before it finished lazily loading.")) {
+                Settings.Instance.LogPreloadingTextures = m;
                 Settings.Instance.Save();
             }
 

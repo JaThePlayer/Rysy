@@ -17,6 +17,8 @@ public static class LayerNames {
     public const string ALL = "All";
     public const string PREFABS = "Prefabs";
 
+    public static bool IsDecalLayer(string layer) => layer is FG_DECALS or BG_DECALS;
+
     public static SelectionLayer ToolLayerToEnum(string layer, SelectionLayer customLayer = SelectionLayer.None) => layer switch {
         FG => SelectionLayer.FGTiles,
         BG => SelectionLayer.BGTiles,

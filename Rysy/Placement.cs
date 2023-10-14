@@ -1,8 +1,10 @@
 ﻿using Rysy.Graphics;
+using Rysy.Graphics.TextureTypes;
 using Rysy.History;
 using Rysy.Mods;
 using Rysy.Selections;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
@@ -147,7 +149,14 @@ public record class Placement {
     /// <summary>
     /// Tries to get the mod this placement comes from
     /// </summary>
-    public ModMeta? GetMod() {
+    public ModMeta? GetDefiningMod() {
+        if (IsDecal()) {
+            var texture = GFX.Atlas[Decal.GetTexturePathFromPlacement(this)];
+            if (texture is ModTexture modTexture)
+                return modTexture.Mod;
+            return null;
+        }
+
         if (SID is { } sid) {
             return EntityRegistry.GetDefiningMod(sid);
         }
@@ -155,10 +164,69 @@ public record class Placement {
         return null;
     }
 
+    private IReadOnlyList<string> _AssociatedMods;
+
+    /// <summary>
+    /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
+    /// </summary>
+    public IReadOnlyList<string> GetAssociatedMods() {
+        if (_AssociatedMods is { } cached)
+            return cached;
+
+        if (!IsEntityOrTrigger()) {
+            if (GetDefiningMod()?.Name is { } name)
+                return _AssociatedMods = new List<string>(1) { name };
+            return _AssociatedMods = new List<string>(0);
+        }
+        try {
+            var handler = PlacementHandler.CreateSelection(this, default, Room.DummyRoom);
+            if (handler is EntitySelectionHandler entityHandler) {
+                var entity = entityHandler.Entity;
+
+                return _AssociatedMods = EntityRegistry.GetAssociatedMods(entity);
+            }
+        } catch
+        {
+
+        }
+        
+
+        return _AssociatedMods = new List<string>(0);
+    }
+
+    public bool AreAssociatedModsADependencyOfCurrentMap([NotNullWhen(false)] out ModMeta? missingDependency) {
+        missingDependency = null;
+        if (GetDefiningMod() is not { } mod)
+            return true;
+
+        if (EditorState.Map?.Mod is not { } currentMod) {
+            return true;
+        }
+
+        foreach (var associated in GetAssociatedMods()) {
+            if (!currentMod.DependencyMet(associated)) {
+                missingDependency = mod;
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /// <summary>
+    /// Checks whether this placement will place a trigger or entity.
+    /// </summary>
+    public bool IsEntityOrTrigger() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.Triggers or SelectionLayer.Entities };
+
     /// <summary>
     /// Checks whether this placement will place a trigger.
     /// </summary>
     public bool IsTrigger() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.Triggers };
+
+    /// <summary>
+    /// Checks whether this placement will place a decal.
+    /// </summary>
+    public bool IsDecal() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals };
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);
 

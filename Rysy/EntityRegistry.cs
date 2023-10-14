@@ -124,7 +124,9 @@ public static class EntityRegistry {
                 foreach (var sid in GetSIDsForType(t)) {
                     SIDToType.Remove(sid);
                     SIDToDefiningMod.Remove(sid);
+                    SIDToAssociatedMods.Remove(sid);
                     EntityPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
+                    TriggerPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
                     StylegroundPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
                 }
             }

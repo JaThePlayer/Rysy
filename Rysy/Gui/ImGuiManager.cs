@@ -381,12 +381,16 @@ public static class ImGuiManager {
         );
     }
 
+    private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new(StringComparer.Ordinal);
 
-    private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new();
-    public static void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null) {
+    public static void XnaWidget(XnaWidgetDef def)
+        => XnaWidget(def.ID, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
+
+    public static void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null, bool rerender = true) {
         if (w <= 0 || h <= 0)
             return;
 
+        bool isNew = false;
         if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
             if (t.Target != null) {
                 GuiRenderer.UnbindTexture(t.ID);
@@ -396,17 +400,28 @@ public static class ImGuiManager {
             t.Target = new(RysyEngine.GDM.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
             t.ID = GuiRenderer.BindTexture(t.Target);
             Targets[id] = t;
+            isNew = true;
         }
 
         ImGui.Image(t.ID, new(w, h));
+        
+        if ((rerender || isNew) && ImGui.IsItemVisible()) {
+            var g = RysyEngine.GDM.GraphicsDevice;
+            g.SetRenderTarget(t.Target);
+            g.Clear(Color.Transparent);
+            GFX.BeginBatch(camera);
+            renderFunc();
+            GFX.EndBatch();
+            g.SetRenderTarget(null);
+        }
+    }
 
-        var g = RysyEngine.GDM.GraphicsDevice;
-        g.SetRenderTarget(t.Target);
-        g.Clear(Color.Transparent);
-        GFX.BeginBatch(camera);
-        renderFunc();
-        GFX.EndBatch();
-        g.SetRenderTarget(null);
+    public static void DisposeXnaWidget(string id) {
+        if (Targets.TryGetValue(id, out var t)) {
+            GuiRenderer.UnbindTexture(t.ID);
+            t.Target?.Dispose();
+            Targets.Remove(id);
+        }
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

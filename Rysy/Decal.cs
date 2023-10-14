@@ -93,9 +93,18 @@ public sealed class Decal : Entity, IPlaceable {
         return (Decal)EntityRegistry.Create(from, room, false);
     }
 
-    private static string MapTextureToPath(string textureFromMap) {
+    /// <summary>
+    /// Converts a decal path stored in the map .bin into a texture path that can be used to index <see cref="GFX.Atlas"/>
+    /// </summary>
+    public static string MapTextureToPath(string textureFromMap) {
         return "decals/" + textureFromMap.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
     }
+
+    /// <summary>
+    /// Retrieves the texture path from the given decal placement. This path can be used to index <see cref="GFX.Atlas"/>
+    /// </summary>
+    public static string GetTexturePathFromPlacement(Placement placement)
+        => MapTextureToPath(placement["texture"]?.ToString() ?? "");
 
     public static Placement PlacementFromPath(string path, bool fg, Vector2 scale, Color color, float rotation) {
         return new Placement(path) {
@@ -174,6 +183,33 @@ public sealed class Decal : Entity, IPlaceable {
                 r.ClearFgDecalsRenderCache();
             else
                 r.ClearBgDecalsRenderCache();
+        }
+    }
+
+    private static Cache<List<string>> _ValidDecalPaths;
+    
+    /// <summary>
+    /// Stores all paths that can be used by decals.
+    /// </summary>
+    public static Cache<List<string>> ValidDecalPaths {
+        get {
+            if (_ValidDecalPaths is { } v)
+                return v;
+
+            var cacheToken = new CacheToken();
+            var cache = new Cache<List<string>>(cacheToken, () => GFX.Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal)).Select(p => {
+                return p.virtPath["decals/".Length..].RegexReplace(NumberTrimEnd, string.Empty);
+            }).Distinct().ToList());
+            _ValidDecalPaths = cache;
+
+            GFX.Atlas.OnTextureLoad += (path) => {
+                if (path.StartsWith("decals/", StringComparison.Ordinal)) {
+                    cacheToken.Invalidate();
+                }
+            };
+            GFX.Atlas.OnUnload += cacheToken.Invalidate;
+
+            return cache;
         }
     }
 }

@@ -46,7 +46,12 @@ public abstract class Tool {
                 _Layer = value;
 
             CancelInteraction();
+            OnLayerChanged();
         }
+    }
+
+    protected virtual void OnLayerChanged() {
+
     }
 
     private string _Search = "";
@@ -133,6 +138,13 @@ public abstract class Tool {
     }
 
     /// <summary>
+    /// Called once, when the tool is unloaded for any reason.
+    /// </summary>
+    public virtual void Unload() {
+
+    }
+
+    /// <summary>
     /// Called whenever the tool should cancel an interaction (like rectangle drawing, selections, etc),
     /// for example when switching rooms or undoing
     /// </summary>
@@ -156,12 +168,12 @@ public abstract class Tool {
         ISprite.OutlinedRect(rect, c * 0.3f, c, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
     }
 
-    private bool IsEqual(string layer, object? currentMaterial, string name) {
+    protected bool IsEqual(string layer, object? currentMaterial, string name) {
         return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
     }
 
     public void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
-        if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), false)) {
+        if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), false, ImGuiWindowFlags.NoScrollWithMouse)) {
             return;
         }
 
@@ -173,6 +185,10 @@ public abstract class Tool {
 
         ImGui.EndChild();
     }
+
+    public virtual float MaterialListElementHeight() => ImGui.GetTextLineHeightWithSpacing();
+
+    public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.ColumnCount", 1) : 1;
 
     public virtual void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = true;
@@ -189,28 +205,39 @@ public abstract class Tool {
         var cachedSearch = CachedSearch ??= (GetMaterials(currentLayer) ?? new List<object>()).Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
         var rendered = 0;
 
+        var columns = MaterialListColumnCount();
 
-        var skip = (ImGui.GetScrollY()) / ImGui.GetTextLineHeightWithSpacing() - 1;
-        //ImGui.BeginChildFrame(2, new(0, (skip) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-        //ImGui.EndChildFrame();
-        //skip = 0;
+        var elementHeight = MaterialListElementHeight() / columns;
+        var elementsVisible = size.Y / elementHeight;
+        if (elementsVisible % columns > 0)
+            elementsVisible++;
+        var skip = (ImGui.GetScrollY() / elementHeight) - 1;
+
+        var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
+        ImGui.BeginChild($"##{GetType().Name}_{Layer}", 
+            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), false, ImGuiWindowFlags.NoScrollWithMouse);
+        skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
+        if (skip > 0) {
+            ImGui.BeginChildFrame((uint) 12347, new(0, skip * elementHeight));
+            ImGui.EndChildFrame();
+        }
+
+        if (columns > 1)
+            ImGui.Columns(columns);
 
         foreach (var (mat, name) in cachedSearch) {
-            // todo: calculate that 60!!!
-            if (rendered < 60 && skip <= 0) {
+            if (rendered < elementsVisible && skip <= 0) {
                 rendered++;
                 RenderMaterialListElement(mat, name);
-            } else {
-                ImGui.NewLine(); // better performance than selectable
+                if (columns > 1)
+                    ImGui.NextColumn();
             }
-
 
             skip--;
         }
-
-        //var left = cachedSearch.Count - rendered;
-        //ImGui.BeginChildFrame(1, new(0, (cachedSearch.Count - 60) * ImGui.GetTextLineHeightWithSpacing()), ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-        //ImGui.EndChildFrame();
+        if (columns > 1)
+            ImGui.Columns();
+        ImGui.EndChild();
     }
 
     public virtual bool AllowSwappingRooms => true;
@@ -230,12 +257,12 @@ public abstract class Tool {
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
             var size = new NumVector2(ToolHandler.DefaultMaterialListWidth, viewport.Height - menubarHeight);
-            ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X, menubarHeight));
-            ImGui.SetNextWindowSize(size);
+            ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X, menubarHeight), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);
         }
 
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Material", ImGuiManager.WindowFlagsResizable)) {
+        if (!ImGui.Begin("Material", ImGuiManager.WindowFlagsResizable | ImGuiWindowFlags.NoScrollWithMouse)) {
             return null;
         }
         ImGuiManager.PopWindowStyle();
@@ -243,8 +270,10 @@ public abstract class Tool {
         return ImGui.GetWindowSize().ToXna();
     }
 
+    protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) => new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3);
+
     protected void BeginMaterialListGUI(string id, Vector2 windowSize) {
-        ImGui.BeginListBox(id, new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3));
+        ImGui.BeginListBox(id, GetMaterialListBoxSize(windowSize));
     }
 
     protected void EndMaterialListGUI(bool searchBar) {
@@ -266,18 +295,109 @@ public abstract class Tool {
         }
     }
 
+    /// <summary>
+    /// Creates a widget that renders a preview for the given material
+    /// </summary>
+    protected virtual XnaWidgetDef? GetMaterialPreview(object material) {
+        return null;
+    }
+
+    /// <summary>
+    /// Converts the previously created widget into one that can be used for rendering inside of the tooltip.
+    /// This edited widget should be larger.
+    /// </summary>
+    protected virtual XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
+        var cam = new Camera() {
+            Scale = 2f,
+        };
+        cam.Move(new(-16, -16));
+
+        var upsizedDef = materialPreview with {
+            W = 256,
+            H = 128,
+            Camera = cam,
+        };
+        return upsizedDef;
+    }
+
+    /// <summary>
+    /// Renders additional ImGui elements below the tooltip for the given material
+    /// </summary>
+    protected virtual void RenderMaterialTooltipExtraInfo(object material) {
+
+    }
+
+    /// <summary>
+    /// Renders the gui for a given material inside the material list.
+    /// </summary>
     protected virtual void RenderMaterialListElement(object material, string name) {
         var favorites = Favorites;
         var currentLayer = Layer;
         var currentMaterial = Material;
+        var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
+
+        var size = new NumVector2(0, 0);
+        var cursorStart = ImGui.GetCursorPos();
+        
+        if (ImGui.GetColumnIndex() == 0) {
+            cursorStart.X = ImGui.GetColumnOffset();
+            ImGui.SetCursorPos(cursorStart);
+        }
+
+        var previewOrNull = showPlacementIcons ? GetMaterialPreview(material) : null;
+
+        if (previewOrNull is { } preview) {
+            size.Y = preview.H;
+        }
 
         var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-        if (ImGui.Selectable(displayName, IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick).WithTooltip(GetMaterialTooltip(currentLayer, material))) {
+        if (ImGui.Selectable($"##{displayName}", IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowItemOverlap, size)) {
             Material = material;
 
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
                 ToggleFavorite(name);
             }
         }
+        if (ImGui.IsItemHovered()) {
+            var prevStyles = ImGuiManager.PopAllStyles();
+            if (!showPlacementIcons)
+                previewOrNull = GetMaterialPreview(material);
+
+            XnaWidgetDef? tooltipPreview = previewOrNull is { } p2 ? CreateTooltipPreview(p2, material) : null;
+            tooltipPreview = tooltipPreview is { } p3 ? p3 with { ID = "upsized_preview" } : null;
+
+            var w = (tooltipPreview?.W ?? 256) + ImGui.GetStyle().FramePadding.X * 4;
+            ImGui.SetNextWindowSize(new(w.AtLeast(256), 0));
+            ImGui.BeginTooltip();
+
+            ImGui.TextWrapped(displayName);
+            ImGui.Separator();
+
+            if (GetMaterialTooltip(currentLayer, material) is { } tooltip)
+                ImGui.TextWrapped(tooltip);
+
+            if (tooltipPreview is { }) {
+                ImGuiManager.XnaWidget(tooltipPreview.Value);
+            }
+
+            RenderMaterialTooltipExtraInfo(material);
+
+            ImGui.EndTooltip();
+            ImGuiManager.PushAllStyles(prevStyles);
+        }
+
+        ImGui.SetCursorPos(cursorStart);
+        if (previewOrNull is { } p && showPlacementIcons) {
+            ImGuiManager.XnaWidget(p);
+            ImGui.SameLine();
+        }
+
+        
+        // center the text
+        cursorStart.Y = ImGui.GetCursorPos().Y;
+        if (showPlacementIcons)
+            cursorStart.Y += previewOrNull?.H / 4 ?? 0;
+        ImGui.SetCursorPosY(cursorStart.Y);
+        ImGui.Text(displayName);
     }
 }
