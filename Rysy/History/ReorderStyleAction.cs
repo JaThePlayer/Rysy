@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Stylegrounds;
+
+namespace Rysy.History;
 
 public record class ReorderStyleAction(IList<Style> Styles, Style ToMove, int Offset) : IHistoryAction {
     private int StartIdx;

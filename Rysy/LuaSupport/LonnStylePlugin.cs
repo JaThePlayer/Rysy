@@ -1,6 +1,7 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Mods;
+using Rysy.Stylegrounds;
 
 namespace Rysy.LuaSupport;
 internal sealed class LonnStylePlugin {

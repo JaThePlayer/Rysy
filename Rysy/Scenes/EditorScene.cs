@@ -7,6 +7,7 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.MapAnalyzers;
+using Rysy.Stylegrounds;
 using Rysy.Tools;
 
 namespace Rysy.Scenes;
@@ -29,7 +30,7 @@ public sealed class EditorScene : Scene {
 
         SwapMapPreserveState(map);
 
-        Camera = new();
+        Camera ??= new();
 
         if (map?.Rooms.Count > 0) {
             CurrentRoom = map.Rooms.First();
@@ -286,12 +287,13 @@ public sealed class EditorScene : Scene {
             return;
         }
 
-        if (Map is { } && CurrentRoom is { }) {
+        if (Map is { }) {
             Camera.HandleMouseMovement(Input.Global);
 
             HandleRoomSwapInputs(Input.Global);
 
-            ToolHandler.Update(Camera, CurrentRoom);
+            if (CurrentRoom is { })
+                ToolHandler.Update(Camera, CurrentRoom);
         }
     }
 
@@ -329,20 +331,29 @@ public sealed class EditorScene : Scene {
             return;
         }
 
-        if (CurrentRoom is null)
-            return;
+        var renderStylegrounds = Settings.Instance?.StylegroundPreview ?? false;
+        if ((Settings.Instance?.OnlyRenderStylesAtRealScale ?? false) && Camera.Scale != 6f) {
+            renderStylegrounds = false;
+        }
+        var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
+
+        if (renderStylegrounds && CurrentRoom is { }) {
+            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG);
+        }
 
         foreach (var room in Map.Rooms) {
             if (room != CurrentRoom)
                 room.Render(Camera, selected: false);
         }
-        CurrentRoom.Render(Camera, selected: true);
 
-        ToolHandler.Render(Camera, CurrentRoom);
+        if (CurrentRoom is { }) {
+            CurrentRoom.Render(Camera, selected: true);
 
-        GFX.BeginBatch();
-        PicoFont.Print(RysyEngine.CurrentFPS.ToString("FPS:0", CultureInfo.CurrentCulture), new Vector2(4, 68), Color.Pink, 4);
-        GFX.EndBatch();
+            if (renderStylegrounds && fgInFront)
+                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG);
+
+            ToolHandler.Render(Camera, CurrentRoom);
+        }
 
         var input = Input.Global;
 
@@ -369,7 +380,7 @@ public sealed class EditorScene : Scene {
             // Re-register entities
             if (input.Keyboard.IsKeyClicked(Keys.F6)) {
                 EntityRegistry.RegisterAsync().AsTask().Wait();
-                CurrentRoom.ClearRenderCache();
+                CurrentRoom?.ClearRenderCache();
                 GC.Collect(3);
             }
         }

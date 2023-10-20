@@ -68,13 +68,11 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.Save();
         }
 
-        // has issues with mouse position
-        //var fullscreen = Settings.Instance.BorderlessFullscreen;
-        //if (ImGui.Checkbox("Borderless Fullscreen", ref fullscreen).WithTooltip("Toggles borderless fullscreen mode.")) {
-        //    Settings.Instance.BorderlessFullscreen = fullscreen;
-        //    Settings.Instance.Save();
-        //}
-
+        var fullscreen = Settings.Instance.BorderlessFullscreen;
+        if (ImGui.Checkbox("Borderless Fullscreen", ref fullscreen).WithTooltip("Toggles borderless fullscreen mode.")) {
+            Settings.Instance.BorderlessFullscreen = fullscreen;
+            Settings.Instance.Save();
+        }
 
         ImGui.EndTabItem();
     }

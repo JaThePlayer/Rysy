@@ -202,7 +202,6 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction PlaceClone(Room room) {
-        Console.WriteLine(Rect.Div(8).Location);
         return new TilePasteAction(new(ToMove), Grid, Rect.Div(8).Location);
     }
 

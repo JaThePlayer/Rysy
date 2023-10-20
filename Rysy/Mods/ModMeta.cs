@@ -136,7 +136,7 @@ public sealed class ModMeta : ILuaWrapper {
         return 1;
     }
 
-    public override string ToString() => EverestYaml.ToString()!;
+    public override string ToString() => string.Join(',', EverestYaml.Select(x => x.ToString()));
 
     public bool DependencyMet(ModMeta other) {
         foreach (var meta in EverestYaml) {

@@ -62,10 +62,10 @@ public sealed class RysyEngine : Game {
 
     public RysyEngine() {
         Instance = this;
+        Window.AllowUserResizing = true;
 
         GDM = new GraphicsDeviceManager(this);
 
-        Window.AllowUserResizing = true;
         IsMouseVisible = true;
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
@@ -107,10 +107,17 @@ public sealed class RysyEngine : Game {
         OnEndOfThisFrame += () => {
             instance.Window.IsBorderless = toggle;
             if (toggle) {
-                var monitorSize = GDM.GraphicsDevice.DisplayMode;
-
-                instance.ResizeWindow(monitorSize.Width, monitorSize.Height, 0, 0);
+                // ??? needed to make mouse position correct
+                GDM.HardwareModeSwitch = false;
+                GDM.IsFullScreen = true;
+                GDM.ApplyChanges();
             } else {
+                // ??? needed to properly regain the border...
+                GDM.IsFullScreen = false;
+                GDM.HardwareModeSwitch = true;
+                GDM.ApplyChanges();
+                instance.Window.IsBorderless = false;
+                GDM.ApplyChanges();
                 instance.ResizeWindowUsingSettings();
             }
         };
@@ -269,12 +276,16 @@ public sealed class RysyEngine : Game {
                 OnLoseFocus?.Invoke();
             }
 
-            //IsActive
             if (true) {
                 Time.Update(gameTime);
 
                 if (IsActive)
                     Input.UpdateGlobal(gameTime);
+
+                // todo: refactor into proper keybind
+                if (Input.Global.Keyboard.IsKeyClicked(Microsoft.Xna.Framework.Input.Keys.F12)) {
+                    HideUI = !HideUI; 
+                }
 
                 SmartFPSHandler.Update();
 
@@ -304,11 +315,20 @@ public sealed class RysyEngine : Game {
 
             GraphicsDevice.Clear(Color.Black);
 
+            var renderUI = !ShouldHideUI();
+
             ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
 
             try {
-                Scene.RenderImGui();
+                if (renderUI)
+                    Scene.RenderImGui();
                 Scene.Render();
+
+                if (renderUI) {
+                    GFX.BeginBatch();
+                    PicoFont.Print(CurrentFPS.ToString("FPS:0", CultureInfo.CurrentCulture), new Vector2(4, 68), Color.Pink, 4);
+                    GFX.EndBatch();
+                }
 
                 if (Scene is not CrashScene)
                     OnRender?.Invoke();
@@ -327,6 +347,9 @@ public sealed class RysyEngine : Game {
             CurrentFPS = smartFramerate.framerate;
         }
     }
+
+    private bool HideUI = false;
+    private bool ShouldHideUI() => HideUI;
 
     //https://stackoverflow.com/a/44689035
     sealed class SmartFramerate {

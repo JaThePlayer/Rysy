@@ -14,6 +14,12 @@ public record class ListField : Field, IFieldConvertibleToList {
     public int MinElements = 1;
     public int MaxElements = -1;
 
+    /// <summary>
+    /// Specifies whether editing the full string preview is possible.
+    /// If this is false, only editing via the individual fields is possible.
+    /// </summary>
+    public bool AllowEdits = true;
+
     public string? Default { get; set; }
 
     public ListField(Field baseField) {
@@ -111,16 +117,26 @@ public record class ListField : Field, IFieldConvertibleToList {
         const int ButtonAmt = 1;
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * ButtonAmt) - xPadding * ButtonAmt);
+        ImGui.BeginDisabled(!AllowEdits);
         if (ImGui.InputText($"##text{fieldName}", ref str, 1024).WithTooltip(Tooltip)) {
             ret = str;
         }
+        ImGui.EndDisabled();
 
         bool anyChanged = false;
+
+        if (split.Length == 0) {
+            //ImGuiManager.TranslatedText("rysy.fields.list.noElements");
+            split = new string[] { "" };
+        }
 
         ImGui.SameLine(0f, xPadding);
 
         if (ImGui.BeginCombo($"##lcombo{fieldName}", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
+
+
+
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
 

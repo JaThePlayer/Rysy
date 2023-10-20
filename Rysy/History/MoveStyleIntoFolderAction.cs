@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Stylegrounds;
+
+namespace Rysy.History;
 
 public record class MoveStyleIntoFolderAction(Style ToMove, StyleFolder Into, IList<Style> OldStyles, bool FromTop) : IHistoryAction {
     private AddStyleAction AddStyleAction;

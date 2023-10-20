@@ -129,7 +129,7 @@ public class EntityPropertyWindow : FormWindow {
 
             if (!equal) {
                 EditedValues[name] = propValue;
-                Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
+                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }
     }

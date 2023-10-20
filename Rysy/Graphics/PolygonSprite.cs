@@ -44,10 +44,10 @@ public record struct PolygonSprite : ISprite {
 
             if (VertexPositionColors.Length < 3)
                 return;
-            GFX.EndBatch();
+            var prevSettings = GFX.EndBatch();
             GFX.DrawVertices(cam.Matrix * (Matrix.CreateTranslation(offset.X * cam.Scale, offset.Y * cam.Scale, 0f)), VertexPositionColors, VertexPositionColors.Length);
 
-            GFX.BeginBatchWithPreviousSettings();
+            GFX.BeginBatch(prevSettings);
         }
     }
 

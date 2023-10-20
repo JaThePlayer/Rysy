@@ -18,7 +18,7 @@ public static class LinqExt {
 
     public static Dictionary<TKey, TValue> CreateMerged<TKey, TValue>(this Dictionary<TKey, TValue> self, Dictionary<TKey, TValue> other)
         where TKey : notnull {
-        var merged = new Dictionary<TKey, TValue>(self);
+        var merged = new Dictionary<TKey, TValue>(self, self.Comparer);
         foreach (var (key, val) in other) {
             merged[key] = val;
         }

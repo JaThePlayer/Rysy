@@ -52,6 +52,10 @@ public static class NumberExt {
         return min + slope * (num - min);
     }
 
+    public static T ClampedMap<T>(this T val, T min, T max, T newMin, T newMax) where T : INumber<T> {
+        return T.Clamp((val - min) / (max - min), T.Zero, T.One) * (newMax - newMin) + newMin;
+    }
+
     public static T Floor<T>(this T num) where T : IFloatingPoint<T>
         => T.Floor(num);
 

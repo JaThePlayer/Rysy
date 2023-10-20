@@ -113,7 +113,7 @@ public static class ModRegistry {
             Filesystem.AddMod(meta);
 
             if (_Mods.TryGetValue(meta.Name, out var prevMod)) {
-                Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.EverestYaml} [{prevMod.Filesystem.Root}] vs {meta.EverestYaml} [{meta.Filesystem.Root}]");
+                Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
             }
             _Mods[meta.Name] = meta;
         }

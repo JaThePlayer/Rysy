@@ -338,9 +338,7 @@ public sealed class Room : IPackable, ILuaWrapper {
            );
 
     internal void StartBatch(Camera camera) {
-        GFX.PushBatchBegin(() => 
-            GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, effect: null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f)))
-        );
+        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
     }
 
     public void Render(Camera camera, bool selected) {
@@ -366,7 +364,8 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         StartBatch(camera);
 
-        ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
+        if (!Settings.Instance.StylegroundPreview)
+            ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
 
         if (interiorVisible)
             DrawRoomInterior(camera, selected, canvasReady);

@@ -95,7 +95,22 @@ public class Camera {
     /// Zooms the camera in.
     /// </summary>
     public void ZoomIn(Input? input = null) {
-        DoZoom(Scale * 2f, input);
+        var newScale = Scale switch { 
+            4f => 6f,
+            var other => other * 2f
+        };
+
+        DoZoom(newScale, input);
+    }
+
+    public void Zoom(float newZoom) {
+        var rp = ScreenToReal(Viewport.Bounds.Size.ToVector2() / 2f);
+        Scale = newZoom;
+        var rp2 = ScreenToReal(Viewport.Bounds.Size.ToVector2() / 2f);
+
+        _pos += rp - rp2;
+
+        RecalculateMatrix();
     }
 
     private void DoZoom(float newZoom, Input? input = null) {
@@ -114,7 +129,12 @@ public class Camera {
     /// Zooms the camera out.
     /// </summary>
     public void ZoomOut(Input? input = null) {
-        DoZoom(Scale / 2f, input);
+        var newScale = Scale switch {
+            6f => 4f,
+            var other => other / 2f
+        };
+
+        DoZoom(newScale, input);
     }
 
     /// <summary>

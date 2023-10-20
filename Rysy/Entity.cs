@@ -653,7 +653,19 @@ public class EntityData : IDictionary<string, object> {
         }), capacity: capacity);
     }
 
-    internal Dictionary<string, object> Inner { get; set; } = new();
+    public void BulkUpdate(Dictionary<string, object> newData) {
+        /*
+        Inner = newData;
+
+        OnChanged?.Invoke(new() {
+            AllChanged = true,
+        });*/
+        foreach (var (k, v) in newData) {
+            this[k] = v;
+        }
+    }
+
+    internal Dictionary<string, object> Inner { get; private set; } = new(StringComparer.Ordinal);
 
     public object this[string key] {
         get => Inner[key];

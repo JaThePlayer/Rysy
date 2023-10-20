@@ -53,6 +53,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Assets\default_imgui.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\font.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -10,6 +10,7 @@ using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
+using Rysy.Stylegrounds;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -327,18 +328,6 @@ public static class EntityRegistry {
                     SIDToDefiningMod[sid] = mod;
             }
 
-        var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
-        try {
-            if (getPlacementsMethod is { }) {
-                var placements = (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null);
-
-                if (placements is { })
-                    AddPlacements(t, new() { sid }, placements);
-            }
-        } catch (Exception e) {
-            Logger.Error(e, $"Failed to get placements for entity {sid}");
-        }
-
         var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
         try {
             if (getPlacementsForSIDMethod is { }) {
@@ -366,7 +355,23 @@ public static class EntityRegistry {
 
     private static void RegisterFrom(Assembly asm, ModMeta? mod = null) {
         foreach (var t in GetEntityTypesFromAsm(asm)) {
-            foreach (var attr in t.GetCustomAttributes<CustomEntityAttribute>()) {
+            var attrs = t.GetCustomAttributes<CustomEntityAttribute>()
+                .Where(attr => HandleAssociatedMods(attr.Name, attr.AssociatedMods, mod))
+                .ToList();
+
+            var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
+            try {
+                if (getPlacementsMethod is { }) {
+                    var placements = (IEnumerable<Placement>?) getPlacementsMethod.Invoke(null, null);
+
+                    if (placements is { })
+                        AddPlacements(t, attrs.Select(a => a.Name).ToList(), placements);
+                }
+            } catch (Exception e) {
+                Logger.Error(e, $"Failed to get placements for entity {t.FullName}");
+            }
+
+            foreach (var attr in attrs) {
                 RegisterType(t, attr, mod);
             }
         }

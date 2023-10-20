@@ -229,5 +229,13 @@ public sealed class Settings {
     public string? FontFile { get; set; } = null;
 
     public bool ShowPlacementIcons { get; set; } = true;
+
+    public bool StylegroundPreview { get; set; } = true;
+
+    public bool AnimateStylegrounds { get; set; } = true;
+
+    public bool RenderFgStylegroundsInFront { get; set; } = false;
+
+    public bool OnlyRenderStylesAtRealScale { get; set; } = false;
     #endregion
 }

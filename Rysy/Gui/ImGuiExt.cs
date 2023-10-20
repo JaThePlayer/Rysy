@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
 using System.Linq;
 
 namespace Rysy.Gui;
@@ -11,6 +12,17 @@ public static class ImGuiExt {
     public static bool WithTooltip(this bool val, string? tooltip) {
         if (tooltip is { } && ImGui.IsItemHovered()) {
             ImGui.SetTooltip(tooltip);
+        }
+
+        return val;
+    }
+
+    /// <summary>
+    /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
+    /// </summary>
+    public static bool WithTranslatedTooltip(this bool val, string tooltipKey) {
+        if (ImGui.IsItemHovered() && tooltipKey.TranslateOrNull() is { } translatedTooltip) {
+            ImGui.SetTooltip(translatedTooltip);
         }
 
         return val;

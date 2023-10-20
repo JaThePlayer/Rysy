@@ -424,6 +424,32 @@ public static class ImGuiManager {
         }
     }
 
+    public static bool TranslatedButton(string id) {
+        return ImGui.Button(id.Translate()).WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static bool TranslatedCheckbox(string id, ref bool v) {
+        return ImGui.Checkbox(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static bool TranslatedInputFloat2(string id, ref NumVector2 v) {
+        return ImGui.InputFloat2(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static bool TranslatedDragFloat2(string id, ref NumVector2 v, float v_speed, float v_min, float v_max) {
+        return ImGui.DragFloat2(id.Translate(), ref v, v_speed, v_min, v_max).WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static void TranslatedText(string id) {
+        ImGui.Text(id.Translate());
+        true.WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static void TranslatedTextWrapped(string id) {
+        ImGui.TextWrapped(id.Translate());
+        true.WithTranslatedTooltip($"{id}.tooltip");
+    }
+
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public class ImGuiRenderer {
         private RasterizerState RasterizerState;
@@ -448,6 +474,10 @@ public static class ImGuiManager {
 
         public ImGuiRenderer(RysyEngine engine) {
             //File.Delete("imgui.ini");
+            // ImGui.NET doesn't expose the dock builder API, but we can just ship the ini file...
+            if (!File.Exists("imgui.ini")) {
+                File.Copy("Assets/default_imgui.ini", "imgui.ini");
+            }
 
             IntPtr ctx = ImGui.CreateContext();
             ImGui.SetCurrentContext(ctx);

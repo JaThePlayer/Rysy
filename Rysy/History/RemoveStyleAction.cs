@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Stylegrounds;
+
+namespace Rysy.History;
 public record class RemoveStyleAction(IList<Style> Styles, Style ToRemove, StyleFolder? Folder) : IHistoryAction {
     private int Index;
     private bool RemovedFromParent;

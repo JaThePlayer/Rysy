@@ -126,38 +126,53 @@ public static class GFX {
     /// Begins the sprite batch with default settings.
     /// </summary>
     public static void BeginBatch() {
-        Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+        BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
     }
 
     public static void BeginBatch(Camera? camera) {
-        PushBatchBegin(() => {
-            if (camera is { })
-                Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
-            else
-                BeginBatch();
-        });
+        if (camera is { })
+            BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix));
+        else
+            BeginBatch(new SpriteBatchState());
     }
 
-    private static Action? LastBatchBegin;
+    private static Stack<SpriteBatchState> BatchStateHistory = new(2);
 
-    public static void PushBatchBegin(Action beginAction) {
-        LastBatchBegin = beginAction;
-
-        beginAction();
+    public static SpriteBatchState GetCurrentBatchState() {
+        return BatchStateHistory.Peek();
     }
 
-    public static void BeginBatchWithPreviousSettings() {
-        if (LastBatchBegin is { }) {
-            LastBatchBegin.Invoke();
-        } else {
-            BeginBatch();
-        }
+    public static void BeginBatch(SpriteBatchState? state) {
+        var st = state ?? new();
+
+        BeginBatchNoPush(ref st);
+        //SpriteBatchState? last = BatchStateHistory.TryPeek(out var l) ? l : null;
+        BatchStateHistory.Push(st);
+
+        //return last;
+    }
+
+    private static void BeginBatchNoPush(ref SpriteBatchState st) {
+        Batch.Begin(
+            st.SortMode, 
+            st.BlendState, 
+            st.SamplerState, 
+            st.DepthStencilState, 
+            st.RasterizerState, 
+            st.Effect, 
+            st.TransformMatrix
+        );
     }
 
     /// <summary>
-    /// Ends the sprite batch.
+    /// Ends the sprite batch, returning the old state
     /// </summary>
-    public static void EndBatch() { Batch.End(); }
+    public static SpriteBatchState? EndBatch() { 
+        Batch.End();
+        if (BatchStateHistory.TryPop(out var last))
+            return last;
+        return null;
+    }
 
     public static void DrawVertices<T>(Matrix matrix, T[] vertices, int vertexCount, BasicEffect? effect = null, BlendState? blendState = null, RasterizerState? rasterizerState = null) where T : struct, IVertexType {
         effect ??= BasicEffect;
@@ -178,4 +193,24 @@ public static class GFX {
             RysyEngine.Instance.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount / 3);
         }
     }
+}
+
+public record struct SpriteBatchState(
+    SpriteSortMode SortMode = SpriteSortMode.Deferred,
+    BlendState? BlendState = null,
+    SamplerState? SamplerState = null,
+    DepthStencilState? DepthStencilState = null,
+    RasterizerState? RasterizerState = null,
+    Effect? Effect = null,
+    Matrix? TransformMatrix = null
+) {
+    public SpriteBatchState MergeWith(SpriteBatchState last) => new(
+        SortMode,
+        BlendState ?? last.BlendState,
+        SamplerState ?? last.SamplerState,
+        DepthStencilState ?? last.DepthStencilState,
+        RasterizerState ?? last.RasterizerState,
+        Effect ?? last.Effect,
+        TransformMatrix ?? last.TransformMatrix
+    );
 }

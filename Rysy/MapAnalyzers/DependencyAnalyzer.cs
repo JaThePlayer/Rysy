@@ -4,6 +4,7 @@ using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Scenes;
+using Rysy.Stylegrounds;
 using Rysy.Tools;
 
 namespace Rysy.MapAnalyzers;
