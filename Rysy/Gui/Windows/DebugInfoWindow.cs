@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Scenes;
+using Rysy.Stylegrounds;
 using System.Diagnostics;
 using System.Linq;
 
@@ -55,6 +56,26 @@ public class DebugInfoWindow : Window {
                     ImGui.EndListBox();
                 }
                 
+            }
+
+            if (ImGui.CollapsingHeader("Camera Info:")) {
+                var cam = editor.Camera;
+
+                ImGui.Text($"Pos: {cam.Pos}");
+                ImGui.Text($"Scale: {cam.Scale}");
+                ImGui.Text($"Room: {EditorState.CurrentRoom?.Pos ?? default}");
+                ImGui.Text($"Viewport: {cam.Viewport.Bounds.Size}");
+                ImGui.Text($"{Parallax.CalcCamPos(cam)}");
+
+                var s = cam.Scale;
+                if (ImGui.InputFloat("Scale", ref s)) {
+                    cam.Scale = s;
+                }
+
+                var p = cam.Pos.ToNumerics();
+                if (ImGui.InputFloat2("Pos", ref p)) {
+                    cam.Move(p - cam.Pos);
+                }
             }
 
             if (EditorState.CurrentRoom is { } room && ImGui.Button("Benchmark current room")) {

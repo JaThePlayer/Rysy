@@ -50,22 +50,15 @@ public class ToolHandler {
 
         CreateTools();
         Registry.Tools.OnChanged += CreateTools;
-
-        HotReloadHandler.OnHotReload += () => {
-            _firstGui = true;
-        };
-        RysyEngine.OnViewportChanged += (v) => {
-            _firstGui = true;
-        };
-
         EditorState.OnCurrentRoomChanged += CancelInteraction;
-
-        history.OnUndo += CancelInteraction;
-        Input = input;
+        History.OnUndo += CancelInteraction;
     }
 
     public void Unload() {
         UnloadAllTools();
+        Registry.Tools.OnChanged -= CreateTools;
+        EditorState.OnCurrentRoomChanged -= CancelInteraction;
+        History.OnUndo -= CancelInteraction;
     }
 
     ~ToolHandler() {

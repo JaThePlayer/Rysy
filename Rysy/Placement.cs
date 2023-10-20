@@ -312,8 +312,11 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room) {
         if (handler is EntitySelectionHandler entityHandler) {
             var entity = entityHandler.Entity;
-            entity.Pos = pos;
-            entity.InitializeNodePositions();
+
+            if (entity.Pos != pos) {
+                entity.Pos = pos;
+                entity.InitializeNodePositions();
+            }
 
             // todo: hacky!!!
             entity.Selected = true;

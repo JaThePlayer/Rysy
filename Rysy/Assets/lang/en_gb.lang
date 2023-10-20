@@ -26,8 +26,28 @@ rysy.menubar.tab.map=Map
 rysy.menubar.tab.map.metadata=Metadata
 
 rysy.menubar.tab.view=View
+rysy.menubar.view.stylegrounds.showPreview=Render Preview
+rysy.menubar.view.stylegrounds.showPreview.tooltip=Whether stylegrounds should be rendered in-editor.
+rysy.menubar.view.stylegrounds.animate=Animate
+rysy.menubar.view.stylegrounds.animate.tooltip=Whether stylegrounds should be animated and move automatically according to their speed fields.
+rysy.menubar.view.realScale=1-1 Scale
+rysy.menubar.view.realScale.tooltip=Zooms in the camera to the in-game scale, useful for previewing stylegrouds.
+rysy.menubar.view.stylegrounds.fgInFront=FG Styles in Front
+rysy.menubar.view.stylegrounds.fgInFront.tooltip=Renders FG Styles in front of the room, like they would be in-game.
+rysy.menubar.view.stylegrounds.warning=Styleground previewing is only accurate at 1-1 scale.
+rysy.menubar.view.stylegrounds.F12tip=Press F12 to toggle the UI for better viewing.
+rysy.menubar.view.stylegrounds.onlyAtRealScale=Render Only At 1-1 Scale
+rysy.menubar.view.stylegrounds.onlyAtRealScale.tooltip=Only render stylegrounds while the camera is at 1-1 scale.
 
 rysy.menubar.tab.debug=Debug
+
+# Fields
+rysy.fields.fade.pos=Position
+rysy.fields.fade.pos.tooltip=The start and end coordinate of this fade region, in world coordinates.
+rysy.fields.fade.alpha=Alpha
+rysy.fields.fade.alpha.tooltip=The alpha range within this fade region. The first value will be reached on the left/top, the 2nd - on the right/bottom.
+
+rysy.fields.list.noElements=The list has no elements
 
 # Metadata Window
 rysy.metadata.field.description.AnimatedTiles=The path to the .xml files to use for animated tiles, relative to mod root.

@@ -57,7 +57,13 @@ public abstract class TileTool : Tool {
     }
 
     public override string? GetMaterialTooltip(string layer, object material) {
-        return material?.ToString();
+        if (material is not char c)
+            return null;
+
+        return $"""
+            Id: {c}
+            Source: {GetAutotiler(layer)?.GetTilesetData(c)?.Filename}
+            """;
     }
 
     public char Tile {
@@ -88,8 +94,6 @@ public abstract class TileTool : Tool {
     }
 
     public override void RenderOverlay() {
-        PicoFont.Print(Tile, new(4, 4), Color.White, 4);
-        PicoFont.Print(Layer, new Vector2(4, 36), Color.White, 4);
     }
 
     protected Tilegrid GetGrid(Room room, string? layer = null) => (layer ?? Layer) switch {

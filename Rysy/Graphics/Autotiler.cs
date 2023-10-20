@@ -24,6 +24,10 @@ public sealed class Autotiler {
         public char[]? Ignores;
 
         public bool IgnoreAll;
+        internal string? DisplayName;
+
+        public string GetDisplayName() 
+            => DisplayName ??= Filename.Split('/').Last().TrimStart("bg").Humanize();
 
         /// <summary>
         /// Stores a tilegrid bitmask -> possible tiles.
@@ -207,11 +211,13 @@ public sealed class Autotiler {
 
                 var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray();
 
-                AutotilerData autotilerData = new();
-                autotilerData.Filename = path;
-                autotilerData.Texture = GFX.Atlas[$"tilesets/{path}"];
-                autotilerData.Ignores = ignores;
-                autotilerData.IgnoreAll = ignores?.Contains('*') ?? false;
+                AutotilerData autotilerData = new() {
+                    Filename = path,
+                    Texture = GFX.Atlas[$"tilesets/{path}"],
+                    Ignores = ignores,
+                    IgnoreAll = ignores?.Contains('*') ?? false,
+                    DisplayName = tileset.Attributes?["displayName"]?.InnerText
+                };
 
                 if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
                     var copied = Tilesets[copy];
@@ -219,8 +225,6 @@ public sealed class Autotiler {
                     autotilerData.Padding = copied.Padding;
                     autotilerData.Center = copied.Center;
                 }
-
-
 
                 var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").Select(n => {
                     var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
@@ -260,7 +264,14 @@ public sealed class Autotiler {
             return $"Unknown: {c}";
         }
 
-        return data.Filename.Split('/').Last().TrimStart("bg").Humanize();
+        return data.GetDisplayName();
+    }
+
+    public AutotilerData? GetTilesetData(char c) {
+        if (Tilesets.TryGetValue(c, out var data)) {
+            return data;
+        }
+        return null;
     }
 
     /// <summary>
@@ -406,9 +417,9 @@ public sealed class Autotiler {
             if (cam is { }) {
                 var scrPos = -Pos + cam.Pos - offset;
                 left = Math.Max(0, (int) scrPos.X / 8);
-                right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 1);
+                right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 2);
                 top = Math.Max(0, (int) scrPos.Y / 8);
-                bot = (int) Math.Min(sprites.GetLength(1), top + float.Round(cam.Viewport.Height / cam.Scale / 8) + 1);
+                bot = (int) Math.Min(sprites.GetLength(1), top + float.Round(cam.Viewport.Height / cam.Scale / 8) + 2);
             } else {
                 left = 0;
                 top = 0;

@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.History;
 using Rysy.Mods;
 using Rysy.Selections;
 
@@ -13,6 +14,11 @@ public class PlacementTool : Tool {
     public SelectRectangleGesture RectangleGesture;
 
     private bool PickNextFrame;
+
+    /// <summary>
+    /// Position at which the GetPreviewSprites method will be called, regardless of the RectangleGesture's location. 
+    /// </summary>
+    private Vector2? AnchorPos;
 
     public override void InitHotkeys(HotkeyHandler handler) {
         base.InitHotkeys(handler);
@@ -110,19 +116,49 @@ public class PlacementTool : Tool {
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
                 //Console.WriteLine(rect);
                 History.ApplyNewAction(place.PlacementHandler.Place(selection, room));
+                AnchorPos = null;
             }
 
-            if (RectangleGesture.Delta is { } delta) {
-                var offset = delta.Location.ToVector2();
-                var resize = delta.Size();
+            HandleMove(camera, room, selection);
+        }
+    }
+
+    private void HandleMove(Camera camera, Room room, ISelectionHandler selection) {
+        if (RectangleGesture.Delta is { } delta) {
+            var offset = delta.Location.ToVector2();
+            var resize = delta.Size();
+
+            // handle noded entity resizing being different
+            // TODO: refactor, maybe into a ICustomMoveHandler
+            if (selection is EntitySelectionHandler entityHandler) {
+                var e = entityHandler.Entity;
+                var resizableX = e.ResizableX;
+                var resizableY = e.ResizableY;
+
+                if (!resizableX && !resizableY && e.Nodes is [var onlyNode]) {
+                    new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply();
+                    AnchorPos ??= e.Pos;
+                    return;
+                }
 
                 if (offset.X != 0 || offset.Y != 0) {
                     selection.MoveBy(offset).Apply();
                 }
 
-                if (resize.X != 0 || resize.Y != 0) {
-                    selection.TryResize(resize)?.Apply();
+                if ((resize.X != 0 || resize.Y != 0) && selection.TryResize(resize) is { } resizeAction) {
+                    resizeAction.Apply();
+                    e.InitializeNodePositions();
                 }
+
+                return;
+            }
+
+            if (offset.X != 0 || offset.Y != 0) {
+                selection.MoveBy(offset).Apply();
+            }
+
+            if (resize.X != 0 || resize.Y != 0) {
+                selection.TryResize(resize)?.Apply();
             }
         }
     }
@@ -163,7 +199,8 @@ public class PlacementTool : Tool {
         var mouse = GetMousePos(camera, room);
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
-            foreach (var item in placement.GetPreviewSprites(selection, RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2(), room)) {
+            var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
+            foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
                 item.WithMultipliedAlpha(0.4f).Render();
             }
         }
@@ -189,6 +226,7 @@ public class PlacementTool : Tool {
 
         CurrentPlacement = null;
         PickNextFrame = false;
+        AnchorPos = null;
     }
 
     public override void Init() {
@@ -197,6 +235,12 @@ public class PlacementTool : Tool {
         PrefabHelper.CurrentPrefabs.OnChanged += ClearMaterialListCache;
 
         RectangleGesture = new(Input);
+    }
+
+    public override void Unload() {
+        base.Unload();
+
+        PrefabHelper.CurrentPrefabs.OnChanged -= ClearMaterialListCache;
     }
 
     const int PreviewSize = 32;

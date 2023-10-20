@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Stylegrounds;
 
 namespace Rysy.Gui.Windows;
 
@@ -39,12 +40,14 @@ public class StylegroundWindow : Window {
 
         var historyHook = () => {
             Form?.ReevaluateChanged(FormStyle!.Data.Inner);
+            Map.Style.ClearFakePreviewData();
         };
         history.OnApply += historyHook;
         history.OnUndo += historyHook;
         SetRemoveAction((w) => {
             History.OnApply -= historyHook;
             History.OnUndo -= historyHook;
+            Map.Style.ClearFakePreviewData();
         });
 
         NoSaveData = false;
@@ -207,7 +210,6 @@ public class StylegroundWindow : Window {
 
     private StyleFolder? GetFolderContaining(Style? style) {
         return style switch {
-            //StyleFolder folder => folder, 
             { Parent: { } parent } => parent,
             _ => null,
         };
@@ -240,6 +242,8 @@ public class StylegroundWindow : Window {
 
         FormStyle = style;
         Form = form;
+        Map.Style.ClearFakePreviewData();
+        SelectedAlteredValues = null;
     }
 
     private string GetPlacementName(Placement placement) {
@@ -260,7 +264,6 @@ public class StylegroundWindow : Window {
             if (!Selections.Contains(style))
                 Selections.Add(style);
         } else {
-            //Selections = new() { style };
             Selections.Clear();
             Selections.Add(style);
         }
@@ -302,12 +305,9 @@ public class StylegroundWindow : Window {
         var newStyle = Style.FromName("apply");
 
         Add(newStyle, GetStyleListContaining(), null);
-        //History.ApplyNewAction(new AddStyleAction(GetStyleListContaining(), newStyle, null, null));
-        //SetOrAddSelection(newStyle);
     }
 
     protected override void Render() {
-        //ImGui.ShowDemoWindow();
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows) && !ImGui.GetIO().WantCaptureKeyboard) {
             HotkeyHandler.Update();
         }
@@ -349,24 +349,20 @@ public class StylegroundWindow : Window {
         ImGuiManager.XnaWidget("styleground_preview", previewW, 300, () => {
             if (Selections is [var selected, ..]) {
                 IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
-                var oldData = selected.Data.Inner;
-
                 try {
                     if (SelectedAlteredValues is { } altered) {
-                        selected.Data.Inner = selected.Data.Inner.CreateMerged(SelectedAlteredValues);
+                        selected.FakePreviewData = new(selected.Data.SID, selected.Data.Inner.CreateMerged(SelectedAlteredValues));
                         sprites = selected.GetPreviewSprites().ToList();
                     } else {
                         sprites = selected.GetPreviewSprites();
                     }
                 } finally {
-                    selected.Data.Inner = oldData;
                 }
 
                 foreach (var sprite in sprites) {
                     sprite.Render();
                 }
             }
-
         });
 
         ImGui.BeginChild("form");
@@ -500,14 +496,16 @@ public class StylegroundWindow : Window {
         bool gray = false;
 
         var only = style.Only;
-        if (string.IsNullOrWhiteSpace(only) && parent?.Only is [_, ..] parentOnly) {
-            only = parentOnly;
+        if (only.IsNullOrWhitespace()) {
             gray = true;
+            if (parent?.Only is { Length: > 0 } parentOnly) {
+                only = parentOnly;
+            }
         }
 
         if (gray)
             ImGui.BeginDisabled();
-        ImGui.Text(only);
+        ImGui.Text(only ?? "*");
         if (gray) {
             ImGui.EndDisabled();
             gray = false;

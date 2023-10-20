@@ -259,4 +259,9 @@ public static partial class StringExt {
     public static float ToSingle(this string s) => Convert.ToSingle(s, CultureInfo.InvariantCulture);
     public static double ToDouble(this string s) => Convert.ToDouble(s, CultureInfo.InvariantCulture);
     public static decimal ToDecimal(this string s) => Convert.ToDecimal(s, CultureInfo.InvariantCulture);
+
+    public static float ToSingle(this ReadOnlySpan<char> s) => float.Parse(s, CultureInfo.InvariantCulture);
+    public static float ToInt(this ReadOnlySpan<char> s) => int.Parse(s, CultureInfo.InvariantCulture);
+
+    public static bool IsNullOrWhitespace(this string? s) => string.IsNullOrWhiteSpace(s);
 }

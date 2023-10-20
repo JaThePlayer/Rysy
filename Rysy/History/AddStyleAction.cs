@@ -1,4 +1,6 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Stylegrounds;
+
+namespace Rysy.History;
 
 public record class AddStyleAction(IList<Style> Styles, Style NewStyle, int? Index, StyleFolder? Parent) : IHistoryAction {
     public bool Apply() {

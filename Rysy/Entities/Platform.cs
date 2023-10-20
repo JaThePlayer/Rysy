@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("movingPlatform")]
 [CustomEntity("sinkingPlatform")]
-public sealed class Platform : Entity, IPlaceable {
+public sealed class Platform : Entity, IMultiSIDPlaceable {
     public override int Depth => 1;
 
     public override Range NodeLimits => Name == "movingPlatform" ? 1..1 : 0..0;
@@ -63,11 +63,11 @@ public sealed class Platform : Entity, IPlaceable {
         };
     }
 
-    public static FieldList GetFields() => new(new {
+    public static FieldList GetFields(string sid) => new(new {
         texture = Fields.AtlasPath("default", "^objects/woodPlatform/(.*)")
     });
 
-    public static PlacementList GetPlacements() => new() {
+    public static PlacementList GetPlacements(string sid) => new() {
         new("default"),
         new("cliffside", new {
             texture = "cliffside",

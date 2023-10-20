@@ -708,8 +708,8 @@ public class SelectionTool : Tool {
         var textBaseWidth = ImGui.CalcTextSize("m").X;
 
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 30f);
-        ImGui.TableSetupColumn("Deselect", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Edit", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Deselect", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Edit", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
         if (CurrentSelections is { })

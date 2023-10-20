@@ -76,6 +76,8 @@ public class QuickActionHandler {
         try {
             if (Path.GetDirectoryName(file) is { } dir)
                 Directory.CreateDirectory(dir);
+            if (!File.Exists(file))
+                return new();
 
             return JsonSerializer.Deserialize<List<QuickActionInfo>>(File.ReadAllText(file), JsonSerializerHelper.DefaultOptions) ?? new();
         } catch (Exception e) {

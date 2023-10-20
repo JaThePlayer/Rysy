@@ -103,47 +103,91 @@ public static class Menubar {
             return;
 
         ViewWindowsMenu();
+        ViewVisibilityMenu();
 
-        var p = Persistence.Instance;
-        bool b;
+        if (Settings.Instance is { } s && ImGui.BeginMenu("Stylegrounds")) {
+            bool b;
 
-        b = p.FGTilesVisible;
-        if (ImGui.Checkbox("FG Tiles", ref b)) {
-            p.FGTilesVisible = b;
+            ImGuiManager.TranslatedText("rysy.menubar.view.stylegrounds.warning");
+            ImGuiManager.TranslatedText("rysy.menubar.view.stylegrounds.F12tip");
+
+            b = s.StylegroundPreview;
+            if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.showPreview", ref b)) {
+                s.StylegroundPreview = b;
+                s.Save();
+            }
+
+            b = s.AnimateStylegrounds;
+            if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.animate", ref b)) {
+                s.AnimateStylegrounds = b;
+                s.Save();
+            }
+
+            b = s.RenderFgStylegroundsInFront;
+            if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.fgInFront", ref b)) {
+                s.RenderFgStylegroundsInFront = b;
+                s.Save();
+            }
+
+            b = s.OnlyRenderStylesAtRealScale;
+            if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.onlyAtRealScale", ref b)) {
+                s.OnlyRenderStylesAtRealScale = b;
+                s.Save();
+            }
+
+            ImGui.EndMenu();
         }
 
-        b = p.BGTilesVisible;
-        if (ImGui.Checkbox("BG Tiles", ref b)) {
-            p.BGTilesVisible = b;
+        if (ImGuiManager.TranslatedButton("rysy.menubar.view.realScale")) {
+            editor.Camera.Zoom(6f);
         }
+    }
 
-        b = p.EntitiesVisible;
-        if (ImGui.Checkbox("Entities", ref b)) {
-            p.EntitiesVisible = b;
-        }
+    private static void ViewVisibilityMenu() {
+        if (ImGui.BeginMenu("Visibility")) {
+            var p = Persistence.Instance;
+            bool b;
 
-        b = p.TriggersVisible;
-        if (ImGui.Checkbox("Triggers", ref b)) {
-            p.TriggersVisible = b;
-        }
+            b = p.FGTilesVisible;
+            if (ImGui.Checkbox("FG Tiles", ref b)) {
+                p.FGTilesVisible = b;
+            }
 
-        b = p.FGDecalsVisible;
-        if (ImGui.Checkbox("FG Decals", ref b)) {
-            p.FGDecalsVisible = b;
-        }
+            b = p.BGTilesVisible;
+            if (ImGui.Checkbox("BG Tiles", ref b)) {
+                p.BGTilesVisible = b;
+            }
 
-        b = p.BGDecalsVisible;
-        if (ImGui.Checkbox("BG Decals", ref b)) {
-            p.BGDecalsVisible = b;
-        }
+            b = p.EntitiesVisible;
+            if (ImGui.Checkbox("Entities", ref b)) {
+                p.EntitiesVisible = b;
+            }
 
-        var currLayer = p.EditorLayer ?? 0;
-        var allLayers = p.EditorLayer is null;
-        if (ImGui.InputInt("Layer", ref currLayer)) {
-            p.EditorLayer = currLayer;
-        }
-        if (ImGui.Checkbox("All layers", ref allLayers)) {
-            p.EditorLayer = allLayers ? null : 0;
+            b = p.TriggersVisible;
+            if (ImGui.Checkbox("Triggers", ref b)) {
+                p.TriggersVisible = b;
+            }
+
+            b = p.FGDecalsVisible;
+            if (ImGui.Checkbox("FG Decals", ref b)) {
+                p.FGDecalsVisible = b;
+            }
+
+            b = p.BGDecalsVisible;
+            if (ImGui.Checkbox("BG Decals", ref b)) {
+                p.BGDecalsVisible = b;
+            }
+
+            var currLayer = p.EditorLayer ?? 0;
+            var allLayers = p.EditorLayer is null;
+            if (ImGui.InputInt("Layer", ref currLayer)) {
+                p.EditorLayer = currLayer;
+            }
+            if (ImGui.Checkbox("All layers", ref allLayers)) {
+                p.EditorLayer = allLayers ? null : 0;
+            }
+
+            ImGui.EndMenu();
         }
     }
 
