@@ -391,7 +391,7 @@ public sealed class EditorScene : Scene {
 
         Menubar.Render(this);
         RoomList.Render(this);
-        ToolHandler.RenderGui();
+        ToolHandler?.RenderGui();
     }
 
     public void CenterCameraOnRoom(Room room) {
