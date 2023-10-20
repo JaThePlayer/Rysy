@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.HighPerformance;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Helpers;
 
@@ -57,14 +56,16 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
     }
 
     public override object? RenderGui(string fieldName, object? value) {
+        string? hexCodeOverride = value?.ToString() ?? "";
         if (!ValueToColor(value, out var color)) {
             color = Color.White;
+            hexCodeOverride = value?.ToString() ?? "";
         }
 
         if (value is string str)
             ValueString = str;
 
-        if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip)) {
+        if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip, hexCodeOverride)) {
             ValueString = null;
             return color.ToString(Format);
         }

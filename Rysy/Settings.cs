@@ -138,7 +138,7 @@ public sealed class Settings {
 
     public bool LogSpriteCachingTimes { get; set; } = false;
 
-    public bool LogMissingTextures { get; set; } = true;
+    public bool LogMissingTextures { get; set; } = false;
 
     public bool LogPreloadingTextures { get; set; } = false;
 
@@ -196,7 +196,7 @@ public sealed class Settings {
         }
     }
 
-    private bool _SmartFramerate = true;
+    private bool _SmartFramerate = false;
     public bool SmartFramerate {
         get => _SmartFramerate;
         set {
@@ -205,7 +205,7 @@ public sealed class Settings {
         }
     }
 
-    public bool MinifyClipboard { get; set; } = true;
+    public bool MinifyClipboard { get; set; } = false;
 
 
     private bool _BorderlessFullscreen = false;
@@ -237,5 +237,7 @@ public sealed class Settings {
     public bool RenderFgStylegroundsInFront { get; set; } = false;
 
     public bool OnlyRenderStylesAtRealScale { get; set; } = false;
+
+    public bool ClearRenderCacheForOffScreenRooms { get; set; } = true;
     #endregion
 }

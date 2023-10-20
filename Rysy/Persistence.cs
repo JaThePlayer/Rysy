@@ -81,7 +81,7 @@ public class Persistence {
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
 
-    private bool _FGTilesVisible;
+    private bool _FGTilesVisible = true;
     public bool FGTilesVisible {
         get => _FGTilesVisible;
         set {
@@ -95,7 +95,7 @@ public class Persistence {
         }
     }
 
-    private bool _BGTilesVisible;
+    private bool _BGTilesVisible = true;
     public bool BGTilesVisible {
         get => _BGTilesVisible;
         set {

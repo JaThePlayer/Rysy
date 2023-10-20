@@ -169,6 +169,17 @@ public class Camera {
     }
 
     /// <summary>
+    /// Checks whether the given rectangle is fully visible inside of the camera at a given camera position
+    /// </summary>
+    public bool IsRectContained(Rectangle rect) {
+        var (x, y) = RealToScreen(rect.Location.ToVector2());
+        var w = rect.Width * Scale;
+        var h = rect.Height * Scale;
+
+        return Viewport.Bounds.Contains(new Rectangle((int) x, (int) y, (int) w, (int) h));
+    }
+
+    /// <summary>
     /// Checks whether the given rectangle is visible inside of the camera at a given camera position
     /// </summary>
     public bool IsPointVisible(XnaVector2 point) {

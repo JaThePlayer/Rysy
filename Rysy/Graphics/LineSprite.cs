@@ -22,6 +22,8 @@ public record struct LineSprite : ISprite {
 
     public Vector2 Offset { get; set; } = default;
 
+    private Rectangle? Bounds;
+
     public LineSprite(IEnumerable<Vector2> positions) {
         Positions = positions.ToListIfNotList();
     }
@@ -43,18 +45,46 @@ public record struct LineSprite : ISprite {
     public void Render() {
         var b = GFX.Batch;
         var c = Color;
-        for (int i = 0; i < Positions.Count - 1; i++) {
-            var start = Positions[i];
-            var end = Positions[i + 1];
+        var positions = Positions;
+        for (int i = 0; i < positions.Count - 1; i++) {
+            var start = positions[i];
+            var end = positions[i + 1];
+
             b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);
         }
     }
 
     public void Render(Camera? cam, Vector2 offset) {
-        Render();
+        //Render();
+        //return;
+        if (cam is null) {
+            Render();
+            return;
+        }
+
+        Bounds ??= RectangleExt.FromPoints(Positions);
+        var bounds = Bounds.Value.MovedBy(offset);
+        if (!cam.IsRectVisible(bounds))
+            return;
+
+        if (cam.IsRectContained(bounds)) {
+            // all lines are visible, no point doing cull checks on each line
+            Render();
+            return;
+        }
+
+        var b = GFX.Batch;
+        var c = Color;
+        var positions = Positions;
+        for (int i = 0; i < positions.Count - 1; i++) {
+            var start = positions[i];
+            var end = positions[i + 1];
+            if (cam.IsRectVisible(RectangleExt.FromPoints(start + offset, end + offset)))
+                b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);
+        }
     }
 
     public ISelectionCollider GetCollider() {
-        return ISelectionCollider.FromRect(RectangleExt.FromPoints(Positions));
+        return ISelectionCollider.FromRect(Bounds ??= RectangleExt.FromPoints(Positions));
     }
 }
