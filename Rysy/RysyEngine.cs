@@ -20,9 +20,11 @@ public sealed class RysyEngine : Game {
     public static Scene Scene {
         get => _scene;
         set {
-            _scene?.OnEnd();
-            _scene = value;
-            value.OnBegin();
+            lock (_scene) {
+                _scene?.OnEnd();
+                value.OnBegin();
+                _scene = value;
+            }
         }
     }
 
