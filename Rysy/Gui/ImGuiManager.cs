@@ -304,8 +304,8 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip) {
-        var colorHex = ColorHelper.ToString(color, format);
+    public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip, string? hexCodeOverride = null) {
+        var colorHex = hexCodeOverride ?? ColorHelper.ToString(color, format);
         bool edited = false;
 
         var xPadding = ImGui.GetStyle().FramePadding.X;

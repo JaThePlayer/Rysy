@@ -34,9 +34,21 @@ public sealed class SettingsWindow : Window {
             VisualBar();
             ThemeBar();
             HotkeyBar();
+            PerformanceBar();
             DebugBar();
 
             ImGui.EndTabBar();
+        }
+    }
+
+    private void PerformanceBar() {
+        if (!ImGui.BeginTabItem("Performance"))
+            return;
+
+        var b = Settings.Instance.ClearRenderCacheForOffScreenRooms;
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.perf.clearRenderCacheForOffScreenRooms", ref b)) {
+            Settings.Instance.ClearRenderCacheForOffScreenRooms = b;
+            Settings.Instance.Save();
         }
     }
 

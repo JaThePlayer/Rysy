@@ -109,6 +109,8 @@ rysy.metadata.field.description.mode:audiostate:Ambience=The ambience of the lev
 # Settings window
 rysy.settings.mods.editSettings.name=Edit Mod Settings
 rysy.settings.mods.editSettings.tooltip=Opens a window to edit the settings for this mod.
+rysy.settings.perf.clearRenderCacheForOffScreenRooms=Clear Render Cache For Off-Screen Rooms
+rysy.settings.perf.clearRenderCacheForOffScreenRooms.tooltip=Clears the render cache for rooms as soon as they're off-screen.\nThis vastly reduces RAM and VRAM usage, at the cost of more lag spikes when zooming out in maps with large rooms.
 
 # Mod Settings window
 rysy.modSettings.windowName=Mod Settings - {0}

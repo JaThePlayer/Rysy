@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.HighPerformance;
-using Rysy.Extensions;
+﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;

@@ -108,7 +108,7 @@ public static class IAtlasExt {
     /// <summary>
     /// Implements the Packer format
     /// </summary>
-    public static async Task LoadFromPackerAtlasAsync(this IAtlas self, string path) {
+    public static async Task LoadFromPackerAtlasAsync(this IAtlas self, string path, bool noAtlas) {
         await Task.CompletedTask;
         using var metaStream = File.OpenRead($"{path}.meta");
         using var metaReader = new BinaryReader(metaStream);
@@ -121,11 +121,17 @@ public static class IAtlasExt {
         int textureCount = metaReader.ReadInt16();
         for (int m = 0; m < textureCount; m++) {
 #pragma warning disable CA2000 // Dispose objects before losing scope - the scope is not lost
-            var texture = ReadVanillaAtlasDataFile(path, metaReader.ReadString());
+            Texture2D? texture = null;
+            var baseTexturePath = metaReader.ReadString();
+            if (!noAtlas)
+                texture = ReadVanillaAtlasDataFile(path, baseTexturePath);
 
             int subtextureCount = metaReader.ReadInt16();
             for (int n = 0; n < subtextureCount; n++) {
                 string subtextPath = metaReader.ReadString().Replace('\\', '/');
+                if (noAtlas) {
+                    texture = ReadVanillaAtlasDataFile(path, Path.Combine(baseTexturePath, subtextPath));
+                }
                 short clipX = metaReader.ReadInt16();
                 short clipY = metaReader.ReadInt16();
                 short clipWidth = metaReader.ReadInt16();
@@ -136,7 +142,7 @@ public static class IAtlasExt {
                 short width = metaReader.ReadInt16();
                 short height = metaReader.ReadInt16();
 
-                var vTexture = VirtTexture.FromAtlasSubtexture(texture, new(clipX, clipY, clipWidth, clipHeight), width, height);
+                var vTexture = VirtTexture.FromAtlasSubtexture(texture!, new(clipX, clipY, clipWidth, clipHeight), width, height);
 #pragma warning restore CA2000
                 vTexture.DrawOffset = new Vector2(offsetX, offsetY);
 
@@ -149,11 +155,20 @@ public static class IAtlasExt {
 
     // TODO: cleanup
     private static unsafe Texture2D ReadVanillaAtlasDataFile(string path, string textureIndex) {
+        Texture2D? texture = null;
+
+        var fullPath = $"{Path.GetDirectoryName(path)}/{textureIndex}.data";
+        if (!File.Exists(fullPath)) {
+            texture = new Texture2D(RysyEngine.GDM.GraphicsDevice, 1, 1);
+            texture.SetData(new Color[] { Color.White });
+            Console.WriteLine(fullPath);
+            return texture;
+        }
+
         const int bytesSize = 524288;
         byte[] readDataBytes = new byte[bytesSize];
         byte[] textureBufferBytes = new byte[67108864];
-
-        using var stream = File.OpenRead($"{Path.GetDirectoryName(path)}/{textureIndex}.data");
+        using var stream = File.OpenRead(fullPath);
         using var dataReader = new BinaryReader(stream);
 
         stream.Read(readDataBytes, 0, bytesSize);
@@ -208,7 +223,7 @@ public static class IAtlasExt {
             }
         }
 
-        var texture = new Texture2D(RysyEngine.GDM.GraphicsDevice, width, height);
+        texture = new Texture2D(RysyEngine.GDM.GraphicsDevice, width, height);
         texture.SetData(textureBufferBytes, 0, size);
 
         return texture;

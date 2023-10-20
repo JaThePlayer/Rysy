@@ -39,7 +39,7 @@ public sealed class Parallax : Style, IPlaceable {
         texture = Fields.AtlasPath("bgs/07/07/bg00", "(bgs/.*)"),
         blendmode = Fields.Dropdown("alphablend", BlendModes.Select(kv => kv.Key).ToList(), editable: true),
         alpha = 1f,
-        color = Fields.RGB(Color.White),
+        color = Fields.RGB(Color.White).AllowNull(),
         scrollx = 0f,
         scrolly = 0f,
         speedx = 0f,
@@ -130,8 +130,8 @@ public sealed class Parallax : Style, IPlaceable {
             var maxX = 320 * 6f / ctx.Camera.Scale;
             var maxY = 180 * 6f / ctx.Camera.Scale;
 
-            for (float x = pos.X; x <= maxX; x += texW) {
-                for (float y = pos.Y; y <= maxY; y += texH) {
+            for (float x = pos.X; x <= maxX + texW; x += texW) {
+                for (float y = pos.Y; y <= maxY + texH; y += texH) {
                     yield return baseSprite with {
                         Pos = new Vector2(x, y),
                         Origin = default,
@@ -163,9 +163,9 @@ public sealed class Parallax : Style, IPlaceable {
             var clipRect = texture.Texture.ClipRect;
 
             if (self.LoopX)
-                clipRect.Width = (int)(320 * 6f / data.Item3.Scale) + 640;
+                clipRect.Width = (int)(data.Item3.Viewport.Width / data.Item3.Scale - texture.Pos.X);//(int)(320 * 6f / data.Item3.Scale) + 640;
             if (self.LoopY)
-                clipRect.Height = (int) (180 * 6f / data.Item3.Scale) + 320;
+                clipRect.Height = (int) (data.Item3.Viewport.Height / data.Item3.Scale - texture.Pos.Y);//(int) (180 * 6f / data.Item3.Scale) + 320;
 
             var flip = SpriteEffects.None;
             if (self.FlipX) {

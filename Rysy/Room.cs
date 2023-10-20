@@ -342,11 +342,16 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void Render(Camera camera, bool selected) {
+        if (!selected && !camera.IsRectVisible(Bounds)) {
+            ClearRenderCacheIfWanted();
+            return;
+        }
+
         var canvasReady = FullRenderCanvas is { IsDisposed: false };
 
         // canvases are not used in selected rooms, free the canvas
         if (canvasReady && selected)
-            ClearRenderCache();
+            ClearFullRenderCache();
 
         // if the room takes up extremely tiny amounts of space due to huge zoom out, there's no point in rendering the interior
         var interiorVisible = selected || (
@@ -355,12 +360,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         );
 
         if (!interiorVisible)
-            ClearRenderCache();
-
-        if (!selected && !camera.IsRectVisible(Bounds)) {
-            ClearRenderCache();
-            return;
-        }
+            ClearRenderCacheIfWanted();
 
         StartBatch(camera);
 
@@ -523,6 +523,15 @@ public sealed class Room : IPackable, ILuaWrapper {
         });
     }
 
+    /// <summary>
+    /// Clears the render cache if the user wants to aggressively clear caches for better memory usage.
+    /// If the cache needs to be cleared regardless of settings, call <see cref="ClearRenderCache"/>
+    /// </summary>
+    public void ClearRenderCacheIfWanted() {
+        if (Settings.Instance?.ClearRenderCacheForOffScreenRooms ?? false)
+        ClearRenderCache();
+    }
+
     public void ClearRenderCache() {
         ClearFullRenderCache();
         ClearEntityRenderCache();
@@ -644,8 +653,6 @@ public sealed class Room : IPackable, ILuaWrapper {
             GetSelectionsInRectForGrid(rect, BG, list, SelectionLayer.BGTiles);
         }
 
-
-
         return list;
     }
 
@@ -685,20 +692,17 @@ public sealed class Room : IPackable, ILuaWrapper {
             if (layer is { } && entity.EditorLayer != layer)
                 continue;
 
-
-            //var mainSelect = entity.GetMainSelection();
             var selection = entity.CreateSelection();
 
-            //if (mainSelect.IsWithinRectangle(rect)) {
             if (selection.Check(rect)) {
                 into.Add(selection);
             }
 
             if (entity.Nodes is { } nodes)
                 for (int i = 0; i < nodes.Count; i++) {
-                    var nodeSelect = entity.GetNodeSelection(i);
-                    if (nodeSelect.IsWithinRectangle(rect)) {
-                        into.Add(new Selection(new NodeSelectionHandler((EntitySelectionHandler)selection.Handler, nodes[i])));
+                    var nodeSelect = entity.CreateNodeSelection(i);
+                    if (nodeSelect.Check(rect)) {
+                        into.Add(nodeSelect);
                     }
                 }
         }

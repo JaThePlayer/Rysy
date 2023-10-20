@@ -19,8 +19,8 @@ public static class RectangleExt {
     }
 
     public static Rectangle FromPoints(IEnumerable<Vector2> points) {
-        int smallestX = int.MinValue, smallestY = int.MinValue;
-        int largestX = int.MaxValue, largestY = int.MaxValue;
+        int smallestX = int.MaxValue, smallestY = int.MaxValue;
+        int largestX = int.MinValue, largestY = int.MinValue;
         foreach (var p in points) {
             var x = (int) p.X;
             var y = (int) p.Y;

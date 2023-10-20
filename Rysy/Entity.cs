@@ -135,14 +135,6 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
 
         try {
-            /*
-            if (firstSprite is Sprite s) {
-                return ISelectionCollider.FromSprite(s);
-            }
-
-            if (firstSprite is RectangleSprite rectSprite) {
-                return ISelectionCollider.FromRect(rectSprite.Pos);
-            }*/
             if (GetSprites().FirstOrDefault() is { } firstSprite)
                 return firstSprite.GetCollider();
         } catch { }
@@ -484,6 +476,20 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         Handler = _SelectionHandler ??= new EntitySelectionHandler(this)
     };
 
+    // todo: refactor node selections
+    internal NodeSelectionHandler?[]? _NodeSelectionHandlers;
+    public Selection CreateNodeSelection(int node) {
+        if (node >= Nodes.Count)
+            throw new Exception($"Tried to get selection for node at index {node}, but entity has {Nodes.Count} nodes.");
+        
+        _NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
+
+        if (node >= _NodeSelectionHandlers.Length)
+            Array.Resize(ref _NodeSelectionHandlers, node + 1);
+
+        return new(_NodeSelectionHandlers[node] ??= new((EntitySelectionHandler) CreateSelection().Handler, Nodes[node]));
+    }
+
     /// <summary>
     /// Transfers the selection handler from this entity to <paramref name="newEntity"/>, used by <see cref="SwapEntityAction"/>
     /// </summary>
@@ -493,6 +499,11 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             _SelectionHandler = null;
 
             handler.Entity = newEntity;
+        }
+
+        if (_NodeSelectionHandlers is { } nodeHandlers) {
+            newEntity._NodeSelectionHandlers = nodeHandlers;
+            _NodeSelectionHandlers = null;
         }
     }
 
@@ -513,6 +524,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public virtual void OnChanged(EntityDataChangeCtx changed) {
         _pos = new(EntityData.X, EntityData.Y);
         _SelectionHandler?.ClearCollideCache();
+        if (_NodeSelectionHandlers is { })
+            foreach (var item in _NodeSelectionHandlers) {
+                item?.ClearCollideCache();
+            }
 
         if (!changed.OnlyPositionChanged)
             BindAttribute.GetBindContext(this).UpdateBoundFields(this, changed);

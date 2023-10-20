@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.HighPerformance;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Selections;
@@ -390,14 +389,13 @@ public sealed class Autotiler {
             };
         }
 
-        public bool IsLoaded //=> Sprites.Cast<AutotiledSprite>().All(s => s.T is null || s.T.Texture is { });
+        public bool IsLoaded
         {
             get {
-                foreach (var item in Sprites.AsSpan2D()) {
+                foreach (var item in Sprites) {
                     if (item.T is { } t && t.Texture is not { })
                         return false;
                 }
-
                 return true;
             }
         }
@@ -427,11 +425,10 @@ public sealed class Autotiler {
                 bot = sprites.GetLength(1);
             }
 
-            var sprSpan = sprites.AsSpan2D();
             var color = Color;
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bot; y++) {
-                    ref var s = ref sprSpan.DangerousGetReferenceAt(x, y);// ref sprites[x, y];
+                    ref var s = ref sprites[x, y];
 
                     if (s.T?.Texture is { } t)
                         b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtext, color);

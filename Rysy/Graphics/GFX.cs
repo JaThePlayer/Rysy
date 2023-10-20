@@ -1,8 +1,6 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics.TextureTypes;
+﻿using Rysy.Graphics.TextureTypes;
 using Rysy.Mods;
 using Rysy.Scenes;
-using System.IO.Compression;
 
 namespace Rysy.Graphics;
 
@@ -81,8 +79,8 @@ public static class GFX {
     }
 
     internal static async ValueTask LoadVanillaAtlasAsync() {
-        var path = $"{Profile.Instance.CelesteDirectory}/Content/Graphics/Atlases/Gameplay";
-        await Atlas.LoadFromPackerAtlasAsync(path);
+        await Atlas.LoadFromPackerAtlasAsync($"{Profile.Instance.CelesteDirectory}/Content/Graphics/Atlases/Gameplay", noAtlas: false);
+        await Atlas.LoadFromPackerAtlasAsync($"{Profile.Instance.CelesteDirectory}/Content/Graphics/Atlases/Misc", noAtlas: true);
     }
 
     internal static ValueTask LoadModAsync(ModMeta mod, bool registerFilewatch = true) {
