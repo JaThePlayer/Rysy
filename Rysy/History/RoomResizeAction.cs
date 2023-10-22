@@ -8,17 +8,25 @@ public record class RoomResizeAction(Room Room, int Width, int Height) : IHistor
         if (Room.Width == Width && Room.Height == Height) {
             return false;
         }
+        int w = Width;
+        if (w <= 0) {
+            w = 8;
+        }
+        var h = Height;
+        if (h <= 0) {
+            h = 8;
+        }
 
         _origBG = Room.BG.Tiles;
         _origFG = Room.FG.Tiles;
         _origHeight = Room.Height;
         _origWidth = Room.Width;
 
-        Room.BG.Resize(Width, Height);
-        Room.FG.Resize(Width, Height);
+        Room.BG.Resize(w, h);
+        Room.FG.Resize(w, h);
 
-        Room.Attributes.Width = Width;
-        Room.Attributes.Height = Height;
+        Room.Attributes.Width = w;
+        Room.Attributes.Height = h;
 
         return true;
     }
