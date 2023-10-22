@@ -36,9 +36,12 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     private IDictionary<T, string> GetValues() {
         if (typeof(T) == typeof(object)) {
+            var values = Values();
+            if (values.Keys.All(k => k is string))
+                return values;
             // the value we get might be an int, but dropdown values might be floats etc.
             // to avoid issues with finding the dropdown values in those cases, we'll compare the string representations...
-            return new Dictionary<T, string>(Values(), new ToStringEqualityComparer());
+            return new Dictionary<T, string>(values, new ToStringEqualityComparer());
         }
 
         return Values();
@@ -51,7 +54,6 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     public override bool IsValid(object? value) {
         var val = ConvertMapDataValue(value);
 
-        //if (value is not T val) {
         if (val is not { }) {
             return (NullAllowed && value is null) && base.IsValid(value);
         }

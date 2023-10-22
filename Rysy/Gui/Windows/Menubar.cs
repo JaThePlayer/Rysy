@@ -95,6 +95,12 @@ public static class Menubar {
             if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
                 editor.AddWindowIfNeeded(() => new StylegroundWindow(history));
             }
+
+            ImGui.BeginDisabled(map.Mod is not { });
+            if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindowIfNeeded(() => new DecalRegistryWindow(map));
+            }
+            ImGui.EndDisabled();
         }
     }
 

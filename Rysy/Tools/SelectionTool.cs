@@ -17,7 +17,7 @@ public class SelectionTool : Tool {
 
     private enum States {
         Idle,
-        MoveGesture,
+        MoveOrResizeGesture,
         RotationGesture,
     }
 
@@ -27,6 +27,7 @@ public class SelectionTool : Tool {
 
     private Point? MoveGestureStart, MoveGestureLastMousePos;
     private Vector2 MoveGestureFinalDelta;
+    private NineSliceLocation MoveGestureGrabbedLocation;
 
     private List<Selection>? CurrentSelections;
     private List<Selection> SelectionsToHighlight = new();
@@ -36,10 +37,7 @@ public class SelectionTool : Tool {
     private int ClickInPlaceIdx;
 
     private Point? RotationGestureStart;
-    private Rectangle? RotationGestureRect;
     private float? RotationGestureLastAngle;
-    private List<IHistoryAction> RotationGestureActions = new();
-
 
     public SelectionTool() {
     }
@@ -160,7 +158,7 @@ public class SelectionTool : Tool {
 
     private Action CreateMoveHandler(Vector2 offset) => () => {
         if (CurrentSelections is { } selections) {
-            MoveSelectionsBy(offset, selections);
+            MoveSelectionsBy(offset, selections, NineSliceLocation.Middle);
         }
     };
 
@@ -225,12 +223,12 @@ public class SelectionTool : Tool {
         History.ApplyNewAction(action);
     }
 
-    private void MoveSelectionsBy(Vector2 offset, List<Selection> selections) {
-        var action = selections.Select(s => s.Handler.MoveBy(offset)).MergeActions();
-
-        ClearColliderCachesInSelections();
+    private void MoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
+        var action = GetMoveSelectionsByAction(offset, selections, grabbed);
 
         History.ApplyNewAction(action);
+        ClearColliderCachesInSelections();
+
     }
 
     private void ResizeSelectionsBy(Point resize, Vector2 move, List<Selection> selections) {
@@ -248,11 +246,30 @@ public class SelectionTool : Tool {
         History.ApplyNewAction(merged);
     }
 
-    private void SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections) {
-        foreach (var s in selections) {
-            s.Handler.MoveBy(offset).Apply();
-            s.Handler.ClearCollideCache();
-        }
+    private IHistoryAction SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
+        var action = GetMoveSelectionsByAction(offset, selections, grabbed);
+        //action.Apply();
+        History.ApplyNewSimulation(action);
+        ClearColliderCachesInSelections();
+        return action;
+    }
+
+    private IHistoryAction GetMoveSelectionsByAction(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed)
+        => selections.Select(s => GetMoveAction(s.Handler, offset, grabbed)).MergeActions();
+
+    private IHistoryAction? GetMoveAction(ISelectionHandler handler, Vector2 offset, NineSliceLocation grabbed) {
+        var off = offset.ToPoint();
+        return grabbed switch {
+            NineSliceLocation.TopLeft => new MergedAction(handler.MoveBy(new(off.X, off.Y)), handler.TryResize(new(-off.X, -off.Y))),
+            NineSliceLocation.TopMiddle => new MergedAction(handler.MoveBy(new(0, off.Y)), handler.TryResize(new(0, -off.Y))),
+            NineSliceLocation.TopRight => new MergedAction(handler.MoveBy(new(0, off.Y)), handler.TryResize(new(off.X, -off.Y))),
+            NineSliceLocation.Left => new MergedAction(handler.MoveBy(new(off.X, 0)), handler.TryResize(new(-off.X, 0))),
+            NineSliceLocation.Right => handler.TryResize(new(off.X, 0)),
+            NineSliceLocation.BottomLeft => new MergedAction(handler.MoveBy(new(off.X, 0)), handler.TryResize(new(-off.X, off.Y))),
+            NineSliceLocation.BottomMiddle => handler.TryResize(new(0, off.Y)),
+            NineSliceLocation.BottomRight => handler.TryResize(new(off.X, off.Y)),
+            _ => handler.MoveBy(offset),
+        };
     }
 
     public void DeleteSelections() {
@@ -332,6 +349,8 @@ public class SelectionTool : Tool {
         DoRender(EditorState.Camera, null);
     }
 
+    private int GetSideGrabLeniency(Camera camera) => (int)(1f / camera.Scale * 6f);
+
     private void DoRender(Camera camera, Room? room) {
         if (SelectionGestureHandler.CurrentRectangle is { } rect) {
             DrawSelectionRect(rect);
@@ -339,16 +358,24 @@ public class SelectionTool : Tool {
 
         var mousePos = GetMouseRoomPos(camera, room!);
 
-        if (CurrentSelections is { } selections)
+        if (CurrentSelections is { } selections) {
+
             foreach (var selection in selections) {
-                if (selection.Check(new(mousePos.X, mousePos.Y, 1, 1))) {
+                if (State != States.Idle || selection.Check(new(mousePos.X, mousePos.Y, 1, 1))) {
                     SelectionsToHighlight.Add(selection);
+
+                    if (State == States.Idle) {
+                        var r = selection.Handler.Rect;
+                        var cursorType = (r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle).ToMouseCursor();
+                        ImGui.SetMouseCursor(cursorType);
+                    }
                 } else {
                     selection.Render(Color.Red);
                 }
             }
+        }
 
-        if (!ImGui.GetIO().WantCaptureMouse) {
+        if (State == States.Idle && !ImGui.GetIO().WantCaptureMouse) {
             var selectionsUnderCursor = room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer, CustomLayer));
             if (selectionsUnderCursor is { Count: > 0 }) {
                 foreach (var selection in selectionsUnderCursor) {
@@ -396,23 +423,20 @@ public class SelectionTool : Tool {
 
     public override void Update(Camera camera, Room room) {
         if (CurrentSelections is { } selections) {
+            var mouseRoomPos = GetMouseRoomPos(camera, room);
+            var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
             if (Input.Mouse.Left.Clicked()) {
-                var mouseRoomPos = GetMouseRoomPos(camera, room);
-                var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
-
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
-                        State = States.MoveGesture;
                         MoveGestureStart = mouseRoomPos;
+                        State = States.MoveOrResizeGesture;
+                        MoveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
                         break;
                     }
                 }
             }
 
             if (Input.Mouse.Right.Clicked()) {
-                var mouseRoomPos = GetMouseRoomPos(camera, room);
-                var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
-
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
                         selection.Handler.OnRightClicked(selections);
@@ -427,7 +451,7 @@ public class SelectionTool : Tool {
             case States.Idle:
                 UpdateDragGesture(camera, room);
                 break;
-            case States.MoveGesture:
+            case States.MoveOrResizeGesture:
                 UpdateMoveGesture(camera, room);
                 break;
             case States.RotationGesture:
@@ -448,15 +472,30 @@ public class SelectionTool : Tool {
 
     public override bool AllowSwappingRooms => Layer != LayerNames.ROOM;
 
+    private IHistoryAction? GetPreciseRotationAction(float realAngle) {
+        if (CurrentSelections is null)
+            return null;
+
+        var actions = new List<IHistoryAction>();
+        foreach (var s in CurrentSelections) {
+            if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
+                if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart!.Value.ToVector2()) is { } act) {
+                    actions.Add(act);
+                }
+                s.Handler.ClearCollideCache();
+            }
+        }
+
+        return actions.MergeActions();
+    }
+
     private void EndRotationGesture(float angle) {
         if (CurrentSelections is null) {
             return;
         }
-        foreach (var item in RotationGestureActions.AsEnumerable().Reverse()) {
-            item.Undo();
-        }
-        History.ApplyNewAction(RotationGestureActions);
-        RotationGestureActions.Clear();
+
+        History.UndoSimulations();
+        History.ApplyNewAction(GetPreciseRotationAction(angle));
         ClearColliderCachesInSelections();
         RotationGestureStart = null;
     }
@@ -472,7 +511,6 @@ public class SelectionTool : Tool {
             CreateMousePosRect(camera, room, out var start);
             RotationGestureStart = start;
             RotationGestureLastAngle = null;
-            RotationGestureRect = null;
         }
 
         CreateMousePosRect(camera, room, out var currentPos);
@@ -484,39 +522,22 @@ public class SelectionTool : Tool {
         } else {
             (angle, RotationGestureLastAngle) = (angle - RotationGestureLastAngle.Value, angle);
         }
-        // RotationGestureLastAngle = angle;
-        //angle -= RotationGestureLastAngle;
-        //RotationGestureRect ??= RectangleExt.Merge(CurrentSelections.Select(s => s.Handler.Rect));
-        //var rect = RotationGestureRect.Value;
-        //var center = rect.Center;
 
         if (!Input.Keyboard.Shift() || CurrentSelections is null) {
             EndRotationGesture(angle);
-            State = States.MoveGesture;
+            State = States.MoveOrResizeGesture;
             return;
         }
 
         switch (Input.Mouse.Left) {
             case MouseInputState.Held: {
-                foreach (var item in RotationGestureActions.AsEnumerable().Reverse()) {
-                    item.Undo();
-                }
-                RotationGestureActions = new();
-
-                foreach (var s in CurrentSelections) {
-                    if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
-                        if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart.Value.ToVector2()) is { } act) {
-                            if (act.Apply())
-                                RotationGestureActions.Add(act);
-                        }
-                        s.Handler.ClearCollideCache();
-                    }
-                }
+                History.UndoSimulations();
+                History.ApplyNewSimulation(GetPreciseRotationAction(realAngle));
 
                 break;
             }
             case MouseInputState.Released: {
-                EndRotationGesture(angle);
+                EndRotationGesture(realAngle);
                 State = States.Idle;
 
                 break;
@@ -525,16 +546,16 @@ public class SelectionTool : Tool {
     }
 
     private void EndMoveGesture(bool simulate) {
-        if (State != States.MoveGesture)
+        if (State != States.MoveOrResizeGesture)
             return;
 
-        if (simulate && CurrentSelections is { } selections)
-            SimulateMoveSelectionsBy(-MoveGestureFinalDelta, selections);
+        History.UndoSimulations();
 
         MoveGestureStart = null;
         MoveGestureLastMousePos = null;
         MoveGestureFinalDelta = Vector2.Zero;
         State = States.Idle;
+        MoveGestureGrabbedLocation = NineSliceLocation.Middle;
     }
 
     private void UpdateMoveGesture(Camera camera, Room room) {
@@ -556,8 +577,7 @@ public class SelectionTool : Tool {
                         // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
                         SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
                     } else {
-                        SimulateMoveSelectionsBy(-delta, selections);
-                        MoveSelectionsBy(delta, selections);
+                        MoveSelectionsBy(delta, selections, MoveGestureGrabbedLocation);
                     }
                 }
 
@@ -572,10 +592,14 @@ public class SelectionTool : Tool {
                     Vector2 delta = CalculateMovementDelta(MoveGestureLastMousePos!.Value, mousePos);
 
                     if (delta.LengthSquared() != 0) {
-                        SimulateMoveSelectionsBy(delta, selections);
                         MoveGestureLastMousePos += delta.ToPoint();
                         MoveGestureFinalDelta += delta;
+
+                        SimulateMoveSelectionsBy(MoveGestureFinalDelta, selections, MoveGestureGrabbedLocation);
                     }
+
+                    var cursorType = MoveGestureGrabbedLocation.ToMouseCursor();
+                    ImGui.SetMouseCursor(cursorType);
                 }
                 break;
             }

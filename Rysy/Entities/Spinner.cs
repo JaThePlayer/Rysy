@@ -1,6 +1,9 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using System;
+using System.Runtime.CompilerServices;
+using YamlDotNet.Core;
 
 namespace Rysy.Entities;
 
@@ -45,7 +48,39 @@ public sealed class Spinner : Entity, IPlaceable {
     [Bind("color")]
     private SpinnerColors SpinnerColor;
 
+    public override void OnChanged(EntityDataChangeCtx changed) {
+        base.OnChanged(changed);
+
+        ClearCache();
+    }
+
+    private void ClearCache() {
+        _cachedSprites = null;
+        if (_cachedConnectedSpinners is { } connected) {
+            _cachedConnectedSpinners = null;
+            foreach (var r in connected) {
+                if (r.TryGetTarget(out var spinner)) {
+                    spinner._cachedConnectedSpinners = null;
+                    spinner._cachedSprites = null;
+                }
+            }
+        }
+    }
+
+    private List<ISprite>? _cachedSprites;
+    private List<WeakReference<Spinner>>? _cachedConnectedSpinners;
+
     public override IEnumerable<ISprite> GetSprites() {
+        if (_cachedSprites is { } cached) {
+            return cached;
+        }
+
+        var sprites = GetSpritesUncached().ToList();
+        _cachedSprites = sprites;
+        return sprites;
+    }
+
+    private IEnumerable<ISprite> GetSpritesUncached() {
         if (Dust) {
             yield return ISprite.FromTexture(Pos, "Rysy:dust_creature_outlines/base00").Centered() with {
                 Color = Color.Red,
@@ -69,12 +104,18 @@ public sealed class Spinner : Entity, IPlaceable {
         };
 
         // connectors
+        _cachedConnectedSpinners = new();
+        bool createSprites = true;
         foreach (Spinner spinner in Room.Entities[typeof(Spinner)]) {
             if (spinner == this)
-                break;
+                createSprites = false;
+                //break;
 
-            if (DistanceSquaredLessThan(pos, spinner.Pos, 24*24)
+            if (DistanceSquaredLessThan(pos, spinner.Pos, 24 * 24)
                 && !spinner.Dust && spinner.AttachToSolid == AttachToSolid) {
+                _cachedConnectedSpinners.Add(new(spinner));
+                if (spinner._cachedSprites is not { })
+                    continue;
                 var connectorPos = (pos + spinner.Pos) / 2f;
 
                 yield return BgSprites[(int) color] with {

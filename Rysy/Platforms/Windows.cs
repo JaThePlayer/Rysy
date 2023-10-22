@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Rysy.Platforms;
 
-public class Windows : RysyPlatform {
+public partial class Windows : RysyPlatform {
     private static string SaveLocation = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Rysy"
@@ -16,6 +16,32 @@ public class Windows : RysyPlatform {
 
         EnableANSI();
     }
+
+    public override void ResizeWindow(int x, int y, int w, int h) {
+        var gdm = RysyEngine.GDM;
+        var monitorSize = gdm.GraphicsDevice.DisplayMode;
+
+        if (w == monitorSize.Width && Math.Abs(h - monitorSize.Height) <= 80) {
+            // most likely, the window was maximized previously
+            // let's do this property
+            gdm.PreferredBackBufferWidth = w;
+            gdm.PreferredBackBufferHeight = h;
+            var window = GetActiveWindow().ToInt32();
+            // subsequent calls to ShowWindow with the same argument seem to do nothing,
+            // so let's give some other flag first.
+            // Otherwise, disabling borderless fullscreen wouldn't maximize the window again.
+            ShowWindow(window, 4);
+            ShowWindow(window, 3);
+        } else {
+            base.ResizeWindow(x, y, w, h);
+        }
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetActiveWindow();
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ShowWindow(int hWnd, int nCmdShow);
 
     #region ANSI codes
     // Based on:
@@ -59,16 +85,18 @@ public class Windows : RysyPlatform {
 
     private const uint ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200;
 
-    [DllImport("kernel32.dll")]
-    private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
 
-    [DllImport("kernel32.dll")]
-    private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr GetStdHandle(int nStdHandle);
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    private static partial IntPtr GetStdHandle(int nStdHandle);
 
-    [DllImport("kernel32.dll")]
-    private static extern uint GetLastError();
+    [LibraryImport("kernel32.dll")]
+    private static partial uint GetLastError();
     #endregion
 }

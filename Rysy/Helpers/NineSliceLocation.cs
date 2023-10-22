@@ -1,4 +1,6 @@
-﻿namespace Rysy.Helpers;
+﻿using ImGuiNET;
+
+namespace Rysy.Helpers;
 
 public enum NineSliceLocation {
     TopLeft, TopMiddle, TopRight,
@@ -13,4 +15,20 @@ public enum NineSliceLocation {
     InnerCorner_DownRight,
 
     InnerCorner_DownLeft,
+}
+
+
+public static class NineSliceLocationExt {
+    public static ImGuiMouseCursor ToMouseCursor(this NineSliceLocation loc) => loc switch {
+        NineSliceLocation.TopLeft => ImGuiMouseCursor.ResizeNWSE,
+        NineSliceLocation.TopMiddle => ImGuiMouseCursor.ResizeNS,
+        NineSliceLocation.TopRight => ImGuiMouseCursor.ResizeNESW,
+        NineSliceLocation.Left => ImGuiMouseCursor.ResizeEW,
+        NineSliceLocation.Middle => ImGuiMouseCursor.None,
+        NineSliceLocation.Right => ImGuiMouseCursor.ResizeEW,
+        NineSliceLocation.BottomLeft => ImGuiMouseCursor.ResizeNESW,
+        NineSliceLocation.BottomMiddle => ImGuiMouseCursor.ResizeNS,
+        NineSliceLocation.BottomRight => ImGuiMouseCursor.ResizeNWSE,
+        _ => ImGuiMouseCursor.None,
+    };
 }

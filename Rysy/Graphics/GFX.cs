@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics.TextureTypes;
+using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Scenes;
 
@@ -13,6 +14,7 @@ public static class GFX {
 
     public static Texture2D Pixel { get; private set; } = null!;
     public static VirtTexture VirtPixel { get; private set; } = null!;
+    public static DecalRegistry DecalRegistry { get; private set; } = null!;
 
     private static BasicEffect BasicEffect;
 
@@ -75,6 +77,13 @@ public static class GFX {
             await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
                 return LoadModAsync(m);
             });
+        }
+
+        LoadingScene.Text = "Loading Decal Registry";
+        DecalRegistry?.Dispose();
+        DecalRegistry = new();
+        foreach (var mod in ModRegistry.Mods.Values) {
+            DecalRegistry.ReadFileFromMod(mod.Filesystem);
         }
     }
 
