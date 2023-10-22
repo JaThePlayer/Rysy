@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using System.Xml;
 
 namespace Rysy.Graphics;
@@ -14,6 +15,8 @@ namespace Rysy.Graphics;
 public sealed class Autotiler {
     public sealed class AutotilerData {
         public string Filename;
+
+        [JsonIgnore]
         public VirtTexture Texture = null!;
         public List<(string mask, Point[] tiles)> Tiles = new();
 
@@ -241,6 +244,13 @@ public sealed class Autotiler {
                     }
                 }).Where(x => x.Item1 is { }).ToList();
 
+                tiles.Sort((a, b) => {
+                    int aSum = a.Item1.CountFast('x');
+                    int bSum = b.Item1.CountFast('x');
+
+                    return aSum - bSum;
+                });
+
                 autotilerData.Tiles.AddRange(tiles);
                 Tilesets[id] = autotilerData;
             }
@@ -321,7 +331,7 @@ public sealed class Autotiler {
     /// </summary>
     public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOOB = true) {
         if (!Loaded) {
-            yield break;
+            return Array.Empty<ISprite>();
         }
 
         List<char>? unknownTilesetsUsed = null;
@@ -334,9 +344,10 @@ public sealed class Autotiler {
             Color = color,
         };
 
-        for (int i = 0; i < l.Sprites.GetLength(0); i++) {
-            for (int j = 0; j < l.Sprites.GetLength(1); j++) {
-                l.Sprites[i, j] = new();
+        var sprites = l.Sprites;
+        for (int i = 0; i < sprites.GetLength(0); i++) {
+            for (int j = 0; j < sprites.GetLength(1); j++) {
+                sprites[i, j] = new();
             }
         }
 
@@ -346,37 +357,64 @@ public sealed class Autotiler {
                 if (c == '0')
                     continue;
 
-                if (!Tilesets.TryGetValue(c, out var data)) {
-                    unknownTilesetsUsed ??= new();
-                    if (!unknownTilesetsUsed.Contains(c)) {
-                        unknownTilesetsUsed.Add(c);
-                        LogUnknownTileset(x, y, c);
-                    }
-
-                    yield return ISprite.Rect(new((int) position.X + x * 8, (int) position.Y + y * 8, 8, 8), Color.Pink);
-                    continue;
-                }
-
-                if (!data.GetFirstMatch(tileGrid, x, y, w, h, tilesOOB, out var tiles)) {
-                    yield return ISprite.Rect(new((int) position.X + x * 8, (int) position.Y + y * 8, 8, 8), Color.Red);
-                    continue;
-                }
-
-
-                //var tile = tiles[random.Next(0, tiles.Length)];
-                var tile = tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
-
-                l.Sprites[x, y] = new() {
-                    T = data.Texture,
-                    Subtext = ISprite.FromTexture(default, data.Texture).GetSubtextureRect(tile.X, tile.Y, 8, 8)
-                };
+                SetTile(sprites, tileGrid, c, x, y, tilesOOB, unknownTilesetsUsed);
             }
         }
-        yield return l;
+        return l;
     }
 
     private static void LogUnknownTileset(int x, int y, char c) {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
+    }
+
+    internal void SetTile(AutotiledSpriteList.AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, List<char>? unknownTilesetsUsed = null) {
+        if (!Tilesets.TryGetValue(c, out var data)) {
+            unknownTilesetsUsed ??= new(1);
+            if (!unknownTilesetsUsed.Contains(c)) {
+                unknownTilesetsUsed.Add(c);
+                LogUnknownTileset(x, y, c);
+            }
+
+            sprites[x, y] = new() {
+                T = GFX.Atlas["Rysy:tilesets/missingTile"],
+                Subtext = new(0, 0, 8, 8),
+            };
+            return;
+        }
+
+        if (!data.GetFirstMatch(tileGrid, x, y, tileGrid.GetLength(0), tileGrid.GetLength(1), tilesOOB, out var tiles)) {
+            sprites[x, y] = new() {
+                T = GFX.Atlas["Rysy:tilesets/missingTile"],
+                Subtext = new(0, 0, 8, 8),
+            };
+            return;
+        }
+
+        var tile = tiles.Length == 1 ? tiles[0] : tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
+
+        sprites[x, y] = new() {
+            T = data.Texture,
+            Subtext = data.Texture.GetSubtextureRect(tile.X, tile.Y, 8, 8, out _)
+        };
+    }
+
+    internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB, List<char>? unknownTilesetsUsed = null) {
+        var sprites = toUpdate.Sprites;
+        const int offset = 1;
+
+        var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
+        var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
+        for (int x = (changedX - offset).AtLeast(0); x <= endX; x++) {
+            for (int y = (changedY - offset).AtLeast(0); y <= endY; y++) {
+                var c = tileGrid[x, y];
+                if (c == '0') {
+                    sprites[x, y] = default;
+                    continue;
+                }
+
+                SetTile(sprites, tileGrid, c, x, y, tilesOOB, unknownTilesetsUsed);
+            }
+        }
     }
 
     internal sealed record class AutotiledSpriteList : ISprite {

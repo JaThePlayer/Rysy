@@ -8,10 +8,30 @@ public class HistoryHandler {
     internal List<IHistoryAction> Actions { get; set; } = new();
     internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
+    internal List<IHistoryAction> SimulatedActions { get; set; } = new();
+
     public Action? OnUndo { get; set; }
     public Action? OnApply { get; set; }
 
+    public void UndoSimulations() {
+        foreach (var item in SimulatedActions) {
+            item?.Undo();
+        }
+        SimulatedActions.Clear();
+    }
+
+    public void ApplyNewSimulation(IHistoryAction? action) {
+        UndoSimulations();
+
+        if (action is { }) {
+            action.Apply();
+            SimulatedActions.Add(action);
+        }
+    }
+
     public void ApplyNewAction(IEnumerable<IHistoryAction?> actions) {
+        UndoSimulations();
+
         if (actions is MergedAction merged) {
             ApplyNewAction((IHistoryAction)merged);
             return;
@@ -32,6 +52,8 @@ public class HistoryHandler {
         => ApplyNewAction((IHistoryAction) action);
 
     public void ApplyNewAction(IHistoryAction? action) {
+        UndoSimulations();
+
         if (action?.Apply() ?? false) {
             InsertAction(action);
         }
@@ -44,6 +66,8 @@ public class HistoryHandler {
     }
 
     public void Undo() {
+        UndoSimulations();
+
         if (Actions.Count > 0) {
             var action = Pop(Actions);
             action.Undo();
@@ -53,6 +77,8 @@ public class HistoryHandler {
     }
 
     public void Redo() {
+        UndoSimulations();
+
         if (UndoneActions.Count > 0) {
             var action = Pop(UndoneActions);
             action.Apply();

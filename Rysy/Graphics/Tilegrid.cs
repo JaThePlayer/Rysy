@@ -31,6 +31,7 @@ public class Tilegrid : ILuaWrapper {
             Width = value.GetLength(0);
             Height = value.GetLength(1);
             RenderCacheToken?.Invalidate();
+            CachedSprites = null;
         }
     }
 
@@ -93,19 +94,32 @@ public class Tilegrid : ILuaWrapper {
             return false;
         currentTile = tile;
         RenderCacheToken?.Invalidate();
+        if (CachedSprites is { } cached) {
+            Autotiler!.UpdateSpriteList(cached, Tiles, x, y, true);
+        }
         return true;
     }
 
     public void Resize(int widthPixels, int heightPixels) {
         Tiles = Tiles.CreateResized(widthPixels / 8, heightPixels / 8, '0');
         RenderCacheToken?.Invalidate();
+        CachedSprites = null;
     }
 
+    private Autotiler.AutotiledSpriteList? CachedSprites;
+
     public IEnumerable<ISprite> GetSprites() {
-        return Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White).Select(s => {
+        if (CachedSprites is { } c)
+            return c;
+
+        var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White).Select(s => {
             s.Depth = Depth;
             return s;
         }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
+
+        CachedSprites = sprites.FirstOrDefault() as Autotiler.AutotiledSpriteList;
+
+        return sprites;
     }
 
     public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {

@@ -1,4 +1,6 @@
-﻿namespace Rysy.Extensions;
+﻿using Rysy.Helpers;
+
+namespace Rysy.Extensions;
 
 public static class RectangleExt {
     public static Rectangle FromPoints(Vector2 a, Vector2 b) => FromPoints(a.ToPoint(), b.ToPoint());
@@ -94,4 +96,31 @@ public static class RectangleExt {
     public static Rectangle MovedTo(this Rectangle r, Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
 
     public static Point Size(this Rectangle r) => new(r.Width, r.Height);
+
+    public static NineSliceLocation? GetLocationInRect(this Rectangle r, Point pos, int leniency = 1) {
+        if (!r.Contains(pos))
+            return null;
+
+        if (new Rectangle(r.X, r.Y, leniency, leniency).Contains(pos))
+            return NineSliceLocation.TopLeft;
+        if (new Rectangle(r.Right - leniency, r.Y, leniency, leniency).Contains(pos))
+            return NineSliceLocation.TopRight;
+
+        if (new Rectangle(r.X, r.Bottom - leniency, leniency, leniency).Contains(pos))
+            return NineSliceLocation.BottomLeft;
+        if (new Rectangle(r.Right - leniency, r.Bottom - leniency, leniency, leniency).Contains(pos))
+            return NineSliceLocation.BottomRight;
+
+        if (new Rectangle(r.X, r.Y, r.Width, leniency).Contains(pos))
+            return NineSliceLocation.TopMiddle;
+        if (new Rectangle(r.X, r.Bottom - leniency, r.Width, leniency).Contains(pos))
+            return NineSliceLocation.BottomMiddle;
+
+        if (new Rectangle(r.X, r.Y, leniency, r.Height).Contains(pos))
+            return NineSliceLocation.Left;
+        if (new Rectangle(r.Right - leniency, r.Y, leniency, r.Height).Contains(pos))
+            return NineSliceLocation.Right;
+
+        return null;
+    }
 }

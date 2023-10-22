@@ -50,6 +50,8 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.ClearRenderCacheForOffScreenRooms = b;
             Settings.Instance.Save();
         }
+
+        ImGui.EndTabItem();
     }
 
     private void VisualBar() {

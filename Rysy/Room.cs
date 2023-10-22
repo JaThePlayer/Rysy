@@ -407,13 +407,32 @@ public sealed class Room : IPackable, ILuaWrapper {
 
             if (p.EntitiesVisible) {
                 if (CachedEntitySprites is null) {
+#if LOG_PER_ENTITY_PERF
+                    Dictionary<string, TimeSpan> TimePerType = new(StringComparer.Ordinal);
+#endif
+
                     CachedEntitySprites = Entities.Select(e => {
                         var spr = e.GetSpritesWithNodes();
                         if (layer is { } && e.EditorLayer != layer)
                             spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
 
+#if LOG_PER_ENTITY_PERF
+                        return spr.Timed((elapsed) => {
+                            var t = e.Name;
+                            if (!TimePerType.TryGetValue(t, out TimeSpan time)) {
+                                time = TimeSpan.Zero;
+                            }
+
+                            TimePerType[t] = time + elapsed;
+                        });
+#else
                         return spr;
+#endif
                     }).SelectMany(x => x).ToList();
+
+#if LOG_PER_ENTITY_PERF
+                    TimePerType.OrderByDescending(kv => kv.Value).LogAsJson();
+#endif
 
                     EntityRenderCacheToken.Reset();
                 }
@@ -478,7 +497,8 @@ public sealed class Room : IPackable, ILuaWrapper {
 
             RenderCacheToken.Reset();
 
-            // w.Message = $"Generating {CachedSprites.Count} sprites for {Name}";
+            if (w is { })
+                w.Message = $"Generating {CachedSprites.Count} sprites for {Name}";
 
             if (Settings.Instance.LogTextureLoadTimes)
                 StartTextureLoadTimer();
@@ -529,7 +549,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     public void ClearRenderCacheIfWanted() {
         if (Settings.Instance?.ClearRenderCacheForOffScreenRooms ?? false)
-        ClearRenderCache();
+            ClearRenderCache();
     }
 
     public void ClearRenderCache() {

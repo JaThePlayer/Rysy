@@ -264,4 +264,16 @@ public static partial class StringExt {
     public static float ToInt(this ReadOnlySpan<char> s) => int.Parse(s, CultureInfo.InvariantCulture);
 
     public static bool IsNullOrWhitespace(this string? s) => string.IsNullOrWhiteSpace(s);
+
+    /// <summary>
+    /// Counts how many times the character <paramref name="x"/> appears in the given string.
+    /// </summary>
+    public static int CountFast(this string s, char x) {
+        var sum = 0;
+        var i = -1;
+        while ((i = s.IndexOf(x, i + 1)) != -1) {
+            sum++;
+        }
+        return sum;
+    }
 }

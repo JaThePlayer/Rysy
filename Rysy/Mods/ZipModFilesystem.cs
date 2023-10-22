@@ -159,13 +159,15 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
-        if (!WatchedAssets.TryGetValue(path, out var assets)) {
-            assets = new(1);
+        lock (WatchedAssets) {
+            if (!WatchedAssets.TryGetValue(path, out var assets)) {
+                assets = new(1);
 
-            WatchedAssets.Add(path, assets);
+                WatchedAssets.Add(path, assets);
+            }
+
+            assets.Add(asset);
         }
-
-        assets.Add(asset);
     }
 
     public bool FileExists(string path) {

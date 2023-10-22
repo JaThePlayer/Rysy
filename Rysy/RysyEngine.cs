@@ -8,6 +8,8 @@ using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using Rysy.Selections;
+using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace Rysy;
 
@@ -252,22 +254,7 @@ public sealed class RysyEngine : Game {
 
     private void ResizeWindow(int w, int h, int x, int y) {
         OnEndOfThisFrame += () => {
-            GDM.PreferredBackBufferWidth = w;
-            GDM.PreferredBackBufferHeight = h;
-            GDM.ApplyChanges();
-
-            var monitorSize = GDM.GraphicsDevice.DisplayMode;
-            // just in case persistence got a messed up value, snap these back in range
-            if (!x.IsInRange(0, monitorSize.Width - w - 32))
-                x = 0;
-
-            // todo: get rid of that hardcoded 32, though that's not easy cross-platform...
-            var minY = Window.IsBorderlessShared() ? 0 : 32;
-            if (!y.IsInRange(minY, monitorSize.Height - h - 32))
-                y = 32;
-            Window.SetPosition(new (x, y));
-            Window_ClientSizeChanged(null, new());
-            GDM.ApplyChanges();
+            RysyPlatform.Current.ResizeWindow(x, y, w, h);
         };
     }
 

@@ -1,6 +1,7 @@
 ﻿using Rysy.Helpers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Rysy.Extensions;
 
@@ -184,6 +185,15 @@ public static class LinqExt {
         foreach (var item in self) {
             yield return callback(item.Item1, item.Item2, item.Item3);
         }
+    }
+
+    public static IEnumerable<T> Timed<T>(this IEnumerable<T> self, Action<TimeSpan> onFinishEnumeration) {
+        var startT = Stopwatch.GetTimestamp();
+        foreach (var item in self) {
+            yield return item;
+        }
+        var time = Stopwatch.GetElapsedTime(startT);
+        onFinishEnumeration(time);
     }
 
     /// <summary>

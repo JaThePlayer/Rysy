@@ -55,8 +55,6 @@ public record struct LineSprite : ISprite {
     }
 
     public void Render(Camera? cam, Vector2 offset) {
-        //Render();
-        //return;
         if (cam is null) {
             Render();
             return;

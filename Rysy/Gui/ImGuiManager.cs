@@ -559,6 +559,43 @@ public static class ImGuiManager {
             unsafe {
                 RenderDrawData(ImGui.GetDrawData());
             }
+
+            switch (ImGui.GetMouseCursor()) {
+                case ImGuiMouseCursor.None:
+                    Mouse.SetCursor(MouseCursor.Arrow);
+                    break;
+                case ImGuiMouseCursor.Arrow:
+                    Mouse.SetCursor(MouseCursor.Arrow);
+                    break;
+                case ImGuiMouseCursor.TextInput:
+                    Mouse.SetCursor(MouseCursor.IBeam);
+                    break;
+                case ImGuiMouseCursor.ResizeAll:
+                    Mouse.SetCursor(MouseCursor.SizeAll);
+                    break;
+                case ImGuiMouseCursor.ResizeNS:
+                    Mouse.SetCursor(MouseCursor.SizeNS);
+                    break;
+                case ImGuiMouseCursor.ResizeEW:
+                    Mouse.SetCursor(MouseCursor.SizeWE);
+                    break;
+                case ImGuiMouseCursor.ResizeNESW:
+                    Mouse.SetCursor(MouseCursor.SizeNESW);
+                    break;
+                case ImGuiMouseCursor.ResizeNWSE:
+                    Mouse.SetCursor(MouseCursor.SizeNWSE);
+                    break;
+                case ImGuiMouseCursor.Hand:
+                    Mouse.SetCursor(MouseCursor.Hand);
+                    break;
+                case ImGuiMouseCursor.NotAllowed:
+                    Mouse.SetCursor(MouseCursor.No);
+                    break;
+                case ImGuiMouseCursor.COUNT:
+                    break;
+                default:
+                    break;
+            }
         }
 
         protected void SetupInput() {
@@ -608,7 +645,6 @@ public static class ImGuiManager {
                 io.AddInputCharacter(c);
             };
 #endif
-
             io.Fonts.AddFontDefault();
         }
 
