@@ -224,6 +224,7 @@ public class SelectionTool : Tool {
     }
 
     private void MoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
+        History.UndoSimulations();
         var action = GetMoveSelectionsByAction(offset, selections, grabbed);
 
         History.ApplyNewAction(action);
@@ -247,6 +248,7 @@ public class SelectionTool : Tool {
     }
 
     private IHistoryAction SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
+        History.UndoSimulations();
         var action = GetMoveSelectionsByAction(offset, selections, grabbed);
         //action.Apply();
         History.ApplyNewSimulation(action);
@@ -594,7 +596,7 @@ public class SelectionTool : Tool {
                     if (delta.LengthSquared() != 0) {
                         MoveGestureLastMousePos += delta.ToPoint();
                         MoveGestureFinalDelta += delta;
-
+                        //Console.WriteLine(MoveGestureFinalDelta);
                         SimulateMoveSelectionsBy(MoveGestureFinalDelta, selections, MoveGestureGrabbedLocation);
                     }
 

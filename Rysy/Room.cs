@@ -831,7 +831,7 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
 public class RoomSelectionHandler : ISelectionHandler {
     public Room Room { get; set; }
     private Vector2 RemainderOffset;
-
+    private Vector2 ResizeRemainderOffset;
     public Rectangle Bounds => Room.Bounds;
 
     public object Parent => Room;
@@ -853,7 +853,7 @@ public class RoomSelectionHandler : ISelectionHandler {
         var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
 
         // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
-        RemainderOffset += offset - (tileOffset.ToVector2() * 8);
+        //RemainderOffset += offset - (tileOffset.ToVector2() * 8);
 
         if (tileOffset.X == 0 && tileOffset.Y == 0) {
             return new MergedAction(Array.Empty<IHistoryAction>());
@@ -879,7 +879,9 @@ public class RoomSelectionHandler : ISelectionHandler {
     }
 
     public IHistoryAction? TryResize(Point delta) {
-        return new RoomResizeAction(Room, Room.Width + delta.X, Room.Height + delta.Y);
+        var tileOffset = ((delta.ToVector2() + ResizeRemainderOffset) / 8).ToPoint();
+
+        return new RoomResizeAction(Room, Room.Width + tileOffset.X * 8, Room.Height + tileOffset.Y * 8);
     }
 
     public IHistoryAction PlaceClone(Room room) {
