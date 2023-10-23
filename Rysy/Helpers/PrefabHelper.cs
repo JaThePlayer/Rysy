@@ -233,6 +233,10 @@ public static class PrefabHelper {
 
                 return null;
             }
+
+            public bool ResizableX => false;
+
+            public bool ResizableY => false;
         }
     }
 }

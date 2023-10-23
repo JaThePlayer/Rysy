@@ -42,9 +42,9 @@ public sealed class Node : IDepth, ILuaWrapper {
     public Vector2 ToVector2() => this;
 }
 
-sealed record class NodeSelectionHandler : ISelectionHandler {
+sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseRotationHandler {
     private EntitySelectionHandler Handler;
-    private int LastNodeId;
+    private int PrevNodeId;
     private Entity LastEntity;
 
     public Entity Entity => Handler.Entity;
@@ -55,12 +55,12 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
         Handler = entity;
         Node = node;
 
-        LastNodeId = NodeIdx;
+        PrevNodeId = NodeIdx;
         LastEntity = Entity;
     }
 
     internal NodeSelectionHandler(EntitySelectionHandler entity, Node node, int nodeId) : this(entity, node) {
-        LastNodeId = nodeId;
+        PrevNodeId = nodeId;
     }
 
     public void OnDeselected() {
@@ -77,7 +77,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
         get {
             EnsureValid();
 
-            return _Collider ??= Entity.GetNodeSelection(LastNodeId);
+            return _Collider ??= Entity.GetNodeSelection(PrevNodeId);
         }
     }
 
@@ -100,6 +100,10 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
     public IHistoryAction? TryResize(Point delta) {
         return null;
     }
+
+    public bool ResizableX => false;
+
+    public bool ResizableY => false;
 
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
         var maxNodes = Entity.NodeLimits.End;
@@ -125,8 +129,8 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
         if (LastEntity != Entity) {
             // transfer over to the node instance on the new entity
-            Node = Entity.Nodes[LastNodeId];
-            LastNodeId = NodeIdx;
+            Node = Entity.Nodes[PrevNodeId];
+            PrevNodeId = NodeIdx;
             LastEntity = Entity;
         }
     }
@@ -146,5 +150,16 @@ sealed record class NodeSelectionHandler : ISelectionHandler {
 
     public IHistoryAction PlaceClone(Room room) {
         return IHistoryAction.Empty;
+    }
+
+    public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
+        if (!Entity.CreateNodeSelection(PrevNodeId).Check(origin)) {
+            return null;
+        }
+        if (Entity.RotatePreciseBy(angle, origin) is not { } rotated) {
+            return null;
+        }
+
+        return Handler.FlipImpl(rotated, nameof(Entity.RotatePreciseBy));
     }
 }

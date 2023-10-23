@@ -52,7 +52,7 @@ public abstract class LoopingSpriteSliceEntity : SpriteEntity {
                 _ when i == count - 1 => tileSize * 2,
                 _ => tileSize
             },
-            LoopingMode.PickRandom => Pos.SeededRandomInclusive(0, (vertical ? baseSprite.Texture.Height : baseSprite.Texture.Width) / tileSize) * tileSize,
+            LoopingMode.PickRandom => Pos.SeededRandomInclusive(0, (vertical ? baseSprite.Texture.Height : baseSprite.Texture.Width) / tileSize - 1) * tileSize,
             _ => throw new Exception($"Unknown LoopingMode {mode}")
         };
 

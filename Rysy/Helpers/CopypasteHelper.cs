@@ -51,10 +51,9 @@ public static class CopypasteHelper {
         var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(pasted)).ToList());
 
         var entityPlaceAction = PasteEntitylikeSelections(history, room, entitySelections, entities, offset);
-        //var entitySelections = PasteEntitylikeSelections(history, room, pasted, pos);
-        var tileSelections = PasteTileSelections(history, room, pasted, offset, out var tileAction);
+        var tileSelections = PasteTileSelections(history, room, pasted, offset);
 
-        history?.ApplyNewAction(new MergedAction(entityPlaceAction, tileAction));
+        history?.ApplyNewAction(entityPlaceAction);
 
         return entitySelections.Concat(tileSelections).ToList();
     }
@@ -156,28 +155,6 @@ static string Compress(byte[] input) {
         return offset;
     }
 
-    /*
-    private static List<Selection> PasteEntitylikeSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 pos) {
-        List<Selection> newSelections = CreateSelectionsFromCopied(room, pasted, out var entities);
-
-        if (entities.Count > 0) {
-            var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).ToList());
-
-            foreach (var entity in entities) {
-                entity.Pos += offset;
-
-                if (entity.Nodes is { } nodes)
-                    foreach (var node in nodes) {
-                        node.Pos += offset;
-                    }
-            }
-
-            history?.ApplyNewAction(AddEntityAction.AddAll(entities, room));
-        }
-
-        return newSelections;
-    }*/
-
     private static IHistoryAction? PasteEntitylikeSelections(HistoryHandler? history, Room room, List<Selection> selections, List<Entity> entities, Vector2 centeringOffset) {
         if (entities.Count > 0) {
             var offset = centeringOffset;
@@ -208,12 +185,7 @@ static string Compress(byte[] input) {
         }).ToList();
     }
 
-    private static List<Selection> PasteTileSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 offset, out IHistoryAction action) {
-        //if (history is null)
-        //    return new();
-
-        var actions = new List<IHistoryAction>();
-
+    private static List<Selection> PasteTileSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 offset) {
         var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
@@ -225,21 +197,13 @@ static string Compress(byte[] input) {
             var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
             var rPos = new Vector2(x, y).GridPosFloor(8);
 
-
-            //offset = GetCenteringOffset(pos, new() { new(rPos.X * 8 - 8, rPos.Y * 8 - 8, w * 8, h * 8) });
             rPos += (offset / 8).ToPoint();
 
-
-            var handler = new TileSelectionHandler(dest, new(rPos.X * 8 - 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
-            var move = handler.MoveBy(new(8, 0));
-            actions.Add(move);
-            //history?.ApplyNewAction(move);
-            //move.Apply();
+            var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
 
             return new Selection(handler);
         }).SelectWhereNotNull(s => s).ToList();
 
-        action = actions.MergeActions();
         return newSelections;
     }
 

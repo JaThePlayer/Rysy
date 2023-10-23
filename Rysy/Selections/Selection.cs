@@ -1,6 +1,7 @@
 ﻿using Rysy;
 using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Selections;
@@ -15,10 +16,28 @@ public class Selection {
     /// <summary>
     /// Checks if <paramref name="roomPos"/> intersects this selection.
     /// </summary>
-    /// <param name="roomPos"></param>
-    /// <returns></returns>
     public bool Check(Rectangle roomPos) {
         if (Handler.IsWithinRectangle(roomPos))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if the point <paramref name="roomPos"/> is contained within this selection.
+    /// </summary>
+    public bool Check(Vector2 roomPos) {
+        if (Handler.IsWithinRectangle(new((int) roomPos.X, (int) roomPos.Y, 1, 1)))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if the point (<paramref name="roomX"/>,<paramref name="roomY"/>) is contained within this selection.
+    /// </summary>
+    public bool Check(float roomX, float roomY) {
+        if (Handler.IsWithinRectangle(new((int) roomX, (int) roomY, 1, 1)))
             return true;
 
         return false;
@@ -78,6 +97,25 @@ public interface ISelectionHandler {
     public Rectangle Rect { get; }
 
     public virtual void OnDeselected() { }
+
+    //todo: find better name for this
+    public virtual IHistoryAction? GetMoveOrResizeAction(Vector2 offset, NineSliceLocation grabbed) {
+        var off = offset.ToPoint();
+        return grabbed switch {
+            NineSliceLocation.TopLeft => new MergedAction(MoveBy(new(off.X, off.Y)), TryResize(new(-off.X, -off.Y))),
+            NineSliceLocation.TopMiddle => new MergedAction(MoveBy(new(0, off.Y)), TryResize(new(0, -off.Y))),
+            NineSliceLocation.TopRight => new MergedAction(MoveBy(new(0, off.Y)), TryResize(new(off.X, -off.Y))),
+            NineSliceLocation.Left => new MergedAction(MoveBy(new(off.X, 0)), TryResize(new(-off.X, 0))),
+            NineSliceLocation.Right => TryResize(new(off.X, 0)),
+            NineSliceLocation.BottomLeft => new MergedAction(MoveBy(new(off.X, 0)), TryResize(new(-off.X, off.Y))),
+            NineSliceLocation.BottomMiddle => TryResize(new(0, off.Y)),
+            NineSliceLocation.BottomRight => TryResize(new(off.X, off.Y)),
+            _ => MoveBy(offset),
+        };
+    }
+
+    public bool ResizableX { get; }
+    public bool ResizableY { get; }
 }
 
 public interface ISelectionFlipHandler {

@@ -98,7 +98,7 @@ public class PlacementTool : Tool {
     public override void Update(Camera camera, Room room) {
         if (PickNextFrame) {
             PickNextFrame = false;
-            if (GetPlacementUnderCursor(camera, room) is { } underCursor) {
+            if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, LayerNames.ToolLayerToEnum(Layer)) is { } underCursor) {
                 Material = underCursor;
             }
             CurrentPlacement = null;
@@ -110,11 +110,7 @@ public class PlacementTool : Tool {
         }
 
         if (Material is Placement place) {
-            //Input.Mouse.ConsumeLeft();
-
-            //History.ApplyNewAction(place.PlacementHandler.Place(selection, currentRoom));
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
-                //Console.WriteLine(rect);
                 History.ApplyNewAction(place.PlacementHandler.Place(selection, room));
                 AnchorPos = null;
             }
@@ -185,9 +181,8 @@ public class PlacementTool : Tool {
         PickNextFrame = true;
     }
 
-    private Placement? GetPlacementUnderCursor(Camera camera, Room currentRoom) {
-        var mouse = GetMousePos(camera, currentRoom, precise: true);
-        var selections = currentRoom.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer));
+    internal static Placement? GetPlacementUnderCursor(Point mouse, Room currentRoom, SelectionLayer layer) {
+        var selections = currentRoom.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), layer);
 
         if (selections.FirstOrDefault()?.Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
             return placement;
@@ -203,6 +198,14 @@ public class PlacementTool : Tool {
             foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
                 item.WithMultipliedAlpha(0.4f).Render();
             }
+        }
+
+        if (!ImGui.GetIO().WantCaptureMouse) {
+            var mousePos = GetMousePos(camera, room);
+
+            SelectionTool.HandleHoveredSelections(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1),
+                LayerNames.ToolLayerToEnum(Layer), selected: null, Input, render: false
+            );
         }
     }
 

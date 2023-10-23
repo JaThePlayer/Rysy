@@ -260,18 +260,7 @@ public class SelectionTool : Tool {
         => selections.Select(s => GetMoveAction(s.Handler, offset, grabbed)).MergeActions();
 
     private IHistoryAction? GetMoveAction(ISelectionHandler handler, Vector2 offset, NineSliceLocation grabbed) {
-        var off = offset.ToPoint();
-        return grabbed switch {
-            NineSliceLocation.TopLeft => new MergedAction(handler.MoveBy(new(off.X, off.Y)), handler.TryResize(new(-off.X, -off.Y))),
-            NineSliceLocation.TopMiddle => new MergedAction(handler.MoveBy(new(0, off.Y)), handler.TryResize(new(0, -off.Y))),
-            NineSliceLocation.TopRight => new MergedAction(handler.MoveBy(new(0, off.Y)), handler.TryResize(new(off.X, -off.Y))),
-            NineSliceLocation.Left => new MergedAction(handler.MoveBy(new(off.X, 0)), handler.TryResize(new(-off.X, 0))),
-            NineSliceLocation.Right => handler.TryResize(new(off.X, 0)),
-            NineSliceLocation.BottomLeft => new MergedAction(handler.MoveBy(new(off.X, 0)), handler.TryResize(new(-off.X, off.Y))),
-            NineSliceLocation.BottomMiddle => handler.TryResize(new(0, off.Y)),
-            NineSliceLocation.BottomRight => handler.TryResize(new(off.X, off.Y)),
-            _ => handler.MoveBy(offset),
-        };
+        return handler.GetMoveOrResizeAction(offset, grabbed);
     }
 
     public void DeleteSelections() {
@@ -348,10 +337,61 @@ public class SelectionTool : Tool {
         GFX.EndBatch();
         GFX.BeginBatch(EditorState.Camera!);
 
-        DoRender(EditorState.Camera, null);
+        DoRender(EditorState.Camera, EditorState.CurrentRoom);
     }
 
-    private int GetSideGrabLeniency(Camera camera) => (int)(1f / camera.Scale * 6f);
+    private int GetSideGrabLeniency(Camera camera) => (int) (1f / camera.Scale * 6f);
+
+    /// <summary>
+    /// Adjusts the grabbed location so that we don't try to resize a selection in a unsupported direction.
+    /// </summary>
+    private static NineSliceLocation AdjustGrabLocBasedOnResizable(NineSliceLocation grabbed, ISelectionHandler handler) {
+        if (grabbed == NineSliceLocation.Middle)
+            return grabbed;
+
+        var resizableX = handler.ResizableX;
+        var resizableY = handler.ResizableY;
+
+        if (grabbed is NineSliceLocation.TopLeft) {
+            if (!resizableX)
+                grabbed = NineSliceLocation.TopMiddle;
+            else if (!resizableY)
+                grabbed = NineSliceLocation.Left;
+        }
+        if (grabbed is NineSliceLocation.TopRight) {
+            if (!resizableX)
+                grabbed = NineSliceLocation.TopMiddle;
+            else if (!resizableY)
+                grabbed = NineSliceLocation.Right;
+        }
+
+        if (grabbed is NineSliceLocation.BottomLeft) {
+            if (!resizableX)
+                grabbed = NineSliceLocation.BottomMiddle;
+            else if (!resizableY)
+                grabbed = NineSliceLocation.Left;
+        }
+        if (grabbed is NineSliceLocation.BottomRight) {
+            if (!resizableX)
+                grabbed = NineSliceLocation.BottomMiddle;
+            else if (!resizableY)
+                grabbed = NineSliceLocation.Right;
+        }
+
+        if (grabbed is NineSliceLocation.BottomLeft or NineSliceLocation.BottomRight && !resizableX) {
+            grabbed = NineSliceLocation.BottomMiddle;
+        }
+
+        if (grabbed is NineSliceLocation.Left or NineSliceLocation.Right && !resizableX) {
+            return NineSliceLocation.Middle;
+        }
+
+        if (grabbed is NineSliceLocation.TopMiddle or NineSliceLocation.BottomMiddle && !resizableY) {
+            return NineSliceLocation.Middle;
+        }
+
+        return grabbed;
+    }
 
     private void DoRender(Camera camera, Room? room) {
         if (SelectionGestureHandler.CurrentRectangle is { } rect) {
@@ -361,14 +401,15 @@ public class SelectionTool : Tool {
         var mousePos = GetMouseRoomPos(camera, room!);
 
         if (CurrentSelections is { } selections) {
-
             foreach (var selection in selections) {
-                if (State != States.Idle || selection.Check(new(mousePos.X, mousePos.Y, 1, 1))) {
+                if (State != States.Idle || selection.Check(mousePos.X, mousePos.Y)) {
                     SelectionsToHighlight.Add(selection);
 
                     if (State == States.Idle) {
                         var r = selection.Handler.Rect;
-                        var cursorType = (r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle).ToMouseCursor();
+                        var cursorType =
+                            AdjustGrabLocBasedOnResizable(r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle, selection.Handler)
+                            .ToMouseCursor();
                         ImGui.SetMouseCursor(cursorType);
                     }
                 } else {
@@ -378,15 +419,12 @@ public class SelectionTool : Tool {
         }
 
         if (State == States.Idle && !ImGui.GetIO().WantCaptureMouse) {
-            var selectionsUnderCursor = room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), LayerNames.ToolLayerToEnum(Layer, CustomLayer));
-            if (selectionsUnderCursor is { Count: > 0 }) {
-                foreach (var selection in selectionsUnderCursor) {
-                    selection.Render(Color.Pink);
-                }
-            }
+            HandleHoveredSelections(room, SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1),
+                LayerNames.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections?.Where(s => SelectionsToHighlight.Contains(s)), Input, middleClick: true
+            );
         }
 
-        if (SelectionsToHighlight is { Count: > 0}) {
+        if (SelectionsToHighlight is { Count: > 0 }) {
             foreach (var selection in SelectionsToHighlight) {
                 selection.Render(Color.Gold);
             }
@@ -403,24 +441,49 @@ public class SelectionTool : Tool {
         }
     }
 
-    private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
-        mouseRoomPos = GetMouseRoomPos(camera, room);
-        return new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
-    }
+    internal static void HandleHoveredSelections(Room? room, Rectangle rectangle, SelectionLayer layer,
+        IEnumerable<Selection>? selected = null, Input? input = null, bool render = true, bool middleClick = false) {
+        var canRightClick = (input ?? Input.Global).Mouse.RightClickedInPlace();
 
-    private Selection? GetHoveredSelection(Camera camera, Room room) {
-        if (CurrentSelections is null)
-            return null;
+        if (!canRightClick && !render && !middleClick)
+            return;
 
-        var mouseRect = CreateMousePosRect(camera, room, out _);
+        var selectionsUnderCursor = room?.GetSelectionsInRect(rectangle, layer);
+        if (selectionsUnderCursor is not { Count: > 0 }) {
+            return;
+        }
 
-        foreach (var selection in CurrentSelections) {
-            if (selection.Check(mouseRect)) {
-                return selection;
+        var firstSelection = selectionsUnderCursor[0];
+
+        if (render) {
+            foreach (var selection in selectionsUnderCursor) {
+                selection.Render(Color.Pink);
             }
         }
 
-        return null;
+        if (canRightClick) {
+            if (selected is { } c) {
+                // if we're hovering over an active selection, right clicking will select that instead,
+                // let's not right click a unselected item in this case
+                foreach (var curr in c) {
+                    if (selectionsUnderCursor.Any(x => x.Handler == curr.Handler)) {
+                        canRightClick = false;
+                        break;
+                    }
+                }
+            }
+
+            // allow right clicking a un-selected item
+            if (canRightClick) {
+                firstSelection.Handler.OnRightClicked(new Selection[] { firstSelection });
+            }
+        }
+
+    }
+
+    private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
+        mouseRoomPos = GetMouseRoomPos(camera, room);
+        return new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
     }
 
     public override void Update(Camera camera, Room room) {
@@ -433,6 +496,7 @@ public class SelectionTool : Tool {
                         MoveGestureStart = mouseRoomPos;
                         State = States.MoveOrResizeGesture;
                         MoveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
+                        MoveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(MoveGestureGrabbedLocation, selection.Handler);
                         break;
                     }
                 }
@@ -684,10 +748,14 @@ public class SelectionTool : Tool {
             }
 
             CurrentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
-            ;
         } else {
             Deselect();
             CurrentSelections = finalSelections.ToList();
+        }
+
+        if (CurrentSelections is [{ Handler: RoomSelectionHandler roomSelection }]) {
+            // you only selected 1 room, let's swap to that room as well
+            EditorState.CurrentRoom = roomSelection.Room;
         }
     }
 
