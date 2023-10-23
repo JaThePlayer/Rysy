@@ -79,11 +79,15 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
         return null;
     }
 
+    public bool ResizableX => Entity.ResizableX;
+
+    public bool ResizableY => Entity.ResizableY;
+
     public void ClearCollideCache() {
         _Collider = null;
     }
 
-    private IHistoryAction? FlipImpl(Entity? flipped, string funcName) {
+    internal IHistoryAction? FlipImpl(Entity? flipped, string funcName) {
         var orig = Entity;
 
         if (flipped is null)
@@ -151,6 +155,9 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
+        if (!Entity.CreateSelection().Check(origin)) {
+            return null;
+        }
         if (Entity.RotatePreciseBy(angle, origin) is not { } rotated) {
             return null;
         }

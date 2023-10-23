@@ -689,6 +689,11 @@ public sealed class Room : IPackable, ILuaWrapper {
                     return tracked.Where(e => e.EntityData.SID == sid).Select(CreateSelectionFrom).ToList();
                 }
                 return null;
+            case Room room:
+                if (room.Map is { } map) {
+                    return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
+                }
+                return null;
             default:
                 return null;
         }
@@ -745,7 +750,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler() { Room = this };
+    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler(this);
 
     public Room Clone() {
         var packed = Pack();
@@ -828,17 +833,23 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
     }
 }
 
-public class RoomSelectionHandler : ISelectionHandler {
-    public Room Room { get; set; }
-    private Vector2 RemainderOffset;
-    private Vector2 ResizeRemainderOffset;
+public sealed class RoomSelectionHandler : ISelectionHandler {
+    public Room Room { get; }
     public Rectangle Bounds => Room.Bounds;
+
+    internal RoomSelectionHandler(Room room) {
+        Room = room;
+    }
 
     public object Parent => Room;
 
     public SelectionLayer Layer => SelectionLayer.Rooms;
 
     public Rectangle Rect => Bounds;
+
+    public bool ResizableX => true;
+
+    public bool ResizableY => true;
 
     public void ClearCollideCache() {
     }
@@ -850,16 +861,21 @@ public class RoomSelectionHandler : ISelectionHandler {
     public bool IsWithinRectangle(Rectangle roomPos) => Bounds.Intersects(roomPos);
 
     public IHistoryAction MoveBy(Vector2 offset) {
-        var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
-
-        // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
-        //RemainderOffset += offset - (tileOffset.ToVector2() * 8);
+        var tileOffset = (offset / 8).ToPoint();
 
         if (tileOffset.X == 0 && tileOffset.Y == 0) {
             return new MergedAction(Array.Empty<IHistoryAction>());
         }
 
         return new RoomMoveAction(Room, tileOffset.X, tileOffset.Y);
+    }
+
+    private IHistoryAction ResizeByAndMoveInsides(Vector2 resize, Vector2 offset) {
+        var tileOffset = (resize / 8).ToPoint();
+        if (tileOffset.X == 0 && tileOffset.Y == 0) {
+            return new MergedAction(Array.Empty<IHistoryAction>());
+        }
+        return new RoomResizeAndMoveInsidesAction(Room, tileOffset.X * 8, tileOffset.Y * 8, offset);
     }
 
     public void OnRightClicked(IEnumerable<Selection> selections) {
@@ -879,9 +895,24 @@ public class RoomSelectionHandler : ISelectionHandler {
     }
 
     public IHistoryAction? TryResize(Point delta) {
-        var tileOffset = ((delta.ToVector2() + ResizeRemainderOffset) / 8).ToPoint();
+        var tileOffset = (delta.ToVector2() / 8).ToPoint();
 
         return new RoomResizeAction(Room, Room.Width + tileOffset.X * 8, Room.Height + tileOffset.Y * 8);
+    }
+
+    public IHistoryAction? GetMoveOrResizeAction(Vector2 offset, NineSliceLocation grabbed) {
+        var off = offset.ToPoint();
+        return grabbed switch {
+            NineSliceLocation.TopLeft => ResizeByAndMoveInsides(new(-off.X, -off.Y), new(off.X, off.Y)),
+            NineSliceLocation.TopMiddle => ResizeByAndMoveInsides(new(0, -off.Y), new(0, off.Y)),
+            NineSliceLocation.TopRight => ResizeByAndMoveInsides(new(off.X, -off.Y), new(0, off.Y)),
+            NineSliceLocation.Left => ResizeByAndMoveInsides(new(-off.X, 0), new(off.X, 0)),
+            NineSliceLocation.Right => TryResize(new(off.X, 0)),
+            NineSliceLocation.BottomLeft => ResizeByAndMoveInsides(new(-off.X, off.Y), new(off.X, 0)),
+            NineSliceLocation.BottomMiddle => TryResize(new(0, off.Y)),
+            NineSliceLocation.BottomRight => TryResize(new(off.X, off.Y)),
+            _ => MoveBy(offset),
+        };
     }
 
     public IHistoryAction PlaceClone(Room room) {

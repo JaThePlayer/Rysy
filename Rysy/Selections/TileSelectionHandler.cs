@@ -12,9 +12,11 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     private char[,] ToMove;
     private char[,]? Orig;
 
-    private Vector2 RemainderOffset;
-
     private SelectionLayer SelectionLayer;
+
+    public bool ResizableX => false;
+
+    public bool ResizableY => false;
 
     public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, SelectionLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
@@ -67,23 +69,26 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction MoveBy(Vector2 offset) {
-        var tileOffset = ((offset + RemainderOffset) / 8).ToPoint();
-
-        // since offset might be less than 8, let's accumulate the offsets that weren't sufficient to move tiles.
-        RemainderOffset += offset - tileOffset.ToVector2() * 8;
+        var tileOffset = (offset / 8).ToPoint();
 
         if (tileOffset.X == 0 && tileOffset.Y == 0)
             return new MergedAction(Array.Empty<IHistoryAction>());
 
         ConsumeTilesIfNeeded();
 
-        var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig!, ToMove, tileOffset);
-        var moveOffset = tileOffset.ToVector2() * 8;
+        var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig!, ToMove, tileOffset)
+            .WithHook(
+            onApply: () => MoveRects(tileOffset),
+            onUndo: () => MoveRects(new(-tileOffset.X, -tileOffset.Y)));
 
+        return action;
+    }
+
+    private void MoveRects(Point tileOffset) {
+        var moveOffset = tileOffset.ToVector2() * 8;
         Rect = Rect.MovedBy(moveOffset);
         for (int i = 0; i < ToMoveRects.Count; i++)
             ToMoveRects[i] = (ToMoveRects[i].Exclude, ToMoveRects[i].Item2.MovedBy(moveOffset));
-        return action;
     }
 
     private void ConsumeTilesIfNeeded() {
@@ -153,6 +158,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
                 for (int y = 0; y < toMove.GetLength(1); y++)
                     if (toMove[x, y] != '0')
                         yield return ISprite.OutlinedRect(new(x * 8 + rPos.X, y * 8 + rPos.Y), 8, 8, c * 0.3f, c * 0.7f);
+        //yield return ISprite.OutlinedRect(Rect, Color.Pink * 0.1f, Color.Pink);
     }
 
     public void MergeWith(Rectangle rectPixels, bool exclude) {

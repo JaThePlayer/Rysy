@@ -5,8 +5,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rysy.Extensions;
 using System;
-using System.Buffers.Text;
-using System.IO.Compression;
 
 public class Input {
     public static Input Global { get; private set; } = new();
@@ -55,6 +53,9 @@ public class Input {
 
         public bool LeftDoubleClicked() => TimeSinceLastClick[0] < DOUBLE_CLICK_TIME && DoubleClicks[0];
 
+        public bool RightClickedInPlace() => Right.Released() && mousePrevState.RightButton == ButtonState.Pressed &&
+                ClickPositions[1] == RealPos;
+
         public bool AnyClicked =>
             Left is not MouseInputState.Released ||
             Right is not MouseInputState.Released ||
@@ -68,9 +69,9 @@ public class Input {
         private MouseState mousePrevState, mouseState = new();
         private float[] HoldTimes = new float[5];
         private bool[] ConsumedInputs = new bool[5];
-
         private float[] TimeSinceLastClick = new float[5];
         private bool[] DoubleClicks = new bool[5];
+        private Point[] ClickPositions = new Point[5];
 
         private MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
             if (PositionDelta != Point.Zero) {
@@ -96,7 +97,7 @@ public class Input {
             if (prev == ButtonState.Released) {
                 // just clicked this frame
                 DoubleClicks[index] = TimeSinceLastClick[index] < DOUBLE_CLICK_TIME;
-
+                ClickPositions[index] = mouseState.Position;
                 HoldTimes[index] = 0f;
                 TimeSinceLastClick[index] = 0f;
                 return MouseInputState.Clicked;

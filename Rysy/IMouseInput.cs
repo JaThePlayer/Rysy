@@ -28,5 +28,6 @@ public interface IMouseInput {
     bool HeldOrClicked(int button);
     float HeldTime(int button);
     bool LeftDoubleClicked();
+    bool RightClickedInPlace();
     void Update(float deltaSeconds);
 }
