@@ -1,31 +1,63 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Stylegrounds;
 
-public abstract class Style : IPackable, IName {
+public abstract class Style : IPackable, IName, IBindTarget {
     public static FieldList GetDefaultFields() => new FieldList(new {
         only = Fields.String("*").AllowNull().ConvertEmptyToNull(),
         exclude = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
         flag = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
         notflag = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
-        tag = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
+        tag = Fields.String(null!).AllowNull().ConvertEmptyToNull().ToList(',').WithMinElements(0),
         _indent = new PaddingField()
     });
 
     public string Name { get; set; }
 
-    public EntityData Data { get; set; }
+    private EntityData _Data;
 
+    public EntityData Data {
+        get => _Data;
+        set {
+            if (_Data is not null) {
+                _Data.OnChanged -= OnChanged;
+            }
+            _Data = value;
+            _Data.OnChanged += OnChanged;
+
+            OnChanged(new() {
+                AllChanged = true
+            });
+        }
+    }
+
+    private EntityData? _FakePreviewData;
     /// <summary>
     /// Gets set by the styleground window for safely allowing for live-preview of changed values.
     /// TODO: refactor to make this apply to entities as well without many code changes...
     /// </summary>
-    internal EntityData? FakePreviewData { get; set; }
+    internal EntityData? FakePreviewData {
+        get => _FakePreviewData;
+        set {
+            if (_FakePreviewData is not null) {
+                _FakePreviewData.OnChanged -= OnChanged;
+            }
+
+            _FakePreviewData = value;
+            if (_FakePreviewData is { })
+                _FakePreviewData.OnChanged += OnChanged;
+
+            OnChanged(new() {
+                AllChanged = true
+            });
+        }
+    }
 
     protected BinaryPacker.Element[]? UnhandledChildren;
 
@@ -43,8 +75,21 @@ public abstract class Style : IPackable, IName {
     [JsonIgnore]
     public string? NotFlag => FakeOrRealData().Attr("notflag", null!);
 
+    [Bind("tag")]
+    public readonly IReadOnlyList<string> Tags;
+
+
+    private StyleFolder? _Parent;
     [JsonIgnore]
-    public StyleFolder? Parent { get; internal set; } = null;
+    public StyleFolder? Parent {
+        get => _Parent;
+        internal set {
+            _Parent = value;
+            OnChanged(new() {
+                AllChanged = true
+            });
+        }
+    }
 
     [JsonIgnore]
     public virtual string DisplayName => $"style.effects.{Name}.name".TranslateOrNull() ?? Name[(Name.LastIndexOf('/') + 1)..].Humanize();
@@ -106,6 +151,10 @@ public abstract class Style : IPackable, IName {
     /// </summary>
     public virtual SpriteBatchState? GetSpriteBatchState() => null;
 
+    public virtual void OnChanged(EntityDataChangeCtx ctx) {
+        BindAttribute.GetBindContext<Style>(this).UpdateBoundFields(this, ctx);
+    }
+
     public static bool MatchRoomName(string predicate, string roomName) {
         // currently copied from celeste,
         // TODO: optimise with caching and spans
@@ -159,4 +208,20 @@ public abstract class Style : IPackable, IName {
 
         return unk;
     }
+
+    #region IBindTarget
+    FieldList IBindTarget.GetFields() => StylegroundWindow.GetFields(this);
+
+    object IBindTarget.GetValueForField(Field field, string key) {
+        Style? style = this;
+        while (style is { }) {
+            if (style.FakeOrRealData().TryGetValue(key, out var value))
+                return value;
+
+            style = style.Parent;
+        }
+
+        return field.GetDefault();
+    }
+    #endregion
 }

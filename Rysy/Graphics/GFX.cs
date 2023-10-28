@@ -160,6 +160,11 @@ public static class GFX {
     }
 
     private static void BeginBatchNoPush(ref SpriteBatchState st) {
+        if (st.ScissorRect is { } scissor)
+            Batch.GraphicsDevice.ScissorRectangle = scissor;
+        else
+            Batch.GraphicsDevice.ScissorRectangle = default;
+
         Batch.Begin(
             st.SortMode, 
             st.BlendState, 
@@ -176,8 +181,11 @@ public static class GFX {
     /// </summary>
     public static SpriteBatchState? EndBatch() { 
         Batch.End();
-        if (BatchStateHistory.TryPop(out var last))
+        if (BatchStateHistory.TryPop(out var last)) {
+            if (last.ScissorRect is { } scissor)
+                Batch.GraphicsDevice.ScissorRectangle = default;
             return last;
+        }
         return null;
     }
 
@@ -209,15 +217,7 @@ public record struct SpriteBatchState(
     DepthStencilState? DepthStencilState = null,
     RasterizerState? RasterizerState = null,
     Effect? Effect = null,
-    Matrix? TransformMatrix = null
+    Matrix? TransformMatrix = null,
+    Rectangle? ScissorRect = null
 ) {
-    public SpriteBatchState MergeWith(SpriteBatchState last) => new(
-        SortMode,
-        BlendState ?? last.BlendState,
-        SamplerState ?? last.SamplerState,
-        DepthStencilState ?? last.DepthStencilState,
-        RasterizerState ?? last.RasterizerState,
-        Effect ?? last.Effect,
-        TransformMatrix ?? last.TransformMatrix
-    );
 }

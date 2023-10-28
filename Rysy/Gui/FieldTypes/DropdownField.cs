@@ -113,7 +113,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     public override Field CreateClone() => this with { };
 
-    public T ConvertMapDataValue(object value) {
+    public T ConvertMapDataValue(object? value) {
         if (value is not T val) {
             val = StringToT(value is string s ? s : null);
         }
@@ -138,11 +138,11 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
                 return x is null;
             }
 
-            return x.ToString()?.ToUpperInvariant() == y.ToString()?.ToUpperInvariant();
+            return x.ToString()?.Equals(y.ToString(), StringComparison.OrdinalIgnoreCase) ?? y.ToString() is null;
         }
 
         public int GetHashCode([DisallowNull] T obj) {
-            return obj.ToString()!.ToUpperInvariant().GetHashCode(StringComparison.Ordinal);
+            return obj.ToString()?.GetHashCode(StringComparison.OrdinalIgnoreCase) ?? 0;
         }
     }
 }

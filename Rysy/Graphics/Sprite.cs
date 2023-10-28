@@ -185,6 +185,12 @@ public record struct Sprite : ISprite {
 
             // Fixup properties now, at this point nothing should try to get stuff from the sprite...
             Flip = SpriteEffects.None;
+
+            // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
+            var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
+            if (nonDivisibleBy2 != default)
+                DrawOffset += (nonDivisibleBy2 * Origin);
+
             _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
             // Monogame doesn't like negative scales...
             if (Scale.X < 0) {

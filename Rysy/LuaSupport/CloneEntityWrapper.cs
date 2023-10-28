@@ -17,7 +17,9 @@ public record class CloneEntityWrapper(Entity Entity) : ILuaWrapper {
             return 1;
         }
 
-        if (Changes.Count > 0 && Changes.TryGetValue(key.ToString(), out var changedVal)) {
+
+        var changes = Changes;
+        if (changes.Count > 0 && changes.TryGetValue(key.ToString(), out var changedVal)) {
             lua.Push(changedVal);
             return 1;
         }

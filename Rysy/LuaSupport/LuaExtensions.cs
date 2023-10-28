@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Mods;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -49,7 +50,7 @@ public static partial class LuaExt {
     }
 
 
-    private static char[] SharedToStringBuffer = new char[4098];
+    internal static char[] SharedToStringBuffer = new char[4098];
 
     public static unsafe Span<char> ToStringInto(this Lua state, int index, Span<char> buffer, bool callMetamethod = true) {
         UIntPtr num;
@@ -70,28 +71,39 @@ public static partial class LuaExt {
             return Span<char>.Empty;
         }
 
-        /*
-        if (length == 1) {
-            var b = ((byte*) source)[0];
-            buffer[0] = (char)b;
-            return buffer;
-        }*/
-
         var decoded = state.Encoding.GetChars(new Span<byte>((void*) source, length), buffer);
 
         return buffer[..decoded];
+    }
+
+    public static unsafe Span<byte> ToStringIntoASCII(this Lua state, int index, bool callMetamethod = true) {
+        UIntPtr num;
+        IntPtr source;
+        if (callMetamethod) {
+            source = luaL_tolstring(state.Handle, index, out num);
+            state.Pop(1);
+        } else {
+            source = lua_tolstring(state.Handle, index, out num);
+        }
+
+        if (source == IntPtr.Zero)
+            return Span<byte>.Empty;
+
+        // todo: check if all these casts are needed?
+        int length = checked((int) (uint) num);
+        if (length == 0) {
+            return Span<byte>.Empty;
+        }
+
+        // let's hope we can trust the lua gc to not clear up the string,
+        // considering strings are always interned, this should be safe?
+        return new Span<byte>((void*) source, length);
     }
 
     /// <summary>
     /// Pushes an ASCII string onto the stack
     /// </summary>
     public static void PushASCIIString(this Lua lua, byte[] value) {
-        if (value == null) {
-            lua.PushNil();
-            return;
-        }
-
-        //(value.Select(b => b.ToString())).LogAsJson();
         lua.PushBuffer(value);
     }
 
@@ -405,26 +417,29 @@ public static partial class LuaExt {
             case null:
                 lua.PushNil();
                 break;
+            case bool b:
+                lua.PushBoolean(b);
+                break;
             case int i:
                 lua.PushInteger(i);
-                break;
-            case long l:
-                lua.PushInteger(l);
                 break;
             case float f:
                 lua.PushNumber(f);
                 break;
-            case double d:
-                lua.PushNumber(d);
-                break;
             case string str:
                 lua.PushString(str);
                 break;
-            case bool b:
-                lua.PushBoolean(b);
-                break;
             case ILuaWrapper wrapper:
                 lua.PushWrapper(wrapper);
+                break;
+            case byte[] asciiStr:
+                lua.PushASCIIString(asciiStr);
+                break;
+            case long l:
+                lua.PushInteger(l);
+                break;
+            case double d:
+                lua.PushNumber(d);
                 break;
             default:
                 throw new Exception($"Can't push {obj} [{obj.GetType()}] to Lua");
@@ -716,8 +731,7 @@ where TArg1 : class, ILuaWrapper {
     private static List<LuaFunction> WrapperFuncs = new();
     private static List<byte[]> WrapperMetatableNames = new();
 
-    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("RWR\0");
-
+    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("_RWR");
     /// <summary>
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
@@ -812,11 +826,6 @@ where TArg1 : class, ILuaWrapper {
         });
         state.SetTable(metatableStackLoc);
 
-        // used to identify the metatable as a wrapper
-        state.PushString("_rysyWrapper");
-        state.PushBoolean(true);
-        state.SetTable(metatableStackLoc);
-
         // set the table to be a metatable of itself
         // this way, pushing a wrapper is very cheap, as it doesn't create any tables
         state.PushCopy(metatableStackLoc);
@@ -850,9 +859,11 @@ where TArg1 : class, ILuaWrapper {
                     ret = obj.LuaIndex(lua, lua.ToInteger(top));
                     break;
                 case LuaType.String:
-                    Span<char> buffer = SharedToStringBuffer.AsSpan();
-                    var str = lua.ToStringInto(top, buffer, callMetamethod: false);
-                    ret = obj.LuaIndex(lua, str);
+                    //Span<char> buffer = SharedToStringBuffer.AsSpan();
+                    //var str = lua.ToStringInto(top, buffer, callMetamethod: false);
+                    //ret = obj.LuaIndex(lua, str);
+
+                    ret = obj.LuaIndex(lua, lua.ToStringIntoASCII(top, callMetamethod: false));
                     break;
                 default:
                     throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");

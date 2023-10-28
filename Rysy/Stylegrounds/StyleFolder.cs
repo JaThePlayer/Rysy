@@ -14,15 +14,22 @@ public abstract class StyleFolder : Style {
 
     public override void Unpack(BinaryPacker.Element from) {
         Name = from.Name!;
-        Data = new(from.Name!, from.Attributes);
         var children = from.Children ?? Array.Empty<BinaryPacker.Element>();
-
         Styles = new(children.Length);
+        Data = new(from.Name!, from.Attributes);
 
         foreach (var style in children) {
             var inner = FromElement(style);
             inner.Parent = this;
             Styles.Add(inner);
+        }
+    }
+
+    public override void OnChanged(EntityDataChangeCtx ctx) {
+        base.OnChanged(ctx);
+
+        foreach (var child in Styles) {
+            child.OnChanged(ctx);
         }
     }
 }
