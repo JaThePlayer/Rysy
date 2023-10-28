@@ -306,9 +306,9 @@ public sealed class RysyEngine : Game {
 
             var renderUI = !ShouldHideUI();
 
-            ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
 
             try {
+                ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
                 if (renderUI)
                     Scene.RenderImGui();
                 Scene.Render();
@@ -324,12 +324,12 @@ public sealed class RysyEngine : Game {
 
                 if (DebugInfoWindow.Enabled)
                     DebugInfoWindow.Instance.RenderGui();
+
+                ImGuiManager.GuiRenderer.AfterLayout();
             } catch (Exception e) {
                 Logger.Error(e, $"Unhandled exception during render!");
                 Scene = new CrashScene(Scene, e);
             }
-
-            ImGuiManager.GuiRenderer.AfterLayout();
 
             smartFramerate.Update(gameTime.ElapsedGameTime.TotalSeconds);
 

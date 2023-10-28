@@ -57,7 +57,13 @@ public class PlacementTool : Tool {
     public override string GetMaterialDisplayName(string layer, object material) {
         if (material is Placement pl) {
             var name = LayerNames.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
-            return pl.GetDefiningMod() is { } mod ? $"{name} [{mod.Name}]" : name;
+
+            var associated = pl.GetAssociatedMods();
+            if (associated is { Count: > 0}) {
+                return $"{name} [{string.Join(',', associated)}]";
+            }
+
+            return $"{name} [Vanilla]";
         }
 
         return material switch {

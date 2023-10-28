@@ -399,10 +399,11 @@ public class SelectionTool : Tool {
         }
 
         var mousePos = GetMouseRoomPos(camera, room!);
+        var imguiWantsMouse = ImGui.GetIO().WantCaptureMouse;
 
         if (CurrentSelections is { } selections) {
             foreach (var selection in selections) {
-                if (State != States.Idle || selection.Check(mousePos.X, mousePos.Y)) {
+                if (!imguiWantsMouse && State != States.Idle || selection.Check(mousePos.X, mousePos.Y)) {
                     SelectionsToHighlight.Add(selection);
 
                     if (State == States.Idle) {

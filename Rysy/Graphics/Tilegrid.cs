@@ -135,12 +135,21 @@ public class Tilegrid : ILuaWrapper {
 
     #region Saving
     public static unsafe Tilegrid FromString(int widthPixels, int heightPixels, string tilesString) {
-        tilesString = tilesString.Replace("\r", "", StringComparison.Ordinal);
         var w = widthPixels / 8;
         var h = heightPixels / 8;
 
         var g = new Tilegrid(widthPixels, heightPixels);
-        var tiles = g.Tiles;
+        g.Tiles = TileArrayFromString(widthPixels, heightPixels, tilesString);
+
+        return g;
+    }
+
+    public static unsafe char[,] TileArrayFromString(int widthPixels, int heightPixels, string tilesString) {
+        tilesString = tilesString.Replace("\r", "", StringComparison.Ordinal);
+        var w = widthPixels / 8;
+        var h = heightPixels / 8;
+
+        var tiles = new char[w,h];
 
         int x = 0, y = 0;
         for (int ci = 0; ci < tilesString.Length; ci++) {
@@ -155,7 +164,7 @@ public class Tilegrid : ILuaWrapper {
                     x = 0;
                     y++;
                     if (y >= h)
-                        return g;
+                        return tiles;
                     break;
                 default:
                     if (x < w) {
@@ -166,7 +175,7 @@ public class Tilegrid : ILuaWrapper {
             }
         }
 
-        return g;
+        return tiles;
     }
 
     public string GetSaveString() => GetSaveString(Tiles);

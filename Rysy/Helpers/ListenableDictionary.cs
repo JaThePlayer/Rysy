@@ -98,6 +98,15 @@ public readonly struct ReadOnlyListenableDictionary<TKey, TValue> : IReadOnlyDic
         set => Inner.OnChanged = value;
     }
 
+    public Cache<T> CreateCache<T>(Func<ReadOnlyListenableDictionary<TKey, TValue>, T> generator) where T : class {
+        var inner = Inner;
+        var token = new CacheToken();
+        var cache = new Cache<T>(token, () => generator(inner));
+        OnChanged += token.InvalidateThenReset;
+
+        return cache;
+    }
+
     public readonly TValue this[TKey key] => Inner[key];
 
     public readonly IEnumerable<TKey> Keys => Inner.Keys;

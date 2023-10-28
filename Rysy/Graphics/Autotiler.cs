@@ -354,10 +354,10 @@ public sealed class Autotiler {
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 var c = tileGrid[x, y];
-                if (c == '0')
+                if (c is '0' or '\0')
                     continue;
 
-                SetTile(sprites, tileGrid, c, x, y, tilesOOB, unknownTilesetsUsed);
+                SetTile(sprites, tileGrid, c, x, y, tilesOOB, ref unknownTilesetsUsed);
             }
         }
         return l;
@@ -367,7 +367,7 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
 
-    internal void SetTile(AutotiledSpriteList.AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, List<char>? unknownTilesetsUsed = null) {
+    internal void SetTile(AutotiledSpriteList.AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
         if (!Tilesets.TryGetValue(c, out var data)) {
             unknownTilesetsUsed ??= new(1);
             if (!unknownTilesetsUsed.Contains(c)) {
@@ -398,9 +398,10 @@ public sealed class Autotiler {
         };
     }
 
-    internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB, List<char>? unknownTilesetsUsed = null) {
+    internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
         var sprites = toUpdate.Sprites;
         const int offset = 1;
+        //toUpdate.UnknownTilesetsUsed = new(0);
 
         var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
         var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
@@ -412,7 +413,7 @@ public sealed class Autotiler {
                     continue;
                 }
 
-                SetTile(sprites, tileGrid, c, x, y, tilesOOB, unknownTilesetsUsed);
+                SetTile(sprites, tileGrid, c, x, y, tilesOOB, ref toUpdate.UnknownTilesetsUsed);
             }
         }
     }
@@ -420,6 +421,7 @@ public sealed class Autotiler {
     internal sealed record class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
+        internal List<char>? UnknownTilesetsUsed;
 
         public ISprite WithMultipliedAlpha(float alpha) {
             return this with {

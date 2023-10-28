@@ -5,6 +5,14 @@ local drawableRectangle = require("structs.drawable_rectangle")
 
 local flaglineHelper = {}
 
+local function randomFixed(a, b)
+	if b > a then
+		return math.random(a, b)
+	else
+		return a
+	end
+end
+
 function flaglineHelper.getFlagLineSprites(room, entity, options)
     local sprites = {}
     local x, y = entity.x, entity.y
@@ -37,9 +45,9 @@ function flaglineHelper.getFlagLineSprites(room, entity, options)
     while progress < 1 do
         local color = options.colors[math.random(1, #options.colors)]
         local highlightColor = {color[1] + 0.1, color[2] + 0.1, color[3] + 0.1}
-        local height = math.random(options.minFlagHeight, options.maxFlagHeight)
-        local length = math.random(options.minFlagLength, options.maxFlagLength)
-        local step = math.random(options.minSpace, options.maxSpace)
+        local height = randomFixed(options.minFlagHeight, options.maxFlagHeight)
+        local length = randomFixed(options.minFlagLength, options.maxFlagLength)
+        local step = randomFixed(options.minSpace, options.maxSpace)
 
         progress += (drawFlag and length or step) / curveLength
 
