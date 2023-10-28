@@ -3,19 +3,18 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Selections;
-using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Rysy.LuaSupport;
 
-public static class LuaSerializer {
+public static partial class LuaSerializer {
     private static Lua GetSandboxedLua() => new(openLibs: false);
 
     private static string CorrectDecalPathForLonn(string rysyPath) {
         // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...
-        if (GFX.Atlas.TryGet($"decals/{rysyPath}00", out _)) {
+        if (GFX.Atlas.TryGet($"decals/{rysyPath}00", out _))
             return $"{rysyPath}00";
-        }
 
         return rysyPath;
     }
@@ -26,7 +25,7 @@ public static class LuaSerializer {
 
         var builder = new StringBuilder();
         builder.AppendLine("{");
-        foreach (var item in copied) {
+        foreach (var item in copied)
             switch (item.Layer) {
                 case SelectionLayer.FGDecals:
                 case SelectionLayer.BGDecals:
@@ -54,19 +53,17 @@ public static class LuaSerializer {
                                 _name = "{{item.Data.Name}}",
                                 _id = {{item.Data.Int("id", 0)}},
                         """);
-                    if (SelectionLayerToLonnType(item.Layer) is { } type) {
+                    if (SelectionLayerToLonnType(item.Layer) is { } type)
                         builder.AppendLine(CultureInfo.InvariantCulture, $"""
                                     _type = "{type}",
                             """);
-                    }
 
-                    if (item.Data.Children is { Length: > 0} nodes) {
+                    if (item.Data.Children is { Length: > 0 } nodes)
                         builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                                     nodes = {{{string.Join(",", nodes.Select(n => $$"""
                                             {x={{n.Int("x")}},y={{n.Int("y")}}}
                                             """))}}},
                             """);
-                    }
                     AppendData(builder, item, blacklistedKeys: new() { "id" });
                     builder.AppendLine("""
                             },
@@ -79,7 +76,6 @@ public static class LuaSerializer {
                 case SelectionLayer.Rooms:
                     return null;
             }
-        }
 
         builder.Append('}');
         return builder.ToString();
@@ -90,15 +86,37 @@ public static class LuaSerializer {
                     continue;
 
                 builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                                    ["{{k}}"] = {{ToLuaString(v)}},
+                                    {{TableKeyString(k)}} = {{ToLuaString(v)}},
                             """);
             }
         }
     }
 
+    private static string TableKeyString(string key) {
+        if (IsValidKey(key))
+            return key;
+
+        return $"""
+            ["{ToLuaString(key)}"]
+            """;
+    }
+
+    private static bool IsValidKey(string key) {
+        if (LuaKeywords.Contains(key))
+            return false;
+
+        return VariableNameRegex().IsMatch(key);
+    }
+
+    private static HashSet<string> LuaKeywords = new() {
+        "and", "break", "do", "else", "elseif", "end", "false", "for",
+        "function", "goto", "if", "in", "local", "nil", "not", "or",
+        "repeat", "return", "then", "true", "until", "while"
+    };
+
     private static string ToLuaString(object obj) => obj switch {
         string s => $"""
-        "{s.Replace("\"", "\\\"", StringComparison.Ordinal)}"
+        "{SanitizeString(s)}"
         """,
         int i => i.ToString(CultureInfo.InvariantCulture),
         long i => i.ToString(CultureInfo.InvariantCulture),
@@ -107,6 +125,39 @@ public static class LuaSerializer {
         bool b => b ? "true" : "false",
         _ => obj.ToString()!,
     };
+
+    private static char[] EscapableChars = new char[] { '\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', '\'' };
+    private static Dictionary<char, string> EscapeSequences = new() {
+        ['\a'] = @"\a",
+        ['\b'] = @"\b",
+        ['\f'] = @"\f",
+        ['\n'] = @"\n",
+        ['\r'] = @"\r",
+        ['\t'] = @"\t",
+        ['\v'] = @"\v",
+        ['\0'] = @"\0",
+    };
+
+    private static string SanitizeString(string s) {
+        StringBuilder builder = new(s.Length);
+        var span = s.AsSpan();
+        int i;
+
+        while ((i = span.IndexOfAny(EscapableChars.AsSpan())) > -1) {
+            builder.Append(span[..i]);
+            if (EscapeSequences.TryGetValue(span[i], out var escape)) {
+                builder.Append(escape);
+            } else {
+                builder.Append('\\');
+                builder.Append(span[i]);
+            }
+
+            span = span[(i+1)..];
+        }
+        builder.Append(span);
+
+        return builder.ToString();
+    }
 
     /// <summary>
     /// Tries to convert lonn-copied placements into Rysy placements.
@@ -247,9 +298,8 @@ public static class LuaSerializer {
 
     private static LuaStatus PCallString(Lua lua, string code, string? chunkName = null, int args = 0, int results = 1) {
         var st = lua.LoadString(code, chunkName ?? code);
-        if (st != LuaStatus.OK) {
+        if (st != LuaStatus.OK)
             return st;
-        }
 
         const int millisecondsTimeout = 1_000;
         LuaStatus status = LuaStatus.ErrRun;
@@ -277,4 +327,7 @@ public static class LuaSerializer {
 
         return status;
     }
+
+    [GeneratedRegex("^[a-zA-Z_][\\w_]*$")]
+    private static partial Regex VariableNameRegex();
 }
