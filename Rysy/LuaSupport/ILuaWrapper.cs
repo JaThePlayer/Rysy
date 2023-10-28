@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using System.Text;
 
 namespace Rysy.LuaSupport;
 
@@ -15,6 +16,12 @@ public interface ILuaWrapper {
     /// Implements the __index metamethod for string-keys. Returns the amount of values pushed to the stack.
     /// </summary>
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key);
+
+    public virtual int LuaIndex(Lua lua, ReadOnlySpan<byte> keyAscii) {
+        Span<char> buffer = LuaExt.SharedToStringBuffer.AsSpan();
+        var decoded = Encoding.ASCII.GetChars(keyAscii, buffer);
+        return LuaIndex(lua, buffer[..decoded]);
+    }
 
     /// <summary>
     /// Implements the __len metamethod. Returns the amount of values pushed to the stack.

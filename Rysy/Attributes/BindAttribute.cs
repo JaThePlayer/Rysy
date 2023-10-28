@@ -6,6 +6,21 @@ using System.Reflection.Emit;
 
 namespace Rysy;
 
+/// <summary>
+/// Provides methods necessary for <see cref="BindAttribute"/> to work
+/// </summary>
+public interface IBindTarget {
+    string Name { get; }
+
+    public FieldList GetFields();
+
+    public object GetValueForField(Field field, string key);
+}
+
+/// <summary>
+/// Binds values from EntityData to fields declared on your type, with caching.
+/// The value gets converted to your field's type by using the <see cref="Field"/> defined in your <see cref="FieldInfo"/> for this field name.
+/// </summary>
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class BindAttribute : Attribute {
     public string FieldName { get; }
@@ -14,16 +29,16 @@ public sealed class BindAttribute : Attribute {
         FieldName = fieldName;
     }
 
-    static Dictionary<string, Ctx> ContextCache = new();
+    static Dictionary<string, object> ContextCache = new();
 
     internal static List<Field> _boundFields = new();
 
-    internal static Ctx GetBindContext(Entity entity) {
+    internal static Ctx<BaseT> GetBindContext<BaseT>(IBindTarget entity) where BaseT : IBindTarget {
         var entityType = entity.GetType();
 
-        if (ContextCache.TryGetValue(entity.Name, out var cached) && cached.Type == entityType) return cached;
+        if (ContextCache.TryGetValue(entity.Name, out var cached) && cached is Ctx<BaseT> cachedCtx && cachedCtx.Type == entityType) return cachedCtx;
 
-        var ctx = new Ctx();
+        var ctx = new Ctx<BaseT>();
         ctx.Type = entityType;
 
         var bindAttrs = entityType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
@@ -32,13 +47,13 @@ public sealed class BindAttribute : Attribute {
             .ToList();
 
         if (bindAttrs.Count > 0) {
-            var fieldList = EntityRegistry.GetFields(entity);
+            var fieldList = entity.GetFields();
 
             foreach (var bind in bindAttrs) {
                 var fieldInfo = bind.Item1!;
                 var attr = bind.Item2!;
 
-                var method = new DynamicMethod($"Rysy.Attributes.BindAttribute.Glue<{entityType.Name}>.{fieldInfo.Name}", null, new Type[] { typeof(Entity) });
+                var method = new DynamicMethod($"Rysy.Attributes.BindAttribute.Glue<{entityType.Name}>.{fieldInfo.Name}", null, new Type[] { typeof(BaseT) });
                 var il = method.GetILGenerator();
 
                 if (!fieldList.TryGetValue(attr.FieldName, out var field)) {
@@ -47,20 +62,23 @@ public sealed class BindAttribute : Attribute {
 
                 MethodInfo? converterMethod = FindConverterMethod(entityType, fieldInfo, attr, field);
 
-                var loadValueFromEntity = LoadValueFromEntity;
-                var loadField = LoadFieldFromEntity;
+                var loadValueFromEntity = entity.GetValueForField;
+                var loadField = LoadFieldByBindId;
 
                 _boundFields.Add(field);
+                var fieldLocal = il.DeclareLocal(typeof(Field));
 
                 il.Emit(OpCodes.Ldarg_0);
 
-                // load right Field instance
+                // load the right Field instance
                 il.Emit(OpCodes.Ldc_I4, _boundFields.Count - 1);
                 il.Emit(OpCodes.Call, loadField.Method);
+                il.Emit(OpCodes.Stloc, fieldLocal);
+                il.Emit(OpCodes.Ldloc, fieldLocal);
 
                 // load right value from entity data
-                il.Emit(OpCodes.Dup);
                 il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldloc, fieldLocal);
                 il.Emit(OpCodes.Ldstr, attr.FieldName);
                 il.Emit(OpCodes.Call, loadValueFromEntity.Method);
 
@@ -71,7 +89,7 @@ public sealed class BindAttribute : Attribute {
                 il.Emit(OpCodes.Stfld, fieldInfo);
                 il.Emit(OpCodes.Ret);
 
-                ctx.UpdateFuncs[attr.FieldName] = method.CreateDelegate<Action<Entity>>();
+                ctx.UpdateFuncs[attr.FieldName] = method.CreateDelegate<Action<BaseT>>();
             }
         }
 
@@ -123,7 +141,7 @@ public sealed class BindAttribute : Attribute {
         return converterMethod;
     }
 
-    internal static Field LoadFieldFromEntity(int id) => _boundFields[id];
+    internal static Field LoadFieldByBindId(int id) => _boundFields[id];
 
     internal static object LoadValueFromEntity(Field field, Entity entity, string key) {
         if (entity.EntityData.TryGetValue(key, out var value))
@@ -132,12 +150,12 @@ public sealed class BindAttribute : Attribute {
         return field.GetDefault();
     }
 
-    internal class Ctx {
-        internal Dictionary<string, Action<Entity>> UpdateFuncs = new(StringComparer.Ordinal);
+    internal class Ctx<T> where T : IBindTarget {
+        internal Dictionary<string, Action<T>> UpdateFuncs = new(StringComparer.Ordinal);
 
         internal Type Type;
 
-        public void UpdateBoundFields(Entity entity, EntityDataChangeCtx changed) {
+        public void UpdateBoundFields(T entity, EntityDataChangeCtx changed) {
             if (entity.GetType() != Type) return;
 
             if (changed.AllChanged) {

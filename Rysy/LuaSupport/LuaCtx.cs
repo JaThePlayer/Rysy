@@ -410,7 +410,7 @@ public class LuaCtx {
                 local copied = orig_table_shallowcopy(tbl, ...)
                 
                 local mt = getmetatable(tbl)
-                if mt and rawget(mt, "_rysyWrapper") then
+                if mt and rawget(mt, "_RWR") then
                     setmetatable(copied, mt)
                 end
 
@@ -444,7 +444,7 @@ public class LuaCtx {
         });
 
         // (room, string, entity, int) -> table
-        RegisterApi("entitiesWithSIDWithinRange", static (nint s) => {
+        RegisterApi("entitiesWithSIDWithinRangeUntilThis", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
             var room = lua.UnboxRoomWrapper(1);
@@ -462,16 +462,16 @@ public class LuaCtx {
                 if (enumerator.MoveNext()) {
                     i++;
                     var e = enumerator.Current;
+                    if (e == entity) {
+                        return 2;
+                    }
+
                     if (Vector2.DistanceSquared(pos, e.Pos) >= maxDistanceSquared)
                         goto start;
 
                     lua.PushInteger(i);
                     lua.PushWrapper(e);
-                } else {
-                    lua.PushNil();
-                    lua.PushNil();
                 }
-
 
                 return 2;
             });

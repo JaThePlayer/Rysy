@@ -213,4 +213,23 @@ public record class ListField : Field, IFieldConvertibleToList {
 
         return list;
     }
+
+    public ListField WithMinAndMaxElements(int min, int max) {
+        return this with {
+            MinElements = min,
+            MaxElements = max,
+        };
+    }
+
+    public ListField WithMinElements(int min) {
+        return this with {
+            MinElements = min,
+        };
+    }
+
+    public ListField WithMaxElements(int max) {
+        return this with {
+            MaxElements = max,
+        };
+    }
 }

@@ -344,7 +344,7 @@ public class PlacementTool : Tool {
     protected override void RenderMaterialTooltipExtraInfo(object material) {
         base.RenderMaterialTooltipExtraInfo(material);
 
-        if (material is Placement placement && placement.GetDefiningMod() is { } definingMod && placement.GetAssociatedMods() is { Count: > 0} associated) {
+        if (material is Placement placement && placement.GetAssociatedMods() is { Count: > 0} associated) {
             ImGui.BeginTooltip();
 
             var currentMod = EditorState.Map?.Mod;
@@ -359,13 +359,14 @@ public class PlacementTool : Tool {
                 }
             }
 
-            ImGui.TextDisabled($"Defined by: {definingMod.Name}");
+            if (placement.GetDefiningMod() is { } defining)
+                ImGui.TextDisabled($"Defined by: {defining.Name}");
             ImGui.EndTooltip();
         }
     }
 
     protected override void RenderMaterialListElement(object material, string name) {
-        if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap(out ModMeta? missingDep)) {
+        if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap()) {
             ImGuiManager.PushNullStyle();
         }
 

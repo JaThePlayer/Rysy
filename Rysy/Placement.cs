@@ -194,18 +194,13 @@ public record class Placement {
         return _AssociatedMods = new List<string>(0);
     }
 
-    public bool AreAssociatedModsADependencyOfCurrentMap([NotNullWhen(false)] out ModMeta? missingDependency) {
-        missingDependency = null;
-        if (GetDefiningMod() is not { } mod)
-            return true;
-
+    public bool AreAssociatedModsADependencyOfCurrentMap() {
         if (EditorState.Map?.Mod is not { } currentMod) {
             return true;
         }
 
         foreach (var associated in GetAssociatedMods()) {
             if (!currentMod.DependencyMet(associated)) {
-                missingDependency = mod;
                 return false;
             }
         }

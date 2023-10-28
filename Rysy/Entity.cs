@@ -1,23 +1,20 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Graphics;
-using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
-using YamlDotNet.Core.Tokens;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -124,7 +121,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
     /// <summary>
     /// Returns the selection collider used for your entity.
-    /// For nodes,
+    /// For nodes, call <see cref="GetNodeSelection"/> instead
     /// </summary>
     /// <returns></returns>
     public virtual ISelectionCollider GetMainSelection() {
@@ -211,7 +208,6 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public IEnumerable<ISprite> GetSpritesWithNodes() {
         try {
             if (Nodes is { }) {
-                //return GetSprites().Concat(NodeHelper.GetNodeSpritesFor(this)).WithErrorCatch(LogError).SetDepth(Depth);
                 return GetSprites().Concat(GetAllNodeSprites()).WithErrorCatch(LogError).SetDepth(Depth);
             }
 
@@ -424,6 +420,21 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         return clone;
     }
 
+    /// <summary>
+    /// Gets fired whenever the EntityData for this entity gets changed in any way.
+    /// </summary>
+    public virtual void OnChanged(EntityDataChangeCtx changed) {
+        _pos = new(EntityData.X, EntityData.Y);
+        _SelectionHandler?.ClearCollideCache();
+        if (_NodeSelectionHandlers is { })
+            foreach (var item in _NodeSelectionHandlers) {
+                item?.ClearCollideCache();
+            }
+
+        if (!changed.OnlyPositionChanged)
+            BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
+    }
+
     public virtual BinaryPacker.Element Pack() {
         var el = new BinaryPacker.Element(EntityData.SID);
         el.Attributes = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
@@ -518,27 +529,25 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
-    /// <summary>
-    /// Gets fired whenever the EntityData for this entity gets changed in any way.
-    /// </summary>
-    public virtual void OnChanged(EntityDataChangeCtx changed) {
-        _pos = new(EntityData.X, EntityData.Y);
-        _SelectionHandler?.ClearCollideCache();
-        if (_NodeSelectionHandlers is { })
-            foreach (var item in _NodeSelectionHandlers) {
-                item?.ClearCollideCache();
-            }
-
-        if (!changed.OnlyPositionChanged)
-            BindAttribute.GetBindContext(this).UpdateBoundFields(this, changed);
-    }
-
     public string ToJson() {
         return new {
             Name = Name,
             Data = EntityData
         }.ToJson();
     }
+
+    #region IBindTarget
+    FieldList IBindTarget.GetFields() => EntityRegistry.GetFields(this);
+
+    object IBindTarget.GetValueForField(Field field, string key) {
+        if (EntityData.TryGetValue(key, out var value))
+            return value;
+
+        return field.GetDefault();
+    }
+
+    string IBindTarget.Name => Name;
+    #endregion
 
     #region ILuaWrapper
     private byte[]? _NameAsASCII = null;
@@ -567,11 +576,38 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
                 return 1;
             case "_name":
-                //lua.PushString(Name);
                 lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             default:
                 EntityData.TryGetValue(key.ToString(), out var value);
+                lua.Push(value);
+                return 1;
+        }
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<byte> keyAscii) {
+        switch (keyAscii) {
+            case [(byte) 'x']:
+                lua.PushNumber(X);
+                return 1;
+            case [(byte) 'y']:
+                lua.PushNumber(Y);
+                return 1;
+            case [(byte) '_', (byte) 'i', (byte) 'd']:
+                lua.PushNumber(ID);
+                return 1;
+            case [(byte) '_', (byte) 'n', (byte) 'a', (byte) 'm', (byte) 'e']:
+                lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
+                return 1;
+            case [(byte) 'n', (byte) 'o', (byte) 'd', (byte) 'e', (byte) 's']:
+                if (Nodes is { }) {
+                    lua.PushWrapper(new NodesWrapper(this));
+                } else {
+                    lua.PushNil();
+                }
+                return 1;
+            default:
+                EntityData.TryGetLuaValue(keyAscii, out var value);
                 lua.Push(value);
                 return 1;
         }
@@ -669,18 +705,24 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public void BulkUpdate(Dictionary<string, object> newData) {
-        /*
-        Inner = newData;
-
-        OnChanged?.Invoke(new() {
-            AllChanged = true,
-        });*/
         foreach (var (k, v) in newData) {
             this[k] = v;
         }
     }
 
     internal Dictionary<string, object> Inner { get; private set; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Used by lua to efficiently retrieve items from entity data using an ascii span, stores strings as ASCII
+    /// </summary>
+    private Dictionary<nint, object>? LuaValues;
+
+    private void UpdateLuaValues(string key) {
+        //if (LuaValues is { } luaValues) {
+        //LuaValues.Remove(key.GetHashCode());
+        //}
+        LuaValues?.Clear();
+    }
 
     public object this[string key] {
         get => Inner[key];
@@ -693,6 +735,8 @@ public class EntityData : IDictionary<string, object> {
                 NewValue = value,
                 ChangedFieldName = key
             });
+
+            UpdateLuaValues(key);
         }
     }
 
@@ -711,6 +755,8 @@ public class EntityData : IDictionary<string, object> {
             ChangedFieldName = key,
             NewValue = value,
         });
+
+        UpdateLuaValues(key);
     }
 
     public void Add(KeyValuePair<string, object> item) {
@@ -720,6 +766,8 @@ public class EntityData : IDictionary<string, object> {
             ChangedFieldName = item.Key,
             NewValue = item.Value,
         });
+
+        UpdateLuaValues(item.Key);
     }
 
     public void Clear() {
@@ -727,6 +775,7 @@ public class EntityData : IDictionary<string, object> {
             AllChanged = true,
         });
         ((ICollection<KeyValuePair<string, object>>) Inner).Clear();
+        LuaValues?.Clear();
     }
 
     public bool Contains(KeyValuePair<string, object> item) {
@@ -750,6 +799,8 @@ public class EntityData : IDictionary<string, object> {
             OnChanged?.Invoke(new() {
                 ChangedFieldName = key,
             });
+            UpdateLuaValues(key);
+
             return true;
         }
 
@@ -761,6 +812,7 @@ public class EntityData : IDictionary<string, object> {
             OnChanged?.Invoke(new() {
                 ChangedFieldName = item.Key,
             });
+            UpdateLuaValues(item.Key);
             return true;
         }
 
@@ -769,6 +821,39 @@ public class EntityData : IDictionary<string, object> {
 
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value) {
         return Inner.TryGetValue(key, out value);
+    }
+
+    /// <summary>
+    /// Retries a value from this entity data using a span. All strings returned by this are converted to ASCII byte[]
+    /// </summary>
+    internal unsafe bool TryGetLuaValue(ReadOnlySpan<byte> key, out object? value) {
+        LuaValues ??= new();
+
+        // as lua strings are interned, we can somewhat trust that a pointer is enough to uniquely identify the string,
+        // saving the need to iterate the string to hash it.
+        // var hash = new HashCode();
+        // hash.AddBytes(key);
+        fixed (byte* bp = key) {
+            ref var valueInDict = ref CollectionsMarshal.GetValueRefOrAddDefault(LuaValues, (nint) bp, out var exists);
+            if (exists) {
+                value = valueInDict;
+                return true;
+            }
+
+            if (Inner.TryGetValue(Encoding.ASCII.GetString(key), out var fromData)) {
+                if (fromData is string str) {
+                    fromData = Encoding.ASCII.GetBytes(str);
+                }
+
+                valueInDict = fromData;
+                value = fromData;
+                return true;
+            }
+
+            valueInDict = null;
+            value = null;
+            return false;
+        }
     }
 
     IEnumerator IEnumerable.GetEnumerator() {

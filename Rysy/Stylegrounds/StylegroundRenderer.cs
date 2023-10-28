@@ -9,14 +9,52 @@ public static class StylegroundRenderer {
         BGAndFG = BG | FG,
     }
 
-    public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers) {
+    private static RasterizerState CullNoneWithScissor = new() {
+        CullMode = CullMode.None,
+        ScissorTestEnable = true,
+        FillMode = FillMode.Solid
+    };
+
+    public static bool NotMasked(Style style) {
+        foreach (var tag in style.Tags) {
+            if (tag.StartsWith("mask_", StringComparison.Ordinal) || tag.StartsWith("sjstylemask_", StringComparison.Ordinal)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static Func<Style, bool> WithTag(string targetTag) => (style) => {
+        foreach (var tag in style.Tags) {
+            if (tag == targetTag) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null) {
         ArgumentNullException.ThrowIfNull(styles);
-        var cam = new Camera();
+        var cam = new Camera(RysyEngine.GDM.GraphicsDevice.Viewport);
         cam.Scale = camera.Scale;
 
         var ctx = new StylegroundRenderCtx(room, camera, Settings.Instance?.AnimateStylegrounds ?? false);
 
-        GFX.BeginBatch(cam);
+        var st = new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, cam.Matrix);
+
+        if (scissorRectWorldPos is { } worldPosScissor) {
+            //var roomPos = camera.RealToScreen(room.Pos);
+            //scissorRect ??= new((int) roomPos.X, (int) roomPos.Y, (int) (room.Width * cam.Scale), (int) (room.Height * cam.Scale));
+
+            var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();
+            st.ScissorRect = new(screenPos.X, screenPos.Y, (int) (worldPosScissor.Width * cam.Scale), (int) (worldPosScissor.Height * cam.Scale));
+            st.RasterizerState = CullNoneWithScissor;
+        }
+
+
+        GFX.BeginBatch(st);
 
         var allStyles = layers switch {
             Layers.BG => styles.AllBackgroundStylesRecursive(),
@@ -26,7 +64,8 @@ public static class StylegroundRenderer {
         };
 
         foreach (var s in allStyles) {
-            Render(s, ctx);
+            if (filter(s))
+                Render(s, ctx);
         }
 
         //ISprite.OutlinedRect(new(0,0, 320, 180), Color.Transparent, Color.Red).Render();
@@ -49,7 +88,6 @@ public static class StylegroundRenderer {
         }
 
         var lastState = GFX.EndBatch();
-        //Console.WriteLine((lastState, state));
         GFX.BeginBatch(state);
         foreach (var sprite in sprites) {
             sprite.Render();

@@ -521,7 +521,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);
 
-        GFX.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone);
+        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
 
         foreach (var item in CachedSprites) {
             item.Render();

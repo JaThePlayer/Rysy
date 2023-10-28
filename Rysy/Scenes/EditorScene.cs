@@ -338,7 +338,7 @@ public sealed class EditorScene : Scene {
         var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
 
         if (renderStylegrounds && CurrentRoom is { }) {
-            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG);
+            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG, filter: StylegroundRenderer.NotMasked);
         }
 
         foreach (var room in Map.Rooms) {
@@ -350,7 +350,7 @@ public sealed class EditorScene : Scene {
             CurrentRoom.Render(Camera, selected: true);
 
             if (renderStylegrounds && fgInFront)
-                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG);
+                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
 
             ToolHandler.Render(Camera, CurrentRoom);
         }
