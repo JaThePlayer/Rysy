@@ -147,6 +147,8 @@ public static partial class Fields {
 
     public static ListField List(string def, Field baseField) => new(baseField, def);
 
+    public static TilegridField Tilegrid(TileLayer layer) => new(layer) { };
+
     private static Field GuessStringFormat(string s) {
         if (HexColorListRegex().IsMatch(s))
             return new ListField(RGB(Color.White), s);

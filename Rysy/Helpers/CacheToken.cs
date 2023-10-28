@@ -44,6 +44,11 @@ public class CacheToken {
         }
     }
 
+    public void InvalidateThenReset() {
+        Invalidate();
+        Reset();
+    }
+
     /// <summary>
     /// Resets the token, setting <see cref="Valid"/> to true.
     /// </summary>

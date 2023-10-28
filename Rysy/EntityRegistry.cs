@@ -11,7 +11,6 @@ using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace Rysy;
@@ -21,7 +20,9 @@ public static class EntityRegistry {
         RegisterHardcoded();
     }
 
-    private static Dictionary<string, Type> SIDToType { get; set; } = new(StringComparer.Ordinal);
+    private static ListenableDictionary<string, Type> _SIDToType = new(StringComparer.Ordinal);
+
+    public static ReadOnlyListenableDictionary<string, Type> SIDToType => _SIDToType;
 
 #if KERA_LUA
     private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
@@ -81,7 +82,7 @@ public static class EntityRegistry {
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
         _LuaCtx = null;
-        SIDToType.Clear();
+        _SIDToType.Clear();
         SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
         EntityPlacements.Clear();
@@ -123,7 +124,7 @@ public static class EntityRegistry {
         if (oldAsm is { }) {
             foreach (var t in GetEntityTypesFromAsm(oldAsm)) {
                 foreach (var sid in GetSIDsForType(t)) {
-                    SIDToType.Remove(sid);
+                    _SIDToType.Remove(sid);
                     SIDToDefiningMod.Remove(sid);
                     SIDToAssociatedMods.Remove(sid);
                     EntityPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
@@ -176,7 +177,7 @@ public static class EntityRegistry {
                     continue;
                 }
 
-                SIDToType[plugin.Name] = typeof(LuaStyle);
+                _SIDToType[plugin.Name] = typeof(LuaStyle);
                 if (mod is { })
                     SIDToDefiningMod[plugin.Name] = mod;
                 if (plugin.FieldList is { })
@@ -203,8 +204,8 @@ public static class EntityRegistry {
     }
 
     private static void RegisterHardcoded() {
-        SIDToType[FGDecalSID] = typeof(Decal);
-        SIDToType[BGDecalSID] = typeof(Decal);
+        _SIDToType[FGDecalSID] = typeof(Decal);
+        _SIDToType[BGDecalSID] = typeof(Decal);
 
         var decalFields = Decal.GetFields();
 
@@ -221,8 +222,8 @@ public static class EntityRegistry {
             foreach (var pl in handlers) {
                 pl.Mod = mod;
 
-                lock (SIDToType) {
-                    SIDToType[pl.Name] = trigger ? typeof(NeoLonnTrigger) : typeof(NeoLonnEntity);
+                lock (_SIDToType) {
+                    _SIDToType[pl.Name] = trigger ? typeof(NeoLonnTrigger) : typeof(NeoLonnEntity);
                 }
                 lock (SIDToLonnPlugin) {
                     SIDToLonnPlugin[pl.Name] = pl;
@@ -248,8 +249,8 @@ public static class EntityRegistry {
                     continue;
                 }
 
-                lock (SIDToType) {
-                    SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
+                lock (_SIDToType) {
+                    _SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 }
                 lock (SIDToLonnPlugin) {
                     SIDToLonnPlugin[pl.Name] = pl;
@@ -298,6 +299,12 @@ public static class EntityRegistry {
 
     private static bool HandleAssociatedMods(string sid, string[] associated, ModMeta? mod) {
         if (associated.Length == 0 && mod is { }) {
+            if (mod.IsVanilla) {
+                lock (SIDToAssociatedMods)
+                    SIDToAssociatedMods[sid] = new(0);
+                return true;
+            }
+
             associated = new[] { mod.Name };
         }
 
@@ -319,8 +326,8 @@ public static class EntityRegistry {
         if (!HandleAssociatedMods(sid, attr.AssociatedMods, mod))
             return;
 
-        lock (SIDToType)
-            SIDToType[sid] = t;
+        lock (_SIDToType)
+            _SIDToType[sid] = t;
 
         if (mod is { IsVanilla: false })
             lock (SIDToDefiningMod) {

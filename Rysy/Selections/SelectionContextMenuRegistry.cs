@@ -1,4 +1,6 @@
 ﻿using ImGuiNET;
+using Rysy.Entities.Modded;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Tools;
 
@@ -58,7 +60,12 @@ public static class SelectionContextWindowRegistry {
         AddHandler(SelectionLayer.BGDecals, RemoveAll);
         AddHandler(SelectionLayer.FGDecals, RemoveAll);
         AddHandler(SelectionLayer.Rooms, RemoveAll);
+
+        AddHandler(SelectionLayer.FGTiles, ConvertTilesToEntity(TileLayer.FG));
+        AddHandler(SelectionLayer.BGTiles, ConvertTilesToEntity(TileLayer.BG));
     }
+
+    private static Cache<List<(string, Type, TileLayer)>>? TilegridEntityTypes;
 
     public static void Render(SelectionTool selectionTool, Room room) {
         while (NewPopupQueue.TryDequeue(out var incomingPopup)) {
@@ -107,5 +114,42 @@ public static class SelectionContextWindowRegistry {
 
             ImGui.CloseCurrentPopup();
         }
+    }
+
+    private static ContextWindowDraw ConvertTilesToEntity(TileLayer targetLayer) {
+        return (ISelectionHandler main, IEnumerable<Selection> all, PopupCtx ctx) => {
+
+            TilegridEntityTypes ??= EntityRegistry.SIDToType.CreateCache(sidToType => sidToType
+                .Where(kv => kv.Value.IsSubclassOf(typeof(TilegridEntity)))
+                .Select(kv => (kv.Key, kv.Value, ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(kv.Key, default, Room.DummyRoom)).Layer))
+                .ToList()
+            );
+            if (main is not TileSelectionHandler tileHandler) {
+                return;
+            }
+
+            if (ImGui.BeginMenu("Convert To Entity")) {
+                foreach (var (sid, type, layer) in TilegridEntityTypes.Value) {
+                    if (layer == targetLayer && ImGui.MenuItem($"{sid}")) {
+                        List<IHistoryAction> actions = new();
+
+                        char[,] tiles = (char[,]) tileHandler.GetSelectedTiles().Clone();
+                        actions.Add(tileHandler.DeleteSelf());
+
+                        var pos = tileHandler.Rect.Location.ToVector2();
+                        var fancyTile = ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(sid, pos, ctx.Room, isTrigger: false)).ChangeTilesTo(tiles);
+
+                        actions.Add(new AddEntityAction(fancyTile, ctx.Room));
+
+                        ctx.SelectionTool.History.ApplyNewAction(actions);
+                        ctx.SelectionTool.Deselect(tileHandler);
+                        ctx.SelectionTool.AddSelection(fancyTile.CreateSelection());
+
+                        ImGui.CloseCurrentPopup();
+                    }
+                }
+                ImGui.EndMenu();
+            }
+        };
     }
 }
