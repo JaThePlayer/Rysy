@@ -169,14 +169,14 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public virtual IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var node = Nodes![nodeIndex];
         var oldPos = Pos;
-        Pos = node;
+        _pos = node;
         try {
             var spr = GetSprites();
             foreach (var item in spr) {
                 yield return item.WithMultipliedAlpha(.5f);
             }
         } finally {
-            Pos = oldPos;
+            _pos = oldPos;
         }
     }
 
@@ -306,7 +306,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// </summary>
     public virtual void ClearRoomRenderCache() {
         if (Room is { } r) {
-            //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new StackTrace().ToString()}");
+            //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new System.Diagnostics.StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }
     }
@@ -433,6 +433,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
         if (!changed.OnlyPositionChanged)
             BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
+
+        ClearRoomRenderCache();
     }
 
     public virtual BinaryPacker.Element Pack() {
@@ -665,6 +667,27 @@ public class EntityData : IDictionary<string, object> {
 
     public Action<EntityDataChangeCtx>? OnChanged { get; set; }
 
+    internal Dictionary<string, object> Inner { get; private set; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Data that gets overlaid on top of <see cref="Inner"/>, used to safely implement live previews
+    /// </summary>
+    internal Dictionary<string, object>? FakeOverlay { get; private set; }
+
+    internal void SetOverlay(Dictionary<string, object>? overlay) {
+        ClearCaches();
+        FakeOverlay = overlay;
+
+        OnChanged?.Invoke(new EntityDataChangeCtx {
+            AllChanged = true,
+        });
+    }
+
+    /// <summary>
+    /// Used by lua to efficiently retrieve items from entity data using an ascii span, stores strings as ASCII
+    /// </summary>
+    private Dictionary<nint, object>? LuaValues;
+
     private int? _X;
     private int? _Y;
     public int X => _X ??= Int("x");
@@ -704,78 +727,79 @@ public class EntityData : IDictionary<string, object> {
         }), capacity: capacity);
     }
 
-    public void BulkUpdate(Dictionary<string, object> newData) {
-        foreach (var (k, v) in newData) {
+    public void BulkUpdate(Dictionary<string, object> delta) {
+        foreach (var (k, v) in delta) {
             this[k] = v;
         }
     }
 
-    internal Dictionary<string, object> Inner { get; private set; } = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// Used by lua to efficiently retrieve items from entity data using an ascii span, stores strings as ASCII
-    /// </summary>
-    private Dictionary<nint, object>? LuaValues;
-
-    private void UpdateLuaValues(string key) {
-        //if (LuaValues is { } luaValues) {
-        //LuaValues.Remove(key.GetHashCode());
-        //}
+    private void ClearCaches(string? key = null) {
         LuaValues?.Clear();
+
+        FakeOverlay = null;
+
+        _X = null;
+        _Y = null;
     }
 
     public object this[string key] {
-        get => Inner[key];
+        get => (FakeOverlay?.TryGetValue(key, out var overlaid) ?? false) ? overlaid : Inner[key];
         set {
-            Inner[key] = value;
-            _X = null;
-            _Y = null;
+            bool edited;
+            if (value is null) {
+                edited = Inner.Remove(key);
+            } else {
+                Inner[key] = value;
+                edited = true;
+            }
 
-            OnChanged?.Invoke(new EntityDataChangeCtx {
-                NewValue = value,
-                ChangedFieldName = key
-            });
+            if (edited) {
+                ClearCaches(key);
 
-            UpdateLuaValues(key);
+                OnChanged?.Invoke(new EntityDataChangeCtx {
+                    NewValue = value,
+                    ChangedFieldName = key
+                });
+            }
         }
     }
 
     #region IDictionary
-    public ICollection<string> Keys => Inner.Keys;
+    public ICollection<string> Keys => FakeOverlay is { } ov ? Inner.CreateMerged(ov).Keys : Inner.Keys;
 
-    public ICollection<object> Values => Inner.Values;
+    public ICollection<object> Values => FakeOverlay is { } ov ? Inner.CreateMerged(ov).Values : Inner.Values;
 
-    public int Count => Inner.Count;
+    public int Count => FakeOverlay is { } ov ? Inner.CreateMerged(ov).Count : Inner.Count;
 
     public bool IsReadOnly => false;
 
     public void Add(string key, object value) {
         Inner.Add(key, value);
+        ClearCaches(key);
+
         OnChanged?.Invoke(new() {
             ChangedFieldName = key,
             NewValue = value,
         });
-
-        UpdateLuaValues(key);
     }
 
     public void Add(KeyValuePair<string, object> item) {
         ((ICollection<KeyValuePair<string, object>>) Inner).Add(item);
+        ClearCaches(item.Key);
 
         OnChanged?.Invoke(new() {
             ChangedFieldName = item.Key,
             NewValue = item.Value,
         });
-
-        UpdateLuaValues(item.Key);
     }
 
     public void Clear() {
+        Inner.Clear();
+        LuaValues?.Clear();
+        ClearCaches();
         OnChanged?.Invoke(new() {
             AllChanged = true,
         });
-        ((ICollection<KeyValuePair<string, object>>) Inner).Clear();
-        LuaValues?.Clear();
     }
 
     public bool Contains(KeyValuePair<string, object> item) {
@@ -783,6 +807,9 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public bool ContainsKey(string key) {
+        if (FakeOverlay is { } ov && ov.ContainsKey(key))
+            return true;
+
         return Inner.ContainsKey(key);
     }
 
@@ -791,15 +818,18 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public IEnumerator<KeyValuePair<string, object>> GetEnumerator() {
+        if (FakeOverlay is { } ov)
+            return Inner.CreateMerged(ov).GetEnumerator();
+
         return Inner.GetEnumerator();
     }
 
     public bool Remove(string key) {
         if (Inner.Remove(key)) {
+            ClearCaches(key);
             OnChanged?.Invoke(new() {
                 ChangedFieldName = key,
             });
-            UpdateLuaValues(key);
 
             return true;
         }
@@ -808,18 +838,14 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public bool Remove(KeyValuePair<string, object> item) {
-        if (((ICollection<KeyValuePair<string, object>>) Inner).Remove(item)) {
-            OnChanged?.Invoke(new() {
-                ChangedFieldName = item.Key,
-            });
-            UpdateLuaValues(item.Key);
-            return true;
-        }
-
-        return false;
+        return Remove(item.Key);
     }
 
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value) {
+        if (FakeOverlay is { } ov && ov.TryGetValue(key, out value)) {
+            return true;
+        }
+
         return Inner.TryGetValue(key, out value);
     }
 
@@ -840,7 +866,7 @@ public class EntityData : IDictionary<string, object> {
                 return true;
             }
 
-            if (Inner.TryGetValue(Encoding.ASCII.GetString(key), out var fromData)) {
+            if (TryGetValue(Encoding.ASCII.GetString(key), out var fromData)) {
                 if (fromData is string str) {
                     fromData = Encoding.ASCII.GetBytes(str);
                 }
@@ -857,14 +883,14 @@ public class EntityData : IDictionary<string, object> {
     }
 
     IEnumerator IEnumerable.GetEnumerator() {
-        return Inner.GetEnumerator();
+        return GetEnumerator();
     }
 
     #endregion
 
 
     public int Int(string attrName, int def = 0) {
-        if (Inner.TryGetValue(attrName, out var obj)) {
+        if (TryGetValue(attrName, out var obj)) {
             return obj is int i ? i : Convert.ToInt32(obj, CultureInfo.InvariantCulture);
         }
 
@@ -872,7 +898,7 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public string Attr(string attrName, string def = "") {
-        if (Inner.TryGetValue(attrName, out var obj) && obj is { }) {
+        if (TryGetValue(attrName, out var obj) && obj is { }) {
             return obj.ToString()!;
         }
 
@@ -880,28 +906,28 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public float Float(string attrName, float def = 0f) {
-        if (Inner.TryGetValue(attrName, out var obj))
+        if (TryGetValue(attrName, out var obj))
             return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
 
         return def;
     }
 
     public bool Bool(string attrName, bool def) {
-        if (Inner.TryGetValue(attrName, out var obj))
+        if (TryGetValue(attrName, out var obj))
             return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
 
         return def;
     }
 
     public char Char(string attrName, char def) {
-        if (Inner.TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
+        if (TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
             return result;
 
         return def;
     }
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum {
-        if (Inner.TryGetValue(attrName, out var obj) && System.Enum.TryParse<T>(obj.ToString(), true, out var result))
+        if (TryGetValue(attrName, out var obj) && System.Enum.TryParse<T>(obj.ToString(), true, out var result))
             return result;
 
         return def;
@@ -926,14 +952,14 @@ public class EntityData : IDictionary<string, object> {
         => GetColor(attrName, def, ColorFormat.ARGB);
 
     public Color GetColor(string attrName, Color def, ColorFormat format) {
-        if (Inner.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+        if (TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
             return parsed;
 
         return def;
     }
 
     public Color GetColor(string attrName, string def, ColorFormat format) {
-        if (Inner.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+        if (TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
             return parsed;
 
         if (ColorHelper.TryGet(def, format, out var defParsed)) {
@@ -944,5 +970,5 @@ public class EntityData : IDictionary<string, object> {
     }
 
     public bool Has(string attrName) 
-        => Inner.ContainsKey(attrName);
+        => ContainsKey(attrName);
 }

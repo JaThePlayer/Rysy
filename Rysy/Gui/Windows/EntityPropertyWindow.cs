@@ -93,6 +93,11 @@ public class EntityPropertyWindow : FormWindow {
         OnChanged = (edited) => {
             History.ApplyNewAction(new EntityEditAction(All, edited));
         };
+        OnLiveUpdate = (edited) => {
+            foreach (var e in All) {
+                e.EntityData.SetOverlay(edited);
+            }
+        };
 
         HistoryHook = ReevaluateEditedValues;
         history.OnApply += HistoryHook;
@@ -101,6 +106,14 @@ public class EntityPropertyWindow : FormWindow {
             History.OnApply -= HistoryHook;
             History.OnUndo -= HistoryHook;
         });
+    }
+
+    public override void RemoveSelf() {
+        base.RemoveSelf();
+
+        foreach (var e in All) {
+            e.EntityData.SetOverlay(null);
+        }
     }
 
     private void ReevaluateEditedValues() {

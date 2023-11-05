@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Helpers;
 
 namespace Rysy;
 
@@ -9,6 +10,8 @@ public class HotkeyHandler {
     public bool UpdateInImgui = false;
 
     public Input Input { get; private set; }
+
+    public LockManager LockManager { get; private set; } = new();
 
     public HotkeyHandler(Input input, bool updateInImgui) {
         Input = input;
@@ -52,6 +55,9 @@ public class HotkeyHandler {
         if (!UpdateInImgui && (ImGui.GetIO().WantCaptureKeyboard || ImGui.GetIO().WantCaptureMouse)) {
             return;
         }
+
+        if (LockManager.IsLocked())
+            return;
         
         var ctrl = Input.Keyboard.Ctrl();
         var shift = Input.Keyboard.Shift();

@@ -11,29 +11,29 @@ namespace Rysy.Stylegrounds;
 public sealed class Parallax : Style, IPlaceable {
     public override string DisplayName => Texture;
 
-    public string Texture => FakeOrRealData().Attr("texture");
+    public string Texture => Data.Attr("texture");
 
-    public float Alpha => FakeOrRealData().Float("alpha", 1f);
+    public float Alpha => Data.Float("alpha", 1f);
 
-    public Color Color => FakeOrRealData().GetColor("color", Color.White, Helpers.ColorFormat.RGB);
+    public Color Color => Data.GetColor("color", Color.White, Helpers.ColorFormat.RGB);
 
-    public Vector2 Pos => new(FakeOrRealData().Float("x", 0f), FakeOrRealData().Float("y", 0f));
+    public Vector2 Pos => new(Data.Float("x", 0f), Data.Float("y", 0f));
 
-    public Vector2 Scroll => new(FakeOrRealData().Float("scrollx", 0f), FakeOrRealData().Float("scrolly", 0f));
+    public Vector2 Scroll => new(Data.Float("scrollx", 0f), Data.Float("scrolly", 0f));
 
-    public Vector2 Speed => new(FakeOrRealData().Float("speedx", 0f), FakeOrRealData().Float("speedy", 0f));
+    public Vector2 Speed => new(Data.Float("speedx", 0f), Data.Float("speedy", 0f));
 
-    public BlendState Blend => BlendModes.TryGetValue(FakeOrRealData().Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
+    public BlendState Blend => BlendModes.TryGetValue(Data.Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
 
-    public Fade FadeX => new(FakeOrRealData().Attr("fadex"));
+    public Fade FadeX => new(Data.Attr("fadex"));
 
-    public Fade FadeY => new(FakeOrRealData().Attr("fadey"));
+    public Fade FadeY => new(Data.Attr("fadey"));
 
-    public bool FlipX => FakeOrRealData().Bool("flipx", false);
-    public bool FlipY => FakeOrRealData().Bool("flipy", false);
+    public bool FlipX => Data.Bool("flipx", false);
+    public bool FlipY => Data.Bool("flipy", false);
 
-    public bool LoopX => FakeOrRealData().Bool("loopx", true);
-    public bool LoopY => FakeOrRealData().Bool("loopy", true);
+    public bool LoopX => Data.Bool("loopx", true);
+    public bool LoopY => Data.Bool("loopy", true);
 
     public static FieldList GetFields() => new(new {
         texture = Fields.AtlasPath("bgs/07/07/bg00", "(bgs/.*)"),

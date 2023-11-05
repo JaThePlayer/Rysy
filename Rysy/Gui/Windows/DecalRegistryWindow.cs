@@ -16,6 +16,8 @@ public sealed class DecalRegistryWindow : Window {
     private FormWindow? Form;
     private DecalRegistryProperty? FormProp;
 
+    private List<DecalRegistryEntry>? Entries;
+
     public DecalRegistryWindow(Map map) : base("Decal Registry", new(1200, 800)) {
         Map = map;
     }
@@ -76,10 +78,14 @@ public sealed class DecalRegistryWindow : Window {
         var form = new FormWindow(fields, prop.Name);
         form.Exists = prop.Data.Has;
         form.OnChanged = (edited) => {
+            prop.Data.SetOverlay(null);
         };
         form.OnLiveUpdate = (edited) => {
+            //prop.Data.BulkUpdate(edited);
+            prop.Data.SetOverlay(edited);
+            GFX.DecalRegistry.Serialize(Entries);
         };
-
+        FormProp?.Data.SetOverlay(null);
         FormProp = prop;
         Form = form;
     }
@@ -191,7 +197,7 @@ public sealed class DecalRegistryWindow : Window {
         if (!ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f)))
             return;
 
-        var entries = GFX.DecalRegistry.GetEntriesForMod(mod);
+        var entries = Entries ??= GFX.DecalRegistry.GetEntriesForMod(mod).ToList();
 
         var flags = ImGuiManager.TableFlags;
         var textBaseWidth = ImGui.CalcTextSize("m").X;

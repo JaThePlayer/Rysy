@@ -350,7 +350,7 @@ public static class ImGuiManager {
     }
 
     public static void WithBottomBar(Action renderMain, Action renderBottomBar) {
-        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 3f;
+        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 4f;
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
 
         ImGui.BeginChild(124, new(0, posy), false, ImGuiWindowFlags.NoResize);

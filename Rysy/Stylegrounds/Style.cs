@@ -37,43 +37,19 @@ public abstract class Style : IPackable, IName, IBindTarget {
         }
     }
 
-    private EntityData? _FakePreviewData;
-    /// <summary>
-    /// Gets set by the styleground window for safely allowing for live-preview of changed values.
-    /// TODO: refactor to make this apply to entities as well without many code changes...
-    /// </summary>
-    internal EntityData? FakePreviewData {
-        get => _FakePreviewData;
-        set {
-            if (_FakePreviewData is not null) {
-                _FakePreviewData.OnChanged -= OnChanged;
-            }
-
-            _FakePreviewData = value;
-            if (_FakePreviewData is { })
-                _FakePreviewData.OnChanged += OnChanged;
-
-            OnChanged(new() {
-                AllChanged = true
-            });
-        }
-    }
-
     protected BinaryPacker.Element[]? UnhandledChildren;
 
-    internal EntityData FakeOrRealData() => FakePreviewData ?? Data;
+    [JsonIgnore]
+    public string? Only => Data.Attr("only", null!);
 
     [JsonIgnore]
-    public string? Only => FakeOrRealData().Attr("only", null!);
+    public string? Exclude => Data.Attr("exclude", null!);
 
     [JsonIgnore]
-    public string? Exclude => FakeOrRealData().Attr("exclude", null!);
+    public string? Flag => Data.Attr("flag", null!);
 
     [JsonIgnore]
-    public string? Flag => FakeOrRealData().Attr("flag", null!);
-
-    [JsonIgnore]
-    public string? NotFlag => FakeOrRealData().Attr("notflag", null!);
+    public string? NotFlag => Data.Attr("notflag", null!);
 
     [Bind("tag")]
     public readonly IReadOnlyList<string> Tags;
@@ -215,7 +191,7 @@ public abstract class Style : IPackable, IName, IBindTarget {
     object IBindTarget.GetValueForField(Field field, string key) {
         Style? style = this;
         while (style is { }) {
-            if (style.FakeOrRealData().TryGetValue(key, out var value))
+            if (Data.TryGetValue(key, out var value))
                 return value;
 
             style = style.Parent;

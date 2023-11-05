@@ -124,6 +124,9 @@ public static class EntityRegistry {
         if (oldAsm is { }) {
             foreach (var t in GetEntityTypesFromAsm(oldAsm)) {
                 foreach (var sid in GetSIDsForType(t)) {
+                    if (_SIDToType.TryGetValue(sid, out var typeForThisSid) && typeForThisSid != t) {
+                        continue;
+                    }
                     _SIDToType.Remove(sid);
                     SIDToDefiningMod.Remove(sid);
                     SIDToAssociatedMods.Remove(sid);
@@ -311,6 +314,12 @@ public static class EntityRegistry {
         var missingAssociatedMods = associated.Where(s => ModRegistry.GetModByName(s) is null).ToList();
         if (missingAssociatedMods.Count > 0) {
             Logger.Write("EntityRegistry", LogLevel.Info, $"Not loading entity {sid}, as the following associated mods are not loaded: {string.Join(',', missingAssociatedMods)}");
+            return false;
+        }
+
+        if (mod is { IsVanilla: true } 
+        && associated.FirstOrDefault(x => ModRegistry.GetModByName(x) is { IsVanilla: false, PluginAssembly: { } }) is { } associatedModWithRysyPlugins) {
+            Logger.Write("EntityRegistry", LogLevel.Info, $"Not loading entity {sid} from Rysy, as {associatedModWithRysyPlugins} contains Rysy plugins already.");
             return false;
         }
 
