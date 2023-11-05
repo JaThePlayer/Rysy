@@ -126,8 +126,8 @@ public static partial class LuaSerializer {
         _ => obj.ToString()!,
     };
 
-    private static char[] EscapableChars = new char[] { '\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', '\'' };
-    private static Dictionary<char, string> EscapeSequences = new() {
+    private readonly static char[] EscapableChars = new char[] { '\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', '\'' };
+    private readonly static Dictionary<char, string> EscapeSequences = new() {
         ['\a'] = @"\a",
         ['\b'] = @"\b",
         ['\f'] = @"\f",
@@ -142,10 +142,12 @@ public static partial class LuaSerializer {
         StringBuilder builder = new(s.Length);
         var span = s.AsSpan();
         int i;
+        var escapable = EscapableChars;
+        var sequences = EscapeSequences;
 
-        while ((i = span.IndexOfAny(EscapableChars.AsSpan())) > -1) {
+        while ((i = span.IndexOfAny(escapable.AsSpan())) > -1) {
             builder.Append(span[..i]);
-            if (EscapeSequences.TryGetValue(span[i], out var escape)) {
+            if (sequences.TryGetValue(span[i], out var escape)) {
                 builder.Append(escape);
             } else {
                 builder.Append('\\');

@@ -16,6 +16,7 @@ internal sealed class EntityEditAction : IHistoryAction {
         OldValues = new(Entities.Count);
 
         foreach (var entity in Entities) {
+            entity.EntityData.SetOverlay(null);
             var oldVals = new List<(string, object?)>(Changed.Count);
             foreach (var (key, val) in Changed) {
                 entity.EntityData.TryGetValue(key, out var prevVal);

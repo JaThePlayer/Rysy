@@ -351,7 +351,8 @@ public class StylegroundWindow : Window {
                 IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
                 try {
                     if (SelectedAlteredValues is { } altered) {
-                        selected.FakePreviewData = new(selected.Data.SID, selected.Data.Inner.CreateMerged(SelectedAlteredValues));
+                        //selected.FakePreviewData = new(selected.Data.SID, selected.Data.Inner.CreateMerged(SelectedAlteredValues));
+                        selected.Data.SetOverlay(SelectedAlteredValues);
                         sprites = selected.GetPreviewSprites().ToList();
                     } else {
                         sprites = selected.GetPreviewSprites();

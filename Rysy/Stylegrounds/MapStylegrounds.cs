@@ -25,7 +25,7 @@ public class MapStylegrounds : IPackable {
 
     public void ClearFakePreviewData() {
         foreach (var style in AllStylesRecursive())
-            style.FakePreviewData = null;
+            style.Data.SetOverlay(null);
     }
 
     private IEnumerable<Style> AllStylesIn(List<Style> styles) {

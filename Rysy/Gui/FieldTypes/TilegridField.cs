@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Scenes;
 using Rysy.Tools;
 
 namespace Rysy.Gui.FieldTypes;
@@ -127,7 +128,7 @@ class EditTileDataWindow : Window {
         XnaBufferID = Guid.NewGuid().ToString();
 
         Camera = new(new Viewport(0, 0, 800, 800));
-        Camera.Scale = 3;
+        Camera.Scale = 2;
 
         Input = new();
 
@@ -171,8 +172,22 @@ class EditTileDataWindow : Window {
             Sprites = null;
         };
 
-        Size = new(1200, 900);
+        var clientBounds = RysyEngine.Instance.Window.ClientBounds;
+        Size = new((Width * Camera.Scale).AtMost(clientBounds.Width - 600) + 300, (Height * Camera.Scale).AtMost(clientBounds.Height - 400) + ImGui.GetTextLineHeightWithSpacing() * 4f);
+
+        if (RysyEngine.Scene is { } scene) {
+            // we need to lock global hotkeys while hovering over this window, as otherwise ctrl+z would undo changes outside the window as well
+            GlobalHotkeyLock = scene.HotkeysIgnoreImGui.LockManager.CreateLock();
+        }
     }
+
+    public override void RemoveSelf() {
+        GlobalHotkeyLock?.Release();
+
+        base.RemoveSelf();
+    }
+
+    Lock? GlobalHotkeyLock;
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         Width = (Width + resize.X).AtLeast(8);
@@ -211,7 +226,7 @@ class EditTileDataWindow : Window {
 
         if (ImGui.IsWindowHovered()) {
             Hotkeys.Update();
-
+            GlobalHotkeyLock?.SetActive(true);
 
             Camera.Viewport = new Viewport((int) pos.X, (int) pos.Y, 800, 800);
             Camera.HandleMouseMovement(Input);
@@ -221,11 +236,14 @@ class EditTileDataWindow : Window {
             NoMove = true;
         } else {
             NoMove = false;
+            GlobalHotkeyLock?.SetActive(false);
         }
 
-        var imgHeight = (ImGui.GetWindowSize().Y - ImGui.GetFrameHeightWithSpacing() * 3).AtLeast(1);
+        var imgHeight = ImGui.GetWindowSize().Y.AtLeast(1);
         var imgWidth = ((int) ImGui.GetWindowSize().X - 200).AtLeast(1);
 
+        // prevent scrolling the internal part of the window
+        ImGui.BeginChild("", new(), false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
         ImGuiManager.XnaWidget(XnaBufferID, imgWidth, (int) imgHeight, () => {
             Sprites = Autotiler.GetSprites(default, Tiles, Color.White).ToList();
 
@@ -238,7 +256,15 @@ class EditTileDataWindow : Window {
             Tools.CurrentTool.Render(Camera, FakeRoom);
         }, Camera);
         ImGui.SameLine();
-        Tools.CurrentTool.RenderGui(new(ImGui.GetWindowSize().X, imgHeight), id: "##fancyTileToolList");
+        Tools.CurrentTool.RenderGui(new(ImGui.GetWindowSize().X, imgHeight + ImGui.GetFrameHeightWithSpacing()), id: "##fancyTileToolList");
+        ImGui.EndChild();
+
+    }
+
+    public override bool HasBottomBar => true;
+
+    public override void RenderBottomBar() {
+        base.RenderBottomBar();
 
         if (ImGui.Button("Save##asd")) {
             Save();

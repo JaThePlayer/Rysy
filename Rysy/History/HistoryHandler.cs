@@ -13,16 +13,7 @@ public class HistoryHandler {
     public Action? OnUndo { get; set; }
     public Action? OnApply { get; set; }
 
-    public bool Locked { get; private set; }
-
-    public void Lock() {
-        Locked = true;
-    }
-
     public void UndoSimulations() {
-        if (Locked)
-            return;
-
         foreach (var item in SimulatedActions) {
             item?.Undo();
         }
@@ -30,9 +21,6 @@ public class HistoryHandler {
     }
 
     public void ApplyNewSimulation(IHistoryAction? action) {
-        if (Locked)
-            return;
-
         UndoSimulations();
 
         if (action is { }) {
@@ -42,9 +30,6 @@ public class HistoryHandler {
     }
 
     public void ApplyNewAction(IEnumerable<IHistoryAction?> actions) {
-        if (Locked)
-            return;
-
         UndoSimulations();
 
         if (actions is MergedAction merged) {
@@ -67,9 +52,6 @@ public class HistoryHandler {
         => ApplyNewAction((IHistoryAction) action);
 
     public void ApplyNewAction(IHistoryAction? action) {
-        if (Locked)
-            return;
-
         UndoSimulations();
 
         if (action?.Apply() ?? false) {
@@ -84,9 +66,6 @@ public class HistoryHandler {
     }
 
     public void Undo() {
-        if (Locked)
-            return;
-
         UndoSimulations();
 
         if (Actions.Count > 0) {
@@ -98,9 +77,6 @@ public class HistoryHandler {
     }
 
     public void Redo() {
-        if (Locked)
-            return;
-
         UndoSimulations();
 
         if (UndoneActions.Count > 0) {

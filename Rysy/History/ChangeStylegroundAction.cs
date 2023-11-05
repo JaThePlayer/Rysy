@@ -10,20 +10,12 @@ public record class ChangeStylegroundAction(Style Style, Dictionary<string, obje
         Old ??= new(Style.Data.Inner, Style.Data.Inner.Comparer);
         EditedClone ??= new(Edited, Edited.Comparer);
 
-        foreach (var (key, val) in EditedClone) {
-            if (val is { })
-                Style.Data[key] = val;
-            else
-                Style.Data.Remove(key);
-        }
-
-        Style.FakePreviewData = null;
+        Style.Data.BulkUpdate(EditedClone);
 
         return true;
     }
 
     public void Undo() {
-        Style.Data.BulkUpdate(new(Old, Old.Comparer));
-        Style.FakePreviewData = null;
+        Style.Data.BulkUpdate(Old);
     }
 }

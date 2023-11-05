@@ -1,6 +1,8 @@
-﻿using Rysy.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Rysy.Graphics;
 using Rysy.Mods;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace Rysy.Helpers;
 
@@ -15,6 +17,22 @@ public sealed class DecalRegistry : IDisposable {
             return entries;
 
         return new List<DecalRegistryEntry>(0);
+    }
+
+    public XDocument? Serialize(IReadOnlyList<DecalRegistryEntry> entries) {
+        XDocument doc = new XDocument();
+        var decalList = new XElement("decals");
+        doc.AddFirst(decalList);
+
+        foreach (var entry in entries) {
+            var entryXml = entry.Serialize();
+
+            decalList.Add(entryXml);
+        }
+
+        Console.WriteLine(doc.ToString());
+
+        return doc;
     }
 
     private static Dictionary<string, List<DecalRegistryEntry>> EntriesByRoot = new(StringComparer.Ordinal);
@@ -102,6 +120,16 @@ public class DecalRegistryEntry {
             pos.X += t.Width;
         }
     }
+
+    public XElement Serialize() {
+        var e = new XElement("decal");
+        e.Add(new XAttribute("path", Path));
+        foreach (var p in Props) {
+            e.Add(p.Serialize());
+        }
+
+        return e;
+    }
 }
 
 public abstract class DecalRegistryProperty {
@@ -147,6 +175,15 @@ public abstract class DecalRegistryProperty {
         ["light"] = typeof(LightDecalRegistryProperty),
         ["bloom"] = typeof(BloomDecalRegistryProperty),
     };
+
+    public virtual XElement Serialize() {
+        var e = new XElement(Name);
+        foreach (var (k, v) in Data) {
+            e.Add(new XAttribute(k, v));
+        }
+
+        return e;
+    }
 }
 
 public class UnknownDecalRegistryProperty : DecalRegistryProperty {
