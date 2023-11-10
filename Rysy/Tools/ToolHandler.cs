@@ -23,8 +23,10 @@ public class ToolHandler {
     public Tool CurrentTool {
         get => _currentTool ??= Tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
         set {
-            CancelInteraction();
-            _currentTool = value;
+            if (_currentTool != value) {
+                CancelInteraction();
+                _currentTool = value;
+            }
         }
     }
 

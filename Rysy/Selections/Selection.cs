@@ -96,6 +96,8 @@ public interface ISelectionHandler {
 
     public Rectangle Rect { get; }
 
+    public virtual void OnSelected() { }
+
     public virtual void OnDeselected() { }
 
     //todo: find better name for this

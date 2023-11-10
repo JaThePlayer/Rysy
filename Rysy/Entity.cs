@@ -305,7 +305,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Clears the correct render cache in the parent room
     /// </summary>
     public virtual void ClearRoomRenderCache() {
-        if (Room is { } r) {
+        if (Room is { } r && ID >= 1) {
             //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new System.Diagnostics.StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }

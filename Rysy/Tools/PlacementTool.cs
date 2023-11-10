@@ -206,7 +206,7 @@ public class PlacementTool : Tool {
             }
         }
 
-        if (!ImGui.GetIO().WantCaptureMouse) {
+        if (!ImGui.GetIO().WantCaptureMouse && !ImGui.IsAnyItemHovered()) {
             var mousePos = GetMousePos(camera, room);
 
             SelectionTool.HandleHoveredSelections(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1),

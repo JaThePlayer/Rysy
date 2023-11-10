@@ -1,6 +1,4 @@
-﻿using Rysy.Extensions;
-using Rysy.Gui.FieldTypes;
-using System.Linq.Expressions;
+﻿using Rysy.Gui.FieldTypes;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -60,7 +58,7 @@ public sealed class BindAttribute : Attribute {
                     throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName}, which is not defined by {nameof(IPlaceable.GetFields)}");
                 }
 
-                MethodInfo? converterMethod = FindConverterMethod(entityType, fieldInfo, attr, field);
+                var converterMethod = FindConverterMethod(entityType, fieldInfo, attr, field);
 
                 var loadValueFromEntity = entity.GetValueForField;
                 var loadField = LoadFieldByBindId;

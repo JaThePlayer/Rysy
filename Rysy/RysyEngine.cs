@@ -237,7 +237,8 @@ public sealed class RysyEngine : Game {
 
         reloadTimer.Dispose();
 
-        Scene = new EditorScene();
+        var editor = new EditorScene();
+        editor.LoadFromPersistence();
     }
 
     private void ResizeWindowUsingSettings() {
@@ -313,11 +314,12 @@ public sealed class RysyEngine : Game {
                     Scene.RenderImGui();
                 Scene.Render();
 
+                /*
                 if (renderUI) {
                     GFX.BeginBatch();
                     PicoFont.Print(CurrentFPS.ToString("FPS:0", CultureInfo.CurrentCulture), new Vector2(4, 68), Color.Pink, 4);
                     GFX.EndBatch();
-                }
+                }*/
 
                 if (Scene is not CrashScene)
                     OnRender?.Invoke();
