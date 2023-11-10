@@ -1,4 +1,7 @@
 ﻿using ImGuiNET;
+using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Rysy.Extensions;
 using Rysy.History;
 using Rysy.LuaSupport;
@@ -38,6 +41,42 @@ public class DebugInfoWindow : Window {
 
         if (ImGui.CollapsingHeader("GC")) {
             ImGui.Text($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
+        }
+
+        if (ImGui.CollapsingHeader("Markdown Test")) {
+            var str = """
+                # Header
+                Hello, this is **bold**!!
+                And ~~strikethrough, too~~
+
+                **~~Bold and strikethrough~~, a bit more**
+
+                ## Table
+                | Tables | Exist  | Now       |
+                |--------|--------|-----------|
+                | Isn't  | that   | cool      |
+                | Yea    | **it** | is~~n't~~ |
+                | ![Image Link](tilesets/subfolder/betterTemplate)  |[Github](https://github.com/JaThePlayer/Rysy)| https://github.com/JaThePlayer/Rysy |
+                """;
+            var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().UseBootstrap().UseAutoLinks().UseGridTables().UsePipeTables().Build();
+            var doc = Markdig.Markdown.Parse(str, pipeline);
+            if (Doc is null || DocStr != str) {
+                //foreach (var item in doc) {
+                //    Print(item, "");
+                //}
+                Doc = doc;
+                DocStr = str;
+            }
+            ImGuiMarkdown.RenderMarkdown(doc);
+
+            void Print(Markdig.Syntax.MarkdownObject item, string indent) {
+                Console.WriteLine((indent, item.GetType(), item.ToString()));
+                //if (item is Block or ParagraphBlock) {
+                    foreach (var obj in item.Descendants()) {
+                        Print(obj, indent + "  ");
+                    }
+                //}
+            }
         }
 
         if (RysyEngine.Scene is EditorScene editor) {
@@ -91,6 +130,10 @@ public class DebugInfoWindow : Window {
             }
         }
     }
+
+
+    string DocStr;
+    Markdig.Syntax.MarkdownDocument Doc;
 
     private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && ImGui.CollapsingHeader("History")) {

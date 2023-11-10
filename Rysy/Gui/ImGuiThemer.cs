@@ -31,17 +31,24 @@ public static class ImGuiThemer {
     public static unsafe void SetFontSize(float fontSize) {
         var io = ImGui.GetIO();
         io.Fonts.Clear();
-
+        /*
         string? fontFile = Settings.Instance?.FontFile;
         if (fontFile is null || (Settings.Instance is { } settings && !File.Exists(settings.FontFile))) {
             if (File.Exists("C:/Windows/Fonts/consola.ttf")) {
-                //fontFile = "C:/Windows/Fonts/consola.ttf";
+                fontFile = "C:/Windows/Fonts/consola.ttf";
             }
-        }
-        fontFile ??= "Assets/RobotoMono-Bold.ttf";
+        }*/
 
-        io.Fonts.AddFontFromFileTTF(fontFile, fontSize);
+        BoldFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize);
+        DefaultFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Regular.ttf", fontSize);
+        HeaderFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 2f);
+        Header2Font = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 1.5f);
         io.Fonts.Build();
         ImGuiManager.GuiRenderer.BuildFontAtlas();
     }
+
+    public static ImFontPtr DefaultFont { get; private set; }
+    public static ImFontPtr BoldFont { get; private set; }
+    public static ImFontPtr HeaderFont { get; private set; }
+    public static ImFontPtr Header2Font { get; private set; }
 }

@@ -312,6 +312,8 @@ public sealed class RysyEngine : Game {
                 ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
                 if (renderUI)
                     Scene.RenderImGui();
+                if (DebugInfoWindow.Enabled)
+                    DebugInfoWindow.Instance.RenderGui();
                 Scene.Render();
 
                 /*
@@ -324,8 +326,7 @@ public sealed class RysyEngine : Game {
                 if (Scene is not CrashScene)
                     OnRender?.Invoke();
 
-                if (DebugInfoWindow.Enabled)
-                    DebugInfoWindow.Instance.RenderGui();
+
 
                 ImGuiManager.GuiRenderer.AfterLayout();
             } catch (Exception e) {
