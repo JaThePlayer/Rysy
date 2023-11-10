@@ -40,16 +40,16 @@ public abstract class Style : IPackable, IName, IBindTarget {
     protected BinaryPacker.Element[]? UnhandledChildren;
 
     [JsonIgnore]
-    public string? Only => Data.Attr("only", null!);
+    public string? Only => Attr("only", null!);
 
     [JsonIgnore]
-    public string? Exclude => Data.Attr("exclude", null!);
+    public string? Exclude => Attr("exclude", null!);
 
     [JsonIgnore]
-    public string? Flag => Data.Attr("flag", null!);
+    public string? Flag => Attr("flag", null!);
 
     [JsonIgnore]
-    public string? NotFlag => Data.Attr("notflag", null!);
+    public string? NotFlag => Attr("notflag", null!);
 
     [Bind("tag")]
     public readonly IReadOnlyList<string> Tags;
@@ -79,6 +79,10 @@ public abstract class Style : IPackable, IName, IBindTarget {
     [JsonIgnore]
     public virtual List<string>? AssociatedMods => null;
 
+    /// <summary>
+    /// Gets the sprites needed to render this style in the styleground window
+    /// </summary>
+    /// <returns></returns>
     public virtual IEnumerable<ISprite> GetPreviewSprites() {
         yield return new PicoTextRectSprite("No preview") {
             Pos = new(0, 0, 100, 150),
@@ -185,13 +189,53 @@ public abstract class Style : IPackable, IName, IBindTarget {
         return unk;
     }
 
+    #region EntityData wrappers
+
+    /// <summary>
+    /// Gets the <see cref="EntityData"/> from either this style or any of its parents recursively, which contains the given key. If no such data exists, null is returned
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    private EntityData? GetDataContaining(string key) {
+        Style? style = this;
+        while (style is { }) {
+            if (style.Data.ContainsKey(key))
+                return style.Data;
+
+            style = style.Parent;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Wrapper for <see cref="EntityData.Bool"/>, which calls it on <see cref="Parent"/> if the key is not defined on this style.
+    /// </summary>
+    public bool Bool(string key, bool def) => GetDataContaining(key)?.Bool(key, def) ?? def;
+
+    /// <summary>
+    /// Wrapper for <see cref="EntityData.Attr"/>, which calls it on <see cref="Parent"/> if the key is not defined on this style.
+    /// </summary>
+    public string Attr(string key, string def = "") => GetDataContaining(key)?.Attr(key, def) ?? def;
+
+    /// <summary>
+    /// Wrapper for <see cref="EntityData.Float"/>, which recursively calls it on <see cref="Parent"/> if the key is not defined on this style.
+    /// </summary>
+    public float Float(string key, float def) => GetDataContaining(key)?.Float(key, def) ?? def;
+
+    /// <summary>
+    /// Wrapper for <see cref="EntityData.GetColor(string, Color, ColorFormat)"/>, which recursively calls it on <see cref="Parent"/> if the key is not defined on this style.
+    /// </summary>
+    public Color GetColor(string key, Color def, ColorFormat format) => GetDataContaining(key)?.GetColor(key, def, format) ?? def;
+    #endregion
+
     #region IBindTarget
     FieldList IBindTarget.GetFields() => StylegroundWindow.GetFields(this);
 
     object IBindTarget.GetValueForField(Field field, string key) {
         Style? style = this;
         while (style is { }) {
-            if (Data.TryGetValue(key, out var value))
+            if (style.Data.TryGetValue(key, out var value))
                 return value;
 
             style = style.Parent;

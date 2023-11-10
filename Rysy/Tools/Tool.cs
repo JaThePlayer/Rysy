@@ -40,6 +40,9 @@ public abstract class Tool {
             ? Persistence.Instance.Get($"{PersistenceGroup}.Layer", ValidLayers.FirstOrDefault() ?? "")
             : _Layer ??= ValidLayers.First();
         set {
+            if (Layer == value)
+                return;
+
             if (UsePersistence)
                 Persistence.Instance.Set($"{PersistenceGroup}.Layer", value);
             else

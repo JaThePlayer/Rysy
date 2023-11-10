@@ -207,17 +207,24 @@ public sealed class SettingsWindow : Window {
         }
 
         ImGui.Separator();
+        ImGui.TextDisabled("Mod Settings");
 
         var modsWithSettings = ModRegistry.Mods.Where(m => m.Value.Settings?.HasAnyData() ?? false).ToDictionary(m => m.Value, m => m.Key);
-        var mod = SelectedMod ?? modsWithSettings.First().Key;
+        var mod = SelectedMod;
+        if (mod is null && modsWithSettings.Count > 0) {
+            mod = modsWithSettings.First().Key;
+        }
+
         if (ImGuiManager.Combo("Selected Mod", ref mod, modsWithSettings, ref ModBarSearch)) {
             SelectedMod = mod;
         }
 
-        ImGui.Text(mod.EverestYaml.First().ToString());
+        if (mod is { }) {
+            ImGui.Text(mod.EverestYaml.First().ToString());
 
-        if (ImGui.Button("rysy.settings.mods.editSettings.name".Translate()).WithTooltip("rysy.settings.mods.editSettings.tooltip")) {
-            RysyEngine.Scene.AddWindow(new ModSettingsWindow(mod));
+            if (ImGuiManager.TranslatedButton("rysy.settings.mods.editSettings")) {
+                RysyEngine.Scene.AddWindow(new ModSettingsWindow(mod));
+            }
         }
 
         ImGui.EndTabItem();

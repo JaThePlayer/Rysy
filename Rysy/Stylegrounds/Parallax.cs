@@ -11,29 +11,29 @@ namespace Rysy.Stylegrounds;
 public sealed class Parallax : Style, IPlaceable {
     public override string DisplayName => Texture;
 
-    public string Texture => Data.Attr("texture");
+    public string Texture => Attr("texture");
 
-    public float Alpha => Data.Float("alpha", 1f);
+    public float Alpha => Float("alpha", 1f);
 
-    public Color Color => Data.GetColor("color", Color.White, Helpers.ColorFormat.RGB);
+    public Color Color => GetColor("color", Color.White, Helpers.ColorFormat.RGB);
 
-    public Vector2 Pos => new(Data.Float("x", 0f), Data.Float("y", 0f));
+    public Vector2 Pos => new(Float("x", 0f), Float("y", 0f));
 
-    public Vector2 Scroll => new(Data.Float("scrollx", 0f), Data.Float("scrolly", 0f));
+    public Vector2 Scroll => new(Float("scrollx", 0f), Float("scrolly", 0f));
 
-    public Vector2 Speed => new(Data.Float("speedx", 0f), Data.Float("speedy", 0f));
+    public Vector2 Speed => new(Float("speedx", 0f), Float("speedy", 0f));
 
-    public BlendState Blend => BlendModes.TryGetValue(Data.Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
+    public BlendState Blend => BlendModes.TryGetValue(Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
 
-    public Fade FadeX => new(Data.Attr("fadex"));
+    public Fade FadeX => new(Attr("fadex"));
 
-    public Fade FadeY => new(Data.Attr("fadey"));
+    public Fade FadeY => new(Attr("fadey"));
 
-    public bool FlipX => Data.Bool("flipx", false);
-    public bool FlipY => Data.Bool("flipy", false);
+    public bool FlipX => Bool("flipx", false);
+    public bool FlipY => Bool("flipy", false);
 
-    public bool LoopX => Data.Bool("loopx", true);
-    public bool LoopY => Data.Bool("loopy", true);
+    public bool LoopX => Bool("loopx", true);
+    public bool LoopY => Bool("loopy", true);
 
     public static FieldList GetFields() => new(new {
         texture = Fields.AtlasPath("bgs/07/07/bg00", "(bgs/.*)"),
@@ -91,10 +91,12 @@ public sealed class Parallax : Style, IPlaceable {
             yield break;
 
         var camPos = CalcCamPos(ctx.Camera);
-        var pos = (Pos - camPos * Scroll).Floored();
+        var pos = Pos - camPos * Scroll;
 
         if (ctx.Animate)
             pos += Time.Elapsed * Speed;
+
+        pos = pos.Floored();
 
         var fade = Alpha;
         fade *= FadeX.GetValueAt(camPos.X + 160f);

@@ -212,12 +212,13 @@ public sealed class Autotiler {
                 var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
 
                 var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray();
+                var ignoresAll = ignores?.Contains('*') ?? false;
 
                 AutotilerData autotilerData = new() {
                     Filename = path,
                     Texture = GFX.Atlas[$"tilesets/{path}"],
-                    Ignores = ignores,
-                    IgnoreAll = ignores?.Contains('*') ?? false,
+                    Ignores = ignoresAll ? null : ignores,
+                    IgnoreAll = ignoresAll,
                     DisplayName = tileset.Attributes?["displayName"]?.InnerText
                 };
 
@@ -400,8 +401,7 @@ public sealed class Autotiler {
 
     internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
         var sprites = toUpdate.Sprites;
-        const int offset = 1;
-        //toUpdate.UnknownTilesetsUsed = new(0);
+        const int offset = 2;
 
         var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
         var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);

@@ -276,7 +276,7 @@ public class SelectionTool : Tool {
     private void ClearColliderCachesInSelections() => CurrentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
     public void Deselect() {
-        if (CurrentSelections is null)
+        if (CurrentSelections is not { Count: > 0 })
             return;
 
         foreach (var selection in CurrentSelections) {
@@ -286,6 +286,8 @@ public class SelectionTool : Tool {
         // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
         CurrentSelections?.Clear();
         CurrentSelections = null;
+
+        OnSelectionsChanged();
     }
 
     public void Deselect(ISelectionHandler handler) {
@@ -296,6 +298,8 @@ public class SelectionTool : Tool {
         if (selection is { }) {
             CurrentSelections.Remove(selection);
             selection.Handler.OnDeselected();
+
+            OnSelectionsChanged();
         }
     }
 
@@ -340,7 +344,7 @@ public class SelectionTool : Tool {
         DoRender(EditorState.Camera, EditorState.CurrentRoom);
     }
 
-    private int GetSideGrabLeniency(Camera camera) => (int) (1f / camera.Scale * 6f);
+    private int GetSideGrabLeniency(Camera camera) => (int) (1f / camera.Scale * 6f).AtLeast(1);
 
     /// <summary>
     /// Adjusts the grabbed location so that we don't try to resize a selection in a unsupported direction.
@@ -394,16 +398,24 @@ public class SelectionTool : Tool {
     }
 
     private void DoRender(Camera camera, Room? room) {
+        if (CurrentSelections is not { Count: > 0 }) {
+            // If we're in room selection mode, always select the current room if there are no other selections
+            // We do this here instead of Update, as Update is not called when hovering over imgui elements
+            if (Layer == LayerNames.ROOM && EditorState.CurrentRoom is { } currentRoom) {
+                AddSelection(new(currentRoom.GetSelectionHandler()));
+            }
+        }
+
         if (SelectionGestureHandler.CurrentRectangle is { } rect) {
             DrawSelectionRect(rect);
         }
 
         var mousePos = GetMouseRoomPos(camera, room!);
-        var imguiWantsMouse = ImGui.GetIO().WantCaptureMouse;
+        var imguiWantsMouse = ImGui.GetIO().WantCaptureMouse || ImGui.IsAnyItemHovered();
 
         if (CurrentSelections is { } selections) {
             foreach (var selection in selections) {
-                if (!imguiWantsMouse && State != States.Idle || selection.Check(mousePos.X, mousePos.Y)) {
+                if (!imguiWantsMouse && (State != States.Idle || selection.Check(mousePos.X, mousePos.Y))) {
                     SelectionsToHighlight.Add(selection);
 
                     if (State == States.Idle) {
@@ -419,9 +431,9 @@ public class SelectionTool : Tool {
             }
         }
 
-        if (State == States.Idle && !ImGui.GetIO().WantCaptureMouse) {
+        if (State == States.Idle && !imguiWantsMouse) {
             HandleHoveredSelections(room, SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1),
-                LayerNames.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections?.Where(s => SelectionsToHighlight.Contains(s)), Input, middleClick: true
+                LayerNames.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections, Input, middleClick: true
             );
         }
 
@@ -462,24 +474,21 @@ public class SelectionTool : Tool {
             }
         }
 
-        if (canRightClick) {
-            if (selected is { } c) {
-                // if we're hovering over an active selection, right clicking will select that instead,
-                // let's not right click a unselected item in this case
-                foreach (var curr in c) {
-                    if (selectionsUnderCursor.Any(x => x.Handler == curr.Handler)) {
-                        canRightClick = false;
-                        break;
-                    }
+        if (canRightClick && selected is { }) {
+            // if we're hovering over an active selection, right clicking will select that instead,
+            // let's not right click a unselected item in this case
+            foreach (var curr in selected) {
+                if (selectionsUnderCursor.Any(x => x.Handler == curr.Handler)) {
+                    canRightClick = false;
+                    break;
                 }
-            }
-
-            // allow right clicking a un-selected item
-            if (canRightClick) {
-                firstSelection.Handler.OnRightClicked(new Selection[] { firstSelection });
             }
         }
 
+        // allow right clicking a un-selected item
+        if (canRightClick) {
+            firstSelection.Handler.OnRightClicked(new Selection[] { firstSelection });
+        }
     }
 
     private Rectangle CreateMousePosRect(Camera camera, Room room, out Point mouseRoomPos) {
@@ -503,7 +512,7 @@ public class SelectionTool : Tool {
                 }
             }
 
-            if (Input.Mouse.Right.Clicked()) {
+            if (Input.Mouse.RightClickedInPlace()) {
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
                         selection.Handler.OnRightClicked(selections);
@@ -706,7 +715,7 @@ public class SelectionTool : Tool {
 
     private void SelectWithin(Room room, Rectangle rect) {
         var selections = room.GetSelectionsInRect(rect, LayerNames.ToolLayerToEnum(Layer, CustomLayer));
-        IEnumerable<Selection> finalSelections = null!;
+        List<Selection>? finalSelections = null;
 
         if (rect.Width <= 1 && rect.Height <= 1 && selections.Count > 0) {
             // you just clicked in place, select only 1 selection
@@ -714,7 +723,7 @@ public class SelectionTool : Tool {
                 int idx = ClickInPlaceIdx % selections.Count;
                 ClickInPlaceIdx = (idx + 1) % selections.Count;
 
-                finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1));
+                finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1)).ToList();
             } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
                 // if you double clicked in place, select all simillar entities/decals
                 finalSelections = room.GetSelectionsForSimillar(selections[0].Handler.Parent)!;
@@ -728,7 +737,15 @@ public class SelectionTool : Tool {
             ClickInPlaceIdx = 0;
         }
 
+        // Deselect all current selections, we will call OnSelected on all remaining ones at the end anyway
+        if (CurrentSelections is { })
+            foreach (var selection in CurrentSelections) {
+                selection.Handler.OnDeselected();
+            }
+
         if (Input.Keyboard.Shift() && CurrentSelections is { }) {
+            // Add new selections
+
             foreach (var h in CurrentSelections.SelectWhereNotNull(s => s.Handler as TileSelectionHandler))
                 h.MergeWith(rect, exclude: false);
 
@@ -737,6 +754,7 @@ public class SelectionTool : Tool {
                 .DistinctBy(x => x.Handler.Parent)
                 .ToList();
         } else if (Input.Keyboard.Ctrl() && CurrentSelections is { }) {
+            // Remove existing selections
             var newSelections = CurrentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
 
             // tile selections are unique - they need to remain in the selection list, and we need to call MergeWith
@@ -750,10 +768,20 @@ public class SelectionTool : Tool {
 
             CurrentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
         } else {
+            // Set selections
             Deselect();
-            CurrentSelections = finalSelections.ToList();
+            CurrentSelections = finalSelections;
         }
 
+        // Tell the handlers that they're selected
+        foreach (var selection in CurrentSelections) {
+            selection.Handler.OnSelected();
+        }
+
+        OnSelectionsChanged();
+    }
+
+    private void OnSelectionsChanged() {
         if (CurrentSelections is [{ Handler: RoomSelectionHandler roomSelection }]) {
             // you only selected 1 room, let's swap to that room as well
             EditorState.CurrentRoom = roomSelection.Room;
@@ -765,6 +793,9 @@ public class SelectionTool : Tool {
         .Append(selection)
         .DistinctBy(x => x.Handler.Parent)
         .ToList() ?? new() { selection };
+
+        selection.Handler.OnSelected();
+        OnSelectionsChanged();
     }
 
     private struct HandlerParentEqualityComparer : IEqualityComparer<Selection> {

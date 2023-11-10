@@ -60,25 +60,26 @@ public sealed class EditorScene : Scene {
         set => EditorState.Camera = value;
     } // will be set in Map.set
 
-    public EditorScene(bool loadFromPersistence = true) {
+    public EditorScene() {
         HistoryHandler = new();
-
-        // Try to load the last edited map.
-        if (loadFromPersistence && !string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
-            LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
-        else {
-            Map = null;
-        }
 
         //EditorState.OnMapChanged += OnMapChanged;
     }
 
-    public EditorScene(Map map) : this(false) {
+    public EditorScene(Map map) : this() {
         Map = map;
     }
 
-    public EditorScene(string mapFilepath, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) : this(false) {
+    public EditorScene(string mapFilepath, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) : this() {
         LoadMapFromBin(mapFilepath, fromPersistence, fromBackup, overrideFilepath);
+    }
+
+    internal void LoadFromPersistence() {
+        if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
+            LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
+        else {
+            Map = null;
+        }
     }
 
     public override void SetupHotkeys() {
@@ -93,10 +94,11 @@ public sealed class EditorScene : Scene {
 
         Hotkeys.AddHotkeyFromSettings("newRoom", "ctrl+n", AddNewRoom);
 
-        Hotkeys.AddHotkeyFromSettings("moveRoomDown", "alt+down", () => MoveCurrentRoom(0, 1), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("moveRoomUp", "alt+up", () => MoveCurrentRoom(0, -1), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
+        // The Room Selection mode can do this much better already, no reason to waste binds on this
+        //Hotkeys.AddHotkeyFromSettings("moveRoomDown", "alt+down", () => MoveCurrentRoom(0, 1), HotkeyModes.OnHoldSmoothInterval);
+        //Hotkeys.AddHotkeyFromSettings("moveRoomUp", "alt+up", () => MoveCurrentRoom(0, -1), HotkeyModes.OnHoldSmoothInterval);
+        //Hotkeys.AddHotkeyFromSettings("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
+        //Hotkeys.AddHotkeyFromSettings("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
 
         Hotkeys.AddHotkeyFromSettings("layerUp", "pageup", () => ChangeEditorLayer(1), HotkeyModes.OnHoldSmoothInterval);
         Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
@@ -116,7 +118,7 @@ public sealed class EditorScene : Scene {
         ClearMapRenderCache();
     }
 
-    public override void OnFileDrop(FileDropEventArgs args) {
+    internal protected override void OnFileDrop(FileDropEventArgs args) {
         base.OnFileDrop(args);
 
         var file = args.Files[0];
@@ -125,7 +127,7 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    public void LoadMapFromBin(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
+    internal void LoadMapFromBin(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
         if (!File.Exists(file))
             return;
 
@@ -149,9 +151,6 @@ public sealed class EditorScene : Scene {
                 Map = map;
 
                 RysyEngine.Scene = this;
-
-                //if (fromPersistence)
-                //    throw new Exception("yo");
             } catch (Exception e) {
                 Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
 
@@ -390,7 +389,7 @@ public sealed class EditorScene : Scene {
         base.RenderImGui();
 
         Menubar.Render(this);
-        RoomList.Render(this);
+        RoomList.Render(this, Input.Global);
         ToolHandler?.RenderGui();
     }
 

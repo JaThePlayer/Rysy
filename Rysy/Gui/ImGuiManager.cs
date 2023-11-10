@@ -215,9 +215,9 @@ public static class ImGuiManager {
         }
     }
 
-    public static bool Combo<T>(string name, ref T value, IDictionary<T, string> values, ref string search, string? tooltip = null, ComboCache<T>? cache = null) where T : notnull {
-        if (!values.TryGetValue(value, out var valueName)) {
-            valueName = value!.ToString();
+    public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, ref string search, string? tooltip = null, ComboCache<T>? cache = null) where T : notnull {
+        if (value is null || !values.TryGetValue(value, out var valueName)) {
+            valueName = value?.ToString() ?? "";
         }
 
         bool changed = false;

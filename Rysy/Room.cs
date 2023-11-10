@@ -118,6 +118,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     public BinaryPacker.Element ObjTiles;
 
+    /// <summary>
+    /// Whether this room is selected by the selection tool.
+    /// This being true does not mean the room is the currently active room!
+    /// </summary>
+    public bool Selected { get; internal set; }
+
     public string Name {
         get => Attributes.Name;
         set {
@@ -750,7 +756,9 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    public ISelectionHandler GetSelectionHandler() => new RoomSelectionHandler(this);
+
+    private RoomSelectionHandler? _SelectionHandler;
+    public ISelectionHandler GetSelectionHandler() => _SelectionHandler ??= new RoomSelectionHandler(this);
 
     public Room Clone() {
         var packed = Pack();
@@ -839,6 +847,14 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
 
     internal RoomSelectionHandler(Room room) {
         Room = room;
+    }
+
+    public void OnSelected() {
+        Room.Selected = true;
+    }
+
+    public void OnDeselected() { 
+        Room.Selected = false;
     }
 
     public object Parent => Room;

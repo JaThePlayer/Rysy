@@ -52,6 +52,7 @@ public sealed class Spinner : Entity, IPlaceable {
     }
 
     private void ClearCache() {
+#if FAILED_CACHE
         _cachedSprites = null;
         if (_cachedConnectedSpinners is { } connected) {
             _cachedConnectedSpinners = null;
@@ -62,18 +63,26 @@ public sealed class Spinner : Entity, IPlaceable {
                 }
             }
         }
+#endif
     }
 
+#if FAILED_CACHE
     private List<ISprite>? _cachedSprites;
     private List<WeakReference<Spinner>>? _cachedConnectedSpinners;
+#endif
 
     public override IEnumerable<ISprite> GetSprites() {
+#if FAILED_CACHE
         if (_cachedSprites is { } cached) {
             return cached;
         }
+#endif
 
-        var sprites = GetSpritesUncached().ToList();
+        var sprites = GetSpritesUncached();
+#if FAILED_CACHE
+        sprites = sprites.ToList();
         _cachedSprites = sprites;
+#endif
         return sprites;
     }
 
@@ -101,18 +110,26 @@ public sealed class Spinner : Entity, IPlaceable {
         };
 
         // connectors
+#if FAILED_CACHE
         _cachedConnectedSpinners = new();
         bool createSprites = true;
+#endif
         foreach (Spinner spinner in Room.Entities[typeof(Spinner)]) {
-            if (spinner == this)
+            if (spinner == this) {
+#if FAILED_CACHE
                 createSprites = false;
-                //break;
+#else
+                break;
+#endif
+            }
 
             if (DistanceSquaredLessThan(pos, spinner.Pos, 24 * 24)
                 && !spinner.Dust && spinner.AttachToSolid == AttachToSolid) {
+                #if FAILED_CACHE
                 _cachedConnectedSpinners.Add(new(spinner));
                 if (spinner._cachedSprites is not { })
                     continue;
+                #endif
                 var connectorPos = (pos + spinner.Pos) / 2f;
 
                 yield return BgSprites[(int) color] with {

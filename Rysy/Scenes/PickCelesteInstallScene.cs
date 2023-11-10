@@ -9,7 +9,7 @@ public class PickCelesteInstallScene : Scene {
         NextScene = nextScene;
     }
 
-    public override void OnFileDrop(FileDropEventArgs args) {
+    internal protected override void OnFileDrop(FileDropEventArgs args) {
         base.OnFileDrop(args);
 
         var file = args.Files[0];
