@@ -78,7 +78,7 @@ public class Window {
         if (NoMove)
             flags |= ImGuiWindowFlags.NoMove;
 
-        if (ImGui.Begin(WindowID, ref open, flags)) {
+        if (ImGui.Begin(WindowID, ref open, EditWindowFlags(flags))) {
             if (HasBottomBar) {
                 ImGuiManager.WithBottomBar(Render, RenderBottomBar);
             } else {
@@ -93,6 +93,8 @@ public class Window {
 
         ImGuiManager.PopWindowStyle();
     }
+
+    protected virtual ImGuiWindowFlags EditWindowFlags(ImGuiWindowFlags prev) => prev;
 
     protected virtual void Render() {
 

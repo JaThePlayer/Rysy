@@ -126,32 +126,25 @@ public class PlacementTool : Tool {
     }
 
     private void HandleMove(Camera camera, Room room, ISelectionHandler selection) {
-        if (RectangleGesture.Delta is { } delta) {
-            var offset = delta.Location.ToVector2();
-            var resize = delta.Size();
+        if (RectangleGesture.Delta is not { } delta) 
+            return;
+        
+        var offset = delta.Location.ToVector2();
+        var resize = delta.Size();
+        
+        if (offset == Vector2.Zero && resize == Point.Zero)
+            return;
 
-            // handle noded entity resizing being different
-            // TODO: refactor, maybe into a ICustomMoveHandler
-            if (selection is EntitySelectionHandler entityHandler) {
-                var e = entityHandler.Entity;
-                var resizableX = e.ResizableX;
-                var resizableY = e.ResizableY;
+        // handle noded entity resizing being different
+        // TODO: refactor, maybe into a ICustomMoveHandler
+        if (selection is EntitySelectionHandler entityHandler) {
+            var e = entityHandler.Entity;
+            var resizableX = e.ResizableX;
+            var resizableY = e.ResizableY;
 
-                if (!resizableX && !resizableY && e.Nodes is [var onlyNode]) {
-                    new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply();
-                    AnchorPos ??= e.Pos;
-                    return;
-                }
-
-                if (offset.X != 0 || offset.Y != 0) {
-                    selection.MoveBy(offset).Apply();
-                }
-
-                if ((resize.X != 0 || resize.Y != 0) && selection.TryResize(resize) is { } resizeAction) {
-                    resizeAction.Apply();
-                    e.InitializeNodePositions();
-                }
-
+            if (!resizableX && !resizableY && e.Nodes is [var onlyNode]) {
+                new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply();
+                AnchorPos ??= e.Pos;
                 return;
             }
 
@@ -159,9 +152,20 @@ public class PlacementTool : Tool {
                 selection.MoveBy(offset).Apply();
             }
 
-            if (resize.X != 0 || resize.Y != 0) {
-                selection.TryResize(resize)?.Apply();
+            if ((resize.X != 0 || resize.Y != 0) && selection.TryResize(resize) is { } resizeAction) {
+                resizeAction.Apply();
+                e.InitializeNodePositions();
             }
+
+            return;
+        }
+
+        if (offset.X != 0 || offset.Y != 0) {
+            selection.MoveBy(offset).Apply();
+        }
+
+        if (resize.X != 0 || resize.Y != 0) {
+            selection.TryResize(resize)?.Apply();
         }
     }
 

@@ -1,11 +1,11 @@
 {
-  "Alpha": 0.9,
+  "Alpha": 1,
   "DisabledAlpha": 0.6,
   "WindowPadding": {
     "X": 8,
     "Y": 8
   },
-  "WindowRounding": 0,
+  "WindowRounding": 6,
   "WindowBorderSize": 0,
   "WindowMinSize": {
     "X": 32,
@@ -18,13 +18,13 @@
   "WindowMenuButtonPosition": 0,
   "ChildRounding": 0,
   "ChildBorderSize": 1,
-  "PopupRounding": 0,
+  "PopupRounding": 6,
   "PopupBorderSize": 1,
   "FramePadding": {
     "X": 4,
     "Y": 3
   },
-  "FrameRounding": 0,
+  "FrameRounding": 6,
   "FrameBorderSize": 0,
   "ItemSpacing": {
     "X": 8,
