@@ -376,7 +376,7 @@ public class StylegroundWindow : Window {
     }
 
     private void RenderList(bool fg) {
-        if (!ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f)))
+        if (!ImGui.BeginChild("list"))
             return;
 
         var flags = ImGuiManager.TableFlags;

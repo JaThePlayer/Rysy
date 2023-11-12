@@ -25,6 +25,13 @@ public class FormWindow : Window {
         public object ValueOrDefault() => Value ?? Field.GetDefault();
     }
 
+    protected override ImGuiWindowFlags EditWindowFlags(ImGuiWindowFlags prev) {
+        if (EditedValues.Count > 0)
+            prev |= ImGuiWindowFlags.UnsavedDocument;
+
+        return base.EditWindowFlags(prev);
+    }
+
     public string SaveChangesButtonName = "Save Changes";
 
     public Func<string, bool> Exists;
@@ -64,7 +71,7 @@ public class FormWindow : Window {
         LongestFieldSize = fields.Count > 0 ? FieldList.Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X).Chunk(2).Max(pair => pair.Sum()) : 50;
         Size = new(
             LongestFieldSize + ITEM_WIDTH * 2.5f,
-            ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2
+            ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2 + ImGui.GetStyle().WindowPadding.Y
         );
 
         Resizable = true;

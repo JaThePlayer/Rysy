@@ -128,8 +128,13 @@ public class DebugInfoWindow : Window {
                 Console.WriteLine($"Benchmark: {room.Name}: {(watch.Elapsed / times).TotalMilliseconds}ms");
             }
         }
+
+        ImGui.Checkbox("Imgui Demo", ref imguiDemo);
+        if (imguiDemo)
+            ImGui.ShowDemoWindow();
     }
 
+    private bool imguiDemo;
 
     string DocStr;
     Markdig.Syntax.MarkdownDocument Doc;

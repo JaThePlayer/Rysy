@@ -467,9 +467,15 @@ public class SelectionTool : Tool {
         }
 
         var firstSelection = selectionsUnderCursor[0];
+        if (firstSelection.Handler is TileSelectionHandler) {
+            canRightClick = false;
+        }
 
         if (render) {
             foreach (var selection in selectionsUnderCursor) {
+                if (selection.Handler is TileSelectionHandler)
+                    continue;
+                
                 selection.Render(Color.Pink);
             }
         }

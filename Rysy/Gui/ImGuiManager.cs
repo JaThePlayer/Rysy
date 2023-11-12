@@ -44,13 +44,13 @@ public static class ImGuiManager {
     }
 
     public static void PushWindowStyle() {
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
+        //ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
+        //ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
+        //ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
     }
 
     public static void PopWindowStyle() {
-        ImGui.PopStyleVar(3);
+        //ImGui.PopStyleVar(3);
     }
 
     /// <summary>
@@ -99,20 +99,20 @@ public static class ImGuiManager {
     }
 
     private static bool _nullStylePushed;
-    public static void PushNullStyle() {
-        var color = (Color.LightGray * 0.8f).ToNumVec4();
+    public static unsafe void PushNullStyle() {
+        var color = *ImGui.GetStyleColorVec4(ImGuiCol.TextDisabled);//(Color.LightGray * 0.8f).ToNumVec4();
 
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
-        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
+        //ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+        //ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _nullStylePushed = true;
     }
 
     public static void PopNullStyle() {
         if (_nullStylePushed) {
             ImGui.PopStyleColor(2);
-            ImGui.PopStyleVar(2);
+            //ImGui.PopStyleVar(2);
             _nullStylePushed = false;
         }
     }
@@ -135,8 +135,7 @@ public static class ImGuiManager {
         public bool Null { get; set; }
         public bool Edited { get; set; }
         public bool Invalid { get; set; }
-
-        public TextEmphasis Emphasis { get; set; }
+        public TextEmphasis? Emphasis { get; set; }
     }
 
     public static void PushAllStyles(StyleHolder holder) {
@@ -157,6 +156,10 @@ public static class ImGuiManager {
         } else {
             PopInvalidStyle();
         }
+
+        PopEmphasis();
+        if (holder.Emphasis is { } emphasis)
+            PushEmphasis(emphasis);
     }
 
     public static StyleHolder PopAllStyles() {
@@ -169,6 +172,7 @@ public static class ImGuiManager {
         PopEditedStyle();
         PopInvalidStyle();
         PopNullStyle();
+        holder.Emphasis = PopEmphasis();
 
         return holder;
     }
@@ -370,6 +374,7 @@ public static class ImGuiManager {
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
 
         ImGui.BeginChild(124, new(0, posy), false, ImGuiWindowFlags.NoResize);
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y); //  + ImGui.GetStyle().FramePadding.Y  
         renderMain();
         ImGui.EndChild();
         ImGui.Separator();
@@ -419,7 +424,9 @@ public static class ImGuiManager {
             isNew = true;
         }
 
+        ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
         ImGui.Image(t.ID, new(w, h));
+        ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
             var g = RysyEngine.GDM.GraphicsDevice;
@@ -520,6 +527,8 @@ public static class ImGuiManager {
             var io = ImGui.GetIO();
 
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+            io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+            
             io.ConfigDockingAlwaysTabBar = true;
             io.ConfigDockingTransparentPayload = true;
         }
