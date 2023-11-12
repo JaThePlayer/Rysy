@@ -12,7 +12,7 @@ public abstract class Scene {
 
     public Scene() {
         RemoveWindow = (w) => {
-            Windows.Remove(w);
+            RysyEngine.OnEndOfThisFrame += () => Windows.Remove(w);
         };
     }
 

@@ -16,24 +16,23 @@ public static class PrefabHelper {
         var prefabPath = GetPrefabDir();
 
         if (Directory.Exists(prefabPath)) {
-            var actions = Directory.EnumerateFiles(prefabPath, "*.json", SearchOption.AllDirectories).Select(LoadFromFileAsync);
-            Task.WhenAll(actions).Wait();
+            foreach (var file in Directory.EnumerateFiles(prefabPath, "*.json", SearchOption.AllDirectories)) {
+                LoadFromFile(file);
+            }
         }
 
         return _CurrentPrefabs;
     }
 
-    public static async Task LoadFromFileAsync(string path) {
+    internal static void LoadFromFile(string path) {
         if (!File.Exists(path))
             return;
 
         using var stream = File.Open(path, FileMode.Open);
-        if (await JsonExtensions.TryDeserializeAsync<Prefab>(stream) is not { } prefab)
+        if (JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText()) is not { } prefab)
             return;
 
-        lock (_CurrentPrefabs) {
-            _CurrentPrefabs[prefab.Name] = prefab;
-        }
+        _CurrentPrefabs[prefab.Name] = prefab;
 
         prefab.Filename = path;
     }

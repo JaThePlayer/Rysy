@@ -58,16 +58,21 @@ public static partial class LuaSerializer {
                                     _type = "{type}",
                             """);
 
-                    if (item.Data.Children is { Length: > 0 } nodes)
+                    if (item.Data.Children is { Length: > 0 } nodes) {
+                        const string sep = ",\n            ";
+                        var nodesString = string.Join(sep, nodes.Select(n => {
+                            var x = n.Int("x");
+                            var y = n.Int("y");
+                            return $"{{ x={x}, y={y} }}";
+                        }));
                         builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                                    nodes = {{{string.Join(",", nodes.Select(n => $$"""
-                                            {x={{n.Int("x")}},y={{n.Int("y")}}}
-                                            """))}}},
-                            """);
-                    AppendData(builder, item, blacklistedKeys: new() { "id" });
-                    builder.AppendLine("""
-                            },
+                                nodes = {
+                                    {{nodesString}}
+                                },
                         """);
+                    }
+                    AppendData(builder, item, blacklistedKeys: new() { "id" });
+                    builder.AppendLine("    },");
                     break;
                 case SelectionLayer.FGTiles:
                 case SelectionLayer.BGTiles:
@@ -85,9 +90,7 @@ public static partial class LuaSerializer {
                 if (blacklistedKeys.Contains(k))
                     continue;
 
-                builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                                    {{TableKeyString(k)}} = {{ToLuaString(v)}},
-                            """);
+                builder.AppendLine(CultureInfo.InvariantCulture, $"        {TableKeyString(k)} = {ToLuaString(v)},");
             }
         }
     }
@@ -108,7 +111,7 @@ public static partial class LuaSerializer {
         return VariableNameRegex().IsMatch(key);
     }
 
-    private static HashSet<string> LuaKeywords = new() {
+    private static readonly HashSet<string> LuaKeywords = new() {
         "and", "break", "do", "else", "elseif", "end", "false", "for",
         "function", "goto", "if", "in", "local", "nil", "not", "or",
         "repeat", "return", "then", "true", "until", "while"
@@ -126,8 +129,8 @@ public static partial class LuaSerializer {
         _ => obj.ToString()!,
     };
 
-    private readonly static char[] EscapableChars = new char[] { '\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', '\'' };
-    private readonly static Dictionary<char, string> EscapeSequences = new() {
+    private static readonly char[] EscapableChars = new char[] { '\a', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '"', '\'' };
+    private static readonly Dictionary<char, string> EscapeSequences = new() {
         ['\a'] = @"\a",
         ['\b'] = @"\b",
         ['\f'] = @"\f",

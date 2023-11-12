@@ -208,6 +208,73 @@ public static class GFX {
             RysyEngine.Instance.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount / 3);
         }
     }
+
+    private static readonly Dictionary<Uri, VirtTexture> WebTextures = new();
+
+    /// <summary>
+    /// Gets a cached texture from the given <paramref name="uri"/>.
+    /// If the texture hasn't been downloaded yet, null is returned, and a background task to download it will be started if needed.
+    /// </summary>
+    public static VirtTexture? GetTextureFromWebIfReady(Uri uri) {
+        lock (WebTextures) {
+            if (WebTextures.TryGetValue(uri, out var cached)) {
+                if (cached == VirtPixel)
+                    return null;
+                return cached;
+            }
+
+            WebTextures[uri] = VirtPixel;
+        }
+
+        // fire and forget
+        Task.Run(async () => await CacheWebTexture(uri, new CancellationToken()));
+
+        return null;
+    }
+    
+    /// <summary>
+    /// Asynchronously get a texture from a web location. Cached. 
+    /// </summary>
+    public static ValueTask<VirtTexture> GetTextureFromWebAsync(Uri uri, CancellationToken token) {
+        lock (WebTextures) {
+            if (WebTextures.TryGetValue(uri, out var cached)) {
+                return new(cached);
+            }
+
+            WebTextures[uri] = VirtPixel;
+        }
+        
+        return CacheWebTexture(uri, token);
+    }
+    
+    private static async ValueTask<VirtTexture> CacheWebTexture(Uri uri, CancellationToken token) {
+        Logger.Write("GFX.WebTexture", LogLevel.Info, $"Loading texture from {uri}");
+        using var client = new HttpClient();
+        client.Timeout = TimeSpan.FromSeconds(30);
+
+        Stream? bytes;
+        try {
+            bytes = await client.GetStreamAsync(uri, token);
+        } catch (Exception e) {
+            Logger.Write("GFX.WebTexture", LogLevel.Warning, $"Failed to download texture from {uri}: {e}");
+            return VirtPixel;
+        }
+
+        Texture2D texture;
+        try {
+            texture = Texture2D.FromStream(Batch.GraphicsDevice, bytes);
+        } catch (Exception e) {
+            Logger.Write("GFX.WebTexture", LogLevel.Warning, $"Failed to load texture from {uri}: {e}");
+            return VirtPixel;
+        }
+        
+        Logger.Write("GFX.WebTexture", LogLevel.Info, $"Successfully loaded texture from {uri}");
+        lock (WebTextures) {
+            var virtTex = VirtTexture.FromTexture(texture);
+            WebTextures[uri] = virtTex;
+            return virtTex;
+        }
+    }
 }
 
 public record struct SpriteBatchState(

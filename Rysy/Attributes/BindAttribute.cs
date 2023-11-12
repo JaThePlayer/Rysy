@@ -1,4 +1,5 @@
-﻿using Rysy.Gui.FieldTypes;
+﻿using JetBrains.Annotations;
+using Rysy.Gui.FieldTypes;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -20,6 +21,7 @@ public interface IBindTarget {
 /// The value gets converted to your field's type by using the <see cref="Field"/> defined in your <see cref="FieldInfo"/> for this field name.
 /// </summary>
 [AttributeUsage(AttributeTargets.Field)]
+[MeansImplicitUse]
 public sealed class BindAttribute : Attribute {
     public string FieldName { get; }
 

@@ -104,7 +104,7 @@ public sealed class Spinner : Entity, IPlaceable {
             Pos = pos,
             Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : Color.White,
         };
-        // the border has to be a seperate sprite to render it at a different depth
+        // the border has to be a separate sprite to render it at a different depth
         yield return FgBorderSprites[(int) color] with {
             Pos = pos,
         };
@@ -137,7 +137,7 @@ public sealed class Spinner : Entity, IPlaceable {
                     Color = rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.White,
                 };
 
-                // the border has to be a seperate sprite to render it at a different depth
+                // the border has to be a separate sprite to render it at a different depth
                 yield return BgBorderSprites[(int) color] with {
                     Pos = connectorPos,
                 };

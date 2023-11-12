@@ -1,14 +1,14 @@
 ﻿using ImGuiNET;
+using JetBrains.Annotations;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Scenes;
-using System;
 
 namespace Rysy.Tools;
 
+[UsedImplicitly(ImplicitUseTargetFlags.WithInheritors)]
 public abstract class Tool {
     public bool UsePersistence { get; set; }
 

@@ -46,30 +46,29 @@ public class DebugInfoWindow : Window {
         if (ImGui.CollapsingHeader("Markdown Test")) {
             var str = """
                 # Header
-                Hello, this is **bold**!!
+                ***Hello***, this is **bold**!!
                 And ~~strikethrough, too~~
-
+                <"hello">
                 **~~Bold and strikethrough~~, a bit more**
 
                 ## Table
                 | Tables | Exist  | Now       |
                 |--------|--------|-----------|
-                | Isn't  | that   | cool      |
-                | Yea    | **it** | is~~n't~~ |
+                | Isn't  | that   | *cool*    |
+                | ***Yea*** | **it** | is~~n't~~ |
                 | ![Image Link](tilesets/subfolder/betterTemplate)  |[Github](https://github.com/JaThePlayer/Rysy)| https://github.com/JaThePlayer/Rysy |
                 """;
-            var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().UseBootstrap().UseAutoLinks().UseGridTables().UsePipeTables().Build();
-            var doc = Markdig.Markdown.Parse(str, pipeline);
             if (Doc is null || DocStr != str) {
+                var doc = Markdig.Markdown.Parse(str, ImGuiMarkdown.MarkdownPipeline);
                 //foreach (var item in doc) {
                 //    Print(item, "");
                 //}
                 Doc = doc;
                 DocStr = str;
             }
-            ImGuiMarkdown.RenderMarkdown(doc);
+            ImGuiMarkdown.RenderMarkdown(Doc);
 
-            void Print(Markdig.Syntax.MarkdownObject item, string indent) {
+            void Print(MarkdownObject item, string indent) {
                 Console.WriteLine((indent, item.GetType(), item.ToString()));
                 //if (item is Block or ParagraphBlock) {
                     foreach (var obj in item.Descendants()) {
