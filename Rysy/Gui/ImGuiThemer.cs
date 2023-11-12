@@ -41,14 +41,20 @@ public static class ImGuiThemer {
 
         BoldFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize);
         DefaultFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Regular.ttf", fontSize);
+        ItalicFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Italic.ttf", fontSize);
+        ItalicBoldFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-BoldItalic.ttf", fontSize);
+        
         HeaderFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 2f);
         Header2Font = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 1.5f);
+
         io.Fonts.Build();
         ImGuiManager.GuiRenderer.BuildFontAtlas();
     }
 
     public static ImFontPtr DefaultFont { get; private set; }
     public static ImFontPtr BoldFont { get; private set; }
+    public static ImFontPtr ItalicFont { get; private set; }
+    public static ImFontPtr ItalicBoldFont { get; private set; }
     public static ImFontPtr HeaderFont { get; private set; }
     public static ImFontPtr Header2Font { get; private set; }
 }

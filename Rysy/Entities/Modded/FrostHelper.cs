@@ -23,13 +23,15 @@ internal sealed class CustomSpinner : LonnEntity {
 
     public Color BorderColor => RGBA("borderColor", Color.Black);
 
-    Sprite FG, BG;
+    private Sprite _fg, _bg;
+    
+    public override string? Documentation => "https://github.com/JaThePlayer/FrostHelper/wiki/Custom-Spinners";
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
 
         if (!changed.OnlyPositionChanged)
-            (FG, BG) = GetBaseSprites(Depth);
+            (_fg, _bg) = GetBaseSprites(Depth);
     }
 
     private static Dictionary<(string directory, string spritePathSuffix), (Sprite FG, Sprite BG)> SpriteCache = new();
@@ -64,7 +66,7 @@ internal sealed class CustomSpinner : LonnEntity {
         var drawOutline = DrawOutline;
         var borderColor = drawOutline ? BorderColor : default;
 
-        var (fgSprite, bgSprite) = (FG, BG);
+        var (fgSprite, bgSprite) = (FG: _fg, BG: _bg);
 
         yield return fgSprite with {
             Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : color,

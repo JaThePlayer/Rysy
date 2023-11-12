@@ -117,10 +117,26 @@ public static class ImGuiManager {
         }
     }
 
+    private static readonly Stack<(TextEmphasis, TextEmphasisPushCtx)> Emphases = new();
+    public static void PushEmphasis(TextEmphasis emphasis) {
+        Emphases.Push((emphasis, emphasis.PushToImgui()));
+    }
+
+    public static TextEmphasis? PopEmphasis() {
+        if (Emphases.TryPop(out var ret)) {
+            ret.Item1.PopFromImgui(ret.Item2);
+            return ret.Item1;
+        }
+
+        return null;
+    }
+
     public struct StyleHolder {
         public bool Null { get; set; }
         public bool Edited { get; set; }
         public bool Invalid { get; set; }
+
+        public TextEmphasis Emphasis { get; set; }
     }
 
     public static void PushAllStyles(StyleHolder holder) {

@@ -54,7 +54,6 @@ public abstract class Style : IPackable, IName, IBindTarget {
     [Bind("tag")]
     public readonly IReadOnlyList<string> Tags;
 
-
     private StyleFolder? _Parent;
     [JsonIgnore]
     public StyleFolder? Parent {
@@ -135,24 +134,33 @@ public abstract class Style : IPackable, IName, IBindTarget {
         BindAttribute.GetBindContext<Style>(this).UpdateBoundFields(this, ctx);
     }
 
-    public static bool MatchRoomName(string predicate, string roomName) {
-        // currently copied from celeste,
-        // TODO: optimise with caching and spans
+    public static bool MatchRoomName(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName) {
         if (roomName.StartsWith("lvl_", StringComparison.Ordinal))
-            roomName = roomName[4..];
+            roomName = roomName["lvl_".Length..];
 
-        string[] array = predicate.Split(',');
-        foreach (string text in array)
-            if (text.Equals(roomName))
+        foreach (var filter in predicate.EnumerateSplits(',')) {
+            if (filter.Equals(roomName, StringComparison.Ordinal))
                 return true;
-            else if (text.Contains("*")) {
-                string pattern = "^" + Regex.Escape(text).Replace("\\*", ".*") + "$";
-                if (Regex.IsMatch(roomName, pattern))
-                    return true;
+
+            if (!filter.Contains('*'))
+                continue;
+            
+            var filterString = filter.ToString();
+            if (!RoomNameMatchRegexCache.TryGetValue(filterString, out var regex)) {
+                string pattern = "^" + Regex.Escape(filterString).Replace("\\*", ".*") + "$";
+
+                regex = new Regex(pattern, RegexOptions.Compiled);
+                RoomNameMatchRegexCache[filterString] = regex;
             }
+
+            if (regex.IsMatch(roomName))
+                return true;
+        }
 
         return false;
     }
+
+    private static readonly Dictionary<string, Regex> RoomNameMatchRegexCache = new();
 
     public static Style FromName(string name) {
         return FromElement(new(name) {

@@ -1,6 +1,9 @@
-﻿namespace Rysy;
+﻿using JetBrains.Annotations;
+
+namespace Rysy;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+[MeansImplicitUse]
 public sealed class CustomEntityAttribute : Attribute {
     public string Name { get; }
     public string[] AssociatedMods { get; }

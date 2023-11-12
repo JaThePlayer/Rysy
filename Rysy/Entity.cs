@@ -91,6 +91,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public abstract int Depth { get; }
 
     /// <summary>
+    /// Gets the documentation for this entity.
+    /// This can be a lang file entry, path to a .md file asset, a url, or plain markdown.
+    /// </summary>
+    public virtual string? Documentation => null;
+
+    /// <summary>
     /// Gets the center of this entity. Used for centering node paths, for example, but can be used in your own plugins as well.
     /// </summary>
     [JsonIgnore]
@@ -218,7 +224,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     /// <summary>
-    /// Whether rendering erors should be logged to the console.
+    /// Whether rendering errors should be logged to the console.
     /// </summary>
     public static bool LogErrors { get; set; } = true;
 
@@ -405,7 +411,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
 
         // find the anchor the closest to the origin
-        origin = Nodes.Select(n => n.Pos).Append(Pos).OrderBy(p => Vector2.DistanceSquared(p, origin)).First();
+        origin = Nodes.Select(n => n.Pos).Append(Pos).MinBy(p => Vector2.DistanceSquared(p, origin));
 
         // rotate all nodes along the entity pos
         var clone = CloneWith(pl => {

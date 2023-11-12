@@ -8,6 +8,7 @@ entities.default.attributes.description._editorLayer=The editor layer this entit
 entities.default.attributes.description._editorColor=The color of this trigger in-editor.
 
 rysy.ok=OK
+rysy.cancel=Cancel
 rysy.load=Load
 
 # Analyzers
@@ -127,6 +128,15 @@ rysy.mapLoadError.noBackups=No backups found.
 
 # Styleground window
 rysy.stylegrounds.windowName=Stylegrounds
+
+# Entity Edit Window
+rysy.entityEdit.documentation=Documentation
+rysy.entityEdit.documentation.tooltip=Opens the documentation for this entity, provided by the mod author.
+rysy.entityEdit.documentation.mdViewWindowName=Documentation - {0}
+
+# Link Open Confirmation Window
+rysy.linkOpenConfirmWindow=Confirm Link Opening
+rysy.linkOpenConfirmWindow.desc=Do you want to open the following link in your browser?
 
 # Enums
 rysy.cassetteBlockIndex.0=Blue

@@ -167,7 +167,7 @@ public static class IAtlasExt {
 
         const int bytesSize = 524288;
         byte[] readDataBytes = new byte[bytesSize];
-        byte[] textureBufferBytes = new byte[67108864];
+        byte[] textureBufferBytes = new byte[64 * 1024 * 1024];
         using var stream = File.OpenRead(fullPath);
         using var dataReader = new BinaryReader(stream);
 
@@ -202,7 +202,7 @@ public static class IAtlasExt {
                     int nextPixel = index + 4;
                     int endRLE = index + runLenEncodingSize;
 
-                    // weird pointer schenanigans to read/write a i32 from a byte[]
+                    // weird pointer shenanigans to read/write a i32 from a byte[]
                     int col = *(int*) &textureBuffer[index];
 
                     while (nextPixel < endRLE) {

@@ -1,4 +1,6 @@
-﻿using Rysy.Extensions;
+﻿using ImGuiNET;
+using Markdig;
+using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
@@ -106,6 +108,31 @@ public class EntityPropertyWindow : FormWindow {
             History.OnApply -= HistoryHook;
             History.OnUndo -= HistoryHook;
         });
+    }
+
+    public override void RenderBottomBar() {
+        base.RenderBottomBar();
+
+        //Console.WriteLine(DocumentationString);
+        if (Main.Documentation is { } docString) {
+            ImGui.SameLine();
+            if (ImGuiManager.TranslatedButton("rysy.entityEdit.documentation")) {
+                OpenDocs(docString);
+            }
+        }
+    }
+
+    private void OpenDocs(string docString) {
+        if (LinkOpenHelper.OpenLinkIfValid(docString)) {
+            return;
+        }
+
+        try {
+            var windowTitle = "rysy.entityEdit.documentation.mdViewWindowName".TranslateFormatted(Main.Name);
+            RysyEngine.Scene.AddWindow(new MarkdownViewWindow(windowTitle, docString));
+        } catch {
+            
+        }
     }
 
     public override void RemoveSelf() {
