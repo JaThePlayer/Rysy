@@ -24,6 +24,10 @@ public class PlacementTool : Tool {
         base.InitHotkeys(handler);
 
         handler.AddHotkeyFromSettings("tools.pick", "mousemiddle", OnMiddleClick);
+        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", () => Flip(false));
+        handler.AddHotkeyFromSettings("selection.flipVertical", "v", () => Flip(true));
+        handler.AddHotkeyFromSettings("selection.rotateRight", "r", () => Rotate(RotationDirection.Right));
+        handler.AddHotkeyFromSettings("selection.rotateLeft", "l", () => Rotate(RotationDirection.Left));
     }
 
     public override string Name => "placement";
@@ -255,8 +259,25 @@ public class PlacementTool : Tool {
 
         PrefabHelper.CurrentPrefabs.OnChanged -= ClearMaterialListCache;
     }
+    
+    private void Flip(bool vertical) {
+        if (CurrentPlacement is not ISelectionFlipHandler pl)
+            return;
 
-    const int PreviewSize = 32;
+        var action = vertical ? pl.TryFlipVertical() : pl.TryFlipHorizontal();
+
+        action?.Apply();
+    }
+
+    private void Rotate(RotationDirection dir) {
+        if (CurrentPlacement is not ISelectionFlipHandler pl)
+            return;
+
+        pl.TryRotate(dir)?.Apply();
+    }
+
+    #region Imgui
+    private const int PreviewSize = 32;
 
     public override float MaterialListElementHeight()
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
@@ -393,4 +414,6 @@ public class PlacementTool : Tool {
             }
         }
     }
+    
+    #endregion
 }
