@@ -396,12 +396,15 @@ public class PlacementTool : Tool {
         }
     }
 
-    protected override void RenderMaterialListElement(object material, string name) {
+    public override object GetGroupKeyForMaterial(object material)
+        => material is Placement { SID: not null } pl && pl.SID != EntityRegistry.FGDecalSID && pl.SID != EntityRegistry.BGDecalSID ? pl.SID : material;
+
+    protected override bool RenderMaterialListElement(object material, string name) {
         if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap()) {
             ImGuiManager.PushNullStyle();
         }
 
-        base.RenderMaterialListElement(material, name);
+        var ret = base.RenderMaterialListElement(material, name);
         ImGuiManager.PopNullStyle();
 
         if (Layer == LayerNames.PREFABS) {
@@ -413,6 +416,8 @@ public class PlacementTool : Tool {
                 ImGui.EndPopup();
             }
         }
+
+        return ret;
     }
     
     #endregion
