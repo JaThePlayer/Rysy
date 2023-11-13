@@ -192,7 +192,23 @@ public abstract class Tool {
     public virtual float MaterialListElementHeight() => ImGui.GetTextLineHeightWithSpacing();
 
     public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.ColumnCount", 1) : 1;
+    
 
+    public virtual object GetGroupKeyForMaterial(object material) => material;
+
+
+    private Dictionary<object, string> GroupKeyToMainPlacementName = new();
+    
+    private (object material, string displayName) GetMainPlacementForGroupKey(object key, List<(object material, string displayName)> group) {
+        if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
+            return group[0];
+        
+        if (group.Find(pair => pair.displayName == targetName) is { material: { } } main)
+            return main;
+
+        return group[0];
+    }
+    
     public virtual void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = true;
 
@@ -205,7 +221,13 @@ public abstract class Tool {
             CachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??= (GetMaterials(currentLayer) ?? new List<object>()).Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat))).SearchFilter(kv => kv.Item2, Search, Favorites).ToList();
+        var cachedSearch = CachedSearch ??=
+            (GetMaterials(currentLayer) ?? new List<object>())
+            .Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat)))
+            .SearchFilter(kv => kv.Item2, Search, Favorites)
+            .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
+            .Select(gr => gr.ToList())
+            .ToList();
         var rendered = 0;
 
         var columns = MaterialListColumnCount();
@@ -228,10 +250,34 @@ public abstract class Tool {
         if (columns > 1)
             ImGui.Columns(columns);
 
-        foreach (var (mat, name) in cachedSearch) {
+        foreach (var group in cachedSearch) {
             if (rendered < elementsVisible && skip <= 0) {
                 rendered++;
-                RenderMaterialListElement(mat, name);
+
+                var groupKey = GetGroupKeyForMaterial(group[0]);
+                var first = GetMainPlacementForGroupKey(groupKey, group);
+                
+                RenderMaterialListElement(first.material, first.displayName);
+                
+                // draw dropdown for alternate placements
+                if (group.Count > 1) {
+                    ImGui.SameLine();
+                    var style = ImGui.GetStyle();
+                    var columnWidth = columns > 1 ? ImGui.GetColumnWidth() : ImGui.GetWindowWidth();
+                    ImGui.SetCursorPosY(ImGui.GetCursorPos().Y + MaterialListElementHeight() / 2 - style.FramePadding.Y - style.ItemSpacing.Y * 2);
+                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - style.ItemSpacing.X * 2 - style.FramePadding.X * 2);
+
+                    if (ImGui.BeginCombo($"##{rendered}", "", ImGuiComboFlags.NoPreview)) {
+                        foreach (var (mat, displayName) in group) {
+                            if (RenderMaterialListElement(mat, displayName)) {
+                                GroupKeyToMainPlacementName[groupKey] = displayName;
+                            }
+                        }
+                        
+                        ImGui.EndCombo();
+                    }
+                }
+                
                 if (columns > 1)
                     ImGui.NextColumn();
             }
@@ -246,7 +292,7 @@ public abstract class Tool {
     public virtual bool AllowSwappingRooms => true;
 
     private string? CachedLayer;
-    private List<(object mat, string)>? CachedSearch;
+    private List<List<(object material, string displayName)>>? CachedSearch;
 
     public void ClearMaterialListCache() {
         CachedSearch = null;
@@ -273,7 +319,7 @@ public abstract class Tool {
         return ImGui.GetWindowSize().ToXna();
     }
 
-    protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) => new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() * 3);
+    protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) => new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() - ImGui.GetFrameHeightWithSpacing() * 1.5f);
 
     protected void BeginMaterialListGUI(string id, Vector2 windowSize) {
         ImGui.BeginListBox(id, GetMaterialListBoxSize(windowSize));
@@ -332,8 +378,10 @@ public abstract class Tool {
 
     /// <summary>
     /// Renders the gui for a given material inside the material list.
+    /// Returns whether the element got clicked this frame.
     /// </summary>
-    protected virtual void RenderMaterialListElement(object material, string name) {
+    protected virtual bool RenderMaterialListElement(object material, string name) {
+        bool ret = false;
         var favorites = Favorites;
         var currentLayer = Layer;
         var currentMaterial = Material;
@@ -343,8 +391,8 @@ public abstract class Tool {
         var cursorStart = ImGui.GetCursorPos();
         
         if (ImGui.GetColumnIndex() == 0) {
-            cursorStart.X = ImGui.GetColumnOffset();
-            ImGui.SetCursorPos(cursorStart);
+            //cursorStart.X = ImGui.GetColumnOffset();
+            //ImGui.SetCursorPos(cursorStart);
         }
 
         var previewOrNull = showPlacementIcons ? GetMaterialPreview(material) : null;
@@ -356,7 +404,7 @@ public abstract class Tool {
         var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
         if (ImGui.Selectable($"##{displayName}", IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowItemOverlap, size)) {
             Material = material;
-
+            ret = true;
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
                 ToggleFavorite(name);
             }
@@ -402,5 +450,7 @@ public abstract class Tool {
             cursorStart.Y += previewOrNull?.H / 4 ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
         ImGui.Text(displayName);
+
+        return ret;
     }
 }
