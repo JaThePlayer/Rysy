@@ -3,7 +3,7 @@
 public interface IMouseInput {
     public Point Offset { get; set; }
 
-    bool AnyClicked { get; }
+    bool AnyClickedOrHeld { get; }
     MouseInputState Left { get; }
     float LeftHoldTime { get; }
     MouseInputState Middle { get; }
@@ -29,5 +29,11 @@ public interface IMouseInput {
     float HeldTime(int button);
     bool LeftDoubleClicked();
     bool RightClickedInPlace();
+    
+    /// <summary>
+    /// Toggles mouse wrapping around screen borders.
+    /// </summary>
+    bool Wrap { get; set; }
+    
     void Update(float deltaSeconds);
 }

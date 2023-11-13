@@ -213,8 +213,6 @@ public abstract class Tool {
         showSearchBar = true;
 
         var currentLayer = Layer;
-        var currentMaterial = Material;
-        var favorites = Favorites;
 
         if (currentLayer != CachedLayer) {
             CachedSearch = null;
