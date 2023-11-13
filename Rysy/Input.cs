@@ -7,7 +7,7 @@ using Rysy.Extensions;
 using System;
 
 public class Input {
-    public static Input Global { get; private set; } = new();
+    public static Input Global { get; private set; } = new() { Mouse = { Wrap = true } };
     public IMouseInput Mouse { get; private set; }
     public IKeyboardInput Keyboard { get; private set; }
 
@@ -56,12 +56,17 @@ public class Input {
         public bool RightClickedInPlace() => Right.Released() && mousePrevState.RightButton == ButtonState.Pressed &&
                 ClickPositions[1] == RealPos;
 
-        public bool AnyClicked =>
+        public bool AnyClickedOrHeld =>
             Left is not MouseInputState.Released ||
             Right is not MouseInputState.Released ||
             Middle is not MouseInputState.Released ||
             X1 is not MouseInputState.Released ||
             X2 is not MouseInputState.Released;
+        
+        /// <summary>
+        /// Toggles mouse wrapping around screen borders.
+        /// </summary>
+        public bool Wrap { get; set; }
 
         private int lastMouseScroll;
         private int realMouseScroll;
@@ -117,12 +122,32 @@ public class Input {
             realMouseScroll = mouseState.ScrollWheelValue;
 
             ScrollDelta = realMouseScroll - lastMouseScroll;
-
+            
+            var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
             var lastPos = RealPos;
             RealPos = new(mouseState.X, mouseState.Y);
             PositionDelta = RealPos - lastPos;
 
-            var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+            if (Wrap && AnyClickedOrHeld) {
+                if (PositionDelta.X > 0 && RealPos.X >= viewport.Width - 3) {
+                    RealPos = new(RealPos.X - viewport.Width, RealPos.Y);
+                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                } else if (PositionDelta.X < 0 && RealPos.X <= 3) {
+                    RealPos = new(viewport.Width - RealPos.X, RealPos.Y);
+                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                }
+                
+                if (PositionDelta.Y > 0 && RealPos.Y >= viewport.Height - 3) {
+                    RealPos = new(RealPos.X, RealPos.Y  - viewport.Height);
+                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                }
+                
+                if (PositionDelta.Y < 0 && RealPos.Y <= 1) {
+                    RealPos = new(RealPos.X, viewport.Height - RealPos.Y);
+                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                }
+            }
+            
             var canInput = viewport.Bounds.Contains(new Point(mouseState.X, mouseState.Y));
 
             // Easiest route is to 'or' the click with the current state
