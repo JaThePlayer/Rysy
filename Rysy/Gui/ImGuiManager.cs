@@ -527,7 +527,6 @@ public static class ImGuiManager {
             var io = ImGui.GetIO();
 
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-            io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
             
             io.ConfigDockingAlwaysTabBar = true;
             io.ConfigDockingTransparentPayload = true;
@@ -722,12 +721,7 @@ public static class ImGuiManager {
         private void RenderDrawData(ImDrawDataPtr ptr) {
             Viewport lastViewport = GraphicsDevice.Viewport;
             Rectangle lastScissor = GraphicsDevice.ScissorRectangle;
-
-            GraphicsDevice.BlendFactor = Color.White;
-            GraphicsDevice.BlendState = BlendState.NonPremultiplied;
-            GraphicsDevice.RasterizerState = RasterizerState;
-            GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-
+            
             ptr.ScaleClipRects(ImGui.GetIO().DisplayFramebufferScale);
             GraphicsDevice.Viewport = new Viewport(0, 0, GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight);
             UpdateBuffers(ptr);
@@ -784,12 +778,16 @@ public static class ImGuiManager {
         }
 
         private unsafe void RenderCommandLists(ImDrawDataPtr ptr) {
-            GraphicsDevice.SetVertexBuffer(VertexBuffer);
-            GraphicsDevice.Indices = IndexBuffer;
-
             int vtxOffset = 0;
             int idxOffset = 0;
-
+            
+            GraphicsDevice.SetVertexBuffer(VertexBuffer);
+            GraphicsDevice.Indices = IndexBuffer;
+            GraphicsDevice.BlendFactor = Color.White;
+            GraphicsDevice.BlendState = BlendState.NonPremultiplied;
+            GraphicsDevice.RasterizerState = RasterizerState;
+            GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+            
             for (int i = 0; i < ptr.CmdListsCount; i++) {
                 ImDrawListPtr cmdList = ptr.CmdListsRange[i];
 
@@ -798,7 +796,7 @@ public static class ImGuiManager {
                     if (!Textures.ContainsKey(cmd.TextureId)) {
                         throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.TextureId}");
                     }
-
+                    
                     GraphicsDevice.ScissorRectangle = new Rectangle(
                         (int) cmd.ClipRect.X,
                         (int) cmd.ClipRect.Y,
