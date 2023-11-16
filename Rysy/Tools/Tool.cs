@@ -336,7 +336,7 @@ public abstract class Tool {
         var search = Search;
         // pass the persistence key as the ID to imgui, because otherwise if you had the search bar selected while switching layers/tools,
         // your search would persist to the different layer/tool
-        if (ImGui.InputText($"##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
+        if (ImGui.InputText($"Search##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
             Search = search;
             CachedSearch = null;
         }

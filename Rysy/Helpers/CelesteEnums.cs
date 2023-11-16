@@ -82,14 +82,6 @@ public static class CelesteEnums {
         ["event:/music/remix/06_reflection"] = "music_rmx_06_reflection",
         ["event:/music/remix/07_summit"] = "music_rmx_07_summit",
         ["event:/music/remix/09_core"] = "music_rmx_09_core",
-        ["event:/music/cassette/01_forsaken_city"] = "cas_01_forsaken_city",
-        ["event:/music/cassette/02_old_site"] = "cas_02_old_site",
-        ["event:/music/cassette/03_resort"] = "cas_03_resort",
-        ["event:/music/cassette/04_cliffside"] = "cas_04_cliffside",
-        ["event:/music/cassette/05_mirror_temple"] = "cas_05_mirror_temple",
-        ["event:/music/cassette/06_reflection"] = "cas_06_reflection",
-        ["event:/music/cassette/07_summit"] = "cas_07_summit",
-        ["event:/music/cassette/09_core"] = "cas_08_core",
         ["event:/new_content/music/lvl10/part01"] = "music_farewell_part01",
         ["event:/new_content/music/lvl10/part02"] = "music_farewell_part02",
         ["event:/new_content/music/lvl10/part03"] = "music_farewell_part03",
@@ -106,7 +98,18 @@ public static class CelesteEnums {
         ["event:/new_content/music/lvl10/golden_room"] = "music_farewell_golden_room",
     };
 
-    public static readonly Dictionary<string, string> Ambience = new Dictionary<string, string>(StringComparer.Ordinal) {
+    public static readonly Dictionary<string, string> CassetteMusic = new() {
+        ["event:/music/cassette/01_forsaken_city"] = "cas_01_forsaken_city",
+        ["event:/music/cassette/02_old_site"] = "cas_02_old_site",
+        ["event:/music/cassette/03_resort"] = "cas_03_resort",
+        ["event:/music/cassette/04_cliffside"] = "cas_04_cliffside",
+        ["event:/music/cassette/05_mirror_temple"] = "cas_05_mirror_temple",
+        ["event:/music/cassette/06_reflection"] = "cas_06_reflection",
+        ["event:/music/cassette/07_summit"] = "cas_07_summit",
+        ["event:/music/cassette/09_core"] = "cas_08_core",
+    };
+
+    public static readonly Dictionary<string, string> Ambience = new(StringComparer.Ordinal) {
         ["event:/env/amb/00_prologue"] = "env_amb_00_main",
         ["event:/env/amb/01_main"] = "env_amb_01_main",
         ["event:/env/amb/02_awake"] = "env_amb_02_awake",

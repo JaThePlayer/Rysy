@@ -53,6 +53,8 @@ public sealed class RysyEngine : Game {
     /// </summary>
     public static event Action? OnRender = null;
 
+    public static event Action? OnNextReload;
+
     private static bool _lastActive;
 
     /// <summary>
@@ -236,7 +238,13 @@ public sealed class RysyEngine : Game {
         await LangRegistry.LoadAllAsync();
 
         reloadTimer.Dispose();
-
+        if (OnNextReload is { } onNextReload) {
+            LoadingScene.Text = "Calling OnReload";
+            OnNextReload = null;
+            onNextReload.Invoke();
+        }
+        
+        LoadingScene.Text = "Entering Editor Scene";
         var editor = new EditorScene();
         editor.LoadFromPersistence();
     }
@@ -286,8 +294,11 @@ public sealed class RysyEngine : Game {
             }
 
             if (OnEndOfThisFrame is { } onFrameEnd) {
-                OnEndOfThisFrame = null;
-                onFrameEnd.Invoke();
+                lock (OnEndOfThisFrame) {
+                    OnEndOfThisFrame = null;
+                    onFrameEnd.Invoke();
+                }
+
             }
         } catch (Exception e) {
             Logger.Error(e, $"Unhandled exception during update!");

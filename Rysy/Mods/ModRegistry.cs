@@ -58,7 +58,7 @@ public static class ModRegistry {
         realPath = realPath.Unbackslash();
 
         foreach (var (_, mod) in Mods) {
-            if (realPath.StartsWith(mod.Filesystem.Root.Unbackslash(), StringComparison.Ordinal)) {
+            if (realPath.StartsWith(mod.Filesystem.Root, StringComparison.Ordinal)) {
                 return mod;
             }
         }
@@ -105,6 +105,7 @@ public static class ModRegistry {
 
         if (CreateVanillaMod() is { } vanilla) {
             allMods = allMods.Append(Task.FromResult(vanilla));
+            VanillaMod = vanilla;
         }
 
         var all = await Task.WhenAll(allMods);
@@ -119,6 +120,8 @@ public static class ModRegistry {
         }
     }
 
+    public static ModMeta VanillaMod { get; private set; }
+    
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
         EverestYaml = new() {
             new() {
@@ -157,7 +160,7 @@ public static class ModRegistry {
 
     private static async Task<ModMeta> CreateModAsync(string dir, bool zip) {
         var mod = new ModMeta();
-        IModFilesystem filesystem = zip ? new ZipModFilesystem(dir) : new FolderModFilesystem(dir);
+        IModFilesystem filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
         await filesystem.InitialScan();
 
         mod.Filesystem = filesystem;

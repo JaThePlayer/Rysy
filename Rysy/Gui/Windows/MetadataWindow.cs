@@ -21,19 +21,19 @@ public sealed class MetadataWindow : Window {
         return AddTooltips(new() {
             ["AnimatedTiles"] = Fields.Path(meta.AnimatedTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             ["BackgroundTiles"] = Fields.Path(meta.BackgroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
+            ["ForegroundTiles"] = Fields.Path(meta.ForegroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
+            ["Sprites"] = Fields.Path(meta.Sprites, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             ["BloomBase"] = Fields.Float(meta.BloomBase ?? 0f),
             ["BloomStrength"] = Fields.Float(meta.BloomStrength ?? 1f),
             ["ColorGrade"] = Fields.Path(meta.ColorGrade, "Graphics/ColorGrading", "png").AllowNull(),
-            ["CoreMode"] = Fields.EnumNamesDropdown(CelesteEnums.CoreModes.None).AllowNull(),//Fields.String(meta.CoreMode).AllowNull(), // todo: dropdown
+            ["CoreMode"] = Fields.EnumNamesDropdown(CelesteEnums.CoreModes.None).AllowNull(),
             ["DarknessAlpha"] = Fields.Float(meta.DarknessAlpha ?? 0.05f),
             ["Dreaming"] = Fields.Bool(meta.Dreaming ?? false),
-            ["ForegroundTiles"] = Fields.Path(meta.ForegroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             ["Icon"] = Fields.String(meta.Icon).AllowNull(),
             ["Interlude"] = Fields.Bool(meta.Interlude ?? false),
             ["IntroType"] = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(meta.IntroType).AllowNull(),
             ["Portraits"] = Fields.String(meta.Portraits).AllowNull(),
             ["PostcardSoundID"] = Fields.String(meta.PostcardSoundID).AllowNull(),
-            ["Sprites"] = Fields.Path(meta.Sprites, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             ["TitleAccentColor"] = Fields.RGB((meta.TitleAccentColor ?? "2f344b").FromRGB()),
             ["TitleBaseColor"] = Fields.RGB((meta.TitleBaseColor ?? "6c7c81").FromRGB()),
             ["TitleTextColor"] = Fields.RGB((meta.TitleTextColor ?? "ffffff").FromRGB()),
@@ -52,7 +52,7 @@ public sealed class MetadataWindow : Window {
     });
 
     public static FieldList GetCassetteFieldInfo(MapMetadata meta) => AddTooltips(new() {
-        ["CassetteSong"] = Fields.Dropdown(meta.CassetteSong, CelesteEnums.Music).AllowNull().AllowEdits(),
+        ["CassetteSong"] = Fields.Dropdown(meta.CassetteSong, CelesteEnums.CassetteMusic).AllowNull().AllowEdits(),
         ["cassettemodifier:BeatIndexOffset"] = Fields.Int(meta.CassetteModifier.BeatIndexOffset),
         ["cassettemodifier:BeatsMax"] = Fields.Int(meta.CassetteModifier.BeatsMax),
         ["cassettemodifier:BeatsPerTick"] = Fields.Int(meta.CassetteModifier.BeatsPerTick),
@@ -64,10 +64,8 @@ public sealed class MetadataWindow : Window {
     });
 
     public static FieldList GetMusicFieldInfo(MapMetadata meta) => AddTooltips(new() {
-        ["mode:audiostate:Music"] = Fields.Dropdown(meta.Mode.AudioState.Music, 
-            CelesteEnums.Music.Where(kv => kv.Key.StartsWith("event:/music/cassette/", StringComparison.Ordinal)).ToDictionary())
-            .AllowNull().AllowEdits(),
-        ["mode:audiostate:Ambience"] = Fields.String(meta.Mode.AudioState.Ambience).AllowNull(), // todo: dropdown
+        ["mode:audiostate:Music"] = Fields.Dropdown(meta.Mode.AudioState.Music, CelesteEnums.Music).AllowNull().AllowEdits(),
+        ["mode:audiostate:Ambience"] = Fields.Dropdown(meta.Mode.AudioState.Ambience, CelesteEnums.Ambience).AllowNull().AllowEdits(),
     });
 
     public HistoryHandler History { get; private set; }
