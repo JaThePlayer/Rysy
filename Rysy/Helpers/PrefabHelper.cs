@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace Rysy.Helpers;
 
 public static class PrefabHelper {
-    private static ListenableDictionary<string, Prefab> _CurrentPrefabs;
+    private static ListenableDictionary<string, Prefab>? _CurrentPrefabs;
     public static ListenableDictionary<string, Prefab> CurrentPrefabs => _CurrentPrefabs ??= Load();
 
     private static ListenableDictionary<string, Prefab> Load() {
@@ -20,6 +20,8 @@ public static class PrefabHelper {
                 LoadFromFile(file);
             }
         }
+
+        RysyEngine.OnNextReload += () => _CurrentPrefabs = null;
 
         return _CurrentPrefabs;
     }

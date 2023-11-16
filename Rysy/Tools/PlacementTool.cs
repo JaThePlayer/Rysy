@@ -52,7 +52,7 @@ public class PlacementTool : Tool {
             LayerNames.TRIGGERS => EntityRegistry.TriggerPlacements,
             LayerNames.FG_DECALS => FGDecalPlacements.Value,
             LayerNames.BG_DECALS => BGDecalPlacements.Value,
-            LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => s.Key),
+            LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => PrefabHelper.PlacementFromName(s.Key)!),
             null => null,
             _ => throw new NotImplementedException(layer)
         };
@@ -60,6 +60,10 @@ public class PlacementTool : Tool {
 
     public override string GetMaterialDisplayName(string layer, object material) {
         if (material is Placement pl) {
+            if (layer == LayerNames.PREFABS) {
+                return pl.Name;
+            }
+            
             var name = LayerNames.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
 
             var associated = pl.GetAssociatedMods();
@@ -344,7 +348,6 @@ public class PlacementTool : Tool {
                 var prevLogErrors = Entity.LogErrors;
                 Entity.LogErrors = false;
 
-                var map = Map.DummyMap;
                 var r = Room.DummyRoom;
                 var s = placement.PlacementHandler.CreateSelection(placement, default, r);
 
@@ -359,7 +362,6 @@ public class PlacementTool : Tool {
                 sprites = placement.GetPreviewSprites(s, offset, r).ToList();
                 Entity.LogErrors = prevLogErrors;
                 // clear old references to let them get GC'd
-                map = null;
                 r = null;
                 s = null;
                 placement = null!;
@@ -419,6 +421,15 @@ public class PlacementTool : Tool {
 
         return ret;
     }
-    
+
+    public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
+        if (Layer == LayerNames.PREFABS && !(GetMaterials(Layer)?.Any() ?? true)) {
+            ImGui.TextWrapped("rysy.tools.placement.noPrefabs".TranslateFormatted(Settings.Instance.GetHotkey(SelectionTool.CreatePrefabKeybindName)));
+            showSearchBar = true;
+        } else {
+            base.RenderMaterialList(size, out showSearchBar);
+        }
+    }
+
     #endregion
 }

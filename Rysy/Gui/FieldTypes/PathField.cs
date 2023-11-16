@@ -115,6 +115,7 @@ public record class PathField : Field, IFieldConvertible<string> {
             return filesystem.FindFilesInDirectoryRecursive(directory, extension).Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}"))).ToList();
         });
 
+        // TODO: unregister!
         filesystem.RegisterFilewatch(directory, new() { 
             OnChanged = (f) => token.Invalidate()
         });

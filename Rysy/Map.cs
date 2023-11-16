@@ -47,7 +47,13 @@ public sealed class Map : IPackable {
     /// </summary>
     public BinaryPacker.Element Filler;
 
-    public ModMeta? Mod => ModRegistry.GetModContainingRealPath(Filepath);
+    private ModMeta? _mod;
+    
+    /// <summary>
+    /// Mod from which this map is from.
+    /// Null means that the map is either un-packaged, or in a directory outside of the mods folder.
+    /// </summary>
+    public ModMeta? Mod => _mod ??= ModRegistry.GetModContainingRealPath(Filepath);
 
     private Map() {
         OnMetaChanged += (old, @new) => {

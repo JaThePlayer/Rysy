@@ -1,11 +1,12 @@
 ﻿using Rysy.Extensions;
 using Rysy.Mods;
 using Rysy.Scenes;
+using System.Collections.Concurrent;
 
 namespace Rysy.Helpers;
 
 public static class LangRegistry {
-    public static Dictionary<string, Lang> Languages { get; } = new();
+    public static ConcurrentDictionary<string, Lang> Languages { get; } = new();
 
     public static Lang FallbackLang { get; set; } = new("en_gb");
 
@@ -34,6 +35,7 @@ public static class LangRegistry {
         LoadingScene.Text = "Reading lang files";
 
         Languages.Clear();
+        Languages["en_gb"] = new("en_gb");
         
         await Task.WhenAll(ModRegistry.Mods.Values.Select(LoadFromModAsync));
 
@@ -46,10 +48,14 @@ public static class LangRegistry {
         var files = fs.FindFilesInDirectoryRecursive("Loenn/lang", "lang")
             .Concat(fs.FindFilesInDirectoryRecursive("lang", "lang"));
 
-        foreach (var file in files) {
+        foreach (var file in files.ToList()) {
             var langName = file.FilenameNoExt()!;
             fs.TryWatchAndOpen(file, stream => {
-                LoadFromLangFile(langName, stream.ReadAllText());
+                try {
+                    LoadFromLangFile(langName, stream.ReadAllText());
+                } catch (Exception e) {
+                    e.LogAsJson();
+                }
             });
         }
 
@@ -62,11 +68,9 @@ public static class LangRegistry {
             return;
 
         Lang? lang;
-        lock (Languages) {
-            if (!Languages.TryGetValue(name, out lang)) {
-                lang = new(name);
-                Languages[name] = lang;
-            }
+        if (!Languages.TryGetValue(name, out lang)) {
+            lang = new(name);
+            Languages[name] = lang;
         }
 
         foreach (var line in langFileContents.Split('\n')) {
@@ -77,8 +81,8 @@ public static class LangRegistry {
                 continue;
             }
 
-            lock (lang)
-                lang.Translations[key] = value.Replace(@"\n", "\n", StringComparison.Ordinal).Trim();
+            value = value?.Replace(@"\n", "\n", StringComparison.Ordinal).Trim() ?? "";
+            lang.Translations[key] = value;
         }
     }
 }

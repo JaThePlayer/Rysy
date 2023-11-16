@@ -13,6 +13,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rysy.Tools;
 
 public class SelectionTool : Tool {
+    public const string CreatePrefabKeybindName = "selection.createPrefab";
+    
     public override string Name => "selection";
 
     private enum States {
@@ -83,8 +85,8 @@ public class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
         handler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
         handler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
-
-        handler.AddHotkeyFromSettings("selection.createPrefab", "alt+c", CreatePrefab);
+        
+        handler.AddHotkeyFromSettings(CreatePrefabKeybindName, "alt+c", CreatePrefab);
 
         History.OnApply += ClearColliderCachesInSelections;
     }
@@ -456,7 +458,9 @@ public class SelectionTool : Tool {
 
     internal static void HandleHoveredSelections(Room? room, Rectangle rectangle, SelectionLayer layer,
         IEnumerable<Selection>? selected = null, Input? input = null, bool render = true, bool middleClick = false) {
-        var canRightClick = (input ?? Input.Global).Mouse.RightClickedInPlace();
+        input ??= Input.Global;
+        
+        var canRightClick = input.Mouse.RightClickedInPlace();
 
         if (!canRightClick && !render && !middleClick)
             return;
@@ -494,6 +498,16 @@ public class SelectionTool : Tool {
         // allow right clicking a un-selected item
         if (canRightClick) {
             firstSelection.Handler.OnRightClicked(new Selection[] { firstSelection });
+        }
+
+        if (input.Mouse.Middle.Clicked() && RysyEngine.Scene is EditorScene editor && editor.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
+            if (placementTool.ValidLayers.Select(x => LayerNames.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
+                input.Mouse.ConsumeMiddle();
+                editor.ToolHandler.SetTool<PlacementTool>();
+                // TODO: Create a proper helper for this!
+                placementTool.Layer = firstSelection.Handler.Layer.FastToString();
+                placementTool.OnMiddleClick();
+            }
         }
     }
 

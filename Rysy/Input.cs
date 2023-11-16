@@ -129,21 +129,26 @@ public class Input {
             PositionDelta = RealPos - lastPos;
 
             if (Wrap && AnyClickedOrHeld) {
+                var setPos = false;
+                
                 if (PositionDelta.X > 0 && RealPos.X >= viewport.Width - 3) {
                     RealPos = new(RealPos.X - viewport.Width, RealPos.Y);
-                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                    setPos = true;
+                    
                 } else if (PositionDelta.X < 0 && RealPos.X <= 3) {
                     RealPos = new(viewport.Width - RealPos.X, RealPos.Y);
-                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                    setPos = true;
                 }
                 
                 if (PositionDelta.Y > 0 && RealPos.Y >= viewport.Height - 3) {
                     RealPos = new(RealPos.X, RealPos.Y  - viewport.Height);
-                    Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
-                }
-                
-                if (PositionDelta.Y < 0 && RealPos.Y <= 1) {
+                    setPos = true;
+                } else if (PositionDelta.Y < 0 && RealPos.Y <= 1) {
                     RealPos = new(RealPos.X, viewport.Height - RealPos.Y);
+                    setPos = true;
+                }
+
+                if (setPos) {
                     Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
                 }
             }

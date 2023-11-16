@@ -128,10 +128,12 @@ public sealed class EditorScene : Scene {
     }
 
     internal void LoadMapFromBin(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
-        if (!File.Exists(file))
+        if (!File.Exists(file)) {
+            RysyEngine.Scene = this;
             return;
-
-        RysyEngine.OnEndOfThisFrame += async () => {
+        }
+        
+        RysyEngine.OnEndOfThisFrame += () => Task.Run(async () => {
             try {
                 if (RysyEngine.Scene is not LoadingScene loadingScreen) {
                     loadingScreen = new LoadingScene();
@@ -167,7 +169,7 @@ public sealed class EditorScene : Scene {
                     }));
                 }
             }
-        };
+        });
     }
 
     public void LoadNewMap(string? packageName = null) {

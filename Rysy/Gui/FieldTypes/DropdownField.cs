@@ -52,6 +52,10 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         => Default = (T) Convert.ChangeType(newDefault, typeof(T), CultureInfo.InvariantCulture);
 
     public override bool IsValid(object? value) {
+        if (value is null) {
+            return NullAllowed;
+        }
+        
         var val = ConvertMapDataValue(value);
 
         if (val is not { }) {

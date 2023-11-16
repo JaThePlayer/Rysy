@@ -166,7 +166,7 @@ public sealed class Decal : Entity, IPlaceable {
         };
 
         if (Color != Color.White)
-            attr["color"] = EntityData.Inner["color"];
+            attr["color"] = EntityData.Attr("color");
 
         var rotation = Rotation;
         if (rotation != 0f)

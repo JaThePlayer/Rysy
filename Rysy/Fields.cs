@@ -113,8 +113,19 @@ public static partial class Fields {
     /// <param name="filesystem"></param>
     /// <returns></returns>
     public static PathField Path(string def, string directory, string fileExtension, IModFilesystem? filesystem = null)
-        => new PathField(def, filesystem ?? ModRegistry.Filesystem, directory, fileExtension, null).AllowEdits();
+        => new PathField(def, filesystem ?? GetPathFieldFilesystem(), directory, fileExtension, null).AllowEdits();
 
+    private static IModFilesystem GetPathFieldFilesystem() {
+        if (EditorState.Map is not { } map)
+            return ModRegistry.VanillaMod.Filesystem;
+
+        if (map.Mod is not { } mod) {
+            return ModRegistry.VanillaMod.Filesystem;
+        }
+
+        return mod.GetAllDependenciesFilesystem();
+    }
+    
     public static ColorField RGBA(Color def) => new() { 
         Default = def,
         Format = ColorFormat.RGBA,

@@ -138,6 +138,8 @@ rysy.entityEdit.documentation.mdViewWindowName=Documentation - {0}
 rysy.linkOpenConfirmWindow=Confirm Link Opening
 rysy.linkOpenConfirmWindow.desc=Do you want to open the following link in your browser?
 
+rysy.tools.placement.noPrefabs=You currently don't have any prefabs.\nPress {0} while a selection is active to create one!
+
 # Enums
 rysy.cassetteBlockIndex.0=Blue
 rysy.cassetteBlockIndex.1=Rose
