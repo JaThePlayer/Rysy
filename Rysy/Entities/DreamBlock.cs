@@ -15,6 +15,7 @@ public class DreamBlock : RectangleEntity, ISolid, IPlaceable {
     public static FieldList GetFields() => new(new {
         fastMoving = false,
         below = false,
+        oneUse = false,
     });
 
     public static PlacementList GetPlacements() => new("dream_block");

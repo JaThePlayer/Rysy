@@ -162,6 +162,12 @@ public interface ISprite : IEnumerable<ISprite> {
         End = end,
         Control = (start + end) / 2f + middleOffset
     }.GetSprite(color, segments);
+
+    public static Rectangle GetBounds(IEnumerable<ISprite> sprites) {
+        var rect = RectangleExt.Merge(sprites.Select(s => s.GetCollider().Rect));
+
+        return rect;
+    }
 }
 
 public static class ISpriteExtensions {

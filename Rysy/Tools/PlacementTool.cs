@@ -346,21 +346,43 @@ public class PlacementTool : Tool {
         var def = new XnaWidgetDef(key, PreviewSize, PreviewSize, () => {
             if (sprites is null) {
                 var prevLogErrors = Entity.LogErrors;
-                Entity.LogErrors = false;
 
                 var r = Room.DummyRoom;
                 var s = placement.PlacementHandler.CreateSelection(placement, default, r);
 
                 var offset = new Vector2(PreviewSize / 2, PreviewSize / 2);
                 var rect = s.Rect;
+                var didResize = false;
+                
+                Entity.LogErrors = false;
                 if (s.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
                     resizeAct.Apply();
                     resizeAct = null;
                     offset = default;
+                    didResize = true;
                 }
 
-                sprites = placement.GetPreviewSprites(s, offset, r).ToList();
-                Entity.LogErrors = prevLogErrors;
+                try {
+                    sprites = placement.GetPreviewSprites(s, offset, r).ToList();
+                } catch {
+                    sprites = new();
+                    return;
+                } finally {
+                    Entity.LogErrors = prevLogErrors;
+                }
+
+                if (!didResize) {
+                    /*
+                    var spriteBounds = ISprite.GetBounds(sprites);
+                    offset = (spriteBounds.Size.ToVector2()) / 2;
+                    
+                    sprites = placement.GetPreviewSprites(s, offset, r).ToList();*/
+                    if (sprites is [Sprite onlySprite]) {
+                        offset *= onlySprite.Origin;
+                        onlySprite.Origin = default;
+                    }
+                }
+                
                 // clear old references to let them get GC'd
                 r = null;
                 s = null;
