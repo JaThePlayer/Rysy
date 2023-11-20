@@ -73,18 +73,29 @@ public abstract class Tool {
         }
     }
 
-    private object? _Material;
+    private object? _material;
+    private string PersistenceMaterialKey => $"{PersistenceGroup}.{Layer}.Material";
     /// <summary>
     /// Gets or sets the currently selected material.
     /// </summary>
     public object? Material {
-        get => UsePersistence ? Persistence.Instance?.Get($"{PersistenceGroup}.{Layer}.Material", (object) null!) : _Material;
+        get {
+            if (_material is { } mat) {
+                return mat is false ? null : mat;
+            }
+
+            if (UsePersistence && Persistence.Instance?.Get(PersistenceMaterialKey, (object) null!) is { } persisted) {
+                _material = persisted;
+                return persisted;
+            }
+
+            _material = false;
+            return null;
+        }
         set {
             if (UsePersistence)
-                Persistence.Instance?.Set($"{PersistenceGroup}.{Layer}.Material", value);
-            else
-                _Material = value;
-
+                Persistence.Instance?.Set(PersistenceMaterialKey, value);
+            _material = value ?? false;
             CancelInteraction();
         }
     }
@@ -152,7 +163,8 @@ public abstract class Tool {
     /// for example when switching rooms or undoing
     /// </summary>
     public virtual void CancelInteraction() {
-
+        if (UsePersistence)
+            _material = null;
     }
 
     /// <summary>
@@ -239,6 +251,8 @@ public abstract class Tool {
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
         ImGui.BeginChild($"##{GetType().Name}_{Layer}", 
             new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), false, ImGuiWindowFlags.NoScrollWithMouse);
+        // make sure columns stay consistent
+        skip -= skip % columns;
         skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
         if (skip > 0) {
             ImGui.BeginChildFrame((uint) 12347, new(0, skip * elementHeight));

@@ -128,7 +128,7 @@ public class Input {
             RealPos = new(mouseState.X, mouseState.Y);
             PositionDelta = RealPos - lastPos;
 
-            if (Wrap && AnyClickedOrHeld) {
+            if (Wrap && AnyClickedOrHeld && !ImGui.GetIO().WantCaptureMouse) {
                 var setPos = false;
                 
                 if (PositionDelta.X > 0 && RealPos.X >= viewport.Width - 3) {
