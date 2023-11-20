@@ -70,6 +70,23 @@ public static class GFX {
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
             Atlas.AddTexture("tilesets/subfolder/betterTemplate", Atlas["Rysy:tilesets/subfolder/betterTemplate"]);
             Atlas.AddTexture("Rysy:missingTexture", UnknownTexture);
+            
+            // provide shims for lonn plugins that hardcode @Internal@/ paths. We'll do this here instead of
+            // lonn plugin handling code, to avoid running extra string conversions on all texture paths for this one edge case
+            ProvideLonnShim("core_message");
+            ProvideLonnShim("cutscene_node");
+            ProvideLonnShim("lava_sandwich");
+            ProvideLonnShim("northern_lights");
+            ProvideLonnShim("rising_lava");
+            ProvideLonnShim("sound_source");
+            ProvideLonnShim("summit_background_manager");
+            ProvideLonnShim("summit_gem_manager");
+            ProvideLonnShim("tentacles");
+            Atlas.AddTexture("@Internal@/missing_image", Atlas["Rysy:__fallback"]);
+
+            void ProvideLonnShim(string virtPathNoPrefix) {
+                Atlas.AddTexture($"@Internal@/{virtPathNoPrefix}", Atlas[$"Rysy:{virtPathNoPrefix}"]);
+            }
         }
 
         LoadingScene.Text = "Scanning mod assets";

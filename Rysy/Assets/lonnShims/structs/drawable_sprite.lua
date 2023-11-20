@@ -229,7 +229,7 @@ function drawableSpriteStruct.fromTexture(texture, data)
 end
 
 function drawableSpriteStruct.fromInternalTexture(texture, data)
-    return drawableSpriteStruct.fromTexture(string.format("Rysy:%s", texture), data)
+    return drawableSpriteStruct.fromTexture(string.format("@Internal@/%s", texture), data)
 end
 
 return drawableSpriteStruct
