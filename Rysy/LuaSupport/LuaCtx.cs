@@ -125,6 +125,40 @@ public class LuaCtx {
         math.atan2 = math.atan
         """, "setup_globals");
 
+        /*
+        lua.Register("_RYSY_strFormat", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var top = lua.GetTop();
+            lua.PushCopy(1);
+            lua.PushCopy(2);
+            for (int i = 3; i <= top; i++) {
+                if (lua.ToNumberX(i) is { } d && d % 1 == 0) {
+                    lua.PushString(d.ToString(CultureInfo.InvariantCulture));
+                } else {
+                    lua.PushCopy(i);
+                }
+            }
+
+            lua.Call(top - 1, 1);
+            return 1;
+        });
+            
+        lua.PCallStringThrowIfError("""
+        -- fix errors like these:
+        -- collectables/summitgems/0.0/gem00
+        local _strFormat = string.format
+        function string.format(format, ...)
+            return _RYSY_strFormat(_strFormat, format, ...)
+        end
+        """, "fixed_string_format");*/
+        lua.Register("_RYSY_DRAWABLE_fixPath", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            lua.PushString(LonnDrawables.SanitizeLonnTexturePath(lua.FastToString(1)));
+            
+            return 1;
+        });
+
         lua.PCallStringThrowIfError(File.ReadAllText("Assets/lua/funpack.lua"), "funpack");
 
         lua.Register("_RYSY_bit_lshift", (nint s) => {

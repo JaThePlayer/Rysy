@@ -151,8 +151,11 @@ public static class IAtlasExt {
         }
         // TODO: LINKS support (only if needed)
 
+        _sharedTextureBuffer = null;
     }
 
+    private static byte[]? _sharedTextureBuffer;
+    
     // TODO: cleanup
     private static unsafe Texture2D ReadVanillaAtlasDataFile(string path, string textureIndex) {
         Texture2D? texture = null;
@@ -167,7 +170,7 @@ public static class IAtlasExt {
 
         const int bytesSize = 524288;
         byte[] readDataBytes = new byte[bytesSize];
-        byte[] textureBufferBytes = new byte[64 * 1024 * 1024];
+        byte[] textureBufferBytes = _sharedTextureBuffer ??= new byte[64 * 1024 * 1024];
         using var stream = File.OpenRead(fullPath);
         using var dataReader = new BinaryReader(stream);
 
@@ -190,12 +193,19 @@ public static class IAtlasExt {
                 int runLenEncodingSize = readDataBytes[pos++] * 4;
 
                 byte alpha = hasTransparency ? readDataBytes[pos++] : byte.MaxValue;
+                if (index + 3 >= textureBufferBytes.Length) {
+                    throw new Exception("Atlas Texture is too big!");
+                }
+                
                 if (alpha > 0) {
                     textureBuffer[index] = readDataBytes[pos + 2];
                     textureBuffer[index + 1] = readDataBytes[pos + 1];
                     textureBuffer[index + 2] = readDataBytes[pos];
                     textureBuffer[index + 3] = alpha;
                     pos += 3;
+                } else {
+                    // 0-fill the buffer, as it can be shared between multiple texture reads
+                    *(int*) &textureBuffer[index] = 0;
                 }
 
                 if (runLenEncodingSize > 4) {
@@ -204,7 +214,10 @@ public static class IAtlasExt {
 
                     // weird pointer shenanigans to read/write a i32 from a byte[]
                     int col = *(int*) &textureBuffer[index];
-
+                    if (endRLE - 4 >= textureBufferBytes.Length) {
+                        throw new Exception("Atlas Texture is too big!");
+                    }
+                    
                     while (nextPixel < endRLE) {
                         *(int*) &textureBuffer[nextPixel] = col;
                         nextPixel += 4;

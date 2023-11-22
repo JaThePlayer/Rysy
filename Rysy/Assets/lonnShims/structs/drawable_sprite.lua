@@ -214,6 +214,8 @@ function drawableSpriteStruct.fromMeta(meta, data)
 end
 
 function drawableSpriteStruct.fromTexture(texture, data)
+    texture = _RYSY_DRAWABLE_fixPath(texture)
+
 	if not _RYSY_DRAWABLE_exists(texture) then
 		--print("missing", texture)
 		return nil--drawableSpriteStruct.fromTexture("Rysy:missingTexture", data)

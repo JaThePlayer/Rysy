@@ -2,10 +2,11 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Rysy.LuaSupport;
 
-public static class LonnDrawables {
+public static partial class LonnDrawables {
     private static byte[] RYSY_UNPACKSPRASCII = Encoding.ASCII.GetBytes("RYSY_UNPACKSPR");
 
     public static RectangleSprite LuaToRect(Lua lua, int top) {
@@ -101,7 +102,6 @@ public static class LonnDrawables {
         var quadX = lua.ToIntegerX(top + 11);
 
         lua.Pop(11);
-
         
         var sprite = ISprite.FromTexture(new Vector2(x, y), texture) with {
             Scale = new(scaleX, scaleY),
@@ -124,6 +124,20 @@ public static class LonnDrawables {
 
         return sprite;
     }
+
+    /// <summary>
+    /// Fixes issues like `"collectables/summitgems/" .. entity.index .. "/gem00"` returning `collectables/summitgems/0.0/gem00`
+    /// </summary>
+    public static string SanitizeLonnTexturePath(string? pathFromLonn) {
+        if (pathFromLonn is null)
+            return "";
+        
+        var fix = MessedUpDigitsRegex().Replace(pathFromLonn, match => match.ValueSpan[..^".0".Length].ToString());
+        return fix;
+    }
+
+    [GeneratedRegex(@"\d\.0")]
+    private static partial Regex MessedUpDigitsRegex();
 
     public static NineSliceSprite LuaToNineSlice(Lua lua, int top) {
         var texture = lua.PeekTableStringValue(top, "texture") ?? "";
