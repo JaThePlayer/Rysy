@@ -3,25 +3,106 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Helpers;
 
+/// <summary>
+/// Stores a reference to an element in a ListenableDictionary.
+/// Whenever that dictionary gets edited, the value stored in this reference will be lazily updated.
+/// </summary>
+/// <typeparam name="TKey"></typeparam>
+/// <typeparam name="TValue"></typeparam>
+public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
+    private long Version { get; set; }
+    public TKey Key { get; private init; }
+    
+    private TValue? _value;
+    private bool _valid;
+    
+    /// <returns>Whether the value got changed</returns>
+    private bool UpdateValue() {
+        var dictVer = _dict.Version;
+        if (dictVer == Version) 
+            return false;
+        
+        Version = dictVer;
+        _valid = true;
+
+        if (_dict.TryGetValue(Key, out _value)) 
+            return true;
+        
+        _value = default;
+        _valid = false;
+
+        return true;
+
+    }
+    
+    public TValue? Value {
+        get {
+            UpdateValue();
+
+            if (!_valid)
+                throw new KeyNotFoundException(Key.ToString());
+            
+            return _value;
+        }
+    }
+
+    public bool TryGetValue([NotNullWhen(true)] out TValue? value, out bool changed) {
+        changed = UpdateValue();
+
+        if (!_valid) {
+            value = default;
+            return false;
+        }
+
+        value = _value!;
+        return true;
+    }
+
+    private readonly ReadOnlyListenableDictionary<TKey, TValue> _dict;
+
+    internal ListenableDictionaryRef(ReadOnlyListenableDictionary<TKey, TValue> dict, TKey key) {
+        Version = long.MinValue;
+        _dict = dict;
+        Key = key;
+    }
+}
+
 public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     where TKey : notnull {
     private readonly Dictionary<TKey, TValue> Inner;
 
     public Action? OnChanged { get; set; }
 
+    /// <summary>
+    /// Keeps track of how many times the dictionary got mutated
+    /// </summary>
+    public long Version { get; private set; }
+    
     public ListenableDictionary(IEqualityComparer<TKey> comparer) {
         Inner = new(comparer);
     }
 
     public static implicit operator ReadOnlyListenableDictionary<TKey, TValue>(ListenableDictionary<TKey, TValue> d) => new(d);
 
+    private void HandleOnChanged() {
+        Version++;
+        OnChanged?.Invoke();
+    }
+    
     public TValue this[TKey key] {
         get => Inner[key];
         set {
             Inner[key] = value;
-            OnChanged?.Invoke();
+            HandleOnChanged();
         }
     }
+    
+    /// <summary>
+    /// Creates a reference to the value stored at the given key. This reference will get lazily updated with the
+    /// new value each time the dictionary is mutated, without subscribing to any events.
+    /// </summary>
+    public ListenableDictionaryRef<TKey, TValue> GetReference(TKey key)
+        => new(this, key);
 
     public ICollection<TKey> Keys => Inner.Keys;
 
@@ -33,17 +114,17 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 
     public void Add(TKey key, TValue value) {
         Inner.Add(key, value);
-        OnChanged?.Invoke();
+        HandleOnChanged();
     }
 
     public void Add(KeyValuePair<TKey, TValue> item) {
         ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Add(item);
-        OnChanged?.Invoke();
+        HandleOnChanged();
     }
 
     public void Clear() {
         Inner.Clear();
-        OnChanged?.Invoke();
+        HandleOnChanged();
     }
 
     public bool Contains(KeyValuePair<TKey, TValue> item) {
@@ -65,14 +146,14 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     public bool Remove(TKey key) {
         var ret = Inner.Remove(key);
         if (ret)
-            OnChanged?.Invoke();
+            HandleOnChanged();
         return ret;
     }
 
     public bool Remove(KeyValuePair<TKey, TValue> item) {
         var ret = ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Remove(item);
         if (ret)
-            OnChanged?.Invoke();
+            HandleOnChanged();
         return ret;
     }
 
@@ -87,19 +168,21 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 
 public readonly struct ReadOnlyListenableDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
     where TKey : notnull {
-    private readonly ListenableDictionary<TKey, TValue> Inner;
+    private readonly ListenableDictionary<TKey, TValue> _inner;
 
     public ReadOnlyListenableDictionary(ListenableDictionary<TKey, TValue> d) {
-        Inner = d;
+        _inner = d;
     }
 
     public readonly Action? OnChanged {
-        get => Inner.OnChanged;
-        set => Inner.OnChanged = value;
+        get => _inner.OnChanged;
+        set => _inner.OnChanged = value;
     }
 
+    public long Version => _inner.Version;
+
     public Cache<T> CreateCache<T>(Func<ReadOnlyListenableDictionary<TKey, TValue>, T> generator) where T : class {
-        var inner = Inner;
+        var inner = _inner;
         var token = new CacheToken();
         var cache = new Cache<T>(token, () => generator(inner));
         OnChanged += token.InvalidateThenReset;
@@ -107,19 +190,22 @@ public readonly struct ReadOnlyListenableDictionary<TKey, TValue> : IReadOnlyDic
         return cache;
     }
 
-    public readonly TValue this[TKey key] => Inner[key];
+    public ListenableDictionaryRef<TKey, TValue> GetReference(TKey key)
+        => new(this, key);
 
-    public readonly IEnumerable<TKey> Keys => Inner.Keys;
+    public readonly TValue this[TKey key] => _inner[key];
 
-    public readonly IEnumerable<TValue> Values => Inner.Values;
+    public readonly IEnumerable<TKey> Keys => _inner.Keys;
 
-    public readonly int Count => Inner.Count;
+    public readonly IEnumerable<TValue> Values => _inner.Values;
 
-    public readonly bool ContainsKey(TKey key) => Inner.ContainsKey(key);
+    public readonly int Count => _inner.Count;
 
-    public readonly IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => Inner.GetEnumerator();
+    public readonly bool ContainsKey(TKey key) => _inner.ContainsKey(key);
 
-    public readonly bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => Inner.TryGetValue(key, out value);
+    public readonly IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _inner.GetEnumerator();
 
-    readonly IEnumerator IEnumerable.GetEnumerator() => Inner.GetEnumerator();
+    public readonly bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _inner.TryGetValue(key, out value);
+
+    readonly IEnumerator IEnumerable.GetEnumerator() => _inner.GetEnumerator();
 }

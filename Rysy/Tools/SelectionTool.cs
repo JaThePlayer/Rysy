@@ -6,6 +6,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Scenes;
 using Rysy.Selections;
 using System.Diagnostics.CodeAnalysis;
@@ -136,7 +137,7 @@ public class SelectionTool : Tool {
 
         var selections = CopypasteHelper.PasteSelectionsFromClipboard(History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
         if (pastedRooms) {
-            Layer = LayerNames.ROOM;
+            Layer = EditorLayers.Room;
         }
 
         if (selections != null) {
@@ -307,28 +308,28 @@ public class SelectionTool : Tool {
 
     public override string PersistenceGroup => "Selection";
 
-    private static readonly List<string> _ValidLayers = new() {
-        LayerNames.ENTITIES, LayerNames.TRIGGERS,
-        LayerNames.FG_DECALS, LayerNames.BG_DECALS,
-        LayerNames.FG, LayerNames.BG,
-        LayerNames.ROOM,
-        LayerNames.ALL, LayerNames.CUSTOM_LAYER
+    private static readonly List<EditorLayer> _ValidLayers = new() {
+        EditorLayers.Entities, EditorLayers.Triggers,
+        EditorLayers.FgDecals, EditorLayers.BgDecals,
+        EditorLayers.Fg, EditorLayers.Bg,
+        EditorLayers.Room,
+        EditorLayers.All, EditorLayers.CustomLayer
     };
 
-    public override List<string> ValidLayers => _ValidLayers;
+    public override List<EditorLayer> ValidLayers => _ValidLayers;
 
-    public override string GetMaterialDisplayName(string layer, object material) {
+    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         throw new NotImplementedException();
     }
 
-    public override IEnumerable<object>? GetMaterials(string layer) => Array.Empty<object>();
+    public override IEnumerable<object>? GetMaterials(EditorLayer layer) => Array.Empty<object>();
 
-    public override string? GetMaterialTooltip(string layer, object material) {
+    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         throw new NotImplementedException();
     }
 
     public override void Render(Camera camera, Room room) {
-        if (Layer == LayerNames.ROOM)
+        if (Layer == EditorLayers.Room)
             return;
 
         DoRender(camera, room);
@@ -337,7 +338,7 @@ public class SelectionTool : Tool {
     }
 
     public override void RenderOverlay() {
-        if (Layer != LayerNames.ROOM)
+        if (Layer != EditorLayers.Room)
             return;
 
         GFX.EndBatch();
@@ -403,7 +404,7 @@ public class SelectionTool : Tool {
         if (CurrentSelections is not { Count: > 0 }) {
             // If we're in room selection mode, always select the current room if there are no other selections
             // We do this here instead of Update, as Update is not called when hovering over imgui elements
-            if (Layer == LayerNames.ROOM && EditorState.CurrentRoom is { } currentRoom) {
+            if (Layer == EditorLayers.Room && EditorState.CurrentRoom is { } currentRoom) {
                 AddSelection(new(currentRoom.GetSelectionHandler()));
             }
         }
@@ -435,7 +436,7 @@ public class SelectionTool : Tool {
 
         if (State == States.Idle && !imguiWantsMouse) {
             HandleHoveredSelections(room, SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1),
-                LayerNames.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections, Input, middleClick: true
+                EditorLayers.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections, Input, middleClick: true
             );
         }
 
@@ -501,11 +502,12 @@ public class SelectionTool : Tool {
         }
 
         if (input.Mouse.Middle.Clicked() && RysyEngine.Scene is EditorScene editor && editor.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
-            if (placementTool.ValidLayers.Select(x => LayerNames.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
+            if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
                 input.Mouse.ConsumeMiddle();
                 editor.ToolHandler.SetTool<PlacementTool>();
                 // TODO: Create a proper helper for this!
-                placementTool.Layer = firstSelection.Handler.Layer.FastToString();
+                //placementTool.Layer = firstSelection.Handler.Layer.FastToString();
+                throw new NotImplementedException();
                 placementTool.OnMiddleClick();
             }
         }
@@ -566,7 +568,7 @@ public class SelectionTool : Tool {
         Deselect();
     }
 
-    public override bool AllowSwappingRooms => Layer != LayerNames.ROOM;
+    public override bool AllowSwappingRooms => Layer != EditorLayers.Room;
 
     private IHistoryAction? GetPreciseRotationAction(float realAngle) {
         if (CurrentSelections is null)
@@ -722,7 +724,7 @@ public class SelectionTool : Tool {
     }
 
     private Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
-        if (Layer == LayerNames.ROOM)
+        if (Layer == EditorLayers.Room)
             return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
         return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
     }
@@ -734,7 +736,7 @@ public class SelectionTool : Tool {
     }
 
     private void SelectWithin(Room room, Rectangle rect) {
-        var selections = room.GetSelectionsInRect(rect, LayerNames.ToolLayerToEnum(Layer, CustomLayer));
+        var selections = room.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
         List<Selection>? finalSelections = null;
 
         if (rect.Width <= 1 && rect.Height <= 1 && selections.Count > 0) {
@@ -831,14 +833,14 @@ public class SelectionTool : Tool {
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = false;
 
-        if (Layer == LayerNames.CUSTOM_LAYER) {
+        if (Layer == EditorLayers.CustomLayer) {
             var c = (int) CustomLayer;
-            ImGui.CheckboxFlags(LayerNames.ENTITIES, ref c, (int) SelectionLayer.Entities);
-            ImGui.CheckboxFlags(LayerNames.TRIGGERS, ref c, (int) SelectionLayer.Triggers);
-            ImGui.CheckboxFlags(LayerNames.FG_DECALS, ref c, (int) SelectionLayer.FGDecals);
-            ImGui.CheckboxFlags(LayerNames.BG_DECALS, ref c, (int) SelectionLayer.BGDecals);
-            ImGui.CheckboxFlags(LayerNames.BG, ref c, (int) SelectionLayer.BGTiles);
-            ImGui.CheckboxFlags(LayerNames.FG, ref c, (int) SelectionLayer.FGTiles);
+            ImGui.CheckboxFlags(EditorLayers.Entities.LocalizedName, ref c, (int) SelectionLayer.Entities);
+            ImGui.CheckboxFlags(EditorLayers.Triggers.LocalizedName, ref c, (int) SelectionLayer.Triggers);
+            ImGui.CheckboxFlags(EditorLayers.FgDecals.LocalizedName, ref c, (int) SelectionLayer.FGDecals);
+            ImGui.CheckboxFlags(EditorLayers.BgDecals.LocalizedName, ref c, (int) SelectionLayer.BGDecals);
+            ImGui.CheckboxFlags(EditorLayers.Bg.LocalizedName, ref c, (int) SelectionLayer.BGTiles);
+            ImGui.CheckboxFlags(EditorLayers.Fg.LocalizedName, ref c, (int) SelectionLayer.FGTiles);
 
             CustomLayer = (SelectionLayer) c;
 

@@ -34,11 +34,11 @@ public record class Placement {
         Name = "";
     }
 
-    public string Name;
+    public string Name { get; set; }
 
-    public string? SID;
+    public string? SID { get; set; }
 
-    public string? Tooltip;
+    public string? Tooltip { get; set; }
 
     [JsonIgnore]
     public Action<Entity>? Finalizer;

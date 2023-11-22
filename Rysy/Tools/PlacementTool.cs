@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
 
@@ -34,37 +35,26 @@ public class PlacementTool : Tool {
 
     public override string PersistenceGroup => "placement";
 
-    private static List<string> _validLayers = new() {
-        LayerNames.ENTITIES,
-        LayerNames.TRIGGERS,
-        LayerNames.FG_DECALS,
-        LayerNames.BG_DECALS,
-        LayerNames.PREFABS,
+    private static List<EditorLayer> _validLayers = new() {
+        EditorLayers.Entities,
+        EditorLayers.Triggers,
+        EditorLayers.FgDecals,
+        EditorLayers.BgDecals,
+        EditorLayers.Prefabs,
     };
-    public override List<string> ValidLayers => _validLayers;
-
-    private static Cache<List<Placement>> FGDecalPlacements = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, LayerNames.FG_DECALS)!).ToList());
-    private static Cache<List<Placement>> BGDecalPlacements = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, LayerNames.BG_DECALS)!).ToList());
-
-    public override IEnumerable<object>? GetMaterials(string layer) {
-        return layer switch {
-            LayerNames.ENTITIES => EntityRegistry.EntityPlacements,
-            LayerNames.TRIGGERS => EntityRegistry.TriggerPlacements,
-            LayerNames.FG_DECALS => FGDecalPlacements.Value,
-            LayerNames.BG_DECALS => BGDecalPlacements.Value,
-            LayerNames.PREFABS => PrefabHelper.CurrentPrefabs.Select(s => PrefabHelper.PlacementFromName(s.Key)!),
-            null => null,
-            _ => throw new NotImplementedException(layer)
-        };
+    public override List<EditorLayer> ValidLayers => _validLayers;
+    
+    public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
+        return layer.GetMaterials();
     }
 
-    public override string GetMaterialDisplayName(string layer, object material) {
+    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         if (material is Placement pl) {
-            if (layer == LayerNames.PREFABS) {
+            if (layer == EditorLayers.Prefabs) {
                 return pl.Name;
             }
             
-            var name = LayerNames.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
+            var name = EditorLayers.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
 
             var associated = pl.GetAssociatedMods();
             if (associated is { Count: > 0}) {
@@ -80,20 +70,24 @@ public class PlacementTool : Tool {
         };
     }
 
-    public override string? GetMaterialTooltip(string layer, object material) {
+    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         return material switch {
             Placement pl => pl.Tooltip ?? pl.Name.TranslateOrNull($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.description"),
             _ => null,
         };
     }
 
-    private static Placement? PlacementFromString(string str, string layer) {
+    private static Placement? PlacementFromString(string str, EditorLayer layer) {
+        Console.WriteLine($"PlacementFromString: {str} [{layer}]");
+        /*
         return layer switch {
             LayerNames.FG_DECALS => Decal.PlacementFromPath(str, true, Vector2.One, Color.White, rotation: 0f),
             LayerNames.BG_DECALS => Decal.PlacementFromPath(str, false, Vector2.One, Color.White, rotation: 0f),
             LayerNames.PREFABS => PrefabHelper.PlacementFromName(str),
             _ => null,
-        };
+        };*/
+        //TODO:
+        return null;
     }
 
     protected override void OnLayerChanged() {
@@ -112,7 +106,7 @@ public class PlacementTool : Tool {
     public override void Update(Camera camera, Room room) {
         if (PickNextFrame) {
             PickNextFrame = false;
-            if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, LayerNames.ToolLayerToEnum(Layer)) is { } underCursor) {
+            if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, EditorLayers.ToolLayerToEnum(Layer)) is { } underCursor) {
                 Material = underCursor;
             }
             CurrentPlacement = null;
@@ -222,7 +216,7 @@ public class PlacementTool : Tool {
             var mousePos = GetMousePos(camera, room);
 
             SelectionTool.HandleHoveredSelections(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1),
-                LayerNames.ToolLayerToEnum(Layer), selected: null, Input, render: false
+                EditorLayers.ToolLayerToEnum(Layer), selected: null, Input, render: false
             );
         }
     }
@@ -431,7 +425,7 @@ public class PlacementTool : Tool {
         var ret = base.RenderMaterialListElement(material, name);
         ImGuiManager.PopNullStyle();
 
-        if (Layer == LayerNames.PREFABS) {
+        if (Layer == EditorLayers.Prefabs) {
             if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGui.MenuItem("Remove")) {
                     PrefabHelper.Remove(name);
@@ -445,7 +439,7 @@ public class PlacementTool : Tool {
     }
 
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
-        if (Layer == LayerNames.PREFABS && !(GetMaterials(Layer)?.Any() ?? true)) {
+        if (Layer == EditorLayers.Prefabs && !(GetMaterials(Layer)?.Any() ?? true)) {
             ImGui.TextWrapped("rysy.tools.placement.noPrefabs".TranslateFormatted(Settings.Instance.GetHotkey(SelectionTool.CreatePrefabKeybindName)));
             showSearchBar = true;
         } else {

@@ -5,15 +5,18 @@ using Rysy.Helpers;
 using Rysy.Scenes;
 using System.Runtime.CompilerServices;
 using Rysy.Gui;
+using Rysy.Layers;
 
 namespace Rysy.Tools;
 
 public abstract class TileTool : Tool {
     public Color DefaultColor = ColorHelper.HSVToColor(0f, 1f, 1f);
 
-    private static List<string> _ValidLayers = new() { LayerNames.FG, LayerNames.BG, LayerNames.BOTH_TILEGRIDS };
+    private static List<EditorLayer> _ValidLayers { get; } = new() {
+        EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
+    };
 
-    public override List<string> ValidLayers => _ValidLayers;
+    public override List<EditorLayer> ValidLayers => _ValidLayers;
 
     public override string PersistenceGroup => "TileTool";
 
@@ -23,18 +26,18 @@ public abstract class TileTool : Tool {
         EditorState.OnMapChanged += ClearMaterialListCache;
     }
 
-    public override IEnumerable<object>? GetMaterials(string layer) {
+    public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
         var autotiler = GetAutotiler(layer);
         if (autotiler is not { })
             return null;
 
         autotiler.TilesetDataCacheToken.OnNextInvalidate += ClearMaterialListCache;
-        return autotiler.Tilesets.Keys.Where(k => k is not 'z' or 'y').Append('0').Select(k => (object) k);
+        return autotiler.Tilesets.Keys.Where(k => k is not ('z' or 'y')).Append('0').Select(k => (object) k);
     }
 
-    private static Dictionary<string, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
+    private static Dictionary<EditorLayer, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
 
-    public override string GetMaterialDisplayName(string layer, object material) {
+    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         if (!MaterialToDisplayCache.TryGetValue(layer, out var cache)) {
             MaterialToDisplayCache[layer] = cache = new();
         }
@@ -56,7 +59,7 @@ public abstract class TileTool : Tool {
         return material.ToString()!;
     }
 
-    public override string? GetMaterialTooltip(string layer, object material) {
+    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         if (material is not char c)
             return null;
 
@@ -71,13 +74,25 @@ public abstract class TileTool : Tool {
         set => Material = value;
     }
 
-    public Autotiler? GetAutotiler(string layer) {
+    protected TileLayer EditorLayerToTileLayer(EditorLayer? layer) {
+        layer ??= Layer;
+        
+        if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
+            return tileLayer;
+        }
+
+        return TileLayer.FG;
+    }
+
+    public Autotiler? GetAutotiler(EditorLayer layer) {
         if (RysyEngine.Scene is EditorScene { Map: { } map }) {
-            return layer switch {
-                LayerNames.FG => map.FGAutotiler,
-                LayerNames.BG => map.BGAutotiler,
-                _ => null,
-            };
+            if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
+                return tileLayer switch {
+                    TileLayer.FG => map.FGAutotiler,
+                    TileLayer.BG => map.BGAutotiler,
+                    _ => null,
+                };
+            }
         }
         return null;
     }
@@ -96,16 +111,17 @@ public abstract class TileTool : Tool {
     public override void RenderOverlay() {
     }
 
-    protected Tilegrid GetGrid(Room room, string? layer = null) => (layer ?? Layer) switch {
-        LayerNames.FG or LayerNames.BOTH_TILEGRIDS => room.FG,
-        LayerNames.BG => room.BG,
-        _ => throw new NotImplementedException(Layer)
-    };
+    protected Tilegrid GetGrid(Room room, EditorLayer? layer = null) {
+        layer ??= Layer;
 
-    protected Tilegrid? GetSecondGrid(Room room) => Layer switch {
-        LayerNames.BOTH_TILEGRIDS => room.BG,
-        _ => null,
-    };
+        if (layer is TileEditorLayer tileEditorLayer)
+            return tileEditorLayer.GetGrid(room);
+
+        throw new ArgumentException("Provided layer is not a tile layer", nameof(layer));
+    }
+
+    protected Tilegrid? GetSecondGrid(Room room) 
+        => Layer == EditorLayers.BothTilegrids ? room.BG : null;
 
     protected Point GetMouseTilePos(Camera camera, Room room, bool round = false) {
         var pos = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2());
@@ -123,9 +139,9 @@ public abstract class TileTool : Tool {
             var bg = currentRoom.BG.SafeTileAt(tx, ty);
 
             (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (LayerNames.BOTH_TILEGRIDS, bg), // if both tiles are air, switch to the "Both" layer.
-                ('0', not '0') => (LayerNames.BG, bg), // fg is air, but bg isn't. Switch to BG.
-                (not '0', _) => (LayerNames.FG, fg), // fg tile exists, swap to that.
+                ('0', '0') => (BOTH_TILEGRIDS: EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.
+                ('0', not '0') => (BG: EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
+                (not '0', _) => (FG: EditorLayers.Fg, fg), // fg tile exists, swap to that.
             };
         }
     }
