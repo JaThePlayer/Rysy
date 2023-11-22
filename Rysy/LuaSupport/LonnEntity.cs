@@ -1,6 +1,7 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Selections;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -8,14 +9,32 @@ using System.Text.Json.Serialization;
 namespace Rysy.LuaSupport;
 
 public class LonnEntity : Entity {
+    internal ListenableDictionaryRef<string, LonnEntityPlugin> PluginRef;
+
+    private void ClearInternalCache() {
+        CachedSprites = null;
+    }
+    
     [JsonIgnore]
-    public LonnEntityPlugin Plugin { get; internal set; }
+    public LonnEntityPlugin? Plugin {
+        get {
+            var exists = PluginRef.TryGetValue(out var plugin, out var changed);
+
+            if (changed) {
+                ClearInternalCache();
+                ClearRoomRenderCache();
+            }
+            
+            return exists ? plugin : null;
+        }
+    }
 
     [JsonIgnore]
-    public override int Depth => Plugin.GetDepth(Room, this);
+    public override int Depth => Plugin?.GetDepth(Room, this) ?? 0;
 
     public override IEnumerable<ISprite> GetAllNodeSprites() {
-        //using var stackHolder = Plugin.PushToStack();
+        if (Plugin is null)
+            return Array.Empty<ISprite>();
 
         return Plugin.PushToStack((pl) => {
             var visibility = pl.GetNodeVisibility(this);
@@ -69,6 +88,9 @@ public class LonnEntity : Entity {
     }
 
     public override IEnumerable<ISprite> GetSprites() {
+        if (Plugin is null)
+            return Array.Empty<ISprite>();
+        
         if (CachedSprites is { } cached)
             return cached;
 
@@ -89,12 +111,11 @@ public class LonnEntity : Entity {
     }
 
     private bool CallSelectionFunc<T>(Func<Lua, int, T> valueRetriever, out T? value) {
-        var lua = Plugin.LuaCtx.Lua;
-
-        if (!Plugin.HasSelectionFunction) {
+        if (Plugin is null || !Plugin.HasSelectionFunction) {
             value = default;
             return false;
         }
+        var lua = Plugin.LuaCtx.Lua;
 
         (var ret, value) = Plugin.PushToStack((pl) => {
             var type = lua.GetTable(pl.StackLoc, "selection");
@@ -113,12 +134,15 @@ public class LonnEntity : Entity {
 
     public override ISelectionCollider GetMainSelection() {
         try {
+            if (Plugin is null)
+                return base.GetMainSelection();
+            
             //selection(room, entity):rectangle, table of rectangles
             if (CallSelectionFunc((lua, top) => lua.ToRectangle(top - 1), out var selectionRect)) {
                 return ISelectionCollider.FromRect(selectionRect);
             }
 
-            if (Plugin.GetRectangle is { } rectFunc) {
+            if (Plugin?.GetRectangle is { } rectFunc) {
                 var rectangle = rectFunc(Room, this);
                 return ISelectionCollider.FromRect(rectangle);
             }
@@ -132,6 +156,9 @@ public class LonnEntity : Entity {
 
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {
         try {
+            if (Plugin is null)
+                return base.GetNodeSelection(nodeIndex);
+            
             if (CallSelectionFunc((lua, top) => {
                 if (lua.Type(top) != LuaType.Table) {
                     return default;
@@ -170,21 +197,14 @@ public class LonnEntity : Entity {
         return base.GetNodeSelection(nodeIndex);
     }
 
-    public override Range NodeLimits => Plugin.GetNodeLimits(Room, this);
+    public override Range NodeLimits => Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
 
-    public override Point MinimumSize {
-        get {
-            if (Plugin is null)
-                Name.LogAsJson();
-
-            return Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
-        }
-    }
+    public override Point MinimumSize => Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
-
-        CachedSprites = null;
+        
+        ClearInternalCache();
     }
 
     public override Entity? TryFlipVertical() {
@@ -196,7 +216,7 @@ public class LonnEntity : Entity {
     }
 
     public override Entity? TryRotate(RotationDirection dir) {
-        if (Plugin.Rotate is null) {
+        if (Plugin?.Rotate is null) {
             return base.TryRotate(dir);
         }
 
@@ -208,7 +228,7 @@ public class LonnEntity : Entity {
     }
 
     private Entity? FlipImpl(bool horizontal, bool vertical) {
-        if (Plugin.Flip is null) {
+        if (Plugin?.Flip is null) {
             return horizontal ? base.TryFlipHorizontal() : base.TryFlipVertical();
         }
 
@@ -280,6 +300,9 @@ public class LonnEntity : Entity {
     }
 
     private List<ISprite> _GetSprites(RoomLuaWrapper roomWrapper) {
+        if (Plugin is null)
+            return new();
+        
         if (Plugin.HasGetSprite) {
             var lua = Plugin.LuaCtx.Lua;
 

@@ -82,6 +82,10 @@ public static class GFX {
             ProvideLonnShim("summit_background_manager");
             ProvideLonnShim("summit_gem_manager");
             ProvideLonnShim("tentacles");
+            ProvideLonnShim("dust_creature_outlines/base00");
+            ProvideLonnShim("dust_creature_outlines/base01");
+            ProvideLonnShim("dust_creature_outlines/base02");
+            ProvideLonnShim("dust_creature_outlines/center00");
             Atlas.AddTexture("@Internal@/missing_image", Atlas["Rysy:__fallback"]);
 
             void ProvideLonnShim(string virtPathNoPrefix) {

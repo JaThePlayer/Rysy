@@ -79,7 +79,7 @@ public sealed class FolderModFilesystem : IModFilesystem {
                 } catch (Exception ex) {
                     Logger.Error(ex, $"Error when hot reloading {path}");
                 }*/
-                Console.WriteLine($"reloading {path}");
+                Logger.Write(nameof(FolderModFilesystem), LogLevel.Info, $"Hot reloading {path}");
                 try {
                     asset.OnChanged?.Invoke(path);
                 } catch (Exception ex) {
