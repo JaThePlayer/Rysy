@@ -1,12 +1,17 @@
-﻿using System.Text.Json.Serialization;
+﻿using Rysy.Helpers;
+using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
 public sealed class LonnTrigger : Trigger {
-    [JsonIgnore]
-    public LonnEntityPlugin Plugin;
+    internal ListenableDictionaryRef<string, LonnEntityPlugin> PluginRef;
 
-    public override Range NodeLimits => Plugin.GetNodeLimits(Room, this);
+    [JsonIgnore] 
+    public LonnEntityPlugin? Plugin => PluginRef.TryGetValue(out var plugin, out var changed) 
+        ? plugin 
+        : null;
 
-    public override Point MinimumSize => Plugin.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+    public override Range NodeLimits => Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
+
+    public override Point MinimumSize => Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
 }

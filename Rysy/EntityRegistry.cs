@@ -25,7 +25,9 @@ public static class EntityRegistry {
     public static ReadOnlyListenableDictionary<string, Type> SIDToType => _SIDToType;
 
 #if KERA_LUA
-    private static Dictionary<string, LonnEntityPlugin> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
+    private static ListenableDictionary<string, LonnEntityPlugin> _SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
+
+    public static ReadOnlyListenableDictionary<string, LonnEntityPlugin> SIDToLonnPlugin => _SIDToLonnPlugin;
 #else
     private static Dictionary<string, NeoLonnEntityHandler> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, LonnEntityPlugin> LegacySIDToLonnPlugin = new(StringComparer.Ordinal);
@@ -83,7 +85,7 @@ public static class EntityRegistry {
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
         _LuaCtx = null;
         _SIDToType.Clear();
-        SIDToLonnPlugin.Clear();
+        _SIDToLonnPlugin.Clear();
         SIDToFields.Clear();
         EntityPlacements.Clear();
         TriggerPlacements.Clear();
@@ -255,8 +257,8 @@ public static class EntityRegistry {
                 lock (_SIDToType) {
                     _SIDToType[pl.Name] = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 }
-                lock (SIDToLonnPlugin) {
-                    SIDToLonnPlugin[pl.Name] = pl;
+                lock (_SIDToLonnPlugin) {
+                    _SIDToLonnPlugin[pl.Name] = pl;
                 }
                 if (mod is { } && !mod.IsVanilla)
                     lock (SIDToDefiningMod) {
@@ -270,6 +272,10 @@ public static class EntityRegistry {
                     lock (SIDToFields) {
                         SIDToFields[pl.Name] = fields;
                     }
+                }
+
+                if (RysyEngine.Scene is EditorScene editor) {
+                    editor.ClearMapRenderCache();
                 }
             }
 #endif
@@ -495,20 +501,20 @@ public static class EntityRegistry {
         e.Room = room;
 #if KERA_LUA
         if (e is LonnEntity lonnEntity) {
-            if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+            if (!_SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
                 plugin = LonnEntityPlugin.Default(LuaCtx, sid);
-                SIDToLonnPlugin[sid] = plugin;
+                _SIDToLonnPlugin[sid] = plugin;
             }
 
-            lonnEntity.Plugin = plugin;
+            lonnEntity.PluginRef = _SIDToLonnPlugin.GetReference(sid);
         }
         if (e is LonnTrigger lonnTrigger) {
-            if (!SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
+            if (!_SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
                 plugin = LonnEntityPlugin.Default(LuaCtx, sid);
-                SIDToLonnPlugin[sid] = plugin;
+                _SIDToLonnPlugin[sid] = plugin;
             }
 
-            lonnTrigger.Plugin = plugin;
+            lonnTrigger.PluginRef = _SIDToLonnPlugin.GetReference(sid);
         }
 #else
         if (e is INeoLonnObject lonnObject) {
