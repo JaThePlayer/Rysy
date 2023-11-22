@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Scenes;
 using Rysy.Selections;
 using Rysy.Tools;
@@ -51,7 +52,7 @@ public static class RoomList {
             if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
                 if (input.Keyboard.Shift()) {
                     if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                        tool.Layer = LayerNames.ROOM;
+                        tool.Layer = EditorLayers.Room;
 
                         if (input.Mouse.LeftDoubleClicked()) {
                             // select all rooms visible in the list
@@ -65,7 +66,7 @@ public static class RoomList {
                     }
                 } else if (input.Keyboard.Ctrl()) {
                     if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                        tool.Layer = LayerNames.ROOM;
+                        tool.Layer = EditorLayers.Room;
 
                         if (input.Mouse.LeftDoubleClicked()) {
                             // deselect all rooms visible in the list

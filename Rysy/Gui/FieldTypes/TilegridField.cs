@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Scenes;
 using Rysy.Tools;
 
@@ -140,7 +141,7 @@ class EditTileDataWindow : Window {
 
         Tools = new ToolHandler(History, Input).UsePersistence(false);
         Tools.InitHotkeys(Hotkeys);
-        Tools.CurrentTool.Layer = layer == TileLayer.FG ? LayerNames.FG : LayerNames.BG;
+        Tools.CurrentTool.Layer = layer == TileLayer.FG ? EditorLayers.Fg : EditorLayers.Bg;
 
         Hotkeys.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
         Hotkeys.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);

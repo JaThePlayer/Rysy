@@ -179,7 +179,7 @@ public class ToolHandler {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
-            var size = new NumVector2(ImGuiManager.CalcListSize(Tools.SelectMany(t => t.ValidLayers)).X, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
+            var size = new NumVector2(ImGuiManager.CalcListSize(Tools.SelectMany(t => t.ValidLayers).Select(t => t.Name)).X, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X - DefaultMaterialListWidth, menubarHeight + toolListHeight));
             ImGui.SetNextWindowSize(size);
         }
@@ -194,7 +194,7 @@ public class ToolHandler {
 
         if (ImGui.BeginListBox("##ToolLayerBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * tool.ValidLayers.Count + 5))) {
             foreach (var item in tool.ValidLayers) {
-                if (ImGui.Selectable(item, currentLayer == item)) {
+                if (ImGui.Selectable(item.LocalizedName, currentLayer == item)) {
                     tool.Layer = item;
                 }
             }

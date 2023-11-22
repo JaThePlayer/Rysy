@@ -7,9 +7,12 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Decal : Entity, IPlaceable {
-    //[GeneratedRegex("\\d+$|\\.png")]
-    internal static Regex NumberTrimEnd { get; set; } = new("\\d+$|\\.png", RegexOptions.Compiled);
+public sealed partial class Decal : Entity, IPlaceable {
+    [GeneratedRegex(@"\d+$|\.png$", RegexOptions.RightToLeft)]
+    internal static partial Regex NumberOrPngExtTrimEnd();
+    
+    [GeneratedRegex(@"\d+$", RegexOptions.RightToLeft)]
+    internal static partial Regex NumberAtEnd();
 
     [JsonIgnore]
     public bool FG { get; set; }
@@ -97,7 +100,7 @@ public sealed class Decal : Entity, IPlaceable {
     /// Converts a decal path stored in the map .bin into a texture path that can be used to index <see cref="GFX.Atlas"/>
     /// </summary>
     public static string MapTextureToPath(string textureFromMap) {
-        return "decals/" + textureFromMap.RegexReplace(NumberTrimEnd, string.Empty).Unbackslash();
+        return "decals/" + textureFromMap.RegexReplace(NumberOrPngExtTrimEnd(), string.Empty).Unbackslash();
     }
 
     /// <summary>
@@ -197,9 +200,20 @@ public sealed class Decal : Entity, IPlaceable {
                 return v;
 
             var cacheToken = new CacheToken();
-            var cache = new Cache<List<string>>(cacheToken, () => GFX.Atlas.GetTextures().Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal)).Select(p => {
-                return p.virtPath["decals/".Length..].RegexReplace(NumberTrimEnd, string.Empty);
-            }).Distinct().ToList());
+            var cache = new Cache<List<string>>(cacheToken, () => GFX.Atlas.GetTextures()
+                .Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal))
+                .SelectWhereNotNull(p => {
+                    if (NumberAtEnd().Match(p.virtPath) is { Success: true } match) {
+                        var frameNumber = int.Parse(match.ValueSpan);
+                        if (frameNumber > 0) {
+                            return null;
+                        }
+                        
+                        return p.virtPath["decals/".Length..^match.Length];
+                    }
+                    
+                    return p.virtPath["decals/".Length..];
+                }).ToList());
             _ValidDecalPaths = cache;
 
             GFX.Atlas.OnTextureLoad += (path) => {

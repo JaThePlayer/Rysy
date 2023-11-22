@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Layers;
 using Rysy.Tools;
 using System.Text.Json;
 
@@ -11,7 +12,7 @@ public class QuickActionHandler {
     private void AddHotkey(QuickActionInfo action) {
         Hotkeys.AddHotkey(action.Hotkey, () => {
             if (ToolHandler.SetToolByName(action.ToolName) is { } tool) {
-                tool.Layer = action.Layer;
+                tool.Layer = EditorLayers.EditorLayerFromName(action.Layer);
 
                 if (action.Material is { } material) {
                     var t = Type.GetType(action.MaterialTypeName!)!;
@@ -36,7 +37,7 @@ public class QuickActionHandler {
 
             var info = new QuickActionInfo() {
                 ToolName = tool.Name,
-                Layer = tool.Layer,
+                Layer = tool.Layer.Name,
             };
 
             switch (tool.Material) {

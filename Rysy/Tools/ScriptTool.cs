@@ -4,20 +4,21 @@ using Rysy.History;
 using Rysy.Scripting;
 using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Layers;
 
 namespace Rysy.Tools;
 
 public class ScriptTool : Tool {
-    public const string CurrentRoomLayer = "Current Room";
-    public const string AllRoomsLayer = "All Rooms";
+    public EditorLayer CurrentRoomLayer { get; } = new FakeLayer("Current Room");
+    public EditorLayer AllRoomsLayer { get; } = new FakeLayer("All Rooms");
 
     public override string Name => "script";
 
     public override string PersistenceGroup => "Scripts";
 
-    public override List<string> ValidLayers => new() { CurrentRoomLayer, AllRoomsLayer };
+    public override List<EditorLayer> ValidLayers => new() { CurrentRoomLayer, AllRoomsLayer };
 
-    public override string GetMaterialDisplayName(string layer, object material) {
+    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         if (material is Script s) {
             return s.Name;
         }
@@ -25,10 +26,10 @@ public class ScriptTool : Tool {
         return material.ToString() ?? "";
     }
 
-    public override IEnumerable<object>? GetMaterials(string layer) 
+    public override IEnumerable<object>? GetMaterials(EditorLayer layer) 
         => ScriptRegistry.Scripts;
 
-    public override string? GetMaterialTooltip(string layer, object material) {
+    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         if (material is Script s) {
             return s.Tooltip;
         }
@@ -48,11 +49,15 @@ public class ScriptTool : Tool {
         args.Args = fieldValues ?? new();
         args.RoomPos = roomPos;
 
-        var rooms = Layer switch {
-            CurrentRoomLayer => EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null,
-            AllRoomsLayer => EditorState.Map?.Rooms,
-            _ => throw new NotImplementedException(Layer),
-        };
+        var layer = Layer;
+        List<Room>? rooms;
+        if (layer == CurrentRoomLayer)
+            rooms = EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null;
+        else if (layer == AllRoomsLayer) {
+            rooms = EditorState.Map?.Rooms;
+        } else {
+            throw new NotImplementedException(layer.Name);
+        }
 
         if (rooms is null) {
             return;

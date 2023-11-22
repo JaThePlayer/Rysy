@@ -5,6 +5,7 @@ using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 
 namespace Rysy.Tools;
 
@@ -28,26 +29,31 @@ public abstract class Tool {
     /// <summary>
     /// A list of possible layers this tool could use, used in the UI for generating the layer list.
     /// </summary>
-    public abstract List<string> ValidLayers { get; }
+    public abstract List<EditorLayer> ValidLayers { get; }
 
-
-    private string? _Layer;
+    
+    private EditorLayer? _layer;
+    
     /// <summary>
     /// Gets or sets the currently used layer.
     /// </summary>
-    public string Layer {
-        get => UsePersistence 
-            ? Persistence.Instance.Get($"{PersistenceGroup}.Layer", ValidLayers.FirstOrDefault() ?? "")
-            : _Layer ??= ValidLayers.First();
+    public EditorLayer Layer {
+        get {
+            if (UsePersistence) {
+                var name = Persistence.Instance.Get($"{PersistenceGroup}.Layer", ValidLayers.FirstOrDefault()?.Name ?? "");
+
+                return _layer = EditorLayers.EditorLayerFromName(name);
+            }
+
+            return _layer ??= ValidLayers.FirstOrDefault() 
+                              ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+        }
         set {
-            if (Layer == value)
-                return;
-
-            if (UsePersistence)
-                Persistence.Instance.Set($"{PersistenceGroup}.Layer", value);
-            else
-                _Layer = value;
-
+            _layer = value;
+            if (UsePersistence) {
+                Persistence.Instance.Set($"{PersistenceGroup}.Layer", value.Name);
+            }
+            
             CancelInteraction();
             OnLayerChanged();
         }
@@ -57,18 +63,18 @@ public abstract class Tool {
 
     }
 
-    private string _Search = "";
+    private string _search = "";
     private string SearchPersistenceKey => $"{PersistenceGroup}.{Layer}.Search";
     /// <summary>
     /// Gets or sets the current search filter.
     /// </summary>
     public string Search {
-        get => UsePersistence ? Persistence.Instance.Get(SearchPersistenceKey, "") : _Search;
+        get => UsePersistence ? Persistence.Instance.Get(SearchPersistenceKey, "") : _search;
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set(SearchPersistenceKey, value);
             } else {
-                _Search = value;
+                _search = value;
             }
         }
     }
@@ -172,18 +178,18 @@ public abstract class Tool {
     /// </summary>
     public virtual void InitHotkeys(HotkeyHandler handler) { }
 
-    public abstract IEnumerable<object>? GetMaterials(string layer);
+    public abstract IEnumerable<object>? GetMaterials(EditorLayer layer);
 
-    public abstract string GetMaterialDisplayName(string layer, object material);
+    public abstract string GetMaterialDisplayName(EditorLayer layer, object material);
 
-    public abstract string? GetMaterialTooltip(string layer, object material);
+    public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
 
     public static void DrawSelectionRect(Rectangle rect) {
         var c = ColorHelper.HSVToColor(rect.Size().ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
         ISprite.OutlinedRect(rect, c * 0.3f, c, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
     }
 
-    protected bool IsEqual(string layer, object? currentMaterial, string name) {
+    protected bool IsEqual(EditorLayer layer, object? currentMaterial, string name) {
         return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
     }
 
@@ -224,14 +230,14 @@ public abstract class Tool {
     public virtual void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = true;
 
-        var currentLayer = Layer;
+        var currentLayer = Layer ??= ValidLayers.FirstOrDefault()!;
 
         if (currentLayer != CachedLayer) {
             CachedSearch = null;
             CachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??=
+        var cachedSearch = CachedSearch ??= currentLayer is null ? new() :
             (GetMaterials(currentLayer) ?? new List<object>())
             .Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search, Favorites)
@@ -303,7 +309,7 @@ public abstract class Tool {
 
     public virtual bool AllowSwappingRooms => true;
 
-    private string? CachedLayer;
+    private EditorLayer? CachedLayer;
     private List<List<(object material, string displayName)>>? CachedSearch;
 
     public void ClearMaterialListCache() {
