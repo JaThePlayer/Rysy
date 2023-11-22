@@ -296,7 +296,7 @@ public class LonnEntity : Entity {
         }
 
         if (Plugin.GetTexture is { } getTexture && getTexture(roomWrapper, this) is { } texturePath) {
-            return new() { ISprite.FromTexture(Pos, texturePath) with {
+            return new() { ISprite.FromTexture(Pos, LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
                 Origin = Plugin.GetJustification(roomWrapper, this),
                 Color = Plugin.GetColor(roomWrapper, this),
                 Scale = Plugin.GetScale(roomWrapper, this),
