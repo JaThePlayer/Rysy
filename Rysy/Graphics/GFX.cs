@@ -86,6 +86,7 @@ public static class GFX {
             ProvideLonnShim("dust_creature_outlines/base01");
             ProvideLonnShim("dust_creature_outlines/base02");
             ProvideLonnShim("dust_creature_outlines/center00");
+            ProvideLonnShim("1x1-tinting-pixel");
             Atlas.AddTexture("@Internal@/missing_image", Atlas["Rysy:__fallback"]);
 
             void ProvideLonnShim(string virtPathNoPrefix) {

@@ -184,6 +184,7 @@ public static class Menubar {
                 p.BGDecalsVisible = b;
             }
 
+            /*
             var currLayer = p.EditorLayer ?? 0;
             var allLayers = p.EditorLayer is null;
             if (ImGui.InputInt("Layer", ref currLayer)) {
@@ -191,7 +192,7 @@ public static class Menubar {
             }
             if (ImGui.Checkbox("All layers", ref allLayers)) {
                 p.EditorLayer = allLayers ? null : 0;
-            }
+            }*/
 
             ImGui.EndMenu();
         }

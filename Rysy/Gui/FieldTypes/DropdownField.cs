@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Helpers;
+using Rysy.Layers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
@@ -29,9 +30,13 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     private string Search = "";
 
     public DropdownField() {
-        var obj = DropdownHelper.DefaultStringToT[typeof(T)];
+        if (DropdownHelper.DefaultStringToT.TryGetValue(typeof(T), out var obj)) {
+            StringToT = (Func<string?, T>) obj;
+        }
+    }
 
-        StringToT = (Func<string?, T>) obj;
+    public DropdownField(Func<string?, T> stringToT) {
+        StringToT = stringToT;
     }
 
     private IDictionary<T, string> GetValues() {
@@ -119,6 +124,8 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     public T ConvertMapDataValue(object? value) {
         if (value is not T val) {
+            if (StringToT is null)
+                throw new Exception($"Objects of type {typeof(T)} cannot be handled by a dropdown by default. Provide a StringToT method manually!");
             val = StringToT(value is string s ? s : null);
         }
 

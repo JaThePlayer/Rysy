@@ -473,6 +473,26 @@ public static class ImGuiManager {
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
 
+    public static unsafe int? IndexDragDrop(string payloadName, ref int index) {
+        int? dropped = null;
+        fixed(int* indexPtr = &index)
+            if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.SourceNoDisableHover | ImGuiDragDropFlags.SourceNoPreviewTooltip)) {
+                ImGui.SetDragDropPayload(payloadName, (IntPtr)indexPtr, sizeof(int));
+                ImGui.EndDragDropSource();
+            }
+
+        if (ImGui.BeginDragDropTarget())
+        {
+            var payload = ImGui.AcceptDragDropPayload(payloadName, ImGuiDragDropFlags.AcceptBeforeDelivery);
+            if (payload.NativePtr != null) {
+                dropped = *(int*) payload.Data;
+            }
+            ImGui.EndDragDropTarget();
+        }
+
+        return dropped;
+    }
+
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public class ImGuiRenderer {
         private RasterizerState RasterizerState;

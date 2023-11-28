@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
@@ -441,7 +442,8 @@ public static class EntityRegistry {
         var sid = from.SID ?? throw new ArgumentException($"Placement.SID is null");
         var data = GetDataFromPlacement(from);
 
-        var entity = Create(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger);
+        var entity = CreateCore(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger,
+            fromBinary: false);
 
         from.Finalizer?.Invoke(entity);
 
@@ -463,7 +465,8 @@ public static class EntityRegistry {
 
         var sid = from.Name ?? throw new ArgumentException($"Entity SID is null in entity element???");
 
-        return Create(sid, new(from.Int("x"), from.Int("y")), from.Int("id"), new(sid, from), room, trigger);
+        return CreateCore(sid, new(from.Int("x"), from.Int("y")), from.Int("id"), new(sid, from), room, trigger,
+            fromBinary: true);
     }
 
     public static Entity CreateFromMainPlacement(string sid, Vector2 pos, Room room, Dictionary<string, object>? overrides = null, bool isTrigger = false) {
@@ -480,10 +483,12 @@ public static class EntityRegistry {
             return entity;
         }
 
-        return Create(sid, pos, null, new(sid, overrides ?? new()), room, isTrigger);
+        return CreateCore(sid, pos, null, new(sid, overrides ?? new()), room, isTrigger, 
+            fromBinary: false);
     }
 
-    private static Entity Create(string sid, Vector2 pos, int? id, EntityData entityData, Room room, bool trigger) {
+    private static Entity CreateCore(string sid, Vector2 pos, int? id, EntityData entityData, Room room, bool trigger,
+        bool fromBinary) {
         Entity e;
         if (SIDToType.TryGetValue(sid, out var type)) {
             e = Activator.CreateInstance(type) switch {
@@ -499,6 +504,7 @@ public static class EntityRegistry {
         e.EntityData = entityData;
         e.ID = id ?? room.NextEntityID();
         e.Room = room;
+        
 #if KERA_LUA
         if (e is LonnEntity lonnEntity) {
             if (!_SIDToLonnPlugin.TryGetValue(sid, out var plugin)) {
@@ -542,11 +548,20 @@ public static class EntityRegistry {
             lonnTrigger.Plugin = plugin;
         }
 #endif
+        
+        if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is { } gr && !gr.IsNullOrWhitespace()) {
+            e.EditorGroups = EditorGroupList.FromString(room.Map.EditorGroups, gr);
+        } else {
+            if (fromBinary) {
+                e.EditorGroups = new EditorGroupList { EditorGroup.Default };
+            } else {
+                if (e.Room.Map?.EditorGroups is {} currentGroups) {
+                    e.EditorGroups = currentGroups.CloneWithOnlyEnabled();
+                }
+            }
+        }
+        
         e.Pos = pos;
-        e.OnChanged(new EntityDataChangeCtx { 
-            AllChanged = true,
-        });
-        entityData.OnChanged += e.OnChanged;
 
         var min = e.MinimumSize;
 
@@ -563,6 +578,11 @@ public static class EntityRegistry {
 
             d.OnCreated();
         }
+        
+        e.OnChanged(new EntityDataChangeCtx { 
+            AllChanged = true,
+        });
+        entityData.OnChanged += e.OnChanged;
 
         return e;
     }

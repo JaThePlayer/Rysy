@@ -10,6 +10,11 @@ entities.default.attributes.description._editorColor=The color of this trigger i
 rysy.ok=OK
 rysy.cancel=Cancel
 rysy.load=Load
+rysy.new=New
+rysy.name=Name
+rysy.delete=Delete
+rysy.rename=Rename
+rysy.edit=Edit
 
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers
@@ -148,6 +153,10 @@ rysy.cassetteBlockIndex.3=Malachite
 
 # Quick Action Window
 rysy.quick_actions.window_name=Add Quick Action
+
+rysy.editor_group_window=Groups
+rysy.editor_group_window.edit_group.new=New Group
+rysy.editor_group_window.edit_group.edit=Edit Group
 
 # FROM LONN:
 

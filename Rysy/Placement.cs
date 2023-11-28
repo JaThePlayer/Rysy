@@ -268,8 +268,6 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     public static readonly EntityPlacementHandler BGDecals = new(SelectionLayer.BGDecals);
 
     private Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
-        placement.ValueOverrides["_editorLayer"] = Persistence.Instance?.EditorLayer ?? 0;
-
         Entity? entity = null;
         switch (Layer) {
             case SelectionLayer.Entities:

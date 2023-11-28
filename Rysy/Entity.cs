@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections;
@@ -80,11 +81,50 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
+    /*
     [JsonIgnore]
+    [Obsolete("Use EditorGroup instead")]
     public int EditorLayer {
         get => EntityData.Int("_editorLayer");
         set => EntityData["_editorLayer"] = value;
+    }*/
+
+    public const string EditorGroupEntityDataKey = "_editorGroup";
+
+    private EditorGroupList? _editorGroupList;
+    public EditorGroupList EditorGroups {
+        get => _editorGroupList!;
+        internal set {
+            if (_editorGroupList is { } prev) {
+                prev.OnChanged -= EditorGroupsListChanged;
+            }
+            _editorGroupList = value;
+            _editorGroupList.OnChanged += EditorGroupsListChanged;
+        }
     }
+
+    private void EditorGroupsListChanged() {
+        var p = string.Join(",", _editorGroupList!);
+        EntityData[EditorGroupEntityDataKey] = string.Join(",", _editorGroupList!);
+
+        Console.WriteLine((p, EntityData[EditorGroupEntityDataKey]));
+    }
+
+    private void AssureAutoAssignedGroupsExist() {
+        EditorGroups ??= new();
+        
+        foreach (var gr in Room.Map.EditorGroups) {
+            if (gr.AutoAssignTo is { Count: > 0 } autoAssignTo) {
+                if (autoAssignTo.Contains(Name)) {
+                    if (!_editorGroupList!.Contains(gr))
+                        _editorGroupList.Add(gr);
+                } else {
+                    _editorGroupList!.Remove(gr);
+                }
+            }
+        }
+    }
+
     #endregion
 
     [JsonIgnore]
@@ -437,8 +477,28 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 item?.ClearCollideCache();
             }
 
-        if (!changed.OnlyPositionChanged)
+        if (!changed.OnlyPositionChanged) {
             BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
+        }
+        
+        if (changed.AllChanged || changed.ChangedFieldName == EditorGroupEntityDataKey) {
+            var groups = EditorGroupList.FromString(Room.Map.EditorGroups, Attr(EditorGroupEntityDataKey, "Default"));
+            EditorGroups = groups;
+            groups.SuppressCallbacks();
+            // the default group is only used for entities with no other group.
+            // if there's no group at the end of the method, the default group will be re-added.
+            groups.Remove(EditorGroup.Default);
+            
+            AssureAutoAssignedGroupsExist();
+        
+            if (groups.Count == 0) {
+                groups.Add(EditorGroup.Default);
+            }
+        
+            // silently update the inner dictionary, to avoid calling OnChanged again
+            EntityData.SilentSet(EditorGroupEntityDataKey, groups.ToString() ?? "");
+            groups.Unsuppress();
+        }
 
         ClearRoomRenderCache();
     }
@@ -456,8 +516,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         if (Height == 0) {
             el.Attributes.Remove("height");
         }
-        if (EditorLayer == 0) {
-            el.Attributes.Remove("_editorLayer");
+        
+        if (EditorGroups.IsOnlyDefault) {
+            el.Attributes.Remove(EditorGroupEntityDataKey);
         }
 
         el.Children = Nodes is { Count: > 0 } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {
@@ -679,6 +740,14 @@ public class EntityData : IDictionary<string, object> {
     /// Data that gets overlaid on top of <see cref="Inner"/>, used to safely implement live previews
     /// </summary>
     internal Dictionary<string, object>? FakeOverlay { get; private set; }
+
+    /// <summary>
+    /// Sets the value at the given key without calling <see cref="OnChanged"/>.
+    /// For internal use only.
+    /// </summary>
+    internal void SilentSet(string key, object value) {
+        (FakeOverlay ?? Inner)[key] = value;
+    }
 
     internal void SetOverlay(Dictionary<string, object>? overlay) {
         ClearCaches();

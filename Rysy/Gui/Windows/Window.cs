@@ -42,6 +42,8 @@ public class Window {
     /// </summary>
     public bool NoMove { get; set; } = false;
 
+    public bool Closeable { get; set; } = true;
+
     private void GenerateID() {
         if (NoSaveData)
             WindowID = $"{Name}##{Guid.NewGuid()}";
@@ -78,7 +80,7 @@ public class Window {
         if (NoMove)
             flags |= ImGuiWindowFlags.NoMove;
 
-        if (ImGui.Begin(WindowID, ref open, EditWindowFlags(flags))) {
+        if (Closeable ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags)) : ImGui.Begin(WindowID, EditWindowFlags(flags))) {
             if (HasBottomBar) {
                 ImGuiManager.WithBottomBar(Render, RenderBottomBar);
             } else {

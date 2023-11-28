@@ -4,6 +4,8 @@ using Rysy.Selections;
 namespace Rysy.Layers;
 
 public static class EditorLayers {
+    internal static List<EditorLayer> KnownLayers { get; } = new();
+    
     public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.FG);
     public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.BG);
     public static EditorLayer BothTilegrids { get; } = new FakeLayer("Both");
@@ -19,10 +21,6 @@ public static class EditorLayers {
     public static EditorLayer All { get; } = new FakeLayer("All");
     public static EditorLayer Prefabs { get; } = new PrefabLayer();
 
-    private static List<EditorLayer> KnownLayers { get; } = new() {
-        Fg, Bg, BothTilegrids, Entities, Triggers, FgDecals, BgDecals, Room, CustomLayer, All, Prefabs
-    };
-
     public static bool IsDecalLayer(EditorLayer layer) => layer == FgDecals || layer == BgDecals;
 
     public static SelectionLayer ToolLayerToEnum(EditorLayer layer, SelectionLayer customLayer = SelectionLayer.None) =>
@@ -30,6 +28,15 @@ public static class EditorLayers {
             SelectionLayer.None => customLayer,
             var other => other,
         };
+
+    internal static EditorLayer? LayerFromSelectionLayer(SelectionLayer selectionLayer) {
+        foreach (var layer in KnownLayers) {
+            if (layer.SelectionLayer == selectionLayer)
+                return layer;
+        }
+
+        return null;
+    }
 
     public static EditorLayer EditorLayerFromName(string name) {
         foreach (var known in KnownLayers) {

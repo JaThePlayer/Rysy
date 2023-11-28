@@ -9,8 +9,8 @@ using Rysy.Layers;
 namespace Rysy.Tools;
 
 public class ScriptTool : Tool {
-    public EditorLayer CurrentRoomLayer { get; } = new FakeLayer("Current Room");
-    public EditorLayer AllRoomsLayer { get; } = new FakeLayer("All Rooms");
+    public static EditorLayer CurrentRoomLayer { get; } = new FakeLayer("Current Room");
+    public static EditorLayer AllRoomsLayer { get; } = new FakeLayer("All Rooms");
 
     public override string Name => "script";
 

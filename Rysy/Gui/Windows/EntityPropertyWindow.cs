@@ -8,7 +8,7 @@ using Rysy.History;
 namespace Rysy.Gui.Windows;
 
 public class EntityPropertyWindow : FormWindow {
-    private static readonly HashSet<string> BlacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorLayer", "_editorColor" };
+    private static readonly HashSet<string> BlacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorColor" };
 
     public Entity Main { get; }
     public List<Entity> All { get; }
@@ -35,8 +35,8 @@ public class EntityPropertyWindow : FormWindow {
             order.Add("height");
         }
 
-        fields["_editorLayer"] = Fields.Int(main.EditorLayer);
-        order.Add("_editorLayer");
+        fields[Entity.EditorGroupEntityDataKey] = Fields.EditorGroup(main.Room.Map.EditorGroups, main.EditorGroups);
+        order.Add(Entity.EditorGroupEntityDataKey);
 
         if (main is Trigger tr) {
             fields["_editorColor"] = Fields.RGBA(tr.EditorColor.ToColor(ColorFormat.RGBA));
@@ -80,7 +80,8 @@ public class EntityPropertyWindow : FormWindow {
         return (fields.Ordered(order), main.EntityData.Has);
     }
 
-    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
+    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) 
+        : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(main);
         ArgumentNullException.ThrowIfNull(all);

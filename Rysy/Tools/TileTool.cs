@@ -117,6 +117,9 @@ public abstract class TileTool : Tool {
         if (layer is TileEditorLayer tileEditorLayer)
             return tileEditorLayer.GetGrid(room);
 
+        if (layer == EditorLayers.BothTilegrids)
+            return room.FG;
+
         throw new ArgumentException("Provided layer is not a tile layer", nameof(layer));
     }
 

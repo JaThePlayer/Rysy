@@ -43,5 +43,10 @@ public record class ScriptArgs {
     /// </summary>
     public Vector2 RoomPos { get; internal set; }
 
+    /// <summary>
+    /// Gets the value of script parameter <paramref name="name"/>, casted to T.
+    /// Note that values returned by this function will always be values saveable to .bins, meaning that complex types
+    /// like lists or editor groups will be converted to strings, and need to be retrieved as such.
+    /// </summary>
     public T Get<T>(string name) => (T)Args[name];
 }
