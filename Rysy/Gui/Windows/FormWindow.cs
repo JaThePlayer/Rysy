@@ -9,7 +9,7 @@ public class FormWindow : Window {
 
     internal List<Prop> FieldList = new();
     public Dictionary<string, object> EditedValues = new();
-    private int ITEM_WIDTH = 175;
+    internal const int ITEM_WIDTH = 175;
 
     public FormWindowChanged OnChanged { get; set; }
     public FormWindowChanged OnLiveUpdate { get; set; }

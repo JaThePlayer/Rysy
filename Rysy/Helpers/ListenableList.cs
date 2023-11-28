@@ -17,6 +17,21 @@ public class ListenableList<T> : IListenableList<T> {
     private List<T> Inner;
     public Action? OnChanged { get; set; }
 
+    private bool Suppressed;
+
+    public void SuppressCallbacks() {
+        Suppressed = true;
+    }
+
+    public void Unsuppress() {
+        Suppressed = false;
+    }
+    
+    private void CallOnChanged() {
+        if (!Suppressed)
+            OnChanged?.Invoke();
+    }
+
     public ListenableList() {
         Inner = new();
     }
@@ -45,7 +60,7 @@ public class ListenableList<T> : IListenableList<T> {
         get => Inner[index];
         set {
             Inner[index] = value;
-            OnChanged?.Invoke();
+            CallOnChanged();
         }
     }
 
@@ -56,7 +71,7 @@ public class ListenableList<T> : IListenableList<T> {
 
     public void Add(T item) {
         Inner.Add(item);
-        OnChanged?.Invoke();
+        CallOnChanged();
     }
 
     public void AddAll(IEnumerable<T> items) {
@@ -68,12 +83,12 @@ public class ListenableList<T> : IListenableList<T> {
         }
 
         if (any)
-            OnChanged?.Invoke();
+            CallOnChanged();
     }
 
     public void Clear() {
         Inner.Clear();
-        OnChanged?.Invoke();
+        CallOnChanged();
     }
 
     public bool Contains(T? item) => Inner.Contains(item!);
@@ -86,7 +101,7 @@ public class ListenableList<T> : IListenableList<T> {
 
     public void Insert(int index, T item) {
         Inner.Insert(index, item);
-        OnChanged?.Invoke();
+        CallOnChanged();
     }
 
     public void RemoveAll(Func<T, bool> predicate) {
@@ -102,12 +117,12 @@ public class ListenableList<T> : IListenableList<T> {
         }
 
         if (changed)
-            OnChanged?.Invoke();
+            CallOnChanged();
     }
 
     public bool Remove(T item) {
         if (Inner.Remove(item)) {
-            OnChanged?.Invoke();
+            CallOnChanged();
             return true;
         }
         return false;
@@ -115,7 +130,7 @@ public class ListenableList<T> : IListenableList<T> {
 
     public void RemoveAt(int index) {
         Inner.RemoveAt(index);
-        OnChanged?.Invoke();
+        CallOnChanged();
     }
 
     public List<T>.Enumerator GetEnumerator() => Inner.GetEnumerator();

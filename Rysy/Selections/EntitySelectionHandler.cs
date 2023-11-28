@@ -151,7 +151,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     }
 
     public IHistoryAction PlaceClone(Room room) {
-        return new AddEntityAction(Entity.Clone(), room);
+        return new AddEntityAction(Entity.CloneWith(pl => pl.ValueOverrides.Remove(Entity.EditorGroupEntityDataKey)), room);
     }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {

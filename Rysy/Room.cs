@@ -5,6 +5,7 @@ using Rysy.Graphics;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Text.Json.Serialization;
@@ -409,7 +410,6 @@ public sealed class Room : IPackable, ILuaWrapper {
 
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
-            var layer = p.EditorLayer;
 
             if (p.EntitiesVisible) {
                 if (CachedEntitySprites is null) {
@@ -419,7 +419,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
                     CachedEntitySprites = Entities.Select(e => {
                         var spr = e.GetSpritesWithNodes();
-                        if (layer is { } && e.EditorLayer != layer)
+                        if (!e.EditorGroups.Enabled)
                             spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
 
 #if LOG_PER_ENTITY_PERF
@@ -450,7 +450,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             if (p.TriggersVisible) {
                 CachedTriggerSprites ??= Triggers.Select(e => {
                     var spr = e.GetSpritesWithNodes();
-                    if (layer is { } && e.EditorLayer != layer)
+                    if (!e.EditorGroups.Enabled)
                         spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
 
                     return spr;
@@ -477,7 +477,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             if (p.FGDecalsVisible) {
                 CachedFgDecalSprites ??= FgDecals.Select<Entity, ISprite>(d => {
                     var spr = d.AsDecal()!.GetSprite();
-                    if (layer is { } && d.EditorLayer != layer)
+                    if (!d.EditorGroups.Enabled)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
 
                     return spr;
@@ -489,7 +489,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             if (p.BGDecalsVisible) {
                 CachedBgDecalSprites ??= BgDecals.Select<Entity, ISprite>(d => {
                     var spr = d.AsDecal()!.GetSprite();
-                    if (layer is { } && d.EditorLayer != layer)
+                    if (!d.EditorGroups.Enabled)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
 
                     return spr;
@@ -633,6 +633,16 @@ public sealed class Room : IPackable, ILuaWrapper {
     public bool IsInBounds(Vector2 roomPos)
         => new Rectangle(0, 0, Width, Height).Contains(roomPos.ToPoint());
 
+    public IEnumerable<Entity> GetAllEntitylikes() => Entities.Concat(Triggers).Concat(BgDecals).Concat(FgDecals);
+
+    public IEnumerable<Entity> GetAllEntitylikesInGroup(EditorGroup? gr) => gr is null 
+        ? Array.Empty<Entity>() 
+        : GetAllEntitylikes().Where(e => e.EditorGroups.Contains(gr));
+    
+    public IEnumerable<Entity> GetAllEntitylikesInGroups(EditorGroupList? groups) => groups is null 
+        ? Array.Empty<Entity>() 
+        : GetAllEntitylikes().Where(e => e.EditorGroups.Any(groups.Contains));
+
     /// <summary>
     /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
     /// Respects editor layers.
@@ -717,10 +727,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     private void GetSelectionsInRectForEntities(Rectangle rect, TypeTrackedList<Entity> entities, List<Selection> into) {
-        var layer = Persistence.Instance.EditorLayer;
-
         foreach (var entity in entities) {
-            if (layer is { } && entity.EditorLayer != layer)
+            if (!entity.EditorGroups.Enabled)
                 continue;
 
             var selection = entity.CreateSelection();
@@ -742,10 +750,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     private static Selection CreateSelectionFrom(Entity entity) => entity.CreateSelection();
 
     private void GetSelectionsInRectForDecals(Rectangle rect, ListenableList<Entity> decals, List<Selection> into) {
-        var layer = Persistence.Instance.EditorLayer;
-
         foreach (var decal in decals) {
-            if (layer is { } && decal.EditorLayer != layer)
+            if (!decal.EditorGroups.Enabled)
                 continue;
 
             var selection = decal.GetMainSelection();

@@ -11,6 +11,8 @@ public record class ListField : Field, IFieldConvertibleToList {
 
     public Func<object, string> InnerObjToString;
 
+    public Func<string, bool> ElementCanBeRemoved = _ => true;
+
     public int MinElements = 1;
     public int MaxElements = -1;
 
@@ -134,12 +136,9 @@ public record class ListField : Field, IFieldConvertibleToList {
 
         if (ImGui.BeginCombo($"##lcombo{fieldName}", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
-
-
-
+            
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
-
 
                 if (!BaseField.IsValid(item))
                     ImGuiManager.PushInvalidStyle();
@@ -152,7 +151,7 @@ public record class ListField : Field, IFieldConvertibleToList {
 
                 ImGui.SameLine();
 
-                ImGui.BeginDisabled(split.Length <= MinElements);
+                ImGui.BeginDisabled(split.Length <= MinElements || !ElementCanBeRemoved(item));
                 if (ImGui.Button($"-##{i}")) {
                     // remove this item
                     var tempList = split.ToList();

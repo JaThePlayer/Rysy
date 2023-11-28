@@ -239,7 +239,7 @@ public class LonnEntity : Entity {
             : null;
     }
 
-    public override List<string>? AssociatedMods => Plugin.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
+    public override List<string>? AssociatedMods => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
     #region Sprites
     private static byte[] _typeASCII = Encoding.ASCII.GetBytes("_type");

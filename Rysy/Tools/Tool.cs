@@ -64,7 +64,7 @@ public abstract class Tool {
     }
 
     private string _search = "";
-    private string SearchPersistenceKey => $"{PersistenceGroup}.{Layer}.Search";
+    private string SearchPersistenceKey => $"{PersistenceGroup}.{Layer.Name}.Search";
     /// <summary>
     /// Gets or sets the current search filter.
     /// </summary>
@@ -80,7 +80,7 @@ public abstract class Tool {
     }
 
     private object? _material;
-    private string PersistenceMaterialKey => $"{PersistenceGroup}.{Layer}.Material";
+    private string PersistenceMaterialKey => $"{PersistenceGroup}.{Layer.Name}.Material";
     /// <summary>
     /// Gets or sets the currently selected material.
     /// </summary>
@@ -108,10 +108,10 @@ public abstract class Tool {
 
     private HashSet<string>? _Favorites;
     public HashSet<string>? Favorites {
-        get => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.Favorites", (HashSet<string>) null!) : _Favorites;
+        get => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _Favorites;
         set {
             if (UsePersistence) {
-                Persistence.Instance.Set($"{PersistenceGroup}.{Layer}.Favorites", value);
+                Persistence.Instance.Set($"{PersistenceGroup}.{Layer.Name}.Favorites", value);
             } else {
                 _Favorites = value;
             }

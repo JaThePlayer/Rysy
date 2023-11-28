@@ -164,20 +164,6 @@ public class Persistence {
         }
     }
 
-    private int? _EditorLayer;
-    public int? EditorLayer {
-        get => _EditorLayer;
-        set {
-            if (_EditorLayer != value) {
-                _EditorLayer = value;
-
-                (RysyEngine.Scene as EditorScene)?.ClearMapRenderCache();
-
-                RecentlyEdited = true;
-            }
-        }
-    }
-
     public bool HistoryWindowOpen = false;
     #endregion
 

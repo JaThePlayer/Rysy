@@ -6,6 +6,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.MapAnalyzers;
 using Rysy.Stylegrounds;
 using Rysy.Tools;
@@ -100,8 +101,8 @@ public sealed class EditorScene : Scene {
         //Hotkeys.AddHotkeyFromSettings("moveRoomLeft", "alt+left", () => MoveCurrentRoom(-1, 0), HotkeyModes.OnHoldSmoothInterval);
         //Hotkeys.AddHotkeyFromSettings("moveRoomRight", "alt+right", () => MoveCurrentRoom(1, 0), HotkeyModes.OnHoldSmoothInterval);
 
-        Hotkeys.AddHotkeyFromSettings("layerUp", "pageup", () => ChangeEditorLayer(1), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
+        //Hotkeys.AddHotkeyFromSettings("layerUp", "pageup", () => ChangeEditorLayer(1), HotkeyModes.OnHoldSmoothInterval);
+        //Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
 
         ToolHandler.InitHotkeys(Hotkeys);
 
@@ -109,11 +110,15 @@ public sealed class EditorScene : Scene {
     }
 
     public void ClearMapRenderCache() {
-        Map?.Rooms.ForEach(r => r.ClearRenderCache());
+        Map?.ClearRenderCache();
     }
 
     public void ChangeEditorLayer(int by) {
-        Persistence.Instance.EditorLayer = (Persistence.Instance.EditorLayer ?? 0) + by;
+        if (Map is null)
+            return;
+        
+        //var index = Map.IndexOfEditorGroup(Persistence.Instance.EditorGroup ?? EditorGroup.Default.Name);
+        //todo: implement editor group hotkeys
 
         ClearMapRenderCache();
     }
@@ -287,6 +292,8 @@ public sealed class EditorScene : Scene {
         if (io.WantCaptureMouse /*|| io.WantCaptureKeyboard*/) {
             return;
         }
+        
+        AddWindowIfNeeded<EditorGroupWindow>();
 
         if (Map is { }) {
             Camera.HandleMouseMovement(Input.Global);

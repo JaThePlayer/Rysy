@@ -17,6 +17,8 @@ public class SelectionTool : Tool {
     public const string CreatePrefabKeybindName = "selection.createPrefab";
     
     public override string Name => "selection";
+    
+    public override string PersistenceGroup => "placement";
 
     private enum States {
         Idle,
@@ -306,8 +308,6 @@ public class SelectionTool : Tool {
         }
     }
 
-    public override string PersistenceGroup => "Selection";
-
     private static readonly List<EditorLayer> _ValidLayers = new() {
         EditorLayers.Entities, EditorLayers.Triggers,
         EditorLayers.FgDecals, EditorLayers.BgDecals,
@@ -503,12 +503,14 @@ public class SelectionTool : Tool {
 
         if (input.Mouse.Middle.Clicked() && RysyEngine.Scene is EditorScene editor && editor.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
             if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
-                input.Mouse.ConsumeMiddle();
-                editor.ToolHandler.SetTool<PlacementTool>();
                 // TODO: Create a proper helper for this!
-                //placementTool.Layer = firstSelection.Handler.Layer.FastToString();
-                throw new NotImplementedException();
-                placementTool.OnMiddleClick();
+                if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer) is { } editorLayer) {
+                    input.Mouse.ConsumeMiddle();
+                    editor.ToolHandler.SetTool<PlacementTool>();
+                    placementTool.Layer = editorLayer;
+                    placementTool.OnMiddleClick();
+                }
+
             }
         }
     }

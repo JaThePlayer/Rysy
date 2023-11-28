@@ -1,5 +1,8 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
+using Rysy.History;
+using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Stylegrounds;
 
@@ -9,7 +12,7 @@ public sealed class Map : IPackable {
     /// <summary>
     /// An empty map that can be used for mocking
     /// </summary>
-    public static Map DummyMap { get; } = Map.NewMap("DUMMY");
+    public static Map DummyMap { get; } = NewMap("DUMMY");
 
     /// <summary>
     /// The package name of the map.
@@ -55,6 +58,8 @@ public sealed class Map : IPackable {
     /// </summary>
     public ModMeta? Mod => _mod ??= ModRegistry.GetModContainingRealPath(Filepath);
 
+    public EditorGroupRegistry EditorGroups { get; private set; } = new(EditorGroup.Default);
+
     private Map() {
         OnMetaChanged += (old, @new) => {
             LoadAutotiler(old, @new);
@@ -88,11 +93,12 @@ public sealed class Map : IPackable {
         var levels = new BinaryPacker.Element("levels");
         levels.Children = Rooms.Select(r => r.Pack()).ToArray();
 
-        el.Children = new BinaryPacker.Element[4];
+        el.Children = new BinaryPacker.Element[5];
         el.Children[0] = levels;
         el.Children[1] = Meta.Pack();
         el.Children[2] = Style.Pack();
         el.Children[3] = Filler;
+        el.Children[4] = EditorGroups.Pack();
 
         return el;
     }
@@ -156,13 +162,17 @@ public sealed class Map : IPackable {
                     Style = new MapStylegrounds();
                     Style.Unpack(child);
                     break;
+                case EditorGroupRegistry.BinaryPackerName:
+                    EditorGroups = new();
+                    EditorGroups.Unpack(child);
+                    break;
             }
         }
 
         UseVanillaTilesetsIfNeeded();
         InitStyleAndFillerIfNeeded();
     }
-
+    
     private void InitStyleAndFillerIfNeeded() {
         Style ??= new();
         Filler ??= new("Filler");
@@ -185,6 +195,31 @@ public sealed class Map : IPackable {
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);
 
     public Rectangle GetBounds() => RectangleExt.Merge(Rooms.Select(r => r.Bounds));
+
+    public void ClearRenderCache() {
+        foreach (var r in Rooms) {
+            r.ClearRenderCache();
+        }
+    }
+
+    public void GroupsChanged() {
+        // tell entities about the change
+        //todo: make this more specific
+        foreach (var e in GetAllEntities()) {
+            e.OnChanged(new() {
+                ChangedFieldName = Entity.EditorGroupEntityDataKey
+            });
+        }
+        
+        //todo: make this more specific
+        ClearRenderCache();
+    }
+
+    internal IEnumerable<Entity> GetAllEntities() =>
+        Rooms.SelectMany(r => r.Entities.Concat(r.Triggers).Concat(r.BgDecals).Concat(r.FgDecals));
+    
+    internal IEnumerable<Entity> GetEntitiesInGroup(EditorGroup group) => 
+        GetAllEntities().Where(e => e.EditorGroups.Contains(group));
 }
 
 public sealed record class MapMetadata {

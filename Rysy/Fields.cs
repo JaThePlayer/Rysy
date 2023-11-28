@@ -2,6 +2,7 @@
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using Rysy.Layers;
 using Rysy.Mods;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -166,6 +167,13 @@ public static partial class Fields {
 
         return String(s);
     }
+
+    public static EditorGroupListField EditorGroup(EditorGroupRegistry registry, EditorGroupList? def = null) {
+        return new EditorGroupListField(registry, def);
+    }
+
+    public static DropdownField<string> SID(string def)
+        => Dropdown(def, EntityRegistry.SIDToType.Keys.ToList());
 
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),
