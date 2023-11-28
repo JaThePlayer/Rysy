@@ -3,7 +3,7 @@
 namespace Rysy.Graphics;
 
 public static class NodePathTypes {
-    public static Color Color => Color.White * .5f;
+    public static Color Color => Color.White * .3f;
 
     /// <summary>
     /// Each node has a line connecting it to the main entity.

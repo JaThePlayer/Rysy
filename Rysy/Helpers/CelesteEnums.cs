@@ -1,4 +1,5 @@
-﻿namespace Rysy.Helpers;
+﻿// ReSharper disable InconsistentNaming
+namespace Rysy.Helpers;
 
 public static class CelesteEnums {
     public static Color[] RoomColors { get; } = new Color[] {
@@ -374,6 +375,27 @@ public static class CelesteEnums {
 
     public enum TentacleEffectDirections {
         Left, Right, Up, Down
+    }
+
+    public enum CrystalShatterTriggerModes {
+        All,
+        Contained
+    }
+    
+    public enum MiniTextboxModes {
+        OnPlayerEnter,
+        OnLevelStart,
+        OnTheoEnter
+    }
+
+    public enum MoonGlitchBackgroundDurations {
+        Short,
+        Medium,
+        Long
+    }
+
+    public enum SpawnFacings {
+        Left, Right
     }
 }
 
