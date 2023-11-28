@@ -150,6 +150,7 @@ public class Tilegrid : ILuaWrapper {
         var h = heightPixels / 8;
 
         var tiles = new char[w,h];
+        tiles.Fill('0');
 
         int x = 0, y = 0;
         for (int ci = 0; ci < tilesString.Length; ci++) {
