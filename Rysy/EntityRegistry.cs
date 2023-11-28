@@ -548,19 +548,17 @@ public static class EntityRegistry {
             lonnTrigger.Plugin = plugin;
         }
 #endif
-        
-        if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is { } gr && !gr.IsNullOrWhitespace()) {
-            e.EditorGroups = EditorGroupList.FromString(room.Map.EditorGroups, gr);
-        } else {
+
+        if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is not { } gr || gr.IsNullOrWhitespace()) {
             if (fromBinary) {
-                e.EditorGroups = new EditorGroupList { EditorGroup.Default };
+                e.EntityData[Entity.EditorGroupEntityDataKey] = EditorGroup.Default.Name;
             } else {
-                if (e.Room.Map?.EditorGroups is {} currentGroups) {
-                    e.EditorGroups = currentGroups.CloneWithOnlyEnabled();
+                if (e.Room.Map?.EditorGroups is { } currentGroups) {
+                    e.EntityData[Entity.EditorGroupEntityDataKey] = currentGroups.CloneWithOnlyEnabled().ToString();
                 }
             }
         }
-        
+
         e.Pos = pos;
 
         var min = e.MinimumSize;
