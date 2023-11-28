@@ -137,10 +137,13 @@ internal sealed class GroupEditWindow : Window {
         }
         ImGuiManager.PopInvalidStyle();
 
+        if (_autoAssignChanged)
+            ImGuiManager.PushEditedStyle();
         if (_autoAssignToField.RenderGui("Auto Assign", _autoAssignString) is string newAutoAssign) {
             _autoAssignString = newAutoAssign;
-            _autoAssignChanged = true;
+            _autoAssignChanged = _sourceGroup is null || !EditorGroup.CreateAutoAssignFromString(_autoAssignString).SetEquals(_sourceGroup.AutoAssignTo);
         }
+        ImGuiManager.PopEditedStyle();
     }
 
     public override bool HasBottomBar => true;
