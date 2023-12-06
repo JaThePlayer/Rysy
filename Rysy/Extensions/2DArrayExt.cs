@@ -15,6 +15,11 @@ public static class TwoDimensionalArrayExt {
         }
     }
 
+    public static T[,] CreateClone<T>(this T[,] arr) {
+        var clone = arr.Clone();
+        return (T[,]) clone;
+    }
+
     //https://stackoverflow.com/questions/6539571/how-to-resize-multidimensional-2d-array-in-c
     /// <summary>
     /// Creates a new 2d array, which is a resized version of this array.
@@ -62,6 +67,43 @@ public static class TwoDimensionalArrayExt {
         }
 
         val = arr[x, y];
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to set the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
+    /// </summary>
+    public static bool TrySet<T>(this T[,] arr, int x, int y, T val) {
+        if (x < 0 || y < 0) {
+            return false;
+        }
+        
+        if (x >= arr.GetLength(0) || y >= arr.GetLength(1)) {
+            return false;
+        }
+
+        arr[x, y] = val;
+        return true;
+    }
+    
+    public static bool TryReplace<T>(this T[,] arr, int x, int y, T val, out T? prev) where T : IEquatable<T> {
+        prev = default;
+        
+        if (x < 0 || y < 0) {
+            return false;
+        }
+        
+        if (x >= arr.GetLength(0) || y >= arr.GetLength(1)) {
+            return false;
+        }
+
+        ref var loc = ref arr[x, y];
+        if (loc.Equals(val)) {
+            return false;
+        }
+
+        prev = loc;
+        loc = val;
         return true;
     }
 

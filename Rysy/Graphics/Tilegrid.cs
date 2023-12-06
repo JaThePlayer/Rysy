@@ -108,18 +108,24 @@ public class Tilegrid : ILuaWrapper {
 
     private Autotiler.AutotiledSpriteList? CachedSprites;
 
-    public IEnumerable<ISprite> GetSprites() {
+    public Autotiler.AutotiledSpriteList GetSprites() {
         if (CachedSprites is { } c)
             return c;
 
-        var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White).Select(s => {
-            s.Depth = Depth;
-            return s;
-        }) ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
+        var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White) 
+                      ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
 
-        CachedSprites = sprites.FirstOrDefault() as Autotiler.AutotiledSpriteList;
+        sprites.Depth = Depth;
+        CachedSprites = sprites;
 
         return sprites;
+    }
+
+    internal void ClearSpriteCache() {
+        if (CachedSprites is { }) {
+            CachedSprites = null;
+            RenderCacheToken?.Invalidate();
+        }
     }
 
     public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {

@@ -376,11 +376,11 @@ public sealed class Autotiler {
         return l;
     }
 
-    private static void LogUnknownTileset(int x, int y, char c) {
-        Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
-    }
-
-    internal void SetTile(AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
+    public AutotiledSprite? GetSprite(char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
+        if (c == '0') {
+            return null;
+        }
+        
         if (!Tilesets.TryGetValue(c, out var data)) {
             unknownTilesetsUsed ??= new(1);
             if (!unknownTilesetsUsed.Contains(c)) {
@@ -388,18 +388,22 @@ public sealed class Autotiler {
                 LogUnknownTileset(x, y, c);
             }
 
-            sprites[x, y] = AutotiledSprite.Missing;
-            return;
+            return AutotiledSprite.Missing;
         }
 
         if (!data.GetFirstMatch(tileGrid, x, y, tileGrid.GetLength(0), tileGrid.GetLength(1), tilesOOB, out var tiles)) {
-            sprites[x, y] = AutotiledSprite.Invalid;
-            return;
+            return AutotiledSprite.Invalid;
         }
 
-        var tile = tiles.Length == 1 ? tiles[0] : tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
-        
-        sprites[x, y] = tile;
+        return tiles.Length == 1 ? tiles[0] : tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
+    }
+
+    private static void LogUnknownTileset(int x, int y, char c) {
+        Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
+    }
+
+    internal void SetTile(AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
+        sprites[x, y] = GetSprite(tileGrid, c, x, y, tilesOOB, ref unknownTilesetsUsed)!;
     }
 
     internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
@@ -472,9 +476,7 @@ public sealed class Autotiler {
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bot; y++) {
                     ref var s = ref sprites[x, y];
-
-                    if (s?.Texture.Texture is { } t)
-                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtexture, color);
+                    s?.RenderAt(b, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), color);
                 }
             }
         }
@@ -510,6 +512,12 @@ public sealed class Autotiler {
             Texture = texture;
             RelativeLocation = location;
             Subtexture = texture.GetSubtextureRect(RelativeLocation.X, RelativeLocation.Y, 8, 8, out _);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RenderAt(SpriteBatch b, Vector2 pos, Color color) {
+            if (Texture.Texture is { } t)
+                b.Draw(t, pos, Subtexture, color);
         }
 
         private static AutotiledSprite? _missing;

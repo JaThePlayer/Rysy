@@ -37,6 +37,24 @@ public static class RectangleExt {
 
         return new Rectangle(smallestX, smallestY, width, height);
     }
+    
+    public static Rectangle FromPoints(IEnumerable<Point> points) {
+        int smallestX = int.MaxValue, smallestY = int.MaxValue;
+        int largestX = int.MinValue, largestY = int.MinValue;
+        foreach (var p in points) {
+            var x = (int) p.X;
+            var y = (int) p.Y;
+            smallestX = int.Min(x, smallestX);
+            smallestY = int.Min(y, smallestY);
+            largestX = int.Max(x, largestX);
+            largestY = int.Max(y, largestY);
+        }
+
+        int width = largestX - smallestX;
+        int height = largestY - smallestY;
+
+        return new Rectangle(smallestX, smallestY, width, height);
+    }
 
     public static Rectangle Merge(Rectangle a, Rectangle b) {
         int smallestX = int.Min(a.Left, b.Left);

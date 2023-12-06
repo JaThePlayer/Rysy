@@ -35,5 +35,14 @@ public interface IMouseInput {
     /// </summary>
     bool Wrap { get; set; }
     
+    bool WrappedThisFrame { get; }
+    
     void Update(float deltaSeconds);
+}
+
+public static class MouseInputExt {
+    /// <summary>
+    /// Gets the location of the mouse in the previous frame
+    /// </summary>
+    public static Point PrevPos(this IMouseInput mouse) => mouse.Pos - mouse.PositionDelta;
 }
