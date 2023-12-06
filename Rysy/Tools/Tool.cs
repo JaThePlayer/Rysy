@@ -312,7 +312,7 @@ public abstract class Tool {
     private EditorLayer? CachedLayer;
     private List<List<(object material, string displayName)>>? CachedSearch;
 
-    public void ClearMaterialListCache() {
+    public virtual void ClearMaterialListCache() {
         CachedSearch = null;
         CachedLayer = null;
 

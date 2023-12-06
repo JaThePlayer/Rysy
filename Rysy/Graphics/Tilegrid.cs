@@ -188,7 +188,7 @@ public class Tilegrid : ILuaWrapper {
         var height = tiles.GetLength(1);
 
         // stores 1 line of text + the newline character, to reduce heap allocations
-        Span<char> line = stackalloc char[width + 1];
+        Span<char> line = width < 2048 - 1 ? stackalloc char[width + 1] : new char[width + 1];
         for (int y = 0; y < height; y++) {
             line.Clear();
             for (int x = 0; x < width; x++) {

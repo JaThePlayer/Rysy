@@ -16,7 +16,13 @@ public static class StylegroundRenderer {
     };
 
     public static bool NotMasked(Style style) {
+        if (style is null)
+            return false;
+        
         foreach (var tag in style.Tags) {
+            if (tag is null)
+                continue;
+            
             if (tag.StartsWith("mask_", StringComparison.Ordinal) || tag.StartsWith("sjstylemask_", StringComparison.Ordinal)) {
                 return false;
             }

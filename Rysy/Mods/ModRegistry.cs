@@ -261,7 +261,9 @@ public static class ModRegistry {
         }
 
 
-        var fileInfo = files.Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}")).Where(p => p.Item1 is not null).ToList();
+        var fileInfo = files
+            .Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}"))
+            .Where(p => p.Item1 is not null).ToList();
 
         var hasCsproj = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "csproj").Any();
         var cachePath = SettingsHelper.GetFullPath($"CompileCache/{mod.Name.ToValidFilename()}", perProfile: true);
@@ -293,13 +295,15 @@ public static class ModRegistry {
                       ?? filesystem.OpenFile("everest.yml", ParseEverestYaml);
 
         if (parsedYaml is { }) {
-            // todo: handle multiple mods in one yaml
             mod.EverestYaml = parsedYaml;
-            return;
+            if (mod.EverestYaml.Count != 0) {
+                return;
+            }
+            // there's no actual mod in the yaml?
         }
 
         var guessedName = guessedNameGetter?.Invoke() ?? $"<unknown:{Guid.NewGuid()}>";
-        Logger.Write("ModRegistry", LogLevel.Info, $"Found mod with no everest.yaml: {guessedName} [{filesystem.Root}]");
+        Logger.Write("ModRegistry", LogLevel.Info, $"Found mod with no everest.yaml or an invalid one: {guessedName} [{filesystem.Root}]");
         mod.EverestYaml = new() {
             new() {
                 Name = guessedName,

@@ -142,9 +142,9 @@ public abstract class TileTool : Tool {
             var bg = currentRoom.BG.SafeTileAt(tx, ty);
 
             (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (BOTH_TILEGRIDS: EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.
-                ('0', not '0') => (BG: EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
-                (not '0', _) => (FG: EditorLayers.Fg, fg), // fg tile exists, swap to that.
+                ('0', '0') => (EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.
+                ('0', not '0') => (EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
+                (not '0', _) => (EditorLayers.Fg, fg), // fg tile exists, swap to that.
             };
         }
     }
@@ -157,12 +157,12 @@ public abstract class TileTool : Tool {
     protected override XnaWidgetDef? GetMaterialPreview(object material) {
         var autotiler = GetAutotiler(Layer);
         if (autotiler is { } && material is char c) {
-            var tileGrid = new char[PreviewSize / 8, PreviewSize / 8];
-            tileGrid.Fill(c);
-            var sprites = autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOOB: false).ToList();
-
+            var tileset = autotiler.GetTilesetData(c);
             return new($"tile_{c}_{autotiler.GetTilesetDisplayName(c)}", PreviewSize, PreviewSize, () => {
-                foreach (var item in sprites) {
+                if (tileset is null)
+                    return;
+                
+                foreach (var item in tileset.GetPreview(PreviewSize)) {
                     item.Render();
                 }
             });
