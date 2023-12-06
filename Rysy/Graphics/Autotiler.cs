@@ -13,20 +13,36 @@ using System.Xml;
 namespace Rysy.Graphics;
 
 public sealed class Autotiler {
-    public sealed class AutotilerData {
+    public sealed class TilesetData {
         public string Filename;
+
+        public char Id { get; init; }
+        
+        public Autotiler Autotiler { get; init; }
 
         [JsonIgnore]
         public VirtTexture Texture = null!;
-        public List<(string mask, Point[] tiles)> Tiles = new();
+        public List<(string mask, AutotiledSprite[] tiles)> Tiles = new();
 
-        public Point[] Center = null!;
-        public Point[] Padding = null!;
+        public AutotiledSprite[] Center = null!;
+        public AutotiledSprite[] Padding = null!;
 
         public char[]? Ignores;
 
         public bool IgnoreAll;
         internal string? DisplayName;
+
+        private AutotiledSpriteList? _preview;
+        public AutotiledSpriteList GetPreview(int previewSizePixels) {
+            if (_preview is { } cached && cached.Sprites.GetLength(0) == previewSizePixels / 8)
+                return cached;
+            
+            var tileGrid = new char[previewSizePixels / 8, previewSizePixels / 8];
+            tileGrid.Fill(Id);
+            _preview = Autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOOB: false);
+
+            return _preview;
+        }
 
         public string GetDisplayName() 
             => DisplayName ??= Filename.Split('/').Last().TrimStart("bg").Humanize();
@@ -35,9 +51,9 @@ public sealed class Autotiler {
         /// Stores a tilegrid bitmask -> possible tiles.
         /// Used for speeding up GetFirstMatch
         /// </summary>
-        private Dictionary<long, Point[]> FastTileDataToTiles = new();
+        private readonly Dictionary<long, AutotiledSprite[]> _fastTileDataToTiles = new();
 
-        private bool TryFindFirstMaskMatch(Span<bool> tileData, [NotNullWhen(true)] out Point[]? tiles) {
+        private bool TryFindFirstMaskMatch(Span<bool> tileData, [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
             var allTiles = Tiles;
             for (int i = 0; i < allTiles.Count; i++) {
                 if (MatchingMask(allTiles[i].mask, tileData)) {
@@ -50,7 +66,7 @@ public sealed class Autotiler {
             return false;
         }
 
-        internal bool GetFirstMatch(int x, int y, int w, int h, [NotNullWhen(true)] out Point[]? tiles) {
+        internal bool GetFirstMatch(int x, int y, int w, int h, [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
             Span<bool> mask = stackalloc bool[9];
             mask[0] = IsTileAt(w, h, x - 1, y - 1);
             mask[1] = IsTileAt(w, h, x, y - 1);
@@ -87,7 +103,7 @@ public sealed class Autotiler {
             }
         }
 
-        internal bool GetFirstMatch(char[,] t, int x, int y, int w, int h, bool tilesOOB, [NotNullWhen(true)] out Point[]? tiles) {
+        internal bool GetFirstMatch(char[,] t, int x, int y, int w, int h, bool tilesOOB, [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
             Span<bool> tileData = stackalloc bool[9];
             char middleTile = t[x, y];
             tileData[0] = IsTileAt(x - 1, y - 1);
@@ -113,12 +129,12 @@ public sealed class Autotiler {
                 (tileData[7].AsByte() << 7) +
                 (tileData[8].AsByte() << 8);
 
-            if (FastTileDataToTiles.TryGetValue(bitmask, out tiles)) {
+            if (_fastTileDataToTiles.TryGetValue(bitmask, out tiles)) {
                 return true;
             }
 
             if (TryFindFirstMaskMatch(tileData, out tiles)) {
-                FastTileDataToTiles[bitmask] = tiles;
+                _fastTileDataToTiles[bitmask] = tiles;
                 return true;
             }
 
@@ -192,7 +208,7 @@ public sealed class Autotiler {
         }
     }
 
-    public Dictionary<char, AutotilerData> Tilesets = new();
+    public Dictionary<char, TilesetData> Tilesets = new();
 
     private bool _Loaded = false;
     public bool Loaded => _Loaded;
@@ -214,19 +230,21 @@ public sealed class Autotiler {
                 var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray();
                 var ignoresAll = ignores?.Contains('*') ?? false;
 
-                AutotilerData autotilerData = new() {
+                TilesetData tilesetData = new() {
+                    Id = id,
+                    Autotiler = this,
                     Filename = path,
                     Texture = GFX.Atlas[$"tilesets/{path}"],
                     Ignores = ignoresAll ? null : ignores,
                     IgnoreAll = ignoresAll,
-                    DisplayName = tileset.Attributes?["displayName"]?.InnerText
+                    DisplayName = tileset.Attributes?["displayName"]?.InnerText,
                 };
 
                 if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
                     var copied = Tilesets[copy];
-                    autotilerData.Tiles = new(copied.Tiles);
-                    autotilerData.Padding = copied.Padding;
-                    autotilerData.Center = copied.Center;
+                    tilesetData.Tiles = copied.Tiles.Select(t => (t.mask, t.tiles.Select(x => x.WithTexture(tilesetData.Texture)).ToArray())).ToList();
+                    tilesetData.Padding = copied.Padding.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
+                    tilesetData.Center = copied.Center.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
                 }
 
                 var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").Select(n => {
@@ -235,13 +253,13 @@ public sealed class Autotiler {
 
                     switch (mask) {
                         case "padding":
-                            autotilerData.Padding = ParseTiles(tiles);
+                            tilesetData.Padding = ParseTiles(tiles, tilesetData.Texture);
                             return (null!, null!);
                         case "center":
-                            autotilerData.Center = ParseTiles(tiles);
+                            tilesetData.Center = ParseTiles(tiles, tilesetData.Texture);
                             return (null!, null!);
                         default:
-                            return (mask.Replace("-", "", StringComparison.Ordinal), ParseTiles(tiles));
+                            return (mask.Replace("-", "", StringComparison.Ordinal), ParseTiles(tiles, tilesetData.Texture));
                     }
                 }).Where(x => x.Item1 is { }).ToList();
 
@@ -252,8 +270,8 @@ public sealed class Autotiler {
                     return aSum - bSum;
                 });
 
-                autotilerData.Tiles.AddRange(tiles);
-                Tilesets[id] = autotilerData;
+                tilesetData.Tiles.AddRange(tiles);
+                Tilesets[id] = tilesetData;
             }
         }
 
@@ -262,11 +280,11 @@ public sealed class Autotiler {
         _Loaded = true;
     }
 
-    private static Point[] ParseTiles(string tiles) {
+    private static AutotiledSprite[] ParseTiles(string tiles, VirtTexture baseTexture) {
         return tiles.Split(';').Select(x => {
             var split = x.Split(',');
             return new Point(int.Parse(split[0], CultureInfo.InvariantCulture) * 8, int.Parse(split[1], CultureInfo.InvariantCulture) * 8);
-        }).ToArray();
+        }).Select(p => AutotiledSprite.Create(baseTexture, p)).ToArray();
     }
 
     public string GetTilesetDisplayName(char c) {
@@ -277,7 +295,7 @@ public sealed class Autotiler {
         return data.GetDisplayName();
     }
 
-    public AutotilerData? GetTilesetData(char c) {
+    public TilesetData? GetTilesetData(char c) {
         if (Tilesets.TryGetValue(c, out var data)) {
             return data;
         }
@@ -296,7 +314,7 @@ public sealed class Autotiler {
             yield break;
 
         AutotiledSpriteList l = new() {
-            Sprites = new AutotiledSpriteList.AutotiledSprite[tileWidth, tileHeight],
+            Sprites = new AutotiledSprite[tileWidth, tileHeight],
             Pos = position,
             Color = color
         };
@@ -307,20 +325,17 @@ public sealed class Autotiler {
             yield break;
         }
 
+        var sprites = l.Sprites;
         for (int x = 0; x < tileWidth; x++) {
             for (int y = 0; y < tileHeight; y++) {
                 if (!data.GetFirstMatch(x, y, tileWidth, tileHeight, out var tiles)) {
-                    yield return ISprite.Rect(new((int) position.X + x * 8, (int) position.Y + y * 8, 8, 8), Color.Red);
+                    sprites[x, y] = AutotiledSprite.Invalid;
                     continue;
                 }
 
                 var pos = position + new Vector2(x * 8, y * 8);
-                var tile = tiles[RandomExt.SeededRandom(pos) % (uint) tiles.Length];
-                //yield return ISprite.FromTexture(pos, data.Texture).CreateSubtexture(tile.X, tile.Y, 8, 8);
-                l.Sprites[x, y] = new() {
-                    T = data.Texture,
-                    Subtext = ISprite.FromTexture(default, data.Texture).GetSubtextureRect(tile.X, tile.Y, 8, 8)
-                };
+                var tile = tiles[pos.SeededRandom() % (uint) tiles.Length];
+                sprites[x, y] = tile;
             }
         }
 
@@ -330,27 +345,24 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a tile grid
     /// </summary>
-    public IEnumerable<ISprite> GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOOB = true) {
+    public AutotiledSpriteList GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOOB = true) {
         if (!Loaded) {
-            return Array.Empty<ISprite>();
+            return new();
         }
 
+        using var watch = new ScopedStopwatch("Autotiler.GetSprites");
+        
         List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
         var h = tileGrid.GetLength(1);
 
         AutotiledSpriteList l = new() {
-            Sprites = new AutotiledSpriteList.AutotiledSprite[w, h],
+            Sprites = new AutotiledSprite[w, h],
             Pos = position,
             Color = color,
         };
 
         var sprites = l.Sprites;
-        for (int i = 0; i < sprites.GetLength(0); i++) {
-            for (int j = 0; j < sprites.GetLength(1); j++) {
-                sprites[i, j] = new();
-            }
-        }
 
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
@@ -368,7 +380,7 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
 
-    internal void SetTile(AutotiledSpriteList.AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
+    internal void SetTile(AutotiledSprite[,] sprites, char[,] tileGrid, char c, int x, int y, bool tilesOOB, ref List<char>? unknownTilesetsUsed) {
         if (!Tilesets.TryGetValue(c, out var data)) {
             unknownTilesetsUsed ??= new(1);
             if (!unknownTilesetsUsed.Contains(c)) {
@@ -376,27 +388,18 @@ public sealed class Autotiler {
                 LogUnknownTileset(x, y, c);
             }
 
-            sprites[x, y] = new() {
-                T = GFX.Atlas["Rysy:tilesets/missingTile"],
-                Subtext = new(0, 0, 8, 8),
-            };
+            sprites[x, y] = AutotiledSprite.Missing;
             return;
         }
 
         if (!data.GetFirstMatch(tileGrid, x, y, tileGrid.GetLength(0), tileGrid.GetLength(1), tilesOOB, out var tiles)) {
-            sprites[x, y] = new() {
-                T = GFX.Atlas["Rysy:tilesets/missingTile"],
-                Subtext = new(0, 0, 8, 8),
-            };
+            sprites[x, y] = AutotiledSprite.Invalid;
             return;
         }
 
         var tile = tiles.Length == 1 ? tiles[0] : tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
-
-        sprites[x, y] = new() {
-            T = data.Texture,
-            Subtext = data.Texture.GetSubtextureRect(tile.X, tile.Y, 8, 8, out _)
-        };
+        
+        sprites[x, y] = tile;
     }
 
     internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
@@ -409,7 +412,7 @@ public sealed class Autotiler {
             for (int y = (changedY - offset).AtLeast(0); y <= endY; y++) {
                 var c = tileGrid[x, y];
                 if (c == '0') {
-                    sprites[x, y] = default;
+                    sprites[x, y] = null!;
                     continue;
                 }
 
@@ -418,7 +421,7 @@ public sealed class Autotiler {
         }
     }
 
-    internal sealed record class AutotiledSpriteList : ISprite {
+    public sealed record class AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
         internal List<char>? UnknownTilesetsUsed;
@@ -433,7 +436,7 @@ public sealed class Autotiler {
         {
             get {
                 foreach (var item in Sprites) {
-                    if (item.T is { } t && t.Texture is not { })
+                    if (item is { Texture.Texture: not { } })
                         return false;
                 }
                 return true;
@@ -470,8 +473,8 @@ public sealed class Autotiler {
                 for (int y = top; y < bot; y++) {
                     ref var s = ref sprites[x, y];
 
-                    if (s.T?.Texture is { } t)
-                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtext, color);
+                    if (s?.Texture.Texture is { } t)
+                        b.Draw(t, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), s.Subtexture, color);
                 }
             }
         }
@@ -482,15 +485,47 @@ public sealed class Autotiler {
 
         public ISelectionCollider GetCollider()
             => ISelectionCollider.FromRect(Pos, Sprites.GetLength(0) * 8, Sprites.GetLength(1) * 8);
-
-        public struct AutotiledSprite {
-            public VirtTexture T;
-            public Rectangle Subtext;
-
-            public AutotiledSprite() {
-            }
-        }
-
     }
 
+    /// <summary>
+    /// Represents a sprite for a specific autotiled sprite.
+    /// For memory efficiency, one instance of this class should be created and re-used for each tile inside a given tileset.
+    /// </summary>
+    public class AutotiledSprite {
+        internal readonly VirtTexture Texture;
+        internal readonly Rectangle Subtexture;
+        
+        /// <summary>
+        /// The location as stored in the xml, as Subtext is different for atlased images.
+        /// We need to store it for copying into different VirtTextures.
+        /// </summary>
+        internal readonly Point RelativeLocation;
+
+        public AutotiledSprite WithTexture(VirtTexture newTexture) 
+            => new(newTexture, RelativeLocation);
+
+        public static AutotiledSprite Create(VirtTexture texture, Point location) => new(texture, location);
+
+        private AutotiledSprite(VirtTexture texture, Point location) {
+            Texture = texture;
+            RelativeLocation = location;
+            Subtexture = texture.GetSubtextureRect(RelativeLocation.X, RelativeLocation.Y, 8, 8, out _);
+        }
+
+        private static AutotiledSprite? _missing;
+        
+        /// <summary>
+        /// Represents a missing tile
+        /// </summary>
+        public static AutotiledSprite Missing => _missing 
+            ??= new(GFX.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
+        
+        private static AutotiledSprite? _invalid;
+        
+        /// <summary>
+        /// Represents an invalid tile
+        /// </summary>
+        public static AutotiledSprite Invalid => _invalid 
+            ??= new(GFX.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
+    }
 }

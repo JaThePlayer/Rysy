@@ -66,7 +66,7 @@ internal sealed class CustomSpinner : LonnEntity {
         var drawOutline = DrawOutline;
         var borderColor = drawOutline ? BorderColor : default;
 
-        var (fgSprite, bgSprite) = (FG: _fg, BG: _bg);
+        var (fgSprite, bgSprite) = (_fg, _bg);
 
         yield return fgSprite with {
             Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : color,

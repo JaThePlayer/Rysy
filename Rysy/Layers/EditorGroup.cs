@@ -36,7 +36,9 @@ public class EditorGroup {
     /// <summary>
     /// The default group, which must always be present in all maps.
     /// </summary>
-    public static EditorGroup Default { get; } = new("Default");
+    public static EditorGroup Default { get; } = new("Default") {
+        Enabled = true,
+    };
     
     public static HashSet<string> CreateAutoAssignFromString(string list) =>
         list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -185,8 +187,6 @@ public sealed class EditorGroupRegistry : IEnumerable<EditorGroup>, IPackable {
                 }
             };
         }
-        
-        el.LogAsJson();
 
         return el;
     }
