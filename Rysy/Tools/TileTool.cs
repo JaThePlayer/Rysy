@@ -126,8 +126,8 @@ public abstract class TileTool : Tool {
     protected Tilegrid? GetSecondGrid(Room room) 
         => Layer == EditorLayers.BothTilegrids ? room.BG : null;
 
-    protected Point GetMouseTilePos(Camera camera, Room room, bool round = false) {
-        var pos = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2());
+    protected Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
+        var pos = room.WorldToRoomPos(camera, (fakeMousePos ?? Input.Mouse.Pos).ToVector2());
         if (round) {
             return pos.GridPosRound(8);
         }

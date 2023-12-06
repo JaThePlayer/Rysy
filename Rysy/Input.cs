@@ -38,6 +38,8 @@ public class Input {
         public MouseInputState Middle { get; private set; }
         public MouseInputState X1 { get; private set; }
         public MouseInputState X2 { get; private set; }
+        
+        public bool WrappedThisFrame { get; private set; }
 
         private Point RealPos { get; set; }
 
@@ -113,6 +115,8 @@ public class Input {
         }
 
         public void Update(float deltaSeconds) {
+            WrappedThisFrame = false;
+            
             // From FNA wiki
             mousePrevState = mouseState;
             mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
@@ -150,6 +154,7 @@ public class Input {
 
                 if (setPos) {
                     Microsoft.Xna.Framework.Input.Mouse.SetPosition(RealPos.X, RealPos.Y);
+                    WrappedThisFrame = true;
                 }
             }
             

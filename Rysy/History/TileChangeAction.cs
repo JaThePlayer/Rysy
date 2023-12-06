@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.History;
 
@@ -18,6 +19,64 @@ public record class TileChangeAction(char ID, int X, int Y, Tilegrid Grid, Tileg
     public void Undo() {
         Grid.SafeSetTile(lastID, X, Y);
         Grid2?.SafeSetTile(lastID2, X, Y);
+    }
+}
+
+public record class TileLineChangeAction
+    (char ID, Point A, Point B, Tilegrid Grid) : IHistoryAction {
+    private List<char> _oldChars;
+    
+    public bool Apply() {
+        var id = ID;
+        var anyChanged = false;
+        
+        _oldChars = new();
+        foreach (var (x, y) in Utils.GetLineGridIntersection(A, B)) {
+            anyChanged |= Grid.SafeReplaceTile(id, x, y, out var last);
+            
+            _oldChars.Add(last);
+        }
+
+        return anyChanged;
+    }
+
+    public void Undo() {
+        var i = 0;
+        foreach (var (x, y) in Utils.GetLineGridIntersection(A, B)) {
+            Grid.SafeSetTile(_oldChars.ElementAtOrDefault(i), x, y);
+            
+            i++;
+        }
+        
+        _oldChars.Clear();
+    }
+}
+
+public record TileBulkChangeAction(char ID, HashSet<Point> Points, Tilegrid Grid) : IHistoryAction {
+    private List<char> _oldChars;
+    
+    public bool Apply() {
+        var id = ID;
+        var anyChanged = false;
+        
+        _oldChars = new(Points.Count);
+        foreach (var (x, y) in Points) {
+            anyChanged |= Grid.SafeReplaceTile(id, x, y, out var last);
+            
+            _oldChars.Add(last);
+        }
+
+        return anyChanged;
+    }
+
+    public void Undo() {
+        var i = 0;
+        foreach (var (x, y) in Points) {
+            Grid.SafeSetTile(_oldChars[i], x, y);
+            i++;
+        }
+        
+        _oldChars.Clear();
     }
 }
 
