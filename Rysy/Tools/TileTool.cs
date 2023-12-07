@@ -9,21 +9,40 @@ using Rysy.Layers;
 
 namespace Rysy.Tools;
 
-public abstract class TileTool : Tool {
+public class TileTool : Tool {
     public Color DefaultColor = ColorHelper.HSVToColor(0f, 1f, 1f);
 
+    private readonly List<ToolMode> _tileModes;
+
+    public TileTool() {
+        _tileModes = new() {
+            new TileBrushMode(this),
+            new TileRectangleMode(this),
+            new TileBucketMode(this),
+        };
+    }
+    
     private static List<EditorLayer> _ValidLayers { get; } = new() {
         EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
     };
 
     public override List<EditorLayer> ValidLayers => _ValidLayers;
 
+    public override List<ToolMode> ValidModes => _tileModes;
+
+    public override string Name => "tile";
+    
     public override string PersistenceGroup => "TileTool";
 
     public override void Init() {
         base.Init();
 
         EditorState.OnMapChanged += ClearMaterialListCache;
+
+        foreach (var m in _tileModes) {
+            if (m is TileMode mode)
+                mode.Init();
+        }
     }
 
     public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
@@ -74,6 +93,12 @@ public abstract class TileTool : Tool {
         set => Material = value;
     }
 
+    /// <summary>
+    /// Returns <see cref="Tile"/>, or a different tile if needed. (For example, air if holding shift)
+    /// </summary>
+    /// <returns></returns>
+    public char TileOrAlt(bool? shiftHeld = null) => (shiftHeld ?? Input.Keyboard.Shift()) ? '0' : Tile;
+
     protected TileLayer EditorLayerToTileLayer(EditorLayer? layer) {
         layer ??= Layer;
         
@@ -106,12 +131,30 @@ public abstract class TileTool : Tool {
     public override void Update(Camera camera, Room room) {
         var (tx, ty) = GetMouseTilePos(camera, room);
         HandleMiddleClick(room, tx, ty);
+        
+        if (Mode is TileMode tileMode) {
+            tileMode.Update(camera, room);
+        }
+    }
+
+    public override void Render(Camera camera, Room room) {
+        if (Mode is TileMode tileMode) {
+            tileMode.Render(camera, room);
+        }
+    }
+
+    public override void CancelInteraction() {
+        base.CancelInteraction();
+        
+        if (Mode is TileMode tileMode) {
+            tileMode.CancelInteraction();
+        }
     }
 
     public override void RenderOverlay() {
     }
 
-    protected Tilegrid GetGrid(Room room, EditorLayer? layer = null) {
+    public Tilegrid GetGrid(Room room, EditorLayer? layer = null) {
         layer ??= Layer;
 
         if (layer is TileEditorLayer tileEditorLayer)
@@ -123,10 +166,10 @@ public abstract class TileTool : Tool {
         throw new ArgumentException("Provided layer is not a tile layer", nameof(layer));
     }
 
-    protected Tilegrid? GetSecondGrid(Room room) 
+    public Tilegrid? GetSecondGrid(Room room) 
         => Layer == EditorLayers.BothTilegrids ? room.BG : null;
 
-    protected Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
+    public Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
         var pos = room.WorldToRoomPos(camera, (fakeMousePos ?? Input.Mouse.Pos).ToVector2());
         if (round) {
             return pos.GridPosRound(8);

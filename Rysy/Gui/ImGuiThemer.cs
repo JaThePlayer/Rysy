@@ -26,6 +26,8 @@ public static class ImGuiThemer {
         });
         var nptr = ptr.NativePtr;
         *nptr = s;
+
+        nptr->DockingSeparatorSize = 1;
     }
 
     public static unsafe void SetFontSize(float fontSize) {

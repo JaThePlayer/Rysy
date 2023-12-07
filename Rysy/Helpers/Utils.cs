@@ -55,4 +55,73 @@ public static class Utils {
             }
         }
     }
+    
+    // https://en.wikipedia.org/wiki/Flood_fill#Span_filling
+    /// <summary>
+    /// Performs a generalized flood fill, starting from <paramref name="sx"/>, <paramref name="sy"/>.
+    /// </summary>
+    /// <param name="sx">Starting x point of the fill</param>
+    /// <param name="sy">Starting y point of the fill</param>
+    /// <param name="inside">Returns true for unfilled points that should be inside the filled area. If <paramref name="set"/> got called on this tile, this should return false!</param>
+    /// <param name="set">Fills a pixel/node. Any point that has Set called on it must then no longer be Inside.</param>
+    /// <param name="cap">The limit on how many tiles can be flood filled at once</param>
+    /// <returns>Whether the entire area got flooded. Returns false if the <paramref name="cap"/> got reached.</returns>
+    public static bool FloodFill(int sx, int sy, Func<int, int, bool> inside, Action<int, int> set, int? cap = null) {
+        if (!inside(sx, sy))
+            return true;
+
+        var count = 0;
+        var s = new Queue<(int, int, int, int)>();
+        
+        s.Enqueue((sx, sx, sy, 1));
+        s.Enqueue((sx, sx, sy - 1, -1));
+
+        while (s.Count != 0) {
+            var (x1, x2, y, dy) = s.Dequeue();
+            var x = x1;
+
+            if (inside(x, y)) {
+                while (inside(x - 1, y)) {
+                    set(x - 1, y);
+                    count++;
+                    if (cap < count) {
+                        return false;
+                    }
+                    x -= 1;
+                }
+                
+                if (x < x1) {
+                    s.Enqueue((x, x1 - 1, y - dy, -dy));
+                }
+            }
+
+            while (x1 <= x2) {
+                while (inside(x1, y)) {
+                    set(x1, y);
+                    count++;
+                    if (cap < count) {
+                        return false;
+                    }
+                    x1 += 1;
+                }
+
+                if (x1 > x) {
+                    s.Enqueue((x, x1 - 1, y + dy, dy));
+                }
+
+                if (x1 - 1 > x2) {
+                    s.Enqueue((x2 + 1, x1 - 1, y - dy, -dy));
+                }
+
+                x1 += 1;
+
+                while (x1 < x2 && !inside(x1, y)) {
+                    x1 += 1;
+                    x = x1;
+                }
+            }
+        }
+
+        return true;
+    }
 }

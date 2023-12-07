@@ -678,11 +678,11 @@ public static class ImGuiManager {
             ImGuiIOPtr io = ImGui.GetIO();
 #if !FNA
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => {
-                const char VOLUME_UP = (char) 128;
-                const char VOLUME_DOWN = (char) 129;
+                const char volumeUp = (char) 128;
+                const char volumeDown = (char) 129;
 
                 var c = e.Character;
-                if (c is '\t' or VOLUME_UP or VOLUME_DOWN)
+                if (c is '\t' or volumeUp or volumeDown)
                     return;
 
                 io.AddInputCharacter(c);

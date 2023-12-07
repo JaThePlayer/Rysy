@@ -3,42 +3,34 @@ using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 
-namespace Rysy.Tools;
+namespace Rysy.Tools; 
 
-public class BrushTool : TileTool {
+public class TileBrushMode : TileMode {
     public override string Name => "brush";
 
     private MouseDragGesture<BrushStrokeData> _dragGesture;
     
-    private char StrokeTile => _dragGesture.Shift ? '0' : Tile;
-
-    public override void Init() {
-        base.Init();
-
-        _dragGesture = new(Input);
-    }
-
+    private char StrokeTile => Tool.TileOrAlt(_dragGesture.Shift);
+    
     public override void Render(Camera camera, Room room) {
-        var mouse = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
+        var mouse = room.WorldToRoomPos(camera, Tool.Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
 
-        RenderTiles(mouse.ToVector2(), 1, 1);
-        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, DefaultColor).Render();
+        Tool.RenderTiles(mouse.ToVector2(), 1, 1);
+        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, Tool.DefaultColor).Render();
     }
 
     public override void Update(Camera camera, Room room) {
-        base.Update(camera, room);
-        
         _dragGesture.Update(out var continueStroke, out var endStroke, out var prevPos, out var data);
 
         if (continueStroke) {
-            var grid = GetGrid(room);
+            var grid = Tool.GetGrid(room);
             
             data!.FakeTiles ??= grid.Tiles.CreateClone();
         
             var anyChanged = false;
             
-            var curr = GetMouseTilePos(camera, room);
-            var prev = GetMouseTilePos(camera, room, fakeMousePos: prevPos);
+            var curr = Tool.GetMouseTilePos(camera, room);
+            var prev = Tool.GetMouseTilePos(camera, room, fakeMousePos: prevPos);
         
             foreach (var p in Utils.GetLineGridIntersection(prev, curr)) {
                 if (data.FakeTiles.TryReplace(p.X, p.Y, StrokeTile, out _)) {
@@ -60,11 +52,11 @@ public class BrushTool : TileTool {
             if (data?.ChangedTilePositions is not { Count: > 0 } stroke)
                 return;
 
-            var grid = GetGrid(room);
-            var altGrid = GetSecondGrid(room);
+            var grid = Tool.GetGrid(room);
+            var altGrid = Tool.GetSecondGrid(room);
             var tile = StrokeTile;
 
-            History.ApplyNewAction(new MergedAction(
+            Tool.History.ApplyNewAction(new MergedAction(
                 new TileBulkChangeAction(tile, stroke, grid),
                 altGrid is { } ? new TileBulkChangeAction(tile, stroke, altGrid) : null
             ));
@@ -72,11 +64,13 @@ public class BrushTool : TileTool {
             ClearStrokeData(room);
         }
     }
-    
-    public override void CancelInteraction() {
-        base.CancelInteraction();
 
+    public override void CancelInteraction() {
         ClearStrokeData(null);
+    }
+
+    public override void Init() {
+        _dragGesture = new(Tool.Input);
     }
     
     private void ClearStrokeData(Room? room) {
@@ -85,15 +79,19 @@ public class BrushTool : TileTool {
         room ??= EditorState.CurrentRoom;
         if (room is null)
             return;
-        GetGrid(room)?.ClearSpriteCache();
-        GetSecondGrid(room)?.ClearSpriteCache();
+        Tool.GetGrid(room)?.ClearSpriteCache();
+        Tool.GetSecondGrid(room)?.ClearSpriteCache();
     }
-}
 
-// data used by the mouse drag gesture
-internal class BrushStrokeData {
-    public readonly HashSet<Point> ChangedTilePositions = new();
+    public TileBrushMode(TileTool tool) : base(tool)
+    {
+    }
     
-    // stores a copy of the current room's tilegrid, with all of the changes from this brush stroke.
-    public char[,]? FakeTiles;
+    // data used by the mouse drag gesture
+    internal class BrushStrokeData {
+        public readonly HashSet<Point> ChangedTilePositions = new();
+    
+        // stores a copy of the current room's tilegrid, with all of the changes from this brush stroke.
+        public char[,]? FakeTiles;
+    }
 }

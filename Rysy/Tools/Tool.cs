@@ -31,6 +31,38 @@ public abstract class Tool {
     /// </summary>
     public abstract List<EditorLayer> ValidLayers { get; }
 
+    /// <summary>
+    /// A list of possible modes this tool could use, used in the UI for generating the mode list.
+    /// </summary>
+    public virtual List<ToolMode> ValidModes => ToolMode.DefaultList;
+    
+    private ToolMode? _mode;
+    
+    /// <summary>
+    /// Gets or sets the currently used layer.
+    /// </summary>
+    public ToolMode Mode {
+        get {
+            if (UsePersistence) {
+                var name = Persistence.Instance.Get($"{PersistenceGroup}.Mode", ValidModes.FirstOrDefault()?.Name ?? "");
+
+                if (ValidModes.FirstOrDefault(m => m.Name == name) is {} mode)
+                    return _mode = mode;
+            }
+
+            return _mode ??= ValidModes.FirstOrDefault() 
+                             ?? throw new NotImplementedException($"No valid modes for tool {GetType().Name}");
+        }
+        set {
+            _mode = value;
+            if (UsePersistence) {
+                Persistence.Instance.Set($"{PersistenceGroup}.Mode", value.Name);
+            }
+            
+            CancelInteraction();
+            OnLayerChanged();
+        }
+    }
     
     private EditorLayer? _layer;
     
