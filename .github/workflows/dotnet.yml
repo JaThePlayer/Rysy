@@ -49,7 +49,7 @@ jobs:
           rm -r -f zh-Hans
           rm -r -f zh-Hant
           cd ..
-        end
+        done
         
         echo "Preparing Linux build"
 
