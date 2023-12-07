@@ -194,7 +194,7 @@ public abstract class Tool {
     }
 
     public void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
-        if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), false, ImGuiWindowFlags.NoScrollWithMouse)) {
+        if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse)) {
             return;
         }
 
@@ -256,13 +256,13 @@ public abstract class Tool {
 
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
         ImGui.BeginChild($"##{GetType().Name}_{Layer}", 
-            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), false, ImGuiWindowFlags.NoScrollWithMouse);
+            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
         // make sure columns stay consistent
         skip -= skip % columns;
         skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
         if (skip > 0) {
-            ImGui.BeginChildFrame((uint) 12347, new(0, skip * elementHeight));
-            ImGui.EndChildFrame();
+            ImGui.BeginChild((uint) 12347, new(0, skip * elementHeight));
+            ImGui.EndChild();
         }
 
         if (columns > 1)
@@ -420,7 +420,7 @@ public abstract class Tool {
         }
 
         var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-        if (ImGui.Selectable($"##{displayName}", IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowItemOverlap, size)) {
+        if (ImGui.Selectable($"##{displayName}", IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
