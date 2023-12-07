@@ -22,44 +22,54 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build with .NET Core
-      run: dotnet publish -c "Release"
+      run: |
+        dotnet publish -c "Release" -r win-x64 --no-self-contained
+        dotnet publish -c "Release" -r linux-x64 --no-self-contained
+        dotnet publish -c "Release" -r osx-x64 --no-self-contained
       
     - name: Create release folders
-      working-directory: ./Rysy/bin/Release/net7.0/publish
+      working-directory: ./Rysy/bin/Release/net7.0
       run: |
-        echo "Preparing Windows build"
+        echo "Preparing build dirs"
         ls
-        rm -r -f Rysy-win64 && mkdir -p Rysy-win64/runtimes/win-x64
-        cp *.dll *.exe *.json *.xml *.pdb Rysy-win64
-        cp -r Assets Rysy-win64
-        cp -r runtimes/win-x64 Rysy-win64/runtimes
+        for DIR in win-x64 linux-x64 osx-x64
+        do
+          cd $DIR/publish
+          rm -r -f cs
+          rm -r -f de
+          rm -r -f es
+          rm -r -f fr
+          rm -r -f it
+          rm -r -f ja
+          rm -r -f ko
+          rm -r -f pl
+          rm -r -f pt-BR
+          rm -r -f ru
+          rm -r -f tr
+          rm -r -f zh-Hans
+          rm -r -f zh-Hant
+          cd ..
+        end
         
         echo "Preparing Linux build"
-        rm -r -f Rysy-linux && mkdir -p Rysy-linux/runtimes
-        cp *.dll *.exe *.json *.xml *.pdb Rysy-linux
-        cp -r Assets Rysy-linux
-        cp -r runtimes/linux-x64 Rysy-linux/runtimes
 
         echo "Preparing Portable build"
-        rm -r -f Rysy-portable && mkdir -p Rysy-portable/runtimes
-        cp *.dll *.exe *.json *.xml *.pdb Rysy-portable
-        cp -r Assets Rysy-portable
-        cp -r runtimes/linux-x64 runtimes/maccatalyst runtimes/osx runtimes/osx-x64 runtimes/win-arm runtimes/win-arm64 runtimes/win-x64 runtimes/win-x86 Rysy-portable/runtimes
+        
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy-windows
-        path: Rysy/bin/Release/net7.0/publish/Rysy-win64
+        path: Rysy/bin/Release/net7.0/win-x64/publish
 
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy-linux
-        path: Rysy/bin/Release/net7.0/publish/Rysy-linux
+        path: Rysy/bin/Release/net7.0/linux-x64/publish
 
-    - name: Upload Portable artifact
+    - name: Upload OSX artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Rysy-portable
-        path: Rysy/bin/Release/net7.0/publish/Rysy-portable
+        name: Rysy-osx
+        path: Rysy/bin/Release/net7.0/osx-x64/publish
