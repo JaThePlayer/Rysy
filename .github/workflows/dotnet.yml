@@ -35,6 +35,7 @@ jobs:
         for DIR in win-x64 linux-x64 osx-x64
         do
           cd $DIR/publish
+          ls
           rm -r -f cs
           rm -r -f de
           rm -r -f es
@@ -48,7 +49,7 @@ jobs:
           rm -r -f tr
           rm -r -f zh-Hans
           rm -r -f zh-Hant
-          cd ..
+          cd ../..
         done
         
         echo "Preparing Linux build"
