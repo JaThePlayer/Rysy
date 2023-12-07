@@ -22,10 +22,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build with .NET Core
-      run: dotnet build "/p:Configuration=Release"
+      run: dotnet publish -c "Release"
       
     - name: Create release folders
-      working-directory: ./Rysy/bin/Release/net7.0
+      working-directory: ./Rysy/bin/Release/net7.0/publish
       run: |
         echo "Preparing Windows build"
         ls
@@ -50,16 +50,16 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy-windows
-        path: Rysy/bin/Release/net7.0/Rysy-win64
+        path: Rysy/bin/Release/net7.0/publish/Rysy-win64
 
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy-linux
-        path: Rysy/bin/Release/net7.0/Rysy-linux
+        path: Rysy/bin/Release/net7.0/publish/Rysy-linux
 
     - name: Upload Portable artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy-portable
-        path: Rysy/bin/Release/net7.0/Rysy-portable
+        path: Rysy/bin/Release/net7.0/publish/Rysy-portable
