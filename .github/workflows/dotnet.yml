@@ -9,7 +9,7 @@ on:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -23,9 +23,42 @@ jobs:
       run: dotnet restore
     - name: Build with .NET Core
       run: dotnet build "/p:Configuration=Release"
+      
+    - name: Create release folders
+      working-directory: Rysy/bin/Release/net7.0
+      run: |
+        echo "Preparing Windows build"
+        rm -r -f Rysy-win64 && mkdir -p Rysy-win64/runtimes/win-x64
+        cp *.dll *.exe *.json *.xml *.pdb Rysy-win64
+        cp -r Assets Rysy-win64
+        cp -r runtimes/win-x64 Rysy-win64/runtimes
+        
+        echo "Preparing Linux build"
+        rm -r -f Rysy-linux && mkdir -p Rysy-linux/runtimes
+        cp *.dll *.exe *.json *.xml *.pdb Rysy-linux
+        cp -r Assets Rysy-linux
+        cp -r runtimes/linux-x64 Rysy-linux/runtimes
 
-    - name: Upload universal artifact
+        echo "Preparing Portable build"
+        rm -r -f Rysy-portable && mkdir -p Rysy-portable/runtimes
+        cp *.dll *.exe *.json *.xml *.pdb Rysy-portable
+        cp -r Assets Rysy-portable
+        cp -r runtimes/linux-x64 runtimes/maccatalyst runtimes/osx runtimes/osx-x64 runtimes/win-arm runtimes/win-arm64 runtimes/win-x64 runtimes/win-x86 Rysy-portable/runtimes
+        
+    - name: Upload Windows artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Rysy
-        path: Rysy/bin/Release/net7.0
+        path: Rysy/bin/Release/net7.0/Rysy-win64
+
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Rysy
+        path: Rysy/bin/Release/net7.0/Rysy-linux
+
+    - name: Upload Portable artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Rysy
+        path: Rysy/bin/Release/net7.0/Rysy-portable
