@@ -48,17 +48,17 @@ jobs:
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Rysy
+        name: Rysy-windows
         path: Rysy/bin/Release/net7.0/Rysy-win64
 
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Rysy
+        name: Rysy-linux
         path: Rysy/bin/Release/net7.0/Rysy-linux
 
     - name: Upload Portable artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        name: Rysy
+        name: Rysy-portable
         path: Rysy/bin/Release/net7.0/Rysy-portable
