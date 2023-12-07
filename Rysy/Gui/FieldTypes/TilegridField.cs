@@ -244,7 +244,7 @@ class EditTileDataWindow : Window {
         var imgWidth = ((int) ImGui.GetWindowSize().X - 200).AtLeast(1);
 
         // prevent scrolling the internal part of the window
-        ImGui.BeginChild("", new(), false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
+        ImGui.BeginChild("", new(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
         ImGuiManager.XnaWidget(XnaBufferID, imgWidth, (int) imgHeight, () => {
             Sprites = Autotiler.GetSprites(default, Tiles, Color.White).ToList();
 

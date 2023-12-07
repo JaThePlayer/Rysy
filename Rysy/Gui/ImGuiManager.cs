@@ -373,7 +373,7 @@ public static class ImGuiManager {
         var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 4f;
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
 
-        ImGui.BeginChild(124, new(0, posy), false, ImGuiWindowFlags.NoResize);
+        ImGui.BeginChild(124, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y); //  + ImGui.GetStyle().FramePadding.Y  
         renderMain();
         ImGui.EndChild();
@@ -513,7 +513,38 @@ public static class ImGuiManager {
         private IntPtr? FontTextureID;
 
         private int ScrollWheelValue;
-        private List<int> ImGUIKeys = new List<int>();
+        
+        record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
+        
+        private static readonly List<ImGuiXnaKeyBind> ImGuiKeys = new()
+        {
+            new(ImGuiKey.Tab, Keys.Tab),
+            new(ImGuiKey.LeftArrow, Keys.Left),
+            new(ImGuiKey.RightArrow, Keys.Right),
+            new(ImGuiKey.UpArrow, Keys.Up),
+            new(ImGuiKey.DownArrow, Keys.Down),
+            new(ImGuiKey.PageUp, Keys.PageUp),
+            new(ImGuiKey.PageDown, Keys.PageDown),
+            new(ImGuiKey.Home, Keys.Home),
+            new(ImGuiKey.End, Keys.End),
+            new(ImGuiKey.Insert, Keys.Insert),
+            new(ImGuiKey.Delete, Keys.Delete),
+            new(ImGuiKey.Backspace, Keys.Back),
+            new(ImGuiKey.Space, Keys.Space),
+            new(ImGuiKey.Enter, Keys.Enter),
+            new(ImGuiKey.Escape, Keys.Escape),
+            new(ImGuiKey.KeypadEnter, Keys.Enter),
+            new(ImGuiKey.A, Keys.A),
+            new(ImGuiKey.C, Keys.C),
+            new(ImGuiKey.V, Keys.V),
+            new(ImGuiKey.X, Keys.X),
+            new(ImGuiKey.Y, Keys.Y),
+            new(ImGuiKey.Z, Keys.Z),
+            
+            new(ImGuiKey.ModCtrl, Keys.LeftControl, Keys.RightControl),
+            new(ImGuiKey.ModShift, Keys.LeftShift, Keys.RightShift),
+            new(ImGuiKey.ModAlt, Keys.LeftAlt, Keys.RightAlt),
+        };
 
         public ImGuiRenderer(RysyEngine engine) {
             //File.Delete("imgui.ini");
@@ -595,7 +626,8 @@ public static class ImGuiManager {
             ImGui.NewFrame();
 
             // allow docking windows to the sides of the window
-            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingInCentralNode);
+            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), 
+                ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingOverCentralNode);
         }
 
         public void AfterLayout() {
@@ -644,39 +676,6 @@ public static class ImGuiManager {
 
         protected void SetupInput() {
             ImGuiIOPtr io = ImGui.GetIO();
-
-            // Bind XNA keys to ImGUI keys
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Tab] = (int) Keys.Tab);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.LeftArrow] = (int) Keys.Left);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.RightArrow] = (int) Keys.Right);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.UpArrow] = (int) Keys.Up);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.DownArrow] = (int) Keys.Down);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.PageUp] = (int) Keys.PageUp);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.PageDown] = (int) Keys.PageDown);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Home] = (int) Keys.Home);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.End] = (int) Keys.End);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Delete] = (int) Keys.Delete);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Backspace] = (int) Keys.Back);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Enter] = (int) Keys.Enter);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Escape] = (int) Keys.Escape);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Space] = (int) Keys.Space);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.A] = (int) Keys.A);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.C] = (int) Keys.C);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.V] = (int) Keys.V);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.X] = (int) Keys.X);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Y] = (int) Keys.Y);
-            ImGUIKeys.Add(io.KeyMap[(int) ImGuiKey.Z] = (int) Keys.Z);
-
-            /*
-            TextInputEXT.TextInput += c => {
-                if (c == '\t')
-                    return;
-                io.AddInputCharacter(c);
-            };
-
-            unsafe {
-                io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(ClipboardDelegates.SDL_Get);
-            }*/
 #if !FNA
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => {
                 const char VOLUME_UP = (char) 128;
@@ -693,7 +692,7 @@ public static class ImGuiManager {
         }
 
         protected Effect UpdateEffect(Texture2D texture) {
-            Effect = Effect ?? new BasicEffect(GraphicsDevice);
+            Effect ??= new BasicEffect(GraphicsDevice);
             ImGuiIOPtr io = ImGui.GetIO();
 
             Effect.World = Matrix.Identity;
@@ -716,14 +715,18 @@ public static class ImGuiManager {
             MouseState m = Mouse.GetState();
             KeyboardState kbd = Keyboard.GetState();
 
-            for (int i = 0; i < ImGUIKeys.Count; i++) {
-                io.KeysDown[ImGUIKeys[i]] = kbd.IsKeyDown((Keys) ImGUIKeys[i]);
+            foreach (var (imGuiKey, xnaKey, altKeyMaybe) in ImGuiKeys)
+            {
+                if (kbd.IsKeyDown(xnaKey) || (altKeyMaybe is {} altKey && kbd.IsKeyDown(altKey))) {
+                    if (!ImGui.IsKeyDown(imGuiKey)) {
+                        io.AddKeyEvent(imGuiKey, true);
+                    }
+                } else {
+                    if (ImGui.IsKeyDown(imGuiKey)) {
+                        io.AddKeyEvent(imGuiKey, false);
+                    }
+                }
             }
-
-            io.KeyShift = kbd.IsKeyDown(Keys.LeftShift) || kbd.IsKeyDown(Keys.RightShift);
-            io.KeyCtrl = kbd.IsKeyDown(Keys.LeftControl) || kbd.IsKeyDown(Keys.RightControl);
-            io.KeyAlt = kbd.IsKeyDown(Keys.LeftAlt) || kbd.IsKeyDown(Keys.RightAlt);
-            io.KeySuper = kbd.IsKeyDown(Keys.LeftWindows) || kbd.IsKeyDown(Keys.RightWindows);
 
             io.DisplaySize = new System.Numerics.Vector2(GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight);
             io.DisplayFramebufferScale = new System.Numerics.Vector2(1f, 1f);
@@ -780,7 +783,7 @@ public static class ImGuiManager {
             int idxOffset = 0;
 
             for (int i = 0; i < ptr.CmdListsCount; i++) {
-                ImDrawListPtr cmdList = ptr.CmdListsRange[i];
+                ImDrawListPtr cmdList = ptr.CmdLists[i];
                 fixed (void* vtxDstPtr = &VertexData[vtxOffset * DrawVertDeclaration.Size]) {
                     fixed (void* idxDstPtr = &IndexData[idxOffset * sizeof(ushort)]) {
                         Buffer.MemoryCopy((void*) cmdList.VtxBuffer.Data, vtxDstPtr, VertexData.Length, cmdList.VtxBuffer.Size * DrawVertDeclaration.Size);
@@ -809,7 +812,7 @@ public static class ImGuiManager {
             GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
             
             for (int i = 0; i < ptr.CmdListsCount; i++) {
-                ImDrawListPtr cmdList = ptr.CmdListsRange[i];
+                ImDrawListPtr cmdList = ptr.CmdLists[i];
 
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
                     ImDrawCmdPtr cmd = cmdList.CmdBuffer[cmdi];
