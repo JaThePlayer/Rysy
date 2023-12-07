@@ -25,9 +25,10 @@ jobs:
       run: dotnet build "/p:Configuration=Release"
       
     - name: Create release folders
-      working-directory: Rysy/bin/Release/net7.0
+      working-directory: ./Rysy/bin/Release/net7.0
       run: |
         echo "Preparing Windows build"
+        ls
         rm -r -f Rysy-win64 && mkdir -p Rysy-win64/runtimes/win-x64
         cp *.dll *.exe *.json *.xml *.pdb Rysy-win64
         cp -r Assets Rysy-win64
