@@ -166,12 +166,36 @@ public class ToolHandler {
     public void RenderGui() {
         RenderToolList(_firstGui, out float toolHeight);
         RenderLayerList(_firstGui, toolHeight);
+        RenderModeList();
 
         if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size)
             CurrentTool.RenderGui(size);
         _firstGui = false;
     }
 
+    private void RenderModeList() {
+        var tool = CurrentTool;
+        var currentMode = tool.Mode;
+        
+        ImGuiManager.PushWindowStyle();
+        if (!ImGui.Begin("Mode", ImGuiManager.WindowFlagsResizable)) {
+            return;
+        }
+        ImGuiManager.PopWindowStyle();
+        
+        var windowSize = ImGui.GetWindowSize();
+        if (ImGui.BeginListBox("##ToolModeBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * tool.ValidModes.Count + 2))) {
+            foreach (var item in tool.ValidModes) {
+                if (ImGui.Selectable(item.LocalizedName, currentMode == item)) {
+                    tool.Mode = item;
+                }
+            }
+            ImGui.EndListBox();
+        }
+        
+        ImGui.End();
+    }
+    
     private void RenderLayerList(bool firstGui, float toolListHeight) {
         var tool = CurrentTool;
         var currentLayer = tool.Layer;

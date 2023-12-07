@@ -13,6 +13,8 @@ public class MouseDragGesture<T> where T : class, new() {
 
     public T? Data { get; private set; }
 
+    public Point? StartingPos { get; private set; }
+
     public MouseDragGesture(Input input) {
         _input = input;
         CancelStroke();
@@ -30,12 +32,15 @@ public class MouseDragGesture<T> where T : class, new() {
         lastMousePos = _currentStrokeLastPos ?? _input.Mouse.Pos;
         
         if (!_begun) {
+            StartingPos = null;
+            
             if (_input.Mouse.Left.Clicked() || _forceBeginNextFrame) {
                 _begun = true;
                 Shift = _input.Keyboard.Shift();
                 Data = new();
                 continueStroke = true;
                 _forceBeginNextFrame = false;
+                StartingPos = _input.Mouse.Pos;
             }
         }
 
