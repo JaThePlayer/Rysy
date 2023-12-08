@@ -216,9 +216,17 @@ public abstract class Tool {
 
     public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
 
-    public static void DrawSelectionRect(Rectangle rect) {
-        var c = ColorHelper.HSVToColor(rect.Size().ToVector2().Length().Div(2f).AtMost(70f), 1f, 1f);
-        ISprite.OutlinedRect(rect, c * 0.3f, c, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
+    public (Color outline, Color fill) GetSelectionColor(Rectangle rect) 
+        => GetSelectionColorCore(rect.Size().ToVector2().Length());
+    
+    private (Color outline, Color fill) GetSelectionColorCore(float len) {
+        var outline = ColorHelper.HSVToColor(len.Div(2f).AtMost(70f), 1f, 1f);
+        return (outline, outline * 0.3f);
+    }
+    
+    public void DrawSelectionRect(Rectangle rect) {
+        var c = GetSelectionColor(rect);
+        ISprite.OutlinedRect(rect, c.fill, c.outline, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
     }
 
     protected bool IsEqual(EditorLayer layer, object? currentMaterial, string name) {
@@ -252,9 +260,12 @@ public abstract class Tool {
     private (object material, string displayName) GetMainPlacementForGroupKey(object key, List<(object material, string displayName)> group) {
         if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
             return group[0];
-        
-        if (group.Find(pair => pair.displayName == targetName) is { material: { } } main)
-            return main;
+
+        foreach (var pair in group) {
+            if (pair.displayName == targetName && pair.material is { }) {
+                return pair;
+            }
+        }
 
         return group[0];
     }

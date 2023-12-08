@@ -1,11 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using Rysy.Extensions;
+﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Selections;
-using System;
-using System.Buffers;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Xml;
@@ -350,7 +347,7 @@ public sealed class Autotiler {
             return new();
         }
 
-        using var watch = new ScopedStopwatch("Autotiler.GetSprites");
+        //using var watch = new ScopedStopwatch("Autotiler.GetSprites");
         
         List<char>? unknownTilesetsUsed = null;
         var w = tileGrid.GetLength(0);
@@ -406,9 +403,11 @@ public sealed class Autotiler {
         sprites[x, y] = GetSprite(tileGrid, c, x, y, tilesOOB, ref unknownTilesetsUsed)!;
     }
 
+    internal const int SpriteListPropagationRange = 2;
+    
     internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
         var sprites = toUpdate.Sprites;
-        const int offset = 2;
+        const int offset = SpriteListPropagationRange;
 
         var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
         var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
@@ -424,8 +423,50 @@ public sealed class Autotiler {
             }
         }
     }
+    
+    /// <summary>
+    /// Updates previously autotiled sprite lists to reflect changes done to all tiles pointed at by <paramref name="changed"/>.
+    /// Also updates nearby tiles as needed by mask size.
+    /// More efficient than individually calling <see cref="UpdateSpriteList"/> on each point.
+    /// </summary>
+    internal void BulkUpdateSpriteList<T>(AutotiledSpriteList toUpdate, char[,] tileGrid, T changed, bool tilesOOB)
+        where T : IEnumerator<Point> {
+        var sprites = toUpdate.Sprites;
+        const int offset = SpriteListPropagationRange;
 
-    public sealed record class AutotiledSpriteList : ISprite {
+        BitArray changeMask = new(tileGrid.Length);
+        
+        while (changed.MoveNext()) {
+            var (changedX, changedY) = changed.Current;
+            
+            var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
+            var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
+            for (int x = (changedX - offset).AtLeast(0); x <= endX; x++) {
+                for (int y = (changedY - offset).AtLeast(0); y <= endY; y++) {
+                    var changeMaskLoc = changeMask.Get1dLoc(x, y, tileGrid.GetLength(0));
+                    
+                    if (changeMask.Get(changeMaskLoc)) {
+                        continue;
+                    }
+
+                    changeMask.Set(changeMaskLoc, true);
+                    
+                    SetTile(sprites, tileGrid, tileGrid[x, y], x, y, tilesOOB, ref toUpdate.UnknownTilesetsUsed);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Updates previously autotiled sprite lists to reflect changes done to all tiles pointed at by true values in <paramref name="changed"/>.
+    /// Also updates nearby tiles as needed by mask size.
+    /// More efficient than individually calling <see cref="UpdateSpriteList"/> on each point.
+    /// </summary>
+    internal void BulkUpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, BitArray changed, bool tilesOOB) {
+        BulkUpdateSpriteList(toUpdate, tileGrid, changed.EnumerateTrue2dLocations(tileGrid.GetLength(0)).GetEnumerator(), tilesOOB);
+    }
+
+    public sealed record AutotiledSpriteList : ISprite {
         public int? Depth { get; set; }
         public Color Color { get; set; } = Color.White;
         internal List<char>? UnknownTilesetsUsed;
@@ -475,8 +516,7 @@ public sealed class Autotiler {
             var color = Color;
             for (int x = left; x < right; x++) {
                 for (int y = top; y < bot; y++) {
-                    ref var s = ref sprites[x, y];
-                    s?.RenderAt(b, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), color);
+                    sprites[x, y]?.RenderAt(b, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), color);
                 }
             }
         }
@@ -493,7 +533,7 @@ public sealed class Autotiler {
     /// Represents a sprite for a specific autotiled sprite.
     /// For memory efficiency, one instance of this class should be created and re-used for each tile inside a given tileset.
     /// </summary>
-    public class AutotiledSprite {
+    public sealed class AutotiledSprite {
         internal readonly VirtTexture Texture;
         internal readonly Rectangle Subtexture;
         

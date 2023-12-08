@@ -155,9 +155,9 @@ public sealed class EditorScene : Scene {
                 if (overrideFilepath is { }) {
                     map.Filepath = overrideFilepath;
                 }
-                Map = map;
 
                 RysyEngine.Scene = this;
+                Map = map;
             } catch (Exception e) {
                 Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
 

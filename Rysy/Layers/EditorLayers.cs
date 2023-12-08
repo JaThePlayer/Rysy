@@ -15,10 +15,10 @@ public static class EditorLayers {
     public static EditorLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FGDecals);
     public static EditorLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BGDecals);
 
-    public static EditorLayer Room { get; } = new FakeLayer("Rooms");
+    public static EditorLayer Room { get; } = new FakeLayer("Rooms", SelectionLayer.Rooms);
 
     public static EditorLayer CustomLayer { get; } = new FakeLayer("Custom");
-    public static EditorLayer All { get; } = new FakeLayer("All");
+    public static EditorLayer All { get; } = new FakeLayer("All", SelectionLayer.All);
     public static EditorLayer Prefabs { get; } = new PrefabLayer();
 
     public static bool IsDecalLayer(EditorLayer layer) => layer == FgDecals || layer == BgDecals;

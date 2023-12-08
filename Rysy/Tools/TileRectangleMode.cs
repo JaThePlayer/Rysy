@@ -12,14 +12,14 @@ public class TileRectangleMode : TileMode {
     
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);
-        var startPos = Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
+        var startPos = _dragGesture.Data?.StartPos ?? mousePos;
         var rect = SelectionRect(startPos, mousePos).Mult(8);
 
         Tool.RenderTiles(rect.Location.ToVector2(), rect.Width / 8, rect.Height / 8);
 
         
         if (_dragGesture.StartingPos is { } start) {
-            Tools.Tool.DrawSelectionRect(rect);
+            Tool.DrawSelectionRect(rect);
         } else {
             ISprite.OutlinedRect(rect, Color.Transparent, Tool.DefaultColor).Render();
         }
@@ -28,13 +28,20 @@ public class TileRectangleMode : TileMode {
     public override void Update(Camera camera, Room room) {
         _dragGesture.Update(out var continueStroke, out var endStroke, out var lastMousePos, out var data);
 
+        if (continueStroke || endStroke) {
+            data!.StartPos ??= Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
+        }
+        
         if (endStroke) {
             var endPos = Tool.GetMouseTilePos(camera, room);
-            var startPos = Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos!);
+            var startPos = data!.StartPos!.Value;
             var rect = SelectionRect(startPos, endPos);
-
-            Tool.History.ApplyNewAction(new TileRectChangeAction(Tool.TileOrAlt(_dragGesture.Shift), rect,
-                Tool.GetGrid(room), Tool.GetSecondGrid(room)));
+            var tile = Tool.TileOrAlt(_dragGesture.Shift);
+            
+            Tool.History.ApplyNewAction(new MergedAction(
+                new TileRectChangeAction(tile, rect, Tool.GetGrid(room)),
+                Tool.GetSecondGrid(room) is {} second ? new TileRectChangeAction(tile, rect, second) : null
+            ));
         }
     }
 
@@ -55,6 +62,6 @@ public class TileRectangleMode : TileMode {
     }
 
     internal sealed class RectangleData {
-        
+        public Point? StartPos;
     }
 }

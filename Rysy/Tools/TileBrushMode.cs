@@ -76,11 +76,7 @@ public class TileBrushMode : TileMode {
     private void ClearStrokeData(Room? room) {
         _dragGesture.CancelStroke();
 
-        room ??= EditorState.CurrentRoom;
-        if (room is null)
-            return;
-        Tool.GetGrid(room)?.ClearSpriteCache();
-        Tool.GetSecondGrid(room)?.ClearSpriteCache();
+        ClearTilegridSpriteCache(room);
     }
 
     public TileBrushMode(TileTool tool) : base(tool)

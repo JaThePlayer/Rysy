@@ -15,7 +15,14 @@ public record struct Sprite : ISprite {
 
     public Color Color { get; set; } = Color.White;
 
-    public ISprite WithMultipliedAlpha(float alpha) {
+    public Sprite WithMultipliedAlpha(float alpha) {
+        return this with {
+            Color = Color * alpha,
+            OutlineColor = OutlineColor * alpha,
+        };
+    }
+    
+    ISprite ISprite.WithMultipliedAlpha(float alpha) {
         return this with {
             Color = Color * alpha,
             OutlineColor = OutlineColor * alpha,

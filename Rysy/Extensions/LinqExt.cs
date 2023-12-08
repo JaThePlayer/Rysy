@@ -225,6 +225,7 @@ public static class LinqExt {
         }
 
         public void Reset() {
+            _moved = false;
         }
     }
 }

@@ -82,7 +82,7 @@ public class Window {
 
         if (Closeable ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags)) : ImGui.Begin(WindowID, EditWindowFlags(flags))) {
             if (HasBottomBar) {
-                ImGuiManager.WithBottomBar(Render, RenderBottomBar);
+                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)GetHashCode());
             } else {
                 Render();
             }

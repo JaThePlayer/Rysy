@@ -369,11 +369,12 @@ public static class ImGuiManager {
         return edited;
     }
 
-    public static void WithBottomBar(Action renderMain, Action renderBottomBar) {
+    public static void WithBottomBar(Action renderMain, Action renderBottomBar, uint? id = null) {
         var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 4f;
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
 
-        ImGui.BeginChild(124, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
+        id ??= (uint) renderMain.Method.GetHashCode();
+        ImGui.BeginChild(id.Value, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y); //  + ImGui.GetStyle().FramePadding.Y  
         renderMain();
         ImGui.EndChild();
@@ -557,6 +558,10 @@ public static class ImGuiManager {
             ImGui.SetCurrentContext(ctx);
 
             EnableDocking();
+
+            ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+
+            ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
             Engine = engine ?? throw new ArgumentNullException(nameof(engine));
             GraphicsDevice = RysyEngine.Instance.GraphicsDevice;

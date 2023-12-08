@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Rysy.Extensions;
+using System.Collections;
 
 namespace Rysy.Helpers; 
 
@@ -11,9 +12,11 @@ public static class Utils {
     /// Gets all intersections between the provided line and a 1x1 grid.
     /// </summary>
     public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b) {
+        var ret = new List<Point>(1);
+        
         if (a == b) {
-            yield return a;
-            yield break;
+            ret.Add(a);
+            return ret;
         }
         
         var (x0, y0) = a;
@@ -31,7 +34,7 @@ public static class Utils {
         dy *= 2;
 
         for (; n > 0; --n) {
-            yield return new(x, y);
+            ret.Add(new(x, y));
 
             switch (error)
             {
@@ -54,6 +57,8 @@ public static class Utils {
                     break;
             }
         }
+
+        return ret;
     }
     
     // https://en.wikipedia.org/wiki/Flood_fill#Span_filling
@@ -117,8 +122,8 @@ public static class Utils {
 
                 while (x1 < x2 && !inside(x1, y)) {
                     x1 += 1;
-                    x = x1;
                 }
+                x = x1;
             }
         }
 

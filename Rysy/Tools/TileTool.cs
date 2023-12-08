@@ -19,6 +19,7 @@ public class TileTool : Tool {
             new TileBrushMode(this),
             new TileRectangleMode(this),
             new TileBucketMode(this),
+            new TileLineMode(this),
         };
     }
     
@@ -54,28 +55,15 @@ public class TileTool : Tool {
         return autotiler.Tilesets.Keys.Where(k => k is not ('z' or 'y')).Append('0').Select(k => (object) k);
     }
 
-    private static Dictionary<EditorLayer, ConditionalWeakTable<string, string>> MaterialToDisplayCache = new();
-
     public override string GetMaterialDisplayName(EditorLayer layer, object material) {
-        if (!MaterialToDisplayCache.TryGetValue(layer, out var cache)) {
-            MaterialToDisplayCache[layer] = cache = new();
+        if (material is not char c)
+            return material.ToString()!;
+        
+        if (c is '0') {
+            return "Air";
         }
 
-        if (material is char c) {
-            if (c is '0') {
-                return "Air";
-            }
-            var cAsString = c.ToString();
-            if (!cache.TryGetValue(cAsString, out var name)) {
-                name = GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? cAsString;
-
-                cache.Add(cAsString, name);
-            }
-
-            return name;
-        }
-
-        return material.ToString()!;
+        return GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? c.ToString();
     }
 
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {

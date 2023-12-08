@@ -14,7 +14,7 @@ public class HistoryHandler {
     public Action? OnApply { get; set; }
 
     public void UndoSimulations() {
-        foreach (var item in SimulatedActions) {
+        foreach (var item in SimulatedActions.AsEnumerable().Reverse()) {
             item?.Undo();
         }
         SimulatedActions.Clear();

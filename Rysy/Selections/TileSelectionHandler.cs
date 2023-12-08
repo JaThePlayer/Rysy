@@ -101,8 +101,9 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             for (int x = rect.X; x < rect.Right; x++)
                 for (int y = rect.Y; y < rect.Bottom; y++)
                     if (x >= 0 && y >= 0 && x < Grid.Width && y < Grid.Height
-                        && toMove[x - rect.X, y - rect.Y] != '0')
+                        && toMove[x - rect.X, y - rect.Y] != '0') {
                         Orig[x, y] = '0';
+                    }
         }
     }
 

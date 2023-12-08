@@ -15,7 +15,8 @@ public sealed class TileEditorLayer : EditorLayer {
 
     public override SelectionLayer SelectionLayer => TileLayer switch {
         TileLayer.BG => SelectionLayer.BGTiles,
-        TileLayer.FG => SelectionLayer.BGTiles,
+        TileLayer.FG => SelectionLayer.FGTiles,
+        _ => throw new ArgumentOutOfRangeException()
     };
 
     public override IEnumerable<Placement> GetMaterials()

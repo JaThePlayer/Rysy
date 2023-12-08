@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using System.Collections;
 
 namespace Rysy.Tools; 
 
@@ -10,17 +11,38 @@ public class TileBucketMode : TileMode {
     }
 
     public override string Name => "bucket";
+
+    private BitArray? _prevChangedTiles;
     
     public override void Render(Camera camera, Room room) {
         var tile = Tool.GetMouseTilePos(camera, room);
         var mouse = tile.Mult(8);
 
-        var changed = GetChangedTilesAt(room, tile, Tool.TileOrAlt(), out var filled, cap: 10_000);
-        foreach (var p in changed) {
-            ISprite.Rect(new Rectangle(p.X * 8, p.Y * 8, 8, 8), Tool.DefaultColor * 0.3f).Render();
+        var width = Tool.GetGrid(room).Width;
+        if (!_prevChangedTiles?.Get2d(tile.X, tile.Y, width) ?? true) {
+            _prevChangedTiles = GetChangedTilesAt(room, tile, Tool.TileOrAlt(), out var filled);
         }
 
-        if (changed.Count == 0) {
+        var tiles = _prevChangedTiles;
+        var color = Tool.DefaultColor * 0.3f;
+        for (int i = 0; i < tiles.Length; i++) {
+            if (!tiles.Get(i))
+                continue;
+
+            var w = 8;
+            var (x, y) = tiles.Get2dLoc(i, width);
+            var maxI = i + width - x;
+            // Merge rectangles horizontally:
+            while (++i < maxI && tiles.Get(i)) {
+                w += 8;
+            }
+            // we overshoot inside the while loop, let's cancel that out
+            i--;
+            
+            GFX.Batch.Draw(GFX.Pixel, new Rectangle(x * 8, y * 8, w, 8), null, color);
+        }
+
+        if (_prevChangedTiles.Count == 0) {
             ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, Tool.DefaultColor).Render();
         }
     }
@@ -40,32 +62,37 @@ public class TileBucketMode : TileMode {
         var tile = Tool.TileOrAlt();
         var changedTiles = GetChangedTilesAt(room, pos, tile, out _);
         
-        Tool.History.ApplyNewAction(new History.TileBulkChangeAction(tile, changedTiles, Tool.GetGrid(room)));
+        Tool.History.ApplyNewAction(new History.TileBulkBitArrayChangeAction(tile, changedTiles, Tool.GetGrid(room)));
+        _prevChangedTiles = null;
     }
 
-    private HashSet<Point> GetChangedTilesAt(Room room, Point startPos, char newTile, out bool finishedFilling, int? cap = null) {
-        var changedTiles = new HashSet<Point>();
+    private BitArray GetChangedTilesAt(Room room, Point startPos, char newTile, out bool finishedFilling, int? cap = null, Action<int, int>? onSet = null) {
         var tiles = Tool.GetGrid(room).Tiles;
+        var changeMask = new BitArray(tiles.Length);
+        var w = tiles.GetLength(0);
+        
         finishedFilling = true;
 
         if (!tiles.TryGet(startPos.X, startPos.Y, out var replacedTile)) {
-            return changedTiles;
+            return changeMask;
         }
 
         if (replacedTile == newTile) {
-            return changedTiles;
+            return changeMask;
         }
         
         finishedFilling = Utils.FloodFill(startPos.X, startPos.Y,
-            (x, y) => !changedTiles.Contains(new(x, y)) && tiles.TryGet(x, y, out var id) && id == replacedTile,
+            (x, y) => tiles.TryGet(x, y, out var id) && id == replacedTile && !changeMask.Get2d(x, y, w),
             (x, y) => {
-                changedTiles.Add(new(x, y)); 
+                changeMask.Set2d(x, y, w, true);
+                onSet?.Invoke(x, y);
             }, cap);
 
-        return changedTiles;
+        return changeMask;
     }
 
     public override void CancelInteraction() {
+        _prevChangedTiles = null;
     }
 
     public override void Init() {

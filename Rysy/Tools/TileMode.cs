@@ -19,4 +19,13 @@ public abstract class TileMode : ToolMode {
     public abstract void CancelInteraction();
 
     public abstract void Init();
+
+    public void ClearTilegridSpriteCache(Room? room = null) {
+        room ??= EditorState.CurrentRoom;
+        if (room is null)
+            return;
+        
+        Tool.GetGrid(room)?.ClearSpriteCache();
+        Tool.GetSecondGrid(room)?.ClearSpriteCache();
+    }
 }

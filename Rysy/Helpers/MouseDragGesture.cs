@@ -3,7 +3,7 @@
 public class MouseDragGesture<T> where T : class, new() {
     private readonly Input _input;
 
-    private bool _begun;
+    public bool Begun { get; private set; }
 
     private Point? _currentStrokeLastPos;
 
@@ -31,11 +31,11 @@ public class MouseDragGesture<T> where T : class, new() {
         }
         lastMousePos = _currentStrokeLastPos ?? _input.Mouse.Pos;
         
-        if (!_begun) {
+        if (!Begun) {
             StartingPos = null;
             
             if (_input.Mouse.Left.Clicked() || _forceBeginNextFrame) {
-                _begun = true;
+                Begun = true;
                 Shift = _input.Keyboard.Shift();
                 Data = new();
                 continueStroke = true;
@@ -44,7 +44,7 @@ public class MouseDragGesture<T> where T : class, new() {
             }
         }
 
-        if (!_begun) {
+        if (!Begun) {
             return;
         }
 
@@ -72,7 +72,7 @@ public class MouseDragGesture<T> where T : class, new() {
     }
     
     public void CancelStroke() {
-        _begun = false;
+        Begun = false;
         _currentStrokeLastPos = null;
         Data = null;
     }
