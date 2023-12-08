@@ -162,7 +162,8 @@ public class FormWindow : Window {
     public void RenderBody() {
         ImGuiManager.WithBottomBar(
             renderMain: Render,
-            renderBottomBar: RenderBottomBar
+            renderBottomBar: RenderBottomBar,
+            id: (uint)GetHashCode()
         );
     }
 

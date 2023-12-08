@@ -1,4 +1,5 @@
 ﻿using Rysy.Helpers;
+using System.Collections;
 
 namespace Rysy.Extensions;
 
@@ -140,5 +141,47 @@ public static class RectangleExt {
             return NineSliceLocation.Right;
 
         return null;
+    }
+
+    /// <summary>
+    /// Returns an enumerator which returns all grid locations that are within the given rectangle.
+    /// </summary>
+    public static GridLocationsEnumerator EnumerateGridLocations(this Rectangle r) => new(r);
+
+    public struct GridLocationsEnumerator : IEnumerator<Point> {
+        private Rectangle _rectangle;
+        private int _x, _y;
+
+        public GridLocationsEnumerator(Rectangle r) {
+            _rectangle = r;
+            Reset();
+        }
+
+        public GridLocationsEnumerator GetEnumerator() 
+            => this;
+        
+        public bool MoveNext() {
+            var r = _rectangle;
+            if (_x == r.Right - 1) {
+                _x = r.X;
+                _y++;
+                return _y != r.Bottom;
+            }
+
+            _x++;
+            return true;
+        }
+
+        public void Reset() {
+            _x = _rectangle.X - 1;
+            _y = _rectangle.Y;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public Point Current => new(_x, _y);
+
+        public void Dispose() {
+        }
     }
 }

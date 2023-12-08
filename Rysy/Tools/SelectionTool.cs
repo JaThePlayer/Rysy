@@ -197,6 +197,8 @@ public class SelectionTool : Tool {
             return;
         }
 
+        FinalizeStates();
+        
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipHorizontal() : null).MergeActions();
         if (action.Any())
             ClearColliderCachesInSelections();
@@ -209,6 +211,7 @@ public class SelectionTool : Tool {
             return;
         }
 
+        FinalizeStates();
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipVertical() : null).MergeActions();
         if (action.Any())
             ClearColliderCachesInSelections();
@@ -221,6 +224,7 @@ public class SelectionTool : Tool {
             return;
         }
 
+        FinalizeStates();
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryRotate(dir) : null).MergeActions();
         if (action.Any())
             ClearColliderCachesInSelections();
@@ -520,6 +524,14 @@ public class SelectionTool : Tool {
         return new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
     }
 
+    private void FinalizeStates() {
+        History.UndoSimulations();
+
+        if (State == States.MoveOrResizeGesture) {
+            FinalizeMove(EditorState.Camera, EditorState.CurrentRoom!);
+        }
+    }
+
     public override void Update(Camera camera, Room room) {
         if (CurrentSelections is { } selections) {
             var mouseRoomPos = GetMouseRoomPos(camera, room);
@@ -565,7 +577,7 @@ public class SelectionTool : Tool {
     public override void CancelInteraction() {
         base.CancelInteraction();
 
-        EndMoveGesture(true);
+        EndMoveGesture(false, null, null);
         SelectionGestureHandler.CancelGesture();
         Deselect();
     }
@@ -595,7 +607,8 @@ public class SelectionTool : Tool {
         }
 
         History.UndoSimulations();
-        History.ApplyNewAction(GetPreciseRotationAction(angle));
+        if (angle != 0f)
+            History.ApplyNewAction(GetPreciseRotationAction(angle));
         ClearColliderCachesInSelections();
         RotationGestureStart = null;
     }
@@ -645,12 +658,33 @@ public class SelectionTool : Tool {
         }
     }
 
-    private void EndMoveGesture(bool simulate) {
+    private void FinalizeMove(Camera camera, Room room) {
+        if (CurrentSelections is { } selections && MoveGestureStart is { } start) {
+            Point mousePos = GetMouseRoomPos(camera, room);
+            Vector2 delta = MoveGestureFinalDelta;
+
+            if (delta.LengthSquared() <= 0) {
+                // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
+                SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
+            } else {
+                MoveSelectionsBy(delta, selections, MoveGestureGrabbedLocation);
+            }
+
+            MoveGestureStart = mousePos;
+            MoveGestureFinalDelta = default;
+        }
+    }
+    
+    private void EndMoveGesture(bool simulate, Camera? camera, Room? room) {
         if (State != States.MoveOrResizeGesture)
             return;
 
         History.UndoSimulations();
 
+        if (simulate && room is {} && camera is {}) {
+            FinalizeMove(camera, room);
+        }
+        
         MoveGestureStart = null;
         MoveGestureLastMousePos = null;
         MoveGestureFinalDelta = Vector2.Zero;
@@ -662,26 +696,14 @@ public class SelectionTool : Tool {
         var left = Input.Mouse.Left;
 
         if (Input.Keyboard.Shift()) {
-            EndMoveGesture(false);
+            EndMoveGesture(false, camera, room);
             State = States.RotationGesture;
             return;
         }
 
         switch (left) {
             case MouseInputState.Released: {
-                if (CurrentSelections is { } selections && MoveGestureStart is { } start) {
-                    Point mousePos = GetMouseRoomPos(camera, room);
-                    Vector2 delta = MoveGestureFinalDelta;
-
-                    if (delta.LengthSquared() <= 0) {
-                        // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
-                        SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
-                    } else {
-                        MoveSelectionsBy(delta, selections, MoveGestureGrabbedLocation);
-                    }
-                }
-
-                EndMoveGesture(false);
+                EndMoveGesture(true, camera, room);
                 break;
             }
             case MouseInputState.Held: {

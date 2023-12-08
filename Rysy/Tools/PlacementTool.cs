@@ -208,7 +208,12 @@ public class PlacementTool : Tool {
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
             foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
-                item.WithMultipliedAlpha(0.4f).Render();
+                if (item is Sprite spr) {
+                    // don't box
+                    spr.WithMultipliedAlpha(0.4f).Render();
+                } else {
+                    item.WithMultipliedAlpha(0.4f).Render();
+                }
             }
         }
 

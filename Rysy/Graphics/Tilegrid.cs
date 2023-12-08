@@ -1,10 +1,9 @@
 ﻿using KeraLua;
-using Rysy;
 using Rysy.Extensions;
 using Rysy.Helpers;
-using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Selections;
+using System.Collections;
 using System.Text;
 
 namespace Rysy.Graphics;
@@ -98,6 +97,98 @@ public class Tilegrid : ILuaWrapper {
             Autotiler!.UpdateSpriteList(cached, Tiles, x, y, true);
         }
         return true;
+    }
+
+    /// <summary>
+    /// Replaces all provided tiles by <paramref name="tile"/> at once. More optimal than calling any other SetTile methods for larger areas.
+    /// </summary>
+    /// <param name="tile">The tile id to replace with</param>
+    /// <param name="locations">A enumerator returning all locations to change. Might be evaluated more than once!!!</param>
+    /// <param name="delta">Stores all changes done by this operation, can be used to undo.</param>
+    /// <param name="locationCountHint">A hint for how many elements will get returned by <paramref name="locations"/>, to help create a well-suited buffer.</param>
+    /// <typeparam name="T">The type of the <paramref name="locations"/> enumerator.</typeparam>
+    /// <returns>Whether any tiles got edited.</returns>
+    public bool BulkReplaceTiles<T>(char tile, T locations, out BulkReplaceDelta delta, int? locationCountHint = null) where T : IEnumerator<Point> {
+        var tiles = Tiles;
+        bool anyChanged = false;
+
+        List<char> oldTiles = locationCountHint is { } hint ? new(hint) : new();
+        delta = new(oldTiles);
+
+        while (locations.MoveNext()) {
+            (int x, int y) = locations.Current;
+            var changed = tiles.TryReplace(x, y, tile, out var last);
+            anyChanged |= changed;
+            oldTiles.Add(changed ? last : tile);
+        }
+        oldTiles.TrimExcess();
+        locations.Reset();
+
+        if (!anyChanged)
+            return false;
+        
+        RenderCacheToken?.Invalidate();
+        if (CachedSprites is { } cached) {
+            Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Replaces all provided tiles by <paramref name="locations"/> at once. More optimal than calling any other SetTile methods for larger areas.
+    /// </summary>
+    /// <param name="tile">The tile id to replace with</param>
+    /// <param name="locations">A bit array holding the locations of changed tiles. Values set to true will be replaced, others ignored. The length of this array should be equal to the length of the tilegrid.</param>
+    /// <param name="delta">Stores all changes done by this operation, can be used to undo.</param>
+    /// <param name="locationCountHint">A hint for how many locations will be changed, to help create a well-suited buffer.</param>
+    /// <returns>Whether any tiles got edited.</returns>
+    internal bool BulkReplaceTiles(char tile, BitArray locations, out BulkReplaceDelta delta, int? locationCountHint = null)
+    => BulkReplaceTiles(tile, locations.EnumerateTrue2dLocations(Tiles.GetLength(0)).GetEnumerator(), out delta, locationCountHint);
+    
+    /// <summary>
+    /// Replaces all tiles at locations indicated by <see cref="locations"/> with tiles from the corresponding index from <see cref="delta"/>
+    /// </summary>
+    internal bool BulkReplaceTiles<T>(T locations, BulkReplaceDelta delta) where T : IEnumerator<Point> {
+        if (delta.OldTiles is not { } oldTiles) {
+            throw new ObjectDisposedException(delta.GetType().FullName);
+        }
+        
+        var tiles = Tiles;
+        bool anyChanged = false;
+
+        var i = 0;
+        while (locations.MoveNext()) {
+            var (x, y) = locations.Current;
+            anyChanged |= tiles.TrySet(x, y, oldTiles[i++]);
+        }
+        locations.Reset();
+
+        if (anyChanged) {
+            RenderCacheToken?.Invalidate();
+            if (CachedSprites is { } cached) {
+                Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
+            }
+        }
+        
+        return anyChanged;
+    }
+    
+    internal bool BulkReplaceTiles(BitArray locations, BulkReplaceDelta delta)
+        => BulkReplaceTiles(locations.EnumerateTrue2dLocations(Tiles.GetLength(0)).GetEnumerator(), delta);
+
+    public sealed class BulkReplaceDelta {
+        internal List<char>? OldTiles { get; private set; }
+
+        internal bool Cleared => OldTiles is null;
+        
+        internal BulkReplaceDelta(List<char> oldTiles) {
+            OldTiles = oldTiles;
+        }
+
+        public void Clear() {
+            OldTiles = null;
+        }
     }
 
     public void Resize(int widthPixels, int heightPixels) {
