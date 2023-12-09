@@ -12,7 +12,7 @@ public abstract class TileEntity : Entity {
         => GetSprites(Pos, Layer, Tiletype);
 
     public IEnumerable<ISprite> GetSprites(Vector2 pos, TileLayer layer, char tiletype)
-        => GetTilegrid(Room, layer).Autotiler!.GetSprites(pos, tiletype, Width / 8, Height / 8, Color);
+        => GetTilegrid(Room, layer).Autotiler!.GetFilledRectSprites(pos, tiletype, Width / 8, Height / 8, Color);
 
     public static Tilegrid GetTilegrid(Room room, TileLayer layer) {
         ArgumentNullException.ThrowIfNull(room);

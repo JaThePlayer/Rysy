@@ -17,7 +17,8 @@ public class TileTool : Tool {
     public TileTool() {
         _tileModes = new() {
             new TileBrushMode(this),
-            new TileRectangleMode(this),
+            new TileRectangleMode(this, hollow: false),
+            new TileRectangleMode(this, hollow: true),
             new TileBucketMode(this),
             new TileLineMode(this),
         };
@@ -110,8 +111,19 @@ public class TileTool : Tool {
         return null;
     }
 
-    public void RenderTiles(Vector2 loc, int w, int h) {
-        foreach (var item in GetAutotiler(Layer)?.GetSprites(loc, Tile, w, h, Color.White) ?? Array.Empty<ISprite>()) {
+    public void RenderTileRectangle(Vector2 loc, int w, int h, bool hollow) {
+        var autotiler = GetAutotiler(Layer);
+        IEnumerable<ISprite>? sprites = null;
+
+        if (hollow) {
+            sprites = autotiler?.GetHollowRectSprites(loc, Tile, w, h, Color.White);
+        } else {
+            sprites = autotiler?.GetFilledRectSprites(loc, Tile, w, h, Color.White);
+        }
+
+        sprites ??= Array.Empty<ISprite>();
+        
+        foreach (var item in sprites) {
             item.WithMultipliedAlpha(0.3f).Render();
         }
     }

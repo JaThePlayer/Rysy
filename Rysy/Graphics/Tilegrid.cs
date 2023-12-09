@@ -197,9 +197,9 @@ public class Tilegrid : ILuaWrapper {
         CachedSprites = null;
     }
 
-    private Autotiler.AutotiledSpriteList? CachedSprites;
+    private AutotiledSpriteList? CachedSprites;
 
-    public Autotiler.AutotiledSpriteList GetSprites() {
+    public AutotiledSpriteList GetSprites() {
         if (CachedSprites is { } c)
             return c;
 
