@@ -106,8 +106,6 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     private void EditorGroupsListChanged() {
         var p = string.Join(",", _editorGroupList!);
         EntityData[EditorGroupEntityDataKey] = string.Join(",", _editorGroupList!);
-
-        Console.WriteLine((p, EntityData[EditorGroupEntityDataKey]));
     }
 
     private void AssureAutoAssignedGroupsExist() {
@@ -355,6 +353,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new System.Diagnostics.StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }
+    }
+
+    /// <summary>
+    /// Clears any and all internal caches used by this entity, to minimize RAM usage.
+    /// Does not clear the room's render cache.
+    /// Should be called sparingly.
+    /// </summary>
+    public virtual void ClearInnerCaches() {
+        _NameAsASCII = null;
+        EntityData.ClearCaches();
     }
 
     public IList<Entity> GetRoomList() => this switch {
@@ -808,7 +816,7 @@ public class EntityData : IDictionary<string, object> {
         }
     }
 
-    private void ClearCaches(string? key = null) {
+    internal void ClearCaches(string? key = null) {
         LuaValues?.Clear();
 
         FakeOverlay = null;

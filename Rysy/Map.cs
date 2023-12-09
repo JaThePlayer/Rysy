@@ -116,19 +116,28 @@ public sealed class Map : IPackable {
 
     private void LoadAutotiler(MapMetadata? oldMeta, MapMetadata meta) {
         if (meta.BackgroundTiles is { } moddedBgTiles && oldMeta?.BackgroundTiles != meta.BackgroundTiles) {
-            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), BGAutotiler.ReadFromXml)) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), stream => {
+                    BGAutotiler.ReadFromXml(stream);
+                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                })) {
                 Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
             }
         }
 
         if (meta.ForegroundTiles is { } moddedFgTiles && oldMeta?.ForegroundTiles != meta.ForegroundTiles) {
-            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), FGAutotiler.ReadFromXml)) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), stream => {
+                    FGAutotiler.ReadFromXml(stream);
+                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                })) {
                 Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
             }
         }
 
         if (meta.Sprites is { } sprites && oldMeta?.Sprites != meta.Sprites) {
-            if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), Sprites.Load)) {
+            if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), (stream, mod) => {
+                    Sprites.Load(stream, mod);
+                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                })) {
                 Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find sprites xml {sprites}");
             }
         }
