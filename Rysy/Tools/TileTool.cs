@@ -21,6 +21,7 @@ public class TileTool : Tool {
             new TileRectangleMode(this, hollow: true),
             new TileBucketMode(this),
             new TileLineMode(this),
+            new TileCircleMode(this),
         };
     }
     

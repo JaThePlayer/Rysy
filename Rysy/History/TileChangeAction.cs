@@ -41,6 +41,23 @@ public record TileLineChangeAction
     }
 }
 
+public record TileCircleChangeAction
+    (char Id, Point A, Point B, Tilegrid Grid) : IHistoryAction {
+    private Tilegrid.BulkReplaceDelta _oldChars;
+    
+    public bool Apply() {
+        var anyChanged = Grid.BulkReplaceTiles(Id, Utils.GetCircleGridIntersection(A, B).GetResettableEnumerator(), out _oldChars);
+
+        return anyChanged;
+    }
+
+    public void Undo() {
+        Grid.BulkReplaceTiles(Utils.GetCircleGridIntersection(A, B).GetResettableEnumerator(), _oldChars);
+        
+        _oldChars.Clear();
+    }
+}
+
 public record TileBulkChangeAction(char Id, HashSet<Point> Points, Tilegrid Grid) : IHistoryAction {
     private Tilegrid.BulkReplaceDelta _oldTiles;
     
