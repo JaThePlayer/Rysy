@@ -50,6 +50,11 @@ public sealed class TilesetMask {
     }
 }
 
+/// <summary>
+/// Represents a 'set' xml element within a tileset
+/// </summary>
+public sealed record TilesetSet(TilesetMask Mask, AutotiledSprite[] Tiles);
+
 public sealed class TilesetData {
     public string Filename;
 
@@ -59,7 +64,7 @@ public sealed class TilesetData {
 
     [JsonIgnore]
     public VirtTexture Texture = null!;
-    public List<(TilesetMask mask, AutotiledSprite[] tiles)> Tiles = new();
+    public List<TilesetSet> Tiles = new();
 
     public AutotiledSprite[] Center = null!;
     public AutotiledSprite[] Padding = null!;
@@ -192,27 +197,22 @@ public sealed class TilesetData {
             }
         }
 
+        // This combination of tiles is unknown
         var allTiles = Tiles;
-        for (int i = 0; i < allTiles.Count; i++) {
-            if (MatchingMask(allTiles[i].mask, tileDataSpan)) {
-                tiles = allTiles[i].tiles;
-                if (hasBitmask)
-                    _fastTileDataToTiles[bitmask] = tiles;
-                return true;
-            }
+        foreach (var t in allTiles) {
+            if (!MatchingMask(t.Mask, tileDataSpan))
+                continue;
+            
+            tiles = t.Tiles;
+            if (hasBitmask)
+                _fastTileDataToTiles[bitmask] = tiles;
+            return true;
         }
             
         tiles = null;
         if (hasBitmask)
             _fastTileDataToTiles[bitmask] = tiles;
         return false;
-    }
-    
-    public bool GetFirstMatch(char[,] t, int x, int y, bool tilesOob, [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
-        //char middleTile = t[x, y];
-        var checker = new TilegridTileChecker(t, tilesOob);
-
-        return GetFirstMatch(checker, x, y, out tiles);
     }
         
     public bool GetFirstMatch<T>(T checker, int x, int y, [NotNullWhen(true)] out AutotiledSprite[]? tiles) 

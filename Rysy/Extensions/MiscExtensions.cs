@@ -76,18 +76,20 @@ public static class MiscExtensions {
     /// <summary>
     /// Returns an enumerator that enumerates through all 2d points stored in the BitArray associated with a true value.
     /// </summary>
-    public static BitArray2dMatchEnumerator EnumerateTrue2dLocations(this BitArray s, int gridWidth) =>
-        new(s, gridWidth);
+    public static BitArray2dMatchEnumerator EnumerateTrue2dLocations(this BitArray s, int gridWidth, Point offset = default) =>
+        new(s, gridWidth, offset);
 }
 
-public struct BitArray2dMatchEnumerator : IEnumerator<Point> {
+public struct BitArray2dMatchEnumerator : IEnumerator<Point>, IEnumerable<Point> {
     private int _i;
     private int _w;
     private BitArray _arr;
+    private Point _offset;
     
-    public BitArray2dMatchEnumerator(BitArray s, int gridWidth) {
+    public BitArray2dMatchEnumerator(BitArray s, int gridWidth, Point offset) {
         _i = -1;
         _w = gridWidth;
+        _offset = offset;
         _arr = s;
     }
 
@@ -112,10 +114,15 @@ public struct BitArray2dMatchEnumerator : IEnumerator<Point> {
 
     object IEnumerator.Current => Current;
 
-    public Point Current => _arr.Get2dLoc(_i, _w);
+    public Point Current => _arr.Get2dLoc(_i, _w) + _offset;
 
     public BitArray2dMatchEnumerator GetEnumerator() => this;
+    
     public readonly void Dispose() {
         
     }
+
+    IEnumerator<Point> IEnumerable<Point>.GetEnumerator() => GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

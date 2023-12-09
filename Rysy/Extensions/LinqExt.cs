@@ -201,6 +201,10 @@ public static class LinqExt {
     /// </summary>
     public static SingleEnumerator<T> ToSelfEnumerator<T>(this T self) => new(self);
 
+    public static IEnumerator<T> GetResettableEnumerator<T>(this IEnumerable<T> self) => self switch {
+        _ => new ResettableEnumerator<T>(self)
+    };
+
     public struct SingleEnumerator<T> : IEnumerator<T> {
         private bool _moved = false;
         private T Item;
@@ -227,5 +231,28 @@ public static class LinqExt {
         public void Reset() {
             _moved = false;
         }
+    }
+}
+
+public struct ResettableEnumerator<T>(IEnumerable<T> wrapped) : IEnumerator<T> {
+    private IEnumerator<T>? _enumerator;
+    
+    public bool MoveNext() {
+        _enumerator ??= wrapped.GetEnumerator();
+
+        return _enumerator.MoveNext();
+    }
+
+    public void Reset() {
+        _enumerator = null;
+    }
+
+    public T Current => _enumerator is {} e ? e.Current : throw new Exception($"Tried to access a ResettableEnumerator that hasn't begun yet.");
+
+    object IEnumerator.Current => Current!;
+
+    public void Dispose() {
+        _enumerator?.Dispose();
+        _enumerator = null;
     }
 }

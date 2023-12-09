@@ -31,8 +31,9 @@ public sealed class Autotiler {
 
     public CacheToken TilesetDataCacheToken { get; set; } = new();
 
-    public int MaxScanWidth { get; private set; } = 3;
-    public int MaxScanHeight { get; private set; } = 3;
+    // padding tiles need 5 scan width, even for 3x3 tileset masks!
+    public int MaxScanWidth { get; private set; } = 5;
+    public int MaxScanHeight { get; private set; } = 5;
 
     public void ReadFromXml(Stream stream) {
         Tilesets.Clear();
@@ -63,26 +64,26 @@ public sealed class Autotiler {
 
                 if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
                     var copied = Tilesets[copy];
-                    tilesetData.Tiles = copied.Tiles.Select(t => (t.mask, t.tiles.Select(x => x.WithTexture(tilesetData.Texture)).ToArray())).ToList();
+                    tilesetData.Tiles = copied.Tiles.Select(t => t with { Tiles = t.Tiles.Select(x => x.WithTexture(tilesetData.Texture)).ToArray() }).ToList();
                     tilesetData.Padding = copied.Padding.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
                     tilesetData.Center = copied.Center.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
                 }
 
-                var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").Select(n => {
+                var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
                     var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
                     var tiles = n.Attributes?["tiles"]?.InnerText ?? throw new Exception($"<set> missing tiles for tileset {id}");
 
                     switch (mask) {
                         case "padding":
                             tilesetData.Padding = ParseTiles(tiles, tilesetData.Texture);
-                            return (null!, null!);
+                            return null;
                         case "center":
                             tilesetData.Center = ParseTiles(tiles, tilesetData.Texture);
-                            return (null!, null!);
+                            return null;
                         default:
-                            return (new TilesetMask(mask), ParseTiles(tiles, tilesetData.Texture));
+                            return new TilesetSet(new TilesetMask(mask), ParseTiles(tiles, tilesetData.Texture));
                     }
-                }).Where(x => x.Item1 is { }).ToList();
+                }).ToList();
 
                 tiles.Sort((a, b) => {
                     // From Everest: https://github.com/EverestAPI/Everest/pull/241/files#diff-99921ff7c00e4bb7b7f2fb8dc659b13960215d3656dfafe8c466daccb229f86dR65
@@ -95,8 +96,8 @@ public sealed class Autotiler {
                     int aAnys = 0;
                     int bAnys = 0;
 
-                    var aMask = a.Item1;
-                    var bMask = b.Item1;
+                    var aMask = a.Mask;
+                    var bMask = b.Mask;
                     
                     for (int i = 0; i < aMask.Length && i < bMask.Length; i++) {
                         var aType = aMask.TypeAt(i);

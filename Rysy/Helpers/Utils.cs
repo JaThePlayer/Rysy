@@ -61,6 +61,33 @@ public static class Utils {
         return ret;
     }
     
+    /// <summary>
+    /// Gets all intersections between the provided circle and a 1x1 grid
+    /// </summary>
+    public static IEnumerable<Point> GetCircleGridIntersection(Point start, int radius) {
+        var startVec2 = start.ToVector2();
+        var radiusSquared = radius * radius;
+        
+        for (int x = start.X - radius; x <= start.X + radius; x++) {
+            for (int y = start.Y - radius; y <= start.Y + radius; y++) {
+                var pos = new Vector2(x, y);
+
+                if (Vector2.DistanceSquared(startVec2, pos) <= radiusSquared)
+                    yield return pos.ToPoint();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Gets all intersections between the provided circle and a 1x1 grid.
+    /// The 'end' point might not necessarily be included in the circle
+    /// </summary>
+    public static IEnumerable<Point> GetCircleGridIntersection(Point start, Point end) {
+        var radius = (int)Vector2.Distance(start.ToVector2(), end.ToVector2());
+
+        return GetCircleGridIntersection(start, radius);
+    }
+    
     // https://en.wikipedia.org/wiki/Flood_fill#Span_filling
     /// <summary>
     /// Performs a generalized flood fill, starting from <paramref name="sx"/>, <paramref name="sy"/>.

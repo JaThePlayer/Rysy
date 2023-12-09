@@ -6,7 +6,7 @@ using Rysy.History;
 namespace Rysy.Tools;
 
 public class TileRectangleMode : TileMode {
-    public override string Name => Hollow ? "rectangleHollow" : "rectangle";
+    public override string Name => Hollow ? "rectHollow" : "rectangle";
 
     public readonly bool Hollow;
     
