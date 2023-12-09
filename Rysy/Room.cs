@@ -555,7 +555,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     public void ClearRenderCacheIfWanted() {
         if (Settings.Instance?.ClearRenderCacheForOffScreenRooms ?? false)
-            ClearRenderCache();
+            ClearRenderCacheAggressively();
     }
 
     public void ClearRenderCache() {
@@ -566,6 +566,21 @@ public sealed class Room : IPackable, ILuaWrapper {
         ClearFgDecalsRenderCache();
         ClearBgTilesRenderCache();
         ClearFgTilesRenderCache();
+    }
+
+    /// <summary>
+    /// Clears the render cache, and as many intermediate caches used by entities, tilegrids, etc.
+    /// </summary>
+    public void ClearRenderCacheAggressively() {
+        ClearRenderCache();
+        
+        // clear autotiled sprite caches for tilegrids
+        FG.ClearSpriteCache();
+        BG.ClearSpriteCache();
+
+        foreach (var e in GetAllEntitylikes()) {
+            e.ClearInnerCaches();
+        }
     }
 
     public void ClearEntityRenderCache() {

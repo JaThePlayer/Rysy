@@ -229,7 +229,7 @@ public static class Menubar {
         }
 
         if (editor.Map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
-            editor.Map.Rooms.ForEach(r => r.ClearRenderCache());
+            editor.Map.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
         }
 
         if (editor.Map is { } && ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {

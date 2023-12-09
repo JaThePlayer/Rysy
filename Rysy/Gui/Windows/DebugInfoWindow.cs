@@ -116,22 +116,35 @@ public class DebugInfoWindow : Window {
                 }
             }
 
-            if (EditorState.CurrentRoom is { } room && ImGui.Button("Benchmark current room")) {
-                var watch = Stopwatch.StartNew();
-                const int times = 100;
-                for (int i = 0; i < times; i++) {
-                    room.ClearEntityRenderCache();
-                    room.CacheSpritesIfNeeded();
-                }
-
-                watch.Stop();
-                Console.WriteLine($"Benchmark: {room.Name}: {(watch.Elapsed / times).TotalMilliseconds}ms");
+            var room = EditorState.CurrentRoom;
+            if (room is { } && ImGui.Button("Benchmark current room")) {
+                Benchmark(room, false);
+            }
+            
+            if (room is { } && ImGui.Button("Benchmark current room (Aggressively Clear Caches)")) {
+                Benchmark(room, true);
             }
         }
 
         ImGui.Checkbox("Imgui Demo", ref imguiDemo);
         if (imguiDemo)
             ImGui.ShowDemoWindow();
+    }
+
+    private void Benchmark(Room room, bool aggressive) {
+        var watch = Stopwatch.StartNew();
+        const int times = 1000;
+        for (int i = 0; i < times; i++) {
+            if (aggressive)
+                room.ClearRenderCacheAggressively();
+            else
+                room.ClearRenderCache();
+            
+            room.CacheSpritesIfNeeded();
+        }
+
+        watch.Stop();
+        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}: {(watch.Elapsed / times).TotalMilliseconds}ms");
     }
 
     private bool imguiDemo;

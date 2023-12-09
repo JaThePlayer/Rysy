@@ -31,6 +31,9 @@ public sealed class Autotiler {
 
     public CacheToken TilesetDataCacheToken { get; set; } = new();
 
+    public int MaxScanWidth { get; private set; } = 3;
+    public int MaxScanHeight { get; private set; } = 3;
+
     public void ReadFromXml(Stream stream) {
         Tilesets.Clear();
 
@@ -54,6 +57,8 @@ public sealed class Autotiler {
                     Ignores = ignoresAll ? null : ignores,
                     IgnoreAll = ignoresAll,
                     DisplayName = tileset.Attributes?["displayName"]?.InnerText,
+                    ScanWidth = tileset.Attributes?["scanWidth"]?.InnerText.ToInt() ?? 3,
+                    ScanHeight = tileset.Attributes?["scanHeight"]?.InnerText.ToInt() ?? 3,
                 };
 
                 if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
@@ -75,18 +80,69 @@ public sealed class Autotiler {
                             tilesetData.Center = ParseTiles(tiles, tilesetData.Texture);
                             return (null!, null!);
                         default:
-                            return (mask.Replace("-", "", StringComparison.Ordinal), ParseTiles(tiles, tilesetData.Texture));
+                            return (new TilesetMask(mask), ParseTiles(tiles, tilesetData.Texture));
                     }
                 }).Where(x => x.Item1 is { }).ToList();
 
                 tiles.Sort((a, b) => {
-                    int aSum = a.Item1.CountFast('x');
-                    int bSum = b.Item1.CountFast('x');
+                    // From Everest: https://github.com/EverestAPI/Everest/pull/241/files#diff-99921ff7c00e4bb7b7f2fb8dc659b13960215d3656dfafe8c466daccb229f86dR65
+                    // Sorts the masks to give preference to more specific masks.
+                    // Order is Custom Filters -> "Not This" -> "Any" -> Everything else
+                    int aFilters = 0;
+                    int bFilters = 0;
+                    int aNots = 0;
+                    int bNots = 0;
+                    int aAnys = 0;
+                    int bAnys = 0;
 
-                    return aSum - bSum;
+                    var aMask = a.Item1;
+                    var bMask = b.Item1;
+                    
+                    for (int i = 0; i < aMask.Length && i < bMask.Length; i++) {
+                        var aType = aMask.TypeAt(i);
+                        var bType = bMask.TypeAt(i);
+
+                        switch (aType) {
+                            case TilesetMask.MaskType.Any:
+                                aAnys++;
+                                break;
+                            case TilesetMask.MaskType.NotThis:
+                                aNots++;
+                                break;
+                            case TilesetMask.MaskType.Custom:
+                                aFilters++;
+                                break;
+                        }
+                        
+                        switch (bType) {
+                            case TilesetMask.MaskType.Any:
+                                bAnys++;
+                                break;
+                            case TilesetMask.MaskType.NotThis:
+                                bNots++;
+                                break;
+                            case TilesetMask.MaskType.Custom:
+                                bFilters++;
+                                break;
+                        }
+                    }
+                    if (aFilters > 0 || bFilters > 0)
+                        return aFilters - bFilters;
+                    if (aNots > 0 || bNots > 0)
+                        return aNots - bNots;
+                    return aAnys - bAnys;
                 });
 
                 tilesetData.Tiles.AddRange(tiles);
+
+                if (!tilesetData.Validate()) {
+                    Logger.Write("Autotiler", LogLevel.Error, $"Tileset {tilesetData.Id} has validation errors, not adding it to the tileset list!");
+                    continue;
+                }
+
+                MaxScanWidth = int.Max(MaxScanWidth, tilesetData.ScanWidth);
+                MaxScanHeight = int.Max(MaxScanHeight, tilesetData.ScanHeight);
+                
                 Tilesets[id] = tilesetData;
             }
         }
@@ -189,18 +245,17 @@ public sealed class Autotiler {
     private static void LogUnknownTileset(int x, int y, char c) {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
-
-    internal const int SpriteListPropagationRange = 2;
     
     internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
         var sprites = toUpdate.Sprites;
-        const int offset = SpriteListPropagationRange;
+        int offsetX = MaxScanWidth / 2;
+        int offsetY = MaxScanHeight / 2;
 
         var checker = new TilegridTileChecker(tileGrid, tilesOOB);
-        var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
-        var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
-        for (int x = (changedX - offset).AtLeast(0); x <= endX; x++) {
-            for (int y = (changedY - offset).AtLeast(0); y <= endY; y++) {
+        var endX = (changedX + offsetX).AtMost(tileGrid.GetLength(0) - 1);
+        var endY = (changedY + offsetY).AtMost(tileGrid.GetLength(1) - 1);
+        for (int x = (changedX - offsetX).AtLeast(0); x <= endX; x++) {
+            for (int y = (changedY - offsetY).AtLeast(0); y <= endY; y++) {
                 sprites[x, y] = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
             }
         }
@@ -214,7 +269,8 @@ public sealed class Autotiler {
     internal void BulkUpdateSpriteList<T>(AutotiledSpriteList toUpdate, char[,] tileGrid, T changed, bool tilesOOB)
         where T : IEnumerator<Point> {
         var sprites = toUpdate.Sprites;
-        const int offset = SpriteListPropagationRange;
+        int offsetX = MaxScanWidth / 2;
+        int offsetY = MaxScanHeight / 2;
 
         BitArray changeMask = new(tileGrid.Length);
         var checker = new TilegridTileChecker(tileGrid, tilesOOB);
@@ -222,10 +278,10 @@ public sealed class Autotiler {
         while (changed.MoveNext()) {
             var (changedX, changedY) = changed.Current;
             
-            var endX = (changedX + offset).AtMost(tileGrid.GetLength(0) - 1);
-            var endY = (changedY + offset).AtMost(tileGrid.GetLength(1) - 1);
-            for (int x = (changedX - offset).AtLeast(0); x <= endX; x++) {
-                for (int y = (changedY - offset).AtLeast(0); y <= endY; y++) {
+            var endX = (changedX + offsetX).AtMost(tileGrid.GetLength(0) - 1);
+            var endY = (changedY + offsetY).AtMost(tileGrid.GetLength(1) - 1);
+            for (int x = (changedX - offsetX).AtLeast(0); x <= endX; x++) {
+                for (int y = (changedY - offsetY).AtLeast(0); y <= endY; y++) {
                     var changeMaskLoc = changeMask.Get1dLoc(x, y, tileGrid.GetLength(0));
                     
                     if (changeMask.Get(changeMaskLoc)) {
