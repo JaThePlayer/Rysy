@@ -19,7 +19,7 @@ public class TileLineMode : TileMode {
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
 
         if (!_dragGesture.Begun) {
-            Tool.RenderTiles(mousePos.Mult(8).ToVector2(), 1, 1);
+            Tool.RenderTileRectangle(mousePos.Mult(8).ToVector2(), 1, 1, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(8));
             

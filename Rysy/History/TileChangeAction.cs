@@ -71,17 +71,24 @@ public record TileBulkBitArrayChangeAction(char Id, BitArray Points, Tilegrid Gr
     }
 }
 
-public record TileRectChangeAction(char Id, Rectangle Rectangle, Tilegrid Grid) : IHistoryAction {
+public record TileRectChangeAction(char Id, Rectangle Rectangle, Tilegrid Grid, bool Hollow) : IHistoryAction {
     private Tilegrid.BulkReplaceDelta _oldTiles;
 
     public bool Apply() {
-        bool changed = Grid.BulkReplaceTiles(Id, Rectangle.EnumerateGridLocations(), out _oldTiles, locationCountHint: Rectangle.Width * Rectangle.Height);
-
-        return changed;
+        var count = Rectangle.Width * Rectangle.Height;
+        if (Hollow) {
+            return Grid.BulkReplaceTiles(Id, Rectangle.EnumerateGridEdgeLocations(), out _oldTiles, locationCountHint: count);
+        }
+        
+        return Grid.BulkReplaceTiles(Id, Rectangle.EnumerateGridLocations(), out _oldTiles, locationCountHint: count);
     }
 
     public void Undo() {
-        Grid.BulkReplaceTiles(Rectangle.EnumerateGridLocations(), _oldTiles);
+        if (Hollow) {
+            Grid.BulkReplaceTiles(Rectangle.EnumerateGridEdgeLocations(), _oldTiles);
+        } else {
+            Grid.BulkReplaceTiles(Rectangle.EnumerateGridLocations(), _oldTiles);
+        }
         _oldTiles.Clear();
     }
 }

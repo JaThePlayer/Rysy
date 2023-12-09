@@ -147,6 +147,11 @@ public static class RectangleExt {
     /// Returns an enumerator which returns all grid locations that are within the given rectangle.
     /// </summary>
     public static GridLocationsEnumerator EnumerateGridLocations(this Rectangle r) => new(r);
+    
+    /// <summary>
+    /// Returns an enumerator which returns all grid locations that are on the edges of the given rectangle.
+    /// </summary>
+    public static GridEdgeLocationsEnumerator EnumerateGridEdgeLocations(this Rectangle r) => new(r);
 
     public struct GridLocationsEnumerator : IEnumerator<Point> {
         private Rectangle _rectangle;
@@ -166,6 +171,55 @@ public static class RectangleExt {
                 _x = r.X;
                 _y++;
                 return _y != r.Bottom;
+            }
+
+            _x++;
+            return true;
+        }
+
+        public void Reset() {
+            _x = _rectangle.X - 1;
+            _y = _rectangle.Y;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public Point Current => new(_x, _y);
+
+        public void Dispose() {
+        }
+    }
+    
+    public struct GridEdgeLocationsEnumerator : IEnumerator<Point> {
+        private Rectangle _rectangle;
+        private int _x, _y;
+
+        public GridEdgeLocationsEnumerator(Rectangle r) {
+            _rectangle = r;
+            Reset();
+        }
+
+        public GridEdgeLocationsEnumerator GetEnumerator() 
+            => this;
+        
+        public bool MoveNext() {
+            var r = _rectangle;
+            
+            // move down if needed
+            if (_x == r.Right - 1) {
+                _x = r.X;
+                _y++;
+                return _y != r.Bottom;
+            }
+            
+            if (_y == r.Y || _y == r.Bottom - 1) {
+                // top and bottom rows are full
+            } else {
+                // inner rows only have left and right points
+                if (_x == r.X) {
+                    _x = r.Right - 1;
+                    return true;
+                }
             }
 
             _x++;
