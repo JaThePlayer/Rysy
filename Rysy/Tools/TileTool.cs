@@ -21,7 +21,10 @@ public class TileTool : Tool {
             new TileRectangleMode(this, hollow: true),
             new TileBucketMode(this),
             new TileLineMode(this),
-            new TileCircleMode(this),
+            new TileCircleMode(this, hollow: false),
+            new TileCircleMode(this, hollow: true),
+            new TileEllipseMode(this, hollow: false),
+            new TileEllipseMode(this, hollow: true),
         };
     }
     
