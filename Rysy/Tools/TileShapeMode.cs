@@ -23,7 +23,7 @@ public abstract class TileShapeMode : TileMode {
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(8));
             
-            foreach (var (x, y) in Utils.GetLineGridIntersection(mousePos, startPos)) {
+            foreach (var (x, y) in TileUtils.GetLineGridIntersection(mousePos, startPos)) {
                 ISprite.OutlinedRect(new Rectangle(x * 8, y * 8, 8, 8), fill, outline).Render();
             }
         }
