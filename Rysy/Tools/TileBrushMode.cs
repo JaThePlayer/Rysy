@@ -32,7 +32,7 @@ public class TileBrushMode : TileMode {
             var curr = Tool.GetMouseTilePos(camera, room);
             var prev = Tool.GetMouseTilePos(camera, room, fakeMousePos: prevPos);
         
-            foreach (var p in Utils.GetLineGridIntersection(prev, curr)) {
+            foreach (var p in TileUtils.GetLineGridIntersection(prev, curr)) {
                 if (data.FakeTiles.TryReplace(p.X, p.Y, StrokeTile, out _)) {
                     anyChanged = true;
                     data.ChangedTilePositions.Add(p);

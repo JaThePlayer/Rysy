@@ -1,12 +1,9 @@
-﻿using Rysy.Extensions;
-using System.Collections;
-
-namespace Rysy.Helpers; 
+﻿namespace Rysy.Helpers; 
 
 /// <summary>
-/// Contains helper functions that don't really fit anywhere else yet
+/// Contains helper functions for tiles and shapes in grids
 /// </summary>
-public static class Utils {
+public static class TileUtils {
     // https://gamedev.stackexchange.com/questions/20103/finding-which-tiles-are-intersected-by-a-line-without-looping-through-all-of-th
     /// <summary>
     /// Gets all intersections between the provided line and a 1x1 grid.
@@ -174,7 +171,7 @@ public static class Utils {
     /// </summary>
     public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point center, int rx, int ry) {
         // https://www.geeksforgeeks.org/midpoint-ellipse-drawing-algorithm/
-        HashSet<Point> points = new();
+        List<Point> points = new();
 
         double x = 0;
         double y = ry;
@@ -224,11 +221,27 @@ public static class Utils {
         }
     
         return points;
-        void Plot4EllipsePoints(HashSet<Point> points, Point center, int x, int y) {
-            points.Add(new(center.X + x, center.Y + y));
-            points.Add(new(center.X - x, center.Y + y));
-            points.Add(new(center.X - x, center.Y - y));
-            points.Add(new(center.X + x, center.Y - y));
+        void Plot4EllipsePoints(List<Point> points, Point center, int x, int y) {
+            // Switch to make sure not to create duplicate points
+            switch (x, y) {
+                case (0, 0):
+                    points.Add(new(x, y));
+                    break;
+                case (_, 0):
+                    points.Add(new(center.X + x, center.Y));
+                    points.Add(new(center.X - x, center.Y));
+                    break;
+                case (0, _):
+                    points.Add(new(center.X, center.Y + y));
+                    points.Add(new(center.X, center.Y - y));
+                    break;
+                default:
+                    points.Add(new(center.X + x, center.Y + y));
+                    points.Add(new(center.X - x, center.Y + y));
+                    points.Add(new(center.X - x, center.Y - y));
+                    points.Add(new(center.X + x, center.Y - y));
+                    break;
+            }
         }
     }
     

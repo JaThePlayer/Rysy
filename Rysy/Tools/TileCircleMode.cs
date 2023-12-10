@@ -8,7 +8,7 @@ public sealed class TileCircleMode(TileTool tool, bool hollow) : TileShapeMode(t
     public override string Name => hollow ? "circleHollow" : "circle";
 
     protected override IEnumerable<Point> GetChangedTileLocations(Point start, Point current)
-        => hollow ? Utils.GetHollowCircleGridIntersection(start, current) : Utils.GetCircleGridIntersection(start, current);
+        => hollow ? TileUtils.GetHollowCircleGridIntersection(start, current) : TileUtils.GetCircleGridIntersection(start, current);
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid)
         => new TileCircleChangeAction(id, start, current, tilegrid, hollow);

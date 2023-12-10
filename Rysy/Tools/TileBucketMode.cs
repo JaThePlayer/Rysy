@@ -81,7 +81,7 @@ public class TileBucketMode : TileMode {
             return changeMask;
         }
         
-        finishedFilling = Utils.FloodFill(startPos.X, startPos.Y,
+        finishedFilling = TileUtils.FloodFill(startPos.X, startPos.Y,
             (x, y) => tiles.TryGet(x, y, out var id) && id == replacedTile && !changeMask.Get2d(x, y, w),
             (x, y) => {
                 changeMask.Set2d(x, y, w, true);
