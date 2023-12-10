@@ -42,17 +42,42 @@ public record TileLineChangeAction
 }
 
 public record TileCircleChangeAction
-    (char Id, Point A, Point B, Tilegrid Grid) : IHistoryAction {
+    (char Id, Point A, Point B, Tilegrid Grid, bool Hollow) : IHistoryAction {
     private Tilegrid.BulkReplaceDelta _oldChars;
+
+    private IEnumerable<Point> GetPoints() => Hollow
+        ? Utils.GetHollowCircleGridIntersection(A, B)
+        : Utils.GetCircleGridIntersection(A, B);
     
     public bool Apply() {
-        var anyChanged = Grid.BulkReplaceTiles(Id, Utils.GetCircleGridIntersection(A, B).GetResettableEnumerator(), out _oldChars);
+        var anyChanged = Grid.BulkReplaceTiles(Id, GetPoints().GetResettableEnumerator(), out _oldChars);
 
         return anyChanged;
     }
 
     public void Undo() {
-        Grid.BulkReplaceTiles(Utils.GetCircleGridIntersection(A, B).GetResettableEnumerator(), _oldChars);
+        Grid.BulkReplaceTiles(GetPoints().GetResettableEnumerator(), _oldChars);
+        
+        _oldChars.Clear();
+    }
+}
+
+public record TileEllipseChangeAction
+    (char Id, Point A, Point B, Tilegrid Grid, bool Hollow) : IHistoryAction {
+    private Tilegrid.BulkReplaceDelta _oldChars;
+
+    private IEnumerable<Point> GetPoints() => Hollow
+        ? Utils.GetHollowEllipseGridIntersection(A, B)
+        : Utils.GetEllipseGridIntersection(A, B);
+    
+    public bool Apply() {
+        var anyChanged = Grid.BulkReplaceTiles(Id, GetPoints().GetResettableEnumerator(), out _oldChars);
+
+        return anyChanged;
+    }
+
+    public void Undo() {
+        Grid.BulkReplaceTiles(GetPoints().GetResettableEnumerator(), _oldChars);
         
         _oldChars.Clear();
     }

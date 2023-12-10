@@ -61,12 +61,16 @@ public static class Utils {
         return ret;
     }
     
+    
     /// <summary>
-    /// Gets all intersections between the provided circle and a 1x1 grid
+    /// Gets all intersections between the provided filled circle and a 1x1 grid
     /// </summary>
     public static IEnumerable<Point> GetCircleGridIntersection(Point start, int radius) {
         var startVec2 = start.ToVector2();
-        var radiusSquared = radius * radius;
+        // offsetting the radius yields a nicer circle
+        var radiusOffset = radius + 0.5f;
+        
+        var radiusSquared = radiusOffset * radiusOffset;
         
         for (int x = start.X - radius; x <= start.X + radius; x++) {
             for (int y = start.Y - radius; y <= start.Y + radius; y++) {
@@ -79,6 +83,44 @@ public static class Utils {
     }
     
     /// <summary>
+    /// Gets all intersections between the provided hollow circle and a 1x1 grid
+    /// </summary>
+    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point center, int radius) {
+        // offsetting the radius yields a nicer circle
+        var radiusF = radius + 0.5f;
+        var radiusFSq = radiusF * radiusF;
+
+        var points = new List<Point>();
+        if (radius < 1) {
+            points.Add(center);
+            return points;
+        }
+        
+        // https://www.redblobgames.com/grids/circle-drawing/
+        for (int r = 0; r <= float.Floor(radiusF * float.Sqrt(0.5f)); r++) {
+            int d = (int)float.Floor(float.Sqrt(radiusFSq - r*r));
+            points.Add(new Point(center.X - d, center.Y + r));
+            points.Add(new Point(center.X + d, center.Y + r));
+            if (r != 0) {
+                points.Add(new Point(center.X - d, center.Y - r));
+                points.Add(new Point(center.X + d, center.Y - r));
+            }
+
+            if (r != d) {
+                points.Add(new Point(center.X + r, center.Y - d));
+                points.Add(new Point(center.X + r, center.Y + d));
+
+                if (r != 0) {
+                    points.Add(new Point(center.X - r, center.Y - d));
+                    points.Add(new Point(center.X - r, center.Y + d));
+                }
+            }
+        }
+
+        return points;
+    }
+    
+    /// <summary>
     /// Gets all intersections between the provided circle and a 1x1 grid.
     /// The 'end' point might not necessarily be included in the circle
     /// </summary>
@@ -86,6 +128,112 @@ public static class Utils {
         var radius = (int)Vector2.Distance(start.ToVector2(), end.ToVector2());
 
         return GetCircleGridIntersection(start, radius);
+    }
+    
+    /// <summary>
+    /// Gets all intersections between the provided circle and a 1x1 grid.
+    /// The 'end' point might not necessarily be included in the circle
+    /// </summary>
+    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point start, Point end) {
+        var radius = (int)Vector2.Distance(start.ToVector2(), end.ToVector2());
+
+        return GetHollowCircleGridIntersection(start, radius);
+    }
+    
+    
+    /// <summary>
+    /// Gets all intersections between the provided filled ellipse and a 1x1 grid
+    /// </summary>
+    public static IEnumerable<Point> GetEllipseGridIntersection(Point center, int rx, int ry) {
+        var startVec2 = center.ToVector2();
+
+        var h = startVec2.X;
+        var k = startVec2.Y;
+        var rxsq = Math.Pow(rx + 0.5f, 2);
+        var rysq = Math.Pow(ry + 0.5f, 2);
+        
+        for (int x = center.X - rx; x <= center.X + rx; x++) {
+            for (int y = center.Y - ry; y <= center.Y + ry; y++) {
+                // https://math.stackexchange.com/a/76463
+                var dist =
+                    Math.Pow(x - h, 2) / rxsq +
+                    Math.Pow(y - k, 2) / rysq;
+
+                if (dist <= 1)
+                    yield return new(x, y);
+            }
+        }
+    }
+    
+    public static IEnumerable<Point> GetEllipseGridIntersection(Point start, Point end) {
+        return GetEllipseGridIntersection(start, int.Abs(start.X - end.X), int.Abs(start.Y - end.Y));
+    }
+    
+    /// <summary>
+    /// Gets all intersections between the provided filled ellipse and a 1x1 grid
+    /// </summary>
+    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point center, int rx, int ry) {
+        // https://www.geeksforgeeks.org/midpoint-ellipse-drawing-algorithm/
+        HashSet<Point> points = new();
+
+        double x = 0;
+        double y = ry;
+ 
+        double d1 = (ry * ry) - (rx * rx * ry) + (0.25f * rx * rx);
+        double dx = 2 * ry * ry * x;
+        double dy = 2 * rx * rx * y;
+
+        var rySqr2 = 2 * ry * ry;
+        var rxSqr2 = 2 * rx * rx;
+     
+        while (dx < dy)
+        {
+            Plot4EllipsePoints(points, center, (int)x, (int)y);
+            x++;
+            dx += rySqr2;
+            
+            if (d1 < 0) 
+            {
+                d1 += dx + (ry * ry);
+            }
+            else
+            {
+                y--;
+                dy -= rxSqr2;
+                d1 += dx - dy + (ry * ry);
+            }
+        }
+
+        double d2 = ((ry * ry) * ((x + 0.5f) * (x + 0.5f))) + ((rx * rx) * ((y - 1) * (y - 1))) - (rx * rx * ry * ry);
+
+        while (y >= 0)
+        {
+            Plot4EllipsePoints(points, center, (int)x, (int)y);
+            y--;
+            dy -= rxSqr2;
+            if (d2 > 0)
+            {
+                d2 += (rx * rx) - dy;
+            }
+            else
+            {
+                x++;
+                dx += rySqr2;
+                d2 += dx - dy + (rx * rx);
+            }
+        }
+    
+        return points;
+        void Plot4EllipsePoints(HashSet<Point> points, Point center, int x, int y) {
+            points.Add(new(center.X + x, center.Y + y));
+            points.Add(new(center.X - x, center.Y + y));
+            points.Add(new(center.X - x, center.Y - y));
+            points.Add(new(center.X + x, center.Y - y));
+        }
+    }
+    
+    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point start, Point end) {
+        return GetHollowEllipseGridIntersection(start, int.Abs(start.X - end.X), int.Abs(start.Y - end.Y));
     }
     
     // https://en.wikipedia.org/wiki/Flood_fill#Span_filling
