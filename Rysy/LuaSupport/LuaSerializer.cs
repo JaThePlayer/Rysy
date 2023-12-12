@@ -76,8 +76,17 @@ public static partial class LuaSerializer {
                     break;
                 case SelectionLayer.FGTiles:
                 case SelectionLayer.BGTiles:
-#warning Support copying tiles to lonn format once its not broken in lonn
-                    return null;
+                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
+                        {
+                            _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
+                            tiles = {{ToLuaString(item.Data.Attr("text", ""))}},
+                            height = {{ToLuaString(item.Data.Int("h", 0))}},
+                            width = {{ToLuaString(item.Data.Int("w", 0))}},
+                            x = {{ToLuaString(item.Data.Int("x", 0))}},
+                            y = {{ToLuaString(item.Data.Int("y", 0))}},
+                        }
+                    """);
+                    break;
                 case SelectionLayer.Rooms:
                     return null;
             }

@@ -231,11 +231,12 @@ public class ToolHandler {
         var currentLayer = tool.Layer;
 
         if (firstGui) {
+            /*
             var menubarHeight = ImGuiManager.MenubarHeight;
             var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
             var size = new NumVector2(ImGuiManager.CalcListSize(Tools.SelectMany(t => t.ValidLayers).Select(t => t.Name)).X, ImGui.GetTextLineHeightWithSpacing() * Tools.Max(t => t.ValidLayers.Count) + ImGui.GetFrameHeightWithSpacing() * 2);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X - DefaultMaterialListWidth, menubarHeight + toolListHeight));
-            ImGui.SetNextWindowSize(size);
+            ImGui.SetNextWindowSize(size);*/
         }
 
         ImGuiManager.PushWindowStyle();
