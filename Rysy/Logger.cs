@@ -1,10 +1,7 @@
-﻿using Neo.IronLua;
-using Rysy.Extensions;
+﻿using Rysy.Extensions;
 using Rysy.Platforms;
-using System;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 
 namespace Rysy;
 
@@ -99,7 +96,6 @@ public static class Logger {
 
 
         var exString = exception switch {
-            LuaRuntimeException luaEx => $"{luaEx.Message} at {luaEx.FileName}:{luaEx.Line}:{luaEx.Column}: {luaEx.StackTrace}",
             _ => exception.ToString()
         };
 

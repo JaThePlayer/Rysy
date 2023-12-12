@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFrameworks>net8.0;net7.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>12.0</LangVersion>
@@ -26,11 +26,7 @@
   <ItemGroup Condition="'$(FNA)' != ''">
     <PackageReference Include="FNA.NET" Version="1.0.0.77-develop" />
   </ItemGroup>
-  <!--The DirectX version is much faster in my experience-->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows' And '$(FNA)' == ''">
-    <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0' And '$(FNA)' == ''">
+  <ItemGroup Condition="'$(FNA)' == ''">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
@@ -49,7 +45,6 @@
     <PackageReference Include="Markdig" Version="0.33.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0-1.final" />
     <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
-    <PackageReference Include="NeoLua" Version="1.3.14" />
     <PackageReference Include="YamlDotNet" Version="13.0.2" />
   </ItemGroup>
 
