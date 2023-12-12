@@ -117,7 +117,7 @@ public class TileTool : Tool {
 
     public void RenderTileRectangle(Vector2 loc, int w, int h, bool hollow) {
         var autotiler = GetAutotiler(Layer);
-        IEnumerable<ISprite>? sprites = null;
+        IEnumerable<ISprite>? sprites;
 
         if (hollow) {
             sprites = autotiler?.GetHollowRectSprites(loc, Tile, w, h, Color.White);

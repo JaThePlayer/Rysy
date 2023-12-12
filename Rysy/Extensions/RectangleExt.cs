@@ -153,7 +153,7 @@ public static class RectangleExt {
     /// </summary>
     public static GridEdgeLocationsEnumerator EnumerateGridEdgeLocations(this Rectangle r) => new(r);
 
-    public struct GridLocationsEnumerator : IEnumerator<Point> {
+    public struct GridLocationsEnumerator : IEnumerator<Point>, IEnumerable<Point> {
         private Rectangle _rectangle;
         private int _x, _y;
 
@@ -161,16 +161,13 @@ public static class RectangleExt {
             _rectangle = r;
             Reset();
         }
-
-        public GridLocationsEnumerator GetEnumerator() 
-            => this;
         
         public bool MoveNext() {
             var r = _rectangle;
-            if (_x == r.Right - 1) {
+            if (_x >= r.Right) {
                 _x = r.X;
                 _y++;
-                return _y != r.Bottom;
+                return _y <= r.Bottom;
             }
 
             _x++;
@@ -188,9 +185,16 @@ public static class RectangleExt {
 
         public void Dispose() {
         }
+
+        public GridLocationsEnumerator GetEnumerator() 
+            => this;
+        
+        IEnumerator<Point> IEnumerable<Point>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
     
-    public struct GridEdgeLocationsEnumerator : IEnumerator<Point> {
+    public struct GridEdgeLocationsEnumerator : IEnumerator<Point>, IEnumerable<Point> {
         private Rectangle _rectangle;
         private int _x, _y;
 
@@ -202,22 +206,26 @@ public static class RectangleExt {
         public GridEdgeLocationsEnumerator GetEnumerator() 
             => this;
         
+        IEnumerator<Point> IEnumerable<Point>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        
         public bool MoveNext() {
             var r = _rectangle;
             
             // move down if needed
-            if (_x == r.Right - 1) {
+            if (_x >= r.Right) {
                 _x = r.X;
                 _y++;
-                return _y != r.Bottom;
+                return _y <= r.Bottom;
             }
             
-            if (_y == r.Y || _y == r.Bottom - 1) {
+            if (_y == r.Y || _y == r.Bottom) {
                 // top and bottom rows are full
             } else {
                 // inner rows only have left and right points
                 if (_x == r.X) {
-                    _x = r.Right - 1;
+                    _x = r.Right;
                     return true;
                 }
             }

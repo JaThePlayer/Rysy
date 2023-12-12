@@ -22,10 +22,11 @@ public abstract class TileShapeMode : TileMode {
             Tool.RenderTileRectangle(mousePos.Mult(8).ToVector2(), 1, 1, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(8));
+
+            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * 8, startPos.ToVector2().Add(0.5f, 0.5f) * 8, outline).Render();
             
-            foreach (var (x, y) in TileUtils.GetLineGridIntersection(mousePos, startPos)) {
-                ISprite.OutlinedRect(new Rectangle(x * 8, y * 8, 8, 8), fill, outline).Render();
-            }
+            Tool.DrawSelectionRect(new Rectangle(startPos.X * 8, startPos.Y * 8, 8, 8));
+            Tool.DrawSelectionRect(new Rectangle(mousePos.X * 8, mousePos.Y * 8, 8, 8));
         }
     }
 
@@ -51,10 +52,8 @@ public abstract class TileShapeMode : TileMode {
             
             // update the tilegrid's cached sprites to reflect this fake tile info.
             if (grid.Autotiler is { }) {
-                foreach (var p in changedTilePositions.Concat(data.LastChangedTiles)) {
-                    grid.Autotiler.UpdateSpriteList(grid.GetSprites(), data.FakeTiles, p.X, p.Y, true);
-                    grid.RenderCacheToken?.Invalidate();
-                }
+                grid.Autotiler.BulkUpdateSpriteList(grid.GetSprites(), data.FakeTiles, changedTilePositions.Concat(data.LastChangedTiles).GetEnumerator(), true);
+                grid.RenderCacheToken?.Invalidate();
             }
 
             data.LastChangedTiles = changedTilePositions;

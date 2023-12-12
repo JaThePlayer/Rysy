@@ -69,12 +69,32 @@ public static class TileUtils {
         
         var radiusSquared = radiusOffset * radiusOffset;
         
-        for (int x = start.X - radius; x <= start.X + radius; x++) {
-            for (int y = start.Y - radius; y <= start.Y + radius; y++) {
-                var pos = new Vector2(x, y);
+        for (int x = 0; x <= radius; x++) {
+            for (int y = 0; y <= radius; y++) {
+                var pos = new NumVector2(x, y);
 
-                if (Vector2.DistanceSquared(startVec2, pos) <= radiusSquared)
-                    yield return pos.ToPoint();
+                if (pos.LengthSquared() > radiusSquared)
+                    continue;
+                
+                switch (x, y) {
+                    case (0, 0):
+                        yield return start;
+                        break;
+                    case (_, 0):
+                        yield return new(start.X + x, start.Y);
+                        yield return new(start.X - x, start.Y);
+                        break;
+                    case (0, _):
+                        yield return new(start.X, start.Y + y);
+                        yield return new(start.X, start.Y - y);
+                        break;
+                    default:
+                        yield return new(start.X + x, start.Y + y);
+                        yield return new(start.X - x, start.Y + y);
+                        yield return new(start.X - x, start.Y - y);
+                        yield return new(start.X + x, start.Y - y);
+                        break;
+                }
             }
         }
     }
@@ -225,7 +245,7 @@ public static class TileUtils {
             // Switch to make sure not to create duplicate points
             switch (x, y) {
                 case (0, 0):
-                    points.Add(new(x, y));
+                    points.Add(center);
                     break;
                 case (_, 0):
                     points.Add(new(center.X + x, center.Y));

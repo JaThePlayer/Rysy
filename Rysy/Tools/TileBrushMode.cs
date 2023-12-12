@@ -41,10 +41,8 @@ public class TileBrushMode : TileMode {
 
             // update the tilegrid's cached sprites to reflect this fake tile info.
             if (anyChanged && grid.Autotiler is { }) {
-                foreach (var p in data.ChangedTilePositions) {
-                    grid.Autotiler.UpdateSpriteList(grid.GetSprites(), data.FakeTiles, p.X, p.Y, true);
-                    grid.RenderCacheToken?.Invalidate();
-                }
+                grid.Autotiler.BulkUpdateSpriteList(grid.GetSprites(), data.FakeTiles, data.ChangedTilePositions.GetEnumerator(), true);
+                grid.RenderCacheToken?.Invalidate();
             }
         }
         

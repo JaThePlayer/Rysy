@@ -55,7 +55,7 @@ public class Tilegrid : ILuaWrapper {
     /// A token which will be invalidated when the render cache needs to be cleared, for example when tiles are edited, or the Autotiler used is changed.
     /// The object that assigns this token is responsible for resetting the token once the render cache is reestablished.
     /// </summary>
-    public CacheToken? RenderCacheToken;
+    public CacheToken? RenderCacheToken { get; set; }
 
     public char SafeTileAt(int x, int y) {
         if (x < 0 || y < 0 || x >= Width || y >= Height)
