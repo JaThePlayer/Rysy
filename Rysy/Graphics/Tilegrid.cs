@@ -127,10 +127,10 @@ public class Tilegrid : ILuaWrapper {
         if (!anyChanged)
             return false;
         
-        RenderCacheToken?.Invalidate();
         if (CachedSprites is { } cached) {
             Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
         }
+        RenderCacheToken?.Invalidate();
 
         return true;
     }

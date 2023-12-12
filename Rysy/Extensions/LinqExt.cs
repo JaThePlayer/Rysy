@@ -165,6 +165,7 @@ public static class LinqExt {
         return new(self);
     }
 
+    #if NET7_0
     public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
         where TKey : notnull
         => new(keyValuePairs);
@@ -172,6 +173,7 @@ public static class LinqExt {
     public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs, IEqualityComparer<TKey>? comparer = null)
         where TKey : notnull
         => new(keyValuePairs, comparer);
+    #endif
 
     public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
 
