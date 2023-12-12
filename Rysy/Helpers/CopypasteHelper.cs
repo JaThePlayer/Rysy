@@ -50,10 +50,17 @@ public static class CopypasteHelper {
 
         var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(pasted)).ToList());
 
+        var actions = new List<IHistoryAction?>();
+        
         var entityPlaceAction = PasteEntitylikeSelections(history, room, entitySelections, entities, offset);
-        var tileSelections = PasteTileSelections(history, room, pasted, offset);
+        var tileSelections = PasteTileSelections(room, pasted, offset);
 
-        history?.ApplyNewAction(entityPlaceAction);
+        actions.Add(entityPlaceAction);
+        foreach (var s in tileSelections) {
+            actions.Add(s.Handler.PlaceClone(room));
+        }
+        
+        history?.ApplyNewAction(actions.MergeActions());
 
         return entitySelections.Concat(tileSelections).ToList();
     }
@@ -185,7 +192,7 @@ static string Compress(byte[] input) {
         }).ToList();
     }
 
-    private static List<Selection> PasteTileSelections(HistoryHandler? history, Room room, List<CopiedSelection> pasted, Vector2 offset) {
+    private static List<Selection> PasteTileSelections(Room room, List<CopiedSelection> pasted, Vector2 offset) {
         var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
