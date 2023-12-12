@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Extensions;
 using Rysy.Helpers;
 
 namespace Rysy;
@@ -52,7 +53,7 @@ public class HotkeyHandler {
     }
 
     public void Update() {
-        if (!UpdateInImgui && (ImGui.GetIO().WantCaptureKeyboard || ImGui.GetIO().WantCaptureMouse)) {
+        if (!UpdateInImgui && (ImGui.GetIO().WantTextInput || ImGui.GetIO().WantCaptureMouse)) {
             return;
         }
 
@@ -92,6 +93,16 @@ public class HotkeyHandler {
             hotkey.OnPress();
             return;
         }
+        
+        if (hotkey.ScrollUp && Input.Mouse.ScrollDelta > 0) {
+            hotkey.OnPress();
+            return;
+        }
+        
+        if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
+            hotkey.OnPress();
+            return;
+        }
     }
 
     private void HandleHoldHotkey(Hotkey hotkey) {
@@ -101,6 +112,16 @@ public class HotkeyHandler {
         }
 
         if (hotkey.MouseButton is { } mouse && Input.Mouse.Held(mouse)) {
+            hotkey.OnPress();
+            return;
+        }
+        
+        if (hotkey.ScrollUp && Input.Mouse.ScrollDelta > 0) {
+            hotkey.OnPress();
+            return;
+        }
+        
+        if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
             hotkey.OnPress();
             return;
         }
@@ -118,6 +139,12 @@ public class HotkeyHandler {
             held = true;
             clicked = Input.Mouse.Clicked(mouse);
             holdTime = Input.Mouse.HeldTime(mouse);
+        } else if (hotkey.ScrollUp && Input.Mouse.ScrollDelta > 0) {
+            held = true;
+            clicked = true;
+        } else if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
+            held = true;
+            clicked = true;
         }
 
         if (held) {
@@ -134,13 +161,16 @@ public class HotkeyHandler {
     }
 
     public static bool IsValid(string? hotkeyString) {
+        if (hotkeyString is "")
+            return true;
+        
         if (hotkeyString is null)
             return false;
 
         foreach (var hotkey in hotkeyString.Split('|')) {
             foreach (var item in hotkey.Replace(" ", "", StringComparison.Ordinal).Split('+')) {
                 var lower = item.ToLowerInvariant();
-                if (lower is not ("shift" or "ctrl" or "alt" or "mouseleft" or "mouseright" or "mousemiddle" or (['m', 'o', 'u', 's', 'e', _]))) {
+                if (lower is not ("shift" or "ctrl" or "alt" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or (['m', 'o', 'u', 's', 'e', _]))) {
                     if (!Enum.TryParse<Keys>(lower, true, out var key))
                         return false;
                 }
@@ -164,6 +194,8 @@ public class Hotkey {
 
     public Keys? Key;
     public int? MouseButton;
+    public bool ScrollDown;
+    public bool ScrollUp;
 
     public Action OnPress;
     public HotkeyModes Mode;
@@ -171,8 +203,9 @@ public class Hotkey {
     internal double SmoothIntervalTime;
 
     public Hotkey(string hotkeyString) {
-        ArgumentNullException.ThrowIfNull(hotkeyString);
-
+        if (hotkeyString.IsNullOrWhitespace())
+            return;
+        
         var inputs = hotkeyString.Replace(" ", "", StringComparison.Ordinal).Split("+");
         foreach (var item in inputs) {
             var lower = item.ToLowerInvariant();
@@ -195,12 +228,18 @@ public class Hotkey {
                 case "mousemiddle":
                     MouseButton = 2;
                     break;
+                case "scrollup":
+                    ScrollUp = true;
+                    break;
+                case "scrolldown":
+                    ScrollDown = true;
+                    break;
                 case ['m', 'o', 'u', 's', 'e', var button]:
                     MouseButton = int.Parse(button.ToString(), CultureInfo.InvariantCulture);
                     break;
                 default:
                     if (!Enum.TryParse<Keys>(lower, true, out var key)) {
-                        Logger.Write("[Hotkey.ctor]", LogLevel.Error, $"Unknown key: {key} in hotkey: '{hotkeyString}'");
+                        Logger.Write("Hotkey.ctor", LogLevel.Error, $"Unknown key: {lower} in hotkey: '{hotkeyString}'");
                         return;
                     }
 

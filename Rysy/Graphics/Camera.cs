@@ -204,15 +204,11 @@ public class Camera {
         if (input.Mouse.Right.Held() && input.Mouse.PositionDelta != default) {
             Move(-input.Mouse.PositionDelta.ToNVector2() / Scale);
         }
+    }
 
-        // Scrolled - zoom camera
-        switch (input.Mouse.ScrollDelta) {
-            case > 0:
-                ZoomIn(input);
-                break;
-            case < 0:
-                ZoomOut(input);
-                break;
-        }
+    public void CreateCameraHotkeys(HotkeyHandler hotkeys) {
+        hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup", () => ZoomIn(hotkeys.Input));
+        hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown", () => ZoomOut(hotkeys.Input));
+        hotkeys.AddHotkeyFromSettings("zoomRealScale", "", () => Zoom(6f));
     }
 }

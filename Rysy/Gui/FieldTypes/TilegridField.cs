@@ -157,6 +157,8 @@ class EditTileDataWindow : Window {
         Hotkeys.AddHotkeyFromSettings("selection.downsizeBottom", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
         Hotkeys.AddHotkeyFromSettings("selection.downsizeTop", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
 
+        Camera.CreateCameraHotkeys(Hotkeys);
+        
         var tiles = field.TilegridParser(val, Width / 8, Height / 8);
         FakeRoom = new(EditorState.Map!, tiles.GetLength(0), tiles.GetLength(1));
 

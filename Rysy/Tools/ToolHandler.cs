@@ -135,13 +135,43 @@ public class ToolHandler {
             tool.InitHotkeys(tool.HotkeyHandler);
         }
 
-        handler.AddHotkeyFromSettings("tools.nextTool", "tab", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("tools.prevTool", "shift+tab", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.nextTool", "ctrl+scrolldown", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevTool", "ctrl+scrollup", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
+        
+        handler.AddHotkeyFromSettings("tools.nextMode", "shift+scrolldown", () => SwapToNextMode(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevMode", "shift+scrollup", () => SwapToNextMode(-1), HotkeyModes.OnHoldSmoothInterval);
+        
+        handler.AddHotkeyFromSettings("tools.nextLayer", "alt+scrolldown", () => SwapToNextLayer(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevLayer", "alt+scrollup", () => SwapToNextLayer(-1), HotkeyModes.OnHoldSmoothInterval);
     }
 
     private void SwapToNextTool(int idOffset) {
         var i = Tools.IndexOf(CurrentTool);
         CurrentTool = Tools[(i + idOffset).MathMod(Tools.Count)];
+    }
+
+    private void SwapToNextMode(int idOffset) {
+        if (CurrentTool is not { } tool)
+            return;
+
+        var modes = tool.ValidModes;
+        var i = modes.IndexOf(tool.Mode);
+        if (i == -1)
+            return;
+
+        tool.Mode = modes[(i + idOffset).MathMod(modes.Count)];
+    }
+    
+    private void SwapToNextLayer(int idOffset) {
+        if (CurrentTool is not { } tool)
+            return;
+
+        var layers = tool.ValidLayers;
+        var i = layers.IndexOf(tool.Layer);
+        if (i == -1)
+            return;
+
+        tool.Layer = layers[(i + idOffset).MathMod(layers.Count)];
     }
 
     public void Update(Camera camera, Room currentRoom) {

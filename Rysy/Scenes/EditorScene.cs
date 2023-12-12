@@ -105,6 +105,7 @@ public sealed class EditorScene : Scene {
         //Hotkeys.AddHotkeyFromSettings("layerDown", "pagedown", () => ChangeEditorLayer(-1), HotkeyModes.OnHoldSmoothInterval);
 
         ToolHandler.InitHotkeys(Hotkeys);
+        Camera.CreateCameraHotkeys(Hotkeys);
 
         _ = new QuickActionHandler(Hotkeys, ToolHandler);
     }
