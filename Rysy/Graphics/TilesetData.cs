@@ -1,9 +1,80 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Xml;
 
 namespace Rysy.Graphics;
+
+/// <summary>
+/// Represents a 'define' element inside a tileset definition
+/// </summary>
+public sealed class TilesetDefine {
+    /// <summary>
+    /// The id of this define.
+    /// </summary>
+    public char Id { get; }
+    
+    /// <summary>
+    /// The 'filter' provided. What it means is dictated by the <see cref="Mode"/> property.
+    /// </summary>
+    public char[] Filter { get; }
+
+    private SearchValues<char> FilterSearchValues;
+
+    /// <summary>
+    /// Defines how the 'filter' property should be treated.
+    /// </summary>
+    public Modes Mode { get; }
+
+    public TilesetDefine(char id, char[] filter, Modes mode) {
+        Id = id;
+        Filter = filter;
+        Mode = mode;
+    }
+
+    public TilesetDefine(XmlNode xml, char tilesetId) {
+        var idString = xml.Attributes?["id"]?.InnerText ?? throw new Exception($"<define> missing 'id' in tileset {tilesetId}");
+
+        if (idString is not [var id]) {
+            throw new Exception($"<define> has id that's not exactly 1 character ({idString}) in tileset {tilesetId}");
+        }
+
+        Id = id;
+        
+        var filterText = xml.Attributes?["filter"]?.InnerText ?? throw new Exception($"<set id=\"{Id}\"> is missing 'filter' for tileset {id}");
+        Filter = filterText
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(str => str is [var only] ? only : '0')
+            .ToArray();
+
+        if (!bool.TryParse(xml.Attributes["ignore"]?.InnerText ?? "false", out var ignore)) {
+            throw new Exception($"<set id=\"{Id}\"> has invalid 'ignore' ({xml.Attributes["ignore"]?.InnerText}) for tileset {id}");
+        }
+
+        Mode = ignore ? Modes.Blacklist : Modes.Whitelist;
+    }
+    
+    public enum Modes {
+        Whitelist,
+        Blacklist,
+    }
+
+    /// <summary>
+    /// Checks whether the given tile id matches this define.
+    /// </summary>
+    public bool Match(char tileId) {
+        FilterSearchValues ??= SearchValues.Create(Filter);
+        
+        return Mode switch {
+            Modes.Whitelist => FilterSearchValues.Contains(tileId),
+            Modes.Blacklist => !FilterSearchValues.Contains(tileId),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+}
 
 public sealed class TilesetMask {
     public string StringValue { get; }
@@ -68,8 +139,10 @@ public sealed class TilesetData {
 
     public AutotiledSprite[] Center = null!;
     public AutotiledSprite[] Padding = null!;
-
+    
     public char[]? Ignores;
+    
+    public Dictionary<char, TilesetDefine> Defines { get; set; } = new();
 
     public int ScanWidth = 3;
     public int ScanHeight = 3;
@@ -92,12 +165,6 @@ public sealed class TilesetData {
     public string GetDisplayName() 
         => DisplayName ??= Filename.Split('/').Last().TrimStart("bg").Humanize();
 
-    /// <summary>
-    /// Stores a tilegrid bitmask -> possible tiles.
-    /// Used for speeding up GetFirstMatch
-    /// </summary>
-    private readonly Dictionary<Int128, AutotiledSprite[]?> _fastTileDataToTiles = new();
-
     public bool Validate() {
         bool valid = true;
         
@@ -114,115 +181,20 @@ public sealed class TilesetData {
         return valid;
     }
 
-    private struct NineBytes {
-        private ulong _00;
-        private byte _08;
-
-        public Int128 ToInt128() => new(_08,_00);
-    }
+    private char[]? _tileDataSharedBuffer;
     
-    private unsafe bool TryFindFirstMaskMatch(Span<byte> tileDataSpan, [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
-        if (tileDataSpan.Length == 0) {
-            tiles = null;
-            return false;
-        }
-        
-        Int128 bitmask = 0;
-        bool hasBitmask = tileDataSpan.Length <= 32;
-        if (hasBitmask) {
-            if (tileDataSpan.Length == 9) {
-                // all tiles fit unpacked within a Int128. This fits 3x3 and 5x3/3x5 masks cleanly.
-                bitmask = Unsafe.As<byte, NineBytes>(ref tileDataSpan[0]).ToInt128();
-            } else if (tileDataSpan.Length == 15) {
-                bitmask = Unsafe.As<byte, Int128>(ref tileDataSpan[0]);
-            } else if (tileDataSpan.Length == 25) {
-                var lower = Unsafe.As<byte, Int128>(ref tileDataSpan[0]);
-                var upper = Unsafe.As<byte, NineBytes>(ref tileDataSpan[16]).ToInt128();
+    public bool GetFirstMatch<T>(T checker, int x, int y, [NotNullWhen(true)] out AutotiledSprite[]? tiles)
+    where T : struct, ITileChecker {
+        _tileDataSharedBuffer ??= new char[ScanWidth * ScanHeight];
+        var tileData = _tileDataSharedBuffer;
 
-                // pack the bytes together a bit
-                bitmask = lower + (upper << 1);
-            } else { 
-                var len = tileDataSpan.Length;
-                var bitmaskInt = 0;
-                /*
-                // Larger masks, may benefit from this, but I haven't really seen a significant difference:
-                if (Vector128.IsHardwareAccelerated && tileDataSpan.Length > Vector128<byte>.Count) {
-                    Vector128<byte> b = -Vector128.Create<byte>(tileDataSpan[^Vector128<byte>.Count..]);
-                    bitmask = (int)b.ExtractMostSignificantBits() << Vector128<byte>.Count;
-                    len -= Vector128<byte>.Count;
-                }*/
-
-                fixed (byte* tileData = &tileDataSpan[0]) // unsafe access to get rid of bound checks
-                    switch (len) { // unroll loop, this creates a jump table, and all gotos are removed.
-                        case 32: bitmaskInt |= tileData[31] << 31; goto case 31;
-                        case 31: bitmaskInt |= tileData[30] << 30; goto case 30;
-                        case 30: bitmaskInt |= tileData[29] << 29; goto case 29;
-                        case 29: bitmaskInt |= tileData[28] << 28; goto case 28;
-                        case 28: bitmaskInt |= tileData[27] << 27; goto case 27;
-                        case 27: bitmaskInt |= tileData[26] << 26; goto case 26;
-                        case 26: bitmaskInt |= tileData[25] << 25; goto case 25;
-                        case 25: bitmaskInt |= tileData[24] << 24; goto case 24;
-                        case 24: bitmaskInt |= tileData[23] << 23; goto case 23;
-                        case 23: bitmaskInt |= tileData[22] << 22; goto case 22;
-                        case 22: bitmaskInt |= tileData[21] << 21; goto case 21;
-                        case 21: bitmaskInt |= tileData[20] << 20; goto case 20;
-                        case 20: bitmaskInt |= tileData[19] << 19; goto case 19;
-                        case 19: bitmaskInt |= tileData[18] << 18; goto case 18;
-                        case 18: bitmaskInt |= tileData[17] << 17; goto case 17;
-                        case 17: bitmaskInt |= tileData[16] << 16; goto case 16;
-                        case 16: bitmaskInt |= tileData[15] << 15; goto case 15;
-                        case 15: bitmaskInt |= tileData[14] << 14; goto case 14;
-                        case 14: bitmaskInt |= tileData[13] << 13; goto case 13;
-                        case 13: bitmaskInt |= tileData[12] << 12; goto case 12;
-                        case 12: bitmaskInt |= tileData[11] << 11; goto case 11;
-                        case 11: bitmaskInt |= tileData[10] << 10; goto case 10;
-                        case 10: bitmaskInt |= tileData[9] << 9; goto case 9;
-                        case 9: bitmaskInt |= tileData[8] << 8; goto case 8;
-                        case 8: bitmaskInt |= tileData[7] << 7; goto case 7;
-                        case 7: bitmaskInt |= tileData[6] << 6; goto case 6;
-                        case 6: bitmaskInt |= tileData[5] << 5; goto case 5;
-                        case 5: bitmaskInt |= tileData[4] << 4; goto case 4;
-                        case 4: bitmaskInt |= tileData[3] << 3; goto case 3;
-                        case 3: bitmaskInt |= tileData[2] << 2; goto case 2;
-                        case 2: bitmaskInt |= tileData[1] << 1; goto case 1;
-                        case 1: bitmaskInt |= tileData[0] << 0; break;
-                    }
-
-                bitmask = bitmaskInt;
-            }
-
-            
-            if (_fastTileDataToTiles.TryGetValue(bitmask, out tiles)) {
-                return tiles is { };
-            }
-        }
-
-        // This combination of tiles is unknown
-        var allTiles = Tiles;
-        foreach (var t in allTiles) {
-            if (!MatchingMask(t.Mask, tileDataSpan))
-                continue;
-            
-            tiles = t.Tiles;
-            if (hasBitmask)
-                _fastTileDataToTiles[bitmask] = tiles;
-            return true;
-        }
-            
-        tiles = null;
-        if (hasBitmask)
-            _fastTileDataToTiles[bitmask] = tiles;
-        return false;
-    }
-        
-    public bool GetFirstMatch<T>(T checker, int x, int y, [NotNullWhen(true)] out AutotiledSprite[]? tiles) 
-        where T : struct, ITileChecker {
-        Span<byte> tileData = stackalloc byte[ScanWidth * ScanHeight];
+        var currentTile = Id;
+        var oobTile = checker.ExtendOutOfBounds() ? currentTile : '0';
 
         // prepare tile data
         if (tileData.Length == 9) {
             // fast path for the most common 3x3 scan size
-            var tilesOob = checker.ExtendOutOfBounds().AsByte();
+            
             var topExists = checker.IsInBounds(x, y - 1);
             var botExists = checker.IsInBounds(x, y + 1);
             
@@ -230,33 +202,33 @@ public sealed class TilesetData {
             var rightExists = checker.IsInBounds(x + 1, y);
 
             if (topExists) {
-                tileData[0] = leftExists ? checker.IsConnectedTileAt(x - 1, y - 1, this).AsByte() : tilesOob;
-                tileData[1] = checker.IsConnectedTileAt(x, y - 1, this).AsByte();
-                tileData[2] = rightExists ? checker.IsConnectedTileAt(x + 1, y - 1, this).AsByte() : tilesOob;
+                tileData[0] = leftExists ? checker.GetTileAt(x - 1, y - 1, oobTile) : oobTile;
+                tileData[1] = checker.GetTileAt(x, y - 1, oobTile);
+                tileData[2] = rightExists ? checker.GetTileAt(x + 1, y - 1, oobTile) : oobTile;
             } else {
-                tileData[0] = tilesOob;
-                tileData[1] = tilesOob;
-                tileData[2] = tilesOob;
+                tileData[0] = oobTile;
+                tileData[1] = oobTile;
+                tileData[2] = oobTile;
             }
 
-            tileData[3] = leftExists ? checker.IsConnectedTileAt(x - 1, y, this).AsByte() : tilesOob;
-            tileData[4] = true.AsByte();
-            tileData[5] = rightExists ? checker.IsConnectedTileAt(x + 1, y, this).AsByte() : tilesOob;
+            tileData[3] = leftExists ? checker.GetTileAt(x - 1, y, oobTile) : oobTile;
+            tileData[4] = currentTile;
+            tileData[5] = rightExists ? checker.GetTileAt(x + 1, y, oobTile) : oobTile;
 
             if (botExists) {
-                tileData[6] = leftExists ? checker.IsConnectedTileAt(x - 1, y + 1, this).AsByte() : tilesOob;
-                tileData[7] = checker.IsConnectedTileAt(x, y + 1, this).AsByte();
-                tileData[8] = rightExists ? checker.IsConnectedTileAt(x + 1, y + 1, this).AsByte() : tilesOob;
+                tileData[6] = leftExists ? checker.GetTileAt(x - 1, y + 1, oobTile) : oobTile;
+                tileData[7] = checker.GetTileAt(x, y + 1, oobTile);
+                tileData[8] = rightExists ? checker.GetTileAt(x + 1, y + 1, oobTile) : oobTile;
             } else {
-                tileData[6] = tilesOob;
-                tileData[7] = tilesOob;
-                tileData[8] = tilesOob;
+                tileData[6] = oobTile;
+                tileData[7] = oobTile;
+                tileData[8] = oobTile;
             }
         } else {
             var i = 0;
             for (int oy = -ScanHeight / 2; oy <= ScanHeight / 2; oy++) {
                 for (int ox = -ScanWidth / 2; ox <= ScanWidth / 2; ox++) {
-                    tileData[i++] = checker.IsConnectedTileAt(x + ox, y + oy, this).AsByte();
+                    tileData[i++] = checker.GetTileAt(x + ox, y + oy, oobTile);
                 }
             }
         }
@@ -277,52 +249,77 @@ public sealed class TilesetData {
         return true;
     }
 
-    internal static bool MatchingMask(TilesetMask maskData, Span<byte> tileData) {
+    private readonly Dictionary<StringRef, AutotiledSprite[]?> _fastTileDataToTiles = new();
+    
+    private bool TryFindFirstMaskMatch(char[] tileData,
+        [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
+        var tileDataRef = StringRef.FromSharedBuffer(tileData);
+
+        if (_fastTileDataToTiles.TryGetValue(tileDataRef, out var cached)) {
+            tiles = cached;
+            return tiles is { };
+        }
+        
+        // This combination of tiles is not yet known
+        
+        var allTiles = Tiles;
+        foreach (var t in allTiles) {
+            if (!MatchingMask(t.Mask, tileData))
+                continue;
+            
+            tiles = t.Tiles;
+            _fastTileDataToTiles[tileDataRef.CloneIntoReadOnly()] = tiles;
+            return true;
+        }
+        
+        tiles = null;
+        _fastTileDataToTiles[tileDataRef.CloneIntoReadOnly()] = tiles;
+        return false;
+    }
+    
+    internal bool MatchingMask(TilesetMask maskData, ReadOnlySpan<char> tileData) {
         var tl = tileData.Length;
         var mask = maskData.StringValue;
         var sl = mask.Length;
 
-        // handle the common case of a 3x3 mask
-        if (sl == 9 && tl == 9) {
-            // for an explanation, see comment in the below for loop
-            if (mask[0] + tileData[0] == '1')
-                return false;
-            if (mask[1] + tileData[1] == '1')
-                return false;
-            if (mask[2] + tileData[2] == '1')
-                return false;
-            if (mask[3] + tileData[3] == '1')
-                return false;
-            // skip mask[4] - that's the tile we're in!
-            if (mask[5] + tileData[5] == '1')
-                return false;
-            if (mask[6] + tileData[6] == '1')
-                return false;
-            if (mask[7] + tileData[7] == '1')
-                return false;
-            if (mask[8] + tileData[8] == '1')
-                return false;
-
-            return true;
-        }
-
         // matches a mask of any size
         for (int i = 0; i < tl && i < sl; i++) {
-            //if ((mask[i], tileData[i]) is ('0', true) or ('1', false))
-            //    return false;
+            var realTile = tileData[i];
 
-            // The two states in which a mask doesn't match are:
-            // '0', true
-            // '1', false
-            // since '0' + (byte)true == '1', and '1' + (byte)false == '1',
-            // we can simply add the two values together and check against '1'
-            // instead of checking all 4 conditions
-            var r = mask[i] + tileData[i];
-            if (r == '1')
-                return false;
+            switch (maskData.TypeAt(i)) {
+                case TilesetMask.MaskType.Any:
+                    continue;
+                case TilesetMask.MaskType.Empty:
+                    if (IsTileConnected(realTile))
+                        return false;
+                    break;
+                case TilesetMask.MaskType.Tile:
+                    if (!IsTileConnected(realTile))
+                        return false;
+                    break;
+                case TilesetMask.MaskType.NotThis:
+                    if (realTile == Id)
+                        return false;
+                    break;
+                case TilesetMask.MaskType.Custom:
+                    var maskTile = mask[i];
+
+                    if (!Defines.TryGetValue(maskTile, out var define)) {
+                        break;
+                    }
+
+                    if (!define.Match(realTile))
+                        return false;
+                    
+                    break;
+            }
         }
 
         return true;
+    }
+
+    private bool IsTileConnected(char tile) {
+        return tile != '0' && (!IgnoreAll || tile == Id) && (!Ignores?.Contains(tile) ?? true);
     }
 }
 
@@ -340,8 +337,9 @@ public interface ITileChecker {
 
     /// <summary>
     /// Returns the tileset id at the given location. The given location might be out of bounds!
+    /// If the location is out of bounds, always return 'def'!
     /// </summary>
-    char GetTileAt(int x, int y);
+    char GetTileAt(int x, int y, char def);
 
     /// <summary>
     /// Whether to treat tiles out of bounds as existing or not.
@@ -353,7 +351,7 @@ public readonly struct HollowRectTileChecker(int w, int h, char id) : ITileCheck
     public bool IsInBounds(int x, int y) => x >= 0 && x < w && y < h && y >= 0;
     public bool IsConnectedTileAt(int x, int y, TilesetData data) => x == 0 || x == w - 1 || y == h - 1 || y == 0;
 
-    public char GetTileAt(int x, int y) => IsConnectedTileAt(x, y, null!) ? id : '0';
+    public char GetTileAt(int x, int y, char def) => IsConnectedTileAt(x, y, null!) ? id : def;
     
     public bool ExtendOutOfBounds() {
         return false;
@@ -365,7 +363,7 @@ public readonly struct FilledRectTileChecker(int w, int h, char id) : ITileCheck
     
     public bool IsConnectedTileAt(int x, int y, TilesetData data) => IsInBounds(x, y);
     
-    public char GetTileAt(int x, int y) => id;
+    public char GetTileAt(int x, int y, char def) => id;
     
     public bool ExtendOutOfBounds() {
         return false;
@@ -389,12 +387,12 @@ public readonly struct TilegridTileChecker(char[,] t, bool tilesOob)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public char GetTileAt(int x, int y) {
+    public char GetTileAt(int x, int y, char def) {
         if (x >= 0 && x < t.GetLength(0) && y < t.GetLength(1) && y >= 0) {
             var tile = t[x, y];
             return tile;
         }
-        return '0';
+        return def;
     }
 
     public bool ExtendOutOfBounds()
