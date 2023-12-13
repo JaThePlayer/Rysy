@@ -68,6 +68,11 @@ public sealed class Autotiler {
                     tilesetData.Padding = copied.Padding.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
                     tilesetData.Center = copied.Center.Select(x => x.WithTexture(tilesetData.Texture)).ToArray();
                 }
+                
+                tilesetData.Defines = tileset.ChildNodes.OfType<XmlNode>()
+                    .Where(n => n.Name == "define")
+                    .Select(n => new TilesetDefine(n, id))
+                    .ToDictionary(d => d.Id, d => d);
 
                 var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
                     var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
@@ -222,7 +227,7 @@ public sealed class Autotiler {
     
     public AutotiledSprite? GetSprite<T>(T tileChecker, int x, int y, ref List<char>? unknownTilesetsUsed)
     where T : struct, ITileChecker {
-        var tilesetId = tileChecker.GetTileAt(x, y);
+        var tilesetId = tileChecker.GetTileAt(x, y, '0');
         if (tilesetId == '0') {
             return null;
         }
