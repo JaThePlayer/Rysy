@@ -1,6 +1,5 @@
-﻿using ImGuiNET;
+﻿using Rysy.Gui.Windows;
 using Rysy.Helpers;
-using Rysy.Layers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
@@ -19,7 +18,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     where T : notnull {
     public bool NullAllowed { get; set; }
 
-    public Func<IDictionary<T, string>> Values;
+    public Func<FormContext, IDictionary<T, string>> Values;
 
     public Func<string?, T> StringToT;
 
@@ -41,7 +40,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     private IDictionary<T, string> GetValues() {
         if (typeof(T) == typeof(object)) {
-            var values = Values();
+            var values = Values(Context);
             if (values.Keys.All(k => k is string))
                 return values;
             // the value we get might be an int, but dropdown values might be floats etc.
@@ -49,7 +48,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
             return new Dictionary<T, string>(values, new ToStringEqualityComparer());
         }
 
-        return Values();
+        return Values(Context);
     }
 
     public override object GetDefault() => Default!;
@@ -83,18 +82,24 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     }
 
     public DropdownField<T> SetValues(Cache<IDictionary<T, string>> cache) {
-        Values = () => cache.Value;
+        Values = _ => cache.Value;
 
         return this;
     }
 
     public DropdownField<T> SetValues(IDictionary<T, string> values) {
-        Values = () => values;
+        Values = _ => values;
 
         return this;
     }
 
     public DropdownField<T> SetValues(Func<IDictionary<T, string>> values) {
+        Values = _ => values();
+
+        return this;
+    }
+    
+    public DropdownField<T> SetValues(Func<FormContext, IDictionary<T, string>> values) {
         Values = values;
 
         return this;

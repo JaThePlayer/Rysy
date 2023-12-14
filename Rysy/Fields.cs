@@ -1,12 +1,11 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.Mods;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Rysy;
@@ -79,6 +78,18 @@ public static partial class Fields {
         }
 
         var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+
+        return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
+    });
+    
+    public static DropdownField<char> TileDropdown(char def, Func<FormContext, bool> bg) => new DropdownField<char>() {
+        Default = def,
+    }.SetValues(ctx => {
+        if (EditorState.Map is not { } map) {
+            return new Dictionary<char, string>();
+        }
+
+        var autotiler = bg(ctx) ? map.BGAutotiler : map.FGAutotiler;
 
         return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
     });
@@ -174,6 +185,10 @@ public static partial class Fields {
 
     public static DropdownField<string> SID(string def)
         => Dropdown(def, EntityRegistry.SIDToType.Keys.ToList());
+
+    public static ConditionalField Conditional(List<Field> fields, Func<FormContext, int> fieldPicker) {
+        return new((ctx) => fields[fieldPicker(ctx)]);
+    }
 
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),

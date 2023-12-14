@@ -195,6 +195,15 @@ public static Color HsvToColor(float h, float s, float v) {
         float value = ((room.Pos + pos).Length()) % num / num;
         return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
     }
+    
+    /// <summary>
+    /// Gets the color of rainbow spinners in a given location in the room.
+    /// </summary>
+    public static Color GetRainbowColorAnimated(Room room, Vector2 pos) {
+        float num = 280f;
+        float value = ((room.Pos + pos).Length() + Time.Elapsed * 50f) % num / num;
+        return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
+    }
 
     private static uint GetPacked(ReadOnlySpan<char> s)
         => uint.Parse(s, System.Globalization.NumberStyles.HexNumber, CultureInfo.InvariantCulture);

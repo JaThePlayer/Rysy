@@ -754,7 +754,7 @@ public class EntityData : IDictionary<string, object> {
     /// For internal use only.
     /// </summary>
     internal void SilentSet(string key, object value) {
-        (FakeOverlay ?? Inner)[key] = value;
+        Inner[key] = value;
     }
 
     internal void SetOverlay(Dictionary<string, object>? overlay) {

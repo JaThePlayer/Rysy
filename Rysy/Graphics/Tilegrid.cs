@@ -197,7 +197,19 @@ public class Tilegrid : ILuaWrapper {
         CachedSprites = null;
     }
 
-    private AutotiledSpriteList? CachedSprites;
+
+    private AutotiledSpriteList? _cachedSprites;
+
+    private AutotiledSpriteList? CachedSprites {
+        get => _cachedSprites;
+        set {
+            var renderTargetEnabled = _cachedSprites?.IsRenderTargetEnabled();
+            _cachedSprites?.UseRenderTarget(false);
+            _cachedSprites = value;
+            if (renderTargetEnabled is true)
+                _cachedSprites?.UseRenderTarget(true);
+        }
+    }
 
     public AutotiledSpriteList GetSprites() {
         if (CachedSprites is { } c)
