@@ -39,10 +39,12 @@ public sealed class Map : IPackable {
     /// </summary>
     public Action<MapMetadata, MapMetadata>? OnMetaChanged { get; set; }
 
-    public Autotiler BGAutotiler = new();
-    public Autotiler FGAutotiler = new();
+    public AnimatedTileBank AnimatedTiles { get; set; } = new();
+    
+    public Autotiler BGAutotiler { get; set; } = new();
+    public Autotiler FGAutotiler { get; set; } = new();
 
-    public SpriteBank Sprites = new();
+    public SpriteBank Sprites { get; set; } = new();
 
     public MapStylegrounds Style;
     /// <summary>
@@ -115,6 +117,31 @@ public sealed class Map : IPackable {
     }
 
     private void LoadAutotiler(MapMetadata? oldMeta, MapMetadata meta) {
+        if (oldMeta?.AnimatedTiles != meta.AnimatedTiles || meta.AnimatedTiles.IsNullOrWhitespace()) {
+            var readVanilla = true;
+            
+            if (meta.AnimatedTiles is { } moddedAnimatedTiles) {
+                readVanilla = false;
+                if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedAnimatedTiles.Unbackslash(), stream => {
+                        AnimatedTiles.ReadFromXml(stream);
+                        Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                    })) {
+                    Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find animated tile xml {moddedAnimatedTiles}");
+                    readVanilla = true;
+                }
+            }
+
+            if (readVanilla) {
+                ModRegistry.VanillaMod.Filesystem.OpenFile("Graphics/AnimatedTiles.xml", (stream) => {
+                    AnimatedTiles.ReadFromXml(stream);
+                    return true;
+                });
+            }
+        }
+
+        BGAutotiler.AnimatedTiles = AnimatedTiles;
+        FGAutotiler.AnimatedTiles = AnimatedTiles;
+        
         if (meta.BackgroundTiles is { } moddedBgTiles && oldMeta?.BackgroundTiles != meta.BackgroundTiles) {
             if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), stream => {
                     BGAutotiler.ReadFromXml(stream);
