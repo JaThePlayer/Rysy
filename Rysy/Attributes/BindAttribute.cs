@@ -135,7 +135,7 @@ public sealed class BindAttribute : Attribute {
         }
 
         if (converterMethod is null) {
-            throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)} or {typeof(IFieldConvertible)}");
+            throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)} or {typeof(IFieldConvertibleToList)}");
         }
 
         return converterMethod;

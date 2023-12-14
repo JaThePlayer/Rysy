@@ -57,10 +57,13 @@ public class FormWindow : Window {
 
     public void Init(FieldList fields, Func<string, bool>? exists = null) {
         Exists = exists ?? ((_) => true);
+        
+        FormContext ctx = new(this);
 
         foreach (var f in fields.OrderedEnumerable(null!)) {
             var fieldName = f.Key;
             var field = f.Value;
+            field.Context = ctx;
 
             FieldList.Add(new(fieldName) {
                 Field = field,
@@ -118,8 +121,6 @@ public class FormWindow : Window {
 
         bool valid = true;
 
-        FormContext ctx = new(this);
-
         foreach (var prop in FieldList) {
             if (prop.Field is PaddingField) {
 
@@ -131,7 +132,7 @@ public class FormWindow : Window {
                 continue;
             }
 
-            if (!HandleProp(prop, ctx)) {
+            if (!HandleProp(prop)) {
                 valid = false;
             }
 
@@ -167,7 +168,7 @@ public class FormWindow : Window {
         );
     }
 
-    private bool HandleProp(Prop prop, FormContext ctx) {
+    private bool HandleProp(Prop prop) {
         var name = prop.Name;
         var val = prop.ValueOrDefault();
 
@@ -184,7 +185,6 @@ public class FormWindow : Window {
         ImGui.SetNextItemWidth(ITEM_WIDTH);
         try {
             var field = prop.Field;
-            field.Context = ctx;
             newVal = field.RenderGui(field.NameOverride ??= name.Humanize(), val);
         } catch (Exception) {
             throw;

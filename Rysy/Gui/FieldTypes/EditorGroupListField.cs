@@ -27,7 +27,7 @@ public record EditorGroupField : DropdownField<EditorGroup> {
     public EditorGroupField(EditorGroupRegistry reg) {
         StringToT = CustomStringToT;
         _registry = reg;
-        Values = () => EditorState.Map?.EditorGroups
+        Values = _ => EditorState.Map?.EditorGroups
             .Where(gr => gr.AutoAssignTo.Count == 0 && gr != EditorGroup.Default)
             .ToDictionary(gr => gr, gr => gr.Name) ?? new();
         

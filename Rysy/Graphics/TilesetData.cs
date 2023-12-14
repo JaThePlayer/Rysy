@@ -134,21 +134,23 @@ public sealed class TilesetData {
     public Autotiler Autotiler { get; init; }
 
     [JsonIgnore]
-    public VirtTexture Texture = null!;
-    public List<TilesetSet> Tiles = new();
+    public VirtTexture Texture { get; set; } = null!;
+    public List<TilesetSet> Tiles { get; set; } = new();
 
-    public AutotiledSprite[] Center = null!;
-    public AutotiledSprite[] Padding = null!;
+    public AutotiledSprite[] Center { get; set; } = null!;
+    public AutotiledSprite[] Padding { get; set; } = null!;
     
-    public char[]? Ignores;
+    public char[]? Ignores { get; set; }
     
     public Dictionary<char, TilesetDefine> Defines { get; set; } = new();
 
-    public int ScanWidth = 3;
-    public int ScanHeight = 3;
+    public int ScanWidth { get; set; } = 3;
+    public int ScanHeight { get; set; } = 3;
 
-    public bool IgnoreAll;
-    internal string? DisplayName;
+    public bool IgnoreAll { get; set; }
+    internal string? DisplayName { get; set; }
+    
+    public bool Rainbow { get; set; }
 
     private AutotiledSpriteList? _preview;
     public AutotiledSpriteList GetPreview(int previewSizePixels) {

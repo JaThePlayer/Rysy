@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Entities;
+using Rysy.Entities.Modded;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.Windows;
@@ -333,6 +334,17 @@ public sealed class Room : IPackable, ILuaWrapper {
         return el;
     }
 
+    public IEnumerable<char> GetRainbowTilesets(TileLayer layer) {
+        foreach (RainbowTilesetController c in Entities[typeof(RainbowTilesetController)]) {
+            if (c.TileLayer != layer)
+                continue;
+            
+            foreach (var id in c.Tilesets) {
+                yield return id;
+            }
+        }
+    }
+
     public Vector2 WorldToRoomPos(Camera camera, Vector2 world)
         => camera.ScreenToReal(world) - new Vector2(X, Y);
 
@@ -397,10 +409,14 @@ public sealed class Room : IPackable, ILuaWrapper {
                 RysyEngine.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
             }
 
-            if (selected)
+            if (selected) {
+                Map.FGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.FG));
+                Map.BGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.BG));
+                
                 foreach (var item in CachedSprites!) {
                     item.Render(camera, new(X, Y));
                 }
+            }
         }
     }
 
@@ -461,14 +477,25 @@ public sealed class Room : IPackable, ILuaWrapper {
             }
 
             if (p.FGTilesVisible) {
-                CachedFgTileSprites ??= FG.GetSprites().ToList();
+                if (CachedFgTileSprites is null) {
+                    var fgsprites = FG.GetSprites();
+                    //fgsprites.UseRenderTarget(true);
+                    
+                    CachedFgTileSprites ??= fgsprites.ToList();
+                }
                 FgTilesRenderCacheToken.Reset();
 
                 sprites = sprites.Concat(CachedFgTileSprites);
             }
 
             if (p.BGTilesVisible) {
-                CachedBgTileSprites ??= BG.GetSprites().ToList();
+                if (CachedBgTileSprites is null) {
+                    var bgsprites = BG.GetSprites();
+                    //bgsprites.UseRenderTarget(true);
+                    
+                    CachedBgTileSprites ??= bgsprites.ToList();
+                }
+                //CachedBgTileSprites ??= BG.GetSprites().ToList();
                 BgTilesRenderCacheToken.Reset();
 
                 sprites = sprites.Concat(CachedBgTileSprites);
@@ -502,7 +529,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             CachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
 
             RenderCacheToken.Reset();
-
+            
             if (w is { })
                 w.Message = $"Generating {CachedSprites.Count} sprites for {Name}";
 

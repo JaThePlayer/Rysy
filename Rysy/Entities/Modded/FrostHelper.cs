@@ -110,3 +110,21 @@ internal sealed class CustomSpinner : LonnEntity {
         }
     }
 }
+
+[CustomEntity("FrostHelper/RainbowTilesetController", associatedMods: [ "FrostHelper" ])]
+internal sealed class RainbowTilesetController : LonnEntity, IPlaceable {
+    [Bind("tilesets")]
+    public IReadOnlyList<char> Tilesets;
+
+    [Bind("bg")]
+    public bool Bg;
+
+    public TileLayer TileLayer => Bg ? TileLayer.BG : TileLayer.FG;
+    
+    public static FieldList GetFields() => new(new {
+        tilesets = Fields.List("3", Fields.TileDropdown('3', ctx => ctx.GetValue("bg") is true)),
+        bg = false,
+    });
+
+    public static PlacementList GetPlacements() => [];
+}

@@ -117,7 +117,7 @@ public sealed class Map : IPackable {
     }
 
     private void LoadAutotiler(MapMetadata? oldMeta, MapMetadata meta) {
-        if (oldMeta?.AnimatedTiles != meta.AnimatedTiles || meta.AnimatedTiles.IsNullOrWhitespace()) {
+        if (oldMeta?.AnimatedTiles != meta.AnimatedTiles || meta.AnimatedTiles.IsNullOrWhitespace() || AnimatedTiles.Empty()) {
             var readVanilla = true;
             
             if (meta.AnimatedTiles is { } moddedAnimatedTiles) {

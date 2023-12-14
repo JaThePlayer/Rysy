@@ -32,6 +32,8 @@ public sealed class AnimatedTileBank {
 
         _tiles = tiles;
     }
+
+    public bool Empty() => _tiles.Count == 0;
 }
 
 public sealed class AnimatedTileData {

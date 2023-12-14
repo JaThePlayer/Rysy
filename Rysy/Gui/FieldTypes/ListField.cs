@@ -7,7 +7,7 @@ namespace Rysy.Gui.FieldTypes;
 public record class ListField : Field, IFieldConvertibleToList {
     public string Separator = ",";
 
-    public Field BaseField;
+    public Field BaseField { get; set; }
 
     public Func<object, string> InnerObjToString;
 
@@ -28,16 +28,16 @@ public record class ListField : Field, IFieldConvertibleToList {
         ArgumentNullException.ThrowIfNull(baseField);
 
         BaseField = baseField;
-        InnerObjToString = BaseField.ValueToString;
+        InnerObjToString = o => PrepareBaseField().ValueToString(o);
 
-        Default = InnerObjToString(BaseField.GetDefault());
+        Default = InnerObjToString(PrepareBaseField().GetDefault());
     }
 
     public ListField(Field baseField, string @default) {
         ArgumentNullException.ThrowIfNull(baseField);
 
         BaseField = baseField;
-        InnerObjToString = BaseField.ValueToString;
+        InnerObjToString = o => PrepareBaseField().ValueToString(o);
 
         Default = @default;
     }
@@ -56,7 +56,7 @@ public record class ListField : Field, IFieldConvertibleToList {
         }
 
         foreach (var item in split) {
-            if (!BaseField.IsValid(item))
+            if (!PrepareBaseField().IsValid(item))
                 return false;
         }
 
@@ -94,7 +94,7 @@ public record class ListField : Field, IFieldConvertibleToList {
     private bool TypeSpecificGui(ref string[] split) {
         bool ret = false;
 
-        if (BaseField is IListFieldExtender ext) {
+        if (PrepareBaseField() is IListFieldExtender ext) {
             var ctx = new ListFieldContext(this, split);
             ext.RenderPostListElementsGui(ctx);
             if (ctx.Changed) {
@@ -140,10 +140,10 @@ public record class ListField : Field, IFieldConvertibleToList {
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
 
-                if (!BaseField.IsValid(item))
+                if (!PrepareBaseField().IsValid(item))
                     ImGuiManager.PushInvalidStyle();
 
-                if (BaseField.RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
+                if (PrepareBaseField().RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
                     split[i] = InnerObjToString(newValue);
                     anyChanged = true;
                 }
@@ -195,7 +195,7 @@ public record class ListField : Field, IFieldConvertibleToList {
         var split = Split(value?.ToString() ?? "");
         var list = new List<T>(split.Length);
 
-        switch (BaseField) {
+        switch (PrepareBaseField()) {
             case IFieldConvertible<T> convertible:
                 for (int i = 0; i < split.Length; i++) {
                     list.Add(convertible.ConvertMapDataValue(split[i]));
@@ -230,5 +230,11 @@ public record class ListField : Field, IFieldConvertibleToList {
         return this with {
             MaxElements = max,
         };
+    }
+
+    private Field PrepareBaseField() {
+        BaseField.Context = Context;
+
+        return BaseField;
     }
 }
