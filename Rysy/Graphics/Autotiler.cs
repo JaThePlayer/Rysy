@@ -35,6 +35,8 @@ public sealed class Autotiler {
     public int MaxScanWidth { get; private set; } = 5;
     public int MaxScanHeight { get; private set; } = 5;
 
+    public AnimatedTileBank? AnimatedTiles;
+
     public void ReadFromXml(Stream stream) {
         Tilesets.Clear();
 
@@ -76,17 +78,30 @@ public sealed class Autotiler {
 
                 var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
                     var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
-                    var tiles = n.Attributes?["tiles"]?.InnerText ?? throw new Exception($"<set> missing tiles for tileset {id}");
+                    var tilesString = n.Attributes?["tiles"]?.InnerText ?? throw new Exception($"<set> missing tiles for tileset {id}");
 
+                    var tiles = ParseTiles(tilesString, tilesetData.Texture);
+
+                    if (AnimatedTiles is {} && n.Attributes?["sprites"]?.Value is { } spritesString) {
+                        var sprites = spritesString.Split(',')
+                            .SelectWhereNotNull(s => AnimatedTiles.Get(s));
+                        
+                        // To keep memory usage of individual tiles low, we store the animated tile together with each tile.
+                        // This does mean we need to create tons of clones though...
+                        tiles = IterationHelper.EachPair(tiles, sprites)
+                            .SelectTuple((t, s) => t.WithAnimatedTile(s))
+                            .ToArray();
+                    }
+                    
                     switch (mask) {
                         case "padding":
-                            tilesetData.Padding = ParseTiles(tiles, tilesetData.Texture);
+                            tilesetData.Padding = tiles;
                             return null;
                         case "center":
-                            tilesetData.Center = ParseTiles(tiles, tilesetData.Texture);
+                            tilesetData.Center = tiles;
                             return null;
                         default:
-                            return new TilesetSet(new TilesetMask(mask), ParseTiles(tiles, tilesetData.Texture));
+                            return new TilesetSet(new TilesetMask(mask), tiles);
                     }
                 }).ToList();
 
@@ -198,7 +213,10 @@ public sealed class Autotiler {
         var sprites = l.Sprites;
         for (int x = 0; x < tileWidth; x++) {
             for (int y = 0; y < tileHeight; y++) {
-                sprites[x, y] = GetSprite(tileChecker, x, y, ref unknownTilesetsUsed)!;
+               var spr = GetSprite(tileChecker, x, y, ref unknownTilesetsUsed);
+               if (spr?.AnimatedTile is { })
+                   l.HasAnimatedTiles = true;
+               sprites[x, y] = spr;
             }
         }
         return l;
@@ -262,7 +280,11 @@ public sealed class Autotiler {
         var endY = (changedY + offsetY).AtMost(tileGrid.GetLength(1) - 1);
         for (int x = (changedX - offsetX).AtLeast(0); x <= endX; x++) {
             for (int y = (changedY - offsetY).AtLeast(0); y <= endY; y++) {
-                sprites[x, y] = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
+                var sprite = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
+                sprites[x, y] = sprite;
+                if (sprite?.AnimatedTile is { }) {
+                    toUpdate.HasAnimatedTiles = true;
+                }
             }
         }
     }
@@ -296,7 +318,11 @@ public sealed class Autotiler {
 
                     changeMask.Set(changeMaskLoc, true);
                     
-                    sprites[x, y] = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
+                    var sprite = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
+                    sprites[x, y] = sprite;
+                    if (sprite?.AnimatedTile is { }) {
+                        toUpdate.HasAnimatedTiles = true;
+                    }
                 }
             }
         }
@@ -326,15 +352,22 @@ public sealed class AutotiledSprite {
     /// </summary>
     internal readonly Point RelativeLocation;
 
+    internal readonly AnimatedTileData? AnimatedTile;
+
     public AutotiledSprite WithTexture(VirtTexture newTexture) 
         => new(newTexture, RelativeLocation);
 
+    public AutotiledSprite WithAnimatedTile(AnimatedTileData tile)
+        => new(Texture, RelativeLocation, tile);
+
     public static AutotiledSprite Create(VirtTexture texture, Point location) => new(texture, location);
 
-    private AutotiledSprite(VirtTexture texture, Point location) {
+    private AutotiledSprite(VirtTexture texture, Point location, AnimatedTileData? animatedTile = null) {
         Texture = texture;
         RelativeLocation = location;
         Subtexture = texture.GetSubtextureRect(RelativeLocation.X, RelativeLocation.Y, 8, 8, out _);
+
+        AnimatedTile = animatedTile;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -364,6 +397,8 @@ public sealed record AutotiledSpriteList : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; } = Color.White;
     internal List<char>? UnknownTilesetsUsed;
+    
+    public bool HasAnimatedTiles { get; internal set; }
 
     public ISprite WithMultipliedAlpha(float alpha) {
         return this with { Color = Color * alpha, };
@@ -408,7 +443,32 @@ public sealed record AutotiledSpriteList : ISprite {
         var color = Color;
         for (int x = left; x < right; x++) {
             for (int y = top; y < bot; y++) {
-                sprites[x, y]?.RenderAt(b, new Vector2(Pos.X + x * 8, Pos.Y + y * 8), color);
+                var sprite = sprites[x, y];
+                if (sprite is null)
+                    continue;
+
+                var pos = new Vector2(Pos.X + x * 8, Pos.Y + y * 8);
+                sprite.RenderAt(b, pos, color);
+            }
+        }
+
+
+        if (!HasAnimatedTiles)
+            return;
+        
+        // Render Animated Tiles
+        
+        const int extend = 1;
+        right = (right + extend).AtMost(sprites.GetLength(0));
+        bot = (bot + extend).AtMost(sprites.GetLength(1));
+        for (int x = (left - extend).AtLeast(0); x < right; x++) {
+            for (int y = (top - extend).AtLeast(0); y < bot; y++) {
+                var sprite = sprites[x, y];
+                if (sprite is not { AnimatedTile: { } animated })
+                    continue;
+
+                var pos = new Vector2(Pos.X + x * 8, Pos.Y + y * 8);
+                animated.RenderAt(b, pos, color);
             }
         }
     }
