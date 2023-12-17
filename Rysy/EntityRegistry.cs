@@ -8,6 +8,7 @@ using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Layers;
+using Rysy.Loading;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
@@ -83,7 +84,7 @@ public static class EntityRegistry {
         return style.AssociatedMods ?? SIDToAssociatedMods.GetValueOrDefault(style.Name)?.Select(m => m.Name).ToList() ?? new() { DependencyCheker.UnknownModName };
     }
 
-    public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true) {
+    public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
         _LuaCtx = null;
         _SIDToType.Clear();
         _SIDToLonnPlugin.Clear();
@@ -97,7 +98,7 @@ public static class EntityRegistry {
         RegisterHardcoded();
 
         const string baseText = "Registering entities:";
-        LoadingScene.Text = baseText;
+        task?.SetMessage(baseText);
         using var watch = new ScopedStopwatch("Registering entities");
 
         /*
@@ -115,9 +116,10 @@ public static class EntityRegistry {
         }*/
 
         foreach (var (_, mod) in ModRegistry.Mods) {
-            LoadingScene.Text = $"{baseText} {mod.Name}";
+            //task?.SetMessage($"{baseText} {mod.Name}");
+            task?.SetMessage(1, mod.Name);
 
-            LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins);
+            LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins, task);
         }
 
         ModRegistry.RegisterModAssemblyScanner(ModScanner);
@@ -150,15 +152,17 @@ public static class EntityRegistry {
         }
     }
 
-    private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins) {
+    private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins, SimpleLoadTask? task) {
         if (loadLuaPlugins)
             foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToListIfNotList()) {
                 if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
+                    task?.SetMessage(2, pluginPath);
                     LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
-
                 } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
+                    task?.SetMessage(2, pluginPath);
                     LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
                 } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
+                    task?.SetMessage(2, pluginPath);
                     LoadLuaEffectPlugin(mod, pluginPath);
                 }
             }

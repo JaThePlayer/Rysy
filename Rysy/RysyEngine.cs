@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
+using Rysy.Loading;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
@@ -169,7 +170,7 @@ public sealed class RysyEngine : Game {
         OnEndOfThisFrame += () => {
             lock (Instance) {
                 GFX.LoadEssencials(Instance);
-                Scene = new LoadingScene();
+                //Scene = new LoadingScene();
             }
 
             Task.Run(async () => {
@@ -184,21 +185,51 @@ public sealed class RysyEngine : Game {
     }
 
     private async ValueTask ReloadAsync() {
-        lock (this) {
-            GFX.LoadEssencials(this);
-            Scene = new LoadingScene();
-        }
-#pragma warning disable CA2000 // Dispose objects before losing scope - not critical here
         var reloadTimer = new ScopedStopwatch("Loading");
-#pragma warning restore CA2000
+        
+        var loadTasks = new LoadTaskManager([
+            new SimpleLoadTask("Load Settings", LoadSettingsTask),
+            new SimpleLoadTask("Load Mods", LoadModsTask),
+            new ParallelLoadTask("Load Assets", [
+                new SimpleLoadTask("Load GFX", LoadGfxTask),
+                new SimpleLoadTask("Load Entities", LoadEntitiesTask),
+                new SimpleLoadTask("Load Lang Files", LoadLangFilesTask),
+            ]),
+            new SimpleLoadTask("Call OnNextReload", task => {
+                if (OnNextReload is { } onNextReload) {
+                    task.SetMessage("Calling OnReload");
+                    OnNextReload = null;
+                    onNextReload.Invoke();
+                }
+
+                return Task.FromResult(LoadTaskResult.Success());
+            }),
+            new SimpleLoadTask("Load Map from Persistence", (t) => {
+                SelectionContextWindowRegistry.Init();
+                reloadTimer.Dispose();
+                var editor = new EditorScene();
+                editor.LoadFromPersistence();
+                
+                return Task.FromResult(LoadTaskResult.Success());
+            }),
+        ]);
 
         Logger.Write("Reload", LogLevel.Info, $"Staring full reload...");
+        
+        lock (this) {
+            GFX.LoadEssencials(this);
+            Scene = new LoadingScene(loadTasks, onCompleted: () => {
 
-        LoadingScene.Text = "Loading settings";
+            });
+        }
+    }
+
+    private async Task<LoadTaskResult> LoadSettingsTask(SimpleLoadTask task) {
+        task.SetMessage("Loading settings");
         try {
             Settings.Instance = Settings.Load();
-        } catch {
-            return; // No point in loading any further. Error is already logged by .Load()
+        } catch (Exception ex) {
+            return LoadTaskResult.Error(ex); // No point in loading any further. Error is already logged by .Load()
         }
 
         ResizeWindowUsingSettings();
@@ -227,26 +258,31 @@ public sealed class RysyEngine : Game {
             await picker.AwaitInstallPickedAsync();
         }
 
-        SelectionContextWindowRegistry.Init();
+        return LoadTaskResult.Success();
+    }
 
-        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory);
-
-        await GFX.LoadAsync();
-
-        await EntityRegistry.RegisterAsync();
-
-        await LangRegistry.LoadAllAsync();
-
-        reloadTimer.Dispose();
-        if (OnNextReload is { } onNextReload) {
-            LoadingScene.Text = "Calling OnReload";
-            OnNextReload = null;
-            onNextReload.Invoke();
-        }
+    private async Task<LoadTaskResult> LoadModsTask(SimpleLoadTask task) {
+        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, task);
         
-        LoadingScene.Text = "Entering Editor Scene";
-        var editor = new EditorScene();
-        editor.LoadFromPersistence();
+        return LoadTaskResult.Success();
+    }
+    
+    private async Task<LoadTaskResult> LoadGfxTask(SimpleLoadTask task) {
+        await GFX.LoadAsync(task);
+        
+        return LoadTaskResult.Success();
+    }
+    
+    private async Task<LoadTaskResult> LoadEntitiesTask(SimpleLoadTask task) {
+        await EntityRegistry.RegisterAsync(task: task);
+        
+        return LoadTaskResult.Success();
+    }
+    
+    private async Task<LoadTaskResult> LoadLangFilesTask(SimpleLoadTask task) {
+        await LangRegistry.LoadAllAsync(task);
+        
+        return LoadTaskResult.Success();
     }
 
     private void ResizeWindowUsingSettings() {

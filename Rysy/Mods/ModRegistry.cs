@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Loading;
 using Rysy.Scenes;
 using System.Reflection;
 using System.Text.Json;
@@ -66,8 +67,8 @@ public static class ModRegistry {
         return null;
     }
 
-    public static async Task LoadAllAsync(string modDir) {
-        LoadingScene.Text = "Scanning For Mods";
+    public static async Task LoadAllAsync(string modDir, SimpleLoadTask? task) {
+        task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
         _Mods.Clear();
@@ -95,11 +96,11 @@ public static class ModRegistry {
             .Where(f => !blacklisted.Contains(f))
             // add Rysy global plugins
             .Concat(Directory.GetDirectories(rysyPluginPath))
-            .Select(async f => {
+            .Select(f => {
                 if (f.EndsWith(".zip", StringComparison.Ordinal))
-                    return await CreateModAsync(f, zip: true);
+                    return CreateModAsync(f, zip: true);
 
-                return await CreateModAsync(f, zip: false);
+                return CreateModAsync(f, zip: false);
             })
             .Append(Task.FromResult(CreateRysyMod()));
 

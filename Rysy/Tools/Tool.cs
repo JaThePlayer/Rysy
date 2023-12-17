@@ -65,6 +65,7 @@ public abstract class Tool {
     }
     
     private EditorLayer? _layer;
+    private string? _layerPersistenceKey;
     
     /// <summary>
     /// Gets or sets the currently used layer.
@@ -72,7 +73,8 @@ public abstract class Tool {
     public EditorLayer Layer {
         get {
             if (UsePersistence) {
-                var name = Persistence.Instance.Get($"{PersistenceGroup}.Layer", ValidLayers.FirstOrDefault()?.Name ?? "");
+                _layerPersistenceKey ??= $"{PersistenceGroup}.Layer";
+                var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null) ?? ValidLayers.FirstOrDefault()?.Name ?? "";
 
                 return _layer = EditorLayers.EditorLayerFromName(name);
             }

@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics.TextureTypes;
 using Rysy.Helpers;
+using Rysy.Loading;
 using Rysy.Mods;
 using Rysy.Scenes;
 
@@ -51,20 +52,20 @@ public static class GFX {
     /// Loads all textures, including those from mods.
     /// </summary>
     /// <returns></returns>
-    public static async ValueTask LoadAsync() {
+    public static async ValueTask LoadAsync(SimpleLoadTask? task) {
         if (Atlas is { } oldAtlas) {
             oldAtlas.DisposeTextures();
         }
 
-        LoadingScene.Text = "Loading";
+        task?.SetMessage("Loading");
 
         Atlas = new Atlas();
 
-        LoadingScene.Text = "Reading vanilla atlas";
+        task?.SetMessage("Reading vanilla atlas");
         using (ScopedStopwatch watch = new("Reading vanilla atlas"))
             await LoadVanillaAtlasAsync();
 
-        LoadingScene.Text = "Scanning Rysy assets";
+        task?.SetMessage("Scanning Rysy assets");
         using (ScopedStopwatch watch = new("Scanning Rysy assets")) {
             await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
@@ -94,19 +95,20 @@ public static class GFX {
             }
         }
 
-        LoadingScene.Text = "Scanning mod assets";
-        using (ScopedStopwatch watch = new("Scanning mods")) {
+        task?.SetMessage("Scanning mod assets");
+        using (ScopedStopwatch watch = new("Scanning mod assets")) {
             await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
                 return LoadModAsync(m);
             });
         }
 
-        LoadingScene.Text = "Loading Decal Registry";
+        task?.SetMessage("Loading Decal Registry");
         DecalRegistry?.Dispose();
         DecalRegistry = new();
-        foreach (var mod in ModRegistry.Mods.Values) {
-            DecalRegistry.ReadFileFromMod(mod.Filesystem);
-        }
+        using (ScopedStopwatch watch = new("Loading Decal Registry"))
+            foreach (var mod in ModRegistry.Mods.Values) {
+                DecalRegistry.ReadFileFromMod(mod.Filesystem);
+            }
     }
 
     internal static async ValueTask LoadVanillaAtlasAsync() {

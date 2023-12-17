@@ -205,14 +205,11 @@ public class TileTool : Tool {
         var autotiler = GetAutotiler(Layer);
         if (autotiler is { } && material is char c) {
             var tileset = autotiler.GetTilesetData(c);
-            return new($"tile_{c}_{autotiler.GetTilesetDisplayName(c)}", PreviewSize, PreviewSize, () => {
-                if (tileset is null)
-                    return;
-                
-                foreach (var item in tileset.GetPreview(PreviewSize)) {
-                    item.Render();
-                }
-            });
+            if (tileset is null) {
+                return autotiler.MissingTileset.GetPreviewWidget(PreviewSize);
+            }
+            
+            return tileset?.GetPreviewWidget(PreviewSize);
         }
 
         return base.GetMaterialPreview(material);

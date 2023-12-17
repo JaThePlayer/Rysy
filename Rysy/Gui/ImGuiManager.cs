@@ -559,7 +559,7 @@ public static class ImGuiManager {
 
             EnableDocking();
 
-            ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+            //ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
             ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
