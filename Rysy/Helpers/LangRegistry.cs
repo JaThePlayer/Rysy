@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Loading;
 using Rysy.Mods;
 using Rysy.Scenes;
 using System.Collections.Concurrent;
@@ -31,8 +32,8 @@ public static class LangRegistry {
             ?? FallbackLang.GetOrNull(keyOrText);
     }
 
-    public static async Task LoadAllAsync() {
-        LoadingScene.Text = "Reading lang files";
+    public static async Task LoadAllAsync(SimpleLoadTask? task) {
+        task?.SetMessage("Reading lang files");
 
         Languages.Clear();
         Languages["en_gb"] = new("en_gb");

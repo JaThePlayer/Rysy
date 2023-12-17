@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Gui;
 using Rysy.Helpers;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
@@ -162,6 +163,20 @@ public sealed class TilesetData {
         _preview = Autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOOB: false);
 
         return _preview;
+    }
+
+    private XnaWidgetDef? _xnaWidgetDef;
+    public XnaWidgetDef GetPreviewWidget(int previewSizePixels) {
+        if (_xnaWidgetDef is { } existing) {
+            if (existing.W != previewSizePixels)
+                _xnaWidgetDef = null;
+        }
+        
+        return _xnaWidgetDef ??= new($"tile_{Id}_{GetDisplayName()}", previewSizePixels, previewSizePixels, () => {
+            foreach (var item in GetPreview(previewSizePixels)) {
+                item.Render();
+            }
+        });
     }
 
     public string GetDisplayName() 

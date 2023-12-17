@@ -7,6 +7,7 @@ using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
+using Rysy.Loading;
 using Rysy.MapAnalyzers;
 using Rysy.Stylegrounds;
 using Rysy.Tools;
@@ -140,42 +141,50 @@ public sealed class EditorScene : Scene {
         }
         
         RysyEngine.OnEndOfThisFrame += () => Task.Run(async () => {
-            try {
-                if (RysyEngine.Scene is not LoadingScene loadingScreen) {
-                    loadingScreen = new LoadingScene();
-                    RysyEngine.Scene = loadingScreen;
-                }
-                LoadingScene.Text = $"Loading map {file.Censor()}";
-
-                // Just to make this run async, so we can see the loading screen.
-                await Task.Delay(1);
-
-                var mapBin = BinaryPacker.FromBinary(file);
-
-                var map = Map.FromBinaryPackage(mapBin);
-                if (overrideFilepath is { }) {
-                    map.Filepath = overrideFilepath;
-                }
-
-                RysyEngine.Scene = this;
-                Map = map;
-            } catch (Exception e) {
-                Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
-
-                if (fromPersistence) {
-                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromPersistence");
-                } else if (fromBackup) {
-                    RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromBackup");
-                } else {
-                    RysyEngine.Scene = this;
-                    AddWindow(new CrashWindow("rysy.mapLoadError.other".TranslateFormatted(file.Censor()), e, (w) => {
-                        if (ImGui.Button("rysy.ok".Translate())) {
-                            w.RemoveSelf();
-                        }
-                    }));
-                }
+            if (RysyEngine.Scene is not LoadingScene) {
+                RysyEngine.Scene = new LoadingScene(new([
+                    new SimpleLoadTask($"Loading map {file.Censor()}", async (t) => {
+                        await LoadMapFromBinCore(file, fromPersistence, fromBackup, overrideFilepath);
+                        return LoadTaskResult.Success();
+                    })
+                ]), onCompleted: () => { });
+                return;
             }
+            
+            await LoadMapFromBinCore(file, fromPersistence, fromBackup, overrideFilepath);
         });
+    }
+
+    private async Task LoadMapFromBinCore(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
+        try {
+            // Just to make this run async, so we can see the loading screen.
+            await Task.Delay(1);
+
+            var mapBin = BinaryPacker.FromBinary(file);
+
+            var map = Map.FromBinaryPackage(mapBin);
+            if (overrideFilepath is { }) {
+                map.Filepath = overrideFilepath;
+            }
+
+            RysyEngine.Scene = this;
+            Map = map;
+        } catch (Exception e) {
+            Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
+
+            if (fromPersistence) {
+                RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromPersistence");
+            } else if (fromBackup) {
+                RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromBackup");
+            } else {
+                RysyEngine.Scene = this;
+                AddWindow(new CrashWindow("rysy.mapLoadError.other".TranslateFormatted(file.Censor()), e, (w) => {
+                    if (ImGui.Button("rysy.ok".Translate())) {
+                        w.RemoveSelf();
+                    }
+                }));
+            }
+        }
     }
 
     public void LoadNewMap(string? packageName = null) {
