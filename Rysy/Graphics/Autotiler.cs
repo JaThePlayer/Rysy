@@ -349,7 +349,7 @@ public sealed class Autotiler {
 /// </summary>
 public sealed class AutotiledSprite {
     internal readonly VirtTexture Texture;
-    internal readonly Rectangle Subtexture;
+    internal readonly Rectangle? Subtexture;
         
     /// <summary>
     /// The location as stored in the xml, as Subtext is different for atlased images.
@@ -508,8 +508,8 @@ public sealed record AutotiledSpriteList : ISprite {
         var hasAnimatedTiles = false;
 
         var color = Color;
-        for (int x = left; x < right; x++) {
-            for (int y = top; y < bot; y++) {
+        for (int y = top; y < bot; y++) {
+            for (int x = left; x < right; x++) {
                 var sprite = sprites[x, y];
                 if (sprite is null)
                     continue;
@@ -521,8 +521,9 @@ public sealed record AutotiledSpriteList : ISprite {
                     sprite.RenderAt(b, pos, color);
                 }
 
-                if (!hasAnimatedTiles && sprite.AnimatedTile is { })
+                if (sprite.AnimatedTile is { }) {
                     hasAnimatedTiles = true;
+                }
             }
         }
 

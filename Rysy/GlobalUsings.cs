@@ -11,3 +11,5 @@ global using NumVector3 = System.Numerics.Vector3;
 global using NumVector4 = System.Numerics.Vector4;
 
 global using XnaVector2 = Microsoft.Xna.Framework.Vector2;
+
+global using SpriteBatch = Rysy.Graphics.FnaSpriteBatch;

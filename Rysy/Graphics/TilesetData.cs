@@ -171,13 +171,15 @@ public sealed class TilesetData {
             if (existing.W != previewSizePixels)
                 _xnaWidgetDef = null;
         }
-        
-        return _xnaWidgetDef ??= new($"tile_{Id}_{GetDisplayName()}", previewSizePixels, previewSizePixels, () => {
-            foreach (var item in GetPreview(previewSizePixels)) {
-                item.Render();
-            }
-        });
+
+        return _xnaWidgetDef ??= CreateWidget(previewSizePixels);
     }
+    
+    private XnaWidgetDef CreateWidget(int previewSizePixels) => new($"tile_{Id}_{GetDisplayName()}", previewSizePixels, previewSizePixels, () => {
+        foreach (var item in GetPreview(previewSizePixels)) {
+            item.Render();
+        }
+    });
 
     public string GetDisplayName() 
         => DisplayName ??= Filename.Split('/').Last().TrimStart("bg").Humanize();
