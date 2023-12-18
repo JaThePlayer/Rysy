@@ -196,7 +196,11 @@ public static class GFX {
             st.DepthStencilState, 
             st.RasterizerState, 
             st.Effect, 
+            #if FNA
+            st.TransformMatrix ?? Matrix.Identity
+            #else
             st.TransformMatrix
+            #endif
         );
     }
 

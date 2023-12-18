@@ -104,7 +104,7 @@ public class Input {
             if (prev == ButtonState.Released) {
                 // just clicked this frame
                 DoubleClicks[index] = TimeSinceLastClick[index] < DOUBLE_CLICK_TIME;
-                ClickPositions[index] = mouseState.Position;
+                ClickPositions[index] = new Point(mouseState.X, mouseState.Y);
                 HoldTimes[index] = 0f;
                 TimeSinceLastClick[index] = 0f;
                 return MouseInputState.Clicked;

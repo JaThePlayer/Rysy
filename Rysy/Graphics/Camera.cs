@@ -104,9 +104,9 @@ public class Camera {
     }
 
     public void Zoom(float newZoom) {
-        var rp = ScreenToReal(Viewport.Bounds.Size.ToVector2() / 2f);
+        var rp = ScreenToReal(Viewport.Bounds.Size().ToVector2() / 2f);
         Scale = newZoom;
-        var rp2 = ScreenToReal(Viewport.Bounds.Size.ToVector2() / 2f);
+        var rp2 = ScreenToReal(Viewport.Bounds.Size().ToVector2() / 2f);
 
         _pos += rp - rp2;
 

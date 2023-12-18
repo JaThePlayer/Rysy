@@ -25,14 +25,14 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
 #if FNA
                         if (Mod.Filesystem is FolderModFilesystem) {
-                            texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                            _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
                             return;
                         }
 
                         using var memStr = new MemoryStream();
                         //buffer = new byte[stream.Length];
                         stream.CopyTo(memStr);
-                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
+                        _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
 
 #else
                             _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);

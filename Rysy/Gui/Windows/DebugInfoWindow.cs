@@ -102,7 +102,7 @@ public class DebugInfoWindow : Window {
                 ImGui.Text($"Pos: {cam.Pos}");
                 ImGui.Text($"Scale: {cam.Scale}");
                 ImGui.Text($"Room: {EditorState.CurrentRoom?.Pos ?? default}");
-                ImGui.Text($"Viewport: {cam.Viewport.Bounds.Size}");
+                ImGui.Text($"Viewport: {cam.Viewport.Bounds.Size()}");
                 ImGui.Text($"{Parallax.CalcCamPos(cam)}");
 
                 var s = cam.Scale;
@@ -112,7 +112,7 @@ public class DebugInfoWindow : Window {
 
                 var p = cam.Pos.ToNumerics();
                 if (ImGui.InputFloat2("Pos", ref p)) {
-                    cam.Move(p - cam.Pos);
+                    cam.Move(p.ToXna() - cam.Pos);
                 }
             }
 
