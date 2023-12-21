@@ -195,6 +195,10 @@ public class StylegroundWindow : Window {
             }
         }
 
+        // Fake fields added by lonn, completely useless
+        fields.Remove("fg");
+        fields.Remove("name");
+
         var tooltipKeyPrefix = $"style.effects.{main.Name}.description";
         var nameKeyPrefix = $"style.effects.{main.Name}.attribute";
         var defaultTooltipKeyPrefix = $"style.effects.default.description";
@@ -287,7 +291,7 @@ public class StylegroundWindow : Window {
                 Add(newStyle, styles, folder);
 
                 ImGui.CloseCurrentPopup();
-            }, new() { "Parallax" });
+            }, favorites: ["Parallax"]);
 
             ImGui.EndPopup();
         }

@@ -7,6 +7,10 @@ namespace Rysy.Entities;
 public class TempleCrackedBlock : Entity, ISolid, IPlaceable {
     public override int Depth => Depths.SolidsBelow;
 
+    public override bool ResizableX => true;
+
+    public override bool ResizableY => true;
+
     private static Sprite GetSprite(NineSliceLocation loc, int tx, int ty) {
         var (x, y) = loc switch {
             NineSliceLocation.TopLeft => (0, 0),

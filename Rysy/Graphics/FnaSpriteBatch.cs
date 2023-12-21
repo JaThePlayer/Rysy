@@ -594,7 +594,6 @@ public sealed class FnaSpriteBatch : IDisposable {
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct VertexPositionColorTexture4 : IVertexType {
-        public const int RealStride = 96;
         public Vector3 Position0;
         public Color Color0;
         public Vector2 TextureCoordinate0;
