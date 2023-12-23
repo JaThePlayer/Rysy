@@ -319,12 +319,14 @@ public class LonnEntity : Entity {
         }
 
         if (Plugin.GetTexture is { } getTexture && getTexture(roomWrapper, this) is { } texturePath) {
-            return new() { ISprite.FromTexture(Pos, LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
-                Origin = Plugin.GetJustification(roomWrapper, this),
-                Color = Plugin.GetColor(roomWrapper, this),
-                Scale = Plugin.GetScale(roomWrapper, this),
-                Rotation = Plugin.GetRotation(roomWrapper, this),
-            }};
+            return [
+                ISprite.FromTexture(Pos, LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
+                    Origin = Plugin.GetJustification(roomWrapper, this),
+                    Color = Plugin.GetColor(roomWrapper, this),
+                    Scale = Plugin.GetScale(roomWrapper, this),
+                    Rotation = Plugin.GetRotation(roomWrapper, this),
+                }
+            ];
         } else {
             Rectangle rectangle;
             if (Plugin.GetRectangle is { } rectFunc) {
@@ -333,7 +335,10 @@ public class LonnEntity : Entity {
                 rectangle = Rectangle;
             }
 
-            return new() { ISprite.OutlinedRect(rectangle, Plugin.GetFillColor(roomWrapper, this), Plugin.GetBorderColor(roomWrapper, this)) };
+            return [
+                ISprite.OutlinedRect(rectangle, Plugin.GetFillColor(roomWrapper, this),
+                    Plugin.GetBorderColor(roomWrapper, this))
+            ];
         }
     }
 

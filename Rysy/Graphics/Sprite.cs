@@ -53,6 +53,15 @@ public record struct Sprite : ISprite {
         DrawOffset = text.DrawOffset;
     }
 
+    public Sprite WithTexture(VirtTexture text) => this with { Texture = text, DrawOffset = text.DrawOffset };
+
+    /// <summary>
+    /// Creates a new sprite which uses a outline texture.
+    /// More performant to render than setting <see cref="OutlineColor"/>, but acts differently for non-black outlines.
+    /// <see cref="OutlineColor"/> tints the sprite which might result in the outline not being uniformly colored, while this tints a pitch-white sprite.
+    /// </summary>
+    public Sprite WithOutlineTexture() => WithTexture(Texture.GetOutlineTexture());
+
     /// <summary>
     /// Forcefully gets the width of this sprite. If this uses a modded texture, it'll likely cause preloading.
     /// </summary>

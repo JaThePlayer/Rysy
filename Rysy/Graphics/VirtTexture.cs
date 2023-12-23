@@ -1,10 +1,19 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Graphics.TextureTypes;
+﻿using Rysy.Graphics.TextureTypes;
 using System.IO.Compression;
 
 namespace Rysy.Graphics;
 
 public class VirtTexture : IDisposable {
+    protected Task? LoadTask;
+    protected Texture2D? _texture;
+    protected State _state = State.Unloaded;
+
+    public Vector2 DrawOffset { get; protected internal set; }
+    
+    private Rectangle? _clipRect;
+
+    private OutlineVirtTexture? _outlineTexture;
+    
     public static VirtTexture FromFile(string filename) {
         return new FileVirtTexture(filename);
     }
@@ -33,12 +42,6 @@ public class VirtTexture : IDisposable {
             H = height,
         };
     }
-
-    protected Task? LoadTask;
-    protected Texture2D? _texture;
-    protected State _state = State.Unloaded;
-
-    private Rectangle? _clipRect;
 
     /// <summary>
     /// Gets the ClipRect used for this texture. If the texture is not loaded yet, this will trigger preloading to get the width/height, which will result in additional IO on the main thread.
@@ -84,8 +87,6 @@ public class VirtTexture : IDisposable {
     /// </summary>
     public virtual int Height => ClipRect.Height;
 
-    public Vector2 DrawOffset;
-
     public Texture2D? Texture => _state switch {
         State.Unloaded => StartLoadingIfNeeded(),
         State.Loaded => _texture!,
@@ -101,6 +102,13 @@ public class VirtTexture : IDisposable {
         var newX = clipRectPos.X + x;
 
         return new(newX, newY, w, h);
+    }
+
+    /// <summary>
+    /// Gets a cached texture that can be used to render an outline for this texture.
+    /// </summary>
+    public VirtTexture GetOutlineTexture() {
+        return _outlineTexture ??= new OutlineVirtTexture(this);
     }
 
     private Texture2D? StartLoadingIfNeeded() {
@@ -125,6 +133,7 @@ public class VirtTexture : IDisposable {
     public virtual void Dispose() {
         _state = State.Unloaded;
         _texture?.Dispose();
+        _outlineTexture?.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -153,11 +162,5 @@ public class VirtTexture : IDisposable {
                 return _texture!;
         }
         throw new Exception($"Unknown state: {_state}");
-
-        //while (Texture is not { } texture) {
-            //    Task.Delay(100).Wait();
-        //}
-
-        //return _texture!;
     }
 }

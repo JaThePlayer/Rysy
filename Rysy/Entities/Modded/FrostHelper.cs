@@ -4,7 +4,7 @@ using Rysy.LuaSupport;
 
 namespace Rysy.Entities.Modded;
 
-[CustomEntity("FrostHelper/IceSpinner", associatedMods: new string[] { "FrostHelper" })]
+[CustomEntity("FrostHelper/IceSpinner", associatedMods: [ "FrostHelper" ])]
 internal sealed class CustomSpinner : LonnEntity {
     [Bind("attachToSolid")]
     public bool AttachToSolid;
@@ -65,6 +65,7 @@ internal sealed class CustomSpinner : LonnEntity {
         var rainbow = Rainbow;
         var drawOutline = DrawOutline;
         var borderColor = drawOutline ? BorderColor : default;
+        var useOutlineTexture = drawOutline && borderColor == Color.Black;
 
         var (fgSprite, bgSprite) = (_fg, _bg);
 
@@ -73,8 +74,16 @@ internal sealed class CustomSpinner : LonnEntity {
             Pos = pos,
         };
 
-        if (drawOutline) {
-            // the border has to be a seperate sprite to render it at a different depth
+        // the border has to be a separate sprite to render it at a different depth
+        if (useOutlineTexture) {
+            // use an outline texture to optimise rendering
+            yield return fgSprite.WithOutlineTexture() with {
+                Color = borderColor,
+                Depth = depth + 2,
+                Pos = pos,
+            };
+        }
+        else if (drawOutline) {
             yield return fgSprite with {
                 Color = Color.Transparent,
                 OutlineColor = borderColor,
@@ -96,9 +105,16 @@ internal sealed class CustomSpinner : LonnEntity {
                     Pos = connectorPos,
                     Color = rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.Lerp(spinner.Color, color, 0.5f)
                 };
-
-                if (drawOutline) {
-                    // the border has to be a seperate sprite to render it at a different depth
+                
+                if (useOutlineTexture) {
+                    // use an outline texture to optimise rendering
+                    yield return bgSprite.WithOutlineTexture() with {
+                        Pos = connectorPos,
+                        Color = borderColor,
+                        Depth = depth + 2,
+                    };
+                }
+                else if (drawOutline) {
                     yield return bgSprite with {
                         Pos = connectorPos,
                         OutlineColor = borderColor,

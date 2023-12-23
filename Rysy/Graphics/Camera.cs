@@ -97,8 +97,11 @@ public class Camera {
     public void ZoomIn(Input? input = null) {
         var newScale = Scale switch { 
             4f => 6f,
-            var other => other * 2f
+            var other => (other * 2f).AtMost(512f)
         };
+
+        if (newScale > 1f)
+            newScale = newScale.Floor();
 
         DoZoom(newScale, input);
     }
@@ -130,8 +133,9 @@ public class Camera {
     /// </summary>
     public void ZoomOut(Input? input = null) {
         var newScale = Scale switch {
+            8f => 6f,
             6f => 4f,
-            var other => other / 2f
+            var other => (other / 2f).AtLeast(1f / 4098f)
         };
 
         DoZoom(newScale, input);

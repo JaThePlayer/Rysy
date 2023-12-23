@@ -18,6 +18,7 @@ public class Atlas : IAtlas {
 
             if (LogMissingTextures)
                 Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
+            Textures[key] = GFX.UnknownTexture;
             return GFX.UnknownTexture;
         }
     }
