@@ -16,10 +16,9 @@ public sealed class Spinner : Entity, IPlaceable {
         ISprite.FromTexture("danger/crystal/fg_white00").Centered(),
     };
 
-    private static readonly Sprite[] FgBorderSprites = FgSprites.Select(s => s with {
-        Color = Color.Transparent,
-        OutlineColor = Color.Black,
+    private static readonly Sprite[] FgBorderSprites = FgSprites.Select(s => s.WithOutlineTexture() with {
         Depth = -8500 + 2,
+        Color = Color.Black,
     }).ToArray();
 
     private static readonly Sprite[] BgSprites = new[] {
@@ -30,9 +29,8 @@ public sealed class Spinner : Entity, IPlaceable {
         ISprite.FromTexture("danger/crystal/bg_white00").Centered() with { Depth = -8500 + 1, },
     };
 
-    private static readonly Sprite[] BgBorderSprites = BgSprites.Select(s => s with {
-        Color = Color.Transparent,
-        OutlineColor = Color.Black,
+    private static readonly Sprite[] BgBorderSprites = BgSprites.Select(s => s.WithOutlineTexture() with {
+        Color = Color.Black,
         Depth = -8500 + 2,
     }).ToArray();
 
@@ -130,7 +128,7 @@ public sealed class Spinner : Entity, IPlaceable {
                 if (spinner._cachedSprites is not { })
                     continue;
                 #endif
-                var connectorPos = (pos + spinner.Pos) / 2f;
+                var connectorPos = ((pos + spinner.Pos) / 2f).Floored();
 
                 yield return BgSprites[(int) color] with {
                     Pos = connectorPos,
