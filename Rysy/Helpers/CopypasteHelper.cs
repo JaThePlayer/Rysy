@@ -209,7 +209,7 @@ static string Compress(byte[] input) {
             var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
 
             return new Selection(handler);
-        }).SelectWhereNotNull(s => s).ToList();
+        }).ToList();
 
         return newSelections;
     }

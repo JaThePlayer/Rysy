@@ -396,7 +396,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         // draw the colored border around the room
         ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White), outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
 
-        GFX.Batch.End();
+        GFX.EndBatch();
     }
 
     private void DrawRoomInterior(Camera camera, bool selected, bool canvasReady) {
@@ -761,11 +761,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         var pos = rect.Location.ToVector2().GridPosFloor(8);
         var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
 
-
-        var selection = grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer);
-
-        if (selection is { })
-            into.Add(selection);
+        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer) is { } s)
+            into.Add(s);
     }
 
     private void GetSelectionsInRectForEntities(Rectangle rect, TypeTrackedList<Entity> entities, List<Selection> into) {

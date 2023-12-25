@@ -838,18 +838,18 @@ public class SelectionTool : Tool {
         CurrentSelections = CurrentSelections?
         .Append(selection)
         .DistinctBy(x => x.Handler.Parent)
-        .ToList() ?? new() { selection };
+        .ToList() ?? [ selection ];
 
         selection.Handler.OnSelected();
         OnSelectionsChanged();
     }
 
     private struct HandlerParentEqualityComparer : IEqualityComparer<Selection> {
-        public bool Equals(Selection? x, Selection? y) {
-            return x!.Handler.Parent == y!.Handler.Parent;
+        public bool Equals(Selection x, Selection y) {
+            return x.Handler.Parent == y.Handler.Parent;
         }
 
-        public int GetHashCode([DisallowNull] Selection obj) {
+        public int GetHashCode(Selection obj) {
             return obj.Handler.Parent.GetHashCode();
         }
     }
@@ -889,14 +889,12 @@ public class SelectionTool : Tool {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                var parent = selection.Handler.Parent;
-
                 switch (selection.Handler) {
                     case EntitySelectionHandler entity:
                         ImGui.Text(entity.Entity.Name);
                         break;
                     case NodeSelectionHandler node:
-                        ImGui.Text($"{node.Entity.Name}[{node.NodeIdx}]");
+                        ImGui.Text(Interpolator.Temp($"{node.Entity.Name}[{node.NodeIdx}]"));
                         break;
                     case RoomSelectionHandler room:
                         ImGui.Text(room.Room.Name);
@@ -904,33 +902,39 @@ public class SelectionTool : Tool {
                     case TileSelectionHandler tiles:
                         ImGui.Text(tiles.Layer.FastToString());
                         break;
-                    default:
-                        break;
                 }
-                HighlightIfHovered(selection);
+                HighlightIfHovered(SelectionsToHighlight, selection);
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Deselect##{selection.GetHashCode()}")) {
-                    RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.Temp($"Deselect##{selection.GetHashCode()}"))) {
+                    DeselectOnEndOfFrame(selection);
                 }
-                HighlightIfHovered(selection);
+                HighlightIfHovered(SelectionsToHighlight, selection);
                 ImGui.TableNextColumn();
 
-                if (RysyEngine.Scene is EditorScene && ImGui.Selectable($"Edit##{selection.GetHashCode()}")) {
-                    RysyEngine.OnEndOfThisFrame += () => selection.Handler.OnRightClicked(new Selection[] { selection });
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.Temp($"Edit##{selection.GetHashCode()}"))) {
+                    RightClickOnEndOfFrame(selection);
                 }
-                HighlightIfHovered(selection);
+                HighlightIfHovered(SelectionsToHighlight, selection);
 
                 ImGuiManager.PopNullStyle();
 
-                void HighlightIfHovered(Selection selection) {
+                static void HighlightIfHovered(List<Selection> into, Selection selection) {
                     if (ImGui.IsItemHovered()) {
-                        SelectionsToHighlight.Add(selection);
+                        into.Add(selection);
                     }
                 }
             }
 
         ImGui.EndTable();
+    }
+    
+    void DeselectOnEndOfFrame(Selection selection) {
+        RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
+    }
+    
+    void RightClickOnEndOfFrame(Selection selection) {
+        RysyEngine.OnEndOfThisFrame += () => selection.Handler.OnRightClicked([selection]);
     }
 }

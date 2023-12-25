@@ -2,6 +2,7 @@
 using Rysy.Gui;
 using Rysy.Helpers;
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -23,7 +24,7 @@ public sealed class TilesetDefine {
     /// </summary>
     public char[] Filter { get; }
 
-    private SearchValues<char> FilterSearchValues;
+    private SearchValues<char> _filterSearchValues;
 
     /// <summary>
     /// Defines how the 'filter' property should be treated.
@@ -67,12 +68,12 @@ public sealed class TilesetDefine {
     /// Checks whether the given tile id matches this define.
     /// </summary>
     public bool Match(char tileId) {
-        FilterSearchValues ??= SearchValues.Create(Filter);
+        _filterSearchValues ??= SearchValues.Create(Filter);
         
         return Mode switch {
-            Modes.Whitelist => FilterSearchValues.Contains(tileId),
-            Modes.Blacklist => !FilterSearchValues.Contains(tileId),
-            _ => throw new ArgumentOutOfRangeException()
+            Modes.Whitelist => _filterSearchValues.Contains(tileId),
+            Modes.Blacklist => !_filterSearchValues.Contains(tileId),
+            _ => throw new UnreachableException()
         };
     }
 }
@@ -303,21 +304,19 @@ public sealed class TilesetData {
 
         // matches a mask of any size
         for (int i = 0; i < tl && i < sl; i++) {
-            var realTile = tileData[i];
-
             switch (maskData.TypeAt(i)) {
                 case TilesetMask.MaskType.Any:
                     continue;
                 case TilesetMask.MaskType.Empty:
-                    if (IsTileConnected(realTile))
+                    if (IsTileConnected(tileData[i]))
                         return false;
                     break;
                 case TilesetMask.MaskType.Tile:
-                    if (!IsTileConnected(realTile))
+                    if (!IsTileConnected(tileData[i]))
                         return false;
                     break;
                 case TilesetMask.MaskType.NotThis:
-                    if (realTile == Id)
+                    if (tileData[i] == Id)
                         return false;
                     break;
                 case TilesetMask.MaskType.Custom:
@@ -327,7 +326,7 @@ public sealed class TilesetData {
                         break;
                     }
 
-                    if (!define.Match(realTile))
+                    if (!define.Match(tileData[i]))
                         return false;
                     
                     break;
@@ -337,8 +336,12 @@ public sealed class TilesetData {
         return true;
     }
 
-    private bool IsTileConnected(char tile) {
-        return tile != '0' && (!IgnoreAll || tile == Id) && (!Ignores?.Contains(tile) ?? true);
+    public bool IsTileConnected(char tile) {
+        if (tile == '0')
+            return false;
+        if (IgnoreAll && tile != Id)
+            return false;
+        return !Ignores?.Contains(tile) ?? true;
     }
 }
 
@@ -399,8 +402,7 @@ public readonly struct TilegridTileChecker(char[,] t, bool tilesOob)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsConnectedTileAt(int x, int y, TilesetData data) {
         if (x >= 0 && x < t.GetLength(0) && y < t.GetLength(1) && y >= 0) {
-            var tile = t[x, y];
-            return tile != '0' && (!data.IgnoreAll || tile == data.Id) && (!data.Ignores?.Contains(tile) ?? true);
+            return data.IsTileConnected(t[x, y]);
         }
         return tilesOob;
     }
