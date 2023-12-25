@@ -195,8 +195,10 @@ public class PlacementTool : Tool {
 
     internal static Placement? GetPlacementUnderCursor(Point mouse, Room currentRoom, SelectionLayer layer) {
         var selections = currentRoom.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), layer);
+        if (selections.Count == 0)
+            return null;
 
-        if (selections.FirstOrDefault()?.Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
+        if (selections[0].Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
             return placement;
 
         return null;

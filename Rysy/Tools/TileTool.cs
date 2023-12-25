@@ -15,7 +15,7 @@ public class TileTool : Tool {
     private readonly List<ToolMode> _tileModes;
 
     public TileTool() {
-        _tileModes = new() {
+        _tileModes = [
             new TileBrushMode(this),
             new TileRectangleMode(this, hollow: false),
             new TileRectangleMode(this, hollow: true),
@@ -24,13 +24,13 @@ public class TileTool : Tool {
             new TileCircleMode(this, hollow: false),
             new TileCircleMode(this, hollow: true),
             new TileEllipseMode(this, hollow: false),
-            new TileEllipseMode(this, hollow: true),
-        };
+            new TileEllipseMode(this, hollow: true)
+        ];
     }
     
-    private static List<EditorLayer> _ValidLayers { get; } = new() {
+    private static List<EditorLayer> _ValidLayers { get; } =[
         EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
-    };
+    ];
 
     public override List<EditorLayer> ValidLayers => _ValidLayers;
 

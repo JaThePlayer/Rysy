@@ -330,7 +330,7 @@ public abstract class Tool {
                     ImGui.SetCursorPosY(ImGui.GetCursorPos().Y + MaterialListElementHeight() / 2 - style.FramePadding.Y - style.ItemSpacing.Y * 2);
                     ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - style.ItemSpacing.X * 2 - style.FramePadding.X * 2);
 
-                    if (ImGui.BeginCombo($"##{rendered}", "", ImGuiComboFlags.NoPreview)) {
+                    if (ImGui.BeginCombo(Interpolator.Temp($"##{rendered}"), "", ImGuiComboFlags.NoPreview)) {
                         foreach (var (mat, displayName) in group) {
                             if (RenderMaterialListElement(mat, displayName)) {
                                 GroupKeyToMainPlacementName[groupKey] = displayName;
@@ -401,7 +401,7 @@ public abstract class Tool {
         var search = Search;
         // pass the persistence key as the ID to imgui, because otherwise if you had the search bar selected while switching layers/tools,
         // your search would persist to the different layer/tool
-        if (ImGui.InputText($"Search##{SearchPersistenceKey}", ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
+        if (ImGui.InputText(Interpolator.Temp($"Search##{SearchPersistenceKey}"), ref search, 512, ImGuiInputTextFlags.AlwaysOverwrite)) {
             Search = search;
             CachedSearch = null;
         }
@@ -463,9 +463,9 @@ public abstract class Tool {
         if (previewOrNull is { } preview) {
             size.Y = preview.H;
         }
-
+        
         var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-        if (ImGui.Selectable($"##{displayName}", IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
+        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {

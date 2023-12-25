@@ -352,7 +352,7 @@ public class StylegroundWindow : Window {
         var previewW = (int) ImGui.GetColumnWidth();
         ImGuiManager.XnaWidget("styleground_preview", previewW, 300, () => {
             if (Selections is [var selected, ..]) {
-                IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
+                IEnumerable<ISprite> sprites;
                 try {
                     if (SelectedAlteredValues is { } altered) {
                         //selected.FakePreviewData = new(selected.Data.SID, selected.Data.Inner.CreateMerged(SelectedAlteredValues));

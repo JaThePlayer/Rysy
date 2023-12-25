@@ -6,7 +6,7 @@ using Rysy.History;
 
 namespace Rysy.Selections;
 
-public class Selection {
+public struct Selection {
     public Selection() { }
 
     public Selection(ISelectionHandler handler) => Handler = handler;

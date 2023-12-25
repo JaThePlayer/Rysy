@@ -1,4 +1,41 @@
-﻿namespace Rysy.Helpers;
+﻿using System.Runtime.CompilerServices;
+
+namespace Rysy.Helpers;
+
+/// <summary>
+/// Same as Span, but is not a ref-struct and as such is unsafe.
+/// </summary>
+public readonly unsafe struct UnsafeSpan<T> where T : unmanaged {
+    private readonly T* _first;
+    private readonly int _length;
+
+    public UnsafeSpan(T* first, int length) {
+        _first = first;
+        _length = length;
+    }
+
+    public UnsafeSpan(T[] array) {
+        if (array.Length == 0) {
+            _first = null;
+        } else {
+            _first = (T*)Unsafe.AsPointer(ref array[0]);
+        }
+        _length = array.Length;
+    }
+
+    public UnsafeSpan(ReadOnlySpan<T> span) {
+        if (span.Length == 0) {
+            _first = null;
+        } else {
+            _first = (T*)Unsafe.AsPointer(ref Unsafe.AsRef(in span[0]));
+        }
+        _length = span.Length;
+    }
+
+    public Span<T> AsSpan() => new(_first, _length);
+
+    public bool Empty => _length == 0;
+}
 
 /// <summary>
 /// Provides a way to create a string-keyed dictionary,
@@ -8,6 +45,7 @@
 public readonly struct StringRef : IEquatable<StringRef> {
     private readonly char[]? _srcCharBuffer;
     private readonly string? _srcString;
+    private readonly UnsafeSpan<char> _srcUnsafeSpan;
 
     private StringRef(char[]? charBuffer, string? srcString) {
         _srcCharBuffer = charBuffer;
@@ -53,4 +91,12 @@ public readonly struct StringRef : IEquatable<StringRef> {
         
     public override bool Equals(object? obj)
         => obj is StringRef other && Equals(other);
+
+    public static bool operator ==(StringRef left, StringRef right) {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(StringRef left, StringRef right) {
+        return !(left == right);
+    }
 }
