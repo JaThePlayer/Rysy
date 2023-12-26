@@ -58,6 +58,12 @@ public interface ISprite : IEnumerable<ISprite> {
         Pos = pos.Floored(),
         Color = Color.White
     };
+    
+    public static SimpleSprite SimpleSpriteFromTexture(Vector2 pos, string texturePath)
+        => new(GFX.Atlas[texturePath]) {
+            Color = Color.White,
+            Pos = pos,
+        };
 
     public static Sprite FromSpriteBank(Vector2 pos, string name, string animation, SpriteBank? bank = null) {
         bank ??= EditorState.Map?.Sprites;

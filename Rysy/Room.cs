@@ -539,17 +539,16 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     private void DrawFromCanvas(Camera camera) {
-        GFX.Batch.Draw(FullRenderCanvas, new Vector2(0, 0), Color.White);
+        if (FullRenderCanvas is {} canvas)
+            GFX.Batch.Draw(canvas, new Vector2(0, 0), Color.White);
     }
 
     private void CacheIntoCanvas(Camera camera) {
         if (CachedSprites is null)
             return;
 
-        RenderTarget2D canvas;
-
         var gd = RysyEngine.GDM.GraphicsDevice;
-        canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        RenderTarget2D canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
 
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);

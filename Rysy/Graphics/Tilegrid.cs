@@ -147,7 +147,7 @@ public class Tilegrid : ILuaWrapper {
     => BulkReplaceTiles(tile, locations.EnumerateTrue2dLocations(Tiles.GetLength(0)).GetEnumerator(), out delta, locationCountHint);
     
     /// <summary>
-    /// Replaces all tiles at locations indicated by <see cref="locations"/> with tiles from the corresponding index from <see cref="delta"/>
+    /// Replaces all tiles at locations indicated by <paramref name="locations"/> with tiles from the corresponding index from <paramref name="delta"/>
     /// </summary>
     internal bool BulkReplaceTiles<T>(T locations, BulkReplaceDelta delta) where T : IEnumerator<Point> {
         if (delta.OldTiles is not { } oldTiles) {

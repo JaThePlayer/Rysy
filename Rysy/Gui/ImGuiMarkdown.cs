@@ -42,6 +42,8 @@ internal static partial class ImGuiMarkdown {
                     }
                         break;
                     case ParagraphBlock paragraphBlock: {
+                        if (paragraphBlock.Inline is null)
+                            continue;
                         var first = true;
                         foreach (var inline in paragraphBlock.Inline) {
                             RenderInline(inline, 0, first, startX);

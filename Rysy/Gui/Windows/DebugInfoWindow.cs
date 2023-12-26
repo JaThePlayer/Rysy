@@ -133,7 +133,7 @@ public class DebugInfoWindow : Window {
 
     private void Benchmark(Room room, bool aggressive) {
         var watch = Stopwatch.StartNew();
-        const int times = 1000;
+        const int times = 100;
         for (int i = 0; i < times; i++) {
             if (aggressive)
                 room.ClearRenderCacheAggressively();

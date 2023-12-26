@@ -5,10 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace Rysy.Graphics;
 
-public record struct Sprite : ISprite {
+public record struct Sprite : ITextureSprite {
     public int? Depth { get; set; }
 
-    public Vector2 Pos;
+    public Vector2 Pos { get; set; }
 
     public VirtTexture Texture;
     public Rectangle? ClipRect;
@@ -36,11 +36,11 @@ public record struct Sprite : ISprite {
     public float Rotation = 0f;
     public Vector2 Origin = Vector2.Zero;
     public Vector2 Scale = Vector2.One;
-    private SpriteEffects Flip = SpriteEffects.None;
+    private SpriteEffects Flip => SpriteEffects.None;
 
     public Vector2 DrawOffset;
-    public int Width;
-    public int Height;
+    private int Width;
+    private int Height;
 
     private Vector2 _multOrigin;
 
@@ -200,7 +200,6 @@ public record struct Sprite : ISprite {
                 LoadSizeFromTexture();
 
             // Fixup properties now, at this point nothing should try to get stuff from the sprite...
-            Flip = SpriteEffects.None;
 
             // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
             var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
@@ -209,6 +208,7 @@ public record struct Sprite : ISprite {
 
             _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
             // Monogame doesn't like negative scales...
+            /*
             if (Scale.X < 0) {
                 Scale.X = -Scale.X;
                 Flip ^= SpriteEffects.FlipHorizontally;
@@ -218,7 +218,7 @@ public record struct Sprite : ISprite {
                 Scale.Y = -Scale.Y;
                 Flip ^= SpriteEffects.FlipVertically;
                 _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
-            }
+            }*/
         }
     }
 

@@ -516,7 +516,7 @@ public sealed record AutotiledSpriteList : ISprite {
 
                 var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
                 if (room is {} && sprite.Tileset is { Rainbow: true }) {
-                    sprite.RenderAt(b, pos, ColorHelper.GetRainbowColorAnimated(room, pos));
+                    sprite.RenderAt(b, pos, ColorHelper.GetRainbowColorAnimated(room, pos) * (color.A / 255f));
                 } else {
                     sprite.RenderAt(b, pos, color);
                 }
