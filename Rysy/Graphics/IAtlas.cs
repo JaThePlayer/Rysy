@@ -9,13 +9,44 @@ namespace Rysy.Graphics;
 
 public interface IAtlas {
     //public Dictionary<string, VirtTexture> Textures { get; }
-
+    public static bool LogMissingTextures => Settings.Instance.LogMissingTextures;
+    
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures();
 
-    public VirtTexture this[string key] { get; }
-    public VirtTexture this[string key, int frame] { get; }
+    public VirtTexture this[string key] {
+        get {
+            if (key is null)
+                return GFX.UnknownTexture;
+
+            if (TryGet(key, out var texture))
+                return texture;
+
+            if (LogMissingTextures)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
+        
+            AddTexture(key, GFX.UnknownTexture);
+            return GFX.UnknownTexture;
+        }
+    }
+
+    public VirtTexture this[string key, int frame] {
+        get {
+            if (key is null)
+                return GFX.UnknownTexture;
+
+            if (TryGet(key, frame, out var texture))
+                return texture;
+
+            if (LogMissingTextures)
+                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
+        
+            AddTexture(key, GFX.UnknownTexture);
+            return GFX.UnknownTexture;
+        }
+    }
 
     public bool TryGet(string key, [NotNullWhen(true)] out VirtTexture? texture);
+    public bool TryGet(string key, int frame, [NotNullWhen(true)] out VirtTexture? texture);
 
     /// <summary>
     /// Equivalent to Celeste's Atlas.GetAtlasSubtextures
@@ -53,7 +84,6 @@ public interface IAtlas {
 public record class FoundPath(string Path, string Captured);
 
 public static class IAtlasExt {
-
     public static Cache<List<FoundPath>> FindTextures(this IAtlas atlas, Regex regex) {
         var token = new CacheToken();
         var cache = new Cache<List<FoundPath>>(token, () => {

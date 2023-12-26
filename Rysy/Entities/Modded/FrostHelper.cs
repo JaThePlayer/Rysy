@@ -1,4 +1,6 @@
-﻿using Rysy.Graphics;
+﻿#pragma warning disable CS0649
+
+using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
 
@@ -23,7 +25,7 @@ internal sealed class CustomSpinner : LonnEntity {
 
     public Color BorderColor => RGBA("borderColor", Color.Black);
 
-    private Sprite _fg, _bg;
+    private SpinnerPathCache _cache;
     
     public override string? Documentation => "https://github.com/JaThePlayer/FrostHelper/wiki/Custom-Spinners";
 
@@ -31,65 +33,63 @@ internal sealed class CustomSpinner : LonnEntity {
         base.OnChanged(changed);
 
         if (!changed.OnlyPositionChanged)
-            (_fg, _bg) = GetBaseSprites(Depth);
+            _cache = GetBaseSprites(Depth, Color, BorderColor);
     }
 
-    private static Dictionary<(string directory, string spritePathSuffix), (Sprite FG, Sprite BG)> SpriteCache = new();
+    record SpinnerPathCache(ColoredSpriteTemplate Fg, ColoredSpriteTemplate FgBack, ColoredSpriteTemplate FgOutline, 
+        ColoredSpriteTemplate Bg, ColoredSpriteTemplate BgBack, ColoredSpriteTemplate BgOutline);
 
-    private (Sprite FG, Sprite BG) GetBaseSprites(int depth) {
+    private static Dictionary<(string directory, string spritePathSuffix, Color color, Color borderColor), SpinnerPathCache> SpriteCache = new();
+    private SpinnerPathCache GetBaseSprites(int depth, Color color, Color borderColor) {
         var directory = Attr("directory", "danger/FrostHelper/icecrystal");
         var suffix = Attr("spritePathSuffix", "");
 
-        if (SpriteCache.TryGetValue((directory, suffix), out var cached)) {
+        if (SpriteCache.TryGetValue((directory, suffix, color, borderColor), out var cached)) {
             return cached;
         }
 
-        var sprites = (
-            ISprite.FromTexture(Pos, $"{directory}/fg{suffix}").Centered(),
-            ISprite.FromTexture(Pos, $"{directory}/bg{suffix}").Centered() with {
-                Depth = depth + 1,
-            }
+        var fg = SpriteTemplate.FromTexture($"{directory}/fg{suffix}", depth).Centered();
+        var bg = SpriteTemplate.FromTexture($"{directory}/bg{suffix}", depth).Centered() with { Depth = depth + 1, };
+        var cache = new SpinnerPathCache(
+            fg.CreateColoredTemplate(color),
+            fg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
+            fg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor),
+            bg.CreateColoredTemplate(color),
+            bg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
+            bg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor)
         );
+        
+        SpriteCache[(directory, suffix, color, borderColor)] = cache;
 
-        SpriteCache[(directory, suffix)] = sprites;
-
-        return sprites;
+        return cache;
     }
 
+    private int _lastSpriteCount = 2;
+    
     public override IEnumerable<ISprite> GetSprites() {
-        var depth = Depth;
-        var color = Color;
         var attachToSolid = AttachToSolid;
         var attachGroup = AttachGroup;
         var pos = Pos;
         var rainbow = Rainbow;
         var drawOutline = DrawOutline;
-        var borderColor = drawOutline ? BorderColor : default;
-        var useOutlineTexture = drawOutline && borderColor == Color.Black;
+        var useOutlineTexture = drawOutline && BorderColor == Color.Black;
 
-        var (fgSprite, bgSprite) = (_fg, _bg);
+        var cache = _cache;
+        var sprites = new List<ISprite>(capacity: _lastSpriteCount);
 
-        yield return fgSprite with {
-            Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : color,
-            Pos = pos,
-        };
+        if (rainbow) {
+            sprites.Add(cache.Fg.Template.Create(pos, ColorHelper.GetRainbowColor(Room, pos)));
+        } else {
+            sprites.Add(cache.Fg.Create(pos));
+        }
 
         // the border has to be a separate sprite to render it at a different depth
         if (useOutlineTexture) {
             // use an outline texture to optimise rendering
-            yield return fgSprite.WithOutlineTexture() with {
-                Color = borderColor,
-                Depth = depth + 2,
-                Pos = pos,
-            };
+            sprites.Add(cache.FgOutline.Create(pos));
         }
         else if (drawOutline) {
-            yield return fgSprite with {
-                Color = Color.Transparent,
-                OutlineColor = borderColor,
-                Depth = depth + 2,
-                Pos = pos,
-            };
+            sprites.Add(cache.FgBack.Create(pos));
         }
 
         foreach (CustomSpinner spinner in Room.Entities[typeof(CustomSpinner)]) {
@@ -98,32 +98,27 @@ internal sealed class CustomSpinner : LonnEntity {
 
             var otherPos = spinner.Pos;
 
-            if (Vector2.DistanceSquared(pos, otherPos) < 24f * 24f && spinner.AttachToSolid == attachToSolid && spinner.AttachGroup == attachGroup) {
+            if (Spinner.DistanceSquaredLessThan(pos, otherPos, 24f * 24f) && spinner.AttachToSolid == attachToSolid && spinner.AttachGroup == attachGroup) {
                 var connectorPos = (pos + otherPos) / 2f;
 
-                yield return bgSprite with {
-                    Pos = connectorPos,
-                    Color = rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.Lerp(spinner.Color, color, 0.5f)
-                };
+                if (rainbow) {
+                    sprites.Add(cache.Bg.Template.Create(connectorPos, ColorHelper.GetRainbowColor(Room, connectorPos)));
+                } else {
+                    sprites.Add(cache.Bg.Create(connectorPos));
+                }
                 
                 if (useOutlineTexture) {
                     // use an outline texture to optimise rendering
-                    yield return bgSprite.WithOutlineTexture() with {
-                        Pos = connectorPos,
-                        Color = borderColor,
-                        Depth = depth + 2,
-                    };
+                    sprites.Add(cache.BgOutline.Create(connectorPos));
                 }
                 else if (drawOutline) {
-                    yield return bgSprite with {
-                        Pos = connectorPos,
-                        OutlineColor = borderColor,
-                        Color = Color.Transparent,
-                        Depth = depth + 2,
-                    };
+                    sprites.Add(cache.BgBack.Create(connectorPos));
                 }
             }
         }
+
+        _lastSpriteCount = sprites.Count;
+        return sprites;
     }
 }
 

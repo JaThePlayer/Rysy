@@ -58,7 +58,9 @@ public interface ISelectionCollider {
     public static ISelectionCollider FromRect(float x, float y, int w, int h) => FromRect(new((int) x, (int) y, w, h));
     public static ISelectionCollider FromRect(float x, float y, float w, float h) => FromRect(new((int) x, (int) y, (int) w, (int) h));
     public static ISelectionCollider FromRect(Vector2 pos, int w, int h) => FromRect(new((int) pos.X, (int) pos.Y, w, h));
-    public static ISelectionCollider FromSprite(Sprite s) => new SpriteSelection(s);
+
+    public static ISelectionCollider FromSprite<T>(T s) where T : ITextureSprite => new SpriteSelection<T>(s);
+
     public static ISelectionCollider FromSprites(IEnumerable<ISprite> s) => new MergedSpriteSelection(s);
 }
 
@@ -186,7 +188,7 @@ public sealed record class RectangleSelection : ISelectionCollider {
     }
 }
 
-public sealed record class SpriteSelection(Sprite Sprite) : ISelectionCollider {
+public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T : ITextureSprite {
     private Vector2 DrawOffset;
     private Point SizeOffset;
 

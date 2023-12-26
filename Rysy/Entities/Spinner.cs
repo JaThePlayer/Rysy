@@ -6,33 +6,47 @@ namespace Rysy.Entities;
 
 [CustomEntity("spinner")]
 public sealed class Spinner : Entity, IPlaceable {
+    private const int SpinnerDepth = -8500;
+    private const int ConnectorDepth = -8500 + 1;
+    private const int OutlineDepth = SpinnerDepth + 2;
+    
     public override int Depth => -8500;
 
-    private static readonly Sprite[] FgSprites = new[] {
-        ISprite.FromTexture("danger/crystal/fg_blue00").Centered(),
-        ISprite.FromTexture("danger/crystal/fg_red00").Centered(),
-        ISprite.FromTexture("danger/crystal/fg_purple00").Centered(),
-        ISprite.FromTexture("danger/crystal/fg_red00").Centered(),
-        ISprite.FromTexture("danger/crystal/fg_white00").Centered(),
+    private static readonly ColoredSpriteTemplate DustSprite =
+        SpriteTemplate.FromTexture("danger/dustcreature/base00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White);
+    
+    private static readonly ColoredSpriteTemplate DustOutlineSprite =
+        SpriteTemplate.FromTexture("Rysy:dust_creature_outlines/base00", -48).Centered().CreateColoredTemplate(Color.Red);
+    
+    private static readonly ColoredSpriteTemplate[] FgSprites = new[] {
+        SpriteTemplate.FromTexture("danger/crystal/fg_blue00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/fg_purple00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/fg_white00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
     };
 
-    private static readonly Sprite[] FgBorderSprites = FgSprites.Select(s => s.WithOutlineTexture() with {
-        Depth = -8500 + 2,
-        Color = Color.Black,
-    }).ToArray();
+    private static readonly ColoredSpriteTemplate[] FgBorderSprites = FgSprites
+        .Select(s => s.Template
+            .WithDepth(OutlineDepth)
+            .WithOutlineTexture()
+            .CreateColoredTemplate(Color.Black))
+        .ToArray();
 
-    private static readonly Sprite[] BgSprites = new[] {
-        ISprite.FromTexture("danger/crystal/bg_blue00").Centered() with { Depth = -8500 + 1, },
-        ISprite.FromTexture("danger/crystal/bg_red00").Centered() with { Depth = -8500 + 1, },
-        ISprite.FromTexture("danger/crystal/bg_purple00").Centered() with { Depth = -8500 + 1, },
-        ISprite.FromTexture("danger/crystal/bg_red00").Centered() with { Depth = -8500 + 1, },
-        ISprite.FromTexture("danger/crystal/bg_white00").Centered() with { Depth = -8500 + 1, },
+    private static readonly ColoredSpriteTemplate[] BgSprites = {
+        SpriteTemplate.FromTexture("danger/crystal/bg_blue00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/bg_red00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/bg_purple00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/bg_red00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("danger/crystal/bg_white00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
     };
 
-    private static readonly Sprite[] BgBorderSprites = BgSprites.Select(s => s.WithOutlineTexture() with {
-        Color = Color.Black,
-        Depth = -8500 + 2,
-    }).ToArray();
+    private static readonly ColoredSpriteTemplate[] BgBorderSprites = BgSprites
+        .Select(s => s.Template
+            .WithDepth(OutlineDepth)
+            .WithOutlineTexture()
+            .CreateColoredTemplate(Color.Black))
+        .ToArray();
 
     [Bind("attachToSolid")]
     public bool AttachToSolid;
@@ -84,28 +98,24 @@ public sealed class Spinner : Entity, IPlaceable {
         return sprites;
     }
 
+    private int _lastSpriteCount = 2;
     private IEnumerable<ISprite> GetSpritesUncached() {
         if (Dust) {
-            yield return ISprite.FromTexture(Pos, "Rysy:dust_creature_outlines/base00").Centered() with {
-                Color = Color.Red,
-                Depth = -48,
-            };
-            yield return ISprite.FromTexture(Pos, "danger/dustcreature/base00").Centered();
-            yield break;
+            return [
+                DustOutlineSprite.Create(Pos),
+                DustSprite.Create(Pos)
+            ];
         }
 
         var color = SpinnerColor;
         var rainbow = color == SpinnerColors.Rainbow;
         var pos = Pos;
 
-        yield return FgSprites[(int) color] with {
-            Pos = pos,
-            Color = rainbow ? ColorHelper.GetRainbowColor(Room, pos) : Color.White,
-        };
+        var sprites = new List<ISprite>(_lastSpriteCount);
+
+        sprites.Add(FgSprites[(int) color].CreateRecolored(pos, rainbow ? ColorHelper.GetRainbowColor(Room, pos) : Color.White));
         // the border has to be a separate sprite to render it at a different depth
-        yield return FgBorderSprites[(int) color] with {
-            Pos = pos,
-        };
+        sprites.Add(FgBorderSprites[(int) color].Create(pos));
 
         // connectors
 #if FAILED_CACHE
@@ -130,17 +140,15 @@ public sealed class Spinner : Entity, IPlaceable {
                 #endif
                 var connectorPos = ((pos + spinner.Pos) / 2f).Floored();
 
-                yield return BgSprites[(int) color] with {
-                    Pos = connectorPos,
-                    Color = rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.White,
-                };
+                sprites.Add(BgSprites[(int) color].CreateRecolored(connectorPos, rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.White));
 
                 // the border has to be a separate sprite to render it at a different depth
-                yield return BgBorderSprites[(int) color] with {
-                    Pos = connectorPos,
-                };
+                sprites.Add(BgBorderSprites[(int) color].Create(connectorPos));
             }
         }
+
+        _lastSpriteCount = sprites.Count;
+        return sprites;
     }
 
     public static bool DistanceSquaredLessThan(Vector2 value1, Vector2 value2, float maxDist) {

@@ -352,7 +352,7 @@ public interface ITileChecker {
     bool IsInBounds(int x, int y);
     
     /// <summary>
-    /// Checks whether the tileset stored in <see cref="data" /> should connect to a tile located at x, y.
+    /// Checks whether the tileset stored in <paramref name="data" /> should connect to a tile located at x, y.
     /// Mask size has already been taken into account.
     /// </summary>
     bool IsConnectedTileAt(int x, int y, TilesetData data);

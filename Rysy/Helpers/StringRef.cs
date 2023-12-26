@@ -45,7 +45,7 @@ public readonly unsafe struct UnsafeSpan<T> where T : unmanaged {
 public readonly struct StringRef : IEquatable<StringRef> {
     private readonly char[]? _srcCharBuffer;
     private readonly string? _srcString;
-    private readonly UnsafeSpan<char> _srcUnsafeSpan;
+    //private readonly UnsafeSpan<char> _srcUnsafeSpan;
 
     private StringRef(char[]? charBuffer, string? srcString) {
         _srcCharBuffer = charBuffer;

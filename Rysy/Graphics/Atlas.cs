@@ -4,24 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rysy.Graphics;
 
 public class Atlas : IAtlas {
-    public bool LogMissingTextures => Settings.Instance.LogMissingTextures;
-
     public Dictionary<string, VirtTexture> Textures { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
-
-    public VirtTexture this[string key] {
-        get {
-            if (key is null)
-                return GFX.UnknownTexture;
-
-            if (TryGet(key, out var texture))
-                return texture;
-
-            if (LogMissingTextures)
-                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
-            Textures[key] = GFX.UnknownTexture;
-            return GFX.UnknownTexture;
-        }
-    }
 
     public bool TryGet(string key, [NotNullWhen(true)] out VirtTexture? texture) {
         texture = null;
@@ -61,20 +44,6 @@ public class Atlas : IAtlas {
         }
 
         return false;
-    }
-
-    public VirtTexture this[string key, int frame] {
-        get {
-            if (key is null)
-                return GFX.UnknownTexture;
-
-            if (TryGet(key, frame, out var texture))
-                return texture;
-
-            if (LogMissingTextures)
-                Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
-            return GFX.UnknownTexture;
-        }
     }
 
     public bool Exists(string key) => TryGet(key, out _);
