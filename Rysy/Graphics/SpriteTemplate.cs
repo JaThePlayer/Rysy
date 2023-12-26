@@ -36,19 +36,28 @@ public sealed record SpriteTemplate {
     public TemplatedOutlinedSprite CreateOutlined(Vector2 pos, Color color, Color outlineColor)
         => new(this) { Pos = pos, Color = color, OutlineColor = outlineColor };
 
+    public Sprite CreateUntemplated(Vector2 pos, Color color) => new Sprite(Texture) {
+        Color = color,
+        Pos = pos,
+        Depth = Depth,
+        Origin = Origin,
+        Rotation = Rotation,
+        Scale = Scale,
+    };
+
     public ColoredSpriteTemplate CreateColoredTemplate(Color color) =>
         new(this, color, default);
     
     public ColoredSpriteTemplate CreateColoredTemplate(Color color, Color outlineColor) =>
         new(this, color, outlineColor);
     
-    public int Depth { get; set; }
-    public VirtTexture Texture { get; private set; }
+    public int Depth { get; init; }
+    public VirtTexture Texture { get; private init; }
     public Rectangle? ClipRect { get; private set; }
     
-    public Vector2 Origin { get; set; }
-    public float Rotation { get; set; } = 0f;
-    public Vector2 Scale { get; set; } = Vector2.One;
+    public Vector2 Origin { get; init; }
+    public float Rotation { get; init; } = 0f;
+    public Vector2 Scale { get; init; } = Vector2.One;
 
     public bool IsLoaded => Texture.Texture is { };
     
@@ -57,9 +66,13 @@ public sealed record SpriteTemplate {
     private int Height;
     private Vector2 SubtextureOffset;
     
+    // Origin multiplied by the size of the texture, needed to pass it to SpriteBatch
     private Vector2 _multOrigin;
+    // The absolute value of Scale, simplifies logic and needed to pass it to monogame's SpriteBatch
+    private Vector2 _realScale;
+    
     private bool _prepared;
-    private SpriteEffects Flip => SpriteEffects.None;
+    private SpriteEffects Flip;
 
     public void RenderAt(Camera? cam, Vector2 offset, Vector2 pos, Color color, Color outlineColor) {
         if (Texture.Texture is not { } texture)
@@ -69,7 +82,7 @@ public sealed record SpriteTemplate {
         // this is not done in the constructor, as that would force preloading
         CacheFields();
 
-        var scale = Scale;
+        var scale = _realScale;
         var origin = _multOrigin;
 
         // todo: figure out if calculating rotated rectangles for culling is worth it
@@ -111,7 +124,7 @@ public sealed record SpriteTemplate {
 
         CacheFields();
 
-        var scale = Scale;
+        var scale = _realScale;
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
         if (Rotation == 0f) {
             Vector2 pos = atPos - _multOrigin * scale + SubtextureOffset;
@@ -154,6 +167,18 @@ public sealed record SpriteTemplate {
                 DrawOffset += (nonDivisibleBy2 * Origin);
 
             _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+            _realScale = Scale;
+            
+            if (Scale.X < 0) {
+                _realScale.X = -Scale.X;
+                Flip ^= SpriteEffects.FlipHorizontally;
+                _multOrigin.X = ClipRect!.Value.Width - _multOrigin.X;
+            }
+            if (Scale.Y < 0) {
+                _realScale.Y = -Scale.Y;
+                Flip ^= SpriteEffects.FlipVertically;
+                _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
+            }
         }
     }
 }

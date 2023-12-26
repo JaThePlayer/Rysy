@@ -11,8 +11,14 @@ namespace Rysy.LuaSupport;
 public class LonnEntity : Entity {
     internal ListenableDictionaryRef<string, LonnEntityPlugin> PluginRef;
 
+    private static byte[] _typeASCII = "_type"u8.ToArray();
+
+    internal List<ISprite>? CachedSprites;
+    internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
+    
     private void ClearInternalCache() {
         CachedSprites = null;
+        CachedNodeSprites = null;
     }
     
     [JsonIgnore]
@@ -31,6 +37,32 @@ public class LonnEntity : Entity {
 
     [JsonIgnore]
     public override int Depth => Plugin?.GetDepth(Room, this) ?? 0;
+
+    public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
+        CachedNodeSprites ??= new();
+
+        var node = Nodes[nodeIndex];
+        if (CachedNodeSprites.TryGetValue(node, out var cached)) {
+            return cached;
+        }
+        
+        var oldPos = Pos;
+        SilentSetPos(node);
+        List<ISprite>? sprites = null;
+        
+        try {
+            sprites = GetSpritesUncached(out var canCache).Select(s => s.WithMultipliedAlpha(NodeSpriteAlpha)).ToList();
+
+            if (canCache) {
+                CachedNodeSprites[node] = sprites;
+            }
+        } finally {
+            SilentSetPos(oldPos);
+            sprites ??= [];
+        }
+        
+        return sprites;
+    }
 
     public override IEnumerable<ISprite> GetAllNodeSprites() {
         if (Plugin is null)
@@ -88,13 +120,25 @@ public class LonnEntity : Entity {
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        if (Plugin is null)
-            return Array.Empty<ISprite>();
-        
         if (CachedSprites is { } cached)
             return cached;
 
-        return Plugin.PushToStack((pl) => {
+        var sprites = GetSpritesUncached(out var canCache);
+        if (canCache)
+            CachedSprites = sprites;
+
+        return sprites;
+    }
+
+    private List<ISprite> GetSpritesUncached(out bool canCache) {
+        canCache = false;
+        if (Plugin is null)
+            return [];
+
+        // can't capture out vars into lambdas
+        bool innerCanCache = false;
+        
+        var sprites = Plugin.PushToStack((pl) => {
             // push a RoomWrapper instead of the room, so that we can see whether the room ever got accessed or not
             // if the room never got accessed, we can cache, if it did, we cannot
             var roomWrapper = new RoomLuaWrapper(Room);
@@ -102,12 +146,13 @@ public class LonnEntity : Entity {
             var spr = _GetSprites(roomWrapper);
 
             if (!roomWrapper.Used)
-                CachedSprites = spr;
-            //else
-            //    (Name, roomWrapper.Reasons).LogAsJson();
+                innerCanCache = true; // CachedSprites = spr
 
             return spr;
         });
+
+        canCache = innerCanCache;
+        return sprites;
     }
 
     private bool CallSelectionFunc<T>(Func<Lua, int, T> valueRetriever, out T? value) {
@@ -227,6 +272,14 @@ public class LonnEntity : Entity {
             : null;
     }
 
+    public override void ClearInnerCaches() {
+        base.ClearInnerCaches();
+
+        CachedSprites = null;
+        CachedNodeSprites?.Clear();
+        CachedNodeSprites = null;
+    }
+
     private Entity? FlipImpl(bool horizontal, bool vertical) {
         if (Plugin?.Flip is null) {
             return horizontal ? base.TryFlipHorizontal() : base.TryFlipVertical();
@@ -242,10 +295,6 @@ public class LonnEntity : Entity {
     public override List<string>? AssociatedMods => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
     #region Sprites
-    private static byte[] _typeASCII = Encoding.ASCII.GetBytes("_type");
-
-    internal List<ISprite>? CachedSprites;
-
     private List<ISprite> SpritesFromLonn(Lua lua, int top) {
         var list = new List<ISprite>();
 
@@ -291,6 +340,12 @@ public class LonnEntity : Entity {
                     addTo.Add(LonnDrawables.LuaToNineSlice(lua, top));
                     break;
                 case "drawableFunction":
+                    break;
+                case "_RYSY_waterfall":
+                    addTo.AddRange(LonnDrawables.LuaToWaterfall(Room, lua, top));
+                    break;
+                case "_RYSY_big_waterfall":
+                    addTo.AddRange(LonnDrawables.LuaToBigWaterfall(Room, lua, top));
                     break;
                 default:
                     Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type.ToString()}: {lua.TableToDictionary(top).ToJson()}");

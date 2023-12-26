@@ -88,6 +88,7 @@ public static class SpikeHelper {
 
     public static IEnumerable<ISprite> GetSprites(Entity e, Direction dir, string type, bool triggerSpikes = false) {
         if (triggerSpikes) {
+            // Create a preview above the normal sprites
             foreach (var previewSprite in GetSprites(e, dir, type, triggerSpikes: false)) {
                 yield return previewSprite.WithMultipliedAlpha(0.3f);
             }

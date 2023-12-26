@@ -1,4 +1,6 @@
-﻿using Rysy.Extensions;
+﻿//#define FAILED_CACHE
+
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 
@@ -18,13 +20,13 @@ public sealed class Spinner : Entity, IPlaceable {
     private static readonly ColoredSpriteTemplate DustOutlineSprite =
         SpriteTemplate.FromTexture("Rysy:dust_creature_outlines/base00", -48).Centered().CreateColoredTemplate(Color.Red);
     
-    private static readonly ColoredSpriteTemplate[] FgSprites = new[] {
+    private static readonly ColoredSpriteTemplate[] FgSprites = [
         SpriteTemplate.FromTexture("danger/crystal/fg_blue00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_purple00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_white00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
-    };
+    ];
 
     private static readonly ColoredSpriteTemplate[] FgBorderSprites = FgSprites
         .Select(s => s.Template
@@ -63,37 +65,67 @@ public sealed class Spinner : Entity, IPlaceable {
         ClearCache();
     }
 
-    private void ClearCache() {
+    private void ClearCache(bool loop = true) {
 #if FAILED_CACHE
         _cachedSprites = null;
         if (_cachedConnectedSpinners is { } connected) {
             _cachedConnectedSpinners = null;
             foreach (var r in connected) {
                 if (r.TryGetTarget(out var spinner)) {
-                    spinner._cachedConnectedSpinners = null;
+                    //spinner._cachedConnectedSpinners = null;
                     spinner._cachedSprites = null;
                 }
             }
+
+            if (loop)
+                foreach (Spinner s in Room.Entities[typeof(Spinner)]) {
+                    if ((s._cachedSprites is {} || s._cachedConnectedSpinners is {}) && IsValidConnection(s)) {
+                        s.ClearCache(false);
+                    }
+                }
         }
 #endif
+    }
+
+    public override void ClearInnerCaches() {
+        base.ClearInnerCaches();
+        ClearCache();
     }
 
 #if FAILED_CACHE
     private List<ISprite>? _cachedSprites;
     private List<WeakReference<Spinner>>? _cachedConnectedSpinners;
+    private bool IsValidConnection(Spinner spinner) {
+        return DistanceSquaredLessThan(Pos, spinner.Pos, 24 * 24)
+               && !spinner.Dust && spinner.AttachToSolid == AttachToSolid && spinner.Room is {};
+    }
 #endif
 
     public override IEnumerable<ISprite> GetSprites() {
 #if FAILED_CACHE
-        if (_cachedSprites is { } cached) {
-            return cached;
+        if (_cachedSprites is { }) {
+            /*
+            if (_cachedConnectedSpinners is {})
+                foreach (var s in _cachedConnectedSpinners) {
+                    if (!s.TryGetTarget(out var spinner)) {
+                        ClearCache();
+                        break;
+                    }
+
+                    if (!IsValidConnection(spinner)) {
+                        ClearCache();
+                        break;
+                    }
+                }*/
+            
+            if (_cachedSprites is {})
+                return _cachedSprites;
         }
 #endif
 
         var sprites = GetSpritesUncached();
 #if FAILED_CACHE
-        sprites = sprites.ToList();
-        _cachedSprites = sprites;
+        sprites = _cachedSprites = sprites.ToList();
 #endif
         return sprites;
     }
@@ -135,8 +167,10 @@ public sealed class Spinner : Entity, IPlaceable {
                 && !spinner.Dust && spinner.AttachToSolid == AttachToSolid) {
                 #if FAILED_CACHE
                 _cachedConnectedSpinners.Add(new(spinner));
-                if (spinner._cachedSprites is not { })
-                    continue;
+                //if (spinner._cachedSprites is not { })
+                //    continue;
+                //if (!createSprites)
+                //    continue;
                 #endif
                 var connectorPos = ((pos + spinner.Pos) / 2f).Floored();
 

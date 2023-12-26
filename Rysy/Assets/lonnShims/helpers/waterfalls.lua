@@ -52,34 +52,20 @@ function waterfallHelper.getWaterfallHeight(room, entity)
 end
 
 function waterfallHelper.getWaterfallSprites(room, entity, fillColor, borderColor)
-    fillColor = fillColor or waterfallFillColor
-    borderColor = borderColor or waterfallBorderColor
+    -- use the room so that C# doesn't cache the sprites
+    local _ = room.x
 
-    local x, y = entity.x or 0, entity.y or 0
-    local height = waterfallHelper.getWaterfallHeight(room, entity)
-
-    local sprites = {}
-
-    local middleRectangle = drawableRectangle.fromRectangle("fill", x, y, 8, height, fillColor)
-    local leftRectangle = drawableRectangle.fromRectangle("fill", x - 1, y, 1, height, borderColor)
-    local rightRectangle = drawableRectangle.fromRectangle("fill", x + 8, y, 1, height, borderColor)
-
-    table.insert(sprites, middleRectangle:getDrawableSprite())
-    table.insert(sprites, leftRectangle:getDrawableSprite())
-    table.insert(sprites, rightRectangle:getDrawableSprite())
-
-    local addWaveLineSprite = waterfallHelper.addWaveLineSprite
-
-    -- Add wave pattern
-    for i = 0, height, 21 do
-        -- From left to right in the waterfall
-        addWaveLineSprite(sprites, y, height, x, y + i + 9, 1, 13, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 1, y + i + 11, 1, 8, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 6, y + i + 1, 1, 8, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 7, y + i - 2, 1, 13, borderColor)
-    end
-
-    return sprites
+    -- Return a fake sprite type, and let C# handle rendering the waterfall instead.
+    -- Because the original function returns a list, we need to return one as well.
+    return {
+        {
+            _type = "_RYSY_waterfall",
+            x = entity.x or 0,
+            y = entity.y or 0,
+            fillColor = fillColor or waterfallFillColor,
+            borderColor = borderColor or waterfallBorderColor,
+        }
+    }
 end
 
 function waterfallHelper.getWaterfallRectangle(room, entity)
@@ -131,47 +117,24 @@ function waterfallHelper.getBigWaterfallSprite(room, entity, fillColor, borderCo
         fillColor = fillColor or defaultFillColor
         borderColor = borderColor or defaultBorderColor
     end
-
+    
     local x, y = entity.x or 0, entity.y or 0
     local width, height = entity.width or 16, entity.height or 64
-
-    local borderOffset = waterfallHelper.getBorderOffsetorderOffset(entity)
-
-    local sprites = {}
-
-    local middleRectangle = drawableRectangle.fromRectangle("fill", x, y, width, height, fillColor)
-    local leftRectangle = drawableRectangle.fromRectangle("fill", x, y, 2, height, borderColor)
-    local rightRectangle = drawableRectangle.fromRectangle("fill", x + width - 2, y, 2, height, borderColor)
-
-    table.insert(sprites, middleRectangle:getDrawableSprite())
-    table.insert(sprites, leftRectangle:getDrawableSprite())
-    table.insert(sprites, rightRectangle:getDrawableSprite())
-
-    local addWaveLineSprite = waterfallHelper.addWaveLineSprite
-
-    -- Add wave pattern
-    for i = 0, height, 21 do
-        -- From left to right in the waterfall
-        -- Parts connected to side borders
-        addWaveLineSprite(sprites, y, height, x + 2, y + i + 9, 1, 12, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 3, y + i + 11, 1, 8, borderColor)
-        addWaveLineSprite(sprites, y, height, x + width - 4, y + i, 1, 9, borderColor)
-        addWaveLineSprite(sprites, y, height, x + width - 3, y + i - 2, 1, 13, borderColor)
-
-        -- Wave on left border
-        addWaveLineSprite(sprites, y, height, x + 1 + borderOffset, y + i, 1, 9, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 2 + borderOffset, y + i + 9, 1, 2, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 2 + borderOffset, y + i + 19, 1, 2, borderColor)
-        addWaveLineSprite(sprites, y, height, x + 3 + borderOffset, y + i + 11, 1, 8, borderColor)
-
-        -- Wave on right border
-        addWaveLineSprite(sprites, y, height, x + width - 2 - borderOffset, y + i - 10, 1, 8, borderColor)
-        addWaveLineSprite(sprites, y, height, x + width - 3 - borderOffset, y + i - 2, 1, 2, borderColor)
-        addWaveLineSprite(sprites, y, height, x + width - 3 - borderOffset, y + i + 9, 1, 2, borderColor)
-        addWaveLineSprite(sprites, y, height, x + width - 4 - borderOffset, y + i, 1, 9, borderColor)
-    end
-
-    return sprites
+    
+    -- Return a fake sprite type, and let C# handle rendering the waterfall instead.
+    -- Because the original function returns a list, we need to return one as well.
+    return {
+        {
+            _type = "_RYSY_big_waterfall",
+            x = x,
+            y = y,
+            w = width,
+            h = height,
+            fillColor = fillColor,
+            borderColor = borderColor,
+            fg = waterfallHelper.isForeground(entity)
+        }
+    }
 end
 
 function waterfallHelper.getBigWaterfallRectangle(room, entity)

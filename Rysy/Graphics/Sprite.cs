@@ -36,7 +36,7 @@ public record struct Sprite : ITextureSprite {
     public float Rotation = 0f;
     public Vector2 Origin = Vector2.Zero;
     public Vector2 Scale = Vector2.One;
-    private SpriteEffects Flip => SpriteEffects.None;
+    private SpriteEffects Flip;
 
     public Vector2 DrawOffset;
     private int Width;
@@ -121,13 +121,6 @@ public record struct Sprite : ITextureSprite {
 
             if (Color != default)
                 Render(texture, pos, Color, scale, flip, origin);
-
-            {
-                //var size = new Vector2(Width * scale.X, Height * scale.Y);
-                //var pos = Pos - origin * scale;
-                //ISprite.OutlinedRect(pos + offset, (int) size.X, (int) size.Y, Color.Transparent, Color.Red * 0.1f).Render();
-            }
-
         }
     }
 
@@ -208,7 +201,7 @@ public record struct Sprite : ITextureSprite {
 
             _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
             // Monogame doesn't like negative scales...
-            /*
+            
             if (Scale.X < 0) {
                 Scale.X = -Scale.X;
                 Flip ^= SpriteEffects.FlipHorizontally;
@@ -218,7 +211,7 @@ public record struct Sprite : ITextureSprite {
                 Scale.Y = -Scale.Y;
                 Flip ^= SpriteEffects.FlipVertically;
                 _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
-            }*/
+            }
         }
     }
 
