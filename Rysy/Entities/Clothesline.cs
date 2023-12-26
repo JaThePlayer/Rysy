@@ -30,13 +30,12 @@ internal sealed class Clothesline : Entity, IPlaceable {
     private static FlaglineHelper.Options FlaglineOptions = new FlaglineHelper.Options() {
         LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f),
         PinColor = Color.Gray,
-        Colors = new()
-        {
+        Colors = [
             "0d2e6b".FromRGB(),
             "3d2688".FromRGB(),
             "4f6e9d".FromRGB(),
             "47194a".FromRGB()
-        },
+        ],
         FlagHeight = 8..20,
         FlagLength = 8..16,
         Space = 2..8,

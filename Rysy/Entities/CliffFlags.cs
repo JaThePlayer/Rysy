@@ -27,16 +27,15 @@ public class CliffFlags : Entity, IPlaceable {
     public override ISelectionCollider GetNodeSelection(int nodeIndex)
         => ISelectionCollider.FromRect(Nodes[nodeIndex].Pos.Add(-2, -2), 4, 4);
 
-    private static FlaglineHelper.Options FlaglineOptions = new FlaglineHelper.Options() {
+    private static readonly FlaglineHelper.Options FlaglineOptions = new FlaglineHelper.Options() {
         LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f),
         PinColor = Color.Gray,
-        Colors = new()
-        {
+        Colors = [
             "d85f2f".FromRGB(),
             "d82f63".FromRGB(),
             "2fd8a2".FromRGB(),
-            "d8d62f".FromRGB(),
-        },
+            "d8d62f".FromRGB()
+        ],
         FlagHeight = 10..10,
         FlagLength = 10..10,
         Space = 2..8,

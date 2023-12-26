@@ -288,6 +288,22 @@ public static partial class LuaExt {
 
         return ret is { } r ? (int)r : null;
     }
+    
+    /// <summary>
+    /// Peeks the bool value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
+    /// </summary>
+    public static bool? PeekTableBoolValue(this Lua lua, int tableStackIndex, string key) {
+        //lua.PushString(key);
+        //var type = lua.GetTable(tableStackIndex);
+        var type = lua.GetField(tableStackIndex, key);
+        bool? ret = null;
+        if (type is LuaType.Boolean) {
+            ret = lua.ToBoolean(lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
 
     /// <summary>
     /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.

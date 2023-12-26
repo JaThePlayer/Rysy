@@ -60,6 +60,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
+    internal void SilentSetPos(Vector2 newPos) {
+        _pos = newPos;
+    }
+
     [JsonIgnore]
     public IList<Node> Nodes => EntityData.Nodes;
 
@@ -207,20 +211,23 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
+
+    internal const float NodeSpriteAlpha = 0.5f;
+    
     /// <summary>
     /// Gets the sprites needed to render the node <paramref name="nodeIndex"/>.
     /// </summary>
     public virtual IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var node = Nodes![nodeIndex];
         var oldPos = Pos;
-        _pos = node;
+        SilentSetPos(node);
         try {
             var spr = GetSprites();
             foreach (var item in spr) {
-                yield return item.WithMultipliedAlpha(.5f);
+                yield return item.WithMultipliedAlpha(NodeSpriteAlpha);
             }
         } finally {
-            _pos = oldPos;
+            SilentSetPos(oldPos);
         }
     }
 

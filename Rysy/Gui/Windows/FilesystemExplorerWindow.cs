@@ -8,11 +8,15 @@ namespace Rysy.Gui.Windows;
 public class FilesystemExplorerWindow : Window {
     private string Filename = "";
 
+    record FileRef(string Path, ModMeta Mod);
 
-    private (string Path, ModMeta Mod)? OpenedFile;
+    private ComboCache<FileRef> _cache = new();
+    private FileRef? OpenedFile;
     private string FileText = "";
+    private string Search = "";
 
-    private List<(string Path, ModMeta Mod)>? FoundFiles;
+    private List<FileRef>? FoundFiles;
+    private Dictionary<FileRef, string>? FoundFilesDict;
 
     public FilesystemExplorerWindow() : base("Filesystem Explorer", new(800, 800)) {
         Resizable = true;
@@ -26,19 +30,30 @@ public class FilesystemExplorerWindow : Window {
             if (ModRegistry.Filesystem.TryReadAllText(Filename) is { } file) {
                 FoundFiles = null;
                 FileText = file;
-                OpenedFile = (Filename, ModRegistry.Filesystem.FindFirstModContaining(Filename)!);
+                OpenedFile = new(Filename, ModRegistry.Filesystem.FindFirstModContaining(Filename)!);
             }
         }
 
         ScanForFilesButton();
 
         if (FoundFiles is { }) {
+            OpenedFile ??= new("", ModRegistry.VanillaMod);
+            
+            FoundFilesDict ??= FoundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.Name}]");
+
+            if (ImGuiManager.Combo("Files", ref OpenedFile, FoundFilesDict, ref Search, null, _cache)) {
+                if (OpenedFile!.Mod.Filesystem.TryReadAllText(OpenedFile.Path) is { } text) {
+                    FileText = text;
+                    //OpenedFile = file;
+                }
+            }
+            /*
             ImGuiManager.DropdownMenu("Files", FoundFiles, x => $"{x.Path} [{x.Mod.Name}]", (file) => {
                 if (file.Mod.Filesystem.TryReadAllText(file.Path) is { } text) {
                     FileText = text;
                     OpenedFile = file;
                 }
-            });
+            });*/
         }
 
         if (OpenedFile is { } opened) {
@@ -77,9 +92,9 @@ public class FilesystemExplorerWindow : Window {
                 if (fs is null)
                     return;
 
-                FoundFiles = fs.FindFilesInDirectoryRecursive(dir, extension).Select(s => (s, mod)).ToList();
+                FoundFiles = fs.FindFilesInDirectoryRecursive(dir, extension).Select(s => new FileRef(s, mod)).ToList();
             } else {
-                FoundFiles = ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod(dir, extension).ToList();
+                FoundFiles = ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod(dir, extension).Select(p => new FileRef(p.Item1, p.Item2)).ToList();
             }
         }
     }

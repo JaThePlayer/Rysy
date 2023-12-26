@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Entities;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using System.Text;
@@ -21,7 +22,8 @@ public static partial class LonnDrawables {
         var sprite = mode switch {
             "fill" => ISprite.Rect(rect, color),
             "line" => ISprite.OutlinedRect(rect, Color.Transparent, color),
-            "bordered" => ISprite.OutlinedRect(rect, color, lua.PeekTableColorValue(top, "secondaryColor", Color.White)),
+            "bordered" => ISprite.OutlinedRect(rect, color,
+                lua.PeekTableColorValue(top, "secondaryColor", Color.White)),
             _ => ISprite.Rect(rect, color),
         };
 
@@ -61,10 +63,7 @@ public static partial class LonnDrawables {
         }
 
         var sprite = new LineSprite(pointsVec2) with {
-            Color = color,
-            Thickness = thickness,
-            MagnitudeOffset = magnitudeOffset,
-            Offset = new(offX, offY)
+            Color = color, Thickness = thickness, MagnitudeOffset = magnitudeOffset, Offset = new(offX, offY)
         };
 
         if (lua.PeekTableIntValue(top, "depth") is { } depth)
@@ -96,13 +95,13 @@ public static partial class LonnDrawables {
         var scaleX = lua.ToFloat(top + 5);
         var scaleY = lua.ToFloat(top + 6);
         var rotation = lua.ToFloat(top + 7);
-        int? depth = lua.ToIntegerX(top + 8) is { } l ? (int)l : null;
+        int? depth = lua.ToIntegerX(top + 8) is { } l ? (int) l : null;
         var color = lua.ToColor(top + 9, Color.White);
         var texture = lua.FastToString(top + 10, callMetamethod: false);
         var quadX = lua.ToIntegerX(top + 11);
 
         lua.Pop(11);
-        
+
         var sprite = ISprite.FromTexture(new Vector2(x, y), texture) with {
             Scale = new(scaleX, scaleY),
             Origin = new(originX, originY),
@@ -113,7 +112,7 @@ public static partial class LonnDrawables {
 
         if (quadX is { } qx) {
             sprite = sprite.CreateSubtexture(
-                (int)qx,
+                (int) qx,
                 lua.PeekTableIntValue(top, "_RYSYqY") ?? 0,
                 lua.PeekTableIntValue(top, "_RYSYqW") ?? 0,
                 lua.PeekTableIntValue(top, "_RYSYqH") ?? 0
@@ -131,7 +130,7 @@ public static partial class LonnDrawables {
     public static string SanitizeLonnTexturePath(string? pathFromLonn) {
         if (pathFromLonn is null)
             return "";
-        
+
         var fix = MessedUpDigitsRegex().Replace(pathFromLonn, match => match.ValueSpan[..^".0".Length].ToString());
         return fix;
     }
@@ -157,13 +156,49 @@ public static partial class LonnDrawables {
     ninePatch.fillMode = options.fillMode or "repeat"
          */
 
-        var sprite = ISprite.NineSliceFromTexture(rect, texture) with {
-            Color = color,
-        };
+        var sprite = ISprite.NineSliceFromTexture(rect, texture) with { Color = color, };
 
         if (lua.PeekTableIntValue(top, "depth") is { } depth)
             sprite.Depth = depth;
 
         return sprite;
+    }
+
+    public static IEnumerable<ISprite> LuaToWaterfall(Room room, Lua lua, int top) {
+        /*
+            _type = "_RYSY_waterfall",
+            x = entity.x or 0,
+            y = entity.y or 0,
+            fillColor = fillColor or waterfallFillColor,
+            borderColor = borderColor or waterfallBorderColor,
+         */
+        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
+        var fillColor = lua.PeekTableColorValue(top, "fillColor", Color.White);
+        var borderColor = lua.PeekTableColorValue(top, "borderColor", Color.White);
+        
+        return Waterfall.GetSprites(room, new(x, y), fillColor, borderColor);
+    }
+    
+    public static IEnumerable<ISprite> LuaToBigWaterfall(Room room, Lua lua, int top) {
+        /*
+            _type = "_RYSY_big_waterfall",
+            x = x,
+            y = y,
+            w = width,
+            h = height,
+            fillColor = fillColor,
+            borderColor = borderColor,
+            fg = waterfallHelper.isForeground(entity)
+         */
+        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
+        var w = lua.PeekTableIntValue(top, "w") ?? 0;
+        var h = lua.PeekTableIntValue(top, "h") ?? 0;
+        var fillColor = lua.PeekTableColorValue(top, "fillColor", Color.White);
+        var borderColor = lua.PeekTableColorValue(top, "borderColor", Color.White);
+        var layer = lua.PeekTableBoolValue(top, "fg") is true ? BigWaterfall.Layers.FG : BigWaterfall.Layers.BG;
+        
+        return BigWaterfall.GetSprites(new(x, y), w, h, fillColor, borderColor, layer);
     }
 }
