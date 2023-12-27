@@ -81,6 +81,11 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
         }
     }
 
+    internal void RecalculateId() {
+        PrevNodeId = Entity.Nodes.IndexOf(Node);
+        ClearCollideCache();
+    }
+
     public Rectangle Rect => Collider.Rect;
 
     public IHistoryAction MoveBy(Vector2 offset) {
@@ -114,7 +119,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
 
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),
-            new NodeSelectionHandler(Handler, node, NodeIdx + 1)
+            Entity.CreateNodeSelection(NodeIdx + 1, new NodeSelectionHandler(Handler, node, NodeIdx + 1)).Handler
         );
     }
 

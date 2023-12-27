@@ -370,6 +370,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public virtual void ClearInnerCaches() {
         _NameAsASCII = null;
         EntityData.ClearCaches();
+        _cachedPackedElement = null;
     }
 
     public IList<Entity> GetRoomList() => this switch {
@@ -485,6 +486,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Gets fired whenever the EntityData for this entity gets changed in any way.
     /// </summary>
     public virtual void OnChanged(EntityDataChangeCtx changed) {
+        _cachedPackedElement = null;
+        
         _pos = new(EntityData.X, EntityData.Y);
         _SelectionHandler?.ClearCollideCache();
         if (_NodeSelectionHandlers is { })
@@ -518,7 +521,18 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         ClearRoomRenderCache();
     }
 
-    public virtual BinaryPacker.Element Pack() {
+
+    private BinaryPacker.Element? _cachedPackedElement;
+
+    public BinaryPacker.Element Pack() {
+        if (_cachedPackedElement is { } cached) {
+            return cached;
+        }
+
+        return _cachedPackedElement = DoPack();
+    }
+    
+    protected virtual BinaryPacker.Element DoPack() {
         var el = new BinaryPacker.Element(EntityData.SID);
         el.Attributes = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
 
@@ -583,6 +597,15 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             Array.Resize(ref _NodeSelectionHandlers, node + 1);
 
         return new(_NodeSelectionHandlers[node] ??= new((EntitySelectionHandler) CreateSelection().Handler, Nodes[node]));
+    }
+    
+    internal Selection CreateNodeSelection(int node, NodeSelectionHandler handler) {
+        _NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
+
+        if (node >= _NodeSelectionHandlers.Length)
+            Array.Resize(ref _NodeSelectionHandlers, node + 1);
+
+        return new(_NodeSelectionHandlers[node] = handler);
     }
 
     /// <summary>
@@ -740,6 +763,8 @@ public readonly struct EntityDataChangeCtx {
     public bool AllChanged { get; init; }
 
     public bool OnlyPositionChanged => !AllChanged && ChangedFieldName is "x" or "y";
+
+    public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName);
 }
 
 public class EntityData : IDictionary<string, object> {

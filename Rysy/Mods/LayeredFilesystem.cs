@@ -74,9 +74,7 @@ public class LayeredFilesystem : IModFilesystem {
 
         return false;
     }
-
-
-
+    
     public ModMeta? FindFirstModContaining(string filepath) {
         return Mods.FirstOrDefault(m => m.Filesystem.FileExists(filepath));
     }

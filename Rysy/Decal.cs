@@ -23,8 +23,10 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public VirtTexture GetVirtTexture() => GFX.Atlas[MapTextureToPath(Texture)];
 
+    private string? _texture;
+    
     public string Texture {
-        get => Attr("texture");
+        get => _texture ??= EntityData.Attr("texture");
         set {
             EntityData["texture"] = value;
 
@@ -157,7 +159,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         ["rotation"] = Fields.Float(0f),
     };
 
-    public override BinaryPacker.Element Pack() {
+    protected override BinaryPacker.Element DoPack() {
         var el = new BinaryPacker.Element(EntityData.SID);
         var attr = new Dictionary<string, object>(EntityData.Inner.Count, StringComparer.Ordinal) {
             ["x"] = X,
@@ -187,6 +189,13 @@ public sealed partial class Decal : Entity, IPlaceable {
             else
                 r.ClearBgDecalsRenderCache();
         }
+    }
+
+    public override void OnChanged(EntityDataChangeCtx changed) {
+        base.OnChanged(changed);
+        
+        if (changed.IsChanged("texture"))
+            _texture = null;
     }
 
     private static Cache<List<string>> _ValidDecalPaths;

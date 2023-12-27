@@ -179,6 +179,11 @@ public class StylegroundWindow : Window {
 
         var fields = Style.GetDefaultFields();
         var order = new List<string>(fields.Order!(main));
+        
+        if (main is StyleFolder) {
+            fields.Add(StyleFolder.EditorNameDataKey, Fields.String(null!).AllowNull().ConvertEmptyToNull());
+            order.Insert(order.Count - 2, StyleFolder.EditorNameDataKey);
+        }
 
         foreach (var (k, f) in fieldInfo.OrderedEnumerable(main)) {
             fields[k] = f.CreateClone();

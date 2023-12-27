@@ -10,6 +10,8 @@ public class MapAnalyzerRegistry {
     public ListenableList<Type> AnalyzerTypes { get; private set; } = new();
 
     public AnalyzerCtx Analyze(Map map) {
+        using var watch = new ScopedStopwatch("Map Analyzers");
+        
         AnalyzerCtx ctx = new(map);
 
         foreach (var type in AnalyzerTypes) {

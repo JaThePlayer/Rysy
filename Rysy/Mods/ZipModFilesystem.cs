@@ -22,7 +22,9 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
-
+    
+    // keeps track of whether a file is known to exist or known not to exist in the zip.
+    private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
 
     public ZipModFilesystem(string zipFilePath) {
         Root = zipFilePath;
@@ -37,6 +39,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return;
+            
+            _knownExistingFiles.Clear();
 
             foreach (var file in WatchedAssets) {
                 foreach (var asset in file.Value) {
@@ -169,10 +173,13 @@ public sealed class ZipModFilesystem : IModFilesystem {
             assets.Add(asset);
         }
     }
-
+    
     public bool FileExists(string path) {
         if (string.IsNullOrWhiteSpace(path))
             return false;
+
+        if (_knownExistingFiles.TryGetValue(path, out var knownResult))
+            return knownResult;
 
         var zip = OpenZipIfNeeded();
 
@@ -180,6 +187,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
         zip.Used = false;
 
+        _knownExistingFiles[path] = exists;
+        
         return exists;
     }
 }

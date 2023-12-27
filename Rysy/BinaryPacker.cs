@@ -82,10 +82,11 @@ public sealed class BinaryPacker {
             headerWriter.Write(item.Key);
         }
 
-        output.Write(headerStream.ToArray());
-        output.Write(contentStream.ToArray());
-        //headerStream.CopyTo(output);
-        //contentStream.CopyTo(output);
+        headerStream.Seek(0, SeekOrigin.Begin);
+        headerStream.CopyTo(output);
+        
+        contentStream.Seek(0, SeekOrigin.Begin);
+        contentStream.CopyTo(output);
     }
 
     public static void SaveToFile(Package package, string filename) {
@@ -96,8 +97,8 @@ public sealed class BinaryPacker {
         // now that we know everything went well, time to write to file
         using var fileStream = File.Open(filename, FileMode.Create);
 
-        fileStream.Write(memStream.ToArray());
-        //memStream.CopyTo(fileStream);
+        memStream.Seek(0, SeekOrigin.Begin);
+        memStream.CopyTo(fileStream);
     }
 
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
@@ -107,11 +108,22 @@ public sealed class BinaryPacker {
 
         WriteLookup(el.Name ?? "");
 
-        var attrs = (el.Attributes ?? new()).Where(p => p.Value is { }).ToList();
-        writer.Write((byte) attrs.Count);
-        foreach (var (name, val) in attrs) {
-            WriteLookup(name);
-            WriteValue(val);
+        var attrs = el.Attributes;
+        if (attrs is null) {
+            writer.Write((byte)0);
+        } else {
+            byte count = 0;
+            foreach (var (k, v) in attrs) {
+                if (v is { })
+                    count++;
+            }
+            writer.Write(count);
+            foreach (var (name, val) in attrs) {
+                if (val is { }) {
+                    WriteLookup(name);
+                    WriteValue(val);
+                }
+            }
         }
 
         var children = el.Children ?? Array.Empty<Element>();
@@ -193,8 +205,7 @@ public sealed class BinaryPacker {
     }
 
     private void EncodeString(string b) {
-        var rleEncode = TryEncodeRLE(b);
-        if (rleEncode is { }) {
+        if (TryEncodeRLE(b, out var rleEncode)) {
             Writer.Write((byte) 7);
             Writer.Write((short) rleEncode.Length);
             Writer.Write(rleEncode);
@@ -249,13 +260,16 @@ public sealed class BinaryPacker {
         return builder.ToString();
     }
 
-    internal static byte[]? TryEncodeRLE(string str) {
+    private static readonly byte[] _rleEncodeBuffer = new byte[short.MaxValue];
+    
+    internal static bool TryEncodeRLE(string str, out ReadOnlySpan<byte> encoded) {
         if (str.Length < 128 || str.Length * 2 > Math.Pow(2, 15)) {
             //Console.WriteLine($"Can't encode RLE: {str} - too short!");
-            return null;
+            encoded = default;
+            return false;
         }
 
-        Span<byte> rle = str.Length < 4198 ? stackalloc byte[str.Length * 2] : new byte[str.Length * 2];
+        Span<byte> rle = _rleEncodeBuffer;
         int bufferIdx = 0;
 
         for (int i = 0; i < str.Length; i++) {
@@ -263,7 +277,8 @@ public sealed class BinaryPacker {
             char c = str[i];
             if (!char.IsAscii(c)) {
                 //Console.WriteLine($"Can't encode RLE: {str} - {c} is non ascii!");
-                return null;
+                encoded = default;
+                return false;
             }
 
             while (i + 1 < str.Length && str[i + 1] == c && repeatCount < 255) {
@@ -275,10 +290,13 @@ public sealed class BinaryPacker {
                 rle[bufferIdx++] = repeatCount;
                 rle[bufferIdx++] = (byte) c;
             } else {
-                return null;
+                encoded = default;
+                return false;
             }
         }
-        return rle[0..bufferIdx].ToArray();
+
+        encoded = rle[0..bufferIdx];
+        return true;
     }
 
     public class Package {
