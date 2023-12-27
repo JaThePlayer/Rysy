@@ -29,7 +29,7 @@ public class Tilegrid : ILuaWrapper {
             _tiles = value;
             Width = value.GetLength(0);
             Height = value.GetLength(1);
-            RenderCacheToken?.Invalidate();
+            MarkEdited();
             CachedSprites = null;
         }
     }
@@ -44,10 +44,10 @@ public class Tilegrid : ILuaWrapper {
 
             // Make sure to clear the render cache whenever the autotiler data changes
             _autotiler!.TilesetDataCacheToken.OnInvalidate += () => {
-                RenderCacheToken?.Invalidate();
+                MarkEdited();
             };
 
-            RenderCacheToken?.Invalidate();
+            MarkEdited();
         }
     }
 
@@ -56,6 +56,11 @@ public class Tilegrid : ILuaWrapper {
     /// The object that assigns this token is responsible for resetting the token once the render cache is reestablished.
     /// </summary>
     public CacheToken? RenderCacheToken { get; set; }
+
+    private void MarkEdited() {
+        _cachedElement = null;
+        RenderCacheToken?.Invalidate();
+    }
 
     public char SafeTileAt(int x, int y) {
         if (x < 0 || y < 0 || x >= Width || y >= Height)
@@ -92,7 +97,7 @@ public class Tilegrid : ILuaWrapper {
         if (currentTile == tile)
             return false;
         currentTile = tile;
-        RenderCacheToken?.Invalidate();
+        MarkEdited();
         if (CachedSprites is { } cached) {
             Autotiler!.UpdateSpriteList(cached, Tiles, x, y, true);
         }
@@ -130,7 +135,7 @@ public class Tilegrid : ILuaWrapper {
         if (CachedSprites is { } cached) {
             Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
         }
-        RenderCacheToken?.Invalidate();
+        MarkEdited();
 
         return true;
     }
@@ -165,7 +170,7 @@ public class Tilegrid : ILuaWrapper {
         locations.Reset();
 
         if (anyChanged) {
-            RenderCacheToken?.Invalidate();
+            MarkEdited();
             if (CachedSprites is { } cached) {
                 Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
             }
@@ -193,7 +198,7 @@ public class Tilegrid : ILuaWrapper {
 
     public void Resize(int widthPixels, int heightPixels) {
         Tiles = Tiles.CreateResized(widthPixels / 8, heightPixels / 8, '0');
-        RenderCacheToken?.Invalidate();
+        MarkEdited();
         CachedSprites = null;
     }
 
@@ -227,8 +232,8 @@ public class Tilegrid : ILuaWrapper {
     internal void ClearSpriteCache() {
         if (CachedSprites is { }) {
             CachedSprites = null;
-            RenderCacheToken?.Invalidate();
         }
+        MarkEdited();
     }
 
     public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {
@@ -319,10 +324,17 @@ public class Tilegrid : ILuaWrapper {
         return saveString.ToString();
     }
 
+    private BinaryPacker.Element? _cachedElement;
+    
     public BinaryPacker.Element Pack(string name) {
+        if (_cachedElement is { }) {
+            _cachedElement.Name = name;
+            return _cachedElement;
+        }
+        
         var saveString = GetSaveString();
 
-        return new(name) {
+        return _cachedElement = new(name) {
             Attributes = new() {
                 ["innerText"] = saveString,
             }

@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
+using System.Collections.Concurrent;
 using System.IO;
 
 namespace Rysy.Mods;
@@ -9,6 +10,8 @@ public sealed class FolderModFilesystem : IModFilesystem {
 
     private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
+    // keeps track of whether a file is known to exist or known not to exist in the directory.
+    private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
 
     public string VirtToRealPath(string virtPath) => $"{Root}/{virtPath}";
 
@@ -19,6 +22,8 @@ public sealed class FolderModFilesystem : IModFilesystem {
         Watcher.Changed += (s, e) => {
             if (e.Name is null)
                 return;
+            
+            _knownExistingFiles.Clear();
             //e.LogAsJson();
             var path = e.Name.Unbackslash();
             switch (e.ChangeType) {
@@ -96,10 +101,16 @@ public sealed class FolderModFilesystem : IModFilesystem {
     public bool FileExists(string path) {
         if (string.IsNullOrWhiteSpace(path))
             return false;
+        
+        if (_knownExistingFiles.TryGetValue(path, out var knownResult))
+            return knownResult;
 
         var realPath = VirtToRealPath(path);
 
-        return File.Exists(realPath);
+        var exists = File.Exists(realPath);
+        _knownExistingFiles[path] = exists;
+
+        return exists;
     }
 
     public Stream? OpenFile(string path) {

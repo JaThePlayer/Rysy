@@ -1,6 +1,12 @@
 ﻿namespace Rysy.Stylegrounds;
 
 public abstract class StyleFolder : Style {
+    public const string EditorNameDataKey = "_editorName";
+
+    public string? EditorName => Data.Attr(EditorNameDataKey, null!);
+    
+    public override string DisplayName => EditorName ?? base.DisplayName;
+    
     public List<Style> Styles { get; set; }
 
     public virtual bool CanBeNested => true;

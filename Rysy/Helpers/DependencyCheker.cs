@@ -66,13 +66,22 @@ public static class DependencyCheker {
         var entities = map.Rooms.SelectMany(r => r.Entities);
         var triggers = map.Rooms.SelectMany(r => r.Triggers);
 
+        var checkedSids = new HashSet<string>();
         foreach (var item in entities.Concat(triggers)) {
+            if (!checkedSids.Add(item.Name))
+                continue;
+            
             var mods = EntityRegistry.GetAssociatedMods(item);
 
             HandleItem(item, mods);
         }
 
+        var checkedTextures = new HashSet<string>();
         foreach (var decal in map.Rooms.SelectMany(r => r.BgDecals.Concat(r.FgDecals)).Cast<Decal>()) {
+            var decalTexture = decal.Texture;
+            if (!checkedTextures.Add(decalTexture))
+                continue;
+            
             HandleTexture(decal, decal.GetVirtTexture());
         }
 
