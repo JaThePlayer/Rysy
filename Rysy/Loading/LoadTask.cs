@@ -88,6 +88,7 @@ public sealed class LoadTaskManager(List<LoadTask> tasks) {
             }
         }
 
+        _current = null;
         return null;
     }
 

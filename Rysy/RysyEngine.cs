@@ -204,13 +204,15 @@ public sealed class RysyEngine : Game {
 
                 return Task.FromResult(LoadTaskResult.Success());
             }),
-            new SimpleLoadTask("Load Map from Persistence", (t) => {
+            new SimpleLoadTask("Load Map from Persistence", async (t) => {
                 SelectionContextWindowRegistry.Init();
                 reloadTimer.Dispose();
                 var editor = new EditorScene();
-                editor.LoadFromPersistence();
+                await editor.LoadFromPersistence();
                 
-                return Task.FromResult(LoadTaskResult.Success());
+                Scene = editor;
+                
+                return LoadTaskResult.Success();
             }),
         ]);
 
