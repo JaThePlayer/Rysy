@@ -76,12 +76,12 @@ public sealed class EditorScene : Scene {
         LoadMapFromBin(mapFilepath, fromPersistence, fromBackup, overrideFilepath);
     }
 
-    internal void LoadFromPersistence() {
+    internal Task LoadFromPersistence() {
         if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
-            LoadMapFromBin(Persistence.Instance.LastEditedMap, fromPersistence: true);
-        else {
-            Map = null;
-        }
+            return LoadMapFromBinCore(Persistence.Instance.LastEditedMap, fromPersistence: true);
+        
+        Map = null;
+        return Task.CompletedTask;
     }
 
     public override void SetupHotkeys() {
@@ -125,7 +125,7 @@ public sealed class EditorScene : Scene {
         ClearMapRenderCache();
     }
 
-    internal protected override void OnFileDrop(FileDropEventArgs args) {
+    protected internal override void OnFileDrop(FileDropEventArgs args) {
         base.OnFileDrop(args);
 
         var file = args.Files[0];
@@ -136,18 +136,22 @@ public sealed class EditorScene : Scene {
 
     internal void LoadMapFromBin(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
         if (!File.Exists(file)) {
-            RysyEngine.Scene = this;
             return;
         }
         
         RysyEngine.OnEndOfThisFrame += () => Task.Run(async () => {
             if (RysyEngine.Scene is not LoadingScene) {
+                var oldScene = RysyEngine.Scene;
+                
                 RysyEngine.Scene = new LoadingScene(new([
                     new SimpleLoadTask($"Loading map {file.Censor()}", async (t) => {
                         await LoadMapFromBinCore(file, fromPersistence, fromBackup, overrideFilepath);
                         return LoadTaskResult.Success();
                     })
-                ]), onCompleted: () => { });
+                ]), onCompleted: () => {
+                    RysyEngine.Scene = oldScene;
+                });
+                
                 return;
             }
             
@@ -155,10 +159,12 @@ public sealed class EditorScene : Scene {
         });
     }
 
-    private async Task LoadMapFromBinCore(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
+    internal async Task LoadMapFromBinCore(string file, bool fromPersistence = false, bool fromBackup = false, string? overrideFilepath = null) {
         try {
             // Just to make this run async, so we can see the loading screen.
             await Task.Delay(1);
+
+            //throw new Exception();
 
             var mapBin = BinaryPacker.FromBinary(file);
 
@@ -166,18 +172,16 @@ public sealed class EditorScene : Scene {
             if (overrideFilepath is { }) {
                 map.Filepath = overrideFilepath;
             }
-
-            RysyEngine.Scene = this;
+            
             Map = map;
         } catch (Exception e) {
             Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
 
             if (fromPersistence) {
-                RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromPersistence");
+                AddWindow(new PersistenceMapLoadErrorWindow(e, "fromPersistence"));
             } else if (fromBackup) {
-                RysyEngine.Scene = new PersistenceMapLoadErrorScene(e, "fromBackup");
+                AddWindow(new PersistenceMapLoadErrorWindow(e, "fromBackup"));
             } else {
-                RysyEngine.Scene = this;
                 AddWindow(new CrashWindow("rysy.mapLoadError.other".TranslateFormatted(file.Censor()), e, (w) => {
                     if (ImGui.Button("rysy.ok".Translate())) {
                         w.RemoveSelf();
