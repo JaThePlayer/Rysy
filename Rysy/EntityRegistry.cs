@@ -294,13 +294,17 @@ public static class EntityRegistry {
         var placementsRegistry = trigger ? TriggerPlacements : EntityPlacements;
 
         lock (placementsRegistry) {
-            foreach (var palcement in placements) {
-                placementsRegistry.Add(new(palcement.Name) {
-                    ValueOverrides = palcement.Data,
+            foreach (var lonnPlacement in placements) {
+                var csPlacement = new Placement(lonnPlacement.Name) {
+                    ValueOverrides = lonnPlacement.Data,
                     SID = sid,
                     PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
                     FromLonn = true,
-                });
+                };
+                if (lonnPlacement.AssociatedMods is { } associatedMods)
+                    csPlacement = csPlacement.WithAssociatedMods(associatedMods);
+                
+                placementsRegistry.Add(csPlacement);
             }
         }
     }

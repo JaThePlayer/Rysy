@@ -88,6 +88,8 @@ public record class Placement {
     public Vector2[]? Nodes { get; set; }
 
     internal bool FromLonn;
+    
+    private IReadOnlyList<string> _AssociatedMods;
 
     public Placement WithSID(string sid) {
         SID = sid;
@@ -109,6 +111,12 @@ public record class Placement {
 
     public Placement SwapWidthAndHeight() {
         (this["width"], this["height"]) = (this["height"], this["width"]);
+
+        return this;
+    }
+
+    public Placement WithAssociatedMods(IEnumerable<string> mods) {
+        _AssociatedMods = mods.ToList();
 
         return this;
     }
@@ -163,8 +171,6 @@ public record class Placement {
 
         return null;
     }
-
-    private IReadOnlyList<string> _AssociatedMods;
 
     /// <summary>
     /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>

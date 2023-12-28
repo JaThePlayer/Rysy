@@ -24,7 +24,7 @@ public sealed class Spinner : Entity, IPlaceable {
         SpriteTemplate.FromTexture("danger/crystal/fg_blue00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_purple00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
-        SpriteTemplate.FromTexture("danger/crystal/fg_red00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("Rysy:coreSpinnerFg", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/fg_white00", SpinnerDepth).Centered().CreateColoredTemplate(Color.White),
     ];
 
@@ -39,7 +39,7 @@ public sealed class Spinner : Entity, IPlaceable {
         SpriteTemplate.FromTexture("danger/crystal/bg_blue00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/bg_red00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/bg_purple00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
-        SpriteTemplate.FromTexture("danger/crystal/bg_red00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
+        SpriteTemplate.FromTexture("Rysy:coreSpinnerBg", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
         SpriteTemplate.FromTexture("danger/crystal/bg_white00", ConnectorDepth).Centered().CreateColoredTemplate(Color.White),
     };
 
