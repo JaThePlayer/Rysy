@@ -626,6 +626,7 @@ public sealed class LonnEntityPlugin {
 public class LonnPlacement {
     public string Name;
     public Dictionary<string, object> Data = new();
+    public List<string>? AssociatedMods;
 
     internal LonnPlacement() {
         Name = "";
@@ -639,8 +640,13 @@ public class LonnPlacement {
 
         if (lua.GetTable(start, "data") is LuaType.Table)
             Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist);
-
         // pop the "data" table
+        lua.Pop(1);
+        
+        if (lua.GetTable(start, "associatedMods") is LuaType.Table) {
+            AssociatedMods = lua.ToList<string>(lua.GetTop());
+        }
+        // pop the "associatedMods" table
         lua.Pop(1);
     }
 

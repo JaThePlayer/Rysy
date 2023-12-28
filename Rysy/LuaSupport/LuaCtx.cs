@@ -409,7 +409,7 @@ public class LuaCtx {
                 trigger = t.IsSubclassOf(typeof(Trigger));
             }
 
-            EntityRegistry.RegisterLuaPlacements(sid, trigger, new() { placement });
+            EntityRegistry.RegisterLuaPlacements(sid, trigger, [placement]);
 
             return 0;
         });
