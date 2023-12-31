@@ -283,6 +283,9 @@
     <None Update="Assets\Graphics\coreSpinnerBg.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\lonnShims\structs\drawable_polygon.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

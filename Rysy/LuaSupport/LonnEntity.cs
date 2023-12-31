@@ -11,8 +11,6 @@ namespace Rysy.LuaSupport;
 public class LonnEntity : Entity {
     internal ListenableDictionaryRef<string, LonnEntityPlugin> PluginRef;
 
-    private static byte[] _typeASCII = "_type"u8.ToArray();
-
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
     
@@ -304,54 +302,18 @@ public class LonnEntity : Entity {
         switch (lua.PeekTableType(top, "_type")) {
             case LuaType.String:
                 // name is provided, so there's 1 sprite
-                NextSprite(top, list);
+                LonnDrawables.AppendSprite(lua, top, this, list);
                 lua.Pop(1);
                 break;
             default:
                 var prevTop = lua.GetTop();
                 lua.IPairs((lua, i, loc) => {
-                    NextSprite(loc, list);
+                    LonnDrawables.AppendSprite(lua, loc, this, list);
                 });
                 break;
         }
 
         return list;
-
-        void NextSprite(int top, List<ISprite> addTo) {
-            //var type = lua.PeekTableStringValue(top, _typeASCII);
-            if (!lua.TryPeekTableStringValueToSpanInSharedBuffer(top, _typeASCII, out var type)) {
-                return;
-            }
-
-            switch (type) {
-                case "drawableSprite":
-                    addTo.Add(LonnDrawables.LuaToSprite(lua, top, Pos));
-                    break;
-                case "drawableLine":
-                    addTo.Add(LonnDrawables.LuaToLine(lua, top));
-                    break;
-                case "_RYSY_fakeTiles":
-                    addTo.AddRange(LonnDrawables.LuaToFakeTiles(lua, top, Room) ?? Array.Empty<ISprite>());
-                    break;
-                case "drawableRectangle":
-                    addTo.Add(LonnDrawables.LuaToRect(lua, top));
-                    break;
-                case "drawableNinePatch":
-                    addTo.Add(LonnDrawables.LuaToNineSlice(lua, top));
-                    break;
-                case "drawableFunction":
-                    break;
-                case "_RYSY_waterfall":
-                    addTo.AddRange(LonnDrawables.LuaToWaterfall(Room, lua, top));
-                    break;
-                case "_RYSY_big_waterfall":
-                    addTo.AddRange(LonnDrawables.LuaToBigWaterfall(Room, lua, top));
-                    break;
-                default:
-                    Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type.ToString()}: {lua.TableToDictionary(top).ToJson()}");
-                    break;
-            }
-        }
     }
 
     private List<ISprite> _GetSprites(RoomLuaWrapper roomWrapper) {

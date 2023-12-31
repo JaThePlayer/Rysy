@@ -9,6 +9,7 @@ namespace Rysy.LuaSupport;
 
 public static partial class LonnDrawables {
     private static byte[] RYSY_UNPACKSPRASCII = Encoding.ASCII.GetBytes("RYSY_UNPACKSPR");
+    private static byte[] _typeASCII = "_type"u8.ToArray();
 
     public static RectangleSprite LuaToRect(Lua lua, int top) {
         var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
@@ -200,5 +201,72 @@ public static partial class LonnDrawables {
         var layer = lua.PeekTableBoolValue(top, "fg") is true ? BigWaterfall.Layers.FG : BigWaterfall.Layers.BG;
         
         return BigWaterfall.GetSprites(new(x, y), w, h, fillColor, borderColor, layer);
+    }
+    
+    public static ISprite LuaToPolygon(Lua lua, int top) {
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
+        var secondaryColor = lua.PeekTableColorValue(top, "secondaryColor", Color.White);
+        var mode = lua.PeekTableStringValue(top, "mode");
+        
+        var points = lua.PeekTableList(top, "points", (lua, top) => lua.ToVector2(top));
+        var connectFirstWithLast = false;
+        
+        if (points is null) {
+            if (lua.PeekTableWrapper<Entity>(top, "__RYSY_entity") is { } srcEntity) {
+                points = [srcEntity.Pos, .. srcEntity.Nodes];
+                connectFirstWithLast = true;
+            } else {
+                points = [];
+            }
+        }
+
+        return mode switch {
+            "line" => ISprite.Line(points, color) with {
+                ConnectFirstWithLast = connectFirstWithLast,
+            },
+            "fill" => new PolygonSprite(points, default, color),
+            "bordered" => new PolygonSprite(points, color, secondaryColor),
+            _ => throw new NotImplementedException(mode)
+        };
+    }
+    
+    public static void AppendSprite(Lua lua, int top, Entity entity, List<ISprite> addTo) {
+        if (!lua.TryPeekTableStringValueToSpanInSharedBuffer(top, _typeASCII, out var type)) {
+            return;
+        }
+
+        switch (type) {
+            case "drawableSprite":
+                addTo.Add(LuaToSprite(lua, top, entity.Pos));
+                break;
+            case "drawableLine":
+                addTo.Add(LuaToLine(lua, top));
+                break;
+            case "drawableRectangle":
+                addTo.Add(LuaToRect(lua, top));
+                break;
+            case "drawableNinePatch":
+                addTo.Add(LuaToNineSlice(lua, top));
+                break;
+            case "drawableFunction":
+                break;
+            // lonn extensions
+            case "drawablePolygon":
+                addTo.Add(LuaToPolygon(lua, top));
+                break;
+            // rysy-specific
+            case "_RYSY_fakeTiles":
+                addTo.AddRange(LuaToFakeTiles(lua, top, entity.Room) ?? Array.Empty<ISprite>());
+                break;
+            case "_RYSY_waterfall":
+                addTo.AddRange(LuaToWaterfall(entity.Room, lua, top));
+                break;
+            case "_RYSY_big_waterfall":
+                addTo.AddRange(LuaToBigWaterfall(entity.Room, lua, top));
+                break;
+            default:
+                Logger.Write("LonnEntity", LogLevel.Warning, $"Unknown Lonn sprite type: {type.ToString()}: {lua.TableToDictionary(top).ToJson()}");
+                break;
+        }
     }
 }
