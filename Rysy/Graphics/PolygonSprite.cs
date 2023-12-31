@@ -8,13 +8,22 @@ public record struct PolygonSprite : ISprite {
 
     private VertexPositionColor[]? VertexPositionColors;
 
+    private Rectangle? _bounds;
+
     public PolygonSprite(IEnumerable<Vector2> nodes, WindingOrder? windingOrder = null) {
         Nodes = nodes.ToArray();
         Order = windingOrder;
     }
 
+    public PolygonSprite(IEnumerable<Vector2> nodes, Color color, Color outlineColor = default, WindingOrder? windingOrder = null) : this(nodes, windingOrder) {
+        Color = color;
+        OutlineColor = outlineColor;
+    }
+
     public int? Depth { get; set; }
-    public Color Color { get; set; }
+    public Color Color { get; set; } = Color.White;
+
+    public Color OutlineColor { get; set; } = default;
 
     public bool IsLoaded => true;
 
@@ -38,16 +47,24 @@ public record struct PolygonSprite : ISprite {
     public void Render(Camera? cam, Vector2 offset) {
         if (Nodes.Length < 3)
             return;
+        
+        VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
+        if (VertexPositionColors.Length < 3)
+            return;
+        
+        var prevSettings = GFX.EndBatch();
+        var matrix = prevSettings?.TransformMatrix;
+        if (matrix is null && cam is { }) {
+            matrix = cam.Matrix * (Matrix.CreateTranslation(offset.X * cam.Scale, offset.Y * cam.Scale, 0f));
+        }
 
-        if (cam is { }) {
-            VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
-
-            if (VertexPositionColors.Length < 3)
-                return;
-            var prevSettings = GFX.EndBatch();
-            GFX.DrawVertices(cam.Matrix * (Matrix.CreateTranslation(offset.X * cam.Scale, offset.Y * cam.Scale, 0f)), VertexPositionColors, VertexPositionColors.Length);
-
-            GFX.BeginBatch(prevSettings);
+        if (matrix is { } m) {
+            GFX.DrawVertices(m, VertexPositionColors, VertexPositionColors.Length);
+        }
+        GFX.BeginBatch(prevSettings);
+        
+        if (OutlineColor != default) {
+            LineSprite.DoRender(cam, offset, Nodes, OutlineColor, ref _bounds, connectFirstWithLast: true);
         }
     }
 

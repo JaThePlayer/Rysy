@@ -559,7 +559,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             item.Render();
         }
 
-        GFX.Batch.End();
+        GFX.EndBatch();
         gd.SetRenderTarget(null);
 
         ClearRenderCache();

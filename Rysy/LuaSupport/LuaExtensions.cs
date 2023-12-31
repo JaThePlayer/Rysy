@@ -402,6 +402,40 @@ public static partial class LuaExt {
 
         return list;
     }
+    
+    public static List<T>? PeekTableList<T>(this Lua lua, int tableStackIndex, string key, Func<Lua, int, T> valueGetter) {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+
+        if (type != LuaType.Table) {
+            return null;
+        }
+
+        var list = new List<T>();
+
+        lua.IPairs((lua, index, loc) => {
+            list.Add(valueGetter(lua, loc));
+        });
+
+        lua.Pop(1);
+
+        return list;
+    }
+    
+    public static T? PeekTableWrapper<T>(this Lua lua, int tableStackIndex, string key) where T : class, ILuaWrapper {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+
+        if (type != LuaType.Table) {
+            return null;
+        }
+
+        var ret = lua.UnboxWrapper<T>(lua.GetTop());
+
+        lua.Pop(1);
+
+        return ret;
+    }
 
     public static float? ToFloatX(this Lua lua, int index) {
         return lua.ToNumberX(index) is { } d ? (float) d : null;

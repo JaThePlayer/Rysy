@@ -337,6 +337,8 @@ public sealed class EditorScene : Scene {
         }
     }
 
+    private static RenderTarget2D _fullScreenBuffer;
+
     public override void Render() {
         base.Render();
 
@@ -363,6 +365,12 @@ public sealed class EditorScene : Scene {
             StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG, filter: StylegroundRenderer.NotMasked);
         }
 
+        /*
+        _fullScreenBuffer ??= new(RysyEngine.GDM.GraphicsDevice, 1920, 1080, false, SurfaceFormat.Color,
+            DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        RysyEngine.GDM.GraphicsDevice.SetRenderTarget(_fullScreenBuffer);
+        RysyEngine.GDM.GraphicsDevice.Clear(Color.Black);*/
+        
         foreach (var room in Map.Rooms) {
             if (room != CurrentRoom)
                 room.Render(Camera, selected: false);
@@ -376,6 +384,12 @@ public sealed class EditorScene : Scene {
 
             ToolHandler.Render(Camera, CurrentRoom);
         }
+
+        /*
+        RysyEngine.GDM.GraphicsDevice.SetRenderTarget(null);
+        GFX.BeginBatch();
+        GFX.Batch.Draw(_fullScreenBuffer, Vector2.Zero, Color.White);
+        GFX.EndBatch();*/
 
         var input = Input.Global;
 

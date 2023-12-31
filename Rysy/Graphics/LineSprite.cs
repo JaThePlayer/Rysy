@@ -22,6 +22,8 @@ public record struct LineSprite : ISprite {
 
     public Vector2 Offset { get; set; } = default;
 
+    public bool ConnectFirstWithLast { get; set; } = false;
+
     private Rectangle? Bounds;
 
     public LineSprite(IEnumerable<Vector2> positions) {
@@ -43,42 +45,41 @@ public record struct LineSprite : ISprite {
     }
 
     public void Render() {
-        var b = GFX.Batch;
-        var c = Color;
-        var positions = Positions;
-        for (int i = 0; i < positions.Count - 1; i++) {
-            var start = positions[i];
-            var end = positions[i + 1];
-
-            b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);
-        }
+        DoRender(null, default, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
     }
 
     public void Render(Camera? cam, Vector2 offset) {
-        if (cam is null) {
-            Render();
-            return;
-        }
+        DoRender(cam, offset, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
+    }
 
-        Bounds ??= RectangleExt.FromPoints(Positions);
-        var bounds = Bounds.Value.MovedBy(offset);
-        if (!cam.IsRectVisible(bounds))
-            return;
+    internal static void DoRender(Camera? cam, Vector2 offset, IList<Vector2> positions, Color c, ref Rectangle? bounds, 
+        float thickness = 1f, Vector2 renderOffset = default, float magnitudeOffset = 0f,
+        bool connectFirstWithLast = false) {
+        if (cam is { }) {
+            bounds ??= RectangleExt.FromPoints(positions);
+            
+            var realBounds = bounds.Value.MovedBy(offset);
+            if (!cam.IsRectVisible(realBounds))
+                return;
 
-        if (cam.IsRectContained(bounds)) {
-            // all lines are visible, no point doing cull checks on each line
-            Render();
-            return;
+            if (cam.IsRectContained(realBounds)) {
+                // all lines are visible, no point doing cull checks on each line
+                cam = null;
+            }
         }
 
         var b = GFX.Batch;
-        var c = Color;
-        var positions = Positions;
         for (int i = 0; i < positions.Count - 1; i++) {
             var start = positions[i];
             var end = positions[i + 1];
-            if (cam.IsRectVisible(RectangleExt.FromPoints(start + offset, end + offset)))
-                b.DrawLine(start, end, c, Thickness, Offset, MagnitudeOffset);
+            if (cam?.IsRectVisible(RectangleExt.FromPoints(start + offset, end + offset)) ?? true)
+                b.DrawLine(start, end, c, thickness, renderOffset, magnitudeOffset);
+        }
+
+        
+        if (connectFirstWithLast && positions is [var first, .., var last]) {
+            if (cam?.IsRectVisible(RectangleExt.FromPoints(first + offset, last + offset)) ?? true)
+                b.DrawLine(last, first, c, thickness, renderOffset, magnitudeOffset);
         }
     }
 
