@@ -191,6 +191,9 @@ public static Color HsvToColor(float h, float s, float v) {
     /// Gets the color of rainbow spinners in a given location in the room.
     /// </summary>
     public static Color GetRainbowColor(Room room, Vector2 pos) {
+        if (room.GetOverridenRainbowColor(pos, 0f) is { } overridenRainbowColor)
+            return overridenRainbowColor;
+        
         float num = 280f;
         float value = ((room.Pos + pos).Length()) % num / num;
         return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
@@ -200,13 +203,17 @@ public static Color HsvToColor(float h, float s, float v) {
     /// Gets the color of rainbow spinners in a given location in the room.
     /// </summary>
     public static Color GetRainbowColorAnimated(Room room, Vector2 pos) {
+        var time = Time.Elapsed;
+        if (room.GetOverridenRainbowColor(pos, time) is { } overridenRainbowColor)
+            return overridenRainbowColor;
+        
         float num = 280f;
-        float value = ((room.Pos + pos).Length() + Time.Elapsed * 50f) % num / num;
+        float value = ((room.Pos + pos).Length() + time * 50f) % num / num;
         return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
     }
 
     private static uint GetPacked(ReadOnlySpan<char> s)
-        => uint.Parse(s, System.Globalization.NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        => uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
     private static ReadOnlySpan<char> PrepareSpan(ReadOnlySpan<char> s) {
         s = s.Trim();

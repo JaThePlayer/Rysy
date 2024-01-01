@@ -684,6 +684,36 @@ public sealed class Room : IPackable, ILuaWrapper {
         ? Array.Empty<Entity>() 
         : GetAllEntitylikes().Where(e => e.EditorGroups.Any(groups.Contains));
 
+    public Room Clone() {
+        var packed = Pack();
+        var room = new Room();
+        room.Map = Map;
+        room.Unpack(packed);
+
+        return room;
+    }
+
+    /// <summary>
+    /// Tries to get a rainbow color by using rainbow spinner controllers in this room.
+    /// </summary>
+    internal Color? GetOverridenRainbowColor(Vector2 pos, float time) {
+        Color? ret = null;
+        
+        foreach (IRainbowSpinnerController controller in Entities[typeof(IRainbowSpinnerController)]) {
+            var local = controller.IsLocal;
+            var success = controller.TryGetRainbowColor(pos, time, out var color);
+            
+            // If a local controller returned something, make that a priority.
+            if (local && success)
+                return color;
+            if (success)
+                ret ??= color;
+        }
+
+        return ret;
+    }
+    
+    #region Selections
     /// <summary>
     /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
     /// Respects editor layers.
@@ -804,15 +834,9 @@ public sealed class Room : IPackable, ILuaWrapper {
     private RoomSelectionHandler? _SelectionHandler;
     public ISelectionHandler GetSelectionHandler() => _SelectionHandler ??= new RoomSelectionHandler(this);
 
-    public Room Clone() {
-        var packed = Pack();
-        var room = new Room();
-        room.Map = Map;
-        room.Unpack(packed);
+    #endregion
 
-        return room;
-    }
-
+    #region LuaWrapper
     public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
@@ -846,6 +870,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         return 0;
     }
+    #endregion
 }
 
 public sealed class RoomLuaWrapper : ILuaWrapper {
