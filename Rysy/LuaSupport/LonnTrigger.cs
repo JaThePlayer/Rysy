@@ -10,6 +10,9 @@ public sealed class LonnTrigger : Trigger {
     public LonnEntityPlugin? Plugin => PluginRef.TryGetValue(out var plugin, out var changed) 
         ? plugin 
         : null;
+    
+    public override List<string>? AssociatedMods
+        => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
     public override Range NodeLimits => Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
 

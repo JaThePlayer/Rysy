@@ -2,9 +2,10 @@
 using Rysy.Extensions;
 using Rysy.Mods;
 using Rysy.Stylegrounds;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.LuaSupport;
-internal sealed class LonnStylePlugin {
+public sealed class LonnStylePlugin {
     public ModMeta? ParentMod { get; internal set; }
 
     public string Name { get; internal set; }
@@ -19,6 +20,8 @@ internal sealed class LonnStylePlugin {
     public PlacementList Placements { get; set; } = new();
     public Func<Style, FieldList>? FieldList { get; set; }
     public Func<Style, Dictionary<string, object>> DefaultData { get; set; }
+    
+    public Func<Style, List<string>?> GetAssociatedMods { get; private set; }
 
     public record struct LuaStackHolder(LonnStylePlugin Plugin, int Amt) : IDisposable {
         public void Dispose() {
@@ -96,6 +99,10 @@ internal sealed class LonnStylePlugin {
 
         plugin.Name = lua.PeekTableStringValue(top, "name") ?? throw new Exception("Name isn't a string!");
 
+        plugin.GetAssociatedMods = NullConstOrGetter_Style(plugin, "associatedMods",
+            def: (List<string>)null!,
+            funcGetter: (lua, top) => lua.ToList<string>(top));
+        
         switch (lua.GetTable(top, "defaultData")) {
             case LuaType.Table:
                 var data = lua.TableToDictionary(lua.GetTop());
@@ -173,5 +180,33 @@ internal sealed class LonnStylePlugin {
         lua.Pop(1);
 
         return plugin;
+    }
+    
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<Style, T?>? NullConstOrGetter_Style<T>(LonnStylePlugin pl, string fieldName,
+        T? def,
+        Func<Lua, int, T> funcGetter,
+        int funcResults = 1
+    ) {
+        var lua = pl.LuaCtx.Lua;
+        var strat = LonnEntityPlugin.NullConstOrGetterImpl(lua, fieldName);
+
+        switch (strat) {
+            case LonnEntityPlugin.LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r) => con;
+            case LonnEntityPlugin.LonnRetrievalStrategy.Function:
+                return (r) => {
+                    return pl.PushToStack((pl) => {
+                        var lua = pl.LuaCtx.Lua;
+
+                        lua.GetTable(pl.StackLoc, fieldName);
+                        return lua.PCallFunction(r, funcGetter, results: funcResults)!;
+                    });
+                };
+            default:
+                return def is { } ? (e) => def : null;
+        }
     }
 }

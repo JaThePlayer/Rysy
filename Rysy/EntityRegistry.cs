@@ -30,6 +30,10 @@ public static class EntityRegistry {
     private static ListenableDictionary<string, LonnEntityPlugin> _SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
 
     public static ReadOnlyListenableDictionary<string, LonnEntityPlugin> SIDToLonnPlugin => _SIDToLonnPlugin;
+    
+    private static ListenableDictionary<string, LonnStylePlugin> _SIDToLonnStylePlugin { get; set; } = new(StringComparer.Ordinal);
+
+    public static ReadOnlyListenableDictionary<string, LonnStylePlugin> SIDToLonnStylePlugin => _SIDToLonnStylePlugin;
 #else
     private static Dictionary<string, NeoLonnEntityHandler> SIDToLonnPlugin { get; set; } = new(StringComparer.Ordinal);
     private static Dictionary<string, LonnEntityPlugin> LegacySIDToLonnPlugin = new(StringComparer.Ordinal);
@@ -77,11 +81,15 @@ public static class EntityRegistry {
     }
 
     public static List<string> GetAssociatedMods(Entity entity) {
-        return entity.AssociatedMods ?? SIDToAssociatedMods.GetValueOrDefault(entity.Name)?.Select(m => m.Name).ToList() ?? new() { DependencyCheker.UnknownModName };
+        return entity.AssociatedMods 
+               ?? SIDToAssociatedMods.GetValueOrDefault(entity.Name)?.Select(m => m.Name).ToList() 
+               ?? [DependencyCheker.UnknownModName];
     }
 
     public static List<string> GetAssociatedMods(Style style) {
-        return style.AssociatedMods ?? SIDToAssociatedMods.GetValueOrDefault(style.Name)?.Select(m => m.Name).ToList() ?? new() { DependencyCheker.UnknownModName };
+        return style.AssociatedMods 
+               ?? SIDToAssociatedMods.GetValueOrDefault(style.Name)?.Select(m => m.Name).ToList() 
+               ?? [DependencyCheker.UnknownModName];
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
@@ -188,6 +196,8 @@ public static class EntityRegistry {
                 }
 
                 _SIDToType[plugin.Name] = typeof(LuaStyle);
+                _SIDToLonnStylePlugin[plugin.Name] = plugin;
+                
                 if (mod is { })
                     SIDToDefiningMod[plugin.Name] = mod;
                 if (plugin.FieldList is { })
@@ -355,8 +365,7 @@ public static class EntityRegistry {
 
         if (mod is { IsVanilla: false })
             lock (SIDToDefiningMod) {
-                if (!SIDToDefiningMod.ContainsKey(sid))
-                    SIDToDefiningMod[sid] = mod;
+                SIDToDefiningMod.TryAdd(sid, mod);
             }
 
         var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
