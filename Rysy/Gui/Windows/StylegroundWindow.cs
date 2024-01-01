@@ -369,8 +369,9 @@ public class StylegroundWindow : Window {
                 } finally {
                 }
 
+                var ctx = SpriteRenderCtx.Default(true);
                 foreach (var sprite in sprites) {
-                    sprite.Render();
+                    sprite.Render(ctx);
                 }
             }
         });

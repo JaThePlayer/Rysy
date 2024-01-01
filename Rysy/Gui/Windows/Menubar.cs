@@ -111,34 +111,36 @@ public static class Menubar {
         ViewWindowsMenu();
         ViewVisibilityMenu();
 
-        if (Settings.Instance is { } s && ImGui.BeginMenu("Stylegrounds")) {
+        var settings = Settings.Instance;
+
+        if (settings is { } && ImGui.BeginMenu("Stylegrounds")) {
             bool b;
 
             ImGuiManager.TranslatedText("rysy.menubar.view.stylegrounds.warning");
             ImGuiManager.TranslatedText("rysy.menubar.view.stylegrounds.F12tip");
 
-            b = s.StylegroundPreview;
+            b = settings.StylegroundPreview;
             if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.showPreview", ref b)) {
-                s.StylegroundPreview = b;
-                s.Save();
+                settings.StylegroundPreview = b;
+                settings.Save();
             }
 
-            b = s.AnimateStylegrounds;
+            b = settings.AnimateStylegrounds;
             if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.animate", ref b)) {
-                s.AnimateStylegrounds = b;
-                s.Save();
+                settings.AnimateStylegrounds = b;
+                settings.Save();
             }
 
-            b = s.RenderFgStylegroundsInFront;
+            b = settings.RenderFgStylegroundsInFront;
             if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.fgInFront", ref b)) {
-                s.RenderFgStylegroundsInFront = b;
-                s.Save();
+                settings.RenderFgStylegroundsInFront = b;
+                settings.Save();
             }
 
-            b = s.OnlyRenderStylesAtRealScale;
+            b = settings.OnlyRenderStylesAtRealScale;
             if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.stylegrounds.onlyAtRealScale", ref b)) {
-                s.OnlyRenderStylesAtRealScale = b;
-                s.Save();
+                settings.OnlyRenderStylesAtRealScale = b;
+                settings.Save();
             }
 
             ImGui.EndMenu();
@@ -146,6 +148,14 @@ public static class Menubar {
 
         if (ImGuiManager.TranslatedButton("rysy.menubar.view.realScale")) {
             editor.Camera.Zoom(6f);
+        }
+        
+        if (settings is { }) {
+            var animate = settings.Animate;
+            if (ImGuiManager.TranslatedCheckbox("rysy.menubar.view.animate", ref animate)) {
+                settings.Animate = animate;
+                settings.Save();
+            }
         }
     }
 

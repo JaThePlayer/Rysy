@@ -178,7 +178,7 @@ public sealed class TilesetData {
     
     private XnaWidgetDef CreateWidget(int previewSizePixels) => new($"tile_{Id}_{GetDisplayName()}", previewSizePixels, previewSizePixels, () => {
         foreach (var item in GetPreview(previewSizePixels)) {
-            item.Render();
+            item.Render(SpriteRenderCtx.Default(true));
         }
     });
 

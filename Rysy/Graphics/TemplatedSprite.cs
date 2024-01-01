@@ -28,12 +28,8 @@ public record struct TemplatedSprite(SpriteTemplate Template) : ITextureSprite {
 
     public bool IsLoaded => Template.IsLoaded;
     
-    public void Render() {
-        Template.RenderAt(null, default, Pos, Color, default);
-    }
-
-    public void Render(Camera? cam, Vector2 offset) {
-        Template.RenderAt(cam, offset, Pos, Color, default);
+    public void Render(SpriteRenderCtx ctx) {
+        Template.RenderAt(ctx.Camera, ctx.CameraOffset, Pos, Color, default);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
@@ -72,13 +68,14 @@ public record struct TemplatedRainbowSprite(SpriteTemplate Template) : ITextureS
     };
 
     public bool IsLoaded => Template.IsLoaded;
-    
-    public void Render() {
-        Template.RenderAt(null, default, Pos, ColorHelper.GetRainbowColor(Room.DummyRoom, Pos), default);
-    }
 
-    public void Render(Camera? cam, Vector2 offset) {
-        Template.RenderAt(cam, offset, Pos, ColorHelper.GetRainbowColorAnimated(EditorState.CurrentRoom ?? Room.DummyRoom, Pos), default);
+    public void Render(SpriteRenderCtx ctx) {
+        var room = ctx.Room ?? Room.DummyRoom;
+        var color = ctx.Animate
+            ? ColorHelper.GetRainbowColorAnimated(room, Pos)
+            : ColorHelper.GetRainbowColor(room, Pos);
+        
+        Template.RenderAt(ctx.Camera, ctx.CameraOffset, Pos, color, default);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
@@ -113,13 +110,9 @@ public record struct TemplatedOutlinedSprite(SpriteTemplate Template) : ITexture
     };
 
     public bool IsLoaded => Template.IsLoaded;
-    
-    public void Render() {
-        Template.RenderAt(null, default, Pos, Color, OutlineColor);
-    }
 
-    public void Render(Camera? cam, Vector2 offset) {
-        Template.RenderAt(cam, offset, Pos, Color, OutlineColor);
+    public void Render(SpriteRenderCtx ctx) {
+        Template.RenderAt(ctx.Camera, ctx.CameraOffset, Pos, Color, OutlineColor);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
@@ -158,13 +151,9 @@ public record struct ColorTemplatedSprite : ITextureSprite {
         : new TemplatedOutlinedSprite(Template.Template, Pos, Color * alpha, OutlineColor * alpha);
 
     public bool IsLoaded => Template.Template.IsLoaded;
-    
-    public void Render() {
-        Template.RenderAt(null, default, Pos);
-    }
 
-    public void Render(Camera? cam, Vector2 offset) {
-        Template.RenderAt(cam, offset, Pos);
+    public void Render(SpriteRenderCtx ctx) {
+        Template.RenderAt(ctx.Camera, ctx.CameraOffset, Pos);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);

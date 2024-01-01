@@ -89,7 +89,7 @@ public record struct Sprite : ITextureSprite {
         Height = Texture.Height;
     }
 
-    public void Render(Camera? cam, Vector2 offset) {
+    public void Render(SpriteRenderCtx ctx) {
         if (Texture.Texture is { } texture) {
             // store some fields for later use
             // this is not done in the constructor, as that would force preloading
@@ -99,11 +99,11 @@ public record struct Sprite : ITextureSprite {
             var origin = _multOrigin;
 
             // todo: figure out if calculating rotated rectangles for culling is worth it
-            if (cam is { } && Rotation == 0f) {
+            if (ctx.Camera is { } cam && Rotation == 0f) {
                 var size = new Vector2(Width * scale.X, Height * scale.Y);
                 var rPos = Pos - origin * scale;
                 //ISprite.OutlinedRect(rPos + offset, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
-                if (!cam.IsRectVisible(rPos + offset, (int) size.X, (int) size.Y))
+                if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int) size.X, (int) size.Y))
                     return;
             }
 
@@ -124,14 +124,10 @@ public record struct Sprite : ITextureSprite {
         }
     }
 
-    public void Render() {
-        Render(null, default);
-    }
-
-    public void RenderWithColor(Color color) {
+    public void RenderWithColor(SpriteRenderCtx ctx, Color color) {
         var old = Color;
         Color = color;
-        Render();
+        Render(ctx);
         Color = old;
     }
 

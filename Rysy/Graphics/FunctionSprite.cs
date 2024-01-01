@@ -14,11 +14,7 @@ public record struct FunctionSprite<TData>(TData Data, Action<TData, FunctionSpr
     public ISelectionCollider GetCollider() 
         => ISelectionCollider.FromRect(0, 0, 0, 0);
 
-    public void Render() {
-        Action(Data, this);
-    }
-
-    public void Render(Camera? cam, Vector2 offset) {
+    public void Render(SpriteRenderCtx ctx) {
         Action(Data, this);
     }
 

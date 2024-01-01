@@ -130,7 +130,7 @@ internal static partial class ImGuiMarkdown {
 
                 void DrawTexture(VirtTexture texture, ReadOnlySpan<char> linkTooltip) {
                     ImGuiManager.XnaWidget($"md.img.{link}", texture.Width, texture.Height, () => {
-                        ISprite.FromTexture(texture).Render();
+                        ISprite.FromTexture(texture).Render(SpriteRenderCtx.Default(true));
                     });
                     if (ImGui.IsItemHovered()) {
                         ImGui.BeginTooltip();

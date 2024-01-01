@@ -453,11 +453,12 @@ public class SelectionTool : Tool {
         }
 
         if (RotationGestureStart is { } rotStart) {
-            ISprite.Circle(rotStart.ToVector2(), 8, Color.Gray, 32, thickness: 0.5f).Render();
-            ISprite.Circle(rotStart.ToVector2(), 1, Color.Gold, 8).Render();
+            var ctx = SpriteRenderCtx.Default();
+            ISprite.Circle(rotStart.ToVector2(), 8, Color.Gray, 32, thickness: 0.5f).Render(ctx);
+            ISprite.Circle(rotStart.ToVector2(), 1, Color.Gold, 8).Render(ctx);
             (ISprite.Line(rotStart.ToVector2(), mousePos.ToVector2(), Color.Gold) with {
                 Thickness = 0.25f,
-            }).Render();
+            }).Render(ctx);
         }
     }
 

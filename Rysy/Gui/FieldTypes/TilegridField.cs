@@ -252,8 +252,9 @@ class EditTileDataWindow : Window {
 
             ISprite.OutlinedRect(default, Tilegrid.Width * 8, Tilegrid.Height * 8, Color.White * 0.1f, Color.White, outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
 
+            var ctx = SpriteRenderCtx.Default();
             foreach (var item in Sprites) {
-                item.Render();
+                item.Render(ctx);
             }
 
             Tools.CurrentTool.Render(Camera, FakeRoom);

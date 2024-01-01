@@ -28,10 +28,6 @@ public record struct SimpleSprite : ITextureSprite {
     };
 
     public bool IsLoaded => Texture.Texture is { };
-    
-    public void Render() {
-        Render(null, default);
-    }
 
     private void CacheFields() {
         if (!Prepared) {
@@ -49,7 +45,7 @@ public record struct SimpleSprite : ITextureSprite {
         }
     }
     
-    public void Render(Camera? cam, Vector2 offset) {
+    public void Render(SpriteRenderCtx ctx) {
         if (Texture.Texture is { } texture) {
             // store some fields for later use
             // this is not done in the constructor, as that would force preloading
@@ -59,9 +55,9 @@ public record struct SimpleSprite : ITextureSprite {
             var pos = Pos;
             var color = Color;
 
-            if (cam is { }) {
+            if (ctx.Camera is { } cam) {
                 var rPos = Pos - origin;
-                if (!cam.IsRectVisible(rPos + offset, Width, Height))
+                if (!cam.IsRectVisible(rPos + ctx.CameraOffset, Width, Height))
                     return;
             }
 

@@ -116,8 +116,9 @@ public sealed class DecalRegistryWindow : Window {
 
         ImGuiManager.XnaWidget("decal_registry_preview", previewW, 300, () => {
             if (Selection is { } entry) {
+                var ctx = SpriteRenderCtx.Default(true);
                 foreach (var item in entry.GetSprites()) {
-                    item.Render();
+                    item.Render(ctx);
                 }
             }
         }, cam);

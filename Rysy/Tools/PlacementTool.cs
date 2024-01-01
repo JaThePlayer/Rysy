@@ -209,12 +209,14 @@ public class PlacementTool : Tool {
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
+            var ctx = SpriteRenderCtx.Default();
+            
             foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
                 if (item is Sprite spr) {
                     // don't box
-                    spr.WithMultipliedAlpha(0.4f).Render();
+                    spr.WithMultipliedAlpha(0.4f).Render(ctx);
                 } else {
-                    item.WithMultipliedAlpha(0.4f).Render();
+                    item.WithMultipliedAlpha(0.4f).Render(ctx);
                 }
             }
         }
@@ -331,14 +333,14 @@ public class PlacementTool : Tool {
         if (size == PreviewSize) {
             // optimised version with less locals getting captured into the lambda
             return new(key, PreviewSize, PreviewSize, () => {
-                ISprite.FromTexture(new(PreviewSize / 2), texture, origin: new(.5f, .5f)).Render();
+                ISprite.FromTexture(new(PreviewSize / 2), texture, origin: new(.5f, .5f)).Render(SpriteRenderCtx.Default());
             });
         }
 
         return new(key, size, size, () => {
             (ISprite.FromTexture(new(size / 2), texture, origin: new(.5f, .5f)) with {
                 Scale = new(scale),
-            }).Render();
+            }).Render(SpriteRenderCtx.Default());
         });
     }
 
@@ -389,9 +391,10 @@ public class PlacementTool : Tool {
                 s = null;
                 placement = null!;
             }
-            
+
+            var ctx = SpriteRenderCtx.Default();
             foreach (var item in sprites) {
-                item.Render();
+                item.Render(ctx);
             }
         }, Rerender: true);
         return def;
