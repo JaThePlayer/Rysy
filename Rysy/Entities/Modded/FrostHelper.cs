@@ -78,7 +78,7 @@ internal sealed class CustomSpinner : LonnEntity {
         var sprites = new List<ISprite>(capacity: _lastSpriteCount);
 
         if (rainbow) {
-            sprites.Add(cache.Fg.Template.Create(pos, ColorHelper.GetRainbowColor(Room, pos)));
+            sprites.Add(cache.Fg.CreateRainbow(pos));
         } else {
             sprites.Add(cache.Fg.Create(pos));
         }
@@ -102,7 +102,7 @@ internal sealed class CustomSpinner : LonnEntity {
                 var connectorPos = (pos + otherPos) / 2f;
 
                 if (rainbow) {
-                    sprites.Add(cache.Bg.Template.Create(connectorPos, ColorHelper.GetRainbowColor(Room, connectorPos)));
+                    sprites.Add(cache.Bg.CreateRainbow(connectorPos));
                 } else {
                     sprites.Add(cache.Bg.Create(connectorPos));
                 }

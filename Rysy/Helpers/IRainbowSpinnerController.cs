@@ -9,5 +9,8 @@ public interface IRainbowSpinnerController {
     /// </summary>
     public bool TryGetRainbowColor(Vector2 pos, float time, out Color res);
     
+    /// <summary>
+    /// Whether this controller is local and only applies to a certain area. Such controllers are prioritized.
+    /// </summary>
     public bool IsLocal { get; }
 }

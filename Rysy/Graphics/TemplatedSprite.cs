@@ -1,4 +1,5 @@
-﻿using Rysy.Selections;
+﻿using Rysy.Helpers;
+using Rysy.Selections;
 
 namespace Rysy.Graphics;
 
@@ -33,6 +34,51 @@ public record struct TemplatedSprite(SpriteTemplate Template) : ITextureSprite {
 
     public void Render(Camera? cam, Vector2 offset) {
         Template.RenderAt(cam, offset, Pos, Color, default);
+    }
+
+    public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
+
+    public Rectangle? GetRenderRect() => Template.GetRenderRect(Pos);
+}
+
+/// <summary>
+/// A sprite using <see cref="SpriteTemplate"/>, using animated rainbow colors.
+/// Always has no outline, use <see cref="TemplatedOutlinedSprite"/> if needed.
+/// </summary>
+public record struct TemplatedRainbowSprite(SpriteTemplate Template) : ITextureSprite {
+    public TemplatedRainbowSprite(SpriteTemplate template, Vector2 pos) : this(template) {
+        Pos = pos;
+    }
+    
+    public int? Depth {
+        get => Template.Depth;
+        set {
+            // noop
+        }
+    }
+    
+    public Vector2 Pos { get; set; }
+
+    [Obsolete("Only used to implement ISprite, unused otherwise.")]
+    public Color Color {
+        get => ColorHelper.GetRainbowColor(Room.DummyRoom, Pos);
+        set => Alpha = value.A;
+    }
+
+    private float Alpha = 1f;
+    
+    public ISprite WithMultipliedAlpha(float alpha) => this with {
+        Alpha = Alpha * alpha,
+    };
+
+    public bool IsLoaded => Template.IsLoaded;
+    
+    public void Render() {
+        Template.RenderAt(null, default, Pos, ColorHelper.GetRainbowColor(Room.DummyRoom, Pos), default);
+    }
+
+    public void Render(Camera? cam, Vector2 offset) {
+        Template.RenderAt(cam, offset, Pos, ColorHelper.GetRainbowColorAnimated(EditorState.CurrentRoom ?? Room.DummyRoom, Pos), default);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);

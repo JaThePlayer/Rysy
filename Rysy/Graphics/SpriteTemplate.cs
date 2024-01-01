@@ -35,6 +35,9 @@ public sealed record SpriteTemplate {
         => new(this) { Pos = pos, Color = color };
     public TemplatedOutlinedSprite CreateOutlined(Vector2 pos, Color color, Color outlineColor)
         => new(this) { Pos = pos, Color = color, OutlineColor = outlineColor };
+    
+    public TemplatedRainbowSprite CreateRainbow(Vector2 pos)
+        => new(this, pos);
 
     public Sprite CreateUntemplated(Vector2 pos, Color color) => new Sprite(Texture) {
         Color = color,
@@ -194,6 +197,9 @@ public record ColoredSpriteTemplate(SpriteTemplate Template, Color Color, Color 
     
     public ColorTemplatedSprite Create(Vector2 pos)
         => new(this, pos);
+    
+    public TemplatedRainbowSprite CreateRainbow(Vector2 pos)
+        => new(Template, pos);
 
     public ISprite CreateRecolored(Vector2 pos, Color color) => color == Color
         ? Create(pos)
