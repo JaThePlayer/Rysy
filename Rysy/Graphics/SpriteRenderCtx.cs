@@ -15,4 +15,6 @@ public record SpriteRenderCtx(Camera? Camera, Vector2 CameraOffset, Room? Room, 
             false => _unanimated ??= new(null, default, null, false)
         };
     }
+
+    public float Time => Animate ? RysyEngine.Scene.TimeActive : 0f;
 }

@@ -80,19 +80,25 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public sealed override IEnumerable<ISprite> GetSprites() => GetSprite();
 
-    public Sprite GetSprite()
-        => ISprite.FromTexture(Pos, MapTextureToPath(Texture)).Centered() with {
-            Depth = Depth,
-            Scale = Scale,
-            Rotation = Rotation.ToRad(),
-            Color = Color,
-        };
+    private AnimatedSpriteTemplate? _template;
+    
+    public ISprite GetSprite() {
+        if (_template is null) {
+            var path = MapTextureToPath(Texture);
+            var animation = SimpleAnimation.FromPathSubtextures(path, 12f);
+            
+            _template = new(SpriteTemplate.FromTexture(path, Depth) with {
+                Scale = Scale,
+                Rotation = Rotation.ToRad(),
+                Origin = new(0.5f)
+            }, animation);
+        }
+
+        return _template.Create(Pos, Color);
+    }
+        
 
     public static Decal Create(BinaryPacker.Element from, bool fg, Room room) {
-        //var d = new Decal();
-        //d.FG = fg;
-        //d.EntityData = new(fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID, from);
-
         from.Name = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID;
 
         return (Decal)EntityRegistry.Create(from, room, false);
@@ -102,7 +108,11 @@ public sealed partial class Decal : Entity, IPlaceable {
     /// Converts a decal path stored in the map .bin into a texture path that can be used to index <see cref="GFX.Atlas"/>
     /// </summary>
     public static string MapTextureToPath(string textureFromMap) {
-        return "decals/" + textureFromMap.RegexReplace(NumberOrPngExtTrimEnd(), string.Empty).Unbackslash();
+        if (textureFromMap.EndsWith(".png", StringComparison.Ordinal)) {
+            textureFromMap = textureFromMap[..^".png".Length];
+        }
+
+        return "decals/" + textureFromMap.RegexReplace(NumberAtEnd(), string.Empty).Unbackslash();
     }
 
     /// <summary>
@@ -193,6 +203,8 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
+
+        _template = null;
         
         if (changed.IsChanged("texture"))
             _texture = null;
