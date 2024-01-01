@@ -38,7 +38,7 @@ public sealed class LonnEntityPlugin {
 
     public Func<ILuaWrapper, Entity, Rectangle>? GetRectangle;
 
-    public Func<Entity, List<string>?> GetAssociatedMods;
+    public Func<Entity, List<string>?> GetAssociatedMods { get; private set; }
 
     //flip(room, entity, horizontal, vertical) -> success?
     public Func<ILuaWrapper, ILuaWrapper, bool, bool, bool>? Flip;
@@ -505,14 +505,16 @@ public sealed class LonnEntityPlugin {
         return null;
     }
 
-    private enum LonnRetrievalStrategy {
+    internal enum LonnRetrievalStrategy {
         Missing,
         Const,
         Function
     }
 
-    private static LonnRetrievalStrategy NullConstOrGetterImpl(LonnEntityPlugin pl, string fieldName) {
-        var lua = pl.LuaCtx.Lua;
+    private static LonnRetrievalStrategy NullConstOrGetterImpl(LonnEntityPlugin pl, string fieldName)
+        => NullConstOrGetterImpl(pl.LuaCtx.Lua, fieldName);
+    
+    internal static LonnRetrievalStrategy NullConstOrGetterImpl(Lua lua, string fieldName) {
         var top = lua.GetTop();
 
         switch (lua.GetField(top, fieldName)) {

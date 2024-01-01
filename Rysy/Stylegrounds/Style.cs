@@ -1,14 +1,16 @@
-﻿using Rysy.Extensions;
+﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
+using Rysy.LuaSupport;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Stylegrounds;
 
-public abstract class Style : IPackable, IName, IBindTarget {
+public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     public static FieldList GetDefaultFields() => new FieldList(new {
         only = Fields.String("*").AllowNull().ConvertEmptyToNull(),
         exclude = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
@@ -250,6 +252,18 @@ public abstract class Style : IPackable, IName, IBindTarget {
         }
 
         return field.GetDefault();
+    }
+    #endregion
+
+    #region ILuaWrapper
+    public int LuaIndex(Lua lua, long key) {
+        lua.PushNil();
+        return 1;
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
+        lua.PushNil();
+        return 1;
     }
     #endregion
 }
