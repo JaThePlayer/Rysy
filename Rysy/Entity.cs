@@ -499,8 +499,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
         }
         
-        if (changed.AllChanged || changed.ChangedFieldName == EditorGroupEntityDataKey) {
-            var groups = EditorGroupList.FromString(Room.Map.EditorGroups, Attr(EditorGroupEntityDataKey, "Default"));
+        if ((changed.AllChanged || changed.ChangedFieldName == EditorGroupEntityDataKey) && Room is {} room) {
+            var groups = EditorGroupList.FromString(room.Map.EditorGroups, Attr(EditorGroupEntityDataKey, "Default"));
             EditorGroups = groups;
             groups.SuppressCallbacks();
             // the default group is only used for entities with no other group.
