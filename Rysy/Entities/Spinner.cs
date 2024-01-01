@@ -145,7 +145,12 @@ public sealed class Spinner : Entity, IPlaceable {
 
         var sprites = new List<ISprite>(_lastSpriteCount);
 
-        sprites.Add(FgSprites[(int) color].CreateRecolored(pos, rainbow ? ColorHelper.GetRainbowColor(Room, pos) : Color.White));
+        if (rainbow) {
+            sprites.Add(FgSprites[(int) color].CreateRainbow(pos));
+        } else {
+            sprites.Add(FgSprites[(int) color].Create(pos));
+        }
+        
         // the border has to be a separate sprite to render it at a different depth
         sprites.Add(FgBorderSprites[(int) color].Create(pos));
 
@@ -174,7 +179,11 @@ public sealed class Spinner : Entity, IPlaceable {
                 #endif
                 var connectorPos = ((pos + spinner.Pos) / 2f).Floored();
 
-                sprites.Add(BgSprites[(int) color].CreateRecolored(connectorPos, rainbow ? ColorHelper.GetRainbowColor(Room, connectorPos) : Color.White));
+                if (rainbow) {
+                    sprites.Add(BgSprites[(int) color].CreateRainbow(connectorPos));
+                } else {
+                    sprites.Add(BgSprites[(int) color].Create(connectorPos));
+                }
 
                 // the border has to be a separate sprite to render it at a different depth
                 sprites.Add(BgBorderSprites[(int) color].Create(connectorPos));
