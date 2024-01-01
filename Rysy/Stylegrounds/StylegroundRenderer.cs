@@ -85,10 +85,11 @@ public static class StylegroundRenderer {
 
         var state = s.GetSpriteBatchState();
         var sprites = s.GetSprites(ctx);
+        var renderCtx = SpriteRenderCtx.Default(ctx.Animate);
 
         if (state is null) {
             foreach (var sprite in sprites) {
-                sprite.Render();
+                sprite.Render(renderCtx);
             }
             return;
         }
@@ -96,7 +97,7 @@ public static class StylegroundRenderer {
         var lastState = GFX.EndBatch();
         GFX.BeginBatch(state);
         foreach (var sprite in sprites) {
-            sprite.Render();
+            sprite.Render(renderCtx);
         }
         GFX.EndBatch();
         GFX.BeginBatch(lastState);

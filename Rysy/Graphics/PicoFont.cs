@@ -45,7 +45,7 @@ public static class PicoFont {
     public static ISprite GetSprite(char c, Vector2 pos, Color color, float scale = 1f) => _GetSprite(c, pos, color, scale);
 
     public static void Print(char c, Vector2 pos, Color color, float scale = 1f) {
-        _GetSprite(c, pos, color, scale).Render();
+        _GetSprite(c, pos, color, scale).Render(SpriteRenderCtx.Default(false));
     }
 
     /// <summary>

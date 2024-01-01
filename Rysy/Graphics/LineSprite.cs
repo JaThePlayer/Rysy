@@ -44,12 +44,8 @@ public record struct LineSprite : ISprite {
         };
     }
 
-    public void Render() {
-        DoRender(null, default, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
-    }
-
-    public void Render(Camera? cam, Vector2 offset) {
-        DoRender(cam, offset, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
+    public void Render(SpriteRenderCtx ctx) {
+        DoRender(ctx.Camera, ctx.CameraOffset, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
     }
 
     internal static void DoRender(Camera? cam, Vector2 offset, IList<Vector2> positions, Color c, ref Rectangle? bounds, 

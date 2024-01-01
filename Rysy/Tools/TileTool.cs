@@ -126,9 +126,10 @@ public class TileTool : Tool {
         }
 
         sprites ??= Array.Empty<ISprite>();
-        
+
+        var ctx = SpriteRenderCtx.Default(true);
         foreach (var item in sprites) {
-            item.WithMultipliedAlpha(0.3f).Render();
+            item.WithMultipliedAlpha(0.3f).Render(ctx);
         }
     }
 

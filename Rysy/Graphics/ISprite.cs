@@ -17,8 +17,7 @@ public interface ISprite : IEnumerable<ISprite> {
 
     public bool IsLoaded { get; }
 
-    public void Render();
-    public void Render(Camera? cam, Vector2 offset);
+    public void Render(SpriteRenderCtx ctx);
 
     public ISelectionCollider GetCollider();
 

@@ -239,5 +239,8 @@ public sealed class Settings {
     public bool OnlyRenderStylesAtRealScale { get; set; } = false;
 
     public bool ClearRenderCacheForOffScreenRooms { get; set; } = true;
+
+    public bool Animate { get; set; } = true;
+
     #endregion
 }

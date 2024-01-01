@@ -142,7 +142,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public void Render(Color c) {
         foreach (var item in GetSprites(c))
-            item.Render();
+            item.Render(SpriteRenderCtx.Default(true));
     }
 
     internal IEnumerable<ISprite> GetSprites(Color c, Vector2? pos = null) {

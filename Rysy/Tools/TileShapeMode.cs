@@ -23,7 +23,7 @@ public abstract class TileShapeMode : TileMode {
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(8));
 
-            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * 8, startPos.ToVector2().Add(0.5f, 0.5f) * 8, outline).Render();
+            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * 8, startPos.ToVector2().Add(0.5f, 0.5f) * 8, outline).Render(SpriteRenderCtx.Default());
             
             Tool.DrawSelectionRect(new Rectangle(startPos.X * 8, startPos.Y * 8, 8, 8));
             Tool.DrawSelectionRect(new Rectangle(mousePos.X * 8, mousePos.Y * 8, 8, 8));

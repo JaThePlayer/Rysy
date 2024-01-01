@@ -44,18 +44,19 @@ public record struct PolygonSprite : ISprite {
         GFX.DrawVertices(Matrix.Identity, VertexPositionColors, VertexPositionColors.Length);
     }
 
-    public void Render(Camera? cam, Vector2 offset) {
+    public void Render(SpriteRenderCtx ctx) {
         if (Nodes.Length < 3)
             return;
         
         VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
         if (VertexPositionColors.Length < 3)
             return;
-        
+
+        var cam = ctx.Camera;
         var prevSettings = GFX.EndBatch();
         var matrix = prevSettings?.TransformMatrix;
         if (matrix is null && cam is { }) {
-            matrix = cam.Matrix * (Matrix.CreateTranslation(offset.X * cam.Scale, offset.Y * cam.Scale, 0f));
+            matrix = cam.Matrix * (Matrix.CreateTranslation(ctx.CameraOffset.X * cam.Scale, ctx.CameraOffset.Y * cam.Scale, 0f));
         }
 
         if (matrix is { } m) {
@@ -64,7 +65,7 @@ public record struct PolygonSprite : ISprite {
         GFX.BeginBatch(prevSettings);
         
         if (OutlineColor != default) {
-            LineSprite.DoRender(cam, offset, Nodes, OutlineColor, ref _bounds, connectFirstWithLast: true);
+            LineSprite.DoRender(cam, ctx.CameraOffset, Nodes, OutlineColor, ref _bounds, connectFirstWithLast: true);
         }
     }
 

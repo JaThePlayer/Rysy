@@ -453,7 +453,7 @@ public sealed record AutotiledSpriteList : ISprite {
         Autotiler = autotiler;
     }
 
-    private void ScheduleCache() {
+    private void ScheduleCache(Room? room) {
         RysyEngine.OnEndOfThisFrame += () => {
             var b = GFX.Batch;
             var gd = b.GraphicsDevice;
@@ -464,19 +464,19 @@ public sealed record AutotiledSpriteList : ISprite {
 
             GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
 
-            DoRender(null, default, default, room: null);
+            DoRender(SpriteRenderCtx.Default(false), default, room);
             
             GFX.EndBatch();
             gd.SetRenderTargets(renderTargetBindings);
         };
     }
     
-    public void Render(Camera? cam, Vector2 offset) {
+    public void Render(SpriteRenderCtx ctx) {
         var shouldCache = _renderTarget is { } && !_renderTargetCached && IsLoaded;
 
         if (shouldCache) {
             _renderTargetCached = true;
-            ScheduleCache();
+            ScheduleCache(ctx.Room);
         }
         
         if (_renderTarget is { } cache && !shouldCache) {
@@ -484,16 +484,16 @@ public sealed record AutotiledSpriteList : ISprite {
             return;
         }
         
-        DoRender(cam, offset, Pos, room: cam is {} ? EditorState.CurrentRoom ?? Room.DummyRoom : null);
+        DoRender(ctx, Pos, ctx.Room);
     }
 
-    private void DoRender(Camera? cam, Vector2 offset, Vector2 selfPos, Room? room) {
+    private void DoRender(SpriteRenderCtx ctx, Vector2 selfPos, Room? room) {
         var b = GFX.Batch;
         var sprites = Sprites;
         
         int left, right, top, bot;
-        if (cam is { }) {
-            var scrPos = -selfPos + cam.Pos - offset;
+        if (ctx.Camera is { } cam) {
+            var scrPos = -selfPos + cam.Pos - ctx.CameraOffset;
             left = Math.Max(0, (int) scrPos.X / 8);
             right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 2);
             top = Math.Max(0, (int) scrPos.Y / 8);
@@ -516,7 +516,10 @@ public sealed record AutotiledSpriteList : ISprite {
 
                 var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
                 if (room is {} && sprite.Tileset is { Rainbow: true }) {
-                    sprite.RenderAt(b, pos, ColorHelper.GetRainbowColorAnimated(room, pos) * (color.A / 255f));
+                    var rainbowColor = ctx.Animate
+                        ? ColorHelper.GetRainbowColorAnimated(room, pos) * (color.A / 255f)
+                        : ColorHelper.GetRainbowColor(room, pos) * (color.A / 255f);
+                    sprite.RenderAt(b, pos, rainbowColor);
                 } else {
                     sprite.RenderAt(b, pos, color);
                 }
@@ -538,14 +541,10 @@ public sealed record AutotiledSpriteList : ISprite {
                         continue;
 
                     var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
-                    animated.RenderAt(b, pos, color);
+                    animated.RenderAt(ctx, b, pos, color);
                 }
             }
         }
-    }
-
-    public void Render() {
-        Render(null, default);
     }
 
     public ISelectionCollider GetCollider()

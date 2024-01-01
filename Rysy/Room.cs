@@ -399,6 +399,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         GFX.EndBatch();
     }
 
+    private void SetupRainbowTilesets() {
+        Map.FGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.FG));
+        Map.BGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.BG));
+    }
+
     private void DrawRoomInterior(Camera camera, bool selected, bool canvasReady) {
         if (!selected && canvasReady) {
             DrawFromCanvas(camera);
@@ -410,11 +415,11 @@ public sealed class Room : IPackable, ILuaWrapper {
             }
 
             if (selected) {
-                Map.FGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.FG));
-                Map.BGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.BG));
-                
+                SetupRainbowTilesets();
+
+                var ctx = new SpriteRenderCtx(camera, new(X, Y), this, Settings.Instance?.Animate ?? false);
                 foreach (var item in CachedSprites!) {
-                    item.Render(camera, new(X, Y));
+                    item.Render(ctx);
                 }
             }
         }
@@ -555,8 +560,10 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
 
+        SetupRainbowTilesets();
+        var ctx = new SpriteRenderCtx(null, default, this, false);
         foreach (var item in CachedSprites) {
-            item.Render();
+            item.Render(ctx);
         }
 
         GFX.EndBatch();

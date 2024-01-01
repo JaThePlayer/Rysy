@@ -72,7 +72,7 @@ public sealed class AnimatedTileData {
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RenderAt(SpriteBatch b, Vector2 pos, Color color) {
+    public void RenderAt(SpriteRenderCtx ctx, SpriteBatch b, Vector2 pos, Color color) {
         var frames = Frames;
         var time = Time.Elapsed / Delay;
         time += pos.SeededRandomExclusive(frames.Count);
@@ -83,7 +83,7 @@ public sealed class AnimatedTileData {
                 Pos = pos + Offset.Add(4f, 4f),
                 Origin = Origin / new Vector2(texture.Width, texture.Height),
                 Color = color
-            }.Render();
+            }.Render(ctx);
         }
     }
 }

@@ -32,17 +32,14 @@ public record struct CircleSprite : ISprite {
     public CircleSprite() {
     }
 
-    public void Render() {
-        GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color, Thickness);
-    }
-
-    public void Render(Camera? cam, Vector2 offset) {
-        if (cam is { }) {
+    public void Render(SpriteRenderCtx ctx) {
+        if (ctx.Camera is { } cam) {
             var r = Radius + Thickness;
-            if (!cam.IsRectVisible(Pos + offset - new Vector2(r), (int) r * 2, (int) r * 2))
+            if (!cam.IsRectVisible(Pos + ctx.CameraOffset - new Vector2(r), (int) r * 2, (int) r * 2))
                 return;
         }
-        Render();
+        
+        GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color, Thickness);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromRect(Pos - new Vector2(Radius), (int) Radius * 2, (int) Radius * 2);
