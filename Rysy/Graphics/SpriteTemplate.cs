@@ -56,7 +56,7 @@ public sealed record SpriteTemplate {
     
     public int Depth { get; init; }
     public VirtTexture Texture { get; private init; }
-    public Rectangle? ClipRect { get; private set; }
+    public Rectangle? ClipRect { get; internal set; }
     
     public Vector2 Origin { get; init; }
     public float Rotation { get; init; } = 0f;
@@ -77,8 +77,15 @@ public sealed record SpriteTemplate {
     private bool _prepared;
     private SpriteEffects Flip;
 
-    public void RenderAt(Camera? cam, Vector2 offset, Vector2 pos, Color color, Color outlineColor) {
+    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor) {
         if (Texture.Texture is not { } texture)
+            return;
+        
+        RenderAt(ctx, pos, color, outlineColor, texture);
+    }
+    
+    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor, Texture2D? texture) {
+        if (texture is null)
             return;
         
         // store some fields for later use
@@ -89,10 +96,10 @@ public sealed record SpriteTemplate {
         var origin = _multOrigin;
 
         // todo: figure out if calculating rotated rectangles for culling is worth it
-        if (cam is { } && Rotation == 0f) {
+        if (ctx.Camera is { } cam && Rotation == 0f) {
             var size = new Vector2(Width * scale.X, Height * scale.Y);
             var rPos = pos - origin * scale;
-            if (!cam.IsRectVisible(rPos + offset, (int) size.X, (int) size.Y))
+            if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int) size.X, (int) size.Y))
                 return;
         }
 
@@ -192,8 +199,8 @@ public record ColoredSpriteTemplate(SpriteTemplate Template, Color Color, Color 
         OutlineColor = OutlineColor * alpha,
     };
     
-    public void RenderAt(Camera? cam, Vector2 offset, Vector2 pos)
-        => Template.RenderAt(cam, offset, pos, Color, OutlineColor);
+    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos)
+        => Template.RenderAt(ctx, pos, Color, OutlineColor);
     
     public ColorTemplatedSprite Create(Vector2 pos)
         => new(this, pos);
@@ -204,4 +211,58 @@ public record ColoredSpriteTemplate(SpriteTemplate Template, Color Color, Color 
     public ISprite CreateRecolored(Vector2 pos, Color color) => color == Color
         ? Create(pos)
         : Template.Create(pos, color);
+}
+
+public record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource TextureSource) {
+    private List<SpriteTemplate> _realTemplates;
+    
+    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor) {
+        if (_realTemplates is null) {
+            _realTemplates = new(TextureSource.TextureCount);
+            for (int j = 0; j < TextureSource.TextureCount; j++) {
+                _realTemplates.Add(Template.WithTexture(TextureSource.GetTextureByIndex(j)));
+            }
+        }
+        
+        var textureIdx = TextureSource.GetTextureIndex(ctx.Time);
+        var template = _realTemplates.ElementAtOrDefault(textureIdx);
+        
+        if (template is { }) {
+            template.RenderAt(ctx, pos, color, outlineColor, template.Texture.Texture ?? Template.Texture.Texture);
+        } else {
+            Template.RenderAt(ctx, pos, color, outlineColor, Template.Texture.Texture);
+        }
+    }
+
+    public TemplatedAnimatedSprite Create(Vector2 pos, Color color) => new(this) { Pos = pos, Color = color };
+}
+
+public record SimpleAnimation(IReadOnlyList<VirtTexture> Textures, float AnimationSpeed) : ITextureSource {
+    public int TextureCount => Textures.Count;
+    
+    public int GetTextureIndex(float time) {
+        if (Textures.Count < 1) {
+            return -1;
+        }
+        
+        var i = (int)(time * AnimationSpeed) % Textures.Count;
+        
+        return i.AtLeast(0);
+    }
+
+    public VirtTexture GetTextureByIndex(int index) => Textures[index];
+
+    public static SimpleAnimation FromPathSubtextures(string path, float animationSpeed) {
+        var textures = GFX.Atlas.GetSubtextures(path);
+
+        return new(textures, animationSpeed);
+    }
+}
+
+public interface ITextureSource {
+    public int TextureCount { get; }
+    
+    public int GetTextureIndex(float time);
+
+    public VirtTexture GetTextureByIndex(int index);
 }
