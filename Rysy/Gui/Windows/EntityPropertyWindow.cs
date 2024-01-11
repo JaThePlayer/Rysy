@@ -151,17 +151,7 @@ public class EntityPropertyWindow : FormWindow {
             var name = prop.Name;
             var exists = Main.EntityData.TryGetValue(name, out var current);
             var propValue = exists ? prop.ValueOrDefault() : prop.Value;
-
-            /*
-            if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
-                current switch {
-                    string currStr => currStr != (string?) prop.Value,
-                    null => prop.Value != current,
-                    _ => !current.Equals(prop.Value)
-                }
-            )) {
-                EditedValues[name] = prop.Value;
-            }*/
+            
             var equal = (current, propValue) switch {
                 (int c, float val) => val == c,
                 (float c, int val) => val == c,

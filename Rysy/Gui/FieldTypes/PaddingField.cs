@@ -1,6 +1,6 @@
 ﻿namespace Rysy.Gui.FieldTypes;
 
-public record class PaddingField : Field {
+public record class PaddingField(string? Text = null) : Field {
     public override Field CreateClone() => this with { };
 
     public override object GetDefault() => null!;

@@ -243,6 +243,7 @@ public static class ImGuiManager {
         bool changed = false;
 
         if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
+            var oldStyles = PopAllStyles();
             ImGui.InputText("Search", ref search, 512);
 
             cache ??= new();
@@ -256,6 +257,7 @@ public static class ImGuiManager {
             }
 
             ImGui.EndCombo();
+            PushAllStyles(oldStyles);
         }
 
         return changed;
@@ -301,7 +303,8 @@ public static class ImGuiManager {
         var size = cache.Size ??= CalcListSize(values.Values);
         ImGui.SetNextWindowSize(new(size.X, (ImGui.GetTextLineHeightWithSpacing() + ImGui.GetFrameHeight()) * 120.AtMost(values.Count)));
         if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
-
+            var oldStyles = PopAllStyles();
+            
             ImGui.InputText("Search", ref search, 512);
 
             ImGui.BeginChild($"comboInner{name}");
@@ -316,6 +319,8 @@ public static class ImGuiManager {
             }
             ImGui.EndChild();
             ImGui.EndCombo();
+            
+            PushAllStyles(oldStyles);
         }
         ImGui.SameLine(0f, xPadding);
         ImGui.Text(name);
