@@ -28,6 +28,8 @@ public static class ImGuiThemer {
         *nptr = s;
 
         nptr->DockingSeparatorSize = 1;
+        nptr->SeparatorTextAlign = new(.5f, .5f);
+        nptr->SeparatorTextBorderSize = 1;
     }
 
     public static unsafe void SetFontSize(float fontSize) {

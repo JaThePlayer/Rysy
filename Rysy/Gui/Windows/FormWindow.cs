@@ -122,12 +122,21 @@ public class FormWindow : Window {
         bool valid = true;
 
         foreach (var prop in FieldList) {
-            if (prop.Field is PaddingField) {
+            if (prop.Field is PaddingField pad) {
+                if (pad.Text is { } text) {
+                    if (hasColumns) {
+                        ImGui.Columns();
+                    }
+                    ImGui.SeparatorText(text);
+                    if (hasColumns) {
+                        ImGui.Columns(2);
+                    }
+                } else {
+                    if (ImGui.GetColumnIndex() != 0)
+                        ImGui.NextColumn();
 
-                if (ImGui.GetColumnIndex() != 0)
-                    ImGui.NextColumn();
-
-                ImGui.Separator();
+                    ImGui.Separator();
+                }
 
                 continue;
             }

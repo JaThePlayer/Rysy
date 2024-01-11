@@ -12,6 +12,10 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public int Default { get; set; }
 
+    /// <summary>
+    /// Divides the number displayed in the gui by this number.
+    /// </summary>
+    public int DisplayScale { get; set; } = 1;
 
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault)
@@ -20,9 +24,9 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     public override bool IsValid(object? value) => value is int i && i >= Min && i <= Max && base.IsValid(value);
 
     public override object? RenderGui(string fieldName, object value) {
-        int b = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+        int b = Convert.ToInt32(value, CultureInfo.InvariantCulture) / DisplayScale;
         if (ImGui.InputInt(fieldName, ref b, Step).WithTooltip(Tooltip))
-            return b;
+            return b * DisplayScale;
 
         return null;
     }
@@ -40,6 +44,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public IntField WithMax(int max) {
         Max = max;
+        return this;
+    }
+    
+    public IntField WithDisplayScale(int scale) {
+        DisplayScale = scale;
         return this;
     }
 

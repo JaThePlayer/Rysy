@@ -1,199 +1,168 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Scenes;
 
 namespace Rysy.Gui.Windows;
 
 public sealed class RoomEditWindow : Window {
-    public const int WIDTH = 800;
-    private Room Room;
-    private RoomAttributes Attrs;
+    private Action HistoryHook;
+    private readonly FormWindow _generalTab;
+    private readonly Room _room;
+    private readonly RoomAttributes _attrs;
+    private bool _newRoom;
+    
+    private FieldList GeneralTabFields(RoomAttributes attrs) {
+        var fields = new FieldList(new {
+            name = Fields.String(attrs.Name).WithValidator(s => RoomNameValid(this, s)),
+            color = new RoomDebugColorField(attrs.C),
+            
+            x = Fields.Int(attrs.X).WithDisplayScale(8),
+            y = Fields.Int(attrs.Y).WithDisplayScale(8),
+            width = Fields.Int(attrs.Width).WithMin(8).WithDisplayScale(8),
+            height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8),
+            
+            cameraX = attrs.CameraOffsetX,
+            cameraY = attrs.CameraOffsetY,
+            
+            windPattern = attrs.WindPattern,
+            dark = attrs.Dark,
+            disableDownTransition = attrs.DisableDownTransition,
+            underwater = attrs.Underwater,
+            checkpoint = attrs.Checkpoint,
+            space = attrs.Space,
+            
+            __musicSep = new PaddingField("Music"),
 
-    private bool GeneralTabInvalid;
+            music = Fields.Dropdown(attrs.Music, CelesteEnums.Music, editable: true),
+            altMusic = Fields.Dropdown(attrs.AltMusic, CelesteEnums.Music, editable: true),
+            musicProgress = attrs.MusicProgress,
+            ambienceProgress = attrs.AmbienceProgress,
+            layer1 = attrs.MusicLayer1,
+            layer2 = attrs.MusicLayer2,
+            layer3 = attrs.MusicLayer3,
+            layer4 = attrs.MusicLayer4,
+            whisper = attrs.Whisper,
+            delayAltMusicFade = attrs.DelayAltMusicFade,
+        });
 
-    private bool NewRoom;
+        return fields;
+    }
+    
+    private static bool RoomNameValid(RoomEditWindow window, string? name) =>
+        !string.IsNullOrWhiteSpace(name) && (
+            (!window._newRoom && name == window._room.Name) // if we haven't changed the name, then it must be correct
+            || !window._room.Map.Rooms.Any(r => r.Name == name)
+        );
+    
+    public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
+        Room room1 = room;
+        var attrs = room.Attributes.Copy();
+        _room = room;
+        _attrs = attrs;
+        _newRoom = newRoom;
 
-    public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}", new(WIDTH, /*250*/ ImGuiManager.CalcListHeight(12))) {
-        Room = room;
+        _generalTab = new FormWindow(GeneralTabFields(attrs), "");
+        Size = _generalTab.Size;
+        
+        _generalTab.OnChanged += edited => {
+            _newRoom = false;
+            
+            foreach (var (k, v) in edited) {
+                attrs.SetValueByName(k, v);
+            }
+            
+            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room1, attrs));
+            if (newRoom) {
+                EditorState.CurrentRoom = room1;
+            }
+        };
 
-        Attrs = room.Attributes.Copy();
-        NewRoom = newRoom;
+        var history = EditorState.History!;
+        HistoryHook = ReevaluateEditedValues;
+        history.OnApply += HistoryHook;
+        history.OnUndo += HistoryHook;
+        SetRemoveAction((w) => {
+            history.OnApply -= HistoryHook;
+            history.OnUndo -= HistoryHook;
+        });
+    }
+    
+    private void ReevaluateEditedValues() {
+        _generalTab.EditedValues.Clear();
+
+        foreach (var prop in _generalTab.FieldList) {
+            if (prop.Name.StartsWith("__", StringComparison.Ordinal))
+                continue;
+            
+            var name = prop.Name;
+            var current = _room.Attributes.GetValueByName(prop.Name);
+            var propValue = prop.ValueOrDefault();
+            
+            var equal = (current, propValue) switch {
+                (int c, float val) => val == c,
+                (float c, int val) => val == c,
+                _ => current.ToString() == propValue.ToString(),
+            };
+
+            if (!equal) {
+                _generalTab.EditedValues[name] = propValue;
+            }
+        }
     }
 
     protected override void Render() {
-        ImGui.BeginTabBar("TabBar");
-
-        GeneralTab();
-        MusicTab();
-
-        ImGui.EndTabBar();
-
-        /*
-        var valid = Valid(Room.Map) && Attrs != Room.Attributes;
-        ImGuiManager.BeginWindowBottomBar(valid);
-
-        if (ImGui.Button("Apply Changes")) {
-            var newRoom = NewRoom;
-            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
-            if (newRoom) {
-                EditorState.CurrentRoom = Room;
-            }
-        }
-
-        ImGuiManager.EndWindowBottomBar();*/
+        base.Render();
+        
+        _generalTab.RenderBody();
     }
-
-    public override bool HasBottomBar => true;
 
     public override void RenderBottomBar() {
-        var valid = Valid(Room.Map) && Attrs != Room.Attributes;
-
-        ImGui.BeginDisabled(!valid);
-        if (ImGui.Button("Apply Changes")) {
-            var newRoom = NewRoom;
-            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(Room, Attrs));
-            if (newRoom) {
-                EditorState.CurrentRoom = Room;
-            }
-        }
-        ImGui.EndDisabled();
-    }
-
-    private string MusicDropdownSearch = "";
-
-    private void MusicTab() {
-        if (!ImGui.BeginTabItem("Music")) {
-            return;
-        }
-
-        ImGui.Columns(2, "Music", false);
-
-        //StringInput("Music", ref Attrs.Music);
-        ImGui.SetNextItemWidth(ImGui.GetColumnWidth() / 2);
-        ImGuiManager.EditableCombo("Music", ref Attrs.Music, CelesteEnums.Music, s => s, ref MusicDropdownSearch);
-        ImGui.NextColumn();
-
-        StringInput("Alt Music", ref Attrs.AltMusic);
-        StringInput("Music Progress", ref Attrs.MusicProgress);
-        StringInput("Ambience Progress", ref Attrs.AmbienceProgress);
-
-        ImGui.Separator();
-
-        ImGui.Checkbox("Layer 1", ref Attrs.MusicLayer1);
-        ImGui.Checkbox("Layer 2", ref Attrs.MusicLayer2);
-        ImGui.Checkbox("Layer 3", ref Attrs.MusicLayer3);
-        ImGui.Checkbox("Layer 4", ref Attrs.MusicLayer4);
-
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Whisper", ref Attrs.Whisper);
-        ImGui.Checkbox("Delay Alt Music Fade", ref Attrs.DelayAltMusicFade);
+        base.RenderBottomBar();
         
-        ImGui.Columns();
-        ImGui.EndTabItem();
+        _generalTab.RenderBottomBar();
+    }
+}
+
+record RoomDebugColorField : Field {
+    public RoomDebugColorField(int def) {
+        _default = def;
+    }
+    
+    private int _default;
+    
+    public override object GetDefault() => _default;
+
+    public override void SetDefault(object newDefault) {
+        _default = Convert.ToInt32(newDefault);
     }
 
-    private void GeneralTab() {
-        var name = Attrs.Name;
-
-        ImGuiManager.PushInvalidStyleIf(GeneralTabInvalid);
-        bool begin = ImGui.BeginTabItem("General");
-        ImGuiManager.PopInvalidStyle();
-        if (!begin) {
-            return;
-        }
-
-        GeneralTabInvalid = false;
-
-        ImGui.Columns(2, "General", false);
-
-        GeneralTabInvalid |= ImGuiManager.PushInvalidStyleIf(!RoomNameValid(Room.Map));
-        if (StringInput("Name", ref name)) {
-            Attrs.Name = name;
-        }
-        ImGuiManager.PopInvalidStyle();
-
-        #region Debug color picker
+    public override object? RenderGui(string fieldName, object value) {
+        var c = Convert.ToInt32(value);
+        object? ret = null;
+        
         var colors = CelesteEnums.RoomColors;
         var colorNames = CelesteEnums.RoomColorNames;
-        ImGui.ColorButton(colorNames[Attrs.C], colors[Attrs.C].ToNumVec4());
+        
+        ImGui.ColorButton(colorNames[c], colors[c].ToNumVec4());
         ImGui.SameLine();
-        if (ImGui.BeginCombo("Color", Attrs.C.ToString(CultureInfo.InvariantCulture), ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo("Color", "", ImGuiComboFlags.NoPreview)) {
+            var oldStyles = ImGuiManager.PopAllStyles();
+            
             for (int i = 0; i < colors.Length; i++) {
                 if (ImGui.ColorButton(colorNames[i], colors[i].ToNumVec4())) {
-                    Attrs.C = i;
+                    c = i;
+                    ret = c;
                 }
                 ImGui.SameLine();
             }
             ImGui.EndCombo();
+            ImGuiManager.PushAllStyles(oldStyles);
         }
 
-        ImGui.NextColumn();
-        #endregion
-
-        DivBy8Input("X", ref Attrs.X);
-        DivBy8Input("Y", ref Attrs.Y);
-        DivBy8Input("Width", ref Attrs.Width);
-        DivBy8Input("Height", ref Attrs.Height);
-
-        ImGui.InputInt("Camera Offset X", ref Attrs.CameraOffsetX);
-        ImGui.NextColumn();
-        ImGui.InputInt("Camera Offset Y", ref Attrs.CameraOffsetY);
-        ImGui.NextColumn();
-
-        ImGuiManager.Combo("Wind Pattern", ref Attrs.WindPattern);
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Dark", ref Attrs.Dark);
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Disable Down Transition", ref Attrs.DisableDownTransition);
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Underwater", ref Attrs.Underwater);
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Checkpoint", ref Attrs.Checkpoint);
-        ImGui.NextColumn();
-
-        ImGui.Checkbox("Space", ref Attrs.Space);
-        ImGui.NextColumn();
-
-
-
-        ImGui.Columns();
-        ImGui.EndTabItem();
-    }
-
-    private bool DivBy8Input(string name, ref int undivided) {
-        var divided = undivided / 8;
-        bool ret;
-        if (ret = ImGui.InputInt(name, ref divided))
-            undivided = divided * 8;
-
-        ImGui.NextColumn();
-
         return ret;
     }
 
-    private bool StringInput(string name, ref string val) {
-        val ??= "";
-        ImGui.SetNextItemWidth(ImGui.GetColumnWidth() / 2);
-        var ret = ImGui.InputText(name, ref val, 128);
-        ImGui.NextColumn();
-
-        return ret;
-    }
-
-    private bool RoomNameValid(Map map) =>
-        !string.IsNullOrWhiteSpace(Attrs.Name) && (
-            (!NewRoom && Attrs.Name == Room.Name) // if we haven't changed the name, then it must be correct
-            || !map.Rooms.Any(r => r.Name == Attrs.Name)
-        );
-
-    private bool Valid(Map map) {
-        return RoomNameValid(map);
-    }
+    public override Field CreateClone() => this with { };
 }
