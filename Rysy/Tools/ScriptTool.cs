@@ -51,9 +51,9 @@ public class ScriptTool : Tool {
 
         var layer = Layer;
         List<Room>? rooms;
-        if (layer == CurrentRoomLayer)
+        if (layer.Name == CurrentRoomLayer.Name)
             rooms = EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null;
-        else if (layer == AllRoomsLayer) {
+        else if (layer.Name == AllRoomsLayer.Name) {
             rooms = EditorState.Map?.Rooms;
         } else {
             throw new NotImplementedException(layer.Name);

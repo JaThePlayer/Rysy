@@ -98,6 +98,10 @@ public sealed class Interpolator {
             data.CopyTo(RemainingSpan());
             _len += data.Length;
         }
+
+        // Just to get rid of the implicit conversion marker in Rider
+        public void AppendFormatted(string data)
+            => AppendLiteral(data.AsSpan());
         
         public void AppendFormatted(ReadOnlySpan<char> str)
         {

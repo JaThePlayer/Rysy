@@ -521,6 +521,28 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         ClearRoomRenderCache();
     }
 
+    /// <summary>
+    /// Checks whether the given value for a EntityData key is the default value for that key, based on the main placement for this entity's SID.
+    /// </summary>
+    public bool IsDefault(string key, object val) {
+        var placement = EntityRegistry.GetMainPlacement(Name);
+        if (placement is null)
+            return false;
+
+        if (!placement.ValueOverrides.TryGetValue(key, out var defVal)) {
+            return false;
+        }
+
+        return val.Equals(defVal);
+    }
+    
+    /// <summary>
+    /// Returns whether the given EntityData value should be trimmed from the .bin file.
+    /// This should only return true if the Celeste code can handle the value being missing properly.
+    /// </summary>
+    public virtual bool ShouldTrim(string key, object val) {
+        return false;
+    }
 
     private BinaryPacker.Element? _cachedPackedElement;
 
@@ -534,6 +556,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     
     protected virtual BinaryPacker.Element DoPack() {
         var el = new BinaryPacker.Element(EntityData.SID);
+        /*
         el.Attributes = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
 
         if (ID == 0) {
@@ -548,6 +571,22 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         
         if (EditorGroups.IsOnlyDefault) {
             el.Attributes.Remove(EditorGroupEntityDataKey);
+        }*/
+        var outAttrs = el.Attributes = new(EntityData.Inner.Count);
+        foreach (var (k, v) in EntityData.Inner) {
+            var shouldTrim = k switch {
+                "x" => false,
+                "y" => false,
+                "id" => ID == 0,
+                "width" => Width == 0,
+                "height" => Height == 0,
+                EditorGroupEntityDataKey => EditorGroups.IsOnlyDefault,
+                _ => ShouldTrim(k, v)
+            };
+
+            if (!shouldTrim) {
+                outAttrs[k] = v;
+            }
         }
 
         el.Children = Nodes is { Count: > 0 } nodes ? nodes.Select(n => new BinaryPacker.Element("node") {

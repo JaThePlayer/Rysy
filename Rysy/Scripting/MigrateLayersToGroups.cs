@@ -2,7 +2,7 @@
 
 namespace Rysy.Scripting; 
 
-public sealed class MigrateLayersToGroups : Script {
+internal sealed class MigrateLayersToGroups : Script {
     public override string Name => "Migrate Layers";
     public override string? Tooltip => "Migrates Lönn Extended Editor Layers into Groups.";
     

@@ -54,14 +54,14 @@ public record struct TemplatedRainbowSprite(SpriteTemplate Template) : ITextureS
     }
     
     public Vector2 Pos { get; set; }
+    
+    private float Alpha = 1f;
 
     [Obsolete("Only used to implement ISprite, unused otherwise.")]
     public Color Color {
         get => ColorHelper.GetRainbowColor(Room.DummyRoom, Pos);
         set => Alpha = value.A;
     }
-
-    private float Alpha = 1f;
     
     public ISprite WithMultipliedAlpha(float alpha) => this with {
         Alpha = Alpha * alpha,

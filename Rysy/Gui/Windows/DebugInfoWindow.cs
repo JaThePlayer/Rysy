@@ -116,13 +116,24 @@ public class DebugInfoWindow : Window {
                 }
             }
 
+            const int times = 100;
             var room = EditorState.CurrentRoom;
             if (room is { } && ImGui.Button("Benchmark current room")) {
-                Benchmark(room, false);
+                Benchmark(room, false, times);
             }
             
             if (room is { } && ImGui.Button("Benchmark current room (Aggressively Clear Caches)")) {
-                Benchmark(room, true);
+                Benchmark(room, true, times);
+            }
+            
+            if (room is { } && ImGui.Button("Benchmark entire map (Aggressively Clear Caches)")) {
+                var watch = Stopwatch.GetTimestamp();
+                foreach (var innerRoom in room.Map.Rooms) {
+                    Benchmark(innerRoom, true, 1);
+                }
+                var elapsed = Stopwatch.GetElapsedTime(watch);
+                
+                Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Map.Package ?? room.Map.Filepath}: {elapsed}");
             }
         }
 
@@ -131,9 +142,8 @@ public class DebugInfoWindow : Window {
             ImGui.ShowDemoWindow();
     }
 
-    private void Benchmark(Room room, bool aggressive) {
-        var watch = Stopwatch.StartNew();
-        const int times = 100;
+    private void Benchmark(Room room, bool aggressive, int times) {
+        var watch = Stopwatch.GetTimestamp();
         for (int i = 0; i < times; i++) {
             if (aggressive)
                 room.ClearRenderCacheAggressively();
@@ -143,8 +153,8 @@ public class DebugInfoWindow : Window {
             room.CacheSpritesIfNeeded();
         }
 
-        watch.Stop();
-        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}: {(watch.Elapsed / times).TotalMilliseconds}ms");
+        var elapsed = Stopwatch.GetElapsedTime(watch);
+        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}: {(elapsed / times).TotalMilliseconds}ms");
     }
 
     private bool imguiDemo;
