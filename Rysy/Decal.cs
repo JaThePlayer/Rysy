@@ -169,7 +169,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         ["rotation"] = Fields.Float(0f),
     };
 
-    protected override BinaryPacker.Element DoPack() {
+    protected override BinaryPacker.Element DoPack(bool trim) {
         var el = new BinaryPacker.Element(EntityData.SID);
         var attr = new Dictionary<string, object>(EntityData.Inner.Count, StringComparer.Ordinal) {
             ["x"] = X,

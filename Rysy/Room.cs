@@ -293,6 +293,8 @@ public sealed class Room : IPackable, ILuaWrapper {
             ["windPattern"] = attr.WindPattern,
         };
 
+        var trimEntities = Settings.Instance.TrimEntities;
+        
         var children = new List<BinaryPacker.Element> {
             FG.Pack("solids"),
             BG.Pack("bg"),
@@ -309,23 +311,23 @@ public sealed class Room : IPackable, ILuaWrapper {
             },
 
             new("entities") {
-                Children = Entities.Select(e => e.Pack()).ToArray(),
+                Children = Entities.Select(e => e.Pack(trimEntities)).ToArray(),
             },
 
             new("triggers") {
-                Children = Triggers.Select(e => e.Pack()).ToArray(),
+                Children = Triggers.Select(e => e.Pack(trimEntities)).ToArray(),
             },
             new("fgdecals") {
                 Attributes = new() {
                     ["tileset"] = "Scenery",
                 },
-                Children = FgDecals.Select(d => d.Pack()).ToArray(),
+                Children = FgDecals.Select(d => d.Pack(trimEntities)).ToArray(),
             },
             new("bgdecals") {
                 Attributes = new() {
                     ["tileset"] = "Scenery",
                 },
-                Children = BgDecals.Select(d => d.Pack()).ToArray(),
+                Children = BgDecals.Select(d => d.Pack(trimEntities)).ToArray(),
             }
         };
 

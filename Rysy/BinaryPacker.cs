@@ -255,10 +255,15 @@ public sealed class BinaryPacker {
     }
 
     private void EncodeString(string b) {
-        if (TryEncodeRLE(b, out var rleEncode)) {
+        if (TryEncodeRLE(b, out var rleEncode) && rleEncode.Length <= b.Length) {
             Writer.Write((byte) 7);
             Writer.Write((short) rleEncode.Length);
             Writer.Write(rleEncode);
+        } else if (b.Length > 512) {
+            // Strings that are this big are really unlikely to repeat themselves
+            // They're most likely tilegrids we couldn't RLE
+            Writer.Write((byte) 6);
+            Writer.Write(b);
         } else {
             Writer.Write((byte) 5);
             WriteLookup(b);
@@ -313,7 +318,7 @@ public sealed class BinaryPacker {
     private static readonly byte[] _rleEncodeBuffer = new byte[short.MaxValue];
     
     internal static bool TryEncodeRLE(string str, out ReadOnlySpan<byte> encoded) {
-        if (str.Length < 128 || str.Length * 2 > Math.Pow(2, 15)) {
+        if (str.Length < 128) {
             //Console.WriteLine($"Can't encode RLE: {str} - too short!");
             encoded = default;
             return false;

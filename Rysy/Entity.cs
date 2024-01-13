@@ -544,34 +544,22 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         return false;
     }
 
-    private BinaryPacker.Element? _cachedPackedElement;
+    private (BinaryPacker.Element element, bool isTrimmed)? _cachedPackedElement;
 
-    public BinaryPacker.Element Pack() {
-        if (_cachedPackedElement is { } cached) {
-            return cached;
+    public BinaryPacker.Element Pack(bool trim = false) {
+        if (_cachedPackedElement is { } cached && cached.isTrimmed == trim) {
+            return cached.element;
         }
 
-        return _cachedPackedElement = DoPack();
+        var el = DoPack(trim);
+        _cachedPackedElement = (el, trim);
+        
+        return el;
     }
     
-    protected virtual BinaryPacker.Element DoPack() {
+    protected virtual BinaryPacker.Element DoPack(bool trim) {
         var el = new BinaryPacker.Element(EntityData.SID);
-        /*
-        el.Attributes = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
 
-        if (ID == 0) {
-            el.Attributes.Remove("id");
-        }
-        if (Width == 0) {
-            el.Attributes.Remove("width");
-        }
-        if (Height == 0) {
-            el.Attributes.Remove("height");
-        }
-        
-        if (EditorGroups.IsOnlyDefault) {
-            el.Attributes.Remove(EditorGroupEntityDataKey);
-        }*/
         var outAttrs = el.Attributes = new(EntityData.Inner.Count);
         foreach (var (k, v) in EntityData.Inner) {
             var shouldTrim = k switch {
@@ -581,7 +569,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 "width" => Width == 0,
                 "height" => Height == 0,
                 EditorGroupEntityDataKey => EditorGroups.IsOnlyDefault,
-                _ => ShouldTrim(k, v)
+                _ => trim && ShouldTrim(k, v)
             };
 
             if (!shouldTrim) {
