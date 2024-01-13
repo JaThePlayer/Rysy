@@ -94,7 +94,7 @@ public static class NumberExt {
     /// Formats a number into a filesize, like 1024 -> 1KB
     /// </summary>
     public static string ToFilesize(this long byteCount) {
-        string[] suf = _filesizeAbbreviations;
+        var suf = _filesizeAbbreviations;
         
         if (byteCount == 0)
             return "0" + suf[0];
@@ -105,5 +105,18 @@ public static class NumberExt {
         return (Math.Sign(byteCount) * num) + suf[place];
     }
 
-    private static string[] _filesizeAbbreviations => ["B", "KB", "MB", "GB", "TB", "PB", "EB"];  //Longs run out around EB
+    /// <summary>
+    /// Returns whether two boxed numbers are loosely equal, that is a float and int can be equal if their real values are the same.
+    /// </summary>
+    public static bool IntFloatLooselyEqual(object a, object b) {
+        return (a, b) switch {
+            (int ai, int bi) => ai == bi,
+            (float af, int bi) => float.IsInteger(af) && (int)af == bi,
+            (int ai, float bf) => float.IsInteger(bf) && ai == (int)bf,
+            (float af, float bf) => af == bf,
+            _ => false,
+        };
+    }
+
+    private static readonly string[] _filesizeAbbreviations = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];  //Longs run out around EB
 }

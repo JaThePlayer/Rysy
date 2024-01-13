@@ -525,22 +525,20 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Checks whether the given value for a EntityData key is the default value for that key, based on the main placement for this entity's SID.
     /// </summary>
     public bool IsDefault(string key, object val) {
-        var placement = EntityRegistry.GetMainPlacement(Name);
-        if (placement is null)
-            return false;
+        var values = EntityRegistry.GetMainPlacementValues(Name);
 
-        if (!placement.ValueOverrides.TryGetValue(key, out var defVal)) {
+        if (!values.TryGetValue(key, out var defVal)) {
             return false;
         }
 
-        return val.Equals(defVal);
+        return val.Equals(defVal) || NumberExt.IntFloatLooselyEqual(val, defVal);
     }
     
     /// <summary>
     /// Returns whether the given EntityData value should be trimmed from the .bin file.
     /// This should only return true if the Celeste code can handle the value being missing properly.
     /// </summary>
-    public virtual bool ShouldTrim(string key, object val) {
+    public virtual bool CanTrim(string key, object val) {
         return false;
     }
 
@@ -569,7 +567,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 "width" => Width == 0,
                 "height" => Height == 0,
                 EditorGroupEntityDataKey => EditorGroups.IsOnlyDefault,
-                _ => trim && ShouldTrim(k, v)
+                _ => trim && CanTrim(k, v)
             };
 
             if (!shouldTrim) {
