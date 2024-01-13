@@ -47,16 +47,29 @@ public static class EntityRegistry {
     public static List<Placement> TriggerPlacements { get; set; } = new();
     public static List<Placement> StylegroundPlacements { get; set; } = new();
 
+    private static Dictionary<string, Placement> MainPlacementsForSid { get; set; } = new();
+    private static Dictionary<string, Dictionary<string, object>> MainPlacementValuesForSid { get; set; } = new();
+
     private static LuaCtx? _LuaCtx = null;
     private static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
 
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
-    public static Placement? GetMainPlacement(string sid) =>
-        EntityPlacements.Find(x => x.SID == sid)
-        ?? TriggerPlacements.Find(x => x.SID == sid)
-        ?? StylegroundPlacements.Find(x => x.SID == sid);
+    public static Placement? GetMainPlacement(string sid) {
+        return MainPlacementsForSid.GetValueOrDefault(sid);
+    }
+
+    public static IReadOnlyDictionary<string, object> GetMainPlacementValues(string sid) {
+        if (MainPlacementValuesForSid.TryGetValue(sid, out var cached))
+            return cached;
+
+        var e = CreateFromMainPlacement(sid, default, Room.DummyRoom);
+        var values = new Dictionary<string, object>(e.EntityData);
+        MainPlacementValuesForSid[sid] = values;
+
+        return values;
+    }
 
     public static FieldList GetFields(Entity entity)
         => GetFields(entity.Name);
@@ -102,6 +115,8 @@ public static class EntityRegistry {
         StylegroundPlacements.Clear();
         SIDToDefiningMod.Clear();
         SIDToAssociatedMods.Clear();
+        MainPlacementValuesForSid.Clear();
+        MainPlacementsForSid.Clear();
 
         RegisterHardcoded();
 
@@ -146,6 +161,8 @@ public static class EntityRegistry {
                     EntityPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
                     TriggerPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
                     StylegroundPlacements.RemoveAll(pl => !pl.FromLonn && pl.SID == sid);
+                    MainPlacementsForSid.Remove(sid);
+                    MainPlacementValuesForSid.Remove(sid);
                 }
             }
         }
@@ -203,6 +220,9 @@ public static class EntityRegistry {
                 if (plugin.FieldList is { })
                     SIDToFields[plugin.Name] = () => plugin.FieldList(Style.FromName("parallax"));
 
+                if (plugin.Placements.FirstOrDefault() is {} firstPlacement)
+                    MainPlacementsForSid[plugin.Name] = firstPlacement;
+                
                 foreach (var pl in plugin.Placements) {
                     pl.SID ??= plugin.Name;
 
@@ -311,6 +331,9 @@ public static class EntityRegistry {
                     PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
                     FromLonn = true,
                 };
+
+                MainPlacementsForSid.TryAdd(sid, csPlacement);
+                
                 if (lonnPlacement.AssociatedMods is { } associatedMods)
                     csPlacement = csPlacement.WithAssociatedMods(associatedMods);
                 
@@ -432,6 +455,8 @@ public static class EntityRegistry {
             foreach (var placement in plcementList) {
                 placement.SID ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
                 placement.PlacementHandler = isTrigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
+                
+                MainPlacementsForSid.TryAdd(placement.SID, placement);
             }
             placementsRegistry.AddRange(plcementList);
         }

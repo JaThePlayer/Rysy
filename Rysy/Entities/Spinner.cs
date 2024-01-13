@@ -223,11 +223,11 @@ public sealed class Spinner : Entity, IPlaceable {
         Blue, Red, Purple, Core, Rainbow
     }
 
-    public override bool ShouldTrim(string key, object val) {
+    public override bool CanTrim(string key, object val) {
         return (key, val) switch {
             ("attachToSolid", false) => true,
             ("dust", false) => true,
-            _ => base.ShouldTrim(key, val)
+            _ => base.CanTrim(key, val)
         };
     }
 }

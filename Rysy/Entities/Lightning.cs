@@ -17,8 +17,11 @@ public class Lightning : RectangleEntity, IPlaceable {
 
     public static FieldList GetFields() => new(new {
         perLevel = false,
-        moveTime = 5.0
+        moveTime = 5.0f
     });
 
     public static PlacementList GetPlacements() => new("lightning");
+
+    public override bool CanTrim(string key, object val)
+        => IsDefault(key, val);
 }
