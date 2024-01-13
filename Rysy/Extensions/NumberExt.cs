@@ -89,4 +89,21 @@ public static class NumberExt {
             return null;
         }
     }
+    
+    /// <summary>
+    /// Formats a number into a filesize, like 1024 -> 1KB
+    /// </summary>
+    public static string ToFilesize(this long byteCount) {
+        string[] suf = _filesizeAbbreviations;
+        
+        if (byteCount == 0)
+            return "0" + suf[0];
+        
+        long bytes = Math.Abs(byteCount);
+        int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+        double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+        return (Math.Sign(byteCount) * num) + suf[place];
+    }
+
+    private static string[] _filesizeAbbreviations => ["B", "KB", "MB", "GB", "TB", "PB", "EB"];  //Longs run out around EB
 }

@@ -214,9 +214,20 @@ public sealed class Spinner : Entity, IPlaceable {
         .Select(n => new Placement(n, new {
             color = n
         }))
+        .Append(new Placement("dust", new {
+            dust = true,
+        }))
         .ToPlacementList();
 
     private enum SpinnerColors {
         Blue, Red, Purple, Core, Rainbow
+    }
+
+    public override bool ShouldTrim(string key, object val) {
+        return (key, val) switch {
+            ("attachToSolid", false) => true,
+            ("dust", false) => true,
+            _ => base.ShouldTrim(key, val)
+        };
     }
 }

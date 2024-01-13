@@ -30,6 +30,8 @@ rysy.menubar.tab.edit=Edit
 
 rysy.menubar.tab.map=Map
 rysy.menubar.tab.map.metadata=Metadata
+rysy.menubar.tab.map.sizeoscope=Sizeoscope
+rysy.menubar.tab.map.sizeoscope_window=Sizeoscope - {0}
 
 rysy.menubar.tab.view=View
 rysy.menubar.view.stylegrounds.showPreview=Render Preview

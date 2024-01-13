@@ -13,6 +13,22 @@ public sealed class BinaryPacker {
 
     short nextLookupId = 0;
     Dictionary<string, short> WritingLookup = new();
+    private Dictionary<Element, DetailedWriteInfo>? DetailedWriteInfos;
+    private Dictionary<string, DetailedLookupWriteInfo>? DetailedWriteLookupInfos;
+
+    public struct DetailedWriteInfo {
+        public long SelfSize;
+        public long TotalSize;
+    }
+    
+    public struct DetailedLookupWriteInfo {
+        public long Size;
+    }
+
+    public IReadOnlyDictionary<Element, DetailedWriteInfo>? GetDetailedWriteInfo() => DetailedWriteInfos;
+    public IReadOnlyDictionary<string, DetailedLookupWriteInfo>? GetDetailedWriteLookupInfo() => DetailedWriteLookupInfos;
+
+    public IReadOnlyDictionary<string, short> GetWritingLookupTable() => WritingLookup;
 
     internal BinaryPacker() { }
 
@@ -59,7 +75,10 @@ public sealed class BinaryPacker {
         };
     }
 
-    public static void SaveToStream(Package package, Stream output) {
+    public static void SaveToStream(Package package, Stream output)
+        => SaveToStream(package, output, false, out _);
+    
+    internal static void SaveToStream(Package package, Stream output, bool saveDetailedInformation, out BinaryPacker packerInstance) {
         // contains the map header and lookup table
         using var headerStream = new MemoryStream();
         using var headerWriter = new BinaryWriter(headerStream);
@@ -74,19 +93,37 @@ public sealed class BinaryPacker {
         var packer = new BinaryPacker();
         // Write the map to a different writer, as we now need the lookup table.
         packer.Writer = contentWriter;
+        if (saveDetailedInformation) {
+            packer.DetailedWriteInfos = [];
+            packer.DetailedWriteLookupInfos = [];
+        }
+        
         packer.WriteElement(package.Data);
 
         // write lookup table
         headerWriter.Write((short) packer.WritingLookup.Count);
-        foreach (var item in packer.WritingLookup.OrderBy(k => k.Value)) {
-            headerWriter.Write(item.Key);
+        var orderedLookup = packer.WritingLookup.OrderBy(k => k.Value);
+        if (packer.DetailedWriteLookupInfos is { } detailed) {
+            foreach (var item in orderedLookup) {
+                var start = headerWriter.BaseStream.Position;
+                headerWriter.Write(item.Key);
+                detailed[item.Key] = new() { Size = headerWriter.BaseStream.Position - start };
+            }
+        } else {
+            foreach (var item in orderedLookup) {
+                headerWriter.Write(item.Key);
+            }
         }
+        
+
 
         headerStream.Seek(0, SeekOrigin.Begin);
         headerStream.CopyTo(output);
         
         contentStream.Seek(0, SeekOrigin.Begin);
         contentStream.CopyTo(output);
+
+        packerInstance = packer;
     }
 
     public static void SaveToFile(Package package, string filename) {
@@ -105,6 +142,7 @@ public sealed class BinaryPacker {
 
     internal void WriteElement(Element el) {
         var writer = Writer;
+        var start = writer.BaseStream.Position;
 
         WriteLookup(el.Name ?? "");
 
@@ -128,8 +166,20 @@ public sealed class BinaryPacker {
 
         var children = el.Children ?? Array.Empty<Element>();
         writer.Write((short) children.Length);
+
+        var selfSize = writer.BaseStream.Position - start;
+        
         foreach (var item in children) {
             WriteElement(item);
+        }
+        
+        var totalSize = writer.BaseStream.Position - start;
+
+        if (DetailedWriteInfos is { } detailed) {
+            detailed[el] = new() {
+                SelfSize = selfSize,
+                TotalSize = totalSize,
+            };
         }
     }
 
