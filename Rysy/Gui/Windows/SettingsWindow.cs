@@ -113,6 +113,12 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.Save();
         }
 
+        var trim = Settings.Instance.TrimEntities;
+        if (ImGui.Checkbox("Trim Entities", ref trim).WithTooltip("Trims default values from entities when saving, decreasing .bin filesize and load times.\nBreaks Lonn and Ahorn compatibility!")) {
+            Settings.Instance.TrimEntities = trim;
+            Settings.Instance.Save();
+        }
+
         ImGui.EndTabItem();
     }
 

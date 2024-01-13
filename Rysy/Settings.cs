@@ -242,5 +242,7 @@ public sealed class Settings {
 
     public bool Animate { get; set; } = true;
 
+    public bool TrimEntities { get; set; } = false;
+
     #endregion
 }

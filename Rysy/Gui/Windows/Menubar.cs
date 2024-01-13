@@ -335,7 +335,7 @@ public static class Menubar {
         }
 
         ImGuiManager.DropdownMenu("Load Backup", BackupHandler.GetBackups(), 
-            (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]",
+            (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value.ToFilesize()}]",
             onClick: (b) => {
                 RysyEngine.Scene = new EditorScene(b.BackupFilepath, fromBackup: true, overrideFilepath: b.OrigFilepath);
             });
