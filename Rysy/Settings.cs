@@ -4,6 +4,7 @@ using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Rysy;
@@ -77,9 +78,13 @@ public static class SettingsHelper {
 }
 
 public sealed class Settings {
+    public static bool UiEnabled { get; set; }
+    
     public static string SettingsFileLocation { get; } = $"settings.json";
 
-    public static Settings Load(bool setInstance = true) {
+    public static Settings Load(bool setInstance = true, bool uiEnabled = true) {
+        UiEnabled = uiEnabled;
+        
         var settings = SettingsHelper.Load<Settings>(SettingsFileLocation);
 
         if (setInstance)
@@ -148,9 +153,14 @@ public sealed class Settings {
         get => _theme;
         set {
             _theme = value;
-            if (RysyEngine.ImGuiAvailable)
-                ImGuiThemer.LoadTheme(value);
+            if (RysyEngine.ImGuiAvailable && UiEnabled)
+                LoadTheme(value);
         }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void LoadTheme(string val) {
+        ImGuiThemer.LoadTheme(val);
     }
 
     private int _fontSize = 16;
@@ -158,7 +168,7 @@ public sealed class Settings {
         get => _fontSize;
         set {
             _fontSize = value;
-            if (RysyEngine.ImGuiAvailable)
+            if (RysyEngine.ImGuiAvailable && UiEnabled)
                 RysyEngine.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
         }
     }

@@ -362,6 +362,11 @@ public sealed class BinaryPacker {
         /// The file this package comes from
         /// </summary>
         public string? Filename { get; init; }
+
+        public IEnumerable<Element> Rooms => Data.Children.FirstOrDefault(e => e.Name == "levels")?.Children ?? [];
+
+        public IEnumerable<Element> EntitiesOrTriggers => Rooms.SelectMany(r =>
+            r.Children.Where(e => e.Name is "entities" or "triggers").SelectMany(e => e.Children));
     }
 
     public class Element {

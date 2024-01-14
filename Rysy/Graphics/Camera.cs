@@ -16,7 +16,7 @@ public class Camera {
         }
     }
 
-    private Viewport _Viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+    private Viewport _Viewport = RysyEngine.GDM?.GraphicsDevice.Viewport ?? new Viewport();
     public Viewport Viewport {
         get => _Viewport;
         set {
@@ -26,10 +26,12 @@ public class Camera {
     }
 
     public Camera() {
-        RysyEngine.OnViewportChanged += (v) => {
-            _Viewport = v;
-            RecalculateMatrix();
-        };
+        if (Settings.UiEnabled) {
+            RysyEngine.OnViewportChanged += (v) => {
+                _Viewport = v;
+                RecalculateMatrix();
+            };
+        }
 
         RecalculateMatrix();
     }
