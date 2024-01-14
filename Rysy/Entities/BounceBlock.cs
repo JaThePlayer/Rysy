@@ -56,10 +56,10 @@ public class BounceBlock : Entity, ISolid, IPlaceable {
         notCoreMode = false
     });
 
-    public static PlacementList GetPlacements() => new() {
+    public static PlacementList GetPlacements() => [
         new("fire"),
-        new("ice", new {
-            notCoreMode = true,
-        }),
-    };
+        new("ice", new { notCoreMode = true })
+    ];
+    
+    public override bool CanTrim(string key, object val) => IsDefault(key, val);
 }

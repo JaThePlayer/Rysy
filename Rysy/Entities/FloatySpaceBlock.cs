@@ -16,4 +16,6 @@ public sealed class FloatySpaceBlock : TileEntity, ISolid, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => new("floaty_space_block");
+
+    public override bool CanTrim(string key, object val) => IsDefault(key, val);
 }

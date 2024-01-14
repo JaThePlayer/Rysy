@@ -101,7 +101,8 @@ public static class NumberExt {
         
         long bytes = Math.Abs(byteCount);
         int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-        double num = Math.Round(bytes / Math.Pow(1024, place), 1);
+        double num = Math.Round(bytes / Math.Pow(1024, place), 2);
+        
         return (Math.Sign(byteCount) * num) + suf[place];
     }
 

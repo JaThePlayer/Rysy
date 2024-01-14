@@ -120,6 +120,11 @@ internal sealed class CustomSpinner : LonnEntity {
         _lastSpriteCount = sprites.Count;
         return sprites;
     }
+    
+    public override bool CanTrim(string key, object val) => key switch {
+        "destroyColor" => val.ToString() == "639bff", // the C# side has a different default than lonn for this 1 thing...
+        _ => IsDefault(key, val),
+    };
 }
 
 [CustomEntity("FrostHelper/RainbowTilesetController", associatedMods: [ "FrostHelper" ])]
