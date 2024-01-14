@@ -9,10 +9,12 @@ using Rysy.Stylegrounds;
 namespace Rysy;
 
 public sealed class Map : IPackable {
+    private static Map _dummyMap;
+    
     /// <summary>
     /// An empty map that can be used for mocking
     /// </summary>
-    public static Map DummyMap { get; } = NewMap("DUMMY");
+    public static Map DummyMap => _dummyMap ??= NewMap("DUMMY");
 
     /// <summary>
     /// The package name of the map.

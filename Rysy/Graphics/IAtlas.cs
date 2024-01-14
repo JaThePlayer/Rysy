@@ -9,7 +9,7 @@ namespace Rysy.Graphics;
 
 public interface IAtlas {
     //public Dictionary<string, VirtTexture> Textures { get; }
-    public static bool LogMissingTextures => Settings.Instance.LogMissingTextures;
+    public static bool LogMissingTextures => Settings.UiEnabled && Settings.Instance.LogMissingTextures;
     
     public IEnumerable<(string virtPath, VirtTexture texture)> GetTextures();
 

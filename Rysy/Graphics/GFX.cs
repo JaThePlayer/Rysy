@@ -20,6 +20,15 @@ public static class GFX {
     private static BasicEffect BasicEffect;
 
     /// <summary>
+    /// Sets up the bare minimum for running headless
+    /// </summary>
+    internal static void HeadlessSetup() {
+        Atlas = new Atlas();
+        DecalRegistry = new();
+        UnknownTexture = new();
+    }
+    
+    /// <summary>
     /// Loads the bare minimum needed to render anything.
     /// </summary>
     /// <param name="eng"></param>
