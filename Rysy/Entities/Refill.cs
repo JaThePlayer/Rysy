@@ -18,10 +18,10 @@ public class Refill : SpriteEntity, IPlaceable {
         twoDash = false
     });
 
-    public static PlacementList GetPlacements() => new() {
+    public static PlacementList GetPlacements() => [
         new("one_dash"),
-        new("two_dashes", new {
-            twoDash = true
-        })
-    };
+        new("two_dashes", new { twoDash = true })
+    ];
+
+    public override bool CanTrim(string key, object val) => IsDefault(key, val);
 }
