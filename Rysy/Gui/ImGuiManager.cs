@@ -337,7 +337,7 @@ public static class ImGuiManager {
         var buttonWidth = ImGui.GetFrameHeight();
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText($"##text{label}", ref colorHex, 24).WithTooltip(tooltip)) {
+        if (ImGui.InputText(Interpolator.Temp($"##text{label}"), ref colorHex, 24).WithTooltip(tooltip)) {
             if (ColorHelper.TryGet(colorHex, format, out var newColor)) {
                 color = newColor;
             }
@@ -349,7 +349,7 @@ public static class ImGuiManager {
         switch (format) {
             case ColorFormat.RGB:
                 var colorN3 = color.ToNumVec3();
-                if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit3(Interpolator.Temp($"##combo{label}"), ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN3.ToXna());
                     edited = true;
                 }
@@ -357,7 +357,7 @@ public static class ImGuiManager {
             case ColorFormat.RGBA:
             case ColorFormat.ARGB:
                 var colorN4 = color.ToNumVec4();
-                if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit4(Interpolator.Temp($"##combo{label}"), ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN4.ToXna());
                     edited = true;
                 }

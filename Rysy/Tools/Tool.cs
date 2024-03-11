@@ -282,7 +282,7 @@ public abstract class Tool {
             CachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??= currentLayer is null ? new() :
+        var cachedSearch = CachedSearch ??= currentLayer is null ? [] :
             (GetMaterials(currentLayer) ?? new List<object>())
             .Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search, Favorites)
@@ -465,7 +465,7 @@ public abstract class Tool {
         }
         
         var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
-        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), IsEqual(currentLayer, currentMaterial, name), ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
+        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), currentMaterial == material, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
             if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
