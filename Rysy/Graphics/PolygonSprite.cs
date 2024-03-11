@@ -20,6 +20,11 @@ public record struct PolygonSprite : ISprite {
         OutlineColor = outlineColor;
     }
 
+    public PolygonSprite(VertexPositionColor[] vertexes) {
+        VertexPositionColors = vertexes;
+        Nodes = [];
+    }
+
     public int? Depth { get; set; }
     public Color Color { get; set; } = Color.White;
 
@@ -31,21 +36,9 @@ public record struct PolygonSprite : ISprite {
 
     public ISelectionCollider GetCollider() 
         => ISelectionCollider.FromRect(0, 0, 0, 0);
-
-    public void Render() {
-        if (Nodes.Length < 3)
-            return;
-        
-        VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
-
-        if (VertexPositionColors.Length < 3)
-            return;
-
-        GFX.DrawVertices(Matrix.Identity, VertexPositionColors, VertexPositionColors.Length);
-    }
-
+    
     public void Render(SpriteRenderCtx ctx) {
-        if (Nodes.Length < 3)
+        if (Nodes.Length < 3 && VertexPositionColors is null)
             return;
         
         VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
@@ -58,6 +51,8 @@ public record struct PolygonSprite : ISprite {
         if (matrix is null && cam is { }) {
             matrix = cam.Matrix * (Matrix.CreateTranslation(ctx.CameraOffset.X * cam.Scale, ctx.CameraOffset.Y * cam.Scale, 0f));
         }
+
+        matrix ??= Matrix.Identity;
 
         if (matrix is { } m) {
             GFX.DrawVertices(m, VertexPositionColors, VertexPositionColors.Length);
@@ -72,7 +67,9 @@ public record struct PolygonSprite : ISprite {
     public ISprite WithMultipliedAlpha(float alpha) {
         return this with {
             Color = Color * alpha,
-            VertexPositionColors = null,
+            VertexPositionColors = VertexPositionColors?
+                .Select(vpc => vpc with { Color = vpc.Color * alpha })
+                .ToArray(),
         };
     }
 

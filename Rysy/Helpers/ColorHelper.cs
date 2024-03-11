@@ -334,3 +334,33 @@ public static class ColorHelperExtensions {
         return new(cv.ToXna());
     }
 }
+
+internal readonly struct RgbaOrXnaColor : ISpanParsable<RgbaOrXnaColor> {
+    public Color Color { get; init; }
+    
+    public static RgbaOrXnaColor Parse(string s, IFormatProvider? provider) 
+        => Parse(s.AsSpan(), provider);
+
+    public static bool TryParse(string? s, IFormatProvider? provider, out RgbaOrXnaColor result) =>
+        TryParse(s.AsSpan(), provider, out result);
+
+    public static RgbaOrXnaColor Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+    {
+        if (!TryParse(s, provider, out var parsed))
+        {
+            throw new Exception($"Invalid RGBA color: {s}");
+        }
+
+        return parsed;
+    }
+
+    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out RgbaOrXnaColor result) {
+        if (!ColorHelper.TryGet(s.ToString(), ColorFormat.RGBA, out var color)) {
+            result = default;
+            return false;
+        }
+        
+        result = new() { Color = color };
+        return true;
+    }
+}
