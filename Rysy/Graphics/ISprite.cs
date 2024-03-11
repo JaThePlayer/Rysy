@@ -168,6 +168,18 @@ public interface ISprite : IEnumerable<ISprite> {
         Control = (start + end) / 2f + middleOffset
     }.GetSprite(color, segments);
 
+    public static LinearGradientSprite LinearGradient(Rectangle bounds, string gradientString, LinearGradient.Directions dir) {
+        if (Graphics.LinearGradient.TryParse(gradientString, null, out var gradient)) {
+            return new LinearGradientSprite(bounds, gradient, dir);
+        }
+
+        return new LinearGradientSprite(bounds, Graphics.LinearGradient.Parse("ff0000,ff0000,100", null), dir);
+    }
+    
+    public static LinearGradientSprite LinearGradient(Rectangle bounds, LinearGradient gradient, LinearGradient.Directions dir) {
+        return new LinearGradientSprite(bounds, gradient, dir);
+    }
+
     public static Rectangle GetBounds(IEnumerable<ISprite> sprites) {
         var rect = RectangleExt.Merge(sprites.Select(s => s.GetCollider().Rect));
 
