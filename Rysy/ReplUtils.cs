@@ -6,20 +6,17 @@ namespace Rysy;
 public static class ReplUtils {
     /*
 csharprepl setup:
-#r "MonoGame.Framework.dll"
-#r "ImGui.NET.dll"
-#r "YamlDotNet.dll"
-#r "Rysy.dll"
-NativeLibrary.Load("runtimes/win-x64/native/lua54.dll");
+csharprepl -r "Rysy.dll" -r "YamlDotNet.dll" -r "ImGui.NET.dll" -r "MonoGame.Framework.dll" -u "Rysy" -u "Rysy.Helpers" -u "Rysy.Mods" -u "Rysy.Extensions"
 
-using Rysy;
-await ReplUtils.LoadHeadless(true);
+Logger.MinimumLevel = LogLevel.Error;
+System.Runtime.InteropServices.NativeLibrary.Load("runtimes/win-x64/native/lua54.dll");
+await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
      */
     
     /// <summary>
     /// Loads everything needed for a headless run of Rysy.
     /// </summary>
-    public static async Task LoadHeadless(bool luaEnabled) {
+    public static async Task LoadHeadless(bool cSharpPlugins, bool luaPlugins) {
         Settings.Load(uiEnabled: false);
         Profile.Instance = Profile.Load();
         Persistence.Instance = Persistence.Load();
@@ -29,8 +26,8 @@ await ReplUtils.LoadHeadless(true);
             return;
         }
 
-        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, null);
-        await EntityRegistry.RegisterAsync(task: null, loadLuaPlugins: luaEnabled);
+        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, null, cSharpPlugins);
+        await EntityRegistry.RegisterAsync(task: null, loadLuaPlugins: luaPlugins);
         GFX.HeadlessSetup();
     }
 }

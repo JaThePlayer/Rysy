@@ -71,7 +71,7 @@ public static class SettingsHelper {
         using var stream = File.Exists(settingsFile)
             ? File.Open(settingsFile, FileMode.Truncate)
             : File.Open(settingsFile, FileMode.CreateNew);
-        JsonSerializer.Serialize(stream, settings, typeof(T), JsonSerializerHelper.SettingsOptions);
+        JsonSerializer.Serialize(stream, settings, JsonSerializerHelper.SettingsOptions);
 
         return settings;
     }

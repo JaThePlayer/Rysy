@@ -84,6 +84,12 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
 
     public static implicit operator ReadOnlyListenableDictionary<TKey, TValue>(ListenableDictionary<TKey, TValue> d) => new(d);
 
+    public ReadOnlyListenableDictionary<TKey, TValue> AsReadonly() => new(this);
+    
+    public Cache<T> CreateCache<T>(Func<ReadOnlyListenableDictionary<TKey, TValue>, T> generator) where T : class {
+        return AsReadonly().CreateCache(generator);
+    }
+    
     private void HandleOnChanged() {
         Version++;
         OnChanged?.Invoke();

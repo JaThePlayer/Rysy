@@ -26,6 +26,8 @@ public class StylegroundWindow : Window {
     private Style? FormStyle;
 
     private HotkeyHandler HotkeyHandler;
+    
+    private IEnumerable<ISprite>? _previewSprites;
 
     public StylegroundWindow(HistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
         History = history;
@@ -244,15 +246,18 @@ public class StylegroundWindow : Window {
 
             History.ApplyNewAction(action);
             SelectedAlteredValues = null;
+            _previewSprites = null;
         };
         form.OnLiveUpdate = (edited) => {
             SelectedAlteredValues = edited;
+            _previewSprites = null;
         };
 
         FormStyle = style;
         Form = form;
         Map.Style.ClearFakePreviewData();
         SelectedAlteredValues = null;
+        _previewSprites = null;
     }
 
     private string GetPlacementName(Placement placement) {
@@ -354,23 +359,25 @@ public class StylegroundWindow : Window {
 
         ImGui.NextColumn();
 
-        var previewW = (int) ImGui.GetColumnWidth();
-        ImGuiManager.XnaWidget("styleground_preview", previewW, 300, () => {
+        var previewW = Math.Min((int) ImGui.GetColumnWidth(), 320); 
+        
+        ImGuiManager.XnaWidget("styleground_preview", previewW, 180, () => {
             if (Selections is [var selected, ..]) {
-                IEnumerable<ISprite> sprites;
-                try {
-                    if (SelectedAlteredValues is { } altered) {
-                        //selected.FakePreviewData = new(selected.Data.SID, selected.Data.Inner.CreateMerged(SelectedAlteredValues));
-                        selected.Data.SetOverlay(SelectedAlteredValues);
-                        sprites = selected.GetPreviewSprites().ToList();
-                    } else {
-                        sprites = selected.GetPreviewSprites();
+                if (_previewSprites is null) {
+                    try {
+                        if (SelectedAlteredValues is { } altered) {
+                            selected.Data.SetOverlay(altered);
+                            _previewSprites = selected.GetPreviewSprites().ToList();
+                        } else {
+                            _previewSprites = selected.GetPreviewSprites().ToList();
+                        }
+                    } finally {
                     }
-                } finally {
                 }
 
+
                 var ctx = SpriteRenderCtx.Default(true);
-                foreach (var sprite in sprites) {
+                foreach (var sprite in _previewSprites) {
                     sprite.Render(ctx);
                 }
             }
