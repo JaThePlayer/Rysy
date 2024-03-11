@@ -184,7 +184,7 @@ public static partial class Fields {
     }
 
     public static DropdownField<string> SID(string def)
-        => Dropdown(def, EntityRegistry.SIDToType.Keys.ToList());
+        => Dropdown(def, EntityRegistry.Registered.Keys.ToList());
 
     public static ConditionalField Conditional(List<Field> fields, Func<FormContext, int> fieldPicker) {
         return new((ctx) => fields[fieldPicker(ctx)]);

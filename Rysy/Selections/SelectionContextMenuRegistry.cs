@@ -119,9 +119,9 @@ public static class SelectionContextWindowRegistry {
     private static ContextWindowDraw ConvertTilesToEntity(TileLayer targetLayer) {
         return (ISelectionHandler main, IEnumerable<Selection> all, PopupCtx ctx) => {
 
-            TilegridEntityTypes ??= EntityRegistry.SIDToType.CreateCache(sidToType => sidToType
-                .Where(kv => kv.Value.IsSubclassOf(typeof(TilegridEntity)))
-                .Select(kv => (kv.Key, kv.Value, ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(kv.Key, default, Room.DummyRoom)).Layer))
+            TilegridEntityTypes ??= EntityRegistry.Registered.CreateCache(sidToType => sidToType
+                .Where(kv => kv.Value.CSharpType.IsSubclassOf(typeof(TilegridEntity)))
+                .Select(kv => (kv.Key, Type: kv.Value.CSharpType, ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(kv.Key, default, Room.DummyRoom)).Layer))
                 .ToList()
             );
             if (main is not TileSelectionHandler tileHandler) {

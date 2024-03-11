@@ -409,7 +409,8 @@ public class LuaCtx {
                 trigger = t.IsSubclassOf(typeof(Trigger));
             }
 
-            EntityRegistry.RegisterLuaPlacements(sid, trigger, [placement]);
+            if (EntityRegistry.GetInfo(sid) is {} info)
+                EntityRegistry.RegisterLuaPlacements(info, trigger, [placement]);
 
             return 0;
         });
