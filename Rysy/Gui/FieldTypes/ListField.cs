@@ -83,8 +83,8 @@ public record class ListField : Field, IFieldConvertibleToList {
         return this;
     }
 
-    private string[] Split(string value) {
-        var split = value.Split(Separator);
+    private string[] Split(string value, StringSplitOptions options = StringSplitOptions.None) {
+        var split = value.Split(Separator, options);
         if (split is [""])
             split = Array.Empty<string>();
 
@@ -144,8 +144,11 @@ public record class ListField : Field, IFieldConvertibleToList {
                     ImGuiManager.PushInvalidStyle();
 
                 if (PrepareBaseField().RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
-                    split[i] = InnerObjToString(newValue);
-                    anyChanged = true;
+                    var newStr = InnerObjToString(newValue);
+                    if (!newStr.Contains(Separator, StringComparison.Ordinal)) {
+                        split[i] = InnerObjToString(newValue);
+                        anyChanged = true;
+                    }
                 }
                 ImGuiManager.PopInvalidStyle();
 
@@ -192,7 +195,7 @@ public record class ListField : Field, IFieldConvertibleToList {
 
 
     public IReadOnlyList<T> ConvertMapDataValueToList<T>(object value) {
-        var split = Split(value?.ToString() ?? "");
+        var split = Split(value?.ToString() ?? "", StringSplitOptions.RemoveEmptyEntries);
         var list = new List<T>(split.Length);
 
         switch (PrepareBaseField()) {

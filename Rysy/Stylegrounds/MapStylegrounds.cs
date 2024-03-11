@@ -22,6 +22,12 @@ public class MapStylegrounds : IPackable {
 
     public IEnumerable<Style> AllForegroundStylesRecursive()
         => AllStylesIn(Foregrounds);
+    
+    /// <summary>
+    /// Returns all tags used by stylegrounds in the map.
+    /// </summary>
+    public IReadOnlySet<string> AllTags()
+        => AllStylesRecursive().SelectMany(s => s.Tags).ToHashSet();
 
     public void ClearFakePreviewData() {
         foreach (var style in AllStylesRecursive())

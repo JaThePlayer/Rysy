@@ -17,7 +17,9 @@ static class DropdownHelper {
 public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConvertible
     where T : notnull {
     public bool NullAllowed { get; set; }
-
+    
+    public bool EmptyIsNull { get; set; }
+    
     public Func<FormContext, IDictionary<T, string>> Values;
 
     public Func<string?, T> StringToT;
@@ -55,6 +57,13 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     public override void SetDefault(object newDefault)
         => Default = (T) Convert.ChangeType(newDefault, typeof(T), CultureInfo.InvariantCulture);
 
+    private T? RealValue(T? value) {
+        if (value is null || EmptyIsNull && value is "")
+            return default;
+
+        return value;
+    }
+    
     public override bool IsValid(object? value) {
         if (value is null) {
             return NullAllowed;
@@ -63,7 +72,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         var val = ConvertMapDataValue(value);
 
         if (val is not { }) {
-            return (NullAllowed && value is null) && base.IsValid(value);
+            return (NullAllowed && val is null) && base.IsValid(value);
         }
 
         return (Editable || GetValues().TryGetValue(val, out _)) && base.IsValid(value);
@@ -75,9 +84,9 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         var prevVal = val;
 
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip) ? val : null;
+            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip) ? RealValue(val) : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip) ? val : null;
+            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip) ? RealValue(val) : null;
         }
     }
 
@@ -124,6 +133,12 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
         return this;
     }
+    
+    public DropdownField<T> ConvertEmptyToNull() {
+        EmptyIsNull = true;
+
+        return this;
+    }
 
     public override Field CreateClone() => this with { };
 
@@ -134,7 +149,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
             val = StringToT(value is string s ? s : null);
         }
 
-        return val;
+        return RealValue(val)!;
     }
 
     T1 IFieldConvertible.ConvertMapDataValue<T1>(object value) {

@@ -7,7 +7,7 @@ using Rysy.Helpers;
 namespace Rysy.Stylegrounds.Modded;
 
 [CustomEntity("FrostHelper/Gradient", associatedMods: [ "FrostHelper" ])]
-public class FrostHelperGradient : Style, IPlaceable {
+internal sealed class FrostHelperGradient : Style, IPlaceable {
     private const string DefaultGradient = "ffffff,ffffff,100";
     
     [Bind("gradient")]
