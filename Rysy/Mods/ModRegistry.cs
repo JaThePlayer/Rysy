@@ -67,7 +67,7 @@ public static class ModRegistry {
         return null;
     }
 
-    public static async Task LoadAllAsync(string modDir, SimpleLoadTask? task) {
+    public static async Task LoadAllAsync(string modDir, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
@@ -98,9 +98,9 @@ public static class ModRegistry {
             .Concat(Directory.GetDirectories(rysyPluginPath))
             .Select(f => {
                 if (f.EndsWith(".zip", StringComparison.Ordinal))
-                    return CreateModAsync(f, zip: true);
+                    return CreateModAsync(f, zip: true, loadCSharpPlugins);
 
-                return CreateModAsync(f, zip: false);
+                return CreateModAsync(f, zip: false, loadCSharpPlugins);
             })
             .Append(Task.FromResult(CreateRysyMod()));
 
@@ -159,7 +159,7 @@ public static class ModRegistry {
         }
     }
 
-    private static async Task<ModMeta> CreateModAsync(string dir, bool zip) {
+    private static async Task<ModMeta> CreateModAsync(string dir, bool zip, bool loadCSharp) {
         var mod = new ModMeta();
         IModFilesystem filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
         await filesystem.InitialScan();
@@ -168,7 +168,8 @@ public static class ModRegistry {
 
         try {
             ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
-            LoadModRysyPlugins(mod);
+            if (loadCSharp)
+                LoadModRysyPlugins(mod);
         } catch (Exception e) {
             Logger.Error(e, $"Error loading mod: {dir}");
         }

@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 namespace Rysy.LuaSupport;
 
 public class LonnEntity : Entity {
-    internal ListenableDictionaryRef<string, LonnEntityPlugin> PluginRef;
+    internal ListenableDictionaryRef<string, RegisteredEntity> PluginRef;
 
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
@@ -22,14 +22,14 @@ public class LonnEntity : Entity {
     [JsonIgnore]
     public LonnEntityPlugin? Plugin {
         get {
-            var exists = PluginRef.TryGetValue(out var plugin, out var changed);
+            var exists = PluginRef.TryGetValue(out var info, out var changed);
 
             if (changed) {
                 ClearInternalCache();
                 ClearRoomRenderCache();
             }
             
-            return exists ? plugin : null;
+            return exists ? info!.LonnPlugin : null;
         }
     }
 

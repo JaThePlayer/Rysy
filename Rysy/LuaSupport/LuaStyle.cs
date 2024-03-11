@@ -10,9 +10,9 @@ internal sealed class LuaStyle : Style {
 
     public override void Unpack(BinaryPacker.Element from) {
         base.Unpack(from);
-        
-        if (EntityRegistry.SIDToLonnStylePlugin.TryGetValue(from.Name ?? "", out var pl)) {
-            Plugin = pl;
+
+        if (EntityRegistry.GetInfo(from.Name ?? "") is { } info) {
+            Plugin = info.LonnStylePlugin!;
         }
     }
 }
