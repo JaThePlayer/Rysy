@@ -16,7 +16,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
         exclude = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
         flag = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
         notflag = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
-        tag = Fields.String(null!).AllowNull().ConvertEmptyToNull().ToList(',').WithMinElements(0),
+        tag = new StylegroundTagField(null!, editable: true).AllowNull().ConvertEmptyToNull().ToList(',').WithMinElements(0),
         _indent = new PaddingField()
     });
 
