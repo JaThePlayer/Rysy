@@ -139,6 +139,10 @@ public sealed class ModMeta : ILuaWrapper {
     public override string ToString() => string.Join(',', EverestYaml.Select(x => x.ToString()));
 
     public bool DependencyMet(ModMeta other) {
+        if (Name == other.Name && Version <= other.Version) {
+            return true;
+        }
+        
         foreach (var meta in EverestYaml) {
             foreach (var dep in meta.Dependencies) {
                 if (dep.Name == other.Name && dep.Version <= other.Version) {
@@ -151,6 +155,9 @@ public sealed class ModMeta : ILuaWrapper {
     }
 
     public bool DependencyMet(string otherName) {
+        if (Name == otherName)
+            return true;
+        
         foreach (var meta in EverestYaml) {
             foreach (var dep in meta.Dependencies) {
                 if (dep.Name == otherName) {

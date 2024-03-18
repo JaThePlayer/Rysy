@@ -63,18 +63,21 @@ public sealed class Parallax : Style, IPlaceable {
 
     public static PlacementList GetPlacements() => new("parallax");
 
-    private Sprite? GetBaseSprite() => string.IsNullOrWhiteSpace(Texture) ? null : ISprite.FromTexture(Texture) with {
-        Color = Color * Alpha,
-    };
+    private ColoredSpriteTemplate? GetBaseSprite(float alpha) =>
+        string.IsNullOrWhiteSpace(Texture)
+            ? null
+            : (SpriteTemplate.FromTexture(Texture, 0) with {
+                Scale = new(FlipX ? -1f : 1f, FlipY ? -1f : 1f)
+            }).CreateColoredTemplate(Color * alpha);
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
-        var baseSprite = GetBaseSprite();
+        var baseSprite = GetBaseSprite(Alpha);
 
         if (baseSprite is null) {
             yield break;
         }
 
-        yield return baseSprite;
+        yield return baseSprite.Create(default);
     }
 
     internal static Vector2 CalcCamPos(Camera camera)
@@ -84,10 +87,7 @@ public sealed class Parallax : Style, IPlaceable {
         if (ctx.Camera.Scale < 1f / 2f)
             yield break; // very tiny stylegrounds cause a lot of lag with vanilla textures, AND they look bad
 
-        if (GetBaseSprite() is not { } baseSprite || baseSprite.Texture.Texture is not { }) {
-            yield break;
-        }
-        if (baseSprite.Texture == GFX.UnknownTexture)
+        if (string.IsNullOrWhiteSpace(Texture))
             yield break;
 
         var camPos = CalcCamPos(ctx.Camera);
@@ -101,19 +101,17 @@ public sealed class Parallax : Style, IPlaceable {
         var fade = Alpha;
         fade *= FadeX.GetValueAt(camPos.X + 160f);
         fade *= FadeY.GetValueAt(camPos.Y + 90f);
+        fade = fade.AtMost(1f);
 
-        var color = Color;
-        if (fade < 1f)
-            color *= fade;
-
-        if (color.A <= 1)
+        var baseSprite = GetBaseSprite(fade);
+        if (baseSprite is null || baseSprite.Color.A <= 1)
             yield break;
 
         var loopX = LoopX;
         var loopY = LoopY;
 
-        var texW = baseSprite.Texture.Width;
-        var texH = baseSprite.Texture.Height;
+        var texW = baseSprite.Template.Texture.Width;
+        var texH = baseSprite.Template.Texture.Height;
         
         if (loopX) {
             pos.X = (pos.X % texW - texW) % texW;
@@ -121,24 +119,15 @@ public sealed class Parallax : Style, IPlaceable {
         if (loopY) {
             pos.Y = (pos.Y % texH - texH) % texH;
         }
-        if (FlipX) {
-            baseSprite.Scale.X = -1f;
-        }
-        if (FlipY) {
-            baseSprite.Scale.Y = -1f;
-        }
+        
         // todo: extract into LoopingSprite
-        if (baseSprite.Texture is VanillaTexture vanilla) {
+        if (baseSprite.Template.Texture is VanillaTexture vanilla) {
             var maxX = 320 * 6f / ctx.Camera.Scale;
             var maxY = 180 * 6f / ctx.Camera.Scale;
 
             for (float x = pos.X; x <= maxX + texW; x += texW) {
                 for (float y = pos.Y; y <= maxY + texH; y += texH) {
-                    yield return baseSprite with {
-                        Pos = new Vector2(x, y),
-                        Origin = default,
-                        Color = color,
-                    };
+                    yield return baseSprite.Create(new(x, y));
                     if (!loopY) {
                         break;
                     }
@@ -150,19 +139,16 @@ public sealed class Parallax : Style, IPlaceable {
             yield break;
         }
 
-        var texture = baseSprite with {
-            Pos = new Vector2(pos.X, pos.Y),
-            Origin = default,
-            Color = color,
-        };
-        yield return new FunctionSprite<(Sprite, Parallax, Camera)>((texture, this, ctx.Camera), static (data, t) => {
+        var texture = baseSprite.Create(new Vector2(pos.X, pos.Y));
+        yield return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), static (data, t) => {
             var texture = data.Item1;
             var self = data.Item2;
+            var textVirt = texture.Template.Template.Texture;
 
-            if (texture.Texture.Texture is not { } tx) {
+            if (textVirt.Texture is not { } tx) {
                 return;
             }
-            var clipRect = texture.Texture.ClipRect;
+            var clipRect = textVirt.ClipRect;
 
             if (self.LoopX)
                 clipRect.Width = (int)(data.Item3.Viewport.Width / data.Item3.Scale - texture.Pos.X);//(int)(320 * 6f / data.Item3.Scale) + 640;
@@ -177,9 +163,9 @@ public sealed class Parallax : Style, IPlaceable {
                 flip |= SpriteEffects.FlipVertically;
             }
 
-            GFX.Batch.Draw(tx, texture.Pos, clipRect, t.Color, texture.Rotation, texture.Origin, 1f, flip, 0f);
+            GFX.Batch.Draw(tx, texture.Pos, clipRect, t.Color, texture.Template.Template.Rotation, texture.Template.Template.Origin, 1f, flip, 0f);
         }) with {
-            Color = color,
+            Color = baseSprite.Color,
         };
     }
 

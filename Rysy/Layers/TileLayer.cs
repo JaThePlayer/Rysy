@@ -11,7 +11,7 @@ public sealed class TileEditorLayer : EditorLayer {
         TileLayer = layer;
     }
 
-    public override string Name => TileLayer.ToString();
+    public override string Name => TileLayer.FastToString();
 
     public override SelectionLayer SelectionLayer => TileLayer switch {
         TileLayer.BG => SelectionLayer.BGTiles,

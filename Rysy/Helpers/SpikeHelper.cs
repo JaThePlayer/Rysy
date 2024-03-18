@@ -182,5 +182,5 @@ public static class SpikeHelper {
     }))
     .ToPlacementList();
 
-    public static PathField GetTypeField() => Fields.AtlasPath("default", "^danger/spikes/(.*)_up00");
+    public static PathField GetTypeField() => Fields.AtlasPath("default", "^danger/spikes/(.*)_up00$");
 }

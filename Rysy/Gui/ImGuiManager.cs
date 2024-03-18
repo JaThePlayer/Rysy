@@ -281,7 +281,7 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search,
+    public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search,
         string? tooltip = null, ComboCache<T>? cache = null)
         where T : notnull {
 
@@ -289,7 +289,7 @@ public static class ImGuiManager {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
-        var valueToString = value.ToString() ?? "";
+        var valueToString = value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         if (ImGui.InputText($"##text{name}", ref valueToString, 128).WithTooltip(tooltip)) {
             value = stringToValue(valueToString);
@@ -301,7 +301,7 @@ public static class ImGuiManager {
         ImGui.SameLine(0f, xPadding);
 
         var size = cache.Size ??= CalcListSize(values.Values);
-        ImGui.SetNextWindowSize(new(size.X, (ImGui.GetTextLineHeightWithSpacing() + ImGui.GetFrameHeight()) * 120.AtMost(values.Count)));
+        ImGui.SetNextWindowSize(new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(values.Count + 1) + ImGui.GetFrameHeight()));
         if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             var oldStyles = PopAllStyles();
             

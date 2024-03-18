@@ -94,10 +94,10 @@ public class PlacementTool : Tool {
         base.OnLayerChanged();
 
         var cache = MaterialPreviewCache;
-        MaterialPreviewCache = new(StringComparer.Ordinal);
+        MaterialPreviewCache.Clear();
         RysyEngine.OnEndOfThisFrame += () => {
             foreach (var (k, v) in cache) {
-                ImGuiManager.DisposeXnaWidget(k);
+                ImGuiManager.DisposeXnaWidget(k.ToString());
             }
             cache.Clear();
         };
@@ -289,7 +289,7 @@ public class PlacementTool : Tool {
     public override float MaterialListElementHeight()
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
-    private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache = new(StringComparer.Ordinal);
+    private static Dictionary<StringRef, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
 
     protected override XnaWidgetDef? GetMaterialPreview(object material) {
         if (material is string)
@@ -298,18 +298,19 @@ public class PlacementTool : Tool {
         if (material is not Placement placement)
             return base.GetMaterialPreview(material);
 
-        var key = $"pl_{placement.Name}_{placement.SID}";
-        if (MaterialPreviewCache.TryGetValue(key, out var value)) {
+        var keySpan = Interpolator.Shared.Interpolate($"pl_{placement.Name}_{placement.SID ?? ""}");
+        if (MaterialPreviewCache.TryGetValue(StringRef.FromSharedBuffer(Interpolator.Shared.Buffer, keySpan.Length), out var value)) {
             return value;
         }
 
         if (EditorState.Map is not { })
             return null;
 
+        var key = keySpan.ToString();
         XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
             ? CreateWidgetForDecal(placement, key, PreviewSize)
             : CreateWidget(placement, key);
-        MaterialPreviewCache[key] = def;
+        MaterialPreviewCache[StringRef.FromString(key)] = def;
 
         return def;
     }
@@ -419,7 +420,7 @@ public class PlacementTool : Tool {
             }
 
             if (placement.GetDefiningMod() is { } defining)
-                ImGui.TextDisabled($"Defined by: {defining.Name}");
+                ImGui.TextDisabled(Interpolator.Shared.Interpolate($"Defined by: {defining.Name}"));
             ImGui.EndTooltip();
         }
     }
