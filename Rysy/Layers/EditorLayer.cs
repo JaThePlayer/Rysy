@@ -2,7 +2,6 @@
 
 namespace Rysy.Layers; 
 
-
 public abstract class EditorLayer {
     protected EditorLayer() {
         EditorLayers.KnownLayers.Add(this);

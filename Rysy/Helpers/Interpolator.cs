@@ -11,6 +11,8 @@ public sealed class Interpolator {
     
     private char[] _buffer = new char[128];
 
+    public char[] Buffer => _buffer;
+
     private int _startIndex;
 
     /// <summary>
@@ -55,6 +57,21 @@ public sealed class Interpolator {
         }
         
         return h.Result;
+    }
+
+    public Span<char> Clone(ReadOnlySpan<char> str) {
+        if (_buffer.Length < str.Length + _startIndex) {
+            Array.Resize(ref _buffer, Math.Max(_buffer.Length * 3 / 2, str.Length + _startIndex));
+        }
+        
+        var b = _buffer.AsSpan()[_startIndex..];
+        str.CopyTo(b);
+        if (ManualClear) {
+            // Move the start index further so that later interpolation steps don't overwrite existing ones
+            _startIndex += str.Length;
+        }
+
+        return b[..str.Length];
     }
 
     /// <summary>

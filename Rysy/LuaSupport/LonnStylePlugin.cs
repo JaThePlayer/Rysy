@@ -17,7 +17,7 @@ public sealed class LonnStylePlugin {
 
     private object LOCK = new();
 
-    public PlacementList Placements { get; set; } = new();
+    public PlacementList Placements { get; set; } = [];
     public Func<Style, FieldList>? FieldList { get; set; }
     public Func<Style, Dictionary<string, object>> DefaultData { get; set; }
     

@@ -142,7 +142,7 @@ public abstract class Tool {
 
     private HashSet<string>? _Favorites;
     public HashSet<string>? Favorites {
-        get => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _Favorites;
+        get => UsePersistence ? _Favorites ??= Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _Favorites;
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.{Layer.Name}.Favorites", value);

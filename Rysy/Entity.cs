@@ -463,6 +463,19 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// </summary>
     public virtual Entity? RotatePreciseBy(float angleRad, Vector2 origin) {
         if (Nodes is not { Count: > 0 } nodes) {
+            /*
+            var snapped = angleRad.RadToDegrees() % 360f;
+            switch (snapped) {
+                case (> 0 and <= 45) or (> 315 and <= 360):
+                    return null;
+                case > 45 and <= 45+90:
+                    return TryRotate(RotationDirection.Right);
+                case > 135 and <= 135+90:
+                    return TryRotate(RotationDirection.Right)?.TryRotate(RotationDirection.Right);
+                case > 225 and <= 225+90:
+                    return TryRotate(RotationDirection.Left);
+            }
+            */
             return null;
         }
 

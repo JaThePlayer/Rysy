@@ -44,18 +44,27 @@ public readonly unsafe struct UnsafeSpan<T> where T : unmanaged {
 /// </summary>
 public readonly struct StringRef : IEquatable<StringRef> {
     private readonly char[]? _srcCharBuffer;
+    private readonly int _srcCharBufferLen;
+    
     private readonly string? _srcString;
     //private readonly UnsafeSpan<char> _srcUnsafeSpan;
 
     private StringRef(char[]? charBuffer, string? srcString) {
         _srcCharBuffer = charBuffer;
         _srcString = srcString;
+        _srcCharBufferLen = charBuffer?.Length ?? 0;
+    }
+    
+    private StringRef(char[] charBuffer, int len) {
+        _srcCharBuffer = charBuffer;
+        _srcString = null;
+        _srcCharBufferLen = len;
     }
     
     /// <summary>
     /// Returns the data represented by this reference.
     /// </summary>
-    public ReadOnlySpan<char> Data => _srcString is {} srcString ? srcString.AsSpan() : _srcCharBuffer.AsSpan();
+    public ReadOnlySpan<char> Data => _srcString is {} srcString ? srcString.AsSpan() : _srcCharBuffer.AsSpan(0, _srcCharBufferLen);
 
     /// <summary>
     /// Returns whether this instance wraps mutable data and should not be used as a dictionary key.
@@ -71,6 +80,11 @@ public readonly struct StringRef : IEquatable<StringRef> {
     /// Creates a StringRef which points to the provided buffer, without cloning.
     /// </summary>
     public static StringRef FromSharedBuffer(char[] shared) => new(shared, null);
+    
+    /// <summary>
+    /// Creates a StringRef which points to the provided buffer, without cloning.
+    /// </summary>
+    public static StringRef FromSharedBuffer(char[] shared, int len) => new(shared, len);
 
     /// <summary>
     /// Creates a StringRef pointing to a copy of the provided data.
@@ -98,5 +112,9 @@ public readonly struct StringRef : IEquatable<StringRef> {
 
     public static bool operator !=(StringRef left, StringRef right) {
         return !(left == right);
+    }
+
+    public override string ToString() {
+        return _srcString ?? Data.ToString();
     }
 }

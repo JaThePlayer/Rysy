@@ -56,10 +56,11 @@ public static class ModRegistry {
         if (realPath is null)
             return null;
 
-        realPath = realPath.Unbackslash();
+        var unbackslashed = Interpolator.Shared.Clone(realPath);
+        unbackslashed.Replace('\\', '/');
 
         foreach (var (_, mod) in Mods) {
-            if (realPath.StartsWith(mod.Filesystem.Root, StringComparison.Ordinal)) {
+            if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
                 return mod;
             }
         }

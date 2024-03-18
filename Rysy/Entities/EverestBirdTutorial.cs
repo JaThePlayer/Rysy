@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 
 namespace Rysy.Entities;
 
@@ -19,8 +20,8 @@ public sealed class EverestBirdTutorial : SpriteEntity, IPlaceable {
         birdId = "",
         onlyOnce = false,
         caw = true,
-        info = Fields.Dropdown("TUTORIAL_DREAMJUMP", CelesteEnums.BirdTutorials),
-        controls = "DownRight,+,Dash,tinyarrow,Jump"
+        info = Fields.Dropdown("TUTORIAL_DREAMJUMP", CelesteEnums.BirdTutorials, editable: true),
+        controls = Fields.List("DownRight,+,Dash,tinyarrow,Jump", new BirdTutorialInputField()), //"DownRight,+,Dash,tinyarrow,Jump"
     });
 
     public override Entity? TryFlipHorizontal() => CloneWith(pl => pl["faceLeft"] = !Bool("faceLeft"));
