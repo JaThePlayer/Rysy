@@ -1,16 +1,21 @@
 ﻿namespace Rysy.History;
 
-public sealed record class RemoveEntityAction(Entity Entity, Room Room) : IHistoryAction {
-    public bool Apply() {
-        Entity.ClearInnerCaches();
-        var removed = Entity.GetRoomList().Remove(Entity);
+public sealed record RemoveEntityAction(EntityRef Entity, RoomRef Room) : IHistoryAction {
+    public bool Apply(Map map) {
+        var entity = Entity.Resolve(map);
+        
+        entity.ClearInnerCaches();
+        var removed = entity.GetRoomList().Remove(entity);
         if (removed)
-            Entity.Room = null!;
+            entity.Room = null!;
         return removed;
     }
 
-    public void Undo() {
-        Entity.Room = Room;
-        Entity.GetRoomList().Add(Entity);
+    public void Undo(Map map) {
+        var entity = Entity.Resolve(map);
+        var room = Room.Resolve(map);
+        
+        entity.Room = room;
+        entity.GetRoomList().Add(entity);
     }
 }

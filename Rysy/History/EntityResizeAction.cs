@@ -2,35 +2,39 @@
 
 namespace Rysy.History;
 
-public record class EntityResizeAction(Entity Entity, Point Delta) : IHistoryAction {
+public record EntityResizeAction(EntityRef Entity, Point Delta) : IHistoryAction {
     private Point? PrevSize;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
+        var entity = Entity.Resolve(map);
+        
         var changed = false;
 
-        var minSize = Entity.MinimumSize;
+        var minSize = entity.MinimumSize;
 
-        PrevSize ??= new(Entity.Width, Entity.Height);
+        PrevSize ??= new(entity.Width, entity.Height);
 
-        if (Entity.ResizableX && Delta.X != 0) {
-            var prevW = Entity.Width;
-            Entity.Width = (Entity.Width + Delta.X).AtLeast(minSize.X);
-            if (prevW != Entity.Width)
+        if (entity.ResizableX && Delta.X != 0) {
+            var prevW = entity.Width;
+            entity.Width = (entity.Width + Delta.X).AtLeast(minSize.X);
+            if (prevW != entity.Width)
                 changed = true;
         }
 
-        if (Entity.ResizableY && Delta.Y != 0) {
-            var prevH = Entity.Height;
-            Entity.Height = (Entity.Height + Delta.Y).AtLeast(minSize.Y);
-            if (prevH != Entity.Height)
+        if (entity.ResizableY && Delta.Y != 0) {
+            var prevH = entity.Height;
+            entity.Height = (entity.Height + Delta.Y).AtLeast(minSize.Y);
+            if (prevH != entity.Height)
                 changed = true;
         }
 
         return changed;
     }
 
-    public void Undo() {
-        Entity.Width = PrevSize!.Value.X;
-        Entity.Height = PrevSize.Value.Y;
+    public void Undo(Map map) {
+        var entity = Entity.Resolve(map);
+        
+        entity.Width = PrevSize!.Value.X;
+        entity.Height = PrevSize.Value.Y;
     }
 }

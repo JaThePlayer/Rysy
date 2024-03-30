@@ -5,7 +5,7 @@ namespace Rysy.History;
 internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] Orig, char[,] ToMove, Point Offset) : IHistoryAction {
     char[,] Old;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         var ox = Offset.X;
         var oy = Offset.Y;
 
@@ -28,7 +28,7 @@ internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,]
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Grid.Tiles = Old;
 
         Grid.RenderCacheToken?.Invalidate();

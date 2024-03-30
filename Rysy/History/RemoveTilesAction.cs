@@ -5,7 +5,7 @@ namespace Rysy.History;
 public record class RemoveTilesAction(Tilegrid Grid, Point StartPos, bool[,] ToRemove) : IHistoryAction {
     char[,] Orig;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         var (w, h) = (ToRemove.GetLength(0), ToRemove.GetLength(1));
         var (ox, oy) = StartPos;
         Orig = new char[w, h];
@@ -20,7 +20,7 @@ public record class RemoveTilesAction(Tilegrid Grid, Point StartPos, bool[,] ToR
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         var (w, h) = (ToRemove.GetLength(0), ToRemove.GetLength(1));
         var (ox, oy) = StartPos;
 

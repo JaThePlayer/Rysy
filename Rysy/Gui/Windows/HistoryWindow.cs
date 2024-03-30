@@ -1,8 +1,18 @@
 ﻿using ImGuiNET;
+using Rysy.Extensions;
+using Rysy.Helpers;
+using Rysy.History;
+using System.Buffers.Text;
+using System.Text;
 
 namespace Rysy.Gui.Windows;
 
 public class HistoryWindow : Window {
+    private IHistoryAction? _selectedAction;
+    private string? _selectedActionJson;
+    private string? _selectedActionHex;
+    private string? _selectedActionByteCount;
+    
     public HistoryWindow() : base("History", new(480, 480)) {
         NoSaveData = false;
     }
@@ -15,12 +25,39 @@ public class HistoryWindow : Window {
             return;
 
         if (ImGui.BeginListBox("Actions")) {
+            int i = 0;
             foreach (var action in history.Actions) {
-                ImGui.Button(action.GetType().Name);
+                if (ImGui.Selectable(Interpolator.Shared.Interpolate($"{action.GetType().Name}##{i++}"), _selectedAction == action)) {
+                    _selectedAction = action;
+                    var packed = HistorySerializer.SerializeAnyToElement(action);
+                    _selectedActionJson = packed.ToJson();
+
+                    using var memstream = new MemoryStream();
+                    BinaryPacker.SaveToStream(new() {Data = packed}, memstream);
+
+                    var bytes = memstream.ToArray();
+
+                    _selectedActionByteCount = bytes.Length.ToString();
+                    //_selectedActionHex = string.Join("",bytes.Select(b => $"{b:X2}"));
+                }
             }
 
             ImGui.EndListBox();
         }
+
+        if (ImGui.Button("From Clipboard") && Input.Clipboard.TryGetFromJson<BinaryPacker.Element>() is {} el) {
+            if (HistorySerializer.TryDeserialize<IHistoryAction>(el, Room.DummyRoom, out var action)) {
+                history.ApplyNewAction(action);
+            }
+        }
+        
+        if (_selectedActionJson is {} json)
+            ImGui.InputTextMultiline("", ref json, (uint)json.Length, new NumVector2(), ImGuiInputTextFlags.ReadOnly);
+        
+        if (_selectedActionByteCount is {})
+            ImGui.Text($"Encoded bytes: {_selectedActionByteCount}");
+        //if (_selectedActionHex is {} hex)
+        //    ImGui.TextWrapped(hex);
     }
 
     public override void RemoveSelf() {

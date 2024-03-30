@@ -6,7 +6,7 @@ namespace Rysy.History;
 public record class TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTiles, char[,] NewTiles) : IHistoryAction {
     char[,] OldTiles;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         if (Rect.Width < 1 || Rect.Height < 1)
             return false;
 
@@ -28,7 +28,7 @@ public record class TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTi
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         for (int x = Rect.X; x < Rect.Right; x++)
             for (int y = Rect.Y; y < Rect.Bottom; y++) {
                 var c = OldTiles[x - Rect.X, y - Rect.Y];

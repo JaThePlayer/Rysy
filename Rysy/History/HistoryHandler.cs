@@ -9,13 +9,19 @@ public class HistoryHandler {
     internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
     internal List<IHistoryAction> SimulatedActions { get; set; } = new();
+    
+    internal Map Map { get; set; }
 
     public Action? OnUndo { get; set; }
     public Action? OnApply { get; set; }
 
+    public HistoryHandler(Map map) {
+        Map = map;
+    }
+
     public void UndoSimulations() {
         foreach (var item in SimulatedActions.AsEnumerable().Reverse()) {
-            item?.Undo();
+            item?.Undo(Map);
         }
         SimulatedActions.Clear();
     }
@@ -24,7 +30,7 @@ public class HistoryHandler {
         UndoSimulations();
 
         if (action is { }) {
-            action.Apply();
+            action.Apply(Map);
             SimulatedActions.Add(action);
         }
     }
@@ -39,7 +45,7 @@ public class HistoryHandler {
 
         List<IHistoryAction> actionList = new();
         foreach (var action in actions) {
-            if (action?.Apply() ?? false) {
+            if (action?.Apply(Map) ?? false) {
                 actionList.Add(action);
             }
         }
@@ -54,7 +60,7 @@ public class HistoryHandler {
     public void ApplyNewAction(IHistoryAction? action) {
         UndoSimulations();
 
-        if (action?.Apply() ?? false) {
+        if (action?.Apply(Map) ?? false) {
             InsertAction(action);
         }
     }
@@ -70,7 +76,7 @@ public class HistoryHandler {
 
         if (Actions.Count > 0) {
             var action = Pop(Actions);
-            action.Undo();
+            action.Undo(Map);
             UndoneActions.Add(action);
             OnUndo?.Invoke();
         }
@@ -81,7 +87,7 @@ public class HistoryHandler {
 
         if (UndoneActions.Count > 0) {
             var action = Pop(UndoneActions);
-            action.Apply();
+            action.Apply(Map);
             Actions.Add(action);
             OnApply?.Invoke();
         }

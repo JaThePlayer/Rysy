@@ -4,16 +4,14 @@ using System.Collections;
 namespace Rysy.History;
 
 public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, ISerializableAction {
-    private List<IHistoryAction> Actions;
+    public List<IHistoryAction> Actions { get; set; }
 
     public MergedAction(IEnumerable<IHistoryAction?> actions) {
         Actions = new(actions.Where(act => act is not null)!);
-        Applied = new bool[Actions.Count];
     }
 
     public MergedAction(params IHistoryAction?[] actions) {
         Actions = new(actions.Where(act => act is not null)!);
-        Applied = new bool[Actions.Count];
     }
 
     private bool[] Applied;
@@ -27,14 +25,16 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
         return act;
     }
 
-    public bool Apply() {
+    public bool Apply(Map map) {
+        Applied ??= new bool[Actions.Count];
+        
         Array.Clear(Applied);
         var ret = false;
 
         for (int i = 0; i < Actions.Count; i++) {
             var action = Actions[i];
 
-            var r = action.Apply();
+            var r = action.Apply(map);
             Applied[i] = r;
             ret |= r;
         }
@@ -42,10 +42,10 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
         return ret;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         for (int i = Actions.Count - 1; i >= 0; i--) {
             if (Applied[i]) {
-                Actions[i].Undo();
+                Actions[i].Undo(map);
             }
         }
     }

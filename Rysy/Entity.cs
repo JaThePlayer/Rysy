@@ -28,7 +28,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #region EntityData Wrappers
     public string Name => EntityData.SID;
 
-    public int ID {
+    public int Id {
         get => EntityData.Int("id");
         set => EntityData["id"] = value;
     }
@@ -356,7 +356,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Clears the correct render cache in the parent room
     /// </summary>
     public virtual void ClearRoomRenderCache() {
-        if (Room is { } r && ID >= 1) {
+        if (Room is { } r && Id >= 1) {
             //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new System.Diagnostics.StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }
@@ -384,7 +384,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// </summary>
     public Entity Clone() {
         var clone = EntityRegistry.Create(ToPlacement(), Pos, Room, false, this is Trigger);
-        clone.ID = ID;
+        clone.Id = Id;
 
         return clone;
     }
@@ -398,7 +398,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         manipulator(placement);
 
         var clone = EntityRegistry.Create(placement, Pos, Room, false, this is Trigger);
-        clone.ID = ID;
+        clone.Id = Id;
 
         return clone;
     }
@@ -576,7 +576,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             var shouldTrim = k switch {
                 "x" => false,
                 "y" => false,
-                "id" => ID == 0,
+                "id" => Id == 0,
                 "width" => Width == 0,
                 "height" => Height == 0,
                 EditorGroupEntityDataKey => EditorGroups.IsOnlyDefault,
@@ -711,7 +711,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 return 1;
 
             case "_id":
-                lua.PushNumber(ID);
+                lua.PushNumber(Id);
                 return 1;
             case "nodes":
                 if (Nodes is { }) {
@@ -739,7 +739,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 lua.PushNumber(Y);
                 return 1;
             case [(byte) '_', (byte) 'i', (byte) 'd']:
-                lua.PushNumber(ID);
+                lua.PushNumber(Id);
                 return 1;
             case [(byte) '_', (byte) 'n', (byte) 'a', (byte) 'm', (byte) 'e']:
                 lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));

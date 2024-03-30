@@ -140,7 +140,7 @@ static string Compress(byte[] input) {
 
         var selections = rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
 
-        history?.ApplyNewAction(rooms.Select(r => new AddRoomAction(map, r)).MergeActions());
+        history?.ApplyNewAction(rooms.Select(r => new AddRoomAction(r)).MergeActions());
 
         if (rooms.Count == 1) {
             EditorState.CurrentRoom = rooms[0];
@@ -220,7 +220,7 @@ static string Compress(byte[] input) {
 
         var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FGDecals or SelectionLayer.BGDecals).SelectMany(s => {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
-            e.ID = 0; // set the ID to 0 so that it gets auto-assigned later
+            e.Id = 0; // set the ID to 0 so that it gets auto-assigned later
             entitiesNotRef.Add(e);
             var handler = e.CreateSelection().Handler as EntitySelectionHandler;
             var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? Array.Empty<ISelectionHandler>();

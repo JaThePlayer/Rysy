@@ -81,7 +81,7 @@ public class EntityPropertyWindow : FormWindow {
     }
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) 
-        : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.ID))}") {
+        : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.Id))}") {
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(main);
         ArgumentNullException.ThrowIfNull(all);

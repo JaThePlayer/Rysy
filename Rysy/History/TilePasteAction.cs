@@ -15,7 +15,7 @@ public class TilePasteAction : IHistoryAction {
         Pos = pos;
     }
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         var (w, h) = (Source.Width, Source.Height);
         var (xOff, yOff) = Pos;
 
@@ -36,7 +36,7 @@ public class TilePasteAction : IHistoryAction {
         return changed;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         var (w, h) = (Source.Width, Source.Height);
         var (xOff, yOff) = Pos;
 

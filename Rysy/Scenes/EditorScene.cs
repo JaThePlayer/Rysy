@@ -18,7 +18,7 @@ public sealed class EditorScene : Scene {
     public ToolHandler ToolHandler;
 
     public HistoryHandler HistoryHandler {
-        get => EditorState.History!;
+        get => EditorState.History ??= new HistoryHandler(Map);
         set => EditorState.History = value;
     }
 
@@ -50,6 +50,8 @@ public sealed class EditorScene : Scene {
 
         // history has to be cleared, as it might contain references to specific entity instances
         HistoryHandler.Clear();
+
+        HistoryHandler.Map = map;
     }
 
     public Room? CurrentRoom {
@@ -63,7 +65,7 @@ public sealed class EditorScene : Scene {
     } // will be set in Map.set
 
     public EditorScene() {
-        HistoryHandler = new();
+        //HistoryHandler = new();
 
         //EditorState.OnMapChanged += OnMapChanged;
     }

@@ -1,22 +1,25 @@
 ﻿namespace Rysy.History;
 
-public record class MoveNodeAction(Node Node, Entity Entity, Vector2 By) : IHistoryAction {
-    public bool Apply() {
+public record MoveNodeAction(Node Node, EntityRef Entity, Vector2 By) : IHistoryAction {
+    public bool Apply(Map map) {
+        var entity = Entity.Resolve(map);
+        
         Node.Pos += By;
 
-        Entity.ClearRoomRenderCache();
-        Entity.OnChanged(new() {
+        entity.ClearRoomRenderCache();
+        entity.OnChanged(new() {
             NodesChanged = true,
         });
 
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
+        var entity = Entity.Resolve(map);
         Node.Pos -= By;
 
-        Entity.ClearRoomRenderCache();
-        Entity.OnChanged(new() {
+        entity.ClearRoomRenderCache();
+        entity.OnChanged(new() {
             NodesChanged = true,
         });
     }

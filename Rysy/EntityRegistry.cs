@@ -543,7 +543,7 @@ public static class EntityRegistry {
         };
 
         e.EntityData = entityData;
-        e.ID = id ?? room.NextEntityID();
+        e.Id = id ?? room.NextEntityID();
         e.Room = room;
         
         if (e is LonnEntity lonnEntity) {

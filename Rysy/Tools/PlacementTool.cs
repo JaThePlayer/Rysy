@@ -137,6 +137,8 @@ public class PlacementTool : Tool {
         if (offset == Vector2.Zero && resize == Point.Zero)
             return;
 
+        var map = room.Map;
+
         // handle noded entity resizing being different
         // TODO: refactor, maybe into a ICustomMoveHandler
         if (selection is EntitySelectionHandler entityHandler) {
@@ -145,17 +147,17 @@ public class PlacementTool : Tool {
             var resizableY = e.ResizableY;
 
             if (!resizableX && !resizableY && e.Nodes is [var onlyNode]) {
-                new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply();
+                new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply(map);
                 AnchorPos ??= e.Pos;
                 return;
             }
 
             if (offset.X != 0 || offset.Y != 0) {
-                selection.MoveBy(offset).Apply();
+                selection.MoveBy(offset).Apply(map);
             }
 
             if ((resize.X != 0 || resize.Y != 0) && selection.TryResize(resize) is { } resizeAction) {
-                resizeAction.Apply();
+                resizeAction.Apply(map);
                 e.InitializeNodePositions();
             }
 
@@ -163,11 +165,11 @@ public class PlacementTool : Tool {
         }
 
         if (offset.X != 0 || offset.Y != 0) {
-            selection.MoveBy(offset).Apply();
+            selection.MoveBy(offset).Apply(map);
         }
 
         if (resize.X != 0 || resize.Y != 0) {
-            selection.TryResize(resize)?.Apply();
+            selection.TryResize(resize)?.Apply(map);
         }
     }
 
@@ -273,14 +275,14 @@ public class PlacementTool : Tool {
 
         var action = vertical ? pl.TryFlipVertical() : pl.TryFlipHorizontal();
 
-        action?.Apply();
+        action?.Apply(EditorState.Map);
     }
 
     private void Rotate(RotationDirection dir) {
         if (CurrentPlacement is not ISelectionFlipHandler pl)
             return;
 
-        pl.TryRotate(dir)?.Apply();
+        pl.TryRotate(dir)?.Apply(EditorState.Map);
     }
 
     #region Imgui
@@ -303,13 +305,13 @@ public class PlacementTool : Tool {
             return value;
         }
 
-        if (EditorState.Map is not { })
+        if (EditorState.Map is not { } map)
             return null;
 
         var key = keySpan.ToString();
         XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
             ? CreateWidgetForDecal(placement, key, PreviewSize)
-            : CreateWidget(placement, key);
+            : CreateWidget(map, placement, key);
         MaterialPreviewCache[StringRef.FromString(key)] = def;
 
         return def;
@@ -345,7 +347,7 @@ public class PlacementTool : Tool {
         });
     }
 
-    private XnaWidgetDef CreateWidget(Placement placement, string key) {
+    private XnaWidgetDef CreateWidget(Map map, Placement placement, string key) {
         List<ISprite>? sprites = null;
         var def = new XnaWidgetDef(key, PreviewSize, PreviewSize, () => {
             if (sprites is null) {
@@ -360,7 +362,7 @@ public class PlacementTool : Tool {
                 
                 Entity.LogErrors = false;
                 if (s.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
-                    resizeAct.Apply();
+                    resizeAct.Apply(map);
                     resizeAct = null;
                     offset = default;
                     didResize = true;

@@ -331,7 +331,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
 
     public IHistoryAction Place(ISelectionHandler handler, Room room) {
         var act = handler.PlaceClone(room);
-        handler.TryResize(new(int.MinValue, int.MinValue))?.Apply();
+        handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(room.Map);
 
         return act;
     }

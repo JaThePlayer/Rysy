@@ -1,9 +1,10 @@
 ﻿namespace Rysy.History;
 
 public interface IHistoryAction {
+    /// <param name="map"></param>
     /// <returns>Whether the action had any effect. If false is returned, the action will not be added to history</returns>
-    public bool Apply();
-    public void Undo();
+    public bool Apply(Map map);
+    public void Undo(Map map);
 
     public static IHistoryAction Empty => new MergedAction(Array.Empty<IHistoryAction>());
 }
