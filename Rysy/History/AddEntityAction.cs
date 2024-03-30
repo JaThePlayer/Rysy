@@ -5,7 +5,7 @@ public sealed record class AddEntityAction(Entity Entity, RoomRef Room) : IHisto
         var room = Room.Resolve(map);
         Entity.Room = room;
         
-        if (Entity is not Decal && (Entity.Id < 1 || room.TryGetEntityById(Entity.Id) is not null)) {
+        if (Entity is not Decal && (Entity.Id < 0 || room.TryGetEntityById(Entity.Id) is not null)) {
             Entity.Id = room.NextEntityID();
         }
         Entity.GetRoomList().Add(Entity);

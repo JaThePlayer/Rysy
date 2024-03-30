@@ -220,7 +220,7 @@ static string Compress(byte[] input) {
 
         var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FGDecals or SelectionLayer.BGDecals).SelectMany(s => {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
-            e.Id = 0; // set the ID to 0 so that it gets auto-assigned later
+            e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
             entitiesNotRef.Add(e);
             var handler = e.CreateSelection().Handler as EntitySelectionHandler;
             var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? Array.Empty<ISelectionHandler>();
