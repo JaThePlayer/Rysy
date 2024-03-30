@@ -130,7 +130,7 @@ internal sealed class CustomSpinner : LonnEntity {
 [CustomEntity("FrostHelper/RainbowTilesetController", associatedMods: [ "FrostHelper" ])]
 internal sealed class RainbowTilesetController : LonnEntity, IPlaceable {
     [Bind("tilesets")]
-    public IReadOnlyList<char> Tilesets;
+    public ReadOnlyArray<char> Tilesets;
 
     [Bind("bg")]
     public bool Bg;

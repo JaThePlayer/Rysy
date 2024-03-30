@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Extensions;
+﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Stylegrounds;
 
@@ -25,9 +25,15 @@ public sealed class Parallax : Style, IPlaceable {
 
     public BlendState Blend => BlendModes.TryGetValue(Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
 
-    public Fade FadeX => new(Attr("fadex"));
+    [Bind("fadex")]
+    private ReadOnlyArray<Fade.Region> _fadeXRegions;
+    
+    [Bind("fadey")]
+    private ReadOnlyArray<Fade.Region> _fadeYRegions;
+    
+    public Fade FadeX => new(_fadeXRegions);
 
-    public Fade FadeY => new(Attr("fadey"));
+    public Fade FadeY => new(_fadeYRegions);
 
     public bool FlipX => Bool("flipx", false);
     public bool FlipY => Bool("flipy", false);
@@ -48,10 +54,10 @@ public sealed class Parallax : Style, IPlaceable {
         y = 0f,
         flipx = false,
         flipy = false,
-        fadex = new FadeField().ToList(':') with {
+        fadex = new FadeRegionField().ToList(':') with {
             MinElements = 0,
         },
-        fadey = new FadeField().ToList(':') with {
+        fadey = new FadeRegionField().ToList(':') with {
             MinElements = 0,
         },
         instantIn = false,
@@ -63,32 +69,47 @@ public sealed class Parallax : Style, IPlaceable {
 
     public static PlacementList GetPlacements() => new("parallax");
 
-    private ColoredSpriteTemplate? GetBaseSprite(float alpha) =>
-        string.IsNullOrWhiteSpace(Texture)
-            ? null
-            : (SpriteTemplate.FromTexture(Texture, 0) with {
-                Scale = new(FlipX ? -1f : 1f, FlipY ? -1f : 1f)
-            }).CreateColoredTemplate(Color * alpha);
+    private ColoredSpriteTemplate? _cachedBaseSprite;
+    
+    private ColoredSpriteTemplate? GetBaseSprite(float alpha) {
+        var texture = Texture;
+        if (string.IsNullOrWhiteSpace(texture))
+            return null;
+
+        var color = Color * alpha;
+        var targetTexture = GFX.Atlas[texture];
+        var scale = new Vector2(FlipX ? -1f : 1f, FlipY ? -1f : 1f);
+
+        if (_cachedBaseSprite is { } cached && cached.Template.Texture == targetTexture) {
+            cached.Color = color;
+            cached.Template.Scale = scale;
+            return cached;
+        }
+
+        var template = SpriteTemplate.FromTexture(targetTexture, 0);
+        template.Scale = scale;
+        
+        return _cachedBaseSprite = template.CreateColoredTemplate(color);
+    }
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
         var baseSprite = GetBaseSprite(Alpha);
 
-        if (baseSprite is null) {
-            yield break;
-        }
-
-        yield return baseSprite.Create(default);
+        return baseSprite?.Create(default) ?? [];
     }
 
     internal static Vector2 CalcCamPos(Camera camera)
         => camera.ScreenToReal(Vector2.Zero).Floored() + new Vector2(0f, 0f);
 
+    // Pre-allocated buffer of struct sprites, allows avoiding big memory allocations from re-rendering parallax each frame
+    private List<ColorTemplatedSprite>? _cachedVanillaSprites;
+    
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
         if (ctx.Camera.Scale < 1f / 2f)
-            yield break; // very tiny stylegrounds cause a lot of lag with vanilla textures, AND they look bad
+            return []; // very tiny stylegrounds cause a lot of lag with vanilla textures, AND they look bad
 
         if (string.IsNullOrWhiteSpace(Texture))
-            yield break;
+            return [];
 
         var camPos = CalcCamPos(ctx.Camera);
         var pos = Pos - camPos * Scroll;
@@ -105,7 +126,7 @@ public sealed class Parallax : Style, IPlaceable {
 
         var baseSprite = GetBaseSprite(fade);
         if (baseSprite is null || baseSprite.Color.A <= 1)
-            yield break;
+            return [];
 
         var loopX = LoopX;
         var loopY = LoopY;
@@ -125,9 +146,19 @@ public sealed class Parallax : Style, IPlaceable {
             var maxX = 320 * 6f / ctx.Camera.Scale;
             var maxY = 180 * 6f / ctx.Camera.Scale;
 
+            var spriteCount = (loopX ? (int) ((maxX - pos.X + texW) / texW + 1) : 1) *
+                              (loopY ? (int) ((maxY - pos.Y + texH) / texH + 1) : 1);
+            var spritesList = _cachedVanillaSprites ??= new(spriteCount);
+            spritesList.Clear();
+            if (spriteCount >= spritesList.Count) {
+                CollectionsMarshal.SetCount(spritesList, spriteCount);
+            }
+            
+            var i = 0;
+            var sprites = CollectionsMarshal.AsSpan(spritesList);
             for (float x = pos.X; x <= maxX + texW; x += texW) {
                 for (float y = pos.Y; y <= maxY + texH; y += texH) {
-                    yield return baseSprite.Create(new(x, y));
+                    sprites[i++] = baseSprite.Create(new(x, y));
                     if (!loopY) {
                         break;
                     }
@@ -136,11 +167,12 @@ public sealed class Parallax : Style, IPlaceable {
                     break;
                 }
             }
-            yield break;
+            
+            return spritesList.Take(i).Cast<ISprite>();
         }
 
         var texture = baseSprite.Create(new Vector2(pos.X, pos.Y));
-        yield return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), static (data, t) => {
+        return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), static (data, t) => {
             var texture = data.Item1;
             var self = data.Item2;
             var textVirt = texture.Template.Template.Texture;

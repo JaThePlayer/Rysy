@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics.TextureTypes;
+using System.Diagnostics;
 using System.IO.Compression;
 
 namespace Rysy.Graphics;
@@ -53,8 +54,10 @@ public class VirtTexture : IDisposable {
                 return _clipRect.Value;
             }
 
-            if (Settings.Instance?.LogPreloadingTextures ?? false)
+            if (Settings.Instance?.LogPreloadingTextures ?? false) {
                 Logger.Write("VirtTexture.Preload", LogLevel.Info, $"Preloading {this}");
+                // Logger.Write("VirtTexture.Preload", LogLevel.Debug, new StackTrace().ToString());
+            }
             if (TryPreloadClipRect()) {
                 return _clipRect!.Value;
             }

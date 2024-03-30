@@ -54,7 +54,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     public string? NotFlag => Attr("notflag", null!);
 
     [Bind("tag")]
-    public readonly IReadOnlyList<string> Tags;
+    public readonly ReadOnlyArray<string> Tags;
 
     private StyleFolder? _Parent;
     [JsonIgnore]
@@ -137,22 +137,22 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     }
 
     public static bool MatchRoomName(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName) {
-        if (roomName.StartsWith("lvl_", StringComparison.Ordinal))
+        if (roomName.StartsWith("lvl_"))
             roomName = roomName["lvl_".Length..];
 
         foreach (var filter in predicate.EnumerateSplits(',')) {
-            if (filter.Equals(roomName, StringComparison.Ordinal))
+            if (filter == roomName)
                 return true;
 
             if (!filter.Contains('*'))
                 continue;
             
-            var filterString = filter.ToString();
-            if (!RoomNameMatchRegexCache.TryGetValue(filterString, out var regex)) {
+            if (!RoomNameMatchRegexCache.TryGetValue(StringRef.FromSpanIntoShared(filter), out var regex)) {
+                var filterString = filter.ToString();
                 string pattern = "^" + Regex.Escape(filterString).Replace("\\*", ".*") + "$";
 
                 regex = new Regex(pattern, RegexOptions.Compiled);
-                RoomNameMatchRegexCache[filterString] = regex;
+                RoomNameMatchRegexCache[StringRef.FromString(filterString)] = regex;
             }
 
             if (regex.IsMatch(roomName))
@@ -162,7 +162,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
         return false;
     }
 
-    private static readonly Dictionary<string, Regex> RoomNameMatchRegexCache = new();
+    private static readonly Dictionary<StringRef, Regex> RoomNameMatchRegexCache = new();
 
     public static Style FromName(string name) {
         return FromElement(new(name) {

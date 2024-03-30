@@ -35,7 +35,9 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
 
 #else
-                            _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+                        var texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+                        ClipRect = new(0, 0, texture.Width, texture.Height);
+                        _texture = texture;
 #endif
                     }
                 });
@@ -44,7 +46,6 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 throw;
             }
 
-            ClipRect = new(0, 0, _texture!.Width, _texture.Height);
             _state = State.Loaded;
         }
         );

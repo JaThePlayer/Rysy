@@ -60,6 +60,9 @@ public sealed class Interpolator {
     }
 
     public Span<char> Clone(ReadOnlySpan<char> str) {
+        if (str.Length == 0)
+            return [];
+        
         if (_buffer.Length < str.Length + _startIndex) {
             Array.Resize(ref _buffer, Math.Max(_buffer.Length * 3 / 2, str.Length + _startIndex));
         }

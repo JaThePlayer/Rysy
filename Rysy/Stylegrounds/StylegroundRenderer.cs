@@ -43,22 +43,17 @@ public static class StylegroundRenderer {
 
     public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null) {
         ArgumentNullException.ThrowIfNull(styles);
-        var cam = new Camera(RysyEngine.GDM.GraphicsDevice.Viewport);
-        cam.Scale = camera.Scale;
+        float scale = camera.Scale;
 
         var ctx = new StylegroundRenderCtx(room, camera, Settings.Instance?.AnimateStylegrounds ?? false);
 
-        var st = new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, cam.Matrix);
+        var st = new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.CreateScale(scale));
 
         if (scissorRectWorldPos is { } worldPosScissor) {
-            //var roomPos = camera.RealToScreen(room.Pos);
-            //scissorRect ??= new((int) roomPos.X, (int) roomPos.Y, (int) (room.Width * cam.Scale), (int) (room.Height * cam.Scale));
-
             var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();
-            st.ScissorRect = new(screenPos.X, screenPos.Y, (int) (worldPosScissor.Width * cam.Scale), (int) (worldPosScissor.Height * cam.Scale));
+            st.ScissorRect = new(screenPos.X, screenPos.Y, (int) (worldPosScissor.Width * scale), (int) (worldPosScissor.Height * scale));
             st.RasterizerState = CullNoneWithScissor;
         }
-
 
         GFX.BeginBatch(st);
 

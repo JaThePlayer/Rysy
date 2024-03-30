@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -120,10 +121,10 @@ public sealed class BindAttribute : Attribute {
         }
 
         if (converterMethod is null && field.GetType().IsAssignableTo(typeof(IFieldConvertibleToList))) {
-            if (fieldInfo.FieldType.GetGenericTypeDefinition() != typeof(IReadOnlyList<>)) {
+            if (fieldInfo.FieldType.GetGenericTypeDefinition() != typeof(ReadOnlyArray<>)) {
                 throw new Exception($"""
                     {entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)}
-                    It implements {typeof(IFieldConvertibleToList)}, but the type of {attr.FieldName} does not extend {typeof(IReadOnlyList<>)}.
+                    It implements {typeof(IFieldConvertibleToList)}, but the type of {attr.FieldName} does not extend {typeof(ReadOnlyArray<>)}.
                     """);
             }
 

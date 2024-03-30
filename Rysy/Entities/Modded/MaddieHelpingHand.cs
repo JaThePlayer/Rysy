@@ -9,7 +9,7 @@ namespace Rysy.Entities.Modded;
 [CustomEntity("MaxHelpingHand/RainbowSpinnerColorAreaController", associatedMods: [ "MaxHelpingHand" ])]
 internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinnerController, IPlaceable {
     [Bind("colors")]
-    private IReadOnlyList<Color> Colors;
+    private ReadOnlyArray<Color> Colors;
     
     [Bind("gradientSize")]
     private float GradientSize;
