@@ -29,7 +29,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public string Name => EntityData.SID;
 
     public int Id {
-        get => EntityData.Int("id");
+        get => EntityData.Int("id", -1);
         set => EntityData["id"] = value;
     }
 
@@ -356,7 +356,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Clears the correct render cache in the parent room
     /// </summary>
     public virtual void ClearRoomRenderCache() {
-        if (Room is { } r && Id >= 1) {
+        if (Room is { } r && Id >= 0) {
             //Logger.Write("INVALIDATE", LogLevel.Debug, $"{new System.Diagnostics.StackTrace().ToString()}");
             r.ClearEntityRenderCache();
         }
@@ -576,7 +576,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             var shouldTrim = k switch {
                 "x" => false,
                 "y" => false,
-                "id" => Id == 0,
+                "id" => false,
                 "width" => Width == 0,
                 "height" => Height == 0,
                 EditorGroupEntityDataKey => EditorGroups.IsOnlyDefault,
