@@ -272,6 +272,7 @@ public static partial class StringExt {
     public static decimal ToDecimal(this string s) => Convert.ToDecimal(s, CultureInfo.InvariantCulture);
 
     public static float ToSingle(this ReadOnlySpan<char> s) => float.Parse(s, CultureInfo.InvariantCulture);
+    public static float ToSingle(this Span<char> s) => float.Parse(s, CultureInfo.InvariantCulture);
     public static float ToInt(this ReadOnlySpan<char> s) => int.Parse(s, CultureInfo.InvariantCulture);
 
     public static bool IsNullOrWhitespace(this string? s) => string.IsNullOrWhiteSpace(s);

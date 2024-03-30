@@ -1,4 +1,6 @@
-﻿namespace Rysy.Gui.FieldTypes;
+﻿using Rysy.Helpers;
+
+namespace Rysy.Gui.FieldTypes;
 
 /// <summary>
 /// Supplies a function that allows the <see cref="BindAttribute"/> to convert the value stored in the .bin file into <typeparamref name="T"/>
@@ -18,5 +20,5 @@ public interface IFieldConvertible {
 /// Supplies a function that allows the <see cref="BindAttribute"/> to convert the value stored in the .bin file into alist of an arbitrary type
 /// </summary>
 public interface IFieldConvertibleToList {
-    IReadOnlyList<T> ConvertMapDataValueToList<T>(object value);
+    ReadOnlyArray<T> ConvertMapDataValueToList<T>(object value);
 }

@@ -40,14 +40,15 @@ public sealed class ZipVirtTexture : VirtTexture {
                     SharedZipArchive.Release(archivePath);
                 }
                 using var memStr = new MemoryStream(buffer);
-                _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
+                var texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
+                ClipRect = new(0, 0, texture.Width, texture.Height);
+                _texture = texture;
 #endif
             } catch (Exception e) {
                 Logger.Write("ZipVirtTexture", LogLevel.Error, $"Failed loading zip texture {this}, {e}");
                 throw;
             }
 
-            ClipRect = new(0, 0, _texture.Width, _texture.Height);
             _state = State.Loaded;
         }
         );

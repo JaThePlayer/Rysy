@@ -37,7 +37,7 @@ internal sealed class SJAllInOneStyleMask : LonnEntity {
 }
 
 
-file static class StyleMaskHelper {
+static class StyleMaskHelper {
     public static ISprite? GetSprite(string? tag, Entity e) {
         if (tag.IsNullOrWhitespace())
             return null;

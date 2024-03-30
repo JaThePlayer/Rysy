@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Helpers;
 using System;
 
 namespace Rysy.Gui.FieldTypes;
@@ -194,26 +195,26 @@ public record class ListField : Field, IFieldConvertibleToList {
     }
 
 
-    public IReadOnlyList<T> ConvertMapDataValueToList<T>(object value) {
+    public ReadOnlyArray<T> ConvertMapDataValueToList<T>(object value) {
         var split = Split(value?.ToString() ?? "", StringSplitOptions.RemoveEmptyEntries);
-        var list = new List<T>(split.Length);
+        var list = new T[split.Length];
 
         switch (PrepareBaseField()) {
             case IFieldConvertible<T> convertible:
                 for (int i = 0; i < split.Length; i++) {
-                    list.Add(convertible.ConvertMapDataValue(split[i]));
+                    list[i] = convertible.ConvertMapDataValue(split[i]);
                 }
                 break;
             case IFieldConvertible convertible:
                 for (int i = 0; i < split.Length; i++) {
-                    list.Add(convertible.ConvertMapDataValue<T>(split[i]));
+                    list[i] = convertible.ConvertMapDataValue<T>(split[i]);
                 }
                 break;
             default:
                 throw new Exception($"Can't convert {nameof(ListField)}[{BaseField.GetType().Name}] to {typeof(T)}, as {BaseField.GetType().Name} does not implement {typeof(IFieldConvertible<T>)} or {typeof(IFieldConvertible)}");
         }
 
-        return list;
+        return new(list);
     }
 
     public ListField WithMinAndMaxElements(int min, int max) {

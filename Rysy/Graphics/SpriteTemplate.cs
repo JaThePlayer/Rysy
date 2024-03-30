@@ -8,12 +8,13 @@ namespace Rysy.Graphics;
 /// Used to reduce memory footprint of sprites and improve performance.
 /// </summary>
 public sealed record SpriteTemplate {
-    public static SpriteTemplate FromTexture(string path, int depth) {
-        var t = GFX.Atlas[path];
-
+    public static SpriteTemplate FromTexture(string path, int depth)
+        => FromTexture(GFX.Atlas[path], depth);
+    
+    public static SpriteTemplate FromTexture(VirtTexture texture, int depth) {
         return new() {
-            Texture = t,
-            DrawOffset = t.DrawOffset,
+            Texture = texture,
+            DrawOffset = texture.DrawOffset,
             Depth = depth,
         };
     }
@@ -58,9 +59,25 @@ public sealed record SpriteTemplate {
     public VirtTexture Texture { get; private init; }
     public Rectangle? ClipRect { get; internal set; }
     
-    public Vector2 Origin { get; init; }
-    public float Rotation { get; init; } = 0f;
-    public Vector2 Scale { get; init; } = Vector2.One;
+    private Vector2 _originBacking;
+    public Vector2 Origin {
+        get => _originBacking;
+        set {
+            _originBacking = value;
+            MarkChanged();
+        }
+    }
+    
+    public float Rotation { get; set; } = 0f;
+    
+    private Vector2 _scaleBacking = Vector2.One;
+    public Vector2 Scale {
+        get => _scaleBacking;
+        set {
+            _scaleBacking = value;
+            MarkChanged();
+        }
+    }
 
     public bool IsLoaded => Texture.Texture is { };
     
@@ -191,9 +208,25 @@ public sealed record SpriteTemplate {
             }
         }
     }
+
+    private void MarkChanged() {
+        _prepared = false;
+        DrawOffset = Texture.DrawOffset;
+        Flip = SpriteEffects.None;
+    }
 }
 
-public record ColoredSpriteTemplate(SpriteTemplate Template, Color Color, Color OutlineColor) {
+public record ColoredSpriteTemplate {
+    public SpriteTemplate Template { get; init; }
+    public Color Color { get; set; }
+    public Color OutlineColor { get; set; }
+    
+    public ColoredSpriteTemplate(SpriteTemplate template, Color color, Color outlineColor) {
+        Template = template;
+        Color = color;
+        OutlineColor = outlineColor;
+    }
+    
     public ColoredSpriteTemplate GetWithMultipliedAlpha(float alpha) => this with {
         Color = Color * alpha, 
         OutlineColor = OutlineColor * alpha,
@@ -225,10 +258,10 @@ public record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource Tex
         }
         
         var textureIdx = TextureSource.GetTextureIndex(ctx.Time);
-        var template = _realTemplates.ElementAtOrDefault(textureIdx);
+        var animatedTemplate = _realTemplates.ElementAtOrDefault(textureIdx);
         
-        if (template is { }) {
-            template.RenderAt(ctx, pos, color, outlineColor, template.Texture.Texture ?? Template.Texture.Texture);
+        if (animatedTemplate is { Texture.Texture: {} templateTexture }) {
+            animatedTemplate.RenderAt(ctx, pos, color, outlineColor, templateTexture);
         } else {
             Template.RenderAt(ctx, pos, color, outlineColor, Template.Texture.Texture);
         }

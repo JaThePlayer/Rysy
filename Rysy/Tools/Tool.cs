@@ -300,7 +300,7 @@ public abstract class Tool {
         var skip = (ImGui.GetScrollY() / elementHeight) - 1;
 
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
-        ImGui.BeginChild($"##{GetType().Name}_{Layer}", 
+        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), 
             new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
         // make sure columns stay consistent
         skip -= skip % columns;
