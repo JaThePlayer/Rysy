@@ -1,7 +1,7 @@
 ﻿namespace Rysy.History;
 
 public record class SwapRoomAction(Room Orig, Room New) : IHistoryAction {
-    public bool Apply() {
+    public bool Apply(Map map) {
         Swap(Orig, New);
 
         return true;
@@ -18,7 +18,7 @@ public record class SwapRoomAction(Room Orig, Room New) : IHistoryAction {
         }
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Swap(New, Orig);
     }
 }

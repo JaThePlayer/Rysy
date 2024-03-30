@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
 
@@ -67,7 +68,7 @@ public sealed class EditorGroupWindow : Window {
             if (g == EditorGroup.Default)
                 continue;
             
-            var id = $"group_{g.Name}";
+            var id = Interpolator.Temp($"group_{g.Name}");
             
             ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonRight);
 

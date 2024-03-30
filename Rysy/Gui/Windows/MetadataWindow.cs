@@ -115,7 +115,7 @@ public sealed class MetadataWindow : Window {
 
         var newMeta = new MapMetadata().Unpack(oldMetaPacked);
 
-        History.ApplyNewAction(new MapMetaEditAction(map, newMeta));
+        History.ApplyNewAction(new MapMetaEditAction(newMeta));
     }
 
     protected override void Render() {

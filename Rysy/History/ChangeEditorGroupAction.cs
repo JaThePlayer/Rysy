@@ -13,7 +13,7 @@ public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? 
 
     }
     
-    public bool Apply() {
+    public bool Apply(Map map) {
         var group = Map.EditorGroups.GetOrCreate(GroupName, out _groupCreated);
 
         if (AutoAssignString is {} autoAssignString) {
@@ -41,7 +41,7 @@ public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? 
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         var group = Map.EditorGroups.GetOrCreate(GroupName);
         
         if (_groupCreated) {

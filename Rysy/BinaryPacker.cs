@@ -1,5 +1,4 @@
-﻿using System.Data;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
@@ -137,7 +136,7 @@ public sealed class BinaryPacker {
         memStream.Seek(0, SeekOrigin.Begin);
         memStream.CopyTo(fileStream);
     }
-
+    
     internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
 
     internal void WriteElement(Element el) {
@@ -191,6 +190,8 @@ public sealed class BinaryPacker {
         Writer.Write(id);
     }
 
+    private const byte ExtElementType = 255; 
+
     internal void WriteValue(object val) {
         switch (val) {
             case bool b:
@@ -231,6 +232,13 @@ public sealed class BinaryPacker {
                 break;
             case string b:
                 EncodeString(b);
+                break;
+            /*
+             EXTENDED - not supported in game!
+             */
+            case Element el:
+                Writer.Write(ExtElementType);
+                WriteElement(el);
                 break;
             default:
                 throw new Exception($"Can't pack object into a binary package: {val}, {val.GetType()}");
@@ -377,7 +385,7 @@ public sealed class BinaryPacker {
         }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? Name;
+        public string? Name { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object> Attributes { get; set; }

@@ -6,7 +6,7 @@ public record class ChangeStylegroundAction(Style Style, Dictionary<string, obje
     Dictionary<string, object> Old;
     Dictionary<string, object> EditedClone;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         Old ??= new(Style.Data.Inner, Style.Data.Inner.Comparer);
         EditedClone ??= new(Edited, Edited.Comparer);
 
@@ -15,7 +15,7 @@ public record class ChangeStylegroundAction(Style Style, Dictionary<string, obje
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Style.Data.BulkUpdate(Old);
     }
 }

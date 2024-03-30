@@ -157,12 +157,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// <returns></returns>
     public int NextEntityID() {
         if (Entities.Count > 0 || Triggers.Count > 0)
-            return Entities.Concat(Triggers).Max(e => e.ID) + 1;
+            return Entities.Concat(Triggers).Max(e => e.Id) + 1;
 
         return 1;
     }
 
-    public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.ID == id);
+    public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.Id == id);
 
     public void Unpack(BinaryPacker.Element from) {
         Attributes = new();
@@ -949,7 +949,7 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     }
 
     public IHistoryAction DeleteSelf() {
-        return new RoomDeleteAction(Room.Map, Room);
+        return new RoomDeleteAction(Room);
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) => Bounds.Intersects(roomPos);
@@ -1010,6 +1010,6 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     }
 
     public IHistoryAction PlaceClone(Room room) {
-        return new AddRoomAction(Room.Map, Room.Clone());
+        return new AddRoomAction(Room.Clone());
     }
 }

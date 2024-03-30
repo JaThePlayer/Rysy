@@ -6,7 +6,7 @@ public record RemoveEditorGroupAction(Map Map, EditorGroup Group) : IHistoryActi
     private List<Entity> _affectedEntities;
     private int _groupIndex;
     
-    public bool Apply() {
+    public bool Apply(Map map) {
         _groupIndex = Map.EditorGroups.Remove(Group);
         _affectedEntities = Map.GetEntitiesInGroup(Group).ToList();
         foreach (var e in _affectedEntities) {
@@ -18,7 +18,7 @@ public record RemoveEditorGroupAction(Map Map, EditorGroup Group) : IHistoryActi
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Map.EditorGroups.Insert(_groupIndex, Group);
 
         foreach (var e in _affectedEntities) {

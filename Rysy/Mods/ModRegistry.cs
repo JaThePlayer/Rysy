@@ -59,7 +59,7 @@ public static class ModRegistry {
         var unbackslashed = Interpolator.Shared.Clone(realPath);
         unbackslashed.Replace('\\', '/');
 
-        foreach (var (_, mod) in Mods) {
+        foreach (var (_, mod) in _Mods) {
             if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
                 return mod;
             }

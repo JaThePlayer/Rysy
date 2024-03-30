@@ -89,7 +89,7 @@ public static class RoomList {
                     editor.AddWindow(new RoomEditWindow(room, newRoom: false));
                 }
                 if (ImGui.MenuItem("Remove")) {
-                    editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(editor.Map, room));
+                    editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(room));
                 }
 
                 if (ImGui.MenuItem("To Clipboard as JSON")) {

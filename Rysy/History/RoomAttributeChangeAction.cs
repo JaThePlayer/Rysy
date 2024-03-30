@@ -17,14 +17,14 @@ public class RoomAttributeChangeAction : IHistoryAction {
         Changed = changed.Copy();
     }
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         NewRoom = !Room.Map.Rooms.Contains(Room);
 
         Orig = Room.Attributes.Copy();
         if (Orig != Changed) {
             if (Room.Width != Changed.Width || Room.Height != Changed.Height) {
                 Resize = new RoomResizeAction(Room, Changed.Width, Changed.Height);
-                Resize.Apply();
+                Resize.Apply(map);
             }
 
             Room.Attributes = Changed.Copy();
@@ -65,9 +65,9 @@ public class RoomAttributeChangeAction : IHistoryAction {
         return false;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Room.Attributes = Orig;
-        Resize?.Undo();
+        Resize?.Undo(map);
 
         if (RemovedCheckpoint is { } removedCp) {
             Room.Entities.Add(removedCp);

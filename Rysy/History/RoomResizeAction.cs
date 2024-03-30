@@ -1,11 +1,13 @@
 ﻿namespace Rysy.History;
 
-public record class RoomResizeAction(Room Room, int Width, int Height) : IHistoryAction {
+public record RoomResizeAction(RoomRef Room, int Width, int Height) : IHistoryAction {
     private char[,] _origBG, _origFG;
     private int _origWidth, _origHeight;
 
-    public bool Apply() {
-        if (Room.Width == Width && Room.Height == Height) {
+    public bool Apply(Map map) {
+        var room = Room.Resolve(map);
+        
+        if (room.Width == Width && room.Height == Height) {
             return false;
         }
         int w = Width;
@@ -17,24 +19,26 @@ public record class RoomResizeAction(Room Room, int Width, int Height) : IHistor
             h = 8;
         }
 
-        _origBG = Room.BG.Tiles;
-        _origFG = Room.FG.Tiles;
-        _origHeight = Room.Height;
-        _origWidth = Room.Width;
+        _origBG = room.BG.Tiles;
+        _origFG = room.FG.Tiles;
+        _origHeight = room.Height;
+        _origWidth = room.Width;
 
-        Room.BG.Resize(w, h);
-        Room.FG.Resize(w, h);
+        room.BG.Resize(w, h);
+        room.FG.Resize(w, h);
 
-        Room.Attributes.Width = w;
-        Room.Attributes.Height = h;
+        room.Attributes.Width = w;
+        room.Attributes.Height = h;
 
         return true;
     }
 
-    public void Undo() {
-        Room.BG.Tiles = _origBG;
-        Room.FG.Tiles = _origFG;
-        Room.Attributes.Width = _origWidth;
-        Room.Attributes.Height = _origHeight;
+    public void Undo(Map map) {
+        var room = Room.Resolve(map);
+        
+        room.BG.Tiles = _origBG;
+        room.FG.Tiles = _origFG;
+        room.Attributes.Width = _origWidth;
+        room.Attributes.Height = _origHeight;
     }
 }

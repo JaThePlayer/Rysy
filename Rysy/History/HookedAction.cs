@@ -8,15 +8,15 @@ public record class HookedAction(IHistoryAction Parent) : IHistoryAction {
     public Action? OnUndo { get; set; }
 
 
-    public bool Apply() {
-        var ret = Parent.Apply();
+    public bool Apply(Map map) {
+        var ret = Parent.Apply(map);
         OnApply?.Invoke();
 
         return ret;
     }
 
-    public void Undo() {
-        Parent.Undo();
+    public void Undo(Map map) {
+        Parent.Undo(map);
         OnUndo?.Invoke();
     }
 

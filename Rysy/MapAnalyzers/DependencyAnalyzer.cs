@@ -84,7 +84,7 @@ public class DependencyAnalyzer : MapAnalyzer {
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Select...##{obj.ID}")) {
+                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Select...##{obj.Id}")) {
                     editor.CurrentRoom = obj.Room;
                     editor.Camera.CenterOnRealPos(obj.Center + obj.Room.Pos);
 

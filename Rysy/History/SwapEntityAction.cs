@@ -1,7 +1,7 @@
 ﻿namespace Rysy.History;
 
 public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction {
-    public bool Apply() {
+    public bool Apply(Map map) {
         if (Orig == With)
             return false;
 
@@ -12,7 +12,7 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
         }
 
         list[idx] = With;
-        With.ID = Orig.ID;
+        With.Id = Orig.Id;
 
         // make sure that selections now point to the new entity instead of the old one
         Orig.TransferHandlersTo(With);
@@ -20,7 +20,7 @@ public record class SwapEntityAction(Entity Orig, Entity With) : IHistoryAction 
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         var list = With.GetRoomList();
 
         list[list.IndexOf(With)] = Orig;

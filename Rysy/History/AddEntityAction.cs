@@ -1,16 +1,19 @@
 ﻿namespace Rysy.History;
 
-public sealed record class AddEntityAction(Entity Entity, Room Room) : IHistoryAction {
-    public bool Apply() {
-        if (Entity is not Decal && (Entity.ID < 1 || Room.TryGetEntityById(Entity.ID) is not null)) {
-            Entity.ID = Room.NextEntityID();
+public sealed record class AddEntityAction(Entity Entity, RoomRef Room) : IHistoryAction {
+    public bool Apply(Map map) {
+        var room = Room.Resolve(map);
+        Entity.Room = room;
+        
+        if (Entity is not Decal && (Entity.Id < 1 || room.TryGetEntityById(Entity.Id) is not null)) {
+            Entity.Id = room.NextEntityID();
         }
         Entity.GetRoomList().Add(Entity);
 
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Entity.GetRoomList().Remove(Entity);
     }
 

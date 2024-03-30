@@ -2,6 +2,7 @@
 using Rysy.Helpers;
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Extensions;
@@ -138,14 +139,24 @@ public static partial class StringExt {
         });
     }
 
-    private static char[] HumanizeReplacedChars = new[] { '.', '_'}; 
+    private static char[] HumanizeReplacedChars = new[] { '.', '_'};
+
+    private static Dictionary<string, string> _humanizeCache = new();
 
     /// <summary>
     /// Combines <see cref="SplitPascalCase(string)"/> and <see cref="UppercaseFirst(string)"/>
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static string Humanize(this string text) => text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "";
+    public static string Humanize(this string? text) {
+        if (text is null)
+            return "";
+        
+        ref var humanized = ref CollectionsMarshal.GetValueRefOrAddDefault(_humanizeCache, text, out var exists);
+        humanized ??= text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "";
+
+        return humanized;
+    }
 
     /// <summary>
     /// Returns the string <paramref name="formatted"/> with all color formatting removed.

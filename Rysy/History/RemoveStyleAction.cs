@@ -5,7 +5,7 @@ public record class RemoveStyleAction(IList<Style> Styles, Style ToRemove, Style
     private int Index;
     private bool RemovedFromParent;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         Index = Styles.IndexOf(ToRemove);
         if (ToRemove.Parent == Folder) {
             ToRemove.Parent = null;
@@ -15,7 +15,7 @@ public record class RemoveStyleAction(IList<Style> Styles, Style ToRemove, Style
         return Styles.Remove(ToRemove);
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         Styles.Insert(Index, ToRemove);
         if (RemovedFromParent) {
             ToRemove.Parent = Folder;

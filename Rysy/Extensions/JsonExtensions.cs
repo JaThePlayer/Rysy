@@ -11,6 +11,13 @@ public static class JsonExtensions {
     public static string ToJson<T>(this T? obj, bool minified = false) {
         return obj is { } ? JsonSerializer.Serialize(obj, Options(minified)) : "";
     }
+    
+    /// <summary>
+    /// Returns the JSON representation of this object.
+    /// </summary>
+    public static string ToJsonNongeneric(this object obj, bool minified = false) {
+        return obj is { } ? JsonSerializer.Serialize(obj, Options(minified)) : "";
+    }
 
     /// <summary>
     /// Returns the JSON representation of this object as UTF-8 bytes

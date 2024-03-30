@@ -59,6 +59,8 @@ rysy.fields.fade.alpha.tooltip=The alpha range within this fade region. The firs
 
 rysy.fields.list.noElements=The list has no elements
 
+rysy.fields.birdTutorialInput.texturePath=Path to a texture in the Gui atlas to use for this input.
+
 # Metadata Window
 rysy.metadata.field.description.AnimatedTiles=The path to the .xml files to use for animated tiles, relative to mod root.
 rysy.metadata.field.description.BackgroundTiles=The path to the .xml files to use for background tiles, relative to mod root.

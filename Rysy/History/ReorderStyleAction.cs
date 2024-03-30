@@ -5,7 +5,7 @@ namespace Rysy.History;
 public record class ReorderStyleAction(IList<Style> Styles, Style ToMove, int Offset) : IHistoryAction {
     private int StartIdx;
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         StartIdx = Styles.IndexOf(ToMove);
         if (StartIdx == -1) {
             return false;
@@ -21,7 +21,7 @@ public record class ReorderStyleAction(IList<Style> Styles, Style ToMove, int Of
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         var i = StartIdx + Offset;
 
         (Styles[i], Styles[StartIdx]) = (Styles[StartIdx], Styles[i]);

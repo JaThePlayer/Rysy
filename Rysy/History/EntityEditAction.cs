@@ -12,7 +12,7 @@ internal sealed class EntityEditAction : IHistoryAction {
     }
 
 
-    public bool Apply() {
+    public bool Apply(Map map) {
         OldValues = new(Entities.Count);
 
         foreach (var entity in Entities) {
@@ -32,7 +32,7 @@ internal sealed class EntityEditAction : IHistoryAction {
         return true;
     }
 
-    public void Undo() {
+    public void Undo(Map map) {
         for (int i = 0; i < Entities.Count; i++) {
             var entity = Entities[i];
             var changed = OldValues[i];

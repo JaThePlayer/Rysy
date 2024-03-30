@@ -317,7 +317,7 @@ public abstract class Tool {
             if (rendered < elementsVisible && skip <= 0) {
                 rendered++;
 
-                var groupKey = GetGroupKeyForMaterial(group[0]);
+                var groupKey = GetGroupKeyForMaterial(group[0].material);
                 var first = GetMainPlacementForGroupKey(groupKey, group);
                 
                 RenderMaterialListElement(first.material, first.displayName);
