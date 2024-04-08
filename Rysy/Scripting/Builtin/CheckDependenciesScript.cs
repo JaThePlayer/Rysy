@@ -1,7 +1,7 @@
 ﻿using Rysy.Helpers;
 using Rysy.History;
 
-namespace Rysy.Scripting;
+namespace Rysy.Scripting.Builtin;
 
 internal sealed class CheckDependenciesScript : Script {
     public override string Name => "Check Dependencies";

@@ -172,33 +172,36 @@ public sealed class Parallax : Style, IPlaceable {
         }
 
         var texture = baseSprite.Create(new Vector2(pos.X, pos.Y));
-        return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), static (data, t) => {
-            var texture = data.Item1;
-            var self = data.Item2;
-            var textVirt = texture.Template.Template.Texture;
-
-            if (textVirt.Texture is not { } tx) {
-                return;
-            }
-            var clipRect = textVirt.ClipRect;
-
-            if (self.LoopX)
-                clipRect.Width = (int)(data.Item3.Viewport.Width / data.Item3.Scale - texture.Pos.X);//(int)(320 * 6f / data.Item3.Scale) + 640;
-            if (self.LoopY)
-                clipRect.Height = (int) (data.Item3.Viewport.Height / data.Item3.Scale - texture.Pos.Y);//(int) (180 * 6f / data.Item3.Scale) + 320;
-
-            var flip = SpriteEffects.None;
-            if (self.FlipX) {
-                flip |= SpriteEffects.FlipHorizontally;
-            }
-            if (self.FlipY) {
-                flip |= SpriteEffects.FlipVertically;
-            }
-
-            GFX.Batch.Draw(tx, texture.Pos, clipRect, t.Color, texture.Template.Template.Rotation, texture.Template.Template.Origin, 1f, flip, 0f);
-        }) with {
-            Color = baseSprite.Color,
+        return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), 
+            RenderModdedSprite) {
+            Color = baseSprite.Color
         };
+    }
+
+    private static void RenderModdedSprite((ColorTemplatedSprite, Parallax, Camera) data, FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)> t) {
+        var texture = data.Item1;
+        var self = data.Item2;
+        var textVirt = texture.Template.Template.Texture;
+
+        if (textVirt.Texture is not { } tx) {
+            return;
+        }
+
+        var clipRect = textVirt.ClipRect;
+
+        if (self.LoopX) clipRect.Width = (int) (data.Item3.Viewport.Width / data.Item3.Scale - texture.Pos.X); //(int)(320 * 6f / data.Item3.Scale) + 640;
+        if (self.LoopY) clipRect.Height = (int) (data.Item3.Viewport.Height / data.Item3.Scale - texture.Pos.Y); //(int) (180 * 6f / data.Item3.Scale) + 320;
+
+        var flip = SpriteEffects.None;
+        if (self.FlipX) {
+            flip |= SpriteEffects.FlipHorizontally;
+        }
+
+        if (self.FlipY) {
+            flip |= SpriteEffects.FlipVertically;
+        }
+
+        GFX.Batch.Draw(tx, texture.Pos, clipRect, t.Color, texture.Template.Template.Rotation, texture.Template.Template.Origin, 1f, flip, 0f);
     }
 
     public override SpriteBatchState? GetSpriteBatchState() => GFX.GetCurrentBatchState() with 

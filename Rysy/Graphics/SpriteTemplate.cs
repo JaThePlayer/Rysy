@@ -249,7 +249,7 @@ public record ColoredSpriteTemplate {
 public record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource TextureSource) {
     private List<SpriteTemplate> _realTemplates;
     
-    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor) {
+    public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor, float timeOffset = 0f) {
         if (_realTemplates is null) {
             _realTemplates = new(TextureSource.TextureCount);
             for (int j = 0; j < TextureSource.TextureCount; j++) {
@@ -257,7 +257,7 @@ public record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource Tex
             }
         }
         
-        var textureIdx = TextureSource.GetTextureIndex(ctx.Time);
+        var textureIdx = TextureSource.GetTextureIndex(ctx.Time + timeOffset);
         var animatedTemplate = _realTemplates.ElementAtOrDefault(textureIdx);
         
         if (animatedTemplate is { Texture.Texture: {} templateTexture }) {

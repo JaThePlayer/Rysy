@@ -397,6 +397,31 @@ public static class CelesteEnums {
     public enum SpawnFacings {
         Left, Right
     }
+
+    public static readonly string[] Easings = [
+        "BackIn",
+        "BackInOut",
+        "BackOut",
+        "BounceIn",
+        "BounceInOut",
+        "BounceOut",
+        "CubeIn",
+        "CubeInOut",
+        "CubeOut",
+        "ElasticIn",
+        "ElasticInOut",
+        "ElasticOut",
+        "ExpoIn",
+        "ExpoInOut",
+        "ExpoOut",
+        "Linear",
+        "QuadIn",
+        "QuadInOut",
+        "QuadOut",
+        "SineIn",
+        "SineInOut",
+        "SineOut"
+    ];
 }
 
 public static class Depths {
