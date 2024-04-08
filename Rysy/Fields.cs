@@ -183,11 +183,12 @@ public static partial class Fields {
         return new EditorGroupListField(registry, def);
     }
 
-    public static DropdownField<string> SID(string def)
-        => Dropdown(def, EntityRegistry.Registered.Keys.ToList());
-
     public static ConditionalField Conditional(List<Field> fields, Func<FormContext, int> fieldPicker) {
         return new((ctx) => fields[fieldPicker(ctx)]);
+    }
+
+    public static EntitySidField Sid(string def, RegisteredEntityType allowedTypes) {
+        return new(def, allowedTypes);
     }
 
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {

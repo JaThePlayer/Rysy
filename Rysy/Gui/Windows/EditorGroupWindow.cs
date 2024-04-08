@@ -119,7 +119,7 @@ internal sealed class GroupEditWindow : Window {
         _parent = parent;
         _sourceGroup = group;
         _autoAssignString = group is { } ? string.Join(",", group.AutoAssignTo) : "";
-        _autoAssignToField = Fields.List(_autoAssignString, Fields.SID("")).WithMinElements(0);
+        _autoAssignToField = Fields.List(_autoAssignString, Fields.Sid("", RegisteredEntityType.Entity | RegisteredEntityType.Trigger)).WithMinElements(0);
         
         UpdateValid();
     }

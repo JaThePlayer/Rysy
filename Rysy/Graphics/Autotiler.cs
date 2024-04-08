@@ -18,7 +18,7 @@ public sealed class Autotiler {
             Texture = AutotiledSprite.Missing.Texture,
             Center = [ AutotiledSprite.Missing ],
             Padding = [ AutotiledSprite.Missing ],
-            Tiles = new(),
+            Tiles = [],
         };
     }
     
@@ -515,14 +515,13 @@ public sealed record AutotiledSpriteList : ISprite {
                     continue;
 
                 var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
+                var tileColor = color;
                 if (room is {} && sprite.Tileset is { Rainbow: true }) {
-                    var rainbowColor = ctx.Animate
+                    tileColor = ctx.Animate
                         ? ColorHelper.GetRainbowColorAnimated(room, pos) * (color.A / 255f)
                         : ColorHelper.GetRainbowColor(room, pos) * (color.A / 255f);
-                    sprite.RenderAt(b, pos, rainbowColor);
-                } else {
-                    sprite.RenderAt(b, pos, color);
                 }
+                sprite.RenderAt(b, pos, tileColor);
 
                 if (sprite.AnimatedTile is { }) {
                     hasAnimatedTiles = true;

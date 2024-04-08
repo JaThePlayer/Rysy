@@ -301,6 +301,18 @@ public static partial class LuaSerializer {
         return null;
     }
 
+    /// <summary>
+    /// Checks whether the given code is valid lua code, by running it in a sandboxed lua instance with a timeout.
+    /// </summary>
+    public static bool IsValidLua(string str) {
+        using var lua = GetSandboxedLua();
+        if (PCallString(lua, str) != LuaStatus.OK)
+            return false;
+        
+        lua.Pop(1);
+        return true;
+    }
+
     private static string? SanitizeCode(string str) {
         if (str is not ['{', .., '}'])
             return null;
@@ -319,9 +331,7 @@ public static partial class LuaSerializer {
         LuaStatus status = LuaStatus.ErrRun;
 
         lock (lua) {
-            var task = Task.Run(() => {
-                return lua.PCall(args, results, 0);
-            });
+            var task = Task.Run(() => lua.PCall(args, results, 0));
 
             if (task.Wait(millisecondsTimeout))
                 status = task.Result;

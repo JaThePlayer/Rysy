@@ -1,6 +1,6 @@
 ﻿using Rysy.Layers;
 
-namespace Rysy.Scripting; 
+namespace Rysy.Scripting.Builtin; 
 
 internal sealed class MigrateLayersToGroups : Script {
     public override string Name => "Migrate Layers";

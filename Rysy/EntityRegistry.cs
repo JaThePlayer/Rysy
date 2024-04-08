@@ -44,8 +44,11 @@ public sealed class RegisteredEntity {
     };
 }
 
+[Flags]
 public enum RegisteredEntityType {
-    Entity, Trigger, Style
+    Entity = 1,
+    Trigger = 2,
+    Style = 4,
 }
 
 public static class EntityRegistry {

@@ -46,6 +46,8 @@ public sealed class AnimatedTileData {
     public Vector2 Origin { get; set; }
 
     public IReadOnlyList<VirtTexture> Frames { get; set; }
+
+    private AnimatedSpriteTemplate? _spriteTemplate;
     
     public AnimatedTileData() {
         
@@ -73,17 +75,17 @@ public sealed class AnimatedTileData {
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RenderAt(SpriteRenderCtx ctx, SpriteBatch b, Vector2 pos, Color color) {
-        var frames = Frames;
-        var time = Time.Elapsed / Delay;
-        time += pos.SeededRandomExclusive(frames.Count);
-        var texture = frames[(int)time % frames.Count]; //pos.SeededRandomFrom(Frames);
-
-        if (texture.Texture is { } t) {
-            new Sprite(texture) {
-                Pos = pos + Offset.Add(4f, 4f),
-                Origin = Origin / new Vector2(texture.Width, texture.Height),
-                Color = color
-            }.Render(ctx);
+        if (Frames is not [{ Texture: { } } firstTexture, ..] frames)
+            return;
+        
+        if (_spriteTemplate is not { } template) {
+            var animation = new SimpleAnimation(Frames, 1f / Delay);
+            
+            _spriteTemplate = template = new(SpriteTemplate.FromTexture(firstTexture, 0) with {
+                Origin = Origin / new Vector2(firstTexture.Width, firstTexture.Height),
+            }, animation);
         }
+        
+        template.RenderAt(ctx, pos + Offset.Add(4f, 4f), color, default, timeOffset: pos.SeededRandomExclusive(frames.Count) / Delay);
     }
 }
