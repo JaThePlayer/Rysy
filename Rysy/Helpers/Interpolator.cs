@@ -107,6 +107,8 @@ public sealed class Interpolator {
         }
         
         public ReadOnlySpan<char> Result => Data.AsSpan(0, _len);
+
+        public int Length => _len;
         
         public void AppendLiteral(ReadOnlySpan<char> data)
         {

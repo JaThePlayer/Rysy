@@ -54,7 +54,9 @@ public class PlacementTool : Tool {
                 return pl.Name;
             }
             
-            var name = EditorLayers.IsDecalLayer(layer) ? pl.Name : pl.Name.TranslateOrHumanize($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.name");
+            var name = EditorLayers.IsDecalLayer(layer) 
+                ? pl.Name
+                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID ?? ""}.placements.name"));
 
             var associated = pl.GetAssociatedMods();
             if (associated is { Count: > 0}) {
@@ -215,8 +217,7 @@ public class PlacementTool : Tool {
             
             foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
                 if (item is Sprite spr) {
-                    // don't box
-                    spr.WithMultipliedAlpha(0.4f).Render(ctx);
+                    spr.RenderWithColor(ctx, spr.Color * 0.4f);
                 } else {
                     item.WithMultipliedAlpha(0.4f).Render(ctx);
                 }
@@ -300,7 +301,7 @@ public class PlacementTool : Tool {
         if (material is not Placement placement)
             return base.GetMaterialPreview(material);
 
-        var keySpan = Interpolator.Shared.Interpolate($"pl_{placement.Name}_{placement.SID ?? ""}");
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}");
         if (MaterialPreviewCache.TryGetValue(StringRef.FromSharedBuffer(Interpolator.Shared.Buffer, keySpan.Length), out var value)) {
             return value;
         }

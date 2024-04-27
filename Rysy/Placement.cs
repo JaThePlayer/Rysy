@@ -231,7 +231,8 @@ public record class Placement {
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);
 
-    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler selection, Vector2 pos, Room room) => PlacementHandler.GetPreviewSprites(selection, pos, room);
+    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler selection, Vector2 pos, Room room) 
+        => PlacementHandler.GetPreviewSprites(selection, pos, room);
 
     public static Placement? TryCreateFromObject(object obj) => obj switch {
         IConvertibleToPlacement convertible => convertible.ToPlacement(),

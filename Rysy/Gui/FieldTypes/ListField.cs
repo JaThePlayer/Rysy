@@ -85,6 +85,9 @@ public record class ListField : Field, IFieldConvertibleToList {
     }
 
     private string[] Split(string value, StringSplitOptions options = StringSplitOptions.None) {
+        if (value is "")
+            return [];
+        
         var split = value.Split(Separator, options);
         if (split is [""])
             split = Array.Empty<string>();

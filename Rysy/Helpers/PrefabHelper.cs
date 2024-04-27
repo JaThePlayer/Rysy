@@ -137,7 +137,7 @@ public static class PrefabHelper {
                 }
             }
 
-            return sprites;
+            return sprites.OrderByDescending(x => x.Depth);
         }
 
         private static void AddEntitySprites(Vector2 pos, List<ISprite> sprites, IEnumerable<EntitySelectionHandler> entitySelections) {
@@ -162,7 +162,7 @@ public static class PrefabHelper {
 
                 // todo: hacky!!!
                 e.Selected = true;
-                sprites.AddRange(e.GetSpritesWithNodes().OrderByDescending(x => x.Depth));
+                sprites.AddRange(e.GetSpritesWithNodes());
                 e.Selected = false;
             }
         }

@@ -6,8 +6,6 @@ using Rysy.Mods;
 namespace Rysy.Gui.Windows;
 
 public class FilesystemExplorerWindow : Window {
-    private string Filename = "";
-
     record FileRef(string Path, ModMeta Mod);
 
     private ComboCache<FileRef> _cache = new();
@@ -25,16 +23,10 @@ public class FilesystemExplorerWindow : Window {
 
     protected override void Render() {
         base.Render();
-
-        if (ImGui.InputText("Filename", ref Filename, 256, ImGuiInputTextFlags.EnterReturnsTrue)) {
-            if (ModRegistry.Filesystem.TryReadAllText(Filename) is { } file) {
-                FoundFiles = null;
-                FileText = file;
-                OpenedFile = new(Filename, ModRegistry.Filesystem.FindFirstModContaining(Filename)!);
-            }
-        }
-
-        ScanForFilesButton();
+        
+        FoundFiles ??= ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod("", "")
+            .Select(p => new FileRef(p.Item1, p.Item2))
+            .ToList();
 
         if (FoundFiles is { }) {
             OpenedFile ??= new("", ModRegistry.VanillaMod);
@@ -44,16 +36,8 @@ public class FilesystemExplorerWindow : Window {
             if (ImGuiManager.Combo("Files", ref OpenedFile, FoundFilesDict, ref Search, null, _cache)) {
                 if (OpenedFile!.Mod.Filesystem.TryReadAllText(OpenedFile.Path) is { } text) {
                     FileText = text;
-                    //OpenedFile = file;
                 }
             }
-            /*
-            ImGuiManager.DropdownMenu("Files", FoundFiles, x => $"{x.Path} [{x.Mod.Name}]", (file) => {
-                if (file.Mod.Filesystem.TryReadAllText(file.Path) is { } text) {
-                    FileText = text;
-                    OpenedFile = file;
-                }
-            });*/
         }
 
         if (OpenedFile is { } opened) {
@@ -75,27 +59,5 @@ public class FilesystemExplorerWindow : Window {
         }
 
         ImGui.InputTextMultiline("", ref FileText, (uint) FileText.Length, new(800 - ImGui.GetStyle().WindowPadding.X, 700), ImGuiInputTextFlags.ReadOnly);
-    }
-
-    private void ScanForFilesButton() {
-        if (ImGui.Button("Scan for files")) {
-            var filenameSplit = Filename.Split(';');
-            var dir = filenameSplit.ElementAtOrDefault(0) ?? "";
-            var extension = filenameSplit.ElementAtOrDefault(1) ?? "";
-            var modName = filenameSplit.ElementAtOrDefault(2);
-
-            if (modName is { }) {
-                var mod = ModRegistry.GetModByName(modName);
-                if (mod is null)
-                    return;
-                var fs = mod.Filesystem;
-                if (fs is null)
-                    return;
-
-                FoundFiles = fs.FindFilesInDirectoryRecursive(dir, extension).Select(s => new FileRef(s, mod)).ToList();
-            } else {
-                FoundFiles = ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod(dir, extension).Select(p => new FileRef(p.Item1, p.Item2)).ToList();
-            }
-        }
     }
 }
