@@ -11,7 +11,7 @@ public record struct PolygonSprite : ISprite {
     private Rectangle? _bounds;
 
     public PolygonSprite(IEnumerable<Vector2> nodes, WindingOrder? windingOrder = null) {
-        Nodes = nodes.ToArray();
+        Nodes = nodes is Vector2[] arr ? arr : nodes.ToArray();
         Order = windingOrder;
     }
 

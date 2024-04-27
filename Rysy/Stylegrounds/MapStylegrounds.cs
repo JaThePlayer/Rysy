@@ -3,18 +3,23 @@
 public class MapStylegrounds : IPackable {
     public MapStylegrounds() { }
 
-    public List<Style> Backgrounds = new();
-    public List<Style> Foregrounds = new();
+    public List<Style> Backgrounds = [];
+    public List<Style> Foregrounds = [];
 
     /// <summary>
     /// Finds all styles in this <see cref="MapStylegrounds"/> object, recursively crawling all <see cref="StyleFolder"/>s
     /// </summary>
     /// <returns></returns>
     public IEnumerable<Style> AllStylesRecursive() {
-        foreach (var item in AllStylesIn(Backgrounds))
-            yield return item;
-        foreach (var item in AllStylesIn(Foregrounds))
-            yield return item;
+        var enumerator = AllStylesIn(Backgrounds).GetEnumerator();
+        while (enumerator.MoveNext())
+            yield return enumerator.Current;
+        enumerator.Dispose();
+
+        enumerator = AllStylesIn(Foregrounds).GetEnumerator();
+        while (enumerator.MoveNext())
+            yield return enumerator.Current;
+        enumerator.Dispose();
     }
 
     public IEnumerable<Style> AllBackgroundStylesRecursive()
@@ -34,15 +39,18 @@ public class MapStylegrounds : IPackable {
             style.Data.SetOverlay(null);
     }
 
-    private IEnumerable<Style> AllStylesIn(List<Style> styles) {
-        foreach (var style in styles)
-            if (style is StyleFolder folder) {
-                yield return folder;
-
-                foreach (var item in AllStylesIn(folder.Styles))
-                    yield return item;
-            } else
-                yield return style;
+    private static IEnumerable<Style> AllStylesIn(List<Style> styles) {
+        // Every additional local increases heap allocations, recursively...
+        for (var i = 0; i < styles.Count; i++) {
+            yield return styles[i];
+            
+            if (styles[i] is StyleFolder) {
+                using var innerStyles = AllStylesIn(((StyleFolder) styles[i]).Styles).GetEnumerator();
+                while (innerStyles.MoveNext()) {
+                    yield return innerStyles.Current;
+                }
+            }
+        }
     }
 
     public BinaryPacker.Element Pack() {

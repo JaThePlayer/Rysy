@@ -129,7 +129,7 @@ public static class LinqExt {
             //    ("duplicate:", value, key, valueGetter(value)).LogAsJson();
             //}
 
-            dict[keyGetter(value)] = valueGetter(value);
+            dict[key] = valueGetter(value);
         }
 
         return dict;

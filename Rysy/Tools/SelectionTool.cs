@@ -98,7 +98,7 @@ public class SelectionTool : Tool {
         if (CurrentSelections is not { } selections)
             return;
 
-        if (CopypasteHelper.CopySelections(CurrentSelections) is not { } copied)
+        if (CopypasteHelper.CopySelections(selections) is not { } copied)
             return;
 
         if (!PrefabHelper.SelectionsLegal(copied))
@@ -873,6 +873,9 @@ public class SelectionTool : Tool {
         }
 
         ImGui.Text("Selections");
+        if (CurrentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
+            CreatePrefab();
+        }
 
         if (!ImGui.BeginTable("Selections", 3, ImGuiManager.TableFlags)) {
             return;

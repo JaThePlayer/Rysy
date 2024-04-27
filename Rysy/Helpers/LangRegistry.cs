@@ -23,13 +23,20 @@ public static class LangRegistry {
             ?? keyOrText;
     }
 
-    public static string? TranslateOrNull(string keyOrText) {
-        if (CurrentLang == FallbackLang) {
-            return CurrentLang.GetOrNull(keyOrText);
-        }
+    public static string? TranslateOrNull(string keyOrText)
+        => TranslateOrNull(StringRef.FromString(keyOrText));
+    
+    public static string? TranslateOrNull(ReadOnlySpan<char> keyOrText)
+        => TranslateOrNull(StringRef.FromSpanIntoShared(keyOrText));
+    
+    public static string? TranslateOrNull(Interpolator.Handler interpolated)
+        => TranslateOrNull(StringRef.FromSharedBuffer(interpolated.Data, interpolated.Length));
 
-        return CurrentLang.GetOrNull(keyOrText)
-            ?? FallbackLang.GetOrNull(keyOrText);
+    public static string? TranslateOrNull(StringRef keyOrTextRef) {
+        if (CurrentLang.GetOrNull(keyOrTextRef) is { } currLang)
+            return currLang;
+        
+        return CurrentLang != FallbackLang ? FallbackLang.GetOrNull(keyOrTextRef) : null;
     }
 
     public static async Task LoadAllAsync(SimpleLoadTask? task) {
@@ -83,7 +90,7 @@ public static class LangRegistry {
             }
 
             value = value?.Replace(@"\n", "\n", StringComparison.Ordinal).Trim() ?? "";
-            lang.Translations[key] = value;
+            lang.Translations[StringRef.FromString(key)] = value;
         }
     }
 }
@@ -91,11 +98,15 @@ public static class LangRegistry {
 public class Lang {
     public string Name { get; set; }
 
-    public Dictionary<string, string> Translations { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<StringRef, string> Translations { get; set; } = new();
 
     public Lang(string name) { 
         Name = name;
     }
 
-    public string? GetOrNull(string key) => Translations.GetValueOrDefault(key);
+    public string? GetOrNull(string key) => Translations.GetValueOrDefault(StringRef.FromString(key));
+    
+    public string? GetOrNull(ReadOnlySpan<char> key) => Translations.GetValueOrDefault(StringRef.FromSpanIntoShared(key));
+    
+    public string? GetOrNull(StringRef key) => Translations.GetValueOrDefault(key);
 }

@@ -252,12 +252,19 @@ public static partial class StringExt {
     /// If no translation is found, returns null.
     /// </summary>
     public static string? TranslateOrNull(this string str, string prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}");
+    
+    /// <summary>
+    /// <inheritdoc cref="TranslateOrNull(string, string)"/>
+    /// </summary>
+    public static string? TranslateOrNull(this ReadOnlySpan<char> str, ReadOnlySpan<char> prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}");
 
     /// <summary>
     /// Translates the string $"{<paramref name="prefix"/>}.{<paramref name="str"/>}" using <see cref="LangRegistry.TranslateOrNull(string)"/>.
     /// If no translation is found, returns the result of calling <see cref="Humanize(string)"/> on <paramref name="str"/>
     /// </summary>
-    public static string TranslateOrHumanize(this string str, string prefix) => LangRegistry.TranslateOrNull($"{prefix}.{str}") ?? Humanize(str);
+    public static string TranslateOrHumanize(this string str, string prefix) => TranslateOrNull(str, prefix) ?? Humanize(str);
+    
+    public static string TranslateOrHumanize(this string str, ReadOnlySpan<char> prefix) => TranslateOrNull(str, prefix) ?? Humanize(str);
 
     public static int ToInt(this string s) => Convert.ToInt32(s, CultureInfo.InvariantCulture);
     public static int ToIntHex(this string s) => int.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
