@@ -137,11 +137,12 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     }
 
     public static bool MatchRoomName(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName) {
-        if (roomName.StartsWith("lvl_"))
+        if (roomName.StartsWith("lvl_")) {
             roomName = roomName["lvl_".Length..];
+        }
 
         foreach (var filter in predicate.EnumerateSplits(',')) {
-            if (filter == roomName)
+            if (filter.SequenceEqual(roomName))
                 return true;
 
             if (!filter.Contains('*'))
