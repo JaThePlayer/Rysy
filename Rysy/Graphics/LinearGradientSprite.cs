@@ -10,16 +10,23 @@ public record LinearGradientSprite : ISprite {
     
     public LinearGradient.Directions Direction { get; }
 
-    public LinearGradientSprite(Rectangle rect, LinearGradient gradient, LinearGradient.Directions dir) {
+    public LinearGradientSprite(Rectangle rect, LinearGradient gradient, LinearGradient.Directions dir, 
+        bool loopX = false, bool loopY = false) {
         Bounds = rect;
         Gradient = gradient;
         Direction = dir;
+        LoopX = loopX;
+        LoopY = loopY;
     }
 
     private PolygonSprite? _polygonSprite;
     
     public int? Depth { get; set; }
     public Color Color { get; set; }
+    
+    public bool LoopX { get; set; }
+    
+    public bool LoopY { get; set; }
 
     private float Alpha = 1f;
 
@@ -33,7 +40,12 @@ public record LinearGradientSprite : ISprite {
         if (ctx.Camera is {} cam && !cam.IsRectVisible(bounds))
             return;
 
-        _polygonSprite ??= new(Gradient.GetVertexes(Direction, bounds));
+        if (_polygonSprite is null) {
+            VertexPositionColor[]? vertexes = null;
+            Gradient.GetVertexes(ref vertexes, Direction, bounds, Vector2.Zero, LoopX, LoopY, out var amt);
+            _polygonSprite = new(vertexes!);
+        }
+        
         _polygonSprite?.Render(ctx);
     }
 
@@ -56,54 +68,128 @@ public sealed class LinearGradient : ISpanParsable<LinearGradient>
     public LinearGradient() { }
     
     public List<Entry> Entries { get; init; } = [];
+    private float? entryPercentageSum = null;
+    
+    public void GetVertexes(ref VertexPositionColor[]? into, Directions dir, Rectangle bounds, Vector2 basePos, bool loopX, bool loopY, out int vertexCount) {
+        entryPercentageSum ??= Entries.Sum(e => e.Percent);
 
-    public VertexPositionColor[] GetVertexes(Directions dir, Rectangle bounds) {
-        var ret = new VertexPositionColor[Entries.Count * 6];
-        var span = ret.AsSpan();
+        float yUnit = bounds.Height / 100f;
+        float xUnit = bounds.Width / 100f;
+        
+        // Perf: Modulo the position of looping directions by the size of the gradient
+        if (loopY && dir == Directions.Vertical) {
+            basePos.Y %= entryPercentageSum.Value * yUnit * 2;
+        } else if (loopX && dir == Directions.Horizontal) {
+            basePos.X %= entryPercentageSum.Value * xUnit * 2;
+        }
+        
+        vertexCount = 0;
+        into ??= new VertexPositionColor[Entries.Count * 6];
+        
+        March(ref into, dir, bounds, basePos, loopX, loopY, ref vertexCount, moveInverted: false);
+
+        if (dir == Directions.Vertical && loopY && basePos.Y > 0f) {
+            // we've started moved down a bit, we need to march upwards
+            March(ref into, dir, bounds, basePos, loopX, loopY, ref vertexCount, moveInverted: true);
+        }
+        else if (dir == Directions.Horizontal && loopY && basePos.X > 0f) {
+            // we've started moved right a bit, we need to march left
+            March(ref into, dir, bounds, basePos, loopX, loopY, ref vertexCount, moveInverted: true);
+        }
+    }
+
+    private void March(ref VertexPositionColor[] ret, Directions dir, Rectangle bounds, Vector2 basePos, bool loopX, bool loopY,
+        ref int vertexCount, bool moveInverted) {
+        var span = ret.AsSpan(vertexCount);
         
         float yUnit = bounds.Height / 100f;
         float xUnit = bounds.Width / 100f;
         
+        var i = 0;
+        var entries = Entries;
+        var inc = 1;
         var start = 0f;
-        foreach (var entry in Entries) {
-            var c1 = entry.ColorFrom;
-            var c2 = entry.ColorTo;
+        while (true) {
+            var entry = entries[i];
 
-            var end = start + entry.Percent;
+            var end = start + entry.Percent * (moveInverted ? -1 : 1);
             
             var (x1, x2, y1, y2) = dir switch {
                 Directions.Vertical => (bounds.Left, bounds.Right, start * yUnit, end * yUnit),
                 Directions.Horizontal => (start * xUnit, end * xUnit, bounds.Top, bounds.Bottom),
                 _ => (0f, 0f, 0f, 0f)
             };
-            
-            // explicit bounds check to help the JIT
-            if (span.Length >= 6) {
-                switch (dir) {
-                    case Directions.Vertical:
-                        span[0] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
-                        span[1] = new VertexPositionColor(new Vector3(x2, y1, 0f), c1);
-                        span[2] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
-                        span[3] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
-                        span[4] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
-                        span[5] = new VertexPositionColor(new Vector3(x1, y2, 0f), c2);
-                        break;
-                    case Directions.Horizontal:
-                        span[0] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
-                        span[1] = new VertexPositionColor(new Vector3(x1, y2, 0f), c1);
-                        span[2] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
-                        span[3] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
-                        span[4] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
-                        span[5] = new VertexPositionColor(new Vector3(x2, y1, 0f), c2);
-                        break;
+
+            // No point in moving on a looping axis if the gradient is not in that direction
+            if (!(loopX && dir == Directions.Vertical)) {
+                x1 += basePos.X;
+                x2 += basePos.X;
+            }
+            if (!(loopY && dir == Directions.Horizontal)) {
+                y1 += basePos.Y;
+                y2 += basePos.Y;
+            }
+
+            // Cull entries above or to the left of the screen
+            if ((x1 >= bounds.Left || x2 >= bounds.Left) && (y1 >= bounds.Top || y2 >= bounds.Top)) {
+                if (span.Length < 6) {
+                    Array.Resize(ref ret, ret.Length + 6);
+                    span = ret.AsSpan()[^6..];
                 }
+
+                var c1 = inc < 0 ? entry.ColorTo : entry.ColorFrom;
+                var c2 = inc < 0 ? entry.ColorFrom : entry.ColorTo;
+                
+                // explicit bounds check to help the JIT
+                if (span.Length >= 6) {
+                    switch (dir) {
+                        case Directions.Vertical:
+                            span[0] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
+                            span[1] = new VertexPositionColor(new Vector3(x2, y1, 0f), c1);
+                            span[2] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
+                            span[3] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
+                            span[4] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
+                            span[5] = new VertexPositionColor(new Vector3(x1, y2, 0f), c2);
+                            break;
+                        case Directions.Horizontal:
+                            span[0] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
+                            span[1] = new VertexPositionColor(new Vector3(x1, y2, 0f), c1);
+                            span[2] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
+                            span[3] = new VertexPositionColor(new Vector3(x1, y1, 0f), c1);
+                            span[4] = new VertexPositionColor(new Vector3(x2, y2, 0f), c2);
+                            span[5] = new VertexPositionColor(new Vector3(x2, y1, 0f), c2);
+                            break;
+                    }
+
+                    vertexCount += 6;
+                    span = span[6..];
+                }
+            }
+            
+            // Return early if we have already covered the entire screen
+            if (dir == Directions.Vertical && (moveInverted ? y2 < 0f : y2 >= bounds.Bottom)) {
+                break;
+            }
+
+            if (dir == Directions.Horizontal && (moveInverted ? x2 < 0f : x2 >= bounds.Right)) {
+                break;
+            }
+
+            // We ran out of entries
+            if (i + inc >= entries.Count || i + inc < 0) {
+                // change direction if we're looping in the same direction as the gradient
+                if (loopY && dir == Directions.Vertical && (moveInverted ? y2 >= 0f : y2 < bounds.Bottom)) {
+                    inc *= -1;
+                } else if (loopX && dir == Directions.Horizontal && (moveInverted ? x2 >= 0f : x2 < bounds.Right)) {
+                    inc *= -1;
+                } else
+                    break;
+            } else {
+                i += inc;
             }
 
             start = end;
-            span = span[6..];
         }
-
-        return ret;
     }
     
     public static LinearGradient Parse(string s, IFormatProvider? provider) 

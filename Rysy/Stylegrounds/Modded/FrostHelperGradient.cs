@@ -15,28 +15,53 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
 
     [Bind("direction")] 
     public LinearGradient.Directions Direction;
+
+    [Bind("loopX")]
+    public bool LoopX;
+    
+    [Bind("loopY")]
+    public bool LoopY;
+    
+    // LinearGradientSprites are expensive to create, and GetSprites gets called each frame the styleground is visible.
+    private LinearGradientSprite? _cachedSprite;
+    private LinearGradientSprite? _cachedPreviewSprite;
     
     public static FieldList GetFields() => new(new {
         gradient = new LinearGradientField(DefaultGradient).WithSeparator(';'),
         direction = LinearGradient.Directions.Vertical,
         blendMode = Fields.Dropdown("alphablend", ["alphablend", "additive", "subtract", "reversesubtract", "multiply"]),
+        loopX = false,
+        loopY = false,
     });
 
     public static PlacementList GetPlacements() => [];
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
-        yield return ISprite.LinearGradient(new(0, 0, 320, 180), Gradient, Direction);
+        return _cachedPreviewSprite ??= ISprite.LinearGradient(new(0, 0, 320, 180), Gradient, Direction, LoopX, LoopY);
     }
-
+    
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
-        yield return ISprite.LinearGradient(new(0, 0, (int)(320 * 6f / ctx.Camera.Scale), (int)(180 * 6f / ctx.Camera.Scale)), Gradient, Direction);
+        var bounds = new Rectangle(0, 0, (int) (320 * 6f / ctx.Camera.Scale), (int) (180 * 6f / ctx.Camera.Scale));
+        
+        // if zoom level changed, clear the cache. OnChanged handles properties being changed already.
+        if (_cachedSprite is { } && _cachedSprite.Bounds != bounds) {
+            _cachedSprite = null;
+        }
+        
+        return _cachedSprite ??= ISprite.LinearGradient(bounds, Gradient, Direction, LoopX, LoopY);
     }
 
     public override SpriteBatchState? GetSpriteBatchState() 
         => GFX.GetCurrentBatchState() with {
             BlendState = ParseBlendMode(Attr("blendMode", "alphablend")),
         };
-    
+
+    public override void OnChanged(EntityDataChangeCtx ctx) {
+        base.OnChanged(ctx);
+        _cachedSprite = null;
+        _cachedPreviewSprite = null;
+    }
+
     private static BlendState ParseBlendMode(string mode) => mode switch {
         "alphablend" => BlendState.AlphaBlend,
         "additive" => BlendState.Additive,
