@@ -226,7 +226,7 @@ public sealed class EditorScene : Scene {
         if (Map is not { })
             return;
 
-        if (saveAs || string.IsNullOrWhiteSpace(Map.Filepath)) {
+        if (saveAs || string.IsNullOrWhiteSpace(Map.Filepath) || !File.Exists(Map.Filepath)) {
             if (!FileDialogHelper.TrySave("bin", out var filepath)) {
                 return;
             }
