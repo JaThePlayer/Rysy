@@ -1,8 +1,10 @@
 ﻿#pragma warning disable CS0649
 
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
+using Rysy.Selections;
 
 namespace Rysy.Entities.Modded;
 
@@ -143,4 +145,101 @@ internal sealed class RainbowTilesetController : LonnEntity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => [];
+}
+
+[CustomEntity("FrostHelper/ArbitraryShapeCloud", [ "FrostHelper" ])]
+internal sealed class ArbitraryShapeCloud : Entity
+{
+    public override int Depth => Int("depth");
+    
+    public override IEnumerable<ISprite> GetSprites()
+    {
+        var nodes = Nodes.Select(n => n.Pos).Append(Pos).ToList();
+        var color = RGBA("color");
+        var fillColor = color;
+
+        var textures = ParseTextureList(Attr("textures", DefaultTextureString));
+
+        var start = Pos;
+
+        foreach (var n in nodes)
+        {
+            var angle = VectorExt.Angle(start, n);
+            var angleVec = angle.AngleToVector(1f);
+
+            var curr = start;
+            var dist = Vector2.Distance(start, n);
+            while (dist > 0) {
+                var t = (curr + Room.Pos).SeededRandomFrom(textures);
+                var spr = GFX.Atlas[t.Path];
+                var sprW = spr.Width * 3 / 4;
+                var offset = Math.Min(0, dist - sprW);
+                var rot = angle + t.DefaultRotation;
+
+                yield return ISprite.FromTexture((curr + angleVec * offset).Floored() + Vector2.UnitY.Rotate(rot) * 2f, spr) with {
+                    Origin = new(0f, 1f),
+                    Rotation = rot,
+                    Color = fillColor,
+                };
+
+                curr += angleVec * sprW;
+                dist -= sprW;
+            }
+
+            start = n;
+        }
+        
+        Vector2[] linePoints = [start, .. nodes];
+
+        yield return new PolygonSprite(linePoints, Enum("windingOrder", WindingOrders.Auto) switch {
+            WindingOrders.Clockwise => Triangulator.WindingOrder.Clockwise,
+            WindingOrders.CounterClockwise => Triangulator.WindingOrder.CounterClockwise,
+            _ => null,
+        }) {
+            Color = fillColor,
+        };
+
+        foreach (var n in linePoints) {
+            yield return ISprite.OutlinedRect(n.Add(-2, -2), 4, 4, Color.Transparent, Color.Orange);
+        }
+    }
+
+    public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) => NodePathTypes.None;
+
+    public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.None;
+
+    public override ISelectionCollider GetMainSelection()
+        => ISelectionCollider.FromRect(Pos.Add(-2, -2), 4, 4);
+
+    public override ISelectionCollider GetNodeSelection(int nodeIndex)
+        => ISelectionCollider.FromRect(Nodes[nodeIndex].Pos.Add(-2, -2), 4, 4);
+
+    public override Range NodeLimits => 2..;
+
+    public enum WindingOrders {
+        Clockwise, CounterClockwise, Auto
+    }
+
+    private static List<CloudTexture> ParseTextureList(string list) {
+        if (CloudTextureCache.TryGetValue(list, out var cached))
+            return cached;
+
+        var split = list.Trim().Split(',');
+
+        var t = new List<CloudTexture>(split.Length);
+
+        foreach (var texDef in split) {
+            t.Add(new(texDef, 0f));
+        }
+
+        CloudTextureCache[list] = t;
+
+        return t;
+    }
+
+    private const string DefaultTextureString = @"decals/10-farewell/clouds/cloud_c,decals/10-farewell/clouds/cloud_cc,decals/10-farewell/clouds/cloud_cd,decals/10-farewell/clouds/cloud_ce";
+
+    private record CloudTexture(string Path, float DefaultRotation);
+
+    private static readonly Dictionary<string, List<CloudTexture>> CloudTextureCache = new(StringComparer.Ordinal);
 }

@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Extensions;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes.Modded;
 
@@ -37,3 +38,23 @@ internal sealed record FrostHelperEasing : DropdownField<string>, ILonnField {
         return IsValidCache[str] = LuaSupport.LuaSerializer.IsValidLua(code);
     }
 }
+
+internal sealed record FrostHelperCloudTag : DropdownField<string>, ILonnField {
+    public static string Name => "FrostHelper.cloudTag";
+
+    public FrostHelperCloudTag(string def) {
+        Default = def ?? "";
+        Editable = true;
+        Values = _ => EditorState.CurrentRoom is { } room
+            ? room.Entities.Concat(room.Triggers)
+                .SelectWhereNotNull(e => 
+                    e.Attr("cloudTag", null!)
+                    ?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                .SelectMany(x => x)
+                .SafeToDictionary(e => (e, e))
+            : [];
+    }
+    
+    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) => new FrostHelperCloudTag(def?.ToString() ?? "");
+}
+
