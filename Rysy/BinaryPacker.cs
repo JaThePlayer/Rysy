@@ -131,6 +131,11 @@ public sealed class BinaryPacker {
         SaveToStream(package, memStream);
 
         // now that we know everything went well, time to write to file
+        
+        // make sure the directory exists...
+        if (Path.GetDirectoryName(filename) is {} dir)
+            Directory.CreateDirectory(dir);
+        
         using var fileStream = File.Open(filename, FileMode.Create);
 
         memStream.Seek(0, SeekOrigin.Begin);
@@ -172,9 +177,8 @@ public sealed class BinaryPacker {
             WriteElement(item);
         }
         
-        var totalSize = writer.BaseStream.Position - start;
-
         if (DetailedWriteInfos is { } detailed) {
+            var totalSize = writer.BaseStream.Position - start;
             detailed[el] = new() {
                 SelfSize = selfSize,
                 TotalSize = totalSize,
