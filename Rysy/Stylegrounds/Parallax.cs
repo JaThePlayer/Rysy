@@ -56,9 +56,11 @@ public sealed class Parallax : Style, IPlaceable {
         flipy = false,
         fadex = new FadeRegionField().ToList(':') with {
             MinElements = 0,
+            Default = ""
         },
         fadey = new FadeRegionField().ToList(':') with {
             MinElements = 0,
+            Default = ""
         },
         instantIn = false,
         instantOut = false,
@@ -80,9 +82,8 @@ public sealed class Parallax : Style, IPlaceable {
         var targetTexture = GFX.Atlas[texture];
         var scale = new Vector2(FlipX ? -1f : 1f, FlipY ? -1f : 1f);
 
-        if (_cachedBaseSprite is { } cached && cached.Template.Texture == targetTexture) {
-            cached.Color = color;
-            cached.Template.Scale = scale;
+        if (_cachedBaseSprite is { } cached && cached.Template.Texture == targetTexture 
+            && cached.Color == color && cached.Template.Scale == scale) {
             return cached;
         }
 
@@ -125,7 +126,7 @@ public sealed class Parallax : Style, IPlaceable {
         fade = fade.AtMost(1f);
 
         var baseSprite = GetBaseSprite(fade);
-        if (baseSprite is null || baseSprite.Color.A <= 1)
+        if (baseSprite is null || fade <= 0)
             return [];
 
         var loopX = LoopX;
