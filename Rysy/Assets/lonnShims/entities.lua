@@ -101,7 +101,25 @@ function entities.getDrawable(name, handler, room, entity, viewport)
 end
 
 function entities.getDrawableRectangle(drawables)
-	_RYSY_unimplemented()
+    if #drawables == 0 and drawables.getRectangle then
+        return drawables:getRectangle()
+    end
+
+    local rectangles = {}
+
+    for i, drawable in ipairs(drawables) do
+        if drawable.getRectangle then
+            rectangles[i] = drawable:getRectangle()
+
+            if drawable.ignoreRest then
+                break
+            end
+        end
+    end
+
+    local x, y, width, height = utils.coverRectangles(rectangles)
+
+    return utils.rectangle(x, y, width, height)
 end
 
 function entities.getNodeRectangles(room, entity, viewport)

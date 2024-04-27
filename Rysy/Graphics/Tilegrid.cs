@@ -374,7 +374,12 @@ public class Tilegrid : ILuaWrapper {
         }
 
         public int LuaIndex(Lua lua, long key) {
-            throw new NotImplementedException();
+            var (y, x) = int.DivRem((int)key, Grid.Width);
+            var tile = Grid.SafeTileAt(x - 1, y);
+            
+            lua.PushString(tile.ToString());
+            
+            return 1;
         }
 
         public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {

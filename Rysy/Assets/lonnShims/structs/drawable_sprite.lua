@@ -124,7 +124,8 @@ function drawableSpriteMt.__index:setAlpha(alpha)
 end
 
 function drawableSpriteMt.__index:getRectangleRaw()
-    _RYSY_unimplemented()
+    local x,y,w,h = _RYSY_DRAWABLE_getRectangle(self)
+	return x, y, w, h
 end
 
 function drawableSpriteMt.__index:getRectangle()
@@ -172,7 +173,6 @@ function RYSY_UNPACKSPR(drawableSprite)
 		   rawget(drawableSprite, "rotation"), rawget(drawableSprite, "depth"),
 		   rawget(drawableSprite, "color"), rawget(drawableSprite, "_RYSY_INTERNAL_texture"),
 		   rawget(drawableSprite, "_RYSYqX")
-
 end
 
 
