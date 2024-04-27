@@ -71,7 +71,7 @@ public class LonnEntity : Entity {
 
             var visible = visibility switch {
                 "always" => true,
-                "selected" => pl.HasGetNodeSprite ? Selected : true,
+                "selected" => true, //pl.HasGetNodeSprite ? Selected : true,
                 var other => false,
             };
 
@@ -301,12 +301,16 @@ public class LonnEntity : Entity {
 
         switch (lua.PeekTableType(top, "_type")) {
             case LuaType.String:
+                var prevTop = lua.GetTop();
                 // name is provided, so there's 1 sprite
                 LonnDrawables.AppendSprite(lua, top, this, list);
-                lua.Pop(1);
+                //lua.Pop(1);
+                if (lua.GetTop() != prevTop) {
+                    Logger.Write("[LuaSupport]", LogLevel.Warning, $"Calling sprite function on {Name} changed Lua stack");
+                    lua.PrintStack();
+                }
                 break;
             default:
-                var prevTop = lua.GetTop();
                 lua.IPairs((lua, i, loc) => {
                     LonnDrawables.AppendSprite(lua, loc, this, list);
                 });
