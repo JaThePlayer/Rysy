@@ -2,6 +2,7 @@
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Mods;
+// ReSharper disable PossibleInvalidCastExceptionInForeachLoop
 
 namespace Rysy.Helpers;
 
@@ -63,26 +64,19 @@ public static class DependencyCheker {
             HandleTexture(new TilesetDependency(TileLayer.BG, data.Filename), data.Texture);
         }
 
-        var entities = map.Rooms.SelectMany(r => r.Entities);
-        var triggers = map.Rooms.SelectMany(r => r.Triggers);
-
-        var checkedSids = new HashSet<string>();
-        foreach (var item in entities.Concat(triggers)) {
-            if (!checkedSids.Add(item.Name))
-                continue;
-            
-            var mods = EntityRegistry.GetAssociatedMods(item);
-
-            HandleItem(item, mods);
-        }
-
-        var checkedTextures = new HashSet<string>();
-        foreach (var decal in map.Rooms.SelectMany(r => r.BgDecals.Concat(r.FgDecals)).Cast<Decal>()) {
-            var decalTexture = decal.Texture;
-            if (!checkedTextures.Add(decalTexture))
-                continue;
-            
-            HandleTexture(decal, decal.GetVirtTexture());
+        foreach (var room in map.Rooms) {
+            foreach (var item in room.Entities) {
+                HandleItem(item, EntityRegistry.GetAssociatedMods(item));
+            }
+            foreach (var item in room.Triggers) {
+                HandleItem(item, EntityRegistry.GetAssociatedMods(item));
+            }
+            foreach (Decal decal in room.BgDecals) {
+                HandleTexture(decal, decal.GetVirtTexture());
+            }
+            foreach (Decal decal in room.FgDecals) {
+                HandleTexture(decal, decal.GetVirtTexture());
+            }
         }
 
         foreach (var style in map.Style.AllStylesRecursive()) {
@@ -113,8 +107,12 @@ public static class DependencyCheker {
                     continue;
 
                 modNames.Add(modName);
-                modValues.TryAdd(modName, new List<object>());
-                modValues[modName].Add(item);
+
+                if (modValues.TryGetValue(modName, out var values)) {
+                    values.Add(item);
+                } else {
+                    modValues[modName] = [ item ];
+                }
             }
         }
 
