@@ -18,6 +18,14 @@ public class HotkeyHandler {
         Input = input;
         UpdateInImgui = updateInImgui;
     }
+    
+    public HotkeyHandler AddHistoryHotkeys(Action undo, Action redo, Action save) {
+        AddHotkeyFromSettings("undo", "ctrl+z|mouse3", undo, HotkeyModes.OnHoldSmoothInterval);
+        AddHotkeyFromSettings("redo", "ctrl+y|mouse4", redo, HotkeyModes.OnHoldSmoothInterval);
+        AddHotkeyFromSettings("saveMap", "ctrl+s", save);
+        
+        return this;
+    }
 
     /// <summary>
     /// Adds a new hotkey, loading it from settings using <paramref name="name"/>, saving the hotkey to the settings file using <paramref name="defaultKeybind"/> if it doesn't exist.
