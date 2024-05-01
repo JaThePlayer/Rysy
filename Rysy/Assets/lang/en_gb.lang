@@ -151,6 +151,20 @@ rysy.linkOpenConfirmWindow.desc=Do you want to open the following link in your b
 
 rysy.tools.placement.noPrefabs=You currently don't have any prefabs.\nPress {0} while a selection is active to create one!
 
+# Decal Registry Window
+rysy.decalRegistryWindow.create=Create
+rysy.decalRegistryWindow.newEntryPath=Path
+rysy.decalRegistryWindow.newEntryPath.tooltip=Path which this entry will edit.
+
+rysy.decalRegistryEntryType=Type
+rysy.decalRegistryEntryType.tooltip=Defines the type of this entry.
+rysy.decalRegistryEntryType.SingleTexture=Single Texture
+rysy.decalRegistryEntryType.SingleTexture.tooltip=The entry edits one texture, specified by Path.
+rysy.decalRegistryEntryType.Directory=Directory
+rysy.decalRegistryEntryType.Directory.tooltip=The entry edits all textures in a given texture.\nDoes not edit textures within subdirectories.
+rysy.decalRegistryEntryType.StartsWith=Path Starts With
+rysy.decalRegistryEntryType.StartsWith.tooltip=The entry edits all textures whose paths start with the value provided in Path and are in the same directory.\nDoes not edit textures within subdirectories.
+
 # Enums
 rysy.cassetteBlockIndex.0=Blue
 rysy.cassetteBlockIndex.1=Rose
@@ -163,6 +177,9 @@ rysy.quick_actions.window_name=Add Quick Action
 rysy.editor_group_window=Groups
 rysy.editor_group_window.edit_group.new=New Group
 rysy.editor_group_window.edit_group.edit=Edit Group
+
+rysy.createPrefab=Create Prefab
+rysy.createPrefab.tooltip=Creates a prefab from the current selections, available from the Placement tool.
 
 # FROM LONN:
 

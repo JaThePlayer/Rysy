@@ -84,15 +84,17 @@ public interface IAtlas {
 public record class FoundPath(string Path, string Captured);
 
 public static class IAtlasExt {
-    public static Cache<List<FoundPath>> FindTextures(this IAtlas atlas, Regex regex) {
+    public static Cache<List<FoundPath>> FindTextures(this IAtlas atlas, Regex regex, 
+        Func<FoundPath, VirtTexture, bool>? where = null) {
         var token = new CacheToken();
         var cache = new Cache<List<FoundPath>>(token, () => {
             var list = new List<FoundPath>();
 
-            foreach (var (path, _) in atlas.GetTextures()) {
+            foreach (var (path, texture) in atlas.GetTextures()) {
                 if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
-                    //match.Groups.Values.Select(c => c.Value).LogAsJson();
-                    list.Add(new(path, secondGroup.Value));
+                    var foundPath = new FoundPath(path, secondGroup.Value);
+                    if (where?.Invoke(foundPath, texture) ?? true)
+                        list.Add(foundPath);
                 }
             }
 

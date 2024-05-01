@@ -195,6 +195,7 @@ public sealed class RysyEngine : Game {
                 new SimpleLoadTask("Load Entities", LoadEntitiesTask),
                 new SimpleLoadTask("Load Lang Files", LoadLangFilesTask),
             ]),
+            new SimpleLoadTask("Load Decal Registry", LoadDecalRegistryTask),
             new SimpleLoadTask("Call OnNextReload", task => {
                 if (OnNextReload is { } onNextReload) {
                     task.SetMessage("Calling OnReload");
@@ -273,6 +274,12 @@ public sealed class RysyEngine : Game {
         await GFX.LoadAsync(task);
         
         return LoadTaskResult.Success();
+    }
+    
+    private Task<LoadTaskResult> LoadDecalRegistryTask(SimpleLoadTask task) {
+        GFX.LoadDecalRegistry(task);
+        
+        return Task.FromResult(LoadTaskResult.Success());
     }
     
     private async Task<LoadTaskResult> LoadEntitiesTask(SimpleLoadTask task) {

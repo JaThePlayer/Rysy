@@ -110,14 +110,17 @@ public static class GFX {
                 return LoadModAsync(m);
             });
         }
+    }
 
+    public static void LoadDecalRegistry(SimpleLoadTask? task) {
         task?.SetMessage("Loading Decal Registry");
         DecalRegistry?.Dispose();
         DecalRegistry = new();
-        using (ScopedStopwatch watch = new("Loading Decal Registry"))
-            foreach (var mod in ModRegistry.Mods.Values) {
-                DecalRegistry.ReadFileFromMod(mod.Filesystem);
-            }
+        using ScopedStopwatch watch = new("Loading Decal Registry");
+        
+        foreach (var mod in ModRegistry.Mods.Values) {
+            DecalRegistry.ReadFileFromMod(mod.Filesystem);
+        }
     }
 
     internal static async ValueTask LoadVanillaAtlasAsync() {

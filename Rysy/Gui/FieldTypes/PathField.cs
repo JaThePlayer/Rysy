@@ -90,9 +90,9 @@ public record class PathField : Field, IFieldConvertible<string> {
     public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
 
-        var regex = new Regex(regexStr, RegexOptions.Compiled);
+        Regex? regex = null;
         Init(atlas, regexStr, captureConverter,
-            textureFinder: () => atlas.FindTextures(regex),
+            textureFinder: () => atlas.FindTextures(regex ??= new Regex(regexStr, RegexOptions.Compiled)),
             modResolver: (path) => atlas[path] is ModTexture modTexture ? modTexture.Mod : null
         );
     }
@@ -100,9 +100,9 @@ public record class PathField : Field, IFieldConvertible<string> {
     public PathField(string @default, SpriteBank bank, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
 
-        var regex = new Regex(regexStr, RegexOptions.Compiled);
+        Regex? regex = null;
         Init(bank, regexStr, captureConverter,
-            () => bank.FindTextures(regex),
+            () => bank.FindTextures(regex ??= new Regex(regexStr, RegexOptions.Compiled)),
             (path) => bank.Get(path)?.Mod
         );
     }
@@ -143,6 +143,15 @@ public record class PathField : Field, IFieldConvertible<string> {
         } else {
             return ImGuiManager.Combo(fieldName, ref strValue, paths, ref Search, Tooltip, ComboCache) ? strValue : null;
         }
+    }
+
+    /// <summary>
+    /// Clears all the caches inside of this path field.
+    /// </summary>
+    public void ClearCache() {
+        KnownPaths.Clear();
+        RawPaths.Clear();
+        ComboCache.Clear();
     }
 
     /// <summary>

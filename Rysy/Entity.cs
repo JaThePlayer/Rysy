@@ -880,7 +880,7 @@ public class EntityData : IDictionary<string, object> {
         }), capacity: capacity);
     }
 
-    public void BulkUpdate(Dictionary<string, object> delta) {
+    public void BulkUpdate(IReadOnlyDictionary<string, object> delta) {
         foreach (var (k, v) in delta) {
             this[k] = v;
         }
