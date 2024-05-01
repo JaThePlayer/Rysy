@@ -143,9 +143,7 @@ class EditTileDataWindow : Window {
         Tools.InitHotkeys(Hotkeys);
         Tools.CurrentTool.Layer = layer == TileLayer.FG ? EditorLayers.Fg : EditorLayers.Bg;
 
-        Hotkeys.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("saveMap", "ctrl+s", Save);
+        Hotkeys.AddHistoryHotkeys(Undo, Redo, Save);
 
         Hotkeys.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
         Hotkeys.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);

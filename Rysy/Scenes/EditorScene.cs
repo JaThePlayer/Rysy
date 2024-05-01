@@ -89,12 +89,10 @@ public sealed class EditorScene : Scene {
     public override void SetupHotkeys() {
         base.SetupHotkeys();
 
-        HotkeysIgnoreImGui.AddHotkeyFromSettings("saveMap", "ctrl+s", () => Save());
         Hotkeys.AddHotkeyFromSettings("openMap", "ctrl+o", Open);
         Hotkeys.AddHotkeyFromSettings("newMap", "ctrl+shift+n", () => LoadNewMap());
 
-        HotkeysIgnoreImGui.AddHotkeyFromSettings("undo", "ctrl+z|mouse3", Undo, HotkeyModes.OnHoldSmoothInterval);
-        HotkeysIgnoreImGui.AddHotkeyFromSettings("redo", "ctrl+y|mouse4", Redo, HotkeyModes.OnHoldSmoothInterval);
+        HotkeysIgnoreImGui.AddHistoryHotkeys(Undo, Redo, () => Save());
 
         Hotkeys.AddHotkeyFromSettings("newRoom", "ctrl+n", AddNewRoom);
 
@@ -364,7 +362,8 @@ public sealed class EditorScene : Scene {
         var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
 
         if (renderStylegrounds && CurrentRoom is { }) {
-            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG, filter: StylegroundRenderer.NotMasked);
+            var layers = fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG;
+            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, layers, filter: StylegroundRenderer.NotMasked);
         }
 
         /*
