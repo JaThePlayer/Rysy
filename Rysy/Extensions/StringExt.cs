@@ -246,6 +246,12 @@ public static partial class StringExt {
     /// If no translation is found, returns null.
     /// </summary>
     public static string? TranslateOrNull(this string str) => LangRegistry.TranslateOrNull(str);
+    
+    /// <summary>
+    /// Translates the string using <see cref="LangRegistry.TranslateOrNull(string)"/>.
+    /// If no translation is found, returns null.
+    /// </summary>
+    public static string? TranslateOrNull(this ReadOnlySpan<char> str) => LangRegistry.TranslateOrNull(str);
 
     /// <summary>
     /// Translates the string $"{<paramref name="prefix"/>}.{<paramref name="str"/>}" using <see cref="LangRegistry.TranslateOrNull(string)"/>.

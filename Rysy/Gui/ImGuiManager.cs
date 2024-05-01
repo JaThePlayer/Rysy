@@ -222,12 +222,26 @@ public static class ImGuiManager {
         }
     }
 
-    public static void Combo<T>(string name, ref T value) where T : struct, Enum {
+    public static void EnumCombo<T>(string name, ref T value) where T : struct, Enum {
         var values = Enum.GetValues<T>();
 
         if (ImGui.BeginCombo(name, value.ToString())) {
             foreach (var item in values) {
                 if (ImGui.MenuItem(item.ToString())) {
+                    value = item;
+                }
+            }
+            ImGui.EndCombo();
+        }
+    }
+    
+    public static void EnumComboTranslated<T>(ReadOnlySpan<char> prefix, ref T value) where T : struct, Enum {
+        var values = Enum.GetValues<T>();
+        
+        if (ImGui.BeginCombo(prefix.TranslateOrNull() ?? prefix, value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
+            foreach (var item in values) {
+                var itemStr = item.ToString();
+                if (TranslatedMenuItem(itemStr, prefix)) {
                     value = item;
                 }
             }
@@ -477,6 +491,10 @@ public static class ImGuiManager {
     public static void TranslatedTextWrapped(string id) {
         ImGui.TextWrapped(id.Translate());
         true.WithTranslatedTooltip($"{id}.tooltip");
+    }
+
+    public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix) {
+        return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
 
     public static unsafe int? IndexDragDrop(string payloadName, ref int index) {

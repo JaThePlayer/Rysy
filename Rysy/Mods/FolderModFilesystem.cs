@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Rysy.Mods;
 
-public sealed class FolderModFilesystem : IModFilesystem {
+public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public string Root { get; init; }
 
     private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
@@ -145,6 +145,22 @@ public sealed class FolderModFilesystem : IModFilesystem {
         var searchFilter = string.IsNullOrWhiteSpace(extension) ? "*" : $"*.{extension}";
 
         return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.AllDirectories).Select(f => Path.GetRelativePath(Root, f).Unbackslash());
+    }
+
+    public bool TryWriteToFile(string path, Action<Stream> write) {
+        var realPath = VirtToRealPath(path);
+
+        if (!realPath.StartsWith(Root))
+            return false;
+        
+        if (Path.GetDirectoryName(realPath) is {} dir)
+            Directory.CreateDirectory(dir);
+        
+        using var fileStream = File.Open(realPath, FileMode.Create);
+
+        write(fileStream);
+
+        return true;
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {

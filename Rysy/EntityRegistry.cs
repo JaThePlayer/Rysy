@@ -24,6 +24,9 @@ public sealed class RegisteredEntity {
     public ModMeta? Mod { get; internal set; }
 
     public List<ModMeta> AssociatedMods { get; internal set; } = [];
+
+    private List<string>? _associatedModNames;
+    public List<string> AssociatedModNames => _associatedModNames ??= AssociatedMods.Select(m => m.Name).ToList();
     
     public Type CSharpType { get; internal set; }
     
@@ -49,6 +52,7 @@ public enum RegisteredEntityType {
     Entity = 1,
     Trigger = 2,
     Style = 4,
+    DecalRegistryProperty = 8,
 }
 
 public static class EntityRegistry {
@@ -69,6 +73,11 @@ public static class EntityRegistry {
     public static IEnumerable<Placement> StylegroundPlacements
         => Registered
             .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
+            .SelectMany(kv => kv.Value.Placements);
+    
+    public static IEnumerable<Placement> DecalRegistryPropertyPlacements
+        => Registered
+            .Where(kv => kv.Value.Type == RegisteredEntityType.DecalRegistryProperty)
             .SelectMany(kv => kv.Value.Placements);
 
     public static ListenableDictionary<string, RegisteredEntity> Registered { get; } = new(StringComparer.Ordinal);
@@ -132,13 +141,13 @@ public static class EntityRegistry {
 
     public static List<string> GetAssociatedMods(Entity entity) {
         return entity.AssociatedMods 
-               ?? GetInfo(entity.Name)?.AssociatedMods.Select(m => m.Name).ToList() 
+               ?? GetInfo(entity.Name)?.AssociatedModNames
                ?? [DependencyCheker.UnknownModName];
     }
 
     public static List<string> GetAssociatedMods(Style style) {
         return style.AssociatedMods 
-               ?? GetInfo(style.Name)?.AssociatedMods.Select(m => m.Name).ToList() 
+               ?? GetInfo(style.Name)?.AssociatedModNames
                ?? [DependencyCheker.UnknownModName];
     }
 
@@ -341,7 +350,8 @@ public static class EntityRegistry {
 
     private static IEnumerable<(Type, RegisteredEntityType)> GetEntityTypesFromAsm(Assembly asm)
         => asm.GetTypes()
-            .Where(t => !t.IsAbstract && (t.IsSubclassOf(typeof(Entity)) || t.IsSubclassOf(typeof(Style))) && t != typeof(UnknownEntity) && t != typeof(Trigger))
+            .Where(t => !t.IsAbstract 
+                        && (t.IsSubclassOf(typeof(Entity)) || t.IsSubclassOf(typeof(Style)) || t.IsSubclassOf(typeof(DecalRegistryProperty))) && t != typeof(UnknownEntity) && t != typeof(Trigger))
             .Select(t => (t, CSharpToRegisteredType(t)));
 
     private static List<string> GetSIDsForType(Type type)
@@ -441,6 +451,7 @@ public static class EntityRegistry {
     private static RegisteredEntityType CSharpToRegisteredType(Type t) =>
         t.IsSubclassOf(typeof(Style)) ? RegisteredEntityType.Style :
         t.IsSubclassOf(typeof(Trigger)) ? RegisteredEntityType.Trigger :
+        t.IsSubclassOf(typeof(DecalRegistryProperty)) ? RegisteredEntityType.DecalRegistryProperty :
         RegisteredEntityType.Entity;
 
     private static void AddPlacements(Type? t, List<string> sids, IEnumerable<Placement> placements) {

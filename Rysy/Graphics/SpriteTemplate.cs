@@ -92,7 +92,7 @@ public sealed record SpriteTemplate {
     private Vector2 _realScale;
     
     private bool _prepared;
-    private SpriteEffects Flip;
+    internal SpriteEffects Flip;
 
     public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor) {
         if (Texture.Texture is not { } texture)

@@ -1,13 +1,23 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Graphics.TextureTypes;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using Rysy.History;
 using Rysy.Mods;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace Rysy.Gui.Windows;
 
 public sealed class DecalRegistryWindow : Window {
-    readonly Map Map;
+    const string CreateNewEntryPopupId = "create_new_entry";
+    
+    private readonly Map Map;
+
+    private ModMeta Mod => Map.Mod!;
+    
     bool firstRender = true;
 
     private DecalRegistryEntry? Selection;
@@ -16,10 +26,46 @@ public sealed class DecalRegistryWindow : Window {
     private FormWindow? Form;
     private DecalRegistryProperty? FormProp;
 
-    private List<DecalRegistryEntry>? Entries;
+    private readonly HotkeyHandler HotkeyHandler;
+    private readonly HistoryHandler History;
+
+    private List<DecalRegistryEntry> Entries => GFX.DecalRegistry.GetEntriesForMod(Map.Mod!);
 
     public DecalRegistryWindow(Map map) : base("Decal Registry", new(1200, 800)) {
         Map = map;
+
+        History = new(map) {
+            OnApply = HistoryHook,
+            OnUndo = HistoryHook
+        };
+        
+        HotkeyHandler = new(Input.Global, updateInImgui: true);
+        HotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
+        
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => MoveSelections(-1), HotkeyModes.OnHoldSmoothInterval);
+        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDown", "down", () => MoveSelections(1), HotkeyModes.OnHoldSmoothInterval);
+
+        HotkeyHandler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
+        HotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
+        HotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
+        
+        HotkeyHandler.AddHistoryHotkeys(History.Undo, History.Redo, Save);
+    }
+
+    private void HistoryHook() {
+        Form?.ReevaluateChanged(FormProp!.Data.Inner);
+        Save();
+    }
+
+    private void MoveSelections(int by) {
+        if (Selection is not { } entry)
+            return;
+
+        if (SelectionProp is { } prop) {
+            History.ApplyNewAction(new DecalRegistryMovePropAction(entry, prop, by));
+        } else {
+            History.ApplyNewAction(new DecalRegistryMoveEntryAction(entry, by));
+        }
     }
 
     private void SetSelection(DecalRegistryEntry? entry, DecalRegistryProperty? property) {
@@ -29,12 +75,46 @@ public sealed class DecalRegistryWindow : Window {
         CreateForm(property);
     }
 
-    public static FieldList GetFields(DecalRegistryProperty main) {
-        FieldList fieldInfo = null!;
-        if (main is IPlaceable) {
-            fieldInfo = (FieldList) main.GetType().GetMethod(nameof(IPlaceable.GetFields))?.Invoke(null, null)!;
+    private void DeleteSelections()
+        => ForAllSelections(RemoveEntry, RemoveProp);
+
+    private void CopySelections() {
+        if (Selection is not { } entry)
+            return;
+        
+        if (SelectionProp is { } prop) {
+            Input.Clipboard.Set(prop.Serialize().ToString());
+        } else {
+            Input.Clipboard.Set(entry.Serialize().ToString());
         }
-        fieldInfo ??= new FieldList();
+    }
+    
+    private void CutSelections() {
+        CopySelections();
+        DeleteSelections();
+    }
+
+    private void PasteSelections() {
+        var str = Input.Clipboard.Get();
+
+        try {
+            var xdoc = XDocument.Parse(str);
+            
+            if (xdoc.Element("decal") is { } decalEl && DecalRegistryEntry.TryLoadFromNode(decalEl, out var newEntry)) {
+                AddEntry(newEntry);
+            } else if (Selection is {} entry) {
+                foreach (var el in xdoc.Elements()) {
+                    var prop = DecalRegistryProperty.FromNode(el);
+                    
+                    AddProp(entry, prop);
+                }
+            }
+
+        } catch { }
+    }
+
+    public static FieldList GetFields(DecalRegistryProperty main) {
+        FieldList fieldInfo = EntityRegistry.GetFields(main.Name);
 
         var fields = new FieldList();
         var order = new List<string>();
@@ -78,20 +158,28 @@ public sealed class DecalRegistryWindow : Window {
         var form = new FormWindow(fields, prop.Name);
         form.Exists = prop.Data.Has;
         form.OnChanged = (edited) => {
-            prop.Data.SetOverlay(null);
+            History.ApplyNewAction(new DecalRegistryChangePropertyAction(prop, edited));
+
+            Save();
         };
         form.OnLiveUpdate = (edited) => {
-            //prop.Data.BulkUpdate(edited);
             prop.Data.SetOverlay(edited);
-            GFX.DecalRegistry.Serialize(Entries);
         };
         FormProp?.Data.SetOverlay(null);
         FormProp = prop;
         Form = form;
     }
 
+    private void Save() {
+        GFX.DecalRegistry.SaveMod(Mod);
+    }
+    
     protected override void Render() {
         base.Render();
+        
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows) && !ImGui.GetIO().WantCaptureKeyboard) {
+            HotkeyHandler.Update();
+        }
 
         if (Map.Mod is not { } mod) {
             ImGui.Text("Decal Registry can only be edited for packaged mods.");
@@ -117,11 +205,19 @@ public sealed class DecalRegistryWindow : Window {
         ImGuiManager.XnaWidget("decal_registry_preview", previewW, 300, () => {
             if (Selection is { } entry) {
                 var ctx = SpriteRenderCtx.Default(true);
-                foreach (var item in entry.GetSprites()) {
+
+                IEnumerable<ISprite>? sprites;
+                if (Form is {} && FormProp is { } prop) {
+                    sprites = entry.GetAffectedTextures().SelectMany(t => prop.GetSprites(t, ctx));
+                } else {
+                    sprites = entry.GetSprites();
+                }
+                
+                foreach (var item in sprites) {
                     item.Render(ctx);
                 }
             }
-        }, cam);
+        }, cam, rerender: true);
 
         ImGui.BeginChild("form");
         Form?.RenderBody();
@@ -148,6 +244,9 @@ public sealed class DecalRegistryWindow : Window {
         if (clicked) {
             SetSelection(entry, prop);
         }
+        AddContextWindow(id.ToString(), remove: () => {
+            RemoveProp(entry, prop);
+        });
 
         ImGui.SameLine();
         ImGui.Text(prop.Name);
@@ -155,6 +254,35 @@ public sealed class DecalRegistryWindow : Window {
         //RenderOtherTabs(style);
     }
 
+    private void ForAllSelections(Action<DecalRegistryEntry>? onEntry, Action<DecalRegistryEntry, DecalRegistryProperty>? onProp) {
+        if (Selection is not { } entry)
+            return;
+        
+        if (SelectionProp is { } prop) {
+            onProp?.Invoke(entry, prop);
+        } else {
+            onEntry?.Invoke(entry);
+        }
+    }
+    
+    private void RemoveEntry(DecalRegistryEntry entry) {
+        History.ApplyNewAction(new DecalRegistryRemoveEntryAction(entry));
+        
+        if (Selection == entry)
+            Selection = null;
+    }
+    
+    private void RemoveProp(DecalRegistryEntry entry, DecalRegistryProperty prop) {
+        History.ApplyNewAction(new DecalRegistryRemovePropAction(entry, prop));
+        
+        if (SelectionProp == prop)
+            SelectionProp = null;
+    }
+    
+    private void AddProp(DecalRegistryEntry entry, DecalRegistryProperty prop) {
+        History.ApplyNewAction(new DecalRegistryAddPropAction(entry, prop));
+    }
+    
     private void RenderEntry(DecalRegistryEntry entry) {
         var id = entry.GetHashCode();
 
@@ -169,7 +297,16 @@ public sealed class DecalRegistryWindow : Window {
 
         var open = ImGui.TreeNodeEx($"##{id}", flags);
         var clicked = ImGui.IsItemClicked();
-        //AddStyleContextWindow(style, id);
+        AddContextWindow(id.ToString(), remove: () => {
+            RemoveEntry(entry);
+        }, render: () => {
+            if (ImGui.Button("Edit")) {
+                _newEntryName = entry.Path.TrimEnd('*');
+                _newEntryType = entry.Type;
+                ImGui.OpenPopup(CreateNewEntryPopupId);
+            }
+            RenderEntryEditPopup(Mod, CreateNewEntryPopupId, entry);
+        });
 
         ImGui.SameLine();
         ImGui.Text(entry.Path);
@@ -178,13 +315,30 @@ public sealed class DecalRegistryWindow : Window {
 
         if (open) {
             foreach (var prop in entry.Props) {
-                //RenderStyleImgui(innerStyle);
                 RenderProp(entry, prop);
             }
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            //RenderAddNewEntry(apply);
+            
+            ImGuiManager.PushNullStyle();
+            ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+            ImGuiManager.PopNullStyle();
+
+            var popupid = $"new_{entry.Path}";
+            ImGui.OpenPopupOnItemClick(popupid, ImGuiPopupFlags.MouseButtonLeft);
+
+            if (ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+                var placements = EntityRegistry.DecalRegistryPropertyPlacements;
+                ImGuiManager.List(placements, p => p.SID ?? p.Name, _newPropertyComboCache, (pl) => {
+                    var prop = DecalRegistryProperty.CreateFromPlacement(pl);
+                    AddProp(entry, prop);
+                    
+                    ImGui.CloseCurrentPopup();
+                }, favorites: []);
+
+                ImGui.EndPopup();
+            }
 
             ImGui.TreePop();
         }
@@ -198,10 +352,9 @@ public sealed class DecalRegistryWindow : Window {
         if (!ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f)))
             return;
 
-        var entries = Entries ??= GFX.DecalRegistry.GetEntriesForMod(mod).ToList();
+        var entries = Entries;
 
         var flags = ImGuiManager.TableFlags;
-        var textBaseWidth = ImGui.CalcTextSize("m").X;
 
         if (!ImGui.BeginTable("Styles", 1, flags)) {
             ImGui.EndChild();
@@ -209,22 +362,137 @@ public sealed class DecalRegistryWindow : Window {
         }
 
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
-        //ImGui.TableSetupColumn("Rooms", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 12f);
         ImGui.TableHeadersRow();
 
         foreach (var entry in entries) {
             RenderEntry(entry);
         }
 
-        //ImGui.TableNextRow();
-        //ImGui.TableNextColumn();
-        //RenderAddNewEntry(null);
-
-        //ImGui.TableNextRow();
-        //ImGui.TableNextColumn();
-        //RenderAddNewFolder();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        
+        ImGuiManager.PushNullStyle();
+        ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        ImGuiManager.PopNullStyle();
+        
+        if (!ImGui.IsPopupOpen(CreateNewEntryPopupId))
+            ImGui.OpenPopupOnItemClick(CreateNewEntryPopupId, ImGuiPopupFlags.MouseButtonLeft);
+        RenderEntryEditPopup(mod, CreateNewEntryPopupId);
 
         ImGui.EndTable();
         ImGui.EndChild();
     }
+
+    private void RenderEntryEditPopup(ModMeta mod, string popupid, DecalRegistryEntry? toChange = null) {
+        if (!ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask))
+            return;
+        
+        ImGuiManager.EnumComboTranslated("rysy.decalRegistryEntryType", ref _newEntryType);
+
+        var isInvalid = EntryExistsFor(_newEntryName);
+
+        PathField? field = null;
+        switch (_newEntryType) {
+            case DecalRegistryEntry.Types.StartsWith:
+                isInvalid |= _newEntryName is [.., '*'];
+                    
+                _newEntryDecalPathFieldStartsWith ??= new("", GFX.Atlas, "^decals/(.*)$") {
+                    Filter = IsValidPath,
+                    Editable = true,
+                };
+
+                field = _newEntryDecalPathFieldStartsWith;
+                break;
+            case DecalRegistryEntry.Types.Directory:
+                isInvalid |= !_newEntryName.EndsWith('/');
+                _newEntryDecalPathFieldDirectory ??= new("", GFX.Atlas, "^decals/(.*/).*$") {
+                    Filter = IsValidPath,
+                    Editable = true,
+                };
+
+                field = _newEntryDecalPathFieldDirectory;
+                break;
+            default:
+                if (!isInvalid) {
+                    isInvalid = !(GFX.Atlas.TryGet(Decal.MapTextureToPath(_newEntryName), out var texture) && texture is ModTexture modTexture && modTexture.Mod == mod);
+                }
+
+                _newEntryDecalPathFieldSingleTexture ??= new("", GFX.Atlas, "^decals/(.*)$") {
+                    Filter = IsValidPath,
+                    Editable = true,
+                };
+                field = _newEntryDecalPathFieldSingleTexture;
+                break;
+        }
+            
+        ImGuiManager.PushInvalidStyleIf(isInvalid);
+        ImGui.SetNextItemWidth(400f);
+        _newEntryName = (string?)field.RenderGui("rysy.decalRegistryWindow.newEntryPath".Translate(), _newEntryName) ?? _newEntryName;
+        ImGuiManager.PopInvalidStyle();
+
+        ImGui.BeginDisabled(isInvalid);
+        if (ImGuiManager.TranslatedButton("rysy.decalRegistryWindow.create")) {
+            if (_newEntryType is DecalRegistryEntry.Types.StartsWith && _newEntryName is not [.., '*']) {
+                _newEntryName += "*";
+            }
+
+            if (toChange is { }) {
+                History.ApplyNewAction(new DecalRegistryChangeEntryPathAction(toChange, _newEntryName));
+                SetSelection(toChange, null);
+            } else {
+                var entry = new DecalRegistryEntry { Path = _newEntryName };
+                AddEntry(entry);
+            }
+
+            _newEntryName = "";
+                
+            _newEntryDecalPathFieldSingleTexture?.ClearCache();
+            _newEntryDecalPathFieldDirectory?.ClearCache();
+            _newEntryDecalPathFieldStartsWith?.ClearCache();
+                
+            ImGui.CloseCurrentPopup();
+        }
+        ImGui.EndDisabled();
+
+        ImGui.EndPopup();
+    }
+
+    private void AddEntry(DecalRegistryEntry entry)
+    {
+        History.ApplyNewAction(new DecalRegistryAddEntryAction(entry));
+        SetSelection(entry, null);
+    }
+
+    private bool EntryExistsFor(string path) {
+        return Entries.Any(e => e.Path == path);
+    }
+    
+    private bool IsValidPath(FoundPath path)
+        => GFX.Atlas.TryGet(path.Path, out var texture) && texture is ModTexture modTexture && modTexture.Mod == Mod && !EntryExistsFor(path.Captured);
+    
+    private void AddContextWindow(string id, Action? remove = null, Action? render = null) {
+        var sid = $"d_ctx_{id}";
+        ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
+
+        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            render?.Invoke();
+            
+            if (remove is {} && ImGui.Button("Remove")) {
+                RysyEngine.OnEndOfThisFrame += remove;
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+    }
+
+    private string _newEntryName = "";
+    
+    private PathField? _newEntryDecalPathFieldSingleTexture;
+    private PathField? _newEntryDecalPathFieldStartsWith;
+    private PathField? _newEntryDecalPathFieldDirectory;
+    private DecalRegistryEntry.Types _newEntryType = DecalRegistryEntry.Types.SingleTexture;
+    
+    private readonly ComboCache<Placement> _newPropertyComboCache = new();
+
 }

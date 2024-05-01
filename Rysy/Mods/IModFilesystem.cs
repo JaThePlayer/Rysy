@@ -42,6 +42,16 @@ public interface IModFilesystem {
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension);
 }
 
+public interface IWriteableModFilesystem : IModFilesystem {
+    public bool TryWriteToFile(string path, Action<Stream> write);
+}
+
+public static class WriteableModFilesystemExt {
+    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, Stream toWrite) {
+        return fs.TryWriteToFile(path, toWrite.CopyTo);
+    }
+}
+
 public sealed class WatchedAsset {
     public Action<string>? OnChanged { get; set; }
 }
