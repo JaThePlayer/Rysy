@@ -68,7 +68,7 @@ public class MapStylegrounds : IPackable {
 
     public void Unpack(BinaryPacker.Element from) {
         foreach (var c in from.Children) {
-            List<Style> styles = new();
+            List<Style> styles = new(c.Children.Length);
 
             foreach (var style in c.Children)
                 styles.Add(Style.FromElement(style));

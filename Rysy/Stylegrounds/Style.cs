@@ -81,7 +81,8 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     public virtual List<string>? AssociatedMods => null;
 
     /// <summary>
-    /// Gets the sprites needed to render this style in the styleground window
+    /// Gets the sprites needed to render this style in the styleground window.
+    /// <see cref="PreviewRectangle"/> returns a rectangle with the bounds of this window.
     /// </summary>
     /// <returns></returns>
     public virtual IEnumerable<ISprite> GetPreviewSprites() {
@@ -136,6 +137,11 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
         BindAttribute.GetBindContext<Style>(this).UpdateBoundFields(this, ctx);
     }
 
+    /// <summary>
+    /// The rectangle to be used in <see cref="GetPreviewSprites"/>
+    /// </summary>
+    public Rectangle PreviewRectangle() => new(0, 0, 320, 180);
+    
     public static bool MatchRoomName(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName) {
         if (roomName.StartsWith("lvl_")) {
             roomName = roomName["lvl_".Length..];

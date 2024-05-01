@@ -37,11 +37,11 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
     public static PlacementList GetPlacements() => [];
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
-        return _cachedPreviewSprite ??= ISprite.LinearGradient(new(0, 0, 320, 180), Gradient, Direction, LoopX, LoopY);
+        return _cachedPreviewSprite ??= ISprite.LinearGradient(PreviewRectangle(), Gradient, Direction, LoopX, LoopY);
     }
     
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
-        var bounds = new Rectangle(0, 0, (int) (320 * 6f / ctx.Camera.Scale), (int) (180 * 6f / ctx.Camera.Scale));
+        var bounds = ctx.FullScreenBounds();
         
         // if zoom level changed, clear the cache. OnChanged handles properties being changed already.
         if (_cachedSprite is { } && _cachedSprite.Bounds != bounds) {
