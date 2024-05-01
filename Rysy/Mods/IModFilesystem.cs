@@ -50,6 +50,18 @@ public static class WriteableModFilesystemExt {
     public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, Stream toWrite) {
         return fs.TryWriteToFile(path, toWrite.CopyTo);
     }
+    
+    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, string fileContents) {
+        return fs.TryWriteToFile(path, s => {
+            using var writer = new StreamWriter(s);
+            
+            writer.Write(fileContents);
+        });
+    }
+    
+    public static bool CopyFileTo(this IWriteableModFilesystem fs, string from, string to) {
+        return fs.OpenFile(from, fromStr => fs.TryWriteToFile(to, fromStr.CopyTo));
+    }
 }
 
 public sealed class WatchedAsset {

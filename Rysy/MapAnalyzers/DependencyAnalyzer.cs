@@ -63,7 +63,7 @@ public class DependencyAnalyzer : MapAnalyzer {
             ? "rysy.analyzers.dependency.missing.unknown".Translate()
             : "rysy.analyzers.dependency.missing".TranslateFormatted(DepModName);
 
-        public bool AutoFixable => !IsUnknown && DepModMeta is { } && BaseMod.Filesystem is FolderModFilesystem;
+        public bool AutoFixable => !IsUnknown && DepModMeta is { } && BaseMod.Filesystem is IWriteableModFilesystem;
 
         private void RenderEntityList(IEnumerable<object> objs) {
             if (!ImGui.BeginTable("Entities", 2, ImGuiManager.TableFlags)) {
@@ -122,7 +122,7 @@ public class DependencyAnalyzer : MapAnalyzer {
         }
 
         public void Fix() {
-            if (DepModMeta is null || BaseMod.Filesystem is not FolderModFilesystem fs)
+            if (DepModMeta is null || BaseMod.Filesystem is not IWriteableModFilesystem fs)
                 return;
 
             BaseMod.EverestYaml.First().Dependencies.Add(new() {
@@ -131,13 +131,11 @@ public class DependencyAnalyzer : MapAnalyzer {
             });
 
             var yaml = YamlHelper.Serializer.Serialize(BaseMod.EverestYaml);
-            var yamlPath = fs.FileExists("everest.yml") ? $"{fs.Root}/everest.yml" : $"{fs.Root}/everest.yaml";
+            
+            var yamlPath = fs.FileExists("everest.yml") ? "everest.yml" : "everest.yaml";
 
-            if (File.Exists(yamlPath)) {
-                File.Move(yamlPath, yamlPath + ".backup", overwrite: true);
-            }
-
-            File.WriteAllText(yamlPath, yaml);
+            fs.CopyFileTo(yamlPath, yamlPath + ".backup");
+            fs.TryWriteToFile(yamlPath, yaml);
         }
     }
 }
