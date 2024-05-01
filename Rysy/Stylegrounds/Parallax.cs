@@ -80,15 +80,19 @@ public sealed class Parallax : Style, IPlaceable {
 
         var color = Color * alpha;
         var targetTexture = GFX.Atlas[texture];
-        var scale = new Vector2(FlipX ? -1f : 1f, FlipY ? -1f : 1f);
+        var flip = SpriteEffects.None;
+        if (FlipX)
+            flip |= SpriteEffects.FlipHorizontally;
+        if (FlipY)
+            flip |= SpriteEffects.FlipVertically;
 
         if (_cachedBaseSprite is { } cached && cached.Template.Texture == targetTexture 
-            && cached.Color == color && cached.Template.Scale == scale) {
+            && cached.Color == color && cached.Template.Flip == flip) {
             return cached;
         }
 
         var template = SpriteTemplate.FromTexture(targetTexture, 0);
-        template.Scale = scale;
+        template.Flip = flip;
         
         return _cachedBaseSprite = template.CreateColoredTemplate(color);
     }

@@ -9,7 +9,7 @@ public static class StylegroundRenderer {
         BGAndFG = BG | FG,
     }
 
-    private static RasterizerState CullNoneWithScissor = new() {
+    private static readonly RasterizerState CullNoneWithScissor = new() {
         CullMode = CullMode.None,
         ScissorTestEnable = true,
         FillMode = FillMode.Solid
@@ -99,4 +99,7 @@ public static class StylegroundRenderer {
     }
 }
 
-public record class StylegroundRenderCtx(Room Room, Camera Camera, bool Animate);
+public record class StylegroundRenderCtx(Room Room, Camera Camera, bool Animate) {
+    public Rectangle FullScreenBounds() =>
+        new(0, 0, (int) (320 * 6f / Camera.Scale), (int) (180 * 6f / Camera.Scale));
+}

@@ -10,12 +10,12 @@ public sealed class NorthernLights : Style, IPlaceable {
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
         return _cachedPreviewSprite
-            ??= ISprite.LinearGradient(new(0, 0, 320, 180), Gradient, LinearGradient.Directions.Vertical);
+            ??= ISprite.LinearGradient(PreviewRectangle(), Gradient, LinearGradient.Directions.Vertical);
     }
 
     // Simplified rendering, which only renders the gradient
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
-        var bounds = new Rectangle(0, 0, (int) (320 * 6f / ctx.Camera.Scale), (int) (180 * 6f / ctx.Camera.Scale));
+        var bounds = ctx.FullScreenBounds();
         
         // if zoom level changed, clear the cache.
         if (_cachedSprite is { } && _cachedSprite.Bounds != bounds) {
@@ -30,5 +30,5 @@ public sealed class NorthernLights : Style, IPlaceable {
 
     public static PlacementList GetPlacements() => new("default");
     
-    private static readonly LinearGradient Gradient = LinearGradient.Parse("020825,170c2f,100", null);
+    private static readonly LinearGradient Gradient = LinearGradient.Parse("020825,170c2f,100");
 }

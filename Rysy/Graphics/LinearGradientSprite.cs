@@ -192,13 +192,13 @@ public sealed class LinearGradient : ISpanParsable<LinearGradient>
         }
     }
     
-    public static LinearGradient Parse(string s, IFormatProvider? provider) 
+    public static LinearGradient Parse(string s, IFormatProvider? provider = null) 
         => Parse(s.AsSpan(), provider);
 
     public static bool TryParse(string? s, IFormatProvider? provider, out LinearGradient result) =>
         TryParse(s.AsSpan(), provider, out result);
 
-    public static LinearGradient Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+    public static LinearGradient Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null)
     {
         if (!TryParse(s, provider, out var parsed))
             throw new Exception("Invalid gradient");
