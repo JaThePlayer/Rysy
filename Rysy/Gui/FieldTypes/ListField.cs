@@ -1,11 +1,10 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Helpers;
-using System;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ListField : Field, IFieldConvertibleToList {
+public record class ListField : Field, IFieldConvertibleToCollection {
     public string Separator = ",";
 
     public Field BaseField { get; set; }
@@ -198,7 +197,7 @@ public record class ListField : Field, IFieldConvertibleToList {
     }
 
 
-    public ReadOnlyArray<T> ConvertMapDataValueToList<T>(object value) {
+    public ReadOnlyArray<T> ConvertMapDataValueToArray<T>(object value) {
         var split = Split(value?.ToString() ?? "", StringSplitOptions.RemoveEmptyEntries);
         var list = new T[split.Length];
 
@@ -219,6 +218,9 @@ public record class ListField : Field, IFieldConvertibleToList {
 
         return new(list);
     }
+
+    public ReadOnlyHashSet<T> ConvertMapDataValueToHashSet<T>(object value) =>
+        new(ConvertMapDataValueToArray<T>(value).ToHashSet());
 
     public ListField WithMinAndMaxElements(int min, int max) {
         return this with {

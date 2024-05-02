@@ -17,8 +17,10 @@ public interface IFieldConvertible {
 }
 
 /// <summary>
-/// Supplies a function that allows the <see cref="BindAttribute"/> to convert the value stored in the .bin file into alist of an arbitrary type
+/// Supplies a function that allows the <see cref="BindAttribute"/> to convert the value stored in the .bin file into a collection of an arbitrary type
 /// </summary>
-public interface IFieldConvertibleToList {
-    ReadOnlyArray<T> ConvertMapDataValueToList<T>(object value);
+public interface IFieldConvertibleToCollection {
+    ReadOnlyArray<T> ConvertMapDataValueToArray<T>(object value);
+    
+    ReadOnlyHashSet<T> ConvertMapDataValueToHashSet<T>(object value);
 }
