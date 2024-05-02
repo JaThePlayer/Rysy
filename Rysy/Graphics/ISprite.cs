@@ -24,7 +24,7 @@ public interface ISprite : IEnumerable<ISprite> {
     public static ISpriteDepthComparer DepthDescendingComparer => new();
 
 #pragma warning disable CA1033 // Interface methods should be callable by child types
-    IEnumerator<ISprite> IEnumerable<ISprite>.GetEnumerator() => this.ToSelfEnumerator<ISprite>();
+    IEnumerator<ISprite> IEnumerable<ISprite>.GetEnumerator() => this.ToSelfEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => this.ToSelfEnumerator();
 #pragma warning restore CA1033 // Interface methods should be callable by child types
