@@ -429,6 +429,9 @@ public static class EntityRegistry {
             var attrs = t.GetCustomAttributes<CustomEntityAttribute>()
                 .Where(attr => HandleAssociatedMods(GetOrCreateInfo(attr.Name, rt), attr.AssociatedMods, mod))
                 .ToList();
+            
+            if (attrs.Count == 0)
+                continue;
 
             var getPlacementsMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
             try {
