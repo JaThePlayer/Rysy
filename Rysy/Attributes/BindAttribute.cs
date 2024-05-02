@@ -120,23 +120,33 @@ public sealed class BindAttribute : Attribute {
             converterMethod = converterMethod?.MakeGenericMethod(fieldInfo.FieldType);
         }
 
-        if (converterMethod is null && field.GetType().IsAssignableTo(typeof(IFieldConvertibleToList))) {
-            if (fieldInfo.FieldType.GetGenericTypeDefinition() != typeof(ReadOnlyArray<>)) {
+        if (converterMethod is null && field.GetType().IsAssignableTo(typeof(IFieldConvertibleToCollection))) {
+            var targetType = fieldInfo.FieldType.GetGenericTypeDefinition();
+
+            string? converterMethodName;
+            
+            if (targetType == typeof(ReadOnlyArray<>)) {
+                converterMethodName = nameof(IFieldConvertibleToCollection.ConvertMapDataValueToArray);
+
+            } else if (targetType == typeof(ReadOnlyHashSet<>)) {
+                converterMethodName = nameof(IFieldConvertibleToCollection.ConvertMapDataValueToHashSet);
+            }
+            else {
                 throw new Exception($"""
                     {entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)}
-                    It implements {typeof(IFieldConvertibleToList)}, but the type of {attr.FieldName} does not extend {typeof(ReadOnlyArray<>)}.
+                    It implements {typeof(IFieldConvertibleToCollection)}, but the type of the field {attr.FieldName} does not extend {typeof(ReadOnlyArray<>)} or {typeof(ReadOnlyHashSet<>)}.
                     """);
             }
 
             converterMethod =
-                 typeof(IFieldConvertibleToList).GetMethod(nameof(IFieldConvertibleToList.ConvertMapDataValueToList), bindingFlags, argumentTypeList)
-              ?? field.GetType().GetMethod(nameof(IFieldConvertibleToList.ConvertMapDataValueToList), bindingFlags, argumentTypeList);
+                typeof(IFieldConvertibleToCollection).GetMethod(converterMethodName, bindingFlags, argumentTypeList)
+                ?? field.GetType().GetMethod(converterMethodName, bindingFlags, argumentTypeList);
 
             converterMethod = converterMethod?.MakeGenericMethod(fieldInfo.FieldType.GetGenericArguments()[0]);
         }
 
         if (converterMethod is null) {
-            throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)} or {typeof(IFieldConvertibleToList)}");
+            throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName} to type {fieldInfo.FieldType}, but {field.GetType()} does not implement {convertibleType} or {typeof(IFieldConvertible)} or {typeof(IFieldConvertibleToCollection)}");
         }
 
         return converterMethod;
