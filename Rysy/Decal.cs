@@ -80,23 +80,34 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public sealed override IEnumerable<ISprite> GetSprites() => GetSprite();
 
-    private AnimatedSpriteTemplate? _template;
+    private object? _template;
     
     public ISprite GetSprite() {
         if (_template is null) {
             var path = MapTextureToPath(Texture);
-            var animation = SimpleAnimation.FromPathSubtextures(path, 12f);
+            if (GFX.Atlas.GetSubtextures(path) is { Count: > 1 }) {
+                var animation = SimpleAnimation.FromPathSubtextures(path, 12f);
             
-            _template = new(SpriteTemplate.FromTexture(path, Depth) with {
-                Scale = Scale,
-                Rotation = Rotation.ToRad(),
-                Origin = new(0.5f)
-            }, animation);
+                _template = new AnimatedSpriteTemplate(SpriteTemplate.FromTexture(path, Depth) with {
+                    Scale = Scale,
+                    Rotation = Rotation.ToRad(),
+                    Origin = new(0.5f)
+                }, animation);
+            } else {
+                _template = (SpriteTemplate.FromTexture(path, Depth) with {
+                    Scale = Scale,
+                    Rotation = Rotation.ToRad(),
+                    Origin = new(0.5f)
+                }).CreateColoredTemplate(Color);
+            }
         }
 
-        return _template.Create(Pos, Color);
+        return _template switch {
+            ColoredSpriteTemplate t => t.Create(Pos),
+            AnimatedSpriteTemplate anim => anim.Create(Pos, Color),
+            _ => ISprite.Point(Pos, Color.Red),
+        };
     }
-        
 
     public static Decal Create(BinaryPacker.Element from, bool fg, Room room) {
         from.Name = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID;
