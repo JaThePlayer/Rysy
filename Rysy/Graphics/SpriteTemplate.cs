@@ -40,6 +40,9 @@ public sealed record SpriteTemplate {
     public TemplatedRainbowSprite CreateRainbow(Vector2 pos)
         => new(this, pos);
 
+    public RepeatingSprite CreateRepeating(Rectangle bounds, Color color)
+        => new(this, bounds, color);
+
     public Sprite CreateUntemplated(Vector2 pos, Color color) => new Sprite(Texture) {
         Color = color,
         Pos = pos,
@@ -254,15 +257,16 @@ public sealed record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSou
     private List<SpriteTemplate> _realTemplates;
     
     public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor, float timeOffset = 0f) {
-        if (_realTemplates is null) {
+        if (_realTemplates is not {} realTemplates) {
             _realTemplates = new(TextureSource.TextureCount);
+            realTemplates = _realTemplates;
             for (int j = 0; j < TextureSource.TextureCount; j++) {
-                _realTemplates.Add(Template.WithTexture(TextureSource.GetTextureByIndex(j)));
+                realTemplates.Add(Template.WithTexture(TextureSource.GetTextureByIndex(j)));
             }
         }
         
         var textureIdx = TextureSource.GetTextureIndex(ctx.Time + timeOffset);
-        var animatedTemplate = _realTemplates.ElementAtOrDefault(textureIdx);
+        var animatedTemplate = textureIdx > 0 && textureIdx < realTemplates.Count ? realTemplates[textureIdx] : default;
         
         if (animatedTemplate is { Texture.Texture: {} templateTexture }) {
             animatedTemplate.RenderAt(ctx, pos, color, outlineColor, templateTexture);

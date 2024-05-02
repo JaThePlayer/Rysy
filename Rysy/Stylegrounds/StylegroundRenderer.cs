@@ -31,16 +31,6 @@ public static class StylegroundRenderer {
         return true;
     }
 
-    public static Func<Style, bool> WithTag(string targetTag) => (style) => {
-        foreach (var tag in style.Tags) {
-            if (tag == targetTag) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
     public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null) {
         ArgumentNullException.ThrowIfNull(styles);
         float scale = camera.Scale;

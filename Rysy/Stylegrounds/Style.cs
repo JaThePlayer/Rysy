@@ -41,20 +41,29 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
 
     protected BinaryPacker.Element[]? UnhandledChildren;
 
-    [JsonIgnore]
-    public string? Only => Attr("only", null!);
+    [Bind("only")]
+    public string? Only;
 
-    [JsonIgnore]
-    public string? Exclude => Attr("exclude", null!);
+    [Bind("exclude")]
+    public string? Exclude;
 
-    [JsonIgnore]
-    public string? Flag => Attr("flag", null!);
+    [Bind("flag")]
+    public string? Flag;
 
-    [JsonIgnore]
-    public string? NotFlag => Attr("notflag", null!);
+    [Bind("notflag")]
+    public string? NotFlag;
 
     [Bind("tag")]
-    public readonly ReadOnlyArray<string> Tags;
+    public ReadOnlyArray<string> Tags;
+
+    public bool HasTag(string tag) {
+        foreach (var selfTag in Tags) {
+            if (selfTag == tag)
+                return true;
+        }
+
+        return false;
+    }
 
     private StyleFolder? _Parent;
     [JsonIgnore]
@@ -143,6 +152,9 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     public Rectangle PreviewRectangle() => new(0, 0, 320, 180);
     
     public static bool MatchRoomName(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName) {
+        if (predicate is ['*'])
+            return true;
+        
         if (roomName.StartsWith("lvl_")) {
             roomName = roomName["lvl_".Length..];
         }
@@ -247,7 +259,17 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
     #endregion
 
     #region IBindTarget
-    FieldList IBindTarget.GetFields() => StylegroundWindow.GetFields(this);
+
+    FieldList IBindTarget.GetFields() {
+        var defaults = GetDefaultFields();
+        var fields = EntityRegistry.GetFields(Name);
+
+        foreach (var (k, v) in defaults) {
+            fields.TryAdd(k, v);
+        }
+
+        return fields;
+    }
 
     object IBindTarget.GetValueForField(Field field, string key) {
         Style? style = this;

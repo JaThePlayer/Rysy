@@ -482,9 +482,10 @@ public class StylegroundWindow : Window {
     }
 
     private void AddStyleContextWindow(Style style, int id) {
-        ImGui.OpenPopupOnItemClick($"style_ctx_{id}", ImGuiPopupFlags.MouseButtonRight);
+        var popupId = Interpolator.Temp($"style_ctx_{id}");
+        ImGui.OpenPopupOnItemClick(popupId, ImGuiPopupFlags.MouseButtonRight);
 
-        if (ImGui.BeginPopupContextWindow($"style_ctx_{id}", ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
             if (ImGui.Button("Remove")) {
                 RysyEngine.OnEndOfThisFrame += () => History.ApplyNewAction(Delete(style));
                 ImGui.CloseCurrentPopup();
@@ -501,7 +502,6 @@ public class StylegroundWindow : Window {
 
                 ImGui.CloseCurrentPopup();
             }
-
 
             ImGui.EndPopup();
         }

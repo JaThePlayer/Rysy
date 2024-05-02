@@ -412,7 +412,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         } else {
             CacheSpritesIfNeeded();
 
-            if (!selected && CachedSprites!.All(s => s.IsLoaded)) {
+            if (!selected && CachedSprites!.TrueForAll(s => s.IsLoaded)) {
                 RysyEngine.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
             }
 
@@ -612,8 +612,17 @@ public sealed class Room : IPackable, ILuaWrapper {
         // clear autotiled sprite caches for tilegrids
         FG.ClearSpriteCache();
         BG.ClearSpriteCache();
-
-        foreach (var e in GetAllEntitylikes()) {
+        
+        foreach (var e in Entities) {
+            e.ClearInnerCaches();
+        }
+        foreach (var e in Triggers) {
+            e.ClearInnerCaches();
+        }
+        foreach (var e in BgDecals) {
+            e.ClearInnerCaches();
+        }
+        foreach (var e in FgDecals) {
             e.ClearInnerCaches();
         }
     }

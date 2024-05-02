@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Stylegrounds;
 
@@ -27,6 +28,8 @@ internal sealed class StyleMask : LonnEntity {
 internal sealed class SJAllInOneStyleMask : LonnEntity {
     public string Tag => Attr("tag", null!) ?? Attr("stylemaskTag");
 
+    public override int Depth => Bool("behindFg") ? Depths.BGTerrain + 1 : Depths.Above;
+
     public override IEnumerable<ISprite> GetSprites() {
         var tag = Tag;
         if (tag.IsNullOrWhitespace() || StyleMaskHelper.GetSprite($"sjstylemask_{tag}", this) is not { } maskSprite)
@@ -42,16 +45,17 @@ static class StyleMaskHelper {
         if (tag.IsNullOrWhitespace())
             return null;
 
-        if (Settings.Instance is { StylegroundPreview: false })
-            return null;
+        return new FunctionSprite<Entity>(e, (spr, ctx, self) => {
+            if (Settings.Instance is { StylegroundPreview: false })
+                return;
+            
+            if (ctx.Camera?.IsRectVisible(self.Rectangle.MovedBy(ctx.CameraOffset)) ?? true) {
+                var lastState = GFX.EndBatch();
+                StylegroundRenderer.Render(self.Room, self.Room.Map.Style, ctx.Camera ?? EditorState.Camera, StylegroundRenderer.Layers.BGAndFG, s => s.HasTag(tag!), 
+                    scissorRectWorldPos: self.Rectangle.MovedBy(self.Room.Pos));
 
-        return new FunctionSprite<Entity>(e, (self, spr) => {
-            var lastState = GFX.EndBatch();
-
-            StylegroundRenderer.Render(self.Room, self.Room.Map.Style, EditorState.Camera, StylegroundRenderer.Layers.BGAndFG, StylegroundRenderer.WithTag(tag!), 
-                scissorRectWorldPos: self.Rectangle.MovedBy(self.Room.Pos));
-
-            GFX.BeginBatch(lastState);
+                GFX.BeginBatch(lastState);
+            }
         });
     }
 }

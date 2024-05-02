@@ -1,9 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
-using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
-using System.Runtime.InteropServices;
 
 namespace Rysy.Stylegrounds;
 
@@ -11,19 +9,30 @@ namespace Rysy.Stylegrounds;
 public sealed class Parallax : Style, IPlaceable {
     public override string DisplayName => Texture;
 
-    public string Texture => Attr("texture");
+    [Bind("texture")]
+    public string Texture;
 
-    public float Alpha => Float("alpha", 1f);
+    [Bind("alpha")]
+    public float Alpha;
 
-    public Color Color => GetColor("color", Color.White, Helpers.ColorFormat.RGB);
+    [Bind("color")]
+    public Color Color;
 
-    public Vector2 Pos => new(Float("x", 0f), Float("y", 0f));
+    [Bind("x")] private float _x;
+    [Bind("y")] private float _y;
+    [Bind("scrollx")] private float _scrollx;
+    [Bind("scrolly")] private float _scrolly;
+    [Bind("speedx")] private float _speedx;
+    [Bind("speedy")] private float _speedy;
+    [Bind("blendmode")] private string? _blendmodeStr;
+    
+    public Vector2 Pos => new(_x, _y);
 
-    public Vector2 Scroll => new(Float("scrollx", 0f), Float("scrolly", 0f));
+    public Vector2 Scroll => new(_scrollx, _scrolly);
 
-    public Vector2 Speed => new(Float("speedx", 0f), Float("speedy", 0f));
+    public Vector2 Speed => new(_speedx, _speedy);
 
-    public BlendState Blend => BlendModes.TryGetValue(Attr("blendmode", "alphablend"), out var state) ? state : BlendState.AlphaBlend;
+    public BlendState Blend => BlendModes.TryGetValue(_blendmodeStr ??= "alphablend", out var state) ? state : BlendState.AlphaBlend;
 
     [Bind("fadex")]
     private ReadOnlyArray<Fade.Region> _fadeXRegions;
@@ -35,11 +44,17 @@ public sealed class Parallax : Style, IPlaceable {
 
     public Fade FadeY => new(_fadeYRegions);
 
-    public bool FlipX => Bool("flipx", false);
-    public bool FlipY => Bool("flipy", false);
+    [Bind("flipx")]
+    public bool FlipX;
+    
+    [Bind("flipy")]
+    public bool FlipY;
 
-    public bool LoopX => Bool("loopx", true);
-    public bool LoopY => Bool("loopy", true);
+    [Bind("loopx")]
+    public bool LoopX;
+    
+    [Bind("loopy")]
+    public bool LoopY;
 
     public static FieldList GetFields() => new(new {
         texture = Fields.AtlasPath("bgs/07/07/bg00", "(bgs/.*)"),
@@ -71,43 +86,43 @@ public sealed class Parallax : Style, IPlaceable {
 
     public static PlacementList GetPlacements() => new("parallax");
 
-    private ColoredSpriteTemplate? _cachedBaseSprite;
+    private SpriteTemplate? _cachedBaseSprite;
     
-    private ColoredSpriteTemplate? GetBaseSprite(float alpha) {
+    private SpriteTemplate? GetBaseSprite() {
         var texture = Texture;
         if (string.IsNullOrWhiteSpace(texture))
             return null;
 
-        var color = Color * alpha;
-        var targetTexture = GFX.Atlas[texture];
+        // Checks for texture, flip, etc are not needed as we clear the cache in OnChanged already.
+        if (_cachedBaseSprite is { } cached) {
+            return cached;
+        }
+
         var flip = SpriteEffects.None;
         if (FlipX)
             flip |= SpriteEffects.FlipHorizontally;
         if (FlipY)
             flip |= SpriteEffects.FlipVertically;
 
-        if (_cachedBaseSprite is { } cached && cached.Template.Texture == targetTexture 
-            && cached.Color == color && cached.Template.Flip == flip) {
-            return cached;
-        }
-
-        var template = SpriteTemplate.FromTexture(targetTexture, 0);
+        var template = SpriteTemplate.FromTexture(texture, 0);
         template.Flip = flip;
         
-        return _cachedBaseSprite = template.CreateColoredTemplate(color);
+        return _cachedBaseSprite = template;
     }
 
     public override IEnumerable<ISprite> GetPreviewSprites() {
-        var baseSprite = GetBaseSprite(Alpha);
+        var baseSprite = GetBaseSprite();
 
-        return baseSprite?.Create(default) ?? [];
+        return baseSprite?.Create(default, Color * Alpha) ?? [];
+    }
+
+    public override void OnChanged(EntityDataChangeCtx ctx) {
+        base.OnChanged(ctx);
+        _cachedBaseSprite = null;
     }
 
     internal static Vector2 CalcCamPos(Camera camera)
-        => camera.ScreenToReal(Vector2.Zero).Floored() + new Vector2(0f, 0f);
-
-    // Pre-allocated buffer of struct sprites, allows avoiding big memory allocations from re-rendering parallax each frame
-    private List<ColorTemplatedSprite>? _cachedVanillaSprites;
+        => camera.ScreenToReal(Vector2.Zero).Floored();
     
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
         if (ctx.Camera.Scale < 1f / 2f)
@@ -129,15 +144,15 @@ public sealed class Parallax : Style, IPlaceable {
         fade *= FadeY.GetValueAt(camPos.Y + 90f);
         fade = fade.AtMost(1f);
 
-        var baseSprite = GetBaseSprite(fade);
-        if (baseSprite is null || fade <= 0 || baseSprite.Template.Texture.Texture is not {})
+        var baseSprite = GetBaseSprite();
+        if (baseSprite is null || fade <= 0 || baseSprite.Texture.Texture is not {})
             return [];
 
         var loopX = LoopX;
         var loopY = LoopY;
 
-        var texW = baseSprite.Template.Texture.Width;
-        var texH = baseSprite.Template.Texture.Height;
+        var texW = baseSprite.Texture.Width;
+        var texH = baseSprite.Texture.Height;
         
         if (loopX) {
             pos.X = (pos.X % texW - texW) % texW;
@@ -146,67 +161,17 @@ public sealed class Parallax : Style, IPlaceable {
             pos.Y = (pos.Y % texH - texH) % texH;
         }
         
-        // todo: extract into LoopingSprite
-        if (baseSprite.Template.Texture is VanillaTexture vanilla) {
-            var maxX = 320 * 6f / ctx.Camera.Scale;
-            var maxY = 180 * 6f / ctx.Camera.Scale;
+        var maxX = 320 * 6f / ctx.Camera.Scale;
+        var maxY = 180 * 6f / ctx.Camera.Scale;
 
-            var spriteCount = (loopX ? (int) ((maxX - pos.X + texW) / texW + 1) : 1) *
-                              (loopY ? (int) ((maxY - pos.Y + texH) / texH + 1) : 1);
-            var spritesList = _cachedVanillaSprites ??= new(spriteCount);
-            spritesList.Clear();
-            if (spriteCount >= spritesList.Count) {
-                CollectionsMarshal.SetCount(spritesList, spriteCount);
-            }
+        var x = (int) pos.X;
+        var y = (int) pos.Y;
             
-            var i = 0;
-            var sprites = CollectionsMarshal.AsSpan(spritesList);
-            for (float x = pos.X; x <= maxX + texW; x += texW) {
-                for (float y = pos.Y; y <= maxY + texH; y += texH) {
-                    sprites[i++] = baseSprite.Create(new(x, y));
-                    if (!loopY) {
-                        break;
-                    }
-                }
-                if (!loopX) {
-                    break;
-                }
-            }
-            
-            return spritesList.Take(i).Cast<ISprite>();
-        }
-
-        var texture = baseSprite.Create(new Vector2(pos.X, pos.Y));
-        return new FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)>((texture, this, ctx.Camera), 
-            RenderModdedSprite) {
-            Color = baseSprite.Color
-        };
-    }
-
-    private static void RenderModdedSprite((ColorTemplatedSprite, Parallax, Camera) data, FunctionSprite<(ColorTemplatedSprite, Parallax, Camera)> t) {
-        var texture = data.Item1;
-        var self = data.Item2;
-        var textVirt = texture.Template.Template.Texture;
-
-        if (textVirt.Texture is not { } tx) {
-            return;
-        }
-
-        var clipRect = textVirt.ClipRect;
-
-        if (self.LoopX) clipRect.Width = (int) (data.Item3.Viewport.Width / data.Item3.Scale - texture.Pos.X); //(int)(320 * 6f / data.Item3.Scale) + 640;
-        if (self.LoopY) clipRect.Height = (int) (data.Item3.Viewport.Height / data.Item3.Scale - texture.Pos.Y); //(int) (180 * 6f / data.Item3.Scale) + 320;
-
-        var flip = SpriteEffects.None;
-        if (self.FlipX) {
-            flip |= SpriteEffects.FlipHorizontally;
-        }
-
-        if (self.FlipY) {
-            flip |= SpriteEffects.FlipVertically;
-        }
-
-        GFX.Batch.Draw(tx, texture.Pos, clipRect, t.Color, texture.Template.Template.Rotation, texture.Template.Template.Origin, 1f, flip, 0f);
+        var bounds = new Rectangle(x, y, 
+            loopX ? (int)maxX - x + texW : texW, 
+            loopY ? (int)maxY - y + texH : texH);
+        
+        return baseSprite.CreateRepeating(bounds, Color * fade);
     }
 
     public override SpriteBatchState? GetSpriteBatchState() => GFX.GetCurrentBatchState() with 
