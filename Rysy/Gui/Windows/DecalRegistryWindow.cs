@@ -6,7 +6,6 @@ using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Mods;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace Rysy.Gui.Windows;

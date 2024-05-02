@@ -107,36 +107,38 @@ public sealed record SpriteTemplate {
         
         // store some fields for later use
         // this is not done in the constructor, as that would force preloading
-        CacheFields();
+        if (!_prepared)
+            CacheFields();
 
-        var scale = _realScale;
+        var rotation = Rotation;
         var origin = _multOrigin;
+        var scale = _realScale;
 
-        // todo: figure out if calculating rotated rectangles for culling is worth it
-        if (ctx.Camera is { } cam && Rotation == 0f) {
-            var size = new Vector2(Width * scale.X, Height * scale.Y);
-            var rPos = pos - origin * scale;
-            if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int) size.X, (int) size.Y))
-                return;
+        if (rotation == 0f) {
+            // todo: figure out if calculating rotated rectangles for culling is worth it
+            if (ctx.Camera is { } cam) {
+                var rPos = pos - origin * scale;
+                if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int)(Width * scale.X), (int) (Height * scale.Y)))
+                    return;
+            }
+
+            pos += SubtextureOffset;
+        } else {
+            pos += SubtextureOffset.Rotate(rotation);
         }
 
         var flip = Flip;
-        pos += SubtextureOffset.Rotate(Rotation);
+        var batch = GFX.Batch;
 
         if (outlineColor != default) {
-            Render(texture, pos + new Vector2(-1f, 0f), outlineColor, scale, flip, origin);
-            Render(texture, pos + new Vector2(1f, 0f), outlineColor, scale, flip, origin);
-            Render(texture, pos + new Vector2(0f, 1f), outlineColor, scale, flip, origin);
-            Render(texture, pos + new Vector2(0f, -1f), outlineColor, scale, flip, origin);
+            batch.Draw(texture, pos + new Vector2(-1f, 0f), ClipRect, outlineColor, rotation, origin, scale, flip, 0f);
+            batch.Draw(texture, pos + new Vector2(1f, 0f), ClipRect, outlineColor, rotation, origin, scale, flip, 0f);
+            batch.Draw(texture, pos + new Vector2(0f, 1f), ClipRect, outlineColor, rotation, origin, scale, flip, 0f);
+            batch.Draw(texture, pos + new Vector2(0f, -1f), ClipRect, outlineColor, rotation, origin, scale, flip, 0f);
         }
 
         if (color != default)
-            Render(texture, pos, color, scale, flip, origin);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Render(Texture2D texture, Vector2 pos, Color color, Vector2 scale, SpriteEffects flip, Vector2 origin) {
-        GFX.Batch.Draw(texture, pos, ClipRect, color, Rotation, origin, scale, flip, 0f);
+            batch.Draw(texture, pos, ClipRect, color, rotation, origin, scale, flip, 0f);
     }
     
     private void LoadSizeFromTexture() {
@@ -148,8 +150,9 @@ public sealed record SpriteTemplate {
         if (Texture.Texture is not { } texture) {
             return null;
         }
-
-        CacheFields();
+        
+        if (!_prepared)
+            CacheFields();
 
         var scale = _realScale;
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
@@ -180,32 +183,33 @@ public sealed record SpriteTemplate {
     }
 
     private void CacheFields() {
-        ClipRect ??= Texture.ClipRect;
+        if (_prepared)
+            return;
         
-        if (!_prepared) {
-            _prepared = true;
-
-            if (Width == 0)
-                LoadSizeFromTexture();
+        _prepared = true;
             
-            // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
-            var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
-            if (nonDivisibleBy2 != default)
-                DrawOffset += (nonDivisibleBy2 * Origin);
+        ClipRect ??= Texture.ClipRect;
 
-            _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
-            _realScale = Scale;
+        if (Width == 0)
+            LoadSizeFromTexture();
             
-            if (Scale.X < 0) {
-                _realScale.X = -Scale.X;
-                Flip ^= SpriteEffects.FlipHorizontally;
-                _multOrigin.X = ClipRect!.Value.Width - _multOrigin.X;
-            }
-            if (Scale.Y < 0) {
-                _realScale.Y = -Scale.Y;
-                Flip ^= SpriteEffects.FlipVertically;
-                _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
-            }
+        // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
+        var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
+        if (nonDivisibleBy2 != default)
+            DrawOffset += (nonDivisibleBy2 * Origin);
+
+        _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+        _realScale = Scale;
+            
+        if (Scale.X < 0) {
+            _realScale.X = -Scale.X;
+            Flip ^= SpriteEffects.FlipHorizontally;
+            _multOrigin.X = ClipRect!.Value.Width - _multOrigin.X;
+        }
+        if (Scale.Y < 0) {
+            _realScale.Y = -Scale.Y;
+            Flip ^= SpriteEffects.FlipVertically;
+            _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
         }
     }
 
@@ -216,7 +220,7 @@ public sealed record SpriteTemplate {
     }
 }
 
-public record ColoredSpriteTemplate {
+public sealed record ColoredSpriteTemplate {
     public SpriteTemplate Template { get; init; }
     public Color Color { get; set; }
     public Color OutlineColor { get; set; }
@@ -246,7 +250,7 @@ public record ColoredSpriteTemplate {
         : Template.Create(pos, color);
 }
 
-public record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource TextureSource) {
+public sealed record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSource TextureSource) {
     private List<SpriteTemplate> _realTemplates;
     
     public void RenderAt(SpriteRenderCtx ctx, Vector2 pos, Color color, Color outlineColor, float timeOffset = 0f) {

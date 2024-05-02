@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace Rysy.LuaSupport;
 
 public static partial class LonnDrawables {
-    private static byte[] RYSY_UNPACKSPRASCII = Encoding.ASCII.GetBytes("RYSY_UNPACKSPR");
+    private static byte[] RYSY_UNPACKSPRASCII = "RYSY_UNPACKSPR"u8.ToArray();
     private static byte[] _typeASCII = "_type"u8.ToArray();
 
     public static RectangleSprite LuaToRect(Lua lua, int top) {
