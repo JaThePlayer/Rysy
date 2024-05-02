@@ -130,7 +130,7 @@ public sealed class Parallax : Style, IPlaceable {
         fade = fade.AtMost(1f);
 
         var baseSprite = GetBaseSprite(fade);
-        if (baseSprite is null || fade <= 0)
+        if (baseSprite is null || fade <= 0 || baseSprite.Template.Texture.Texture is not {})
             return [];
 
         var loopX = LoopX;
