@@ -493,11 +493,11 @@ public sealed record AutotiledSpriteList : ISprite {
         
         int left, right, top, bot;
         if (ctx.Camera is { } cam) {
-            var scrPos = -selfPos + cam.Pos - ctx.CameraOffset;
-            left = Math.Max(0, (int) scrPos.X / 8);
-            right = (int) Math.Min(sprites.GetLength(0), left + float.Round(cam.Viewport.Width / cam.Scale / 8) + 2);
-            top = Math.Max(0, (int) scrPos.Y / 8);
-            bot = (int) Math.Min(sprites.GetLength(1), top + float.Round(cam.Viewport.Height / cam.Scale / 8) + 2);
+            var scrPos = cam.Pos - ctx.CameraOffset - selfPos;
+            left = Math.Max(0, (int) (scrPos.X / 8));
+            right = (int) Math.Min(sprites.GetLength(0), float.Round((scrPos.X + cam.Viewport.Width / cam.Scale) / 8) + 2);
+            top = Math.Max(0, (int) (scrPos.Y / 8));
+            bot = (int) Math.Min(sprites.GetLength(1), float.Round((scrPos.Y + cam.Viewport.Height / cam.Scale) / 8) + 2);
         } else {
             left = 0;
             top = 0;

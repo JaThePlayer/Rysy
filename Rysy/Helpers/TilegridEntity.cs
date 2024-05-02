@@ -30,7 +30,7 @@ public abstract class TilegridEntity : Entity {
 
         var tiles = ParseTilegrid(tileData, Width / 8, Height / 8);
 
-        return CachedSprites = TileEntity.GetTilegrid(Room, Layer).Autotiler!.GetSprites(Pos, tiles, Color, tilesOOB: false).ToListIfNotList();
+        return CachedSprites = TileEntity.GetTilegrid(Room, Layer).Autotiler!.GetSprites(Pos, tiles, Color, tilesOOB: false);
     }
 
     public override void OnChanged(EntityDataChangeCtx changed) {
@@ -73,5 +73,5 @@ public abstract class TilegridEntity : Entity {
         return cloned;
     }
 
-    private List<ISprite>? CachedSprites;
+    private AutotiledSpriteList? CachedSprites;
 }
