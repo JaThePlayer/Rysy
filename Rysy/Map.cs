@@ -163,6 +163,9 @@ public sealed class Map : IPackable {
         }
 
         if (meta.Sprites is { } sprites && oldMeta?.Sprites != meta.Sprites) {
+            Sprites.Clear();
+            LoadVanillaSpritesXml();
+            
             if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), (stream, mod) => {
                     Sprites.Load(stream, mod);
                     Rooms.ForEach(r => r.ClearRenderCacheAggressively());
@@ -224,10 +227,15 @@ public sealed class Map : IPackable {
         if (!FGAutotiler.Loaded) {
             ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FGAutotiler.ReadFromXml);
         }
-
-        ModRegistry.Filesystem.TryWatchAndOpenAll("Graphics/Sprites.xml", Sprites.Load, Sprites.Clear);
+        
         if (!Sprites.Loaded) {
+            LoadVanillaSpritesXml();
         }
+    }
+
+    private void LoadVanillaSpritesXml() {
+        ModRegistry.VanillaMod.Filesystem.TryOpenFile("Graphics/Sprites.xml", s => Sprites.Load(s, ModRegistry.VanillaMod));
+        ModRegistry.Filesystem.TryWatchAndOpenAll("Graphics/Sprites.xml", Sprites.Load, Sprites.Clear, filter: m => !m.IsVanilla);
     }
 
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);

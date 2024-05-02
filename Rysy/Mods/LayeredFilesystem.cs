@@ -32,17 +32,23 @@ public class LayeredFilesystem : IModFilesystem {
         }
     }
 
-    public void TryWatchAndOpenAll(string path, Action<Stream, ModMeta> callback, Action onChanged) {
+    public void TryWatchAndOpenAll(string path, Action<Stream, ModMeta> callback, Action onChanged, Func<ModMeta, bool>? filter = null) {
         WatchedAsset asset = new() {
             OnChanged = (path) => {
                 onChanged();
                 foreach (var mod in Mods) {
+                    if (!(filter?.Invoke(mod) ?? true))
+                        continue;
+                    
                     mod.Filesystem.TryOpenFile(path, (stream) => callback(stream, mod));
                 }
             }
         };
 
         foreach (var mod in Mods) {
+            if (!(filter?.Invoke(mod) ?? true))
+                continue;
+            
             mod.Filesystem.TryOpenFile(path, (stream) => callback(stream, mod));
             mod.Filesystem.RegisterFilewatch(path, asset);
         }
