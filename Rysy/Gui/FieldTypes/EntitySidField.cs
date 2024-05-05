@@ -5,7 +5,7 @@ namespace Rysy.Gui.FieldTypes;
 public record EntitySidField : DropdownField<string> {
     private static Cache<Dictionary<string, string>> CreateCache(RegisteredEntityType types) {
         return EntityRegistry.Registered.CreateCache(x =>
-            x.Where(y => y.Value.Type.HasFlag(types))
+            x.Where(y => (y.Value.Type & types) != 0)
             .ToDictionary(y => y.Key, y => y.Key));
     }
 
