@@ -41,7 +41,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
     }
     
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
-        var bounds = ctx.FullScreenBounds();
+        var bounds = ctx.FullScreenBounds;
         
         // if zoom level changed, clear the cache. OnChanged handles properties being changed already.
         if (_cachedSprite is { } && _cachedSprite.Bounds != bounds) {

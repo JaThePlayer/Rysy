@@ -15,7 +15,7 @@ public sealed class NorthernLights : Style, IPlaceable {
 
     // Simplified rendering, which only renders the gradient
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx) {
-        var bounds = ctx.FullScreenBounds();
+        var bounds = ctx.FullScreenBounds;
         
         // if zoom level changed, clear the cache.
         if (_cachedSprite is { } && _cachedSprite.Bounds != bounds) {

@@ -12,5 +12,5 @@ public sealed class Stars : Style, IPlaceable {
         => ISprite.Rect(PreviewRectangle(), Color.Black);
 
     public override IEnumerable<ISprite> GetSprites(StylegroundRenderCtx ctx)
-        => ISprite.Rect(ctx.FullScreenBounds(), Color.Black);
+        => ISprite.Rect(ctx.FullScreenBounds, Color.Black);
 }
