@@ -89,7 +89,8 @@ public static class StylegroundRenderer {
     }
 }
 
-public record class StylegroundRenderCtx(Room Room, Camera Camera, bool Animate) {
-    public Rectangle FullScreenBounds() =>
-        new(0, 0, (int) (320 * 6f / Camera.Scale), (int) (180 * 6f / Camera.Scale));
+public record StylegroundRenderCtx(Room Room, Camera Camera, bool Animate) {
+    public Rectangle FullScreenBounds => new(0, 0, ScreenWidth, ScreenHeight);
+    public int ScreenWidth => (int) (320 * 6f / Camera.Scale);
+    public int ScreenHeight => (int) (180 * 6f / Camera.Scale);
 }

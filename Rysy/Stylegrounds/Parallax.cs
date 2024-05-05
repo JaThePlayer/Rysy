@@ -160,16 +160,13 @@ public sealed class Parallax : Style, IPlaceable {
         if (loopY) {
             pos.Y = (pos.Y % texH - texH) % texH;
         }
-        
-        var maxX = 320 * 6f / ctx.Camera.Scale;
-        var maxY = 180 * 6f / ctx.Camera.Scale;
 
         var x = (int) pos.X;
         var y = (int) pos.Y;
             
         var bounds = new Rectangle(x, y, 
-            loopX ? (int)maxX - x + texW : texW, 
-            loopY ? (int)maxY - y + texH : texH);
+            loopX ? ctx.ScreenWidth - x + texW : texW,
+            loopY ? ctx.ScreenHeight - y + texH : texH);
         
         return baseSprite.CreateRepeating(bounds, Color * fade);
     }
