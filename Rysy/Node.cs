@@ -96,7 +96,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     public IHistoryAction DeleteSelf() {
         var nodesLeft = Entity.Nodes!.Count - 1;
         if (nodesLeft < Entity.NodeLimits.Start.Value) {
-            return new RemoveEntityAction(Entity, Entity.Room);
+            return new RemoveEntityAction(Entity);
         }
 
         return new RemoveNodeAction(Node, Entity);
