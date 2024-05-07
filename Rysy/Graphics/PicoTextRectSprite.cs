@@ -8,7 +8,7 @@ namespace Rysy.Graphics;
 /// </summary>
 public record struct PicoTextRectSprite : ISprite {
     public int? Depth { get; set; }
-    public Color Color { get; set; }
+    public Color Color { get; set; } = Color.White;
     public ISprite WithMultipliedAlpha(float alpha) {
         return this with {
             Color = Color * alpha,
@@ -23,6 +23,11 @@ public record struct PicoTextRectSprite : ISprite {
 
     public PicoTextRectSprite(string text) {
         Text = text;
+    }
+    
+    public PicoTextRectSprite(string text, Rectangle bounds) {
+        Text = text;
+        Pos = bounds;
     }
 
     public void Render() {
