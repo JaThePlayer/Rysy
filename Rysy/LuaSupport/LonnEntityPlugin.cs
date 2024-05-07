@@ -25,6 +25,7 @@ public sealed class LonnEntityPlugin {
     public Func<ILuaWrapper, Entity, Vector2> GetJustification;
     public Func<ILuaWrapper, Entity, Vector2> GetScale { get; set; }
     public Func<ILuaWrapper, Entity, float> GetRotation;
+    public Func<ILuaWrapper, Entity, Vector2>? GetOffset { get; set; }
 
     public Func<ILuaWrapper, Entity, Color> GetColor;
     public Func<ILuaWrapper, Entity, Color> GetFillColor;
@@ -216,6 +217,12 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetScale = NullConstOrGetter(plugin, "scale",
             def: Vector2.One,
+            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcResults: 2
+        );
+        
+        plugin.GetOffset = NullConstOrGetter(plugin, "offset",
+            def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
