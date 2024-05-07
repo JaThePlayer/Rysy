@@ -49,12 +49,18 @@ public static class PicoFont {
     }
 
     /// <summary>
-    /// Prints a line of text. Doesn't support newlines.
+    /// Prints a line of text.
     /// </summary>
     public static void Print(ReadOnlySpan<char> txt, Vector2 pos, Color color, float scale = 1f) {
+        var startX = pos.X;
         foreach (var c in txt) {
-            Print(c, pos, color, scale);
-            pos.X += W * scale;
+            if (c is '\n') {
+                pos.Y += H * scale;
+                pos.X = startX;
+            } else {
+                Print(c, pos, color, scale);
+                pos.X += W * scale;
+            }
         }
     }
 
@@ -84,6 +90,11 @@ public static class PicoFont {
 
         if (scale == 0f)
             return;
+
+        if (bounds.Width == 0 || bounds.Height == 0) {
+            Print(txt, bounds.Location.ToVector2(), color, scale);
+            return;
+        }
 
         var rw = W * scale;
         var boundWidth = bounds.Width - 2;
