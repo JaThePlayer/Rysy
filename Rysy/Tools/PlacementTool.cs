@@ -155,7 +155,7 @@ public class PlacementTool : Tool {
             }
 
             if (offset.X != 0 || offset.Y != 0) {
-                selection.MoveBy(offset).Apply(map);
+                selection.MoveBy(offset)?.Apply(map);
             }
 
             if ((resize.X != 0 || resize.Y != 0) && selection.TryResize(resize) is { } resizeAction) {
@@ -167,7 +167,7 @@ public class PlacementTool : Tool {
         }
 
         if (offset.X != 0 || offset.Y != 0) {
-            selection.MoveBy(offset).Apply(map);
+            selection.MoveBy(offset)?.Apply(map);
         }
 
         if (resize.X != 0 || resize.Y != 0) {

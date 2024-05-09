@@ -399,6 +399,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
         var clone = EntityRegistry.Create(placement, Pos, Room, false, this is Trigger);
         clone.Id = Id;
+        
+        if (placement.ValueOverrides.TryGetValue("x", out var x) && x is IConvertible) {
+            clone.X = Convert.ToInt32(x);
+        }
+        if (placement.ValueOverrides.TryGetValue("y", out var y) && y is IConvertible) {
+            clone.Y = Convert.ToInt32(y);
+        }
 
         return clone;
     }
@@ -493,6 +500,18 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         clone.Pos = Pos.RotateAround(origin, angleRad).Floored();
 
         return clone;
+    }
+
+    /// <summary>
+    /// Handles moving this entity by the given offset.
+    /// NodeIndex is -1 if moving the main entity.
+    /// If 'shouldDoNormalMove' is set to true, the default move behaviour is used, which is more efficient than doing this manually.
+    /// Set 'shouldDoNormalMove' to false and return a new entity instance (don't edit 'this'!) to make changes to the entity.
+    /// Set 'shouldDoNormalMove' to false and return null to cancel the move.
+    /// </summary>
+    public virtual Entity? MoveBy(Vector2 offset, int nodeIndex, out bool shouldDoNormalMove) {
+        shouldDoNormalMove = true;
+        return null;
     }
 
     /// <summary>
