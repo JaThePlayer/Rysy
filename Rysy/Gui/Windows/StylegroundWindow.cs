@@ -180,6 +180,7 @@ public class StylegroundWindow : Window {
         var fieldInfo = EntityRegistry.GetFields(main.Name);
 
         var fields = Style.GetDefaultFields();
+        fields.SetHiddenFields(fieldInfo.GetDynamicallyHiddenFields);
         var order = new List<string>(fields.Order!(main));
         
         if (main is StyleFolder) {

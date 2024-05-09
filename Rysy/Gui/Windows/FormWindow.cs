@@ -1,6 +1,8 @@
 ﻿using ImGuiNET;
+using KeraLua;
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
+using Rysy.LuaSupport;
 
 namespace Rysy.Gui.Windows;
 
@@ -11,10 +13,13 @@ public class FormWindow : Window {
     public Dictionary<string, object> EditedValues = new();
     internal const int ITEM_WIDTH = 175;
 
+    private Func<FormContext, IEnumerable<string>>? _getDynamicallyHiddenFields;
+    private HashSet<string> dynamicallyHiddenFields = [];
+
     public FormWindowChanged OnChanged { get; set; }
     public FormWindowChanged OnLiveUpdate { get; set; }
 
-    internal sealed record class Prop(string Name) {
+    internal sealed record Prop(string Name) {
         public Field Field;
 
         /// <summary>
@@ -36,6 +41,8 @@ public class FormWindow : Window {
 
     public Func<string, bool> Exists;
 
+    private FormContext FormContext;
+
 
     // used for deciding whether the form should be displayed in columns or not.
     float LongestFieldSize;
@@ -56,28 +63,34 @@ public class FormWindow : Window {
     }
 
     public void Init(FieldList fields, Func<string, bool>? exists = null) {
-        Exists = exists ?? ((_) => true);
+        Exists = exists ?? (_ => true);
         
-        FormContext ctx = new(this);
+        FormContext ctx = FormContext = new(this);
 
-        foreach (var f in fields.OrderedEnumerable(null!)) {
-            var fieldName = f.Key;
-            var field = f.Value;
+        foreach (var (fieldName, field) in fields.OrderedEnumerable(null!)) {
             field.Context = ctx;
 
             FieldList.Add(new(fieldName) {
-                Field = field,
-                //Value = field.GetDefault()
+                Field = field
             });
         }
 
-        LongestFieldSize = fields.Count > 0 ? FieldList.Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X).Chunk(2).Max(pair => pair.Sum()) : 50;
+        LongestFieldSize = fields.Count > 0 ? FieldList
+            .Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X)
+            .Chunk(2)
+            .Max(pair => pair.Sum()) : 50;
         Size = new(
             LongestFieldSize + ITEM_WIDTH * 2.5f,
+            // ReSharper disable once PossibleLossOfFraction
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2 + ImGui.GetStyle().WindowPadding.Y
         );
 
         Resizable = true;
+
+        if (fields.GetDynamicallyHiddenFields is {} getHidden)
+            _getDynamicallyHiddenFields = getHidden;
+        
+        UpdateDynamicallyHiddenFields();
     }
 
     public void ReevaluateChanged(Dictionary<string, object> newDefaults) {
@@ -109,6 +122,14 @@ public class FormWindow : Window {
                 //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }
+
+        UpdateDynamicallyHiddenFields();
+    }
+
+    protected void UpdateDynamicallyHiddenFields() {
+        if (_getDynamicallyHiddenFields is { } getHidden) {
+            dynamicallyHiddenFields = getHidden(FormContext).ToHashSet();
+        }
     }
 
     private bool AllFieldsValid;
@@ -122,6 +143,9 @@ public class FormWindow : Window {
         bool valid = true;
 
         foreach (var prop in FieldList) {
+            if (prop.Field.IsHidden(FormContext) || dynamicallyHiddenFields.Contains(prop.Name))
+                continue;
+            
             if (prop.Field is PaddingField pad) {
                 if (pad.Text is { } text) {
                     if (hasColumns) {
@@ -195,8 +219,6 @@ public class FormWindow : Window {
         try {
             var field = prop.Field;
             newVal = field.RenderGui(field.NameOverride ??= name.Humanize(), val);
-        } catch (Exception) {
-            throw;
         } finally {
             ImGuiManager.PopInvalidStyle();
             ImGuiManager.PopEditedStyle();
@@ -217,10 +239,11 @@ public class FormWindow : Window {
         prop.Value = val;
 
         OnLiveUpdate?.Invoke(EditedValues);
+        UpdateDynamicallyHiddenFields();
     }
 }
 
-public class FormContext {
+public class FormContext : ILuaWrapper {
     private FormWindow Window;
 
     public FormContext(FormWindow window) => Window = window;
@@ -237,5 +260,21 @@ public class FormContext {
     public void SetValue(string fieldName, object newValue) {
         if (Window.FieldList.FirstOrDefault(f => f.Name == fieldName) is { } prop)
             Window.Set(prop, newValue);
+    }
+
+    public int LuaIndex(Lua lua, long key) {
+        lua.PushNil();
+        return 1;
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
+        var stringKey = key.ToString();
+        if (GetValue(stringKey) is { } val) {
+            lua.Push(val);
+            return 1;
+        }
+        
+        lua.PushNil();
+        return 1;
     }
 }
