@@ -22,6 +22,8 @@ public class EntityPropertyWindow : FormWindow {
         var fieldInfo = EntityRegistry.GetFields(main);
 
         var fields = new FieldList();
+        fields.SetHiddenFields(fieldInfo.GetDynamicallyHiddenFields);
+        
         var order = new List<string>();
 
         var minSize = main.MinimumSize;
@@ -47,21 +49,23 @@ public class EntityPropertyWindow : FormWindow {
         order.Add("__padding");
 
         foreach (var (k, f) in fieldInfo.OrderedEnumerable(main)) {
-            if (!BlacklistedKeys.Contains(k)) {
-                fields[k] = f.CreateClone();
-                order.Add(k);
-            }
+            if (!IsValidKey(k))
+                continue;
+            
+            fields[k] = f.CreateClone();
+            order.Add(k);
         }
 
         // Take into account properties defined on this entity, even if not present in FieldInfo
         foreach (var (k, v) in main.EntityData.Inner) {
-            if (!BlacklistedKeys.Contains(k)) {
-                if (fields.TryGetValue(k, out var knownFieldType)) {
-                    fields[k].SetDefault(v);
-                } else {
-                    fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
-                    order.Add(k);
-                }
+            if (!IsValidKey(k))
+                continue;
+            
+            if (fields.TryGetValue(k, out var knownFieldType)) {
+                fields[k].SetDefault(v);
+            } else {
+                fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
+                order.Add(k);
             }
         }
 
@@ -78,6 +82,8 @@ public class EntityPropertyWindow : FormWindow {
         }
 
         return (fields.Ordered(order), main.EntityData.Has);
+
+        bool IsValidKey(string key) => !BlacklistedKeys.Contains(key);
     }
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) 
@@ -163,5 +169,7 @@ public class EntityPropertyWindow : FormWindow {
                 Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }
+        
+        UpdateDynamicallyHiddenFields();
     }
 }

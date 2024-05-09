@@ -400,8 +400,42 @@ public sealed class LonnEntityPlugin {
                 };
             }
             break;
-            default:
+        }
+        lua.Pop(1);
+        
+        switch (lua.GetTable(top, "ignoredFields")) {
+            case LuaType.Table: {
+                if (lua.ToList(lua.GetTop())?.OfType<string>().ToList() is { } ignored) {
+                    var origFieldListGetter = plugin.FieldList;
+                    plugin.FieldList = () => origFieldListGetter().SetHiddenFields(ignored);
+                }
                 break;
+            }
+            case LuaType.Function: {
+                var origFieldListGetter = plugin.FieldList;
+
+                plugin.FieldList = () => {
+                    var fields = origFieldListGetter();
+
+                    return fields.SetHiddenFields(ctx => {
+                        return plugin.PushToStack(plugin => {
+                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields");
+
+                            if (type != LuaType.Function) {
+                                lua.Pop(1);
+                                return [];
+                            }
+
+                            var order = lua.PCallFunction(ctx, 
+                                (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                            lua.Pop(1);
+
+                            return order;
+                        });
+                    });
+                };
+                break;
+            }
         }
         lua.Pop(1);
 

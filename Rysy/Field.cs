@@ -16,6 +16,11 @@ public abstract record class Field {
     public Func<object?, bool>? Validator { get; set; }
 
     /// <summary>
+    /// Whether this field is hidden and should not be shown in the entity edit window
+    /// </summary>
+    public Func<FormContext, bool> IsHidden { get; set; } = _ => false;
+
+    /// <summary>
     /// Gets the default value for this field
     /// </summary>
     public abstract object GetDefault();
@@ -123,6 +128,22 @@ public static class FieldExtensions {
     }
 
     /// <summary>
+    /// Makes this field hidden from entity edit windows.
+    /// </summary>
+    public static T MakeHidden<T>(this T field) where T : Field {
+        field.IsHidden = _ => true;
+        return field;
+    }
+    
+    /// <summary>
+    /// Makes this field hidden from entity edit windows based on a condition
+    /// </summary>
+    public static T MakeHidden<T>(this T field, Func<FormContext, bool> isHidden) where T : Field {
+        field.IsHidden = isHidden;
+        return field;
+    }
+
+    /// <summary>
     /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
     /// </summary>
     public static ListField ToList(this Field field, char separator = ',')
@@ -144,6 +165,7 @@ public sealed class FieldList : Dictionary<string, Field> {
     }
 
     public Func<object, List<string>>? Order;
+    public Func<FormContext, IEnumerable<string>>? GetDynamicallyHiddenFields;
 
     public IEnumerable<KeyValuePair<string, Field>> OrderedEnumerable(object functionArg) {
         if (Order is null || Order?.Invoke(functionArg) is not { } order)
@@ -210,4 +232,18 @@ public sealed class FieldList : Dictionary<string, Field> {
 
     public FieldList Ordered(params string[] strings)
         => Ordered(new List<string>(strings));
+
+    public FieldList SetHiddenFields(IEnumerable<string> toHide) {
+        var toHideList = toHide.ToList(); // avoid multiple enumeration
+        GetDynamicallyHiddenFields = _ => toHideList;
+
+        return this;
+    }
+    
+    public FieldList SetHiddenFields(Func<FormContext, IEnumerable<string>>? toHide) {
+        if (toHide is {})
+            GetDynamicallyHiddenFields = toHide;
+
+        return this;
+    }
 }
