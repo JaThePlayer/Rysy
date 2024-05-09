@@ -45,6 +45,9 @@ public sealed class LonnEntityPlugin {
     public Func<ILuaWrapper, ILuaWrapper, bool, bool, bool>? Flip;
     // rotate(room, entity, direction) -> success?
     public Func<ILuaWrapper, ILuaWrapper, int, bool>? Rotate;
+    
+    // move(room, entity, nodeIndex, offsetX, offsetY)
+    public Action<ILuaWrapper, ILuaWrapper, int, float, float>? Move;
 
     public bool HasSelectionFunction;
 
@@ -275,6 +278,18 @@ public sealed class LonnEntityPlugin {
 
                     lua.GetTable(pl.StackLoc, "rotate");
                     return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, dir);
+                });
+            };
+        }
+
+        if (lua.PeekTableType(top, "move") is LuaType.Function) {
+            plugin.Move = (room, entity, nodeIndex, offsetX, offsetY) => {
+                plugin.PushToStack((pl) => {
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, "move");
+                    
+                    return lua.PCallFunction((_, _) => false, results: 1, room, entity, nodeIndex, offsetX, offsetY);
                 });
             };
         }

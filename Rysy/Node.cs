@@ -88,9 +88,13 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
 
     public Rectangle Rect => Collider.Rect;
 
-    public IHistoryAction MoveBy(Vector2 offset) {
-        //Entity.OnChanged();
-        return new MoveNodeAction(Node, Entity, offset);
+    public IHistoryAction? MoveBy(Vector2 offset) {
+        var newEntity = Entity.MoveBy(offset, PrevNodeId, out var shouldDoNormalMove);
+        if (shouldDoNormalMove) {
+            return new MoveNodeAction(Node, Entity, offset);
+        }
+
+        return newEntity is { } ? Handler.FlipImpl(newEntity, nameof(Entity.MoveBy)) : null;
     }
 
     public IHistoryAction DeleteSelf() {

@@ -266,16 +266,25 @@ public class LonnEntity : Entity {
         var selfWrapper = new CloneEntityWrapper(this);
 
         return Plugin.Rotate(Room, selfWrapper, (int)dir)
-            ? selfWrapper.CreateMutatedClone()
+            ? selfWrapper.CreateMutatedCloneIfChanged()
             : null;
     }
 
-    public override void ClearInnerCaches() {
-        base.ClearInnerCaches();
+    public override Entity? MoveBy(Vector2 offset, int nodeIndex, out bool shouldDoNormalMove) {
+        shouldDoNormalMove = true;
+        if (Plugin is null)
+            return null;
+        
+        if (Plugin?.Move is {} move) {
+            shouldDoNormalMove = false;
+            var selfWrapper = new CloneEntityWrapper(this);
 
-        CachedSprites = null;
-        CachedNodeSprites?.Clear();
-        CachedNodeSprites = null;
+            move(Room, selfWrapper, nodeIndex + 1, offset.X, offset.Y);
+
+            return selfWrapper.CreateMutatedCloneIfChanged();
+        }
+
+        return null;
     }
 
     private Entity? FlipImpl(bool horizontal, bool vertical) {
@@ -286,12 +295,20 @@ public class LonnEntity : Entity {
         var selfWrapper = new CloneEntityWrapper(this);
 
         return Plugin.Flip(Room, selfWrapper, horizontal, vertical) 
-            ? selfWrapper.CreateMutatedClone() 
+            ? selfWrapper.CreateMutatedCloneIfChanged() 
             : null;
     }
 
     public override List<string>? AssociatedMods => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
+    public override void ClearInnerCaches() {
+        base.ClearInnerCaches();
+
+        CachedSprites = null;
+        CachedNodeSprites?.Clear();
+        CachedNodeSprites = null;
+    }
+    
     #region Sprites
     private List<ISprite> SpritesFromLonn(Lua lua, int top) {
         var list = new List<ISprite>();

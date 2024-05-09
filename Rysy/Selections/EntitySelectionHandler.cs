@@ -47,8 +47,13 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
 
-    public IHistoryAction MoveBy(Vector2 offset) {
-        return new MoveEntityAction(Entity, offset);
+    public IHistoryAction? MoveBy(Vector2 offset) {
+        var newEntity = Entity.MoveBy(offset, -1, out var shouldDoNormalMove);
+        if (shouldDoNormalMove) {
+            return new MoveEntityAction(Entity, offset);
+        }
+
+        return newEntity is { } ? FlipImpl(newEntity, "MoveBy") : null;
     }
 
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
