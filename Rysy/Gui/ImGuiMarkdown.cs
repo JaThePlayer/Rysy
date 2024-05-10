@@ -5,7 +5,6 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Rysy.Graphics;
 using Rysy.Helpers;
-using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -82,6 +81,39 @@ internal static partial class ImGuiMarkdown {
                         }
                         ImGui.EndTable();
                         break;
+                    case FencedCodeBlock fencedCodeBlock: {
+                        ImGui.BeginDisabled();
+                        if (fencedCodeBlock.Lines is {})
+                            foreach (var line in fencedCodeBlock.Lines.Lines.AsSpan()
+                                         .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
+                                ImGui.Text(line.ToString() ?? "");
+                            }
+                        ImGui.EndDisabled();
+                        break;
+                    }
+                    case LeafBlock codeBlock: {
+                        var first = true;
+
+                        if (codeBlock.Inline is null) {
+                            if (codeBlock.Lines is {})
+                                foreach (var line in codeBlock.Lines) {
+                                    ImGui.Text(line.ToString() ?? "");
+                                    first = false;
+                                }
+                            
+                            continue;
+                        }
+
+                        foreach (var inline in codeBlock.Inline) {
+                            RenderInline(inline, 0, first, startX);
+                            first = false;
+                        }
+                        
+                        break;
+                    }
+                    default:
+                        Logger.Write("Markdown", LogLevel.Warning, $"Unknown block: {contained}");
+                        break;
                 }
                 
                 ImGui.NewLine();
@@ -139,6 +171,14 @@ internal static partial class ImGuiMarkdown {
                     }
                     renderText = false;
                 }
+            case LineBreakInline:
+                ImGui.NewLine();
+                break;
+            case LinkInline:
+                break;
+            default:
+                Logger.Write("Markdown", LogLevel.Warning, $"Unknown inline: {inline}");
+                break;
         }
 
         if (inline is ContainerInline container) {
