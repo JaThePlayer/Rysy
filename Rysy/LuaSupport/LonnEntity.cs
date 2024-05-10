@@ -224,13 +224,14 @@ public class LonnEntity : Entity {
 
             if (Plugin.GetRectangle is { } rectFunc) {
                 var oldPos = Pos;
-                Pos = Nodes![nodeIndex];
+                
+                SilentSetPos(Nodes![nodeIndex]);
 
                 try {
                     var rectangle = rectFunc(Room, this);
                     return ISelectionCollider.FromRect(rectangle);
                 } finally {
-                    Pos = oldPos;
+                    SilentSetPos(oldPos);
                 }
             }
         } catch (Exception ex) {
