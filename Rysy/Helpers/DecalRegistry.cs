@@ -48,7 +48,7 @@ public sealed class DecalRegistry : IDisposable {
         var serialized = GFX.DecalRegistry.Serialize(entries);
 
         if (mod.Filesystem is IWriteableModFilesystem fs) {
-            fs.TryWriteToFile("DecalRegistry.test.xml", s => serialized.Save(s));
+            fs.TryWriteToFile("DecalRegistry.xml", s => serialized.Save(s));
         }
     }
 
