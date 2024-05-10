@@ -198,6 +198,31 @@ public static class LinqExt {
         onFinishEnumeration(time);
     }
 
+    public static Span<T> SkipWhileFromEnd<T>(this Span<T> from, Func<T, bool> shouldSkip) {
+        var i = from.Length - 1;
+        while (i >= 0 && shouldSkip(from[i])) {
+            i--;
+        }
+
+        return from[..(i+1)];
+    }
+
+    public static ListTakeEnumerable<T, T> FastTake<T>(this List<T> list, int amt)
+        => new(list, amt);
+    
+    /// <summary>
+    /// Represents a list.Take(amt).Cast[TOut]() pattern in one enumerable.
+    /// </summary>
+    public static ListTakeEnumerable<TIn, TOut> FastTakeAs<TIn, TOut>(this List<TIn> list, int amt)
+        where TIn : TOut
+        => new(list, amt);
+    
+    public static CastEnumerator<TFrom, TFromEnumerator, TTo> FastCast<TFrom, TFromEnumerator, TTo>(this TFromEnumerator enumerator)
+        where TFromEnumerator : IEnumerator<TFrom>
+        where TFrom : TTo {
+        return new CastEnumerator<TFrom, TFromEnumerator, TTo>(enumerator);
+    }
+
     /// <summary>
     /// Converts <paramref name="self"/> to an enumerator which returns this object as the only item.
     /// </summary>
@@ -206,33 +231,77 @@ public static class LinqExt {
     public static IEnumerator<T> GetResettableEnumerator<T>(this IEnumerable<T> self) => self switch {
         _ => new ResettableEnumerator<T>(self)
     };
+}
 
-    public struct SingleEnumerator<T> : IEnumerator<T> {
-        private bool _moved = false;
-        private T Item;
+public struct ListTakeEnumerable<TIn, TOut>(List<TIn> list, int amt) : IEnumerable<TOut>, IEnumerator<TOut>
+where TIn : TOut {
+    private int _i = -1;
+    
+    public readonly ListTakeEnumerable<TIn, TOut> GetEnumerator()
+        => _i < 0 ? this : new(list, amt);
 
-        internal SingleEnumerator(T item) {
-            Item = item;
+    IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public bool MoveNext() {
+        return ++_i < amt;
+    }
+
+    public void Reset() {
+        _i = -1;
+    }
+
+    public readonly TOut Current => list[_i];
+
+    object IEnumerator.Current => Current!;
+
+    public readonly void Dispose() {
+    }
+}
+
+public struct CastEnumerator<TFrom, TFromEnumerator, TTo>(TFromEnumerator enumerator) : IEnumerator<TTo>
+    where TFromEnumerator : IEnumerator<TFrom>
+    where TFrom : TTo {
+        
+    public bool MoveNext() => enumerator.MoveNext();
+
+    public void Reset() => enumerator.Reset();
+
+    public TTo Current => enumerator.Current;
+
+    object IEnumerator.Current => Current!;
+
+    public void Dispose() {
+        enumerator.Dispose();
+    }
+}
+
+public struct SingleEnumerator<T> : IEnumerator<T> {
+    private bool _moved = false;
+    private T Item;
+
+    internal SingleEnumerator(T item) {
+        Item = item;
+    }
+
+    public T Current => Item;
+
+    object IEnumerator.Current => Item!;
+
+    public void Dispose() {
+    }
+
+    public bool MoveNext() {
+        if (!_moved) {
+            _moved = true;
+            return true;
         }
+        return false;
+    }
 
-        public T Current => Item;
-
-        object IEnumerator.Current => Item!;
-
-        public void Dispose() {
-        }
-
-        public bool MoveNext() {
-            if (!_moved) {
-                _moved = true;
-                return true;
-            }
-            return false;
-        }
-
-        public void Reset() {
-            _moved = false;
-        }
+    public void Reset() {
+        _moved = false;
     }
 }
 
