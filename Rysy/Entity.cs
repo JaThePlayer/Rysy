@@ -15,7 +15,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, ILooseData {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -325,6 +325,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             (null, null) => $"{GetType().FullName}",
         };
     }
+
+    bool ILooseData.TryGetValue(string key, [NotNullWhen(true)] out object? value)
+        => EntityData.TryGetValue(key, out value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vector2 GetNodeCentered(int index) {
@@ -824,7 +827,7 @@ public readonly struct EntityDataChangeCtx {
     public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName);
 }
 
-public class EntityData : IDictionary<string, object> {
+public class EntityData : IDictionary<string, object>, ILooseData {
     public string SID { get; init; }
 
     public ListenableList<Node> Nodes { get; private set; }
@@ -862,8 +865,8 @@ public class EntityData : IDictionary<string, object> {
 
     private int? _X;
     private int? _Y;
-    public int X => _X ??= Int("x");
-    public int Y => _Y ??= Int("y");
+    public int X => _X ??= this.Int("x");
+    public int Y => _Y ??= this.Int("y");
 
     public EntityData(string sid, BinaryPacker.Element e) {
         SID = sid;
@@ -1059,87 +1062,6 @@ public class EntityData : IDictionary<string, object> {
     }
 
     #endregion
-
-
-    public int Int(string attrName, int def = 0) {
-        if (TryGetValue(attrName, out var obj)) {
-            return obj is int i ? i : Convert.ToInt32(obj, CultureInfo.InvariantCulture);
-        }
-
-        return def;
-    }
-
-    public string Attr(string attrName, string def = "") {
-        if (TryGetValue(attrName, out var obj) && obj is { }) {
-            return obj.ToString()!;
-        }
-
-        return def;
-    }
-
-    public float Float(string attrName, float def = 0f) {
-        if (TryGetValue(attrName, out var obj))
-            return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
-
-        return def;
-    }
-
-    public bool Bool(string attrName, bool def) {
-        if (TryGetValue(attrName, out var obj))
-            return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
-
-        return def;
-    }
-
-    public char Char(string attrName, char def) {
-        if (TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
-            return result;
-
-        return def;
-    }
-
-    public T Enum<T>(string attrName, T def) where T : struct, Enum {
-        if (TryGetValue(attrName, out var obj) && System.Enum.TryParse<T>(obj.ToString(), true, out var result))
-            return result;
-
-        return def;
-    }
-
-    public Color RGB(string attrName, Color def)
-        => GetColor(attrName, def, ColorFormat.RGB);
-
-    public Color RGB(string attrName, string def)
-        => GetColor(attrName, def, ColorFormat.RGB);
-
-    public Color RGBA(string attrName, Color def)
-        => GetColor(attrName, def, ColorFormat.RGBA);
-
-    public Color RGBA(string attrName, string def)
-        => GetColor(attrName, def, ColorFormat.RGBA);
-
-    public Color ARGB(string attrName, Color def)
-        => GetColor(attrName, def, ColorFormat.ARGB);
-
-    public Color ARGB(string attrName, string def)
-        => GetColor(attrName, def, ColorFormat.ARGB);
-
-    public Color GetColor(string attrName, Color def, ColorFormat format) {
-        if (TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
-            return parsed;
-
-        return def;
-    }
-
-    public Color GetColor(string attrName, string def, ColorFormat format) {
-        if (TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
-            return parsed;
-
-        if (ColorHelper.TryGet(def, format, out var defParsed)) {
-            return defParsed;
-        }
-
-        return Color.White;
-    }
 
     public bool Has(string attrName) 
         => ContainsKey(attrName);

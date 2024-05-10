@@ -140,7 +140,7 @@ internal sealed class RainbowTilesetController : LonnEntity, IPlaceable {
     public TileLayer TileLayer => Bg ? TileLayer.BG : TileLayer.FG;
     
     public static FieldList GetFields() => new(new {
-        tilesets = Fields.List("3", Fields.TileDropdown('3', ctx => ctx.GetValue("bg") is true)),
+        tilesets = Fields.List("3", Fields.TileDropdown('3', ctx => ctx.Bool("bg"))),
         bg = false,
     });
 
