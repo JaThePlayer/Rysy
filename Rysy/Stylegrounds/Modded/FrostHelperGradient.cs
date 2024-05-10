@@ -1,4 +1,6 @@
-﻿using ImGuiNET;
+﻿#pragma warning disable CS0649
+
+using ImGuiNET;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.FieldTypes;

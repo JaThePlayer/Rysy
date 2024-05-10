@@ -1,4 +1,6 @@
-﻿using Rysy.Helpers;
+﻿#pragma warning disable CS0649
+
+using Rysy.Helpers;
 using Rysy.LuaSupport;
 
 namespace Rysy.Entities.Modded;
