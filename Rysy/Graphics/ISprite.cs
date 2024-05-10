@@ -182,6 +182,12 @@ public interface ISprite : IEnumerable<ISprite> {
         return new LinearGradientSprite(bounds, gradient, dir, loopX, loopY);
     }
 
+    public static PicoTextRectSprite TextRect(string text, Rectangle bounds, Color color, float scale = 1f) => 
+        new(text, bounds) {
+            Color = color,
+            Scale = scale
+        };
+
     public static Rectangle GetBounds(IEnumerable<ISprite> sprites) {
         var rect = RectangleExt.Merge(sprites.Select(s => s.GetCollider().Rect));
 

@@ -176,7 +176,7 @@ public static class GFX {
         if (camera is { })
             BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix));
         else
-            BeginBatch(new SpriteBatchState());
+            BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
     }
 
     private static Stack<SpriteBatchState> BatchStateHistory = new(2);
