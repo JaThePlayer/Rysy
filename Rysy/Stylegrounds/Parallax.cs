@@ -1,4 +1,5 @@
-﻿using Rysy.Extensions;
+﻿#pragma warning disable CS0649
+
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;

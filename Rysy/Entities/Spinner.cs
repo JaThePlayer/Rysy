@@ -1,4 +1,5 @@
-﻿//#define FAILED_CACHE
+﻿#pragma warning disable CS0649
+//#define FAILED_CACHE
 
 using Rysy.Extensions;
 using Rysy.Graphics;
