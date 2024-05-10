@@ -113,12 +113,12 @@ class EditTileDataWindow : Window {
     private readonly FormContext FormCtx;
 
     internal int Width {
-        get => (int) FormCtx.GetValue("width")!;
+        get => FormCtx.Int("width");
         set => FormCtx.SetValue("width", value);
     }
 
     internal int Height {
-        get => (int) FormCtx.GetValue("height")!;
+        get => FormCtx.Int("height");
         set => FormCtx.SetValue("height", value);
     }
 

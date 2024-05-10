@@ -1,16 +1,15 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
-using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Stylegrounds;
 
-public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
+public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, ILooseData {
     public static FieldList GetDefaultFields() => new FieldList(new {
         only = Fields.String("*").AllowNull().ConvertEmptyToNull(),
         exclude = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
@@ -218,8 +217,6 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
         return unk;
     }
 
-    #region EntityData wrappers
-
     /// <summary>
     /// Gets the <see cref="EntityData"/> from either this style or any of its parents recursively, which contains the given key. If no such data exists, null is returned
     /// </summary>
@@ -236,27 +233,6 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
 
         return null;
     }
-
-    /// <summary>
-    /// Wrapper for <see cref="EntityData.Bool"/>, which calls it on <see cref="Parent"/> if the key is not defined on this style.
-    /// </summary>
-    public bool Bool(string key, bool def) => GetDataContaining(key)?.Bool(key, def) ?? def;
-
-    /// <summary>
-    /// Wrapper for <see cref="EntityData.Attr"/>, which calls it on <see cref="Parent"/> if the key is not defined on this style.
-    /// </summary>
-    public string Attr(string key, string def = "") => GetDataContaining(key)?.Attr(key, def) ?? def;
-
-    /// <summary>
-    /// Wrapper for <see cref="EntityData.Float"/>, which recursively calls it on <see cref="Parent"/> if the key is not defined on this style.
-    /// </summary>
-    public float Float(string key, float def) => GetDataContaining(key)?.Float(key, def) ?? def;
-
-    /// <summary>
-    /// Wrapper for <see cref="EntityData.GetColor(string, Color, ColorFormat)"/>, which recursively calls it on <see cref="Parent"/> if the key is not defined on this style.
-    /// </summary>
-    public Color GetColor(string key, Color def, ColorFormat format) => GetDataContaining(key)?.GetColor(key, def, format) ?? def;
-    #endregion
 
     #region IBindTarget
 
@@ -295,4 +271,13 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper {
         return 1;
     }
     #endregion
+
+    bool ILooseData.TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+        if (GetDataContaining(key) is not { } data) {
+            value = null;
+            return false;
+        }
+
+        return data.TryGetValue(key, out value);
+    }
 }

@@ -1,4 +1,6 @@
-﻿namespace Rysy.Stylegrounds;
+﻿using Rysy.Helpers;
+
+namespace Rysy.Stylegrounds;
 
 public abstract class StyleFolder : Style {
     public const string EditorNameDataKey = "_editorName";

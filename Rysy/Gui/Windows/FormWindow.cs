@@ -1,8 +1,9 @@
 ﻿using ImGuiNET;
 using KeraLua;
-using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.Windows;
 
@@ -159,7 +160,8 @@ public class FormWindow : Window {
                     if (ImGui.GetColumnIndex() != 0)
                         ImGui.NextColumn();
 
-                    ImGui.Separator();
+                    if (pad.DrawSeparator)
+                        ImGui.Separator();
                 }
 
                 continue;
@@ -243,22 +245,38 @@ public class FormWindow : Window {
     }
 }
 
-public class FormContext : ILuaWrapper {
+public class FormContext : ILuaWrapper, ILooseData {
     private FormWindow Window;
 
     public FormContext(FormWindow window) => Window = window;
 
+    private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => Window.FieldList.FirstOrDefault(f => f.Name == fieldName);
+    
+    /// <summary>
+    /// Tries to get the value of the field of name <paramref name="fieldName"/>
+    /// </summary>
+    public bool TryGetValue(string fieldName, [NotNullWhen(true)] out object? value) {
+        var field = GetPropByNameOrNull(fieldName);
+        if (field is null) {
+            value = null;
+            return false;
+        }
+
+        value = field.ValueOrDefault();
+        return true;
+    }
+    
     /// <summary>
     /// Gets the value of the field of name <paramref name="fieldName"/>, or null if the field does not exist
     /// </summary>
     public object? GetValue(string fieldName)
-        => Window.FieldList.FirstOrDefault(f => f.Name == fieldName)?.ValueOrDefault();
+        => GetPropByNameOrNull(fieldName)?.ValueOrDefault();
 
     /// <summary>
     /// Sets the value of the field of name <paramref name="fieldName"/>
     /// </summary>
     public void SetValue(string fieldName, object newValue) {
-        if (Window.FieldList.FirstOrDefault(f => f.Name == fieldName) is { } prop)
+        if (GetPropByNameOrNull(fieldName) is { } prop)
             Window.Set(prop, newValue);
     }
 

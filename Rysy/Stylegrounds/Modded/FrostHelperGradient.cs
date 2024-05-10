@@ -53,7 +53,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
 
     public override SpriteBatchState? GetSpriteBatchState() 
         => GFX.GetCurrentBatchState() with {
-            BlendState = ParseBlendMode(Attr("blendMode", "alphablend")),
+            BlendState = ParseBlendMode(this.Attr("blendMode", "alphablend")),
         };
 
     public override void OnChanged(EntityDataChangeCtx ctx) {
