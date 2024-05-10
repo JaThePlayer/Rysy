@@ -301,6 +301,14 @@ public static class ColorHelperExtensions {
     /// <inheritdoc cref="ColorHelper.Get"/>
     /// </summary>
     public static Color ToColor(this string str, ColorFormat format = ColorFormat.RGBA) => ColorHelper.Get(str, format);
+    
+    public static Color ToColorOr(this string str, Color def, ColorFormat format = ColorFormat.RGBA) {
+        return ColorHelper.TryGet(str, format, out var color) ? color : def;
+    }
+    
+    public static Color ToColorOr(this string? str, string def, ColorFormat format = ColorFormat.RGBA) {
+        return str is {} && ColorHelper.TryGet(str, format, out var color) ? color : def.ToColorOr(Color.White);
+    }
 
     /// <summary>
     /// <inheritdoc cref="ColorHelper.TryGet"/>
