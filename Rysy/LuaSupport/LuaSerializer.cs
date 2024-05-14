@@ -38,9 +38,9 @@ public static partial class LuaSerializer {
                                 rotation = {{ToLuaString(item.Data.Float("rotation", 0))}},
                                 x = {{ToLuaString(item.Data.Float("x", 0))}},
                                 y = {{ToLuaString(item.Data.Float("y", 0))}},
-                                color = {{ToLuaString(item.Data.Attr("color", "ffffff"))}}
+                                color = {{ToLuaString(item.Data.Attr("color", "ffffff"))}},
                         """);
-                    AppendData(builder, item, blacklistedKeys: new() { "texture", "scaleX", "scaleY", "rotation", "x", "y" });
+                    AppendData(builder, item, blacklistedKeys: new() { "texture", "scaleX", "scaleY", "rotation", "x", "y", "color" });
                     builder.AppendLine("""
                             },
                         """);
