@@ -15,7 +15,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, ILooseData {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -326,7 +326,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         };
     }
 
-    bool ILooseData.TryGetValue(string key, [NotNullWhen(true)] out object? value)
+    bool IUntypedData.TryGetValue(string key, [NotNullWhen(true)] out object? value)
         => EntityData.TryGetValue(key, out value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -827,7 +827,7 @@ public readonly struct EntityDataChangeCtx {
     public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName);
 }
 
-public class EntityData : IDictionary<string, object>, ILooseData {
+public class EntityData : IDictionary<string, object>, IUntypedData {
     public string SID { get; init; }
 
     public ListenableList<Node> Nodes { get; private set; }
