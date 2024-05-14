@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy.Stylegrounds;
 
-public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, ILooseData {
+public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntypedData {
     public static FieldList GetDefaultFields() => new FieldList(new {
         only = Fields.String("*").AllowNull().ConvertEmptyToNull(),
         exclude = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
@@ -272,7 +272,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, ILoose
     }
     #endregion
 
-    bool ILooseData.TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+    bool IUntypedData.TryGetValue(string key, [NotNullWhen(true)] out object? value) {
         if (GetDataContaining(key) is not { } data) {
             value = null;
             return false;

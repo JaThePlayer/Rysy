@@ -245,7 +245,7 @@ public class FormWindow : Window {
     }
 }
 
-public class FormContext : ILuaWrapper, ILooseData {
+public class FormContext : ILuaWrapper, IUntypedData {
     private FormWindow Window;
 
     public FormContext(FormWindow window) => Window = window;

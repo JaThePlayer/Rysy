@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Rysy.Helpers;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
@@ -381,7 +383,7 @@ public sealed class BinaryPacker {
             r.Children.Where(e => e.Name is "entities" or "triggers").SelectMany(e => e.Children));
     }
 
-    public class Element {
+    public class Element : IUntypedData {
         public Element() { }
 
         public Element(string? name = null) {
@@ -396,47 +398,9 @@ public sealed class BinaryPacker {
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Element[] Children = null!;
-
-#pragma warning disable CA1720 // Identifier contains type name
-        public int Int(string attrName, int def = 0) {
-            if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToInt32(obj, CultureInfo.InvariantCulture);
-            }
-
-            return def;
+        
+        public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+            return Attributes.TryGetValue(key, out value);
         }
-
-        public bool Bool(string attrName, bool def = false) {
-            if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
-            }
-
-            return def;
-        }
-
-        public string Attr(string attrName, string def = "") {
-            if (Attributes.TryGetValue(attrName, out var obj)) {
-                return obj.ToString()!;
-            }
-
-            return def;
-        }
-
-        public float Float(string attrName, float def = 0f) {
-            if (Attributes.TryGetValue(attrName, out var obj)) {
-                return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
-            }
-
-            return def;
-        }
-
-        public T Enum<T>(string attrName, T def) where T : struct, Enum {
-            if (Attributes.TryGetValue(attrName, out var obj)) {
-                return System.Enum.Parse<T>(obj.ToString()!);
-            }
-
-            return def;
-        }
-#pragma warning restore CA1720 // Identifier contains type name
     }
 }
