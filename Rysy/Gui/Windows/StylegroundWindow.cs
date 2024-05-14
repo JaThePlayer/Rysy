@@ -17,8 +17,6 @@ public class StylegroundWindow : Window {
 
     private ComboCache<Placement> PlacementComboCache = new();
 
-    private Dictionary<string, object>? SelectedAlteredValues;
-
     private readonly ListenableList<Style> Selections;
 
     private FormWindow? Form;
@@ -66,12 +64,20 @@ public class StylegroundWindow : Window {
 
         Selections = new();
         Selections.OnChanged += () => {
-            if (Selections is [var main, ..]) {
+            if (Selections is [var main]) {
                 CreateForm(main);
             } else {
-                Form = null;
+                RemoveForm();
             }
         };
+    }
+
+    private void RemoveForm() {
+        if (Form is { }) {
+            Form = null;
+            FormStyle?.Data.SetOverlay(null);
+            FormStyle = null;
+        }
     }
 
     private void CopySelections() {
@@ -233,11 +239,14 @@ public class StylegroundWindow : Window {
         : FG ? Map.Style.Foregrounds : Map.Style.Backgrounds;
 
     private void CreateForm(Style? style) {
+        RemoveForm();
+        
         if (style is null) {
-            Form = null;
             return;
         }
 
+        FormStyle?.Data.SetOverlay(null);
+        
         var fields = GetFields(style);
 
         var form = new FormWindow(fields, style.Name);
@@ -246,19 +255,23 @@ public class StylegroundWindow : Window {
             var action = Selections.Select(s => new ChangeStylegroundAction(s, edited)).MergeActions();
 
             History.ApplyNewAction(action);
-            SelectedAlteredValues = null;
             _previewSprites = null;
         };
         form.OnLiveUpdate = (edited) => {
-            SelectedAlteredValues = edited;
+            style.Data.SetOverlay(edited);
             _previewSprites = null;
         };
 
         FormStyle = style;
         Form = form;
         Map.Style.ClearFakePreviewData();
-        SelectedAlteredValues = null;
         _previewSprites = null;
+    }
+
+    public override void RemoveSelf() {
+        base.RemoveSelf();
+        
+        RemoveForm();
     }
 
     private string GetPlacementName(Placement placement) {
@@ -363,16 +376,12 @@ public class StylegroundWindow : Window {
         var previewW = Math.Min((int) ImGui.GetColumnWidth(), 320); 
         
         ImGuiManager.XnaWidget("styleground_preview", previewW, 180, () => {
-            if (Selections is [var selected, ..]) {
+            if (Selections is [var selected]) {
                 if (_previewSprites is null) {
                     try {
-                        if (SelectedAlteredValues is { } altered) {
-                            selected.Data.SetOverlay(altered);
-                            _previewSprites = selected.GetPreviewSprites().ToList();
-                        } else {
-                            _previewSprites = selected.GetPreviewSprites().ToList();
-                        }
-                    } finally {
+                        _previewSprites = selected.GetPreviewSprites().ToList();
+                    } catch (Exception) {
+                        _previewSprites = [];
                     }
                 }
 
@@ -511,23 +520,26 @@ public class StylegroundWindow : Window {
     private void RenderOtherTabs(Style style) {
         ImGui.TableNextColumn();
 
-        var parent = style.Parent;
-        bool gray = false;
-
-        var only = style.Only;
-        if (only.IsNullOrWhitespace()) {
-            gray = true;
-            if (parent?.Only is { Length: > 0 } parentOnly) {
-                only = parentOnly;
-            }
-        }
-
-        if (gray)
-            ImGui.BeginDisabled();
-        ImGui.Text(only ?? "*");
-        if (gray) {
-            ImGui.EndDisabled();
-            gray = false;
+        var only = style.Attr("only", null!); // See if the styleground provides its own 'only'
+        switch (only)
+        {
+            case "":
+                // Empty string makes the styleground never visible, most likely map maker error.
+                // While its not possible to make such a styleground in Rysy (as it will be turned into null),
+                // other map editors may allow for it.
+                ImGuiManager.PushInvalidStyle();
+                ImGui.Text("<NONE>");
+                ImGuiManager.PopInvalidStyle();
+                break;
+            case null:
+                // The styleground doesn't define its own 'only' field, but it may be inherited from a folder
+                ImGui.BeginDisabled();
+                ImGui.Text(style.Only ?? "<NULL, how?>");
+                ImGui.EndDisabled();
+                break;
+            default:
+                ImGui.Text(only);
+                break;
         }
     }
 }

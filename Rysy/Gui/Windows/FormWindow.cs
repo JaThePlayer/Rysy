@@ -28,7 +28,9 @@ public class FormWindow : Window {
         /// </summary>
         public object? Value;
 
-        public object ValueOrDefault() => Value ?? Field.GetDefault();
+        public bool ValueWasSet;
+
+        public object ValueOrDefault() => ValueWasSet ? Value! : Field.GetDefault();
     }
 
     protected override ImGuiWindowFlags EditWindowFlags(ImGuiWindowFlags prev) {
@@ -237,8 +239,10 @@ public class FormWindow : Window {
     internal void Set(Prop prop, object newVal) {
         var val = newVal is FieldNullReturn ? null : newVal;
 
-        EditedValues[prop.Name] = val;
+        EditedValues[prop.Name] = val!;
+        
         prop.Value = val;
+        prop.ValueWasSet = true;
 
         OnLiveUpdate?.Invoke(EditedValues);
         UpdateDynamicallyHiddenFields();

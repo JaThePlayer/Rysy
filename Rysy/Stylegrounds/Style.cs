@@ -126,6 +126,8 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
             return false;
 
         var roomName = ctx.Room.Name;
+        if (Only is null && Data.ContainsKey("only"))
+            return false;
         if (Only is { } only && !MatchRoomName(only, roomName))
             return false;
 
