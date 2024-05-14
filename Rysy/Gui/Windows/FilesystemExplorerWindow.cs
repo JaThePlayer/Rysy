@@ -1,12 +1,13 @@
 ﻿using ImGuiNET;
-using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Mods;
 
 namespace Rysy.Gui.Windows;
 
-public class FilesystemExplorerWindow : Window {
-    record FileRef(string Path, ModMeta Mod);
+public sealed class FilesystemExplorerWindow : Window {
+    sealed record FileRef(string Path, ModMeta Mod) {
+        public override string ToString() => Path ?? "";
+    }
 
     private ComboCache<FileRef> _cache = new();
     private FileRef? OpenedFile;
