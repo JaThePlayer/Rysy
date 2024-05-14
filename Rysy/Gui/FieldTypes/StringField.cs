@@ -13,7 +13,7 @@ public record class StringField : Field, IFieldConvertible<string> {
     public override void SetDefault(object newDefault)
         => Default = Convert.ToString(newDefault, CultureInfo.InvariantCulture) ?? "";
 
-    private string? RealValue(string from)
+    private string? RealValue(string? from)
         => (EmptyIsNull && string.IsNullOrWhiteSpace(from)) ? null : from;
 
     public override bool IsValid(object? value) {
@@ -65,5 +65,5 @@ public record class StringField : Field, IFieldConvertible<string> {
 
     public override Field CreateClone() => this with { };
 
-    public string ConvertMapDataValue(object value) => RealValue((value ?? "").ToString()!)!;
+    public string ConvertMapDataValue(object value) => RealValue(value?.ToString()!)!;
 }

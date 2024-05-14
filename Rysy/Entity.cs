@@ -834,7 +834,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
 
     public Action<EntityDataChangeCtx>? OnChanged { get; set; }
 
-    internal Dictionary<string, object> Inner { get; private set; } = new(StringComparer.Ordinal);
+    internal Dictionary<string, object> Inner { get; private set; }
 
     /// <summary>
     /// Data that gets overlaid on top of <see cref="Inner"/>, used to safely implement live previews
@@ -918,7 +918,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     }
 
     public object this[string key] {
-        get => (FakeOverlay?.TryGetValue(key, out var overlaid) ?? false) ? overlaid : Inner[key];
+        get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
         set {
             bool edited;
             if (value is null) {
@@ -977,16 +977,11 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
         });
     }
 
-    public bool Contains(KeyValuePair<string, object> item) {
-        return ((ICollection<KeyValuePair<string, object>>) Inner).Contains(item);
-    }
+    public bool Contains(KeyValuePair<string, object> item) =>
+        TryGetValue(item.Key, out var value) && value == item.Value;
 
-    public bool ContainsKey(string key) {
-        if (FakeOverlay is { } ov && ov.ContainsKey(key))
-            return true;
-
-        return Inner.ContainsKey(key);
-    }
+    public bool ContainsKey(string key)
+        => TryGetValue(key, out _);
 
     public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) {
         ((ICollection<KeyValuePair<string, object>>) Inner).CopyTo(array, arrayIndex);
@@ -1018,7 +1013,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
 
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value) {
         if (FakeOverlay is { } ov && ov.TryGetValue(key, out value)) {
-            return true;
+            return value is not null; // key = null in overlays means that the key should get removed
         }
 
         return Inner.TryGetValue(key, out value);
