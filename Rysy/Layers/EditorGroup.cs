@@ -212,8 +212,21 @@ public sealed class EditorGroupList : ListenableList<EditorGroup> {
             return Count == 0;
         }
     }
+    
+    public bool IsOnlyDefault {
+        get {
+            foreach (var group in this) {
+                if (group.AutoAssignTo.Count == 0)
+                    continue;
+                if (group == EditorGroup.Default)
+                    continue;
+                
+                return false;
+            }
 
-    public bool IsOnlyDefault => Count == 1 && this[0] == EditorGroup.Default;
+            return true;
+        }
+    }
 
     public EditorGroupList CloneWithOnlyEnabled() {
         var newList = new EditorGroupList();

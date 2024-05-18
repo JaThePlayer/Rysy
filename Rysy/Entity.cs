@@ -697,10 +697,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     public string ToJson() {
-        return new {
-            Name = Name,
-            Data = EntityData
-        }.ToJson();
+        return Pack().ToJson();
     }
 
     #region IBindTarget
