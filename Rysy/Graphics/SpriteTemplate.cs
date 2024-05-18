@@ -271,7 +271,7 @@ public sealed record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSou
         if (animatedTemplate is { Texture.Texture: {} templateTexture }) {
             animatedTemplate.RenderAt(ctx, pos, color, outlineColor, templateTexture);
         } else {
-            Template.RenderAt(ctx, pos, color, outlineColor, Template.Texture.Texture);
+            Template.RenderAt(ctx, pos, color, outlineColor);
         }
     }
 

@@ -1,24 +1,34 @@
-﻿namespace Rysy.Extensions {
+﻿using Microsoft.Xna.Framework.Input;
+
+namespace Rysy.Extensions {
     public static class FnaMonogameCompat {
+        public static void SetMouseCursor(MouseCursor cursor) {
+            #if FNA
+            MouseCursorEXT.SetCursor(cursor);
+            #else
+            Mouse.SetCursor(cursor);
+            #endif
+        }
+        
         public static bool IsBorderlessShared(this GameWindow window) {
 #if FNA
             return window.IsBorderlessEXT;
 #else
-        return window.IsBorderless;
+            return window.IsBorderless;
 #endif
         }
 
         public static Point GetPosition(this GameWindow window) {
 #if FNA
-            return window.PositionEXT;
+            return GameWindowEXT.Position;
 #else
-        return window.Position;
+            return window.Position;
 #endif
         }
 
         public static void SetPosition(this GameWindow window, Point p) {
 #if FNA
-            window.PositionEXT = p;
+            GameWindowEXT.Position = p;
 #else
             window.Position = p;
 #endif
@@ -42,7 +52,7 @@ namespace Microsoft.Xna.Framework {
         public List<string> Files = new();
     }
 
-    public static class FNAMonogame {
+    public static class FnaMonogame {
         public static Vector2 ToVector2(this Point point) => new(point.X, point.Y);
         public static NumVector2 ToNumerics(this Vector2 point) => new(point.X, point.Y);
         public static NumVector3 ToNumerics(this Vector3 point) => new(point.X, point.Y, point.Z);

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿#if !FNA
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // ReSharper disable InconsistentNaming
@@ -649,3 +650,4 @@ public sealed class FnaSpriteBatch : IDisposable {
         }
     }
 }
+#endif
