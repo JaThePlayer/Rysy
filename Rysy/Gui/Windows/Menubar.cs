@@ -103,7 +103,7 @@ public static class Menubar {
             ImGui.EndDisabled();
             
             if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindow(new MapSizeoscopeWindow(map));
+                editor.AddWindow(new MapSizeoscopeWindow(map, history));
             }
         }
     }
