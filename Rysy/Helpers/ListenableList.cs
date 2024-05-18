@@ -27,7 +27,7 @@ public class ListenableList<T> : IListenableList<T> {
         Suppressed = false;
     }
     
-    private void CallOnChanged() {
+    protected void CallOnChanged() {
         if (!Suppressed)
             OnChanged?.Invoke();
     }
