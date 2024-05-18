@@ -128,6 +128,12 @@ public sealed class RysyEngine : Game {
                 instance.ResizeWindowUsingSettings();
             }
         };
+#else
+        OnEndOfThisFrame += () => {
+            GDM.IsFullScreen = toggle;
+            GDM.ApplyChanges();
+            instance.Window.IsBorderlessEXT = toggle;
+        };
 #endif
     }
 

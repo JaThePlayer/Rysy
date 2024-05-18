@@ -666,57 +666,59 @@ public static class ImGuiManager {
 
             switch (ImGui.GetMouseCursor()) {
                 case ImGuiMouseCursor.None:
-                    Mouse.SetCursor(MouseCursor.Arrow);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.Arrow);
                     break;
                 case ImGuiMouseCursor.Arrow:
-                    Mouse.SetCursor(MouseCursor.Arrow);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.Arrow);
                     break;
                 case ImGuiMouseCursor.TextInput:
-                    Mouse.SetCursor(MouseCursor.IBeam);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.IBeam);
                     break;
                 case ImGuiMouseCursor.ResizeAll:
-                    Mouse.SetCursor(MouseCursor.SizeAll);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeAll);
                     break;
                 case ImGuiMouseCursor.ResizeNS:
-                    Mouse.SetCursor(MouseCursor.SizeNS);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNS);
                     break;
                 case ImGuiMouseCursor.ResizeEW:
-                    Mouse.SetCursor(MouseCursor.SizeWE);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeWE);
                     break;
                 case ImGuiMouseCursor.ResizeNESW:
-                    Mouse.SetCursor(MouseCursor.SizeNESW);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNESW);
                     break;
                 case ImGuiMouseCursor.ResizeNWSE:
-                    Mouse.SetCursor(MouseCursor.SizeNWSE);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNWSE);
                     break;
                 case ImGuiMouseCursor.Hand:
-                    Mouse.SetCursor(MouseCursor.Hand);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.Hand);
                     break;
                 case ImGuiMouseCursor.NotAllowed:
-                    Mouse.SetCursor(MouseCursor.No);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.No);
                     break;
                 case ImGuiMouseCursor.COUNT:
-                    break;
-                default:
                     break;
             }
         }
 
         protected void SetupInput() {
             ImGuiIOPtr io = ImGui.GetIO();
-#if !FNA
-            RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => {
-                const char volumeUp = (char) 128;
-                const char volumeDown = (char) 129;
-
-                var c = e.Character;
-                if (c is '\t' or volumeUp or volumeDown)
-                    return;
-
-                io.AddInputCharacter(c);
-            };
+#if FNA
+            TextInputEXT.TextInput += OnTextInput;
+            TextInputEXT.StartTextInput();
+#else
+            RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => OnTextInput(e.Character);
 #endif
             io.Fonts.AddFontDefault();
+        }
+
+        private void OnTextInput(char c) {
+            const char volumeUp = (char) 128;
+            const char volumeDown = (char) 129;
+
+            if (c is '\t' or volumeUp or volumeDown)
+                return;
+
+            ImGui.GetIO().AddInputCharacter(c);
         }
 
         protected Effect UpdateEffect(Texture2D texture) {

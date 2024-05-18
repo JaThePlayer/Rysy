@@ -24,7 +24,7 @@
   -->
 
   <ItemGroup Condition="'$(FNA)' != ''">
-    <PackageReference Include="FNA.NET" Version="1.0.0.77-develop" />
+    <PackageReference Include="FNA.NET" Version="1.0.7.2403" />
   </ItemGroup>
   <ItemGroup Condition="'$(FNA)' == ''">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />

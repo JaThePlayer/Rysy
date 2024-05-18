@@ -23,22 +23,20 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                     lock (this) {
                         _texture?.Dispose();
 
+                        Texture2D? texture;
 #if FNA
                         if (Mod.Filesystem is FolderModFilesystem) {
-                            _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
-                            return;
+                            texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream);
+                        } else {
+                            using var memStr = new MemoryStream();
+                            stream.CopyTo(memStr);
+                            texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
                         }
-
-                        using var memStr = new MemoryStream();
-                        //buffer = new byte[stream.Length];
-                        stream.CopyTo(memStr);
-                        _texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
-
 #else
-                        var texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
+#endif
                         ClipRect = new(0, 0, texture.Width, texture.Height);
                         _texture = texture;
-#endif
                     }
                 });
             } catch (Exception e) {

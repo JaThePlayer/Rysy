@@ -58,6 +58,8 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private RenderTarget2D? FullRenderCanvas;
 
+    private bool CanUseCanvas => Width < 4098 && Height < 4098;
+
     private Map _map = null!;
 
     [JsonIgnore]
@@ -379,6 +381,11 @@ public sealed class Room : IPackable, ILuaWrapper {
             Width * camera.Scale >= 8
             && Height * camera.Scale >= 8
         );
+        
+        // If we can't cache into a canvas and the room is not selected,
+        // there's no point in trying to render the interior
+        if (!CanUseCanvas && !selected)
+            interiorVisible = false;
 
         if (!interiorVisible)
             ClearRenderCacheIfWanted();
