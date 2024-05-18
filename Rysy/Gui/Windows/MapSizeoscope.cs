@@ -1,21 +1,39 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.History;
 
 namespace Rysy.Gui.Windows;
 
 public sealed class MapSizeoscopeWindow : Window {
     private readonly Map _map;
-    private readonly BinaryPacker.Package _package;
-    private readonly long _fullSize;
-    private readonly BinaryPacker _packer;
-    private readonly string _lookupSize;
+    private readonly HistoryHandler _history;
+    
+    private BinaryPacker.Package _package;
+    private long _fullSize;
+    private BinaryPacker _packer;
+    private string _lookupSize;
 
     private bool _group;
     
-    public MapSizeoscopeWindow(Map map) : base("rysy.menubar.tab.map.sizeoscope_window".TranslateFormatted(map.Package ?? map.Filepath ?? ""), new(500, 500)) {
+    public MapSizeoscopeWindow(Map map, HistoryHandler history) : base("rysy.menubar.tab.map.sizeoscope_window".TranslateFormatted(map.Package ?? map.Filepath ?? ""), new(500, 500)) {
         _map = map;
-        _package = map.IntoBinary();
+        _history = history;
+        
+        PackMap();
+
+        _history.OnApply += PackMap;
+        _history.OnUndo += PackMap;
+    }
+
+    public override void RemoveSelf() {
+        base.RemoveSelf();
+        _history.OnApply -= PackMap;
+        _history.OnUndo -= PackMap;
+    }
+
+    private void PackMap() {
+        _package = _map.IntoBinary();
 
         using var memStream = new MemoryStream();
         BinaryPacker.SaveToStream(_package, memStream, saveDetailedInformation: true, out _packer);
