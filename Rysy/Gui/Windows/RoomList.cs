@@ -31,7 +31,7 @@ public static class RoomList {
         if (_firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
             ImGui.SetNextWindowPos(new NumVector2(0f, menubarHeight));
-            ImGui.SetNextWindowSize(new NumVector2(150f, RysyEngine.Instance.GraphicsDevice.Viewport.Height - menubarHeight));
+            ImGui.SetNextWindowSize(new NumVector2(150f, RysyState.GraphicsDevice.Viewport.Height - menubarHeight));
 
             _firstGui = false;
         }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>12.0</LangVersion>
@@ -10,8 +10,8 @@
     <!--<DebugSymbols>true</DebugSymbols>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-    <!--
     <FNA Condition="'$(FNA)' == ''">FNA</FNA>
+    <!--
     -->
     <DefineConstants Condition="'$(FNA)' != ''">$(DefineConstants);FNA</DefineConstants>
   </PropertyGroup>
@@ -24,7 +24,10 @@
   -->
 
   <ItemGroup Condition="'$(FNA)' != ''">
-    <PackageReference Include="FNA.NET" Version="1.0.7.2403" />
+    <Reference Include="FNA">
+      <HintPath>lib\FNA.dll</HintPath> <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
+    </Reference>
+    <PackageReference Include="FNA.NET.NativeAssets" Version="1.0.3.2403" />
   </ItemGroup>
   <ItemGroup Condition="'$(FNA)' == ''">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />

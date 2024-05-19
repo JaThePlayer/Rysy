@@ -13,7 +13,7 @@ internal sealed class FileVirtTexture : VirtTexture {
     protected override Task? QueueLoad() {
         return Task.Run(() => {
             try {
-                _texture = FnaMonogameCompat.Texture2DFromFile(RysyEngine.GDM.GraphicsDevice, Filename);
+                _texture = FnaMonogameCompat.Texture2DFromFile(RysyState.GraphicsDevice, Filename);
                 ClipRect = new(0, 0, _texture.Width, _texture.Height);
                 _state = State.Loaded;
             } catch (Exception e) {

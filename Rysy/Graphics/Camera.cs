@@ -16,7 +16,7 @@ public class Camera {
         }
     }
 
-    private Viewport _Viewport = RysyEngine.GDM?.GraphicsDevice.Viewport ?? new Viewport();
+    private Viewport _Viewport = RysyState.GraphicsDevice?.Viewport ?? new Viewport();
     public Viewport Viewport {
         get => _Viewport;
         set {

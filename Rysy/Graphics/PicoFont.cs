@@ -1,4 +1,4 @@
-﻿using Rysy.Extensions;
+﻿using Rysy.Platforms;
 
 namespace Rysy.Graphics;
 
@@ -18,15 +18,18 @@ public static class PicoFont {
         if (Texture is { })
             return Texture;
 
-        Texture = VirtTexture.FromTexture(FnaMonogameCompat.Texture2DFromFile(RysyEngine.GDM.GraphicsDevice, "Assets/font.png"));
-
         // The font is slightly edited in Rysy to include ,/\<>
         var fontMap = @"abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+-=?:.,/\<> ";
         for (int i = 0; i < fontMap.Length; i++) {
             CharacterLocations[fontMap[i]] = new Point((i % 30) * W, (i / 30) * H);
         }
+        
+        if (RysyPlatform.Current.GetRysyFilesystem().TryOpenFile("font.png",
+                s => VirtTexture.FromTexture(Texture2D.FromStream(RysyState.GraphicsDevice, s)), out var texture)) {
+            return Texture = texture!;
+        }
 
-        return Texture;
+        return Texture = GFX.UnknownTexture;
     }
 
     private static Sprite _GetSprite(char c, Vector2 pos, Color color, float scale) {

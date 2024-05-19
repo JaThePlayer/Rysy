@@ -1,13 +1,16 @@
-﻿using Rysy.Extensions;
-using Rysy.Helpers;
+﻿using Rysy.Helpers;
 using Rysy.Loading;
-using Rysy.Scenes;
+using Rysy.Platforms;
 using System.Reflection;
 using System.Text.Json;
 
 namespace Rysy.Mods;
 
 public static class ModRegistry {
+    public static ModMeta VanillaMod { get; private set; }
+    
+    public static ModMeta RysyMod { get; private set; }
+    
     public delegate void ModAssemblyScanner(ModMeta mod, Assembly? oldAssembly);
 
     internal static ModAssemblyScanner? ModAssemblyScannerInstance;
@@ -121,8 +124,6 @@ public static class ModRegistry {
             _Mods[meta.Name] = meta;
         }
     }
-
-    public static ModMeta VanillaMod { get; private set; }
     
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
         EverestYaml = new() {
@@ -134,23 +135,14 @@ public static class ModRegistry {
         Filesystem = new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content"),
     };
 
-    private static ModMeta CreateRysyMod() => new() {
-        EverestYaml = new() {
+    private static ModMeta CreateRysyMod() => RysyMod = new() {
+        EverestYaml = [
             new() {
-                Name = "Rysy",
-                Version = new(1, 0, 0, 0), // todo: auto-fill
+                Name = "Rysy", Version = new(1, 0, 0, 0), // todo: auto-fill
             }
-        },
+        ],
         PluginAssembly = typeof(RysyEngine).Assembly,
-        Filesystem =
-#if DEBUG
-        Directory.Exists("../../../Assets")
-        ? new FolderModFilesystem(Path.GetFullPath("../../../Assets"))
-        : new FolderModFilesystem("Assets"),
-
-#else
-        new FolderModFilesystem($"Assets"),
-#endif
+        Filesystem = RysyPlatform.Current.GetRysyFilesystem(),
     };
 
     private static void UnloadAllMods() {

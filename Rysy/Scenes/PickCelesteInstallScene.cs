@@ -32,7 +32,7 @@ public class PickCelesteInstallScene : Scene {
         base.Render();
 
         GFX.BeginBatch();
-        var windowSize = RysyEngine.Instance.Window.ClientBounds.Size();
+        var windowSize = RysyState.Window.ClientBounds.Size();
         var height = 4 * 6;
         var center = windowSize.Y / 2;
         PicoFont.Print("Please drop the", new Rectangle(0, center - 32, windowSize.X, height), Color.White, 4f);

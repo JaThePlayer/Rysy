@@ -173,7 +173,7 @@ class EditTileDataWindow : Window {
             Sprites = null;
         };
 
-        var clientBounds = RysyEngine.Instance.Window.ClientBounds;
+        var clientBounds = RysyState.Window.ClientBounds;
         Size = new((Width * Camera.Scale).AtMost(clientBounds.Width - 600) + 300, (Height * Camera.Scale).AtMost(clientBounds.Height - 400) + ImGui.GetTextLineHeightWithSpacing() * 4f);
 
         if (RysyEngine.Scene is { } scene) {

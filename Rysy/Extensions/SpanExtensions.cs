@@ -3,16 +3,18 @@
 namespace Rysy.Extensions;
 
 public static class SpanExtensions {
+    #if !NET8_0_OR_GREATER
     /// <summary>
-    /// (Mutates in-place) Replaces all occurences of <paramref name="from"/> with <paramref name="with"/>
+    /// Shim for Span.Replace from .net8
     /// </summary>
-    public static void ReplaceInPlace(this Span<char> span, char from, char with) {
+    public static void Replace(this Span<char> span, char from, char with) {
         int i;
         while ((i = span.IndexOf(from)) != -1) {
             span[i] = with;
             span = span[(i + 1)..];
         }
     }
+    #endif
 
     /// <summary>
     /// Enumerates each split in the <paramref name="span"/>, without any memory allocations

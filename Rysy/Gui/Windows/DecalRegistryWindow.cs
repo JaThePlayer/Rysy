@@ -197,7 +197,7 @@ public sealed class DecalRegistryWindow : Window {
         ImGui.NextColumn();
 
         var previewW = (int) ImGui.GetColumnWidth();
-        var cam = new Camera(RysyEngine.GDM.GraphicsDevice.Viewport);
+        var cam = new Camera(RysyState.GraphicsDevice.Viewport);
         cam.Scale = 6f;
         cam.Move(-new Vector2(previewW / 2f / cam.Scale, 300 / 2f / cam.Scale));
 

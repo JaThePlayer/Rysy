@@ -561,7 +561,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (CachedSprites is null)
             return;
 
-        var gd = RysyEngine.GDM.GraphicsDevice;
+        var gd = RysyState.GraphicsDevice;
         RenderTarget2D canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
 
         gd.SetRenderTarget(canvas);

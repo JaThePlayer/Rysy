@@ -194,7 +194,7 @@ public static class IAtlasExt {
 
         var fullPath = $"{Path.GetDirectoryName(path)}/{textureIndex}.data";
         if (!File.Exists(fullPath)) {
-            texture = new Texture2D(RysyEngine.GDM.GraphicsDevice, 1, 1);
+            texture = new Texture2D(RysyState.GraphicsDevice, 1, 1);
             texture.SetData(new Color[] { Color.White });
             Console.WriteLine(fullPath);
             return texture;
@@ -268,7 +268,7 @@ public static class IAtlasExt {
             }
         }
 
-        texture = new Texture2D(RysyEngine.GDM.GraphicsDevice, width, height);
+        texture = new Texture2D(RysyState.GraphicsDevice, width, height);
         texture.SetData(textureBufferBytes, 0, size);
 
         return texture;

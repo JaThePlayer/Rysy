@@ -8,15 +8,19 @@ namespace Rysy.LuaSupport;
 
 public class LuaCtx {
     public Lua Lua { get; private set; } = new();
+    
+    public static bool SeleneLoaded { get; private set; }
 
     private static readonly string[] RequireSearchPaths = new string[] {
         "?.lua",
-        "Assets/lonnShims/?.lua"
+        "lonnShims/?.lua"
     };
 
     public static LuaCtx CreateNew() {
         LuaCtx luaCtx = new();
         var lua = luaCtx.Lua;
+
+        SeleneLoaded = false;
 
         // loadstring, but calling selene
         lua.Register("loadstring", (nint s) => {
@@ -42,11 +46,12 @@ public class LuaCtx {
             var lua = Lua.FromIntPtr(s);
 
             var modName = lua.FastToString(-1).Replace('.', '/');
+            var rysyFs = ModRegistry.RysyMod.Filesystem;
 
             foreach (var searchPath in RequireSearchPaths) {
                 var path = CalcPath(searchPath);
-
-                if (File.Exists(path)) {
+                
+                if (rysyFs.FileExists(path)) {
                     lua.PushString(path);
                     return 1;
                 }
@@ -66,22 +71,19 @@ public class LuaCtx {
 
             var moduleName = lua.FastToString(-1);
             var path = lua.FastToString(-2);
-            var txt = File.ReadAllText(path);
+
             lua.Pop(2);
-            lua.PCallStringThrowIfError(txt, path, results: 1);
+            if (ModRegistry.RysyMod.Filesystem.TryReadAllText(path) is { } txt) {
+                lua.PCallStringThrowIfError(txt, path, results: 1);
+            } else {
+                Logger.Write("Lua", LogLevel.Error, $"Failed to require file from Rysy: {path}");
+                //throw new FileNotFoundException(path);
+            }
 
             return 1;
         });
-
-        // Load selene
-        lua.LoadString("""
-            local selene = require("Assets.lua.selene")
-            selene.load(nil, true)
-            _G.selene = selene
-        """, "selene_loader");
-        lua.PCallThrowIfError(arguments: 0, results: 0, errorFunctionIndex: 0);
-
-        // Rewrite 'require' so that it runs selene
+        
+        // Rewrite 'require' so that it runs selene and runs through IModFilesystem
         lua.PCallStringThrowIfError("""
         function require(modname)
             local alreadyLoaded = package.loaded[modname]
@@ -101,6 +103,15 @@ public class LuaCtx {
             return ret
         end
         """, "new_require");
+
+        // Load selene
+        lua.PCallStringThrowIfError("""
+            local selene = require("lua.selene")
+            selene.load(nil, true)
+            _G.selene = selene
+        """, "selene_loader");
+
+        SeleneLoaded = true;
 
         lua.PCallStringThrowIfError("""
         RYSY = {} -- Set up a global RYSY variable, so that plugins know they're running in Rysy if needed.
@@ -159,7 +170,8 @@ public class LuaCtx {
             return 1;
         });
 
-        lua.PCallStringThrowIfError(File.ReadAllText("Assets/lua/funpack.lua"), "funpack");
+        if (ModRegistry.RysyMod.Filesystem.TryReadAllText("lua/funpack.lua") is {} funpack)
+            lua.PCallStringThrowIfError(funpack, "funpack");
 
         lua.Register("_RYSY_bit_lshift", (nint s) => {
             var lua = Lua.FromIntPtr(s);

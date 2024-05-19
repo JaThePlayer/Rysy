@@ -10,7 +10,7 @@ public sealed class MarkdownViewWindow : Window {
 
     private static float GetSizeX(string md) => ImGui
         .CalcTextSize(md.Contains('\n') ? md.Split('\n').MaxBy(l => l.Length) : md).X
-        .AtMost(RysyEngine.Instance.Window.ClientBounds.Width * 0.75f);
+        .AtMost(RysyState.Window.ClientBounds.Width * 0.75f);
         
     
     public MarkdownViewWindow(string name, string markdown) : base(name, new(GetSizeX(markdown), 0))

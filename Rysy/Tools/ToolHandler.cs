@@ -263,7 +263,7 @@ public class ToolHandler {
         height = 0f;
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
-            var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
+            var viewport = RysyState.GraphicsDevice.Viewport;
             var size = new NumVector2(120f, ImGui.GetTextLineHeightWithSpacing() * Tools.Count + ImGui.GetFrameHeightWithSpacing() * 2);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X - DefaultMaterialListWidth, menubarHeight));
             ImGui.SetNextWindowSize(size);

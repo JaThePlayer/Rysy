@@ -127,7 +127,7 @@ public class Input {
 
             ScrollDelta = realMouseScroll - lastMouseScroll;
             
-            var viewport = RysyEngine.GDM.GraphicsDevice.Viewport;
+            var viewport = RysyState.GraphicsDevice.Viewport;
             var lastPos = RealPos;
             RealPos = new(mouseState.X, mouseState.Y);
             PositionDelta = RealPos - lastPos;
