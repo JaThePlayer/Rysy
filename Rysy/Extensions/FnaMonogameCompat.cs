@@ -68,10 +68,6 @@ namespace Microsoft.Xna.Framework {
     public enum MouseCursor {
         Arrow, IBeam, SizeAll, SizeNS, SizeWE, SizeNESW, SizeNWSE, Hand, No
     }
-    
-    public class FileDropEventArgs {
-        public List<string> Files = new();
-    }
 
     public static class FnaMonogame {
         public static Vector2 ToVector2(this Point point) => new(point.X, point.Y);

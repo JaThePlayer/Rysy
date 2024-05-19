@@ -125,10 +125,9 @@ public sealed class EditorScene : Scene {
         ClearMapRenderCache();
     }
 
-    protected internal override void OnFileDrop(FileDropEventArgs args) {
-        base.OnFileDrop(args);
+    protected internal override void OnFileDrop(string file) {
+        base.OnFileDrop(file);
 
-        var file = args.Files[0];
         if (File.Exists(file) && Path.GetExtension(file) == ".bin") {
             LoadMapFromBin(file);
         }

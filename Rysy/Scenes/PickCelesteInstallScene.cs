@@ -9,10 +9,8 @@ public class PickCelesteInstallScene : Scene {
         NextScene = nextScene;
     }
 
-    internal protected override void OnFileDrop(FileDropEventArgs args) {
-        base.OnFileDrop(args);
-
-        var file = args.Files[0];
+    protected internal override void OnFileDrop(string file) {
+        base.OnFileDrop(file);
 
         if (Path.GetFileName(file) is "Celeste.exe" or "Celeste.dll") {
             Profile.Instance.CelesteDirectory = Path.GetDirectoryName(file)!;
