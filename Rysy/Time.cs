@@ -24,8 +24,8 @@ public static class Time {
 
     public static float RawElapsed { get; private set; } = 0f;
 
-    internal static void Update(GameTime gameTime) {
-        RawDelta = (float) gameTime.ElapsedGameTime.TotalSeconds;
+    internal static void Update(float deltaSeconds) {
+        RawDelta = deltaSeconds;
         Delta = RawDelta * TimeScale;
         Elapsed += Delta;
         RawElapsed += RawDelta;

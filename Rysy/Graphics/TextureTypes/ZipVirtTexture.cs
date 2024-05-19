@@ -40,7 +40,7 @@ public sealed class ZipVirtTexture : VirtTexture {
                     SharedZipArchive.Release(archivePath);
                 }
                 using var memStr = new MemoryStream(buffer);
-                var texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, memStr);
+                var texture = Texture2D.FromStream(RysyState.GraphicsDevice, memStr);
                 ClipRect = new(0, 0, texture.Width, texture.Height);
                 _texture = texture;
 #endif

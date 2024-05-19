@@ -221,7 +221,7 @@ public static partial class StringExt {
 
         Span<char> b = stackalloc char[vLen];
         val[0..vLen].CopyTo(b);
-        b.ReplaceInPlace('\\', '/');
+        b.Replace('\\', '/');
 
         if (!string.IsNullOrWhiteSpace(prefix))
             return $"{prefix}:{b}";

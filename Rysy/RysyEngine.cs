@@ -1,6 +1,4 @@
-﻿using Rysy;
-using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
@@ -9,15 +7,11 @@ using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using Rysy.Selections;
-using System.Drawing;
-using System.Runtime.InteropServices;
 
 namespace Rysy;
 
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
-
-    public static GraphicsDeviceManager GDM { get; private set; } = null!;
 
     private static Scene _scene = new BlankScene();
     public static Scene Scene {
@@ -71,8 +65,10 @@ public sealed class RysyEngine : Game {
         Instance = this;
         Window.AllowUserResizing = true;
 
-        GDM = new GraphicsDeviceManager(this);
-
+        var gdm = new GraphicsDeviceManager(this);
+        RysyState.GraphicsDeviceManager = gdm;
+        RysyState.Game = this;
+        
         IsMouseVisible = true;
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
@@ -98,7 +94,7 @@ public sealed class RysyEngine : Game {
 
     public static void ToggleVSync(bool toggle) {
         OnEndOfThisFrame += () => {
-            if (GDM is { } gdm) {
+            if (RysyState.GraphicsDeviceManager is { } gdm) {
                 gdm.SynchronizeWithVerticalRetrace = toggle;
                 gdm.ApplyChanges();
             }
@@ -106,7 +102,7 @@ public sealed class RysyEngine : Game {
     }
 
     public static void ToggleBorderlessFullscreen(bool toggle) {
-        if (GDM is not { } gdm || Instance is not { } instance) {
+        if (RysyState.GraphicsDeviceManager is not { } gdm || Instance is not { } instance) {
             return;
         }
 
@@ -130,8 +126,8 @@ public sealed class RysyEngine : Game {
         };
 #else
         OnEndOfThisFrame += () => {
-            GDM.IsFullScreen = toggle;
-            GDM.ApplyChanges();
+            RysyState.GraphicsDeviceManager.IsFullScreen = toggle;
+            RysyState.GraphicsDeviceManager.ApplyChanges();
             instance.Window.IsBorderlessEXT = toggle;
         };
 #endif
@@ -148,11 +144,11 @@ public sealed class RysyEngine : Game {
     public static Action<Viewport>? OnViewportChanged { get; set; }
 
     private void Window_ClientSizeChanged(object? sender, EventArgs e) {
-        OnViewportChanged?.Invoke(GDM.GraphicsDevice.Viewport);
+        OnViewportChanged?.Invoke(RysyState.GraphicsDevice.Viewport);
 
-        if (Settings.Instance is { } settings && !Instance.Window.IsBorderlessShared()) {
-            settings.StartingWindowWidth = GDM.GraphicsDevice.Viewport.Width;
-            settings.StartingWindowHeight = GDM.GraphicsDevice.Viewport.Height;
+        if (Settings.Instance is { } settings && !RysyState.Window.IsBorderlessShared()) {
+            settings.StartingWindowWidth = RysyState.GraphicsDevice.Viewport.Width;
+            settings.StartingWindowHeight = RysyState.GraphicsDevice.Viewport.Height;
             settings.StartingWindowX = Window.GetPosition().X;
             settings.StartingWindowY = Window.GetPosition().Y;
             settings.Save();
@@ -164,7 +160,7 @@ public sealed class RysyEngine : Game {
 
         RysyPlatform.Current.Init();
         Logger.Init();
-        ImGuiManager.Load(this);
+        ImGuiManager.Load();
 
         QueueReload();
     }
@@ -175,7 +171,7 @@ public sealed class RysyEngine : Game {
     public static void QueueReload() {
         OnEndOfThisFrame += () => {
             lock (Instance) {
-                GFX.LoadEssencials(Instance);
+                GFX.LoadEssencials();
                 //Scene = new LoadingScene();
             }
 
@@ -226,7 +222,7 @@ public sealed class RysyEngine : Game {
         Logger.Write("Reload", LogLevel.Info, $"Staring full reload...");
         
         lock (this) {
-            GFX.LoadEssencials(this);
+            GFX.LoadEssencials();
             Scene = new LoadingScene(loadTasks, onCompleted: () => {
 
             });
@@ -320,16 +316,20 @@ public sealed class RysyEngine : Game {
 
     protected override void Update(GameTime gameTime) {
         base.Update(gameTime);
+        DispatchUpdate((float) gameTime.ElapsedGameTime.TotalSeconds);
+    }
+
+    public static void DispatchUpdate(float elapsed) {
         try {
-            if (_lastActive != IsActive) {
+            if (_lastActive != RysyState.Game.IsActive) {
                 OnLoseFocus?.Invoke();
             }
 
             if (true) {
-                Time.Update(gameTime);
+                Time.Update(elapsed);
 
-                if (IsActive)
-                    Input.UpdateGlobal(gameTime);
+                if (RysyState.Game.IsActive)
+                    Input.Global.Update(elapsed);
 
                 // todo: refactor into proper keybind
                 if (Input.Global.Keyboard.IsKeyClicked(Microsoft.Xna.Framework.Input.Keys.F12)) {
@@ -356,7 +356,7 @@ public sealed class RysyEngine : Game {
             Scene = new CrashScene(Scene, e);
         }
 
-        _lastActive = IsActive;
+        _lastActive = RysyState.Game.IsActive;
     }
 
     protected override unsafe void Draw(GameTime gameTime) {
@@ -371,7 +371,7 @@ public sealed class RysyEngine : Game {
 
 
             try {
-                ImGuiManager.GuiRenderer.BeforeLayout(gameTime);
+                ImGuiManager.GuiRenderer.BeforeLayout((float)gameTime.ElapsedGameTime.TotalSeconds);
                 if (renderUI)
                     Scene.RenderImGui();
                 if (DebugInfoWindow.Enabled)
@@ -402,7 +402,7 @@ public sealed class RysyEngine : Game {
         }
     }
 
-    private bool HideUI = false;
+    private static bool HideUI = false;
     private bool ShouldHideUI() => HideUI;
 
     //https://stackoverflow.com/a/44689035

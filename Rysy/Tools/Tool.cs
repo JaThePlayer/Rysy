@@ -367,7 +367,7 @@ public abstract class Tool {
     internal Vector2? BeginMaterialListWindow(bool firstGui) {
         if (firstGui) {
             var menubarHeight = ImGuiManager.MenubarHeight;
-            var viewport = RysyEngine.Instance.GraphicsDevice.Viewport;
+            var viewport = RysyState.GraphicsDevice.Viewport;
             var size = new NumVector2(ToolHandler.DefaultMaterialListWidth, viewport.Height - menubarHeight);
             ImGui.SetNextWindowPos(new NumVector2(viewport.Width - size.X, menubarHeight), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSize(size, ImGuiCond.FirstUseEver);

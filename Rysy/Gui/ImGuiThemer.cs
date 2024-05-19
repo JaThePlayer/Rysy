@@ -1,4 +1,6 @@
 ﻿using ImGuiNET;
+using Rysy.Mods;
+using Rysy.Platforms;
 using System.Text.Json;
 
 namespace Rysy.Gui;
@@ -35,24 +37,42 @@ public static class ImGuiThemer {
     public static unsafe void SetFontSize(float fontSize) {
         var io = ImGui.GetIO();
         io.Fonts.Clear();
-        /*
-        string? fontFile = Settings.Instance?.FontFile;
-        if (fontFile is null || (Settings.Instance is { } settings && !File.Exists(settings.FontFile))) {
-            if (File.Exists("C:/Windows/Fonts/consola.ttf")) {
-                fontFile = "C:/Windows/Fonts/consola.ttf";
-            }
-        }*/
-
-        BoldFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize);
-        DefaultFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Regular.ttf", fontSize);
-        ItalicFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Italic.ttf", fontSize);
-        ItalicBoldFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-BoldItalic.ttf", fontSize);
         
-        HeaderFont = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 2f);
-        Header2Font = io.Fonts.AddFontFromFileTTF("Assets/RobotoMono-Bold.ttf", fontSize * 1.5f);
+        BoldFont = AddFont("RobotoMono-Bold.ttf", fontSize);
+        DefaultFont = AddFont("RobotoMono-Regular.ttf", fontSize);
+        ItalicFont = AddFont("RobotoMono-Italic.ttf", fontSize);
+        ItalicBoldFont = AddFont("RobotoMono-BoldItalic.ttf", fontSize);
+        
+        HeaderFont = AddFont("RobotoMono-Bold.ttf", fontSize * 2f);
+        Header2Font = AddFont("RobotoMono-Bold.ttf", fontSize * 1.5f);
 
         io.Fonts.Build();
         ImGuiManager.GuiRenderer.BuildFontAtlas();
+        
+        ImFontPtr AddFont(string name, float size) {
+            var fs = RysyPlatform.Current.GetRysyFilesystem();
+
+            if (File.Exists($"{fs.Root}/{name}")) {
+                return io.Fonts.AddFontFromFileTTF($"{fs.Root}/{name}", size);
+            }
+
+            Console.WriteLine("using slow fallback for font loading...");
+            // TODO: fix this to load from memory
+            if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
+                var temp = Path.GetTempFileName();
+                File.WriteAllBytes(temp, bytes);
+                var ret = io.Fonts.AddFontFromFileTTF(temp, size);
+                File.Delete(temp);
+                return ret;
+
+                //var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                //fixed (byte* bPtr = &bytes[0])
+                //    return io.Fonts.AddFontFromMemoryTTF((nint)bPtr, bytes.Length, size);
+            }
+
+            Console.WriteLine($"FAILED: {name}");
+            return default;
+        }
     }
 
     public static ImFontPtr DefaultFont { get; private set; }

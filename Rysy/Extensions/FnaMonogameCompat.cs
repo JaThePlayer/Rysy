@@ -1,10 +1,26 @@
 ﻿using Microsoft.Xna.Framework.Input;
+using SDL2;
 
 namespace Rysy.Extensions {
     public static class FnaMonogameCompat {
+        #if FNA
+        private static Dictionary<MouseCursor, IntPtr> sdlMouseCursors = new() {
+            [MouseCursor.Arrow] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW),
+            [MouseCursor.IBeam] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM),
+            [MouseCursor.SizeAll] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL),
+            [MouseCursor.SizeNS] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS),
+            [MouseCursor.SizeWE] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE),
+            [MouseCursor.SizeNESW] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW),
+            [MouseCursor.SizeNWSE] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE),
+            [MouseCursor.Hand] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND),
+            [MouseCursor.No] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO),
+        };
+        #endif
+        
         public static void SetMouseCursor(MouseCursor cursor) {
             #if FNA
-            MouseCursorEXT.SetCursor(cursor);
+            if (sdlMouseCursors.TryGetValue(cursor, out var sdlCursor))
+                SDL2.SDL.SDL_SetCursor(sdlCursor);
             #else
             Mouse.SetCursor(cursor);
             #endif
@@ -20,7 +36,8 @@ namespace Rysy.Extensions {
 
         public static Point GetPosition(this GameWindow window) {
 #if FNA
-            return GameWindowEXT.Position;
+            SDL2.SDL.SDL_GetWindowPosition(window.Handle, out var x, out var y);
+            return new(x, y);
 #else
             return window.Position;
 #endif
@@ -28,7 +45,7 @@ namespace Rysy.Extensions {
 
         public static void SetPosition(this GameWindow window, Point p) {
 #if FNA
-            GameWindowEXT.Position = p;
+            SDL2.SDL.SDL_SetWindowPosition(window.Handle, p.X, p.Y);
 #else
             window.Position = p;
 #endif
@@ -48,6 +65,10 @@ namespace Rysy.Extensions {
 
 #if FNA
 namespace Microsoft.Xna.Framework {
+    public enum MouseCursor {
+        Arrow, IBeam, SizeAll, SizeNS, SizeWE, SizeNESW, SizeNWSE, Hand, No
+    }
+    
     public class FileDropEventArgs {
         public List<string> Files = new();
     }

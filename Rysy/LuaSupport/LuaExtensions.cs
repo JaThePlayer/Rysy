@@ -108,16 +108,21 @@ public static partial class LuaExt {
     }
 
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
-        lua.GetGlobal("selene");
-        var seleneLoc = lua.GetTop();
-        lua.PushString("parse");
-        lua.GetTable(seleneLoc);
+        string code;
+        if (LuaCtx.SeleneLoaded) {
+            lua.GetGlobal("selene");
+            var seleneLoc = lua.GetTop();
+            lua.PushString("parse");
+            lua.GetTable(seleneLoc);
 
-        lua.PushString(str);
-        lua.Call(1, 1); // call selene.parse(arg)
+            lua.PushString(str);
+            lua.Call(1, 1); // call selene.parse(arg)
 
-        var code = lua.FastToString(-1);
-        lua.Pop(2);
+            code = lua.FastToString(-1);
+            lua.Pop(2);
+        } else {
+            code = str;
+        }
 
         var st = lua.LoadString(code, chunkName ?? str);
         if (st != LuaStatus.OK) {

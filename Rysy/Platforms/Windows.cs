@@ -18,7 +18,7 @@ public partial class Windows : RysyPlatform {
     }
 
     public override void ResizeWindow(int x, int y, int w, int h) {
-        var gdm = RysyEngine.GDM;
+        var gdm = RysyState.GraphicsDeviceManager;
         var monitorSize = gdm.GraphicsDevice.DisplayMode;
 
         if (w == monitorSize.Width && Math.Abs(h - monitorSize.Height) <= 80) {

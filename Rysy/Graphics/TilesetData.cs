@@ -24,7 +24,9 @@ public sealed class TilesetDefine {
     /// </summary>
     public char[] Filter { get; }
 
+    #if NET8_0_OR_GREATER
     private SearchValues<char> _filterSearchValues;
+    #endif
 
     /// <summary>
     /// Defines how the 'filter' property should be treated.
@@ -68,6 +70,7 @@ public sealed class TilesetDefine {
     /// Checks whether the given tile id matches this define.
     /// </summary>
     public bool Match(char tileId) {
+#if NET8_0_OR_GREATER
         _filterSearchValues ??= SearchValues.Create(Filter);
         
         return Mode switch {
@@ -75,6 +78,13 @@ public sealed class TilesetDefine {
             Modes.Blacklist => !_filterSearchValues.Contains(tileId),
             _ => throw new UnreachableException()
         };
+#else
+        return Mode switch {
+            Modes.Whitelist => Filter.Contains(tileId),
+            Modes.Blacklist => !Filter.Contains(tileId),
+            _ => throw new UnreachableException()
+        };
+#endif
     }
 }
 

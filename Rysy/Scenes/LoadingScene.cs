@@ -26,7 +26,7 @@ public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Sce
     public override void Render() {
         base.Render();
 
-        var windowSize = RysyEngine.Instance.Window.ClientBounds.Size();
+        var windowSize = RysyState.Window.ClientBounds.Size();
         GFX.BeginBatch();
 
         const int scale = 4;

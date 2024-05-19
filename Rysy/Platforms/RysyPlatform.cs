@@ -1,16 +1,36 @@
-﻿using Rysy.Extensions;
+﻿using Rysy.Mods;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Rysy.Platforms;
 
 public abstract class RysyPlatform {
-    public static RysyPlatform Current { get; } =
+    public static RysyPlatform Current { get; private set; } =
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new Windows() :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new Linux() :
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new MacOS() :
         throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.RuntimeIdentifier}");
 
+    /// <summary>
+    /// Forcibly overrides the current platform. Should be called before Rysy initializes!
+    /// </summary>
+    /// <param name="newPlatform"></param>
+    public static void OverridePlatform(RysyPlatform newPlatform) {
+        Current = newPlatform;
+    }
+
+    protected IModFilesystem? CachedRysyFilesystem;
+    
+    public virtual IModFilesystem GetRysyFilesystem() {
+#if DEBUG
+        return CachedRysyFilesystem ??= Directory.Exists("../../../Assets")
+        ? new FolderModFilesystem(Path.GetFullPath("../../../Assets"))
+        : new FolderModFilesystem("Assets");
+
+#else
+        return CachedRysyFilesystem ??= new FolderModFilesystem("Assets");
+#endif
+    }
+    
     /// <summary>
     /// Gets the location in which Rysy should save its settings
     /// </summary>
@@ -24,7 +44,7 @@ public abstract class RysyPlatform {
     }
 
     public virtual void ResizeWindow(int x, int y, int w, int h) {
-        var gdm = RysyEngine.GDM;
+        var gdm = RysyState.GraphicsDeviceManager;
 
         gdm.PreferredBackBufferWidth = w;
         gdm.PreferredBackBufferHeight = h;
@@ -42,7 +62,7 @@ public abstract class RysyPlatform {
         //var minY = RysyEngine.Instance.Window.IsBorderlessShared() ? 0 : taskbarHeight;
         //if (!y.IsInRange(minY, monitorSize.Height - h - taskbarHeight))
         //    y = taskbarHeight;
-        RysyEngine.Instance.Window.SetPosition(new(x, y));
+        RysyState.Window.SetPosition(new(x, y));
         gdm.ApplyChanges();
     }
 }

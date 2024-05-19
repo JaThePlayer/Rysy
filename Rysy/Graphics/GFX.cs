@@ -31,14 +31,13 @@ public static class GFX {
     /// <summary>
     /// Loads the bare minimum needed to render anything.
     /// </summary>
-    /// <param name="eng"></param>
-    public static void LoadEssencials(RysyEngine eng) {
+    public static void LoadEssencials() {
         if (Batch is not null)
             return;
 
-        Batch = new(eng.GraphicsDevice);
+        Batch = new(RysyState.GraphicsDevice);
 
-        Pixel = new(eng.GraphicsDevice, 1, 1);
+        Pixel = new(RysyState.GraphicsDevice, 1, 1);
         Pixel.SetData(new Color[1] { Color.White });
         VirtPixel = VirtTexture.FromTexture(Pixel);
 
@@ -49,7 +48,7 @@ public static class GFX {
 
         PicoFont.Init();
 
-        BasicEffect = new BasicEffect(eng.GraphicsDevice);
+        BasicEffect = new BasicEffect(RysyState.GraphicsDevice);
         BasicEffect.World = Matrix.Identity;
         BasicEffect.View = Matrix.Identity;
         BasicEffect.Projection = Matrix.Identity;
@@ -234,18 +233,18 @@ public static class GFX {
         blendState ??= BlendState.AlphaBlend;
         rasterizerState ??= RasterizerState.CullNone;
 
-        Vector2 vector = new Vector2(RysyEngine.GDM.GraphicsDevice.Viewport.Width, RysyEngine.GDM.GraphicsDevice.Viewport.Height);
+        Vector2 vector = new Vector2(RysyState.GraphicsDevice.Viewport.Width, RysyState.GraphicsDevice.Viewport.Height);
         matrix *= Matrix.CreateScale(1f / vector.X * 2f, -(1f / vector.Y) * 2f, 1f);
         matrix *= Matrix.CreateTranslation(-1f, 1f, 0f);
 
-        RysyEngine.Instance.GraphicsDevice.RasterizerState = rasterizerState;
-        RysyEngine.Instance.GraphicsDevice.BlendState = blendState;
+        RysyState.GraphicsDevice.RasterizerState = rasterizerState;
+        RysyState.GraphicsDevice.BlendState = blendState;
 
         //effect.Parameters["World"].SetValue(matrix);
         effect.World = matrix;
         foreach (EffectPass effectPass in effect.CurrentTechnique.Passes) {
             effectPass.Apply();
-            RysyEngine.Instance.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount / 3);
+            RysyState.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertexCount / 3);
         }
     }
 

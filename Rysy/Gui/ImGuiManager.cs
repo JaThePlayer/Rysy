@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Input;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.Mods;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Gui;
@@ -35,8 +36,8 @@ public static class ImGuiManager {
         ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg |
         ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.Hideable;
 
-    public static unsafe void Load(RysyEngine game) {
-        GuiRenderer = new ImGuiRenderer(game);
+    public static void Load() {
+        GuiRenderer = new ImGuiRenderer();
 
         ImGuiThemer.SetFontSize(16f);
 
@@ -438,7 +439,7 @@ public static class ImGuiManager {
                 t.Target.Dispose();
             }
 
-            t.Target = new(RysyEngine.GDM.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            t.Target = new(RysyState.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
             t.ID = GuiRenderer.BindTexture(t.Target);
             Targets[id] = t;
             isNew = true;
@@ -449,7 +450,7 @@ public static class ImGuiManager {
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
-            var g = RysyEngine.GDM.GraphicsDevice;
+            var g = RysyState.GraphicsDevice;
             g.SetRenderTarget(t.Target);
             g.Clear(Color.Transparent);
             GFX.BeginBatch(camera);
@@ -520,8 +521,7 @@ public static class ImGuiManager {
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public class ImGuiRenderer {
         private RasterizerState RasterizerState;
-        private RysyEngine Engine;
-        private GraphicsDevice GraphicsDevice;
+        private GraphicsDevice GraphicsDevice => RysyState.GraphicsDevice;
         private BasicEffect Effect;
 
         private byte[] VertexData;
@@ -570,11 +570,14 @@ public static class ImGuiManager {
             new(ImGuiKey.ModAlt, Keys.LeftAlt, Keys.RightAlt),
         };
 
-        public ImGuiRenderer(RysyEngine engine) {
+        public ImGuiRenderer() {
             //File.Delete("imgui.ini");
             // ImGui.NET doesn't expose the dock builder API, but we can just ship the ini file...
             if (!File.Exists("imgui.ini")) {
-                File.Copy("Assets/default_imgui.ini", "imgui.ini");
+                ModRegistry.RysyMod.Filesystem.TryOpenFile("default_imgui.ini", s => {
+                   using var fs = File.Open("imgui.ini", FileMode.Create);
+                   s.CopyTo(fs);
+                });
             }
 
             IntPtr ctx = ImGui.CreateContext();
@@ -586,8 +589,6 @@ public static class ImGuiManager {
 
             ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
-            Engine = engine ?? throw new ArgumentNullException(nameof(engine));
-            GraphicsDevice = RysyEngine.Instance.GraphicsDevice;
             Textures = new Dictionary<IntPtr, Texture2D>();
 
             RasterizerState = new RasterizerState() {
@@ -647,9 +648,9 @@ public static class ImGuiManager {
             Textures.Remove(texPtr);
         }
 
-        public void BeforeLayout(GameTime gt) {
-            ImGui.GetIO().DeltaTime = (float) gt.ElapsedGameTime.TotalSeconds;
-            if (RysyEngine.Instance.IsActive)
+        public void BeforeLayout(float elapsedSeconds) {
+            ImGui.GetIO().DeltaTime = elapsedSeconds;
+            if (RysyState.Game.IsActive)
                 UpdateInput();
             ImGui.NewFrame();
 
@@ -664,6 +665,7 @@ public static class ImGuiManager {
                 RenderDrawData(ImGui.GetDrawData());
             }
 
+            #if !Celeste
             switch (ImGui.GetMouseCursor()) {
                 case ImGuiMouseCursor.None:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.Arrow);
@@ -698,6 +700,7 @@ public static class ImGuiManager {
                 case ImGuiMouseCursor.COUNT:
                     break;
             }
+            #endif
         }
 
         protected void SetupInput() {
@@ -737,7 +740,7 @@ public static class ImGuiManager {
 
         protected void UpdateInput() {
             // Make sure the window is focused before responding to input.
-            if (!RysyEngine.Instance.IsActive)
+            if (!RysyState.Game?.IsActive ?? true)
                 return;
 
             ImGuiIOPtr io = ImGui.GetIO();

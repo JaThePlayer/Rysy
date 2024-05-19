@@ -78,7 +78,7 @@ public sealed class EditorScene : Scene {
         LoadMapFromBin(mapFilepath, fromPersistence, fromBackup, overrideFilepath);
     }
 
-    internal Task LoadFromPersistence() {
+    public Task LoadFromPersistence() {
         if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
             return LoadMapFromBinCore(Persistence.Instance.LastEditedMap, fromPersistence: true);
         
@@ -343,7 +343,7 @@ public sealed class EditorScene : Scene {
         base.Render();
 
         if (Map is not { }) {
-            var windowSize = RysyEngine.Instance.Window.ClientBounds.Size();
+            var windowSize = RysyState.Window.ClientBounds.Size();
             var height = 4 * 6;
             var center = windowSize.Y / 2;
 
