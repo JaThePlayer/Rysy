@@ -7,6 +7,11 @@ using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using Rysy.Selections;
+#if FNA
+using SDL2;
+using System.Runtime.InteropServices;
+using System.Text;
+#endif
 
 namespace Rysy;
 
@@ -74,7 +79,35 @@ public sealed class RysyEngine : Game {
         Window.ClientSizeChanged += Window_ClientSizeChanged;
 
 #if !FNA
-        Window.FileDrop += Window_FileDrop;
+        Window.FileDrop += (object? sender, FileDropEventArgs e) {
+            Console.WriteLine(string.Join(' ', e.Files));
+
+            foreach (var file in e.Files) {
+                Scene?.OnFileDrop(file);
+            }
+        }
+#else
+        unsafe {
+            SDL.SDL_AddEventWatch(MyEventFunction, IntPtr.Zero);
+        
+            static int MyEventFunction(IntPtr userdata, IntPtr sdlEventPtr) {
+                var sdlEvent = (SDL.SDL_Event*) sdlEventPtr;
+                if (sdlEvent->type == SDL.SDL_EventType.SDL_DROPFILE) {
+                    var droppedFileDir = sdlEvent->drop.file;
+                    var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
+                    var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
+                    SDL_free(droppedFileDir);
+                    
+                    Console.WriteLine(pathString);
+                    Scene?.OnFileDrop(pathString);
+                }
+                
+                return 0; // Value will be ignored
+            }
+            
+            [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)]
+            static extern void SDL_free(IntPtr memblock);
+        }
 #endif
 
         SetTargetFps(60);
@@ -132,14 +165,6 @@ public sealed class RysyEngine : Game {
         };
 #endif
     }
-
-#if !FNA
-    private void Window_FileDrop(object? sender, FileDropEventArgs e) {
-        Console.WriteLine(string.Join(' ', e.Files));
-
-        Scene?.OnFileDrop(e);
-    }
-#endif
 
     public static Action<Viewport>? OnViewportChanged { get; set; }
 

@@ -94,7 +94,7 @@ public abstract class Scene {
             AddWindow(factory());
     }
 
-    internal protected virtual void OnFileDrop(FileDropEventArgs args) {
+    protected internal virtual void OnFileDrop(string filePath) {
         // Rysy is most likely not focused, but visible rn. Force the window to be active for a bit, to update the UI.
         RysyEngine.ForceActiveTimer = 1f;
     }
