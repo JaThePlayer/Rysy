@@ -30,6 +30,10 @@ public abstract class RysyPlatform {
         return CachedRysyFilesystem ??= new FolderModFilesystem("Assets");
 #endif
     }
+
+    public virtual (string Name, Profile Profile)? ForcedProfile() => null;
+
+    public bool HasForcedProfile => ForcedProfile() is { };
     
     /// <summary>
     /// Gets the location in which Rysy should save its settings

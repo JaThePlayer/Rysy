@@ -1,4 +1,6 @@
-﻿using KeraLua;
+﻿#if SourceCodePlugins
+
+using KeraLua;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -165,3 +167,5 @@ public static class CodeCompilationHelper {
         return str.ToString();
     }
 }
+
+#endif

@@ -12,10 +12,8 @@ public class Booster : SpriteEntity, IPlaceable {
         ch9_hub_booster = false
     });
 
-    public static PlacementList GetPlacements() => new() {
+    public static PlacementList GetPlacements() => [
         new("green"),
-        new("red", new {
-            red = true,
-        }),
-    };
+        new("red", new { red = true })
+    ];
 }

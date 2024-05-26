@@ -20,22 +20,33 @@ public static class Logger {
 
     public static LogLevel MinimumLevel { get; set; } = LogLevel.Debug;
 
-    public static void Init([CallerFilePath] string filePath = "") {
-        CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
+    private static bool _initialized = false;
+    
+    private static bool Init() {
+        if (!_initialized) {
+            _initialized = true;
+            DoInit();
+        }
 
-        if (Path.GetDirectoryName(LogFile) is { } dir)
-            Directory.CreateDirectory(dir);
+        return true;
+        
+        void DoInit([CallerFilePath] string filePath = "") {
+            CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
 
-        if (File.Exists(LogFile)) {
-            File.Copy(LogFile, LastLogFile, true);
-            File.Delete(LogFile);
+            if (Path.GetDirectoryName(LogFile) is { } dir)
+                Directory.CreateDirectory(dir);
+
+            if (File.Exists(LogFile)) {
+                File.Copy(LogFile, LastLogFile, true);
+                File.Delete(LogFile);
+            }
         }
     }
 
     private static string PrependLocation(string txt, string callerMethod, string callerFile, int lineNumber)
         => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.RESET_COLOR}] {txt}";
 
-    private static bool ValidLogLevel(LogLevel level) => level >= MinimumLevel;
+    private static bool ValidLogLevel(LogLevel level) => Init() && level >= MinimumLevel;
 
     public static void Write(string tag, LogLevel logLevel, string msg, 
         [CallerMemberName] string callerMethod = "",

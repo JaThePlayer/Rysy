@@ -21,7 +21,7 @@ public class Persistence {
 
     #region Helpers
 
-    public static Persistence Instance { get; internal set; } = null!;
+    public static Persistence Instance { get; set; } = null!;
 
     private static string FileLocation { get; set; } = $"persistence.json";
 

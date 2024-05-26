@@ -41,7 +41,7 @@ public static class ImGuiManager {
 
         ImGuiThemer.SetFontSize(16f);
 
-        RysyEngine.ImGuiAvailable = true;
+        RysyState.ImGuiAvailable = true;
     }
 
     public static void PushWindowStyle() {

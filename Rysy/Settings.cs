@@ -14,7 +14,7 @@ public static class SettingsHelper {
     public static bool ReadSettings { get; set; } = true;
 
     public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
-    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{Settings.Instance.Profile}/{settingFileName}"
+    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.Profile}/{settingFileName}"
     : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
 
     //public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
@@ -153,7 +153,7 @@ public sealed class Settings {
         get => _theme;
         set {
             _theme = value;
-            if (RysyEngine.ImGuiAvailable && UiEnabled)
+            if (RysyState.ImGuiAvailable && UiEnabled)
                 LoadTheme(value);
         }
     }
@@ -168,8 +168,8 @@ public sealed class Settings {
         get => _fontSize;
         set {
             _fontSize = value;
-            if (RysyEngine.ImGuiAvailable && UiEnabled)
-                RysyEngine.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
+            if (RysyState.ImGuiAvailable && UiEnabled)
+                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
         }
     }
 

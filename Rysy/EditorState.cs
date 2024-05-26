@@ -24,7 +24,7 @@ public static class EditorState {
                 return;
 
             _currentRoom = value;
-            RysyEngine.ForceActiveTimer = 0.25f;
+            RysyState.ForceActiveTimer = 0.25f;
 
             OnCurrentRoomChanged?.Invoke();
         }

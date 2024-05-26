@@ -24,7 +24,7 @@ public class DebugInfoWindow : Window {
     private static string HistoryFromText = "";
 
     protected override void Render() {
-        ImGui.Text($"FPS: {RysyEngine.CurrentFPS}");
+        ImGui.Text($"FPS: {RysyState.CurrentFPS}");
 
         if (ImGui.CollapsingHeader("Memory")) {
             ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
@@ -57,6 +57,44 @@ public class DebugInfoWindow : Window {
                 | Isn't  | that   | *cool*    |
                 | ***Yea*** | **it** | is~~n't~~ |
                 | ![Image Link](tilesets/subfolder/betterTemplate)  |[Github](https://github.com/JaThePlayer/Rysy)| https://github.com/JaThePlayer/Rysy |
+                
+                # Entity.sprite(room, entity)
+                
+                This function is used when you want your entity rendering to be more complicated than just a rectangle or single sprite.
+                
+                ## DrawableSprite
+                
+                To draw celeste sprites in the `sprite` function, you can use the `drawableSprite` struct.
+                First, import it at the top of your plugin file:
+                `local drawableSprite = require("structs.drawable_sprite")`
+                
+                Now, you can use it in the `sprite` function:
+                ```
+                function YOUR_ENTITY.sprite(room, entity)
+                    -- creates a sprite instance. First arg is the texture path, second is a table containing the position, color, etc.
+                    -- In most cases, you just want to pass the `entity` to make the sprite appear the entity's position.
+                    local computerSprite = drawableSprite.fromTexture("objects/kevinspc/pc", entity)
+                    -- you can also edit the sprite after creating it
+                    -- equivalent to `Celeste.Sprite.JustifyOrigin(x, y)` in C#:
+                    -- By default, justification is 0.5, 0.5 (centered)
+                    computerSprite:setJustification(0.5, 1.0)
+                
+                    -- you can also create multiple sprites in the same function:
+                    local spectogramSprite = drawableSprite.fromTexture("objects/kevinspc/spectogram", entity)
+                    spectogramSprite:setJustification(0.0, 0.0)
+                    -- This moves the sprite:
+                    spectogramSprite:addPosition(-16, -39)
+                    -- This is equivalent to MTexture.CreateSubtexture - allows you to render only parts of the sprite.
+                    spectogramSprite:useRelativeQuad(0, 0, 32, 18)
+                
+                    -- You need to return all the sprites you created, or else they won't be rendered.
+                    -- If you have more than 1 sprite, you need to create a table containing the sprites, like this:
+                    return {
+                        computerSprite,
+                        spectogramSprite
+                    }
+                end
+                ```
                 """;
             if (Doc is null || DocStr != str) {
                 var doc = Markdig.Markdown.Parse(str, ImGuiMarkdown.MarkdownPipeline);

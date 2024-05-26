@@ -97,7 +97,7 @@ public class PlacementTool : Tool {
 
         var cache = MaterialPreviewCache;
         MaterialPreviewCache.Clear();
-        RysyEngine.OnEndOfThisFrame += () => {
+        RysyState.OnEndOfThisFrame += () => {
             foreach (var (k, v) in cache) {
                 ImGuiManager.DisposeXnaWidget(k.ToString());
             }

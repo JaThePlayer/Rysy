@@ -454,7 +454,7 @@ public sealed record AutotiledSpriteList : ISprite {
     }
 
     private void ScheduleCache(Room? room) {
-        RysyEngine.OnEndOfThisFrame += () => {
+        RysyState.OnEndOfThisFrame += () => {
             var b = GFX.Batch;
             var gd = b.GraphicsDevice;
             

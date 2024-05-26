@@ -42,7 +42,7 @@ public sealed class EditorScene : Scene {
         if (map is { })
             Persistence.Instance.PushRecentMap(map);
 
-        RysyEngine.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
+        RysyState.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
     }
 
     private void SwapMapPreserveState(Map? map) {
@@ -138,7 +138,7 @@ public sealed class EditorScene : Scene {
             return;
         }
         
-        RysyEngine.OnEndOfThisFrame += () => Task.Run(async () => {
+        RysyState.OnEndOfThisFrame += () => Task.Run(async () => {
             if (RysyEngine.Scene is not LoadingScene) {
                 var oldScene = RysyEngine.Scene;
                 

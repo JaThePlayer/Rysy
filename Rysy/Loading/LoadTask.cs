@@ -33,9 +33,14 @@ public sealed class SimpleLoadTask(string name, Func<SimpleLoadTask, Task<LoadTa
     public override List<string> CurrentMessages => _messages.ToList();
     
     protected override async Task<LoadTaskResult> DoRun() {
-        var ret = await run(this);
-        SetMessage();
-        return ret;
+        try {
+            var ret = await run(this);
+            SetMessage();
+            return ret;
+        } catch (Exception e) {
+            SetMessage($"{Name} Failed!");
+            return LoadTaskResult.Error(e);
+        }
     }
 
     public void SetMessage(params string[] newMsg) {

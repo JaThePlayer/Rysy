@@ -477,7 +477,7 @@ public sealed class DecalRegistryWindow : Window {
             render?.Invoke();
             
             if (remove is {} && ImGui.Button("Remove")) {
-                RysyEngine.OnEndOfThisFrame += remove;
+                RysyState.OnEndOfThisFrame += remove;
                 ImGui.CloseCurrentPopup();
             }
 

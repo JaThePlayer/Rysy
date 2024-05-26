@@ -119,7 +119,7 @@ public class StylegroundWindow : Window {
     }
 
     private void EditAll(Func<Style, IHistoryAction?> styleToAction, bool descending = false) {
-        RysyEngine.OnEndOfThisFrame += () => {
+        RysyState.OnEndOfThisFrame += () => {
             var ordered = descending
             ? Selections.OrderByDescending(s => GetStyleListContaining(s).IndexOf(s))
             : Selections.OrderBy(s => GetStyleListContaining(s).IndexOf(s));
@@ -497,12 +497,12 @@ public class StylegroundWindow : Window {
 
         if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
             if (ImGui.Button("Remove")) {
-                RysyEngine.OnEndOfThisFrame += () => History.ApplyNewAction(Delete(style));
+                RysyState.OnEndOfThisFrame += () => History.ApplyNewAction(Delete(style));
                 ImGui.CloseCurrentPopup();
             }
 
             if (ImGui.Button("Clone")) {
-                RysyEngine.OnEndOfThisFrame += () => {
+                RysyState.OnEndOfThisFrame += () => {
                     var newStyle = Style.FromElement(style.Pack());
                     var styles = GetStyleListContaining(style);
                     var folder = GetFolderContaining(style);

@@ -165,4 +165,13 @@ public static class TwoDimensionalArrayExt {
         offY = minY;
         return newTiles;
     }
+
+    public static T[][] Create2DJagged<T>(int w, int h) {
+        T[][] arr = new T[h][];
+        for (int i = 0; i < h; i++) {
+            arr[i] = new T[w];
+        }
+
+        return arr;
+    }
 }

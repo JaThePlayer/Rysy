@@ -5,7 +5,7 @@ using Rysy.Loading;
 namespace Rysy.Scenes;
 
 public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Scene {
-    private Task? _loadTask;
+    private Task<Exception?>? _loadTask;
     private bool _completed;
 
     /// <summary>
@@ -19,6 +19,11 @@ public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Sce
 
         if (!_completed && _loadTask.IsCompleted) {
             _completed = true;
+
+            if (_loadTask.Result is { } ex) {
+                Logger.Error(ex, "Failed to load");
+            }
+            
             onCompleted();
         }
     }

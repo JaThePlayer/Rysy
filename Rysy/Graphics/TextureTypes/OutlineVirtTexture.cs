@@ -98,7 +98,7 @@ public sealed class OutlineVirtTexture : VirtTexture {
             var tData = new Color[tw * th];
             var dataLoaded = false;
 
-            RysyEngine.OnEndOfThisFrame += () => {
+            RysyState.OnEndOfThisFrame += () => {
                 try {
                     t.GetData(0, parent.ClipRect, tData, 0, tData.Length);
                     dataLoaded = true;

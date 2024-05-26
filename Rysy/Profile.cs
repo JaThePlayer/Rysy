@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Rysy.Platforms;
+using System.Text.Json.Serialization;
 
 namespace Rysy;
 
@@ -31,7 +32,7 @@ public class Profile {
             throw new Exception("Settings.Load() needs to be called before Profile.Load()");
         }
 
-        var profile = SettingsHelper.Load<Profile>("profile.json", perProfile: true);
+        var profile = RysyPlatform.Current.ForcedProfile()?.Profile ?? SettingsHelper.Load<Profile>("profile.json", perProfile: true);
 
         if (setInstance) {
             Instance = profile;
