@@ -107,7 +107,7 @@ internal sealed class MapAnalyzerWindow : Window {
                     ImGuiManager.PushEditedStyle();
                     ImGui.TableNextColumn();
                     if (ImGui.Selectable($"Fix##{i++}")) {
-                        RysyEngine.OnEndOfThisFrame += () => {
+                        RysyState.OnEndOfThisFrame += () => {
                             res.Fix();
                             Update();
                         };

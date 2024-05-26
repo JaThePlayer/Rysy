@@ -274,7 +274,7 @@ public sealed class SettingsWindow : Window {
     }
 
     private void ProfileBar() {
-        if (!ImGui.BeginTabItem("Profile")) {
+        if (RysyPlatform.Current.HasForcedProfile || !ImGui.BeginTabItem("Profile")) {
             return;
         }
 

@@ -935,10 +935,10 @@ public class SelectionTool : Tool {
     }
     
     void DeselectOnEndOfFrame(Selection selection) {
-        RysyEngine.OnEndOfThisFrame += () => Deselect(selection.Handler);
+        RysyState.OnEndOfThisFrame += () => Deselect(selection.Handler);
     }
     
     void RightClickOnEndOfFrame(Selection selection) {
-        RysyEngine.OnEndOfThisFrame += () => selection.Handler.OnRightClicked([selection]);
+        RysyState.OnEndOfThisFrame += () => selection.Handler.OnRightClicked([selection]);
     }
 }

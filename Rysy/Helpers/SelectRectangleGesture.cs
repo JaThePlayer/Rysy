@@ -24,7 +24,7 @@ public sealed class SelectRectangleGesture {
     public Func<Point, Point> Transform { get; set; } = (p) => p;
 
     public SelectRectangleGesture(Input input, Action<Rectangle>? onSelectionFinish = null) {
-        RysyEngine.OnLoseFocus += OnLoseFocus;
+        RysyState.OnLoseFocus += OnLoseFocus;
 
         OnSelectionFinish = onSelectionFinish;
         Input = input ?? Input.Global;

@@ -21,7 +21,7 @@ public static class PrefabHelper {
             }
         }
 
-        RysyEngine.OnNextReload += () => _CurrentPrefabs = null;
+        RysyState.OnNextReload += () => _CurrentPrefabs = null;
 
         return _CurrentPrefabs;
     }

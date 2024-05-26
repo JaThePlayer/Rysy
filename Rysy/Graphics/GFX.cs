@@ -2,12 +2,13 @@
 using Rysy.Helpers;
 using Rysy.Loading;
 using Rysy.Mods;
+using Rysy.Platforms;
 using Rysy.Scenes;
 
 namespace Rysy.Graphics;
 
 public static class GFX {
-    public static IAtlas Atlas { get; private set; } = null!;
+    public static IAtlas Atlas { get; set; } = new Atlas();
 
     public static SpriteBatch Batch { get; private set; } = null!;
 
@@ -41,10 +42,12 @@ public static class GFX {
         Pixel.SetData(new Color[1] { Color.White });
         VirtPixel = VirtTexture.FromTexture(Pixel);
 
-        if (File.Exists("Assets/Graphics/__fallback.png"))
-            UnknownTexture = VirtTexture.FromFile("Assets/Graphics/__fallback.png");
-        else
+
+        if (!RysyPlatform.Current.GetRysyFilesystem().TryOpenFile("Graphics/__fallback.png", s => {
+            UnknownTexture = VirtTexture.FromTexture(Texture2D.FromStream(RysyState.GraphicsDevice, s));
+        })) {
             UnknownTexture = VirtTexture.FromTexture(Pixel);
+        }
 
         PicoFont.Init();
 
@@ -74,8 +77,33 @@ public static class GFX {
             await LoadVanillaAtlasAsync();
 
         task?.SetMessage("Scanning Rysy assets");
+        await LoadRysyTextures();
+
+        task?.SetMessage("Scanning mod assets");
+        using (ScopedStopwatch watch = new("Scanning mod assets")) {
+            await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
+                if (m == ModRegistry.RysyMod)
+                    return ValueTask.CompletedTask;
+                return LoadModAsync(m);
+            });
+        }
+    }
+
+    public static void LoadDecalRegistry(SimpleLoadTask? task) {
+        task?.SetMessage("Loading Decal Registry");
+        DecalRegistry?.Dispose();
+        DecalRegistry = new();
+        using ScopedStopwatch watch = new("Loading Decal Registry");
+        
+        foreach (var mod in ModRegistry.Mods.Values) {
+            DecalRegistry.ReadFileFromMod(mod.Filesystem);
+        }
+    }
+
+    public static async Task LoadRysyTextures() {
         using (ScopedStopwatch watch = new("Scanning Rysy assets")) {
-            await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
+            //await Atlas.LoadFromDirectoryAsync("Assets/Graphics", "Rysy");
+            await LoadModAsync(ModRegistry.RysyMod, registerFilewatch: false, folder: "Graphics", prefix: "Rysy");
             Atlas.AddTexture("Rysy:1x1-tinting-pixel", VirtPixel);
             Atlas.AddTexture("tilesets/subfolder/betterTemplate", Atlas["Rysy:tilesets/subfolder/betterTemplate"]);
             Atlas.AddTexture("Rysy:missingTexture", UnknownTexture);
@@ -102,24 +130,6 @@ public static class GFX {
                 Atlas.AddTexture($"@Internal@/{virtPathNoPrefix}", Atlas[$"Rysy:{virtPathNoPrefix}"]);
             }
         }
-
-        task?.SetMessage("Scanning mod assets");
-        using (ScopedStopwatch watch = new("Scanning mod assets")) {
-            await Parallel.ForEachAsync(ModRegistry.Mods.Values, (m, token) => {
-                return LoadModAsync(m);
-            });
-        }
-    }
-
-    public static void LoadDecalRegistry(SimpleLoadTask? task) {
-        task?.SetMessage("Loading Decal Registry");
-        DecalRegistry?.Dispose();
-        DecalRegistry = new();
-        using ScopedStopwatch watch = new("Loading Decal Registry");
-        
-        foreach (var mod in ModRegistry.Mods.Values) {
-            DecalRegistry.ReadFileFromMod(mod.Filesystem);
-        }
     }
 
     internal static async ValueTask LoadVanillaAtlasAsync() {
@@ -127,8 +137,8 @@ public static class GFX {
         await Atlas.LoadFromPackerAtlasAsync($"{Profile.Instance.CelesteDirectory}/Content/Graphics/Atlases/Misc", noAtlas: true);
     }
 
-    internal static ValueTask LoadModAsync(ModMeta mod, bool registerFilewatch = true) {
-        var files = mod.Filesystem.FindFilesInDirectoryRecursive("Graphics/Atlases/Gameplay", "png");
+    internal static ValueTask LoadModAsync(ModMeta mod, bool registerFilewatch = true, string folder = "Graphics/Atlases/Gameplay", string? prefix = null) {
+        var files = mod.Filesystem.FindFilesInDirectoryRecursive(folder, "png");
         var atlas = Atlas;
 
         foreach (var file in files) {
@@ -136,7 +146,7 @@ public static class GFX {
         }
 
         if (registerFilewatch)
-        mod.Filesystem.RegisterFilewatch("Graphics/Atlases/Gameplay", new() {
+        mod.Filesystem.RegisterFilewatch(folder, new() {
             OnChanged = (string newPath) => {
                 var list = atlas.GetTextures()
                     .Where(p => p.texture is ModTexture { Mod: var textureMod } && textureMod == mod)
@@ -156,8 +166,12 @@ public static class GFX {
         return ValueTask.CompletedTask;
 
         void AddTexture(string path) {
-            var virt = path["Graphics/Atlases/Gameplay/".Length..(^".png".Length)];
+            var virt = path[(folder.Length+1)..(^".png".Length)];
 
+            if (prefix is { }) {
+                virt = $"{prefix}:{virt}";
+            }
+            
 #pragma warning disable CA2000 // Dispose objects before losing scope - scope is not lost here
             atlas!.AddTexture(virt, new ModTexture(mod, path));
 #pragma warning restore CA2000

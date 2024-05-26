@@ -345,15 +345,14 @@ public sealed record class MapMetadata {
         var props = typeof(T).GetProperties().ToDictionary(p => p.Name, p => p, StringComparer.InvariantCultureIgnoreCase);
 
         foreach (var (attrName, val) in el.Attributes) {
-            var prop = props[attrName];
+            if (!props.TryGetValue(attrName, out var prop))
+                continue;
 
             if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) {
                 prop.SetValue(into, Convert.ToSingle(val, CultureInfo.InvariantCulture));
             } else {
                 prop.SetValue(into, val);
             }
-
-
         }
     }
 

@@ -548,7 +548,7 @@ public static class EntityRegistry {
         Entity e;
 
         var info = GetInfo(sid);
-        if (info is null) {
+        if (info is null || info.CSharpType is null) {
             if (Settings.Instance?.LogMissingEntities ?? false)
                 Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
             info = RegisteredEntity.UnknownEntity(sid, trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);

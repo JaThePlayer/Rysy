@@ -12,7 +12,7 @@ public abstract class Scene {
 
     public Scene() {
         RemoveWindow = (w) => {
-            RysyEngine.OnEndOfThisFrame += () => Windows.Remove(w);
+            RysyState.OnEndOfThisFrame += () => Windows.Remove(w);
         };
     }
 
@@ -96,7 +96,7 @@ public abstract class Scene {
 
     protected internal virtual void OnFileDrop(string filePath) {
         // Rysy is most likely not focused, but visible rn. Force the window to be active for a bit, to update the UI.
-        RysyEngine.ForceActiveTimer = 1f;
+        RysyState.ForceActiveTimer = 1f;
     }
 
     public bool OnInterval(double interval) {

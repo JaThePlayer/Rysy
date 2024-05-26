@@ -60,7 +60,7 @@ public sealed class EditorGroupWindow : Window {
             if (ImGuiManager.IndexDragDrop("group", ref i) is { } droppedIndex) {
                 var droppedGroup = groups[droppedIndex];
 
-                RysyEngine.OnEndOfThisFrame += () => {
+                RysyState.OnEndOfThisFrame += () => {
                     groups.Swap(droppedGroup, g);
                 };
             }
@@ -74,11 +74,11 @@ public sealed class EditorGroupWindow : Window {
 
             if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
                 if (ImGuiManager.TranslatedButton("rysy.edit")) {
-                    RysyEngine.Scene.AddWindow(new GroupEditWindow(this, map, g));
+                    RysyState.Scene.AddWindow(new GroupEditWindow(this, map, g));
                 }
                 
                 if (ImGuiManager.TranslatedButton("rysy.delete")) {
-                    RysyEngine.OnEndOfThisFrame += () => EditorState.History?.ApplyNewAction(new RemoveEditorGroupAction(map, g));
+                    RysyState.OnEndOfThisFrame += () => EditorState.History?.ApplyNewAction(new RemoveEditorGroupAction(map, g));
                 }
 
                 ImGui.EndPopup();

@@ -420,7 +420,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             CacheSpritesIfNeeded();
 
             if (!selected && CachedSprites!.TrueForAll(s => s.IsLoaded)) {
-                RysyEngine.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
+                RysyState.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
             }
 
             if (selected) {

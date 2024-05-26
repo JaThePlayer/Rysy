@@ -162,7 +162,7 @@ public static class ModRegistry {
         try {
             ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
             if (loadCSharp)
-                LoadModRysyPlugins(mod);
+                LoadModRysySourceCodePlugins(mod);
         } catch (Exception e) {
             Logger.Error(e, $"Error loading mod: {dir}");
         }
@@ -223,7 +223,8 @@ public static class ModRegistry {
         mod.Module.Load();
     }
 
-    private static void LoadModRysyPlugins(ModMeta mod, bool registerFilewatch = true) {
+    private static void LoadModRysySourceCodePlugins(ModMeta mod, bool registerFilewatch = true) {
+        #if SourceCodePlugins
         var files = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "cs")
             .Where(f => !f.StartsWith("Rysy/obj", StringComparison.Ordinal)
                      && !f.StartsWith("Rysy/.vs", StringComparison.Ordinal)
@@ -246,8 +247,8 @@ public static class ModRegistry {
                 OnChanged = name => {
                     if (!reloading && name.EndsWith(".cs", StringComparison.Ordinal)) {
                         reloading = true;
-                        RysyEngine.OnEndOfThisFrame += () => {
-                            LoadModRysyPlugins(mod, registerFilewatch: false);
+                        RysyState.OnEndOfThisFrame += () => {
+                            LoadModRysySourceCodePlugins(mod, registerFilewatch: false);
                             reloading = false;
                         };
                     }
@@ -281,6 +282,7 @@ public static class ModRegistry {
         mod.PluginAssembly = modAsm;
 
         LoadModule(mod);
+        #endif
     }
 
     private static void ReadEverestYaml(ModMeta mod, Func<string?>? guessedNameGetter) {

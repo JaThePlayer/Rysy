@@ -73,7 +73,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     private void CallWatchers(string path, List<WatchedAsset>? watched) {
-        RysyEngine.OnEndOfThisFrame += () => {
+        RysyState.OnEndOfThisFrame += () => {
             foreach (var asset in watched?.ToList() ?? new()) {
                 /*
                 using var stream = OpenFile(path);
