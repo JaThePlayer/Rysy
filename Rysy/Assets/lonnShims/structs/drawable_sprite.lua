@@ -1,5 +1,4 @@
-﻿-- A partial implementation of drawable sprite
-local utils = require("utils")
+﻿local utils = require("utils")
 local drawing = require("utils.drawing")
 
 --[[
@@ -33,12 +32,21 @@ function __metaMt.__index(self, key)
     return nil
 end
 
-local function __newMeta(sprite)
-	local m = {
-        _RYSY_INTERNAL_texture = sprite._RYSY_INTERNAL_texture
-    }
+local _metaCache = {}
 
-    return setmetatable(m, __metaMt)
+local function __newMeta(texture)
+    local cached = _metaCache[texture]
+    if cached then
+        return cached
+    end
+    
+	local m = {
+        _RYSY_INTERNAL_texture = texture
+    }
+    setmetatable(m, __metaMt)
+    _metaCache[texture] = m
+
+    return m
 end
 -- END RYSY INTERNALS
 
@@ -175,36 +183,32 @@ function RYSY_UNPACKSPR(drawableSprite)
 		   rawget(drawableSprite, "_RYSYqX")
 end
 
-
-function drawableSpriteStruct.fromMeta(meta, data)
+local function __create(meta, data, texture)
     data = data or {}
+    
+    if not meta and not texture then
+        return nil
+    end
 
     local drawableSprite = {
-        _type = "drawableSprite"
+        _type = "drawableSprite",
+        x = data.x or 0,
+        y = data.y or 0,
+        justificationX = data.jx or data.justificationX or 0.5,
+        justificationY = data.jy or data.justificationY or 0.5,
+        scaleX = data.sx or data.scaleX or 1,
+        scaleY = data.sy or data.scaleY or 1,
+        rotation = data.r or data.rotation or 0,
+        depth = data.depth,
     }
-
-    drawableSprite.x = data.x or 0
-    drawableSprite.y = data.y or 0
-
-    drawableSprite.justificationX = data.jx or data.justificationX or 0.5
-    drawableSprite.justificationY = data.jy or data.justificationY or 0.5
-
-    drawableSprite.scaleX = data.sx or data.scaleX or 1
-    drawableSprite.scaleY = data.sy or data.scaleY or 1
-
-    drawableSprite.rotation = data.r or data.rotation or 0
-
-    drawableSprite.depth = data.depth
-
-    drawableSprite.meta = meta or __newMeta(drawableSprite)
-
-	-- handle creating clones of sprites
-	if meta then
-		local baseSprite = rawget(meta, "_RYSY_INTERNAL_texture")
-		if baseSprite then
-			drawableSprite._RYSY_INTERNAL_texture = baseSprite
-		end
-	end
+    
+    if texture then
+        drawableSprite._RYSY_INTERNAL_texture = texture
+        drawableSprite.meta = __newMeta(texture)
+    else
+        drawableSprite.meta = meta
+        drawableSprite._RYSY_INTERNAL_texture = rawget(meta, "_RYSY_INTERNAL_texture")
+    end
 
     if data.color then
         setColor(drawableSprite, data.color)
@@ -213,21 +217,18 @@ function drawableSpriteStruct.fromMeta(meta, data)
     return setmetatable(drawableSprite, drawableSpriteMt)
 end
 
+function drawableSpriteStruct.fromMeta(meta, data)
+    return __create(meta, data)
+end
+
 function drawableSpriteStruct.fromTexture(texture, data)
     texture = _RYSY_DRAWABLE_fixPath(texture)
 
 	if not _RYSY_DRAWABLE_exists(texture) then
-		--print("missing", texture)
-		return nil--drawableSpriteStruct.fromTexture("Rysy:missingTexture", data)
+		return nil
 	end
 
-	local meta = nil --spriteMeta - todo: figure this out, this might've been a bug?
-
-    local spr = drawableSpriteStruct.fromMeta(meta, data)
-    spr._RYSY_INTERNAL_texture = texture
-	rawset(spr.meta, "_RYSY_INTERNAL_texture", texture)
-
-    return spr
+    return __create(nil, data, texture)
 end
 
 function drawableSpriteStruct.fromInternalTexture(texture, data)

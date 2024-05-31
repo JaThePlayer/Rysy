@@ -71,7 +71,8 @@ end
 
 function atlases.getResource(resource, name)
 	if name == "Gameplay" then
-		return drawableSpriteStruct.fromTexture(resource).meta
+	    local texture = drawableSpriteStruct.fromTexture(resource)
+		return texture and texture.meta
 	end
 
     return nil

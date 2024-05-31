@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
+using System.Runtime.InteropServices;
 
 namespace Rysy.LuaSupport;
 
@@ -425,6 +426,45 @@ public class LuaCtx {
                 EntityRegistry.RegisterLuaPlacements(info, trigger, [placement]);
 
             return 0;
+        });
+        
+        //(rectangles, checkX, checkY, checkWidth, checkHeight) -> bool
+        lua.Register("_RYSY_CONNECTED_ENTITIES_hasAdjacent", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            List<Rectangle> rectangles;
+            if (lua.GetTable(1, "_rysy_rect") != LuaType.Nil) {
+                rectangles = lua.UnboxWrapper<ListWrapper<Rectangle>>(lua.GetTop()).Inner;
+                lua.Pop(1);
+            } else {
+                lua.Pop(1);
+                
+                rectangles = new List<Rectangle>();
+                lua.IPairs((lua, index, loc) => {
+                    rectangles.Add(lua.ToRectangle(loc));
+                }, tableStackLoc: 1);
+                
+                lua.PushString("_rysy_rect");
+                lua.PushWrapper(new ListWrapper<Rectangle>(rectangles));
+                lua.SetTable(1);
+            }
+            
+            var checkX = (int)lua.ToFloat(2);
+            var checkY = (int)lua.ToFloat(3);
+            var checkWidth = (int)lua.ToFloat(4);
+            var checkHeight = (int)lua.ToFloat(5);
+            var checkRect = new Rectangle(checkX, checkY, checkWidth, checkHeight);
+
+            foreach (var r in CollectionsMarshal.AsSpan(rectangles)) {
+                if (r.Intersects(checkRect)) {
+                    lua.PushBoolean(true);
+                    return 1;
+                }
+            }
+            
+            lua.PushBoolean(false);
+
+            return 1;
         });
 
         /*

@@ -659,9 +659,9 @@ where TArg1 : class, ILuaWrapper {
     /// </summary>
     /// <param name="lua"></param>
     /// <param name="onElement">(lua, index, valueLocation)</param>
-    public static void IPairs(this Lua lua, Action<Lua, int, int> onElement) {
+    public static void IPairs(this Lua lua, Action<Lua, int, int> onElement, int tableStackLoc = -1) {
         for (int i = 1; ; i++) {
-            var t = lua.RawGetInteger(-1, i);
+            var t = lua.RawGetInteger(tableStackLoc, i);
             if (t == LuaType.Nil) {
                 lua.Pop(1);
                 break;
@@ -791,13 +791,18 @@ where TArg1 : class, ILuaWrapper {
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
     public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
-        int newIndex = RegisterWrapper(wrapper);
+        int newIndex = RegisterWrapper(wrapper, out var isNew);
+        var name = WrapperMetatableNames[newIndex];
+        
+        if (isNew) {
+            if (state.NewMetatableASCII(name)) {
+                // Create a metatable that will call the C# methods:
+                int metatableIndex = state.GetTop();
 
-        if (state.NewMetatableASCII(WrapperMetatableNames[newIndex])) {
-            // Create a metatable that will call the C# methods:
-            int metatableIndex = state.GetTop();
-
-            SetupWrapperMetatable(state, newIndex, metatableIndex);
+                SetupWrapperMetatable(state, newIndex, metatableIndex);
+            }
+        } else {
+            state.GetMetatableASCII(name);
         }
     }
 
@@ -887,12 +892,14 @@ where TArg1 : class, ILuaWrapper {
         state.SetMetaTable(metatableStackLoc);
     }
 
-    private static int RegisterWrapper(ILuaWrapper wrapper) {
+    private static int RegisterWrapper(ILuaWrapper wrapper, out bool isNew) {
         var newIndex = LuaWrapperList.Count;
         LuaWrapperList.Add(wrapper);
-
+        isNew = false;
+        
         if (newIndex == WrapperMetatableNames.Count) {
             WrapperMetatableNames.Add(Encoding.ASCII.GetBytes($"{newIndex}"));
+            isNew = true;
         }
 
         return newIndex;
@@ -999,6 +1006,12 @@ where TArg1 : class, ILuaWrapper {
             return luaL_newmetatable(lua.Handle, ptr) != 0;
         }
     }
+    
+    public static unsafe void GetMetatableASCII(this Lua lua, byte[] asciiName) {
+        fixed (byte* ptr = &asciiName[0]) {
+            lua_getfield(lua.Handle, (int)LuaRegistry.Index, ptr);
+        }
+    }
 
     public static long ToIntegerSafe(Lua lua, int index) {
         return lua.ToIntegerX(index) ?? throw new LuaException(lua, new InvalidCastException($"Can't convert lua {lua.Type(index)} [{lua.ToString(index)}] to c# integer"));
@@ -1026,4 +1039,8 @@ where TArg1 : class, ILuaWrapper {
     [LibraryImport("lua54")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
     internal static unsafe partial int luaL_newmetatable(nint luaState, byte* name);
+    
+    [LibraryImport("lua54")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    internal static unsafe partial void lua_getfield(nint luaState, int index, byte* name);
 }

@@ -155,9 +155,15 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
     local positionOffsetKey = horizontal and "y" or "x"
 
     local position = {
-        x = entity.x,
-        y = entity.y
+        x = entity.x + offsetX,
+        y = entity.y + offsetY,
+        depth = spikeDepth,
+        rotation = rotation,
+        justificationX = justificationX,
+        justificationY = justificationY,
     }
+    
+    local textureMeta = nil
 
     local sprites = {}
 
@@ -167,12 +173,13 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
             position[positionOffsetKey] -= step / 2
         end
 
-        local sprite = drawableSprite.fromTexture(texture, position)
-
-        sprite.depth = spikeDepth
-        sprite.rotation = rotation
-        sprite:setJustification(justificationX, justificationY)
-        sprite:addPosition(offsetX, offsetY)
+        local sprite = nil
+        if not textureMeta then
+            sprite = drawableSprite.fromTexture(texture, position)
+            textureMeta = sprite.meta
+        else
+            sprite = drawableSprite.fromMeta(textureMeta, position)
+        end
 
         table.insert(sprites, sprite)
 

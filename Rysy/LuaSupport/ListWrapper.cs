@@ -3,7 +3,7 @@ using Rysy.Helpers;
 
 namespace Rysy.LuaSupport;
 
-public record class ListWrapper<T>(IList<T> Inner) : ILuaWrapper {
+public record class ListWrapper<T>(List<T> Inner) : ILuaWrapper {
     public int LuaIndex(Lua lua, long key) {
         var i = (int)key - 1;
         var inner = Inner;

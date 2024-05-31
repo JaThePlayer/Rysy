@@ -231,6 +231,15 @@ public static class LinqExt {
     public static IEnumerator<T> GetResettableEnumerator<T>(this IEnumerable<T> self) => self switch {
         _ => new ResettableEnumerator<T>(self)
     };
+
+    /// <summary>
+    /// Enumerates through the enumerable, discarding all values returned from it. Mostly for benchmarking purposes.
+    /// </summary>
+    public static void Enumerate<T>(this IEnumerable<T> self) {
+        foreach (var v in self) {
+            
+        }
+    }
 }
 
 public struct ListTakeEnumerable<TIn, TOut>(List<TIn> list, int amt) : IEnumerable<TOut>, IEnumerator<TOut>
