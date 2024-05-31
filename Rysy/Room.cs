@@ -889,8 +889,6 @@ public sealed class Room : IPackable, ILuaWrapper {
             case "y":
                 lua.PushNumber(Y);
                 return 1;
-            default:
-                break;
         }
 
         return 0;
@@ -904,7 +902,7 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
     /// </summary>
     public bool Used { get; private set; } = false;
 
-    internal List<string> Reasons = new();
+    internal HashSet<string> Reasons = new();
 
     private Room Room { get; init; }
 

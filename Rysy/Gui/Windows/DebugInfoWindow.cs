@@ -164,6 +164,14 @@ public class DebugInfoWindow : Window {
                 Benchmark(room, true, times);
             }
             
+            if (room is { } && ImGui.Button("Benchmark current room's entities")) {
+                BenchmarkEntities(room, false, times);
+            }
+            
+            if (room is { } && ImGui.Button("Benchmark current room's entities (Aggressively Clear Caches)")) {
+                BenchmarkEntities(room, true, times);
+            }
+            
             if (room is { } && ImGui.Button("Benchmark entire map (Aggressively Clear Caches)")) {
                 var watch = Stopwatch.GetTimestamp();
                 foreach (var innerRoom in room.Map.Rooms) {
@@ -193,6 +201,34 @@ public class DebugInfoWindow : Window {
 
         var elapsed = Stopwatch.GetElapsedTime(watch);
         Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}: {(elapsed / times).TotalMilliseconds}ms");
+    }
+
+    private void BenchmarkEntities(Room room, bool aggressive, int howManyTimes) {
+        var entities = room.Entities;
+        var times = entities.Select(e => e.Name).SafeToDictionary(t => (t, TimeSpan.Zero));
+        
+        foreach (var e in entities) {
+            var start = Stopwatch.GetTimestamp();
+            
+            if (aggressive) {
+                for (int i = 0; i < howManyTimes; i++) {
+                    e.GetSprites().Enumerate();
+                    e.ClearInnerCaches();
+                }
+            } else {
+                for (int i = 0; i < howManyTimes; i++) {
+                    e.GetSprites().Enumerate();
+                }
+            }
+            
+            var elapsed = Stopwatch.GetElapsedTime(start);
+            times[e.Name] += elapsed;
+        }
+
+        var summary = string.Join('\n', times
+            .OrderByDescending(t => t.Value)
+            .Select(t => $"{t.Key}: {(t.Value / howManyTimes).TotalMilliseconds}ms"));
+        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}:\n{summary}");
     }
 
     private bool imguiDemo;
