@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using LuaSharpener;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
@@ -8,7 +9,7 @@ using System.Text;
 
 namespace Rysy.Graphics;
 
-public class Tilegrid : ILuaWrapper {
+public class Tilegrid : ILuaWrapper, ILuaTable {
     public Tilegrid() { }
 
     public Tilegrid(char[,] tiles) {
@@ -357,7 +358,7 @@ public class Tilegrid : ILuaWrapper {
         return 0;
     }
 
-    private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
+    private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper, ILuaTable {
         private static int Get(nint n) {
             var lua = Lua.FromIntPtr(n);
 
@@ -391,5 +392,25 @@ public class Tilegrid : ILuaWrapper {
 
             return 0;
         }
+
+        object? ILuaTable.this[object? key] {
+            get => key is "get" ? Get_Sharpener : null;
+            set => throw new NotImplementedException();
+        }
+
+        private string Get_Sharpener(MatrixLuaWrapper wrapper, int x, int y, string? def) {
+            def ??= "0";
+            var tile = wrapper.Grid.SafeTileAt(x, y, def[0]);
+            return tile.ToString();
+        }
+
+        int ILuaTable.Length => 0;
     }
+
+    object? ILuaTable.this[object? key] {
+        get => key is "matrix" ? new MatrixLuaWrapper(this) : null;
+        set => throw new NotImplementedException();
+    }
+
+    int ILuaTable.Length => 0;
 }

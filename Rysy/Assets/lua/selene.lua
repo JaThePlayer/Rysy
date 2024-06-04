@@ -1556,8 +1556,7 @@ end
 local selene = {}
 
 do
-  local s, p = pcall(require, "lua.selene_parser") -- This might not be possible in every environment
-  selene.parser = s and p or nil
+  selene.parser = require("lua.selene_parser")
 end
 
 local function parse(chunk, stripcomments)

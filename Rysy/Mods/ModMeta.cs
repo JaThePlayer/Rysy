@@ -1,15 +1,13 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
-using Rysy.Helpers;
+using LuaSharpener;
 using Rysy.LuaSupport;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Rysy.Mods;
 
-public sealed class ModMeta : ILuaWrapper {
+public sealed class ModMeta : ILuaWrapper, ILuaTable {
     internal ModMeta() { }
 
     /// <summary>
@@ -168,6 +166,17 @@ public sealed class ModMeta : ILuaWrapper {
 
         return false;
     }
+
+    public object? this[object? key] {
+        get => key switch {
+            "Name" => Name,
+            "Version" => Version.ToString(),
+            _ => null,
+        };
+        set { }
+    }
+
+    public int Length { get; }
 }
 
 /// <summary>

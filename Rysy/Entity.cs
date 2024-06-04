@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using LuaSharpener;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
@@ -12,10 +13,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
+using LuaException = Rysy.LuaSupport.LuaException;
 
 namespace Rysy;
 
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData, ILuaTable {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -777,7 +779,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
-    private sealed record class NodesWrapper(Entity Entity) : ILuaWrapper {
+    private sealed record class NodesWrapper(Entity Entity) : ILuaWrapper, ILuaTable {
         public int LuaIndex(Lua lua, long i) {
             var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
             if (node is { } n) {
@@ -807,8 +809,56 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
             return 1;
         }
+
+        object? ILuaTable.this[object? key] {
+            get {
+                #if LuaSharpener
+                if (key.TryAsInt() is not {} i) {
+                    return null;
+                }
+
+                var nodes = Entity.Nodes;
+                i -= 1;
+                if (i >= nodes.Count) {
+                    return null;
+                }
+
+                var node = nodes[i];
+                return new LuaTable(0, 2) {
+                    ["x"] = node.X,
+                    ["y"] = node.Y,
+                };
+                #else
+                return null;
+                #endif
+            }
+            set => throw new NotImplementedException();
+        }
+
+        int ILuaTable.Length => Entity.Nodes?.Count ?? 0;
     }
     #endregion
+
+    object? ILuaTable.this[object? key] {
+        get {
+            if (key is not string s)
+                return null;
+
+            return s switch {
+                "x" => X,
+                "y" => Y,
+                "width" => Width,
+                "height" => Height,
+                "_id" => Id,
+                "_name" => Name,
+                "nodes" => new NodesWrapper(this),
+                _ => EntityData.TryGetValue(s, out var data) ? data : null,
+            };
+        }
+        set => throw new NotImplementedException();
+    }
+
+    int ILuaTable.Length => EntityData.Count;
 }
 
 public readonly struct EntityDataChangeCtx {
