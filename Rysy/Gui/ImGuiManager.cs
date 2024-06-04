@@ -4,6 +4,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
+using Rysy.Platforms;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Gui;
@@ -574,7 +575,7 @@ public static class ImGuiManager {
             //File.Delete("imgui.ini");
             // ImGui.NET doesn't expose the dock builder API, but we can just ship the ini file...
             if (!File.Exists("imgui.ini")) {
-                ModRegistry.RysyMod.Filesystem.TryOpenFile("default_imgui.ini", s => {
+                RysyPlatform.Current.GetRysyFilesystem().TryOpenFile("default_imgui.ini", s => {
                    using var fs = File.Open("imgui.ini", FileMode.Create);
                    s.CopyTo(fs);
                 });
