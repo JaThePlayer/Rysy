@@ -446,6 +446,8 @@ public sealed class EditorScene : Scene {
         ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
         EditorState.OnMapChanged += OnMapChanged;
 
+        OnMapChanged();
+
         base.OnBegin();
     }
 }
