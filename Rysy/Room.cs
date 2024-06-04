@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using LuaSharpener;
 using Rysy.Entities;
 using Rysy.Entities.Modded;
 using Rysy.Extensions;
@@ -13,7 +14,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public sealed class Room : IPackable, ILuaWrapper {
+public sealed class Room : IPackable, ILuaWrapper, ILuaTable {
     /// <summary>
     /// An empty room that can be used for mocking
     /// </summary>
@@ -894,6 +895,23 @@ public sealed class Room : IPackable, ILuaWrapper {
         return 0;
     }
     #endregion
+
+    object? ILuaTable.this[object? key] {
+        get => key switch {
+            "entities" => new EntityListWrapper(Entities),
+            "triggers" => new EntityListWrapper(Triggers),
+            "tilesFg" => FG,
+            "tilesBg" => BG,
+            "width" => Width,
+            "height" => Height,
+            "x" => X,
+            "y" => Y,
+            _ => null,
+        };
+        set => throw new NotImplementedException();
+    }
+
+    int ILuaTable.Length => 0;
 }
 
 public sealed class RoomLuaWrapper : ILuaWrapper {

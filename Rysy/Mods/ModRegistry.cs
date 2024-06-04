@@ -25,7 +25,7 @@ public static class ModRegistry {
     /// Tries to get a <see cref="ModMeta"/> for a mod using its everest.yaml name.
     /// Returns null if the mod is not loaded.
     /// </summary>
-    public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName);
+    public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName ?? "");
 
     /// <summary>
     /// Tries to get the settings of mod <paramref name="modName"/>. If the mod doesn't exist, null is returned.

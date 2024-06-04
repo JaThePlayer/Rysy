@@ -162,8 +162,6 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
         justificationX = justificationX,
         justificationY = justificationY,
     }
-    
-    local textureMeta = nil
 
     local sprites = {}
 
@@ -173,13 +171,7 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
             position[positionOffsetKey] -= step / 2
         end
 
-        local sprite = nil
-        if not textureMeta then
-            sprite = drawableSprite.fromTexture(texture, position)
-            textureMeta = sprite.meta
-        else
-            sprite = drawableSprite.fromMeta(textureMeta, position)
-        end
+        local sprite = drawableSprite.fromTexture(texture, position)
 
         table.insert(sprites, sprite)
 

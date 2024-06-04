@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using LuaSharpener;
 using Rysy.Helpers;
 
 namespace Rysy.LuaSupport;
@@ -52,7 +53,7 @@ public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
     }
 }
 
-public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapper {
+public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapper, ILuaTable {
     public int LuaIndex(Lua lua, long key) {
         var i = (int) key - 1;
         var inner = Inner;
@@ -74,4 +75,11 @@ public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapp
 
         return 1;
     }
+
+    object? ILuaTable.this[object? key] {
+        get => key is int i && i < Inner.Count ? Inner[i - 1] : null;
+        set => throw new NotImplementedException();
+    }
+
+    int ILuaTable.Length => Inner.Count;
 }
