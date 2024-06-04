@@ -87,7 +87,7 @@ public sealed class RysyEngine : Game {
 
     public static Action<Viewport>? OnViewportChanged { get; set; }
 
-    private void Window_ClientSizeChanged(object? sender, EventArgs e) {
+    internal void Window_ClientSizeChanged(object? sender, EventArgs e) {
         OnViewportChanged?.Invoke(RysyState.GraphicsDevice.Viewport);
 
         if (Settings.Instance is { } settings && !RysyState.Window.IsBorderlessShared()) {
@@ -213,6 +213,7 @@ public sealed class RysyEngine : Game {
 
     private void ResizeWindow(int w, int h, int x, int y) {
         RysyState.OnEndOfThisFrame += () => {
+            RysyEngine.Instance.Window_ClientSizeChanged(null, null!);
             RysyPlatform.Current.ResizeWindow(x, y, w, h);
         };
     }

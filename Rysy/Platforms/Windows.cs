@@ -26,6 +26,7 @@ public partial class Windows : RysyPlatform {
             // let's do this property
             gdm.PreferredBackBufferWidth = w;
             gdm.PreferredBackBufferHeight = h;
+            gdm.ApplyChanges();
             var window = GetActiveWindow().ToInt32();
             // subsequent calls to ShowWindow with the same argument seem to do nothing,
             // so let's give some other flag first.
