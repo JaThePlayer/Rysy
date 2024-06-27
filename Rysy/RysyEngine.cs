@@ -104,7 +104,8 @@ public sealed class RysyEngine : Game {
 
         RysyPlatform.Current.Init();
         //Logger.Init();
-        ImGuiManager.Load();
+        if (RysyPlatform.Current.SupportImGui)
+            ImGuiManager.Load();
 
         QueueReload();
     }

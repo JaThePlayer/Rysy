@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Platforms;
 using System.Collections.Concurrent;
 using System.IO;
 
@@ -18,6 +19,10 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public FolderModFilesystem(string dirName) {
         Root = dirName;
 
+        if (!RysyPlatform.Current.SupportFileWatchers) {
+            return;
+        }
+        
         Watcher = new FileSystemWatcher(dirName.CorrectSlashes());
         Watcher.Changed += (s, e) => {
             if (e.Name is null)

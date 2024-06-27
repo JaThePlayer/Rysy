@@ -418,7 +418,7 @@ public class SelectionTool : Tool {
         }
 
         var mousePos = GetMouseRoomPos(camera, room!);
-        var imguiWantsMouse = ImGui.GetIO().WantCaptureMouse || ImGui.IsAnyItemHovered();
+        var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
         if (CurrentSelections is { } selections) {
             foreach (var selection in selections) {

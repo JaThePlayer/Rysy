@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Platforms;
 using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Compression;
@@ -32,6 +33,10 @@ public sealed class ZipModFilesystem : IModFilesystem {
         // setup a timer to close the zip archive if no more files from it are needed
         CleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
 
+        if (!RysyPlatform.Current.SupportFileWatchers) {
+            return;
+        }
+        
         Watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
         Watcher.Changed += (s, e) => {
             if (e.FullPath != Root.CorrectSlashes())

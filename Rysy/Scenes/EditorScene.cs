@@ -300,10 +300,12 @@ public sealed class EditorScene : Scene {
     public override void Update() {
         base.Update();
 
-        ImGuiIOPtr io = ImGui.GetIO();
-        // Intentionally don't check for capturing keyboard, works weirdly with search bar, and can result in seemingly eaten inputs.
-        if (io.WantCaptureMouse /*|| io.WantCaptureKeyboard*/) {
-            return;
+        if (RysyState.ImGuiAvailable) {
+            ImGuiIOPtr io = ImGui.GetIO();
+            // Intentionally don't check for capturing keyboard, works weirdly with search bar, and can result in seemingly eaten inputs.
+            if (io.WantCaptureMouse /*|| io.WantCaptureKeyboard*/) {
+                return;
+            }
         }
         
         AddWindowIfNeeded<EditorGroupWindow>();

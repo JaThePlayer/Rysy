@@ -37,6 +37,9 @@ public static class ImGuiManager {
         ImGuiTableFlags.Resizable | ImGuiTableFlags.RowBg |
         ImGuiTableFlags.NoBordersInBody | ImGuiTableFlags.Hideable;
 
+    public static bool WantCaptureMouse => RysyState.ImGuiAvailable && ImGui.GetIO().WantCaptureMouse;
+    public static bool WantTextInput => RysyState.ImGuiAvailable && ImGui.GetIO().WantTextInput;
+    
     public static void Load() {
         GuiRenderer = new ImGuiRenderer();
 
@@ -572,7 +575,6 @@ public static class ImGuiManager {
         };
 
         public ImGuiRenderer() {
-            //File.Delete("imgui.ini");
             // ImGui.NET doesn't expose the dock builder API, but we can just ship the ini file...
             if (!File.Exists("imgui.ini")) {
                 RysyPlatform.Current.GetRysyFilesystem().TryOpenFile("default_imgui.ini", s => {

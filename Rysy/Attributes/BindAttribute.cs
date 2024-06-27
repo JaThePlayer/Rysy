@@ -54,7 +54,7 @@ public sealed class BindAttribute : Attribute {
                 var fieldInfo = bind.Item1!;
                 var attr = bind.Item2!;
 
-                var method = new DynamicMethod($"Rysy.Attributes.BindAttribute.Glue<{entityType.Name}>.{fieldInfo.Name}", null, new Type[] { typeof(BaseT) });
+                var method = new DynamicMethod($"Rysy.Attributes.BindAttribute.Glue<{entityType.Name}>.{fieldInfo.Name}", null, new Type[] { typeof(BaseT) }, true);
                 var il = method.GetILGenerator();
 
                 if (!fieldList.TryGetValue(attr.FieldName, out var field)) {

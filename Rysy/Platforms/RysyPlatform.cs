@@ -4,18 +4,24 @@ using System.Runtime.InteropServices;
 namespace Rysy.Platforms;
 
 public abstract class RysyPlatform {
-    public static RysyPlatform Current { get; private set; } =
+    private static RysyPlatform? _current;
+    
+    public static RysyPlatform Current => _current ??=
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new Windows() :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new Linux() :
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new MacOS() :
         throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.RuntimeIdentifier}");
 
+    public virtual bool SupportFileWatchers => true;
+    
+    public virtual bool SupportImGui => true;
+    
     /// <summary>
     /// Forcibly overrides the current platform. Should be called before Rysy initializes!
     /// </summary>
     /// <param name="newPlatform"></param>
     public static void OverridePlatform(RysyPlatform newPlatform) {
-        Current = newPlatform;
+        _current = newPlatform;
     }
 
     protected IModFilesystem? CachedRysyFilesystem;

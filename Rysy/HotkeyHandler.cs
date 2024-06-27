@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
 using Rysy.Extensions;
+using Rysy.Gui;
 using Rysy.Helpers;
 
 namespace Rysy;
@@ -61,7 +62,7 @@ public class HotkeyHandler {
     }
 
     public void Update() {
-        if (!UpdateInImgui && (ImGui.GetIO().WantTextInput || ImGui.GetIO().WantCaptureMouse)) {
+        if (!UpdateInImgui && (ImGuiManager.WantTextInput || ImGuiManager.WantCaptureMouse)) {
             return;
         }
 
