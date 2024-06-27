@@ -130,6 +130,7 @@ public static partial class LuaSerializer {
         string s => $"""
         "{SanitizeString(s)}"
         """,
+        char c => $"\"{SanitizeString(c.ToString())}\"",
         int i => i.ToString(CultureInfo.InvariantCulture),
         long i => i.ToString(CultureInfo.InvariantCulture),
         float f => f.ToString(CultureInfo.InvariantCulture),

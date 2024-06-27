@@ -46,7 +46,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
     public bool IsLocal => IsAreaController;
 
     // https://github.com/maddie480/MaddieHelpingHand/blob/db38d49ab9c2a1a031dff4733f806d77e1d1c869/Entities/RainbowSpinnerColorController.cs#L311
-    private static Color GetModHue(IReadOnlyList<Color> colors, float gradientSize, Vector2 position, bool loopColors, Vector2 center, float gradientSpeed, float time) {
+    private static Color GetModHue(ReadOnlyArray<Color> colors, float gradientSize, Vector2 position, bool loopColors, Vector2 center, float gradientSpeed, float time) {
         if (colors.Count == 1) {
             // edge case: there is 1 color, just return it!
             return colors[0];
