@@ -64,7 +64,10 @@ public static class ModRegistry {
 
         foreach (var (_, mod) in _Mods) {
             if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
-                return mod;
+                // the root is correct, check if the file actually exists there though
+                var vpath = unbackslashed[mod.Filesystem.Root.Length..].TrimStart('/').ToString();
+                if (mod.Filesystem.FileExists(vpath))
+                    return mod;
             }
         }
 
