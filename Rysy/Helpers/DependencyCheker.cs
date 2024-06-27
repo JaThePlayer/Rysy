@@ -2,6 +2,8 @@
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Mods;
+using System.Runtime.InteropServices;
+
 // ReSharper disable PossibleInvalidCastExceptionInForeachLoop
 
 namespace Rysy.Helpers;
@@ -66,10 +68,10 @@ public static class DependencyCheker {
 
         foreach (var room in map.Rooms) {
             foreach (var item in room.Entities) {
-                HandleItem(item, EntityRegistry.GetAssociatedMods(item));
+                HandleItem(item, CollectionsMarshal.AsSpan(EntityRegistry.GetAssociatedMods(item)));
             }
             foreach (var item in room.Triggers) {
-                HandleItem(item, EntityRegistry.GetAssociatedMods(item));
+                HandleItem(item, CollectionsMarshal.AsSpan(EntityRegistry.GetAssociatedMods(item)));
             }
             foreach (Decal decal in room.BgDecals) {
                 HandleTexture(decal, decal.GetVirtTexture());
@@ -82,7 +84,7 @@ public static class DependencyCheker {
         foreach (var style in map.Style.AllStylesRecursive()) {
             var mods = EntityRegistry.GetAssociatedMods(style);
 
-            HandleItem(style, mods);
+            HandleItem(style, CollectionsMarshal.AsSpan(mods));
         }
 
         ctx.Mods = modNames;
@@ -92,15 +94,15 @@ public static class DependencyCheker {
 
         void HandleTexture(object item, VirtTexture texture) {
             if (texture is ModTexture modTexture) {
-                HandleItem(item, new() { modTexture.Mod.Name });
+                HandleItem(item, [ modTexture.Mod.Name ]);
             }
 
             if (texture == GFX.UnknownTexture) {
-                HandleItem(item, new() { UnknownModName });
+                HandleItem(item, [ UnknownModName ]);
             }
         }
 
-        void HandleItem(object item, List<string> mods) {
+        void HandleItem(object item, ReadOnlySpan<string> mods) {
             foreach (var modName in mods) {
                 var mod = ModRegistry.GetModByName(modName);
                 if (mod?.IsVanilla ?? false)
@@ -123,7 +125,7 @@ public static class DependencyCheker {
 
             var mod = ModRegistry.Filesystem.FindFirstModContaining(val);
 
-            HandleItem(new MetadataDependency(valName, val), new() { mod?.Name ?? UnknownModName });
+            HandleItem(new MetadataDependency(valName, val), [ mod?.Name ?? UnknownModName ]);
         }
     }
 }

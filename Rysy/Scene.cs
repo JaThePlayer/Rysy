@@ -68,9 +68,14 @@ public abstract class Scene {
     /// <summary>
     /// Adds a new window of type <typeparamref name="T"/> if there's no window of that type in the scene.
     /// </summary>
-    public void AddWindowIfNeeded<T>() where T : Window, new() {
-        if (!Windows.Any(w => w is T))
-            AddWindow(new T());
+    public T AddWindowIfNeeded<T>() where T : Window, new() {
+        var window = Windows.OfType<T>().FirstOrDefault();
+
+        if (window is { })
+            return window;
+        window = new T();
+        AddWindow(window);
+        return window;
     }
 
     /// <summary>

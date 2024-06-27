@@ -19,6 +19,8 @@ rysy.edit=Edit
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers
 rysy.analyzers.window.cant_save=Errors detected by map analyzers!\nMap can't be saved until they are resolved!
+rysy.analyzers.window.save_anyway=Save anyway
+rysy.analyzers.window.save_anyway.tooltip=Saving a map with analyzer errors might cause issues in-game,\nlike missing dependencies or crashes.
 rysy.analyzers.dependency.missing='{0}' missing from everest.yaml
 rysy.analyzers.dependency.missing.unknown=Unknown assets used, can't verify everest.yaml
 rysy.analyzers.dependency.not_in_mod=Map is unpackaged, dependency checks disabled

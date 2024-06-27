@@ -8,6 +8,8 @@ internal sealed class MapAnalyzerWindow : Window {
     private AnalyzerCtx? Ctx;
     private List<IAnalyzerResult>? Results;
 
+    public Action? SaveAnyway;
+
     public static new string Name => "rysy.analyzers.window.name".Translate() ?? "Map Analyzer";
 
     public MapAnalyzerWindow() : base(Name, new(600, 1000)) {
@@ -68,6 +70,10 @@ internal sealed class MapAnalyzerWindow : Window {
             ImGuiManager.PushInvalidStyle();
             ImGui.Text("rysy.analyzers.window.cant_save".Translate());
             ImGuiManager.PopInvalidStyle();
+            if (SaveAnyway is {} && ImGuiManager.TranslatedButton("rysy.analyzers.window.save_anyway")) {
+                SaveAnyway();
+                RemoveSelf();
+            }
         }
 
         if (!ImGui.BeginChild("List"))
