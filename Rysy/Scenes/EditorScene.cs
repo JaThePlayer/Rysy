@@ -238,12 +238,17 @@ public sealed class EditorScene : Scene {
         //analyzerCtx.Results.LogAsJson();
 
         if (analyzerCtx.Results.Any(r => r.Level == LogLevel.Error)) {
-            AddWindowIfNeeded<MapAnalyzerWindow>();
+            var w = AddWindowIfNeeded<MapAnalyzerWindow>();
+            w.SaveAnyway = ForceSave;
         } else {
-            using var watch = new ScopedStopwatch("Saving");
-            var pack = Map.IntoBinary();
-            BinaryPacker.SaveToFile(pack, pack.Filename!);
+            ForceSave();
         }
+    }
+
+    private void ForceSave() {
+        using var watch = new ScopedStopwatch("Saving");
+        var pack = Map!.IntoBinary();
+        BinaryPacker.SaveToFile(pack, pack.Filename!);
     }
 
     public void Open() {
