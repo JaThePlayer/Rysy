@@ -144,7 +144,11 @@ function modHandler.requireFromPlugin(lib, modName)
 			return nil
 		end
 
-		loadedFromPlugins[modName][lib] = loadstring(required)()
+        if type(required) == "string" then
+            required = loadstring(required)()
+        end
+
+		loadedFromPlugins[modName][lib] = required
 	end
 
 	if loadedFromPlugins[modName][lib] == "__nil" then

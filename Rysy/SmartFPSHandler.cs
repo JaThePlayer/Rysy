@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Gui;
 
 namespace Rysy;
 public static class SmartFPSHandler {
@@ -26,7 +27,7 @@ public static class SmartFPSHandler {
         && input.Mouse.ScrollDelta == 0 
         && !input.Keyboard.AnyKeyHeld 
         && !input.Mouse.AnyClickedOrHeld
-        && !ImGui.GetIO().WantCaptureMouse) {
+        && !ImGuiManager.WantCaptureMouse) {
             if (InactiveTimer > 2f && !LoweredFps) {
 
                 RysyEngine.SetTargetFps(10);

@@ -910,8 +910,6 @@ public sealed class Room : IPackable, ILuaWrapper, ILuaTable {
         };
         set => throw new NotImplementedException();
     }
-
-    int ILuaTable.Length => 0;
 }
 
 public sealed class RoomLuaWrapper : ILuaWrapper {

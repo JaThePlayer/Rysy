@@ -80,6 +80,4 @@ public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapp
         get => key is int i && i < Inner.Count ? Inner[i - 1] : null;
         set => throw new NotImplementedException();
     }
-
-    int ILuaTable.Length => Inner.Count;
 }

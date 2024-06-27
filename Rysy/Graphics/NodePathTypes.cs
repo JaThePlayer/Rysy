@@ -18,6 +18,20 @@ public static class NodePathTypes {
             yield return ISprite.Line(start, end, Color);
         }
     }
+    
+    /// <summary>
+    /// Each node has a line connecting it to the main entity.
+    /// </summary>
+    public static IEnumerable<ISprite> Fan(Entity entity, Func<Entity, int, Vector2> nodeToPos) {
+        var nodes = entity.Nodes!;
+        var start = entity.Center;
+
+        for (int i = 0; i < nodes.Count; i++) {
+            var end = nodeToPos(entity, i);
+
+            yield return ISprite.Line(start, end, Color);
+        }
+    }
 
     /// <summary>
     /// Nodes are connected in one line, going from the main entity to the last node while passing by each other node
@@ -59,6 +73,16 @@ public static class NodePathTypes {
 
         var pos = entity.Pos;
         var radius = Vector2.Distance(pos, node);
+
+        yield return ISprite.Circle(pos, radius, Color, ((int) radius).AtLeast(12));
+    }
+    
+    public static IEnumerable<ISprite> Circle(Entity entity, Func<Entity, int, Vector2> nodeToPos) {
+        if (entity.Nodes is not [_, ..])
+            yield break;
+
+        var pos = entity.Pos;
+        var radius = Vector2.Distance(pos, nodeToPos(entity, 0));
 
         yield return ISprite.Circle(pos, radius, Color, ((int) radius).AtLeast(12));
     }

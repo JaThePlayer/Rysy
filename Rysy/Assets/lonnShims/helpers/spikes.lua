@@ -335,11 +335,6 @@ function spikeHelper.createEntityHandler(name, direction, triggerSpike, original
 
 	handler.selection = _RYSY_selectionFuncs[direction]
 
-    --function handler.selection(room, entity)
-        --local sprites = spriteFunction(entity, direction, originalTriggerSpike)
-        --return entities.getDrawableRectangle(sprites)
-    --end
-
     return handler
 end
 

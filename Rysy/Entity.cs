@@ -810,6 +810,28 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             return 1;
         }
 
+        private Node? this[object? key] {
+            get {
+#if LuaSharpener
+                
+                if (key.TryAsInt() is not {} i) {
+                    return null;
+                }
+
+                var nodes = Entity.Nodes;
+                i -= 1;
+                if (i >= nodes.Count) {
+                    return null;
+                }
+
+                var node = nodes[i];
+                return node;
+#else
+                return null;
+#endif
+            }
+        }
+        
         object? ILuaTable.this[object? key] {
             get {
                 #if LuaSharpener
@@ -824,21 +846,25 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
 
                 var node = nodes[i];
-                return new LuaTable(0, 2) {
-                    ["x"] = node.X,
-                    ["y"] = node.Y,
-                };
-                #else
+                return node;
+#else
                 return null;
-                #endif
+#endif
             }
             set => throw new NotImplementedException();
         }
-
-        int ILuaTable.Length => Entity.Nodes?.Count ?? 0;
     }
     #endregion
 
+    
+    private float GetTable_x() => X;
+    private float GetTable_y() => Y;
+    private double GetTable_width() => Width;
+    private double GetTable_height() => Height;
+    private string GetTable__name() => Name;
+    private int GetTable__id() => Id;
+    private NodesWrapper GetTable_nodes() => new NodesWrapper(this);
+    
     object? ILuaTable.this[object? key] {
         get {
             if (key is not string s)
@@ -847,18 +873,35 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             return s switch {
                 "x" => X,
                 "y" => Y,
-                "width" => Width,
-                "height" => Height,
+                "width" => (double)Width,
+                "height" =>  (double)Height,
                 "_id" => Id,
                 "_name" => Name,
                 "nodes" => new NodesWrapper(this),
                 _ => EntityData.TryGetValue(s, out var data) ? data : null,
             };
         }
-        set => throw new NotImplementedException();
-    }
+        set {
+            if (key is not string s)
+                return;
 
-    int ILuaTable.Length => EntityData.Count;
+            switch (key) {
+                case "_id":
+                    throw new Exception("Can't set entity._id!");
+                case "_name":
+                    throw new Exception("Can't set entity._name!");
+                case "nodes":
+                    throw new Exception("Can't set entity.nodes!");
+                default:
+                    if (value is null) {
+                        EntityData.Remove(s);
+                    } else {
+                        EntityData[s] = value;
+                    }
+                    break;
+            }
+        }
+    }
 }
 
 public readonly struct EntityDataChangeCtx {
