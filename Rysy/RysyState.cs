@@ -127,11 +127,15 @@ public static class RysyState {
         var renderUI = !_hideUi;
         
         try {
-            ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
-            if (renderUI)
-                Scene.RenderImGui();
-            if (DebugInfoWindow.Enabled)
-                DebugInfoWindow.Instance.RenderGui();
+            if (ImGuiAvailable) {
+                ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
+                if (renderUI)
+                    Scene.RenderImGui();
+                if (DebugInfoWindow.Enabled)
+                    DebugInfoWindow.Instance.RenderGui();
+            }
+
+
             Scene.Render();
 
             /*
@@ -144,7 +148,9 @@ public static class RysyState {
             if (Scene is not CrashScene)
                 OnRender?.Invoke();
 
-            ImGuiManager.GuiRenderer.AfterLayout();
+            if (ImGuiAvailable) {
+                ImGuiManager.GuiRenderer.AfterLayout();
+            }
         } catch (Exception e) {
             Logger.Error(e, $"Unhandled exception during render!");
             Scene = new CrashScene(Scene, e);
@@ -172,6 +178,7 @@ public static class RysyState {
             }
         }
 #else
+        /*
         unsafe {
             SDL.SDL_AddEventWatch(MyEventFunction, IntPtr.Zero);
         
@@ -193,6 +200,7 @@ public static class RysyState {
             [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)]
             static extern void SDL_free(IntPtr memblock);
         }
+        */
 #endif
     }
     

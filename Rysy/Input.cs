@@ -1,4 +1,6 @@
-﻿namespace Rysy;
+﻿using Rysy.Gui;
+
+namespace Rysy;
 
 using ImGuiNET;
 using Microsoft.Xna.Framework;
@@ -132,7 +134,7 @@ public class Input {
             RealPos = new(mouseState.X, mouseState.Y);
             PositionDelta = RealPos - lastPos;
 
-            if (Wrap && AnyClickedOrHeld && !ImGui.GetIO().WantCaptureMouse) {
+            if (Wrap && AnyClickedOrHeld && !ImGuiManager.WantCaptureMouse) {
                 var setPos = false;
                 
                 if (PositionDelta.X > 0 && RealPos.X >= viewport.Width - 3) {
