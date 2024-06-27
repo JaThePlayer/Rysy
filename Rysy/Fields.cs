@@ -70,16 +70,16 @@ public static partial class Fields {
         Editable = editable,
     }.SetValues(values.ToDictionary(k => k, k => toString is { } ? toString(k) : k.ToString()!));
 
-    public static DropdownField<char> TileDropdown(char def, bool bg) => new DropdownField<char>() {
-        Default = def,
+    public static DropdownField<string> TileDropdown(char def, bool bg) => new DropdownField<string>() {
+        Default = def.ToString(),
     }.SetValues(() => {
         if (EditorState.Map is not { } map) {
-            return new Dictionary<char, string>();
+            return new Dictionary<string, string>();
         }
 
         var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
 
-        return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
+        return autotiler.Tilesets.ToDictionary(t => t.Key.ToString(), t => autotiler.GetTilesetDisplayName(t.Key));
     });
     
     public static DropdownField<char> TileDropdown(char def, Func<FormContext, bool> bg) => new DropdownField<char>() {

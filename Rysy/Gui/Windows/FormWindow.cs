@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using KeraLua;
+using LuaSharpener;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
@@ -249,7 +250,7 @@ public class FormWindow : Window {
     }
 }
 
-public class FormContext : ILuaWrapper, IUntypedData {
+public class FormContext : ILuaWrapper, IUntypedData, ILuaTable {
     private FormWindow Window;
 
     public FormContext(FormWindow window) => Window = window;
@@ -298,5 +299,10 @@ public class FormContext : ILuaWrapper, IUntypedData {
         
         lua.PushNil();
         return 1;
+    }
+
+    object? ILuaTable.this[object? key] {
+        get => key is string s ? GetValue(s) : null;
+        set => throw new NotImplementedException();
     }
 }

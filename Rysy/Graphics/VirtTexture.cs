@@ -9,7 +9,7 @@ public class VirtTexture : IDisposable {
     protected Texture2D? _texture;
     protected State _state = State.Unloaded;
 
-    public Vector2 DrawOffset { get; protected internal set; }
+    public Vector2 DrawOffset { get; set; }
     
     private Rectangle? _clipRect;
 
@@ -34,7 +34,7 @@ public class VirtTexture : IDisposable {
     /// <summary>
     /// TODO: Something that's a bit cleaner for creating subtextures of VirtTextures
     /// </summary>
-    internal static VirtTexture FromAtlasSubtexture(Texture2D parent, Rectangle clipRect, int width, int height) {
+    public static VirtTexture FromAtlasSubtexture(Texture2D parent, Rectangle clipRect, int width, int height) {
         return new VanillaTexture() {
             _texture = parent,
             _state = State.Loaded,

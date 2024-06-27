@@ -208,19 +208,27 @@ public static class EntityRegistry {
     }
 
     private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins, SimpleLoadTask? task) {
-        if (loadLuaPlugins)
-            foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToListIfNotList()) {
-                if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
-                    task?.SetMessage(2, pluginPath);
-                    LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
-                } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
-                    task?.SetMessage(2, pluginPath);
-                    LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
-                } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
-                    task?.SetMessage(2, pluginPath);
-                    LoadLuaEffectPlugin(mod, pluginPath);
-                }
+        if (!loadLuaPlugins)
+            return;
+
+        //var tasks = new List<Task>();
+        
+        foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToListIfNotList()) {
+            if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
+                task?.SetMessage(2, pluginPath);
+                LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
+                //tasks.Add(Task.Run(() => LoadLuaPluginFromModFile(mod, pluginPath, trigger: false)));
+            } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
+                task?.SetMessage(2, pluginPath);
+                LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
+                //tasks.Add(Task.Run(() => LoadLuaPluginFromModFile(mod, pluginPath, trigger: true)));
+            } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
+                task?.SetMessage(2, pluginPath);
+                LoadLuaEffectPlugin(mod, pluginPath);
             }
+        }
+
+        //Task.WhenAll(tasks).Wait();
     }
 
     private static void LoadLuaEffectPlugin(ModMeta mod, string pluginPath) {
@@ -345,7 +353,7 @@ public static class EntityRegistry {
             var parentFunc = LuaFunction.FromBlock(ctx.Env, chunkName, block, [ ]).CreateClosure();
             
             IEnumerable<LuaTable> plugins = ctx.Executor.Run(parentFunc, []).FirstOrNull() switch {
-                LuaTable lt => lt["name"] is {} ? [ lt ] : lt.IPairs()
+                LuaTable lt => lt["name"] is {} ? [ lt ] : lt.RawIPairs()
                     .Select(p => p.value)
                     .OfType<LuaTable>()
                     .Where(t => t["name"] is {}),
@@ -357,7 +365,7 @@ public static class EntityRegistry {
                 var info = GetOrCreateInfo(plugin.Name,
                     trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
 
-                if (!HandleAssociatedMods(info, plugin.AssociatedMods, mod)) {
+                if (!HandleAssociatedMods(info, [], mod)) {
                     continue;
                 }
 
