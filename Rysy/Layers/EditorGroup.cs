@@ -216,7 +216,7 @@ public sealed class EditorGroupList : ListenableList<EditorGroup> {
     public bool IsOnlyDefault {
         get {
             foreach (var group in this) {
-                if (group.AutoAssignTo.Count == 0)
+                if (group.AutoAssignTo.Count != 0)
                     continue;
                 if (group == EditorGroup.Default)
                     continue;
