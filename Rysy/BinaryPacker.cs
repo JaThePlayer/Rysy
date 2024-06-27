@@ -209,22 +209,22 @@ public sealed class BinaryPacker {
                 Writer.Write(b);
                 break;
             case short b:
-                WriteNumber((uint) b);
+                WriteNumber(b);
                 break;
             case int b:
-                WriteNumber((uint) b);
+                WriteNumber(b);
                 break;
             case float b:
-                if (float.IsEvenInteger(b)) {
-                    WriteNumber((uint) b);
+                if (float.IsInteger(b)) {
+                    WriteNumber((int)b);
                 } else {
                     Writer.Write((byte) 4);
                     Writer.Write(b);
                 }
                 break;
             case double b:
-                if (double.IsEvenInteger(b)) {
-                    WriteNumber((uint) b);
+                if (double.IsInteger(b)) {
+                    WriteNumber((int)b);
                 } else {
                     Writer.Write((byte) 4);
                     Writer.Write((float) b);
@@ -249,25 +249,25 @@ public sealed class BinaryPacker {
             default:
                 throw new Exception($"Can't pack object into a binary package: {val}, {val.GetType()}");
         }
-
-        void WriteNumber(uint num) {
-            switch (num) {
-                case <= byte.MaxValue:
-                    Writer.Write((byte) 1);
-                    Writer.Write((byte) num);
-                    break;
-                case <= (uint) short.MaxValue:
-                    Writer.Write((byte) 2);
-                    Writer.Write((short) num);
-                    break;
-                default:
-                    Writer.Write((byte) 3);
-                    Writer.Write(num);
-                    break;
-            }
-        }
     }
 
+    private void WriteNumber(int num) {
+        switch (num) {
+            case >= byte.MinValue and <= byte.MaxValue:
+                Writer.Write((byte) 1);
+                Writer.Write((byte) num);
+                break;
+            case >= short.MinValue and <= short.MaxValue:
+                Writer.Write((byte) 2);
+                Writer.Write((short) num);
+                break;   
+            default:
+                Writer.Write((byte) 3);
+                Writer.Write(num);
+                break;
+        }
+    }
+    
     private void EncodeString(string b) {
         if (TryEncodeRLE(b, out var rleEncode) && rleEncode.Length <= b.Length) {
             Writer.Write((byte) 7);
@@ -318,7 +318,7 @@ public sealed class BinaryPacker {
 
     internal string DecodeRLE() {
         var dataLen = Reader.ReadInt16();
-        Span<byte> rle = stackalloc byte[dataLen];
+        Span<byte> rle = dataLen < 1024 ? stackalloc byte[dataLen] : new byte[dataLen];
         Reader.BaseStream.Read(rle);
 
         StringBuilder builder = new();
@@ -351,7 +351,7 @@ public sealed class BinaryPacker {
             }
 
             while (i + 1 < str.Length && str[i + 1] == c && repeatCount < 255) {
-                repeatCount += 1;
+                repeatCount++;
                 i++;
             }
 
