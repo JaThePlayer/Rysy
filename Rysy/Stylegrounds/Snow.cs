@@ -20,7 +20,9 @@ public sealed class SnowBG : Style, IPlaceable {
 
 [CustomEntity("windSnow")]
 public sealed class WindSnow : Style, IPlaceable {
-    public static FieldList GetFields() => new();
+    public static FieldList GetFields() => new(new {
+        color = Fields.RGB(null!).AllowNull(),
+    });
 
     public static PlacementList GetPlacements() => new("default");
 
