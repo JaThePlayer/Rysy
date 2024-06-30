@@ -9,7 +9,7 @@ using Rysy.Mods;
 using Rysy.Selections;
 
 namespace Rysy.Tools;
-public class PlacementTool : Tool {
+public class PlacementTool : Tool, ISelectionHotkeyTool {
     public ISelectionHandler? CurrentPlacement;
 
     public SelectRectangleGesture RectangleGesture;
@@ -25,10 +25,7 @@ public class PlacementTool : Tool {
         base.InitHotkeys(handler);
 
         handler.AddHotkeyFromSettings("tools.pick", "mousemiddle", OnMiddleClick);
-        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", () => Flip(false));
-        handler.AddHotkeyFromSettings("selection.flipVertical", "v", () => Flip(true));
-        handler.AddHotkeyFromSettings("selection.rotateRight", "r", () => Rotate(RotationDirection.Right));
-        handler.AddHotkeyFromSettings("selection.rotateLeft", "l", () => Rotate(RotationDirection.Left));
+        this.AddSelectionHotkeys(handler);
     }
 
     public override string Name => "placement";
@@ -270,8 +267,8 @@ public class PlacementTool : Tool {
         PrefabHelper.CurrentPrefabs.OnChanged -= ClearMaterialListCache;
     }
     
-    private void Flip(bool vertical) {
-        if (CurrentPlacement is not ISelectionFlipHandler pl)
+    void ISelectionHotkeyTool.Flip(bool vertical) {
+        if (CurrentPlacement is not ISelectionFlipHandler pl || EditorState.Map is null)
             return;
 
         var action = vertical ? pl.TryFlipVertical() : pl.TryFlipHorizontal();
@@ -279,8 +276,8 @@ public class PlacementTool : Tool {
         action?.Apply(EditorState.Map);
     }
 
-    private void Rotate(RotationDirection dir) {
-        if (CurrentPlacement is not ISelectionFlipHandler pl)
+    void ISelectionHotkeyTool.Rotate(RotationDirection dir) {
+        if (CurrentPlacement is not ISelectionFlipHandler pl || EditorState.Map is null)
             return;
 
         pl.TryRotate(dir)?.Apply(EditorState.Map);
