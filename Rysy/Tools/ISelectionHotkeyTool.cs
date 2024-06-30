@@ -12,9 +12,9 @@ public interface ISelectionHotkeyTool {
 
 public static class SelectionHotkeysExt {
     public static void AddSelectionHotkeys(this ISelectionHotkeyTool tool, HotkeyHandler handler) {
-        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h|ctrl+h", () => tool.Flip(false));
-        handler.AddHotkeyFromSettings("selection.flipVertical",   "v|ctrl+v", () => tool.Flip(true));
-        handler.AddHotkeyFromSettings("selection.rotateRight",    "r|ctrl+r", () => tool.Rotate(RotationDirection.Right));
-        handler.AddHotkeyFromSettings("selection.rotateLeft",     "l|ctrl+l", () => tool.Rotate(RotationDirection.Left));
+        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", () => tool.Flip(false));
+        handler.AddHotkeyFromSettings("selection.flipVertical",   "v", () => tool.Flip(true));
+        handler.AddHotkeyFromSettings("selection.rotateRight",    "r", () => tool.Rotate(RotationDirection.Right));
+        handler.AddHotkeyFromSettings("selection.rotateLeft",     "l", () => tool.Rotate(RotationDirection.Left));
     }
 }
