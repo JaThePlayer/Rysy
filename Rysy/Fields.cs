@@ -21,6 +21,8 @@ public static partial class Fields {
     public static BoolField Bool(bool def) => new() { Default = def };
     public static FloatField Float(float def) => new() { Default = def };
     public static IntField Int(int def) => new() { Default = def };
+    public static IntField IntNullable(int? def = null) => new IntField { Default = def }.AllowNull();
+    
     public static CharField Char(char def) => new() { Default = def };
     public static StringField String(string def) => new() { Default = def };
 
