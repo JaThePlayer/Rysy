@@ -1,24 +1,30 @@
 ﻿namespace Rysy.History;
 
 public sealed record RemoveEntityAction(EntityRef Entity) : IHistoryAction {
-    private Entity? removedEntity;
+    private Entity? _removedEntity;
+    private int _originalIndex;
     
     public bool Apply(Map map) {
         if (Entity.TryResolve(map) is not { } entity || entity.Room is null) {
             return false;
         }
 
-        removedEntity = entity;
+        _removedEntity = entity;
         
         entity.ClearInnerCaches();
-        var removed = entity.GetRoomList().Remove(entity);
+        var list = entity.GetRoomList();
         
-        return removed;
+        _originalIndex = list.IndexOf(entity);
+        if (_originalIndex == -1)
+            return false;
+        list.RemoveAt(_originalIndex);
+        
+        return true;
     }
 
     public void Undo(Map map) {
-        var entity = removedEntity!;
+        var entity = _removedEntity!;
         
-        entity.GetRoomList().Add(entity);
+        entity.GetRoomList().Insert(_originalIndex, entity);
     }
 }
