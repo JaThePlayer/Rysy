@@ -474,4 +474,32 @@ public static class Depths {
     public const int Top = -1000000;
 
     public const int FormationSequences = -2000000;
+    
+    public static readonly Dictionary<int, string> AllDepths = new() {
+        [BGTerrain] = "BGTerrain",
+        [BGMirrors] = "BGMirrors",
+        [BGDecals] = "BGDecals",
+        [BGParticles] = "BGParticles",
+        [SolidsBelow] = "SolidsBelow",
+        [Below] = "Below",
+        [NPCs] = "NPCs",
+        [TheoCrystal] = "TheoCrystal",
+        [Player] = "Player",
+        [Dust] = "Dust",
+        [Pickups] = "Pickups",
+        [Seeker] = "Seeker",
+        [Particles] = "Particles",
+        [Above] = "Above",
+        [Solids] = "Solids",
+        [FGTerrain] = "FGTerrain",
+        [FGDecals] = "FGDecals",
+        [DreamBlocks] = "DreamBlocks",
+        [CrystalSpinners] = "CrystalSpinners",
+        [PlayerDreamDashing] = "PlayerDreamDashing",
+        [Enemy] = "Enemy",
+        [FakeWalls] = "FakeWalls",
+        [FGParticles] = "FGParticles",
+        [Top] = "Top",
+        [FormationSequences] = "FormationSequences",
+    };
 }

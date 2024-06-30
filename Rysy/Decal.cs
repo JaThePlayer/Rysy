@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 using System.Text.Json.Serialization;
@@ -76,7 +77,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         }
     }
 
-    public sealed override int Depth => FG ? Depths.FGDecals : Depths.BGDecals; // TODO: Decal registry depth
+    public sealed override int Depth => Int("depth", FG ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
 
     public sealed override IEnumerable<ISprite> GetSprites() => GetSprite();
 
@@ -178,6 +179,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         ["scaleX"] = Fields.Float(1f),
         ["scaleY"] = Fields.Float(1f),
         ["rotation"] = Fields.Float(0f),
+        ["depth"] = new NullableDepthField(),
     };
 
     protected override BinaryPacker.Element DoPack(bool trim) {
@@ -197,6 +199,10 @@ public sealed partial class Decal : Entity, IPlaceable {
         var rotation = Rotation;
         if (rotation != 0f)
             attr["rotation"] = rotation;
+
+        if (EntityData.TryGetValue("depth", out var d)) {
+            attr["depth"] = d;
+        }
 
         el.Attributes = attr;
 
