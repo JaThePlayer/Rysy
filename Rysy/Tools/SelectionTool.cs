@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Tools;
 
-public class SelectionTool : Tool {
+public class SelectionTool : Tool, ISelectionHotkeyTool {
     public const string CreatePrefabKeybindName = "selection.createPrefab";
     
     public override string Name => "selection";
@@ -75,10 +75,7 @@ public class SelectionTool : Tool {
         handler.AddHotkeyFromSettings("selection.downsizeTop", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.flipHorizontal", "h", HorizontalFlipSelections);
-        handler.AddHotkeyFromSettings("selection.flipVertical", "v", VerticalFlipSelections);
-        handler.AddHotkeyFromSettings("selection.rotateRight", "r", () => RotateSelections(RotationDirection.Right));
-        handler.AddHotkeyFromSettings("selection.rotateLeft", "l", () => RotateSelections(RotationDirection.Left));
+        this.AddSelectionHotkeys(handler);
 
         handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
 
@@ -192,34 +189,24 @@ public class SelectionTool : Tool {
         }
     }
 
-    private void HorizontalFlipSelections() {
+    void ISelectionHotkeyTool.Flip(bool vertical) {
         if (CurrentSelections is not { } selections) {
             return;
         }
 
         FinalizeStates();
         
-        var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipHorizontal() : null).MergeActions();
+        var action = selections
+            .Select(s => s.Handler is ISelectionFlipHandler flip ? vertical ? flip.TryFlipVertical() : flip.TryFlipHorizontal()  : null)
+            .MergeActions();
+        
         if (action.Any())
             ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
     }
 
-    private void VerticalFlipSelections() {
-        if (CurrentSelections is not { } selections) {
-            return;
-        }
-
-        FinalizeStates();
-        var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryFlipVertical() : null).MergeActions();
-        if (action.Any())
-            ClearColliderCachesInSelections();
-
-        History.ApplyNewAction(action);
-    }
-
-    private void RotateSelections(RotationDirection dir) {
+    void ISelectionHotkeyTool.Rotate(RotationDirection dir) {
         if (CurrentSelections is not { } selections) {
             return;
         }
