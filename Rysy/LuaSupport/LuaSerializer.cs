@@ -82,9 +82,9 @@ public static partial class LuaSerializer {
                             tiles = {{ToLuaString(item.Data.Attr("text", ""))}},
                             height = {{ToLuaString(item.Data.Int("h", 0))}},
                             width = {{ToLuaString(item.Data.Int("w", 0))}},
-                            x = {{ToLuaString(item.Data.Int("x", 0))}},
-                            y = {{ToLuaString(item.Data.Int("y", 0))}},
-                        }
+                            x = {{ToLuaString(item.Data.Int("x", 0) / 8)}},
+                            y = {{ToLuaString(item.Data.Int("y", 0) / 8)}},
+                        },
                     """);
                     break;
                 case SelectionLayer.Rooms:
@@ -299,6 +299,7 @@ public static partial class LuaSerializer {
             return d;
         }
 
+        Console.WriteLine(sanitized);
         return null;
     }
 

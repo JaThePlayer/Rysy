@@ -64,7 +64,7 @@ public class LonnEntity : Entity {
 
     public override IEnumerable<ISprite> GetAllNodeSprites() {
         if (Plugin is null)
-            return Array.Empty<ISprite>();
+            return [];
 
         return Plugin.PushToStack((pl) => {
             var visibility = pl.GetNodeVisibility(this);
@@ -76,7 +76,7 @@ public class LonnEntity : Entity {
             };
 
             if (!visible) {
-                return Array.Empty<ISprite>();
+                return [];
             }
 
             if (!pl.HasGetNodeSprite) {
@@ -91,7 +91,7 @@ public class LonnEntity : Entity {
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
-                return Array.Empty<ISprite>();
+                return [];
             }
 
             var spriteFuncLoc = lua.GetTop();
@@ -102,7 +102,7 @@ public class LonnEntity : Entity {
 
                 lua.PushCopy(spriteFuncLoc);
                 try {
-                    sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, (lua, idx) => SpritesFromLonn(lua, idx)) ?? new());
+                    sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, SpritesFromLonn) ?? []);
                 } catch {
                     lua.Pop(1); // pop the "nodeSprite" func
                     throw;
@@ -111,7 +111,7 @@ public class LonnEntity : Entity {
 
             lua.Pop(1); // pop the "nodeSprite" func
 
-            sprites.AddRange(GetNodePathSprites() ?? Array.Empty<ISprite>());
+            sprites.AddRange(GetNodePathSprites() ?? []);
 
             return sprites!;
         });
@@ -315,7 +315,7 @@ public class LonnEntity : Entity {
         var list = new List<ISprite>();
 
         if (lua.Type(top) != LuaType.Table)
-            return new();
+            return list;
 
         switch (lua.PeekTableType(top, "_type")) {
             case LuaType.String:
@@ -340,7 +340,7 @@ public class LonnEntity : Entity {
 
     private List<ISprite> _GetSprites(RoomLuaWrapper roomWrapper) {
         if (Plugin is null)
-            return new();
+            return [];
         
         if (Plugin.HasGetSprite) {
             var lua = Plugin.LuaCtx.Lua;
@@ -349,10 +349,10 @@ public class LonnEntity : Entity {
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
-                return new();
+                return [];
             }
 
-            var sprites = lua.PCallFunction(roomWrapper, this, (lua, i) => SpritesFromLonn(lua, i));
+            var sprites = lua.PCallFunction(roomWrapper, this, SpritesFromLonn);
 
             return sprites!;
         }
