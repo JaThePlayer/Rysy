@@ -327,10 +327,15 @@ public abstract class Tool {
                     ImGui.SameLine();
                     var style = ImGui.GetStyle();
                     var columnWidth = columns > 1 ? ImGui.GetColumnWidth() : ImGui.GetWindowWidth();
-                    ImGui.SetCursorPosY(ImGui.GetCursorPos().Y + MaterialListElementHeight() / 2 - style.FramePadding.Y - style.ItemSpacing.Y * 2);
-                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - style.ItemSpacing.X * 2 - style.FramePadding.X * 2);
-
-                    if (ImGui.BeginCombo(Interpolator.Temp($"##{rendered}"), "", ImGuiComboFlags.NoPreview)) {
+                    
+                    var lasty = style.FramePadding.Y;
+                    style.FramePadding.Y = (MaterialListElementHeight() - ImGui.GetTextLineHeightWithSpacing()) / 2;
+                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - style.ItemSpacing.X * 2 - style.FramePadding.Y * 2);
+                    
+                    var comboOpened = ImGui.BeginCombo(Interpolator.Temp($"##{rendered}"), "", ImGuiComboFlags.NoPreview);
+                    style.FramePadding.Y = lasty;
+                    
+                    if (comboOpened) {
                         foreach (var (mat, displayName) in group) {
                             if (RenderMaterialListElement(mat, displayName)) {
                                 GroupKeyToMainPlacementName[groupKey] = displayName;
