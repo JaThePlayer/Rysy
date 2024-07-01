@@ -418,11 +418,11 @@ public class LuaCtx {
             var placement = new LonnPlacement(lua, 2);
             var trigger = false;
 
-            if (EntityRegistry.GetTypeForSID(sid) is { } t) {
+            if (EntityRegistry.GetTypeForSID(sid, RegisteredEntityType.Entity) is { } t) {
                 trigger = t.IsSubclassOf(typeof(Trigger));
             }
 
-            if (EntityRegistry.GetInfo(sid) is {} info)
+            if (EntityRegistry.GetInfo(sid, RegisteredEntityType.Entity) is {} info)
                 EntityRegistry.RegisterLuaPlacements(info, trigger, [placement]);
 
             return 0;

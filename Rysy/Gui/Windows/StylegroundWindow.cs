@@ -183,7 +183,7 @@ public class StylegroundWindow : Window {
     }
 
     public static FieldList GetFields(Style main) {
-        var fieldInfo = EntityRegistry.GetFields(main.Name);
+        var fieldInfo = EntityRegistry.GetFields(main.Name, RegisteredEntityType.Style);
 
         var fields = Style.GetDefaultFields();
         fields.SetHiddenFields(fieldInfo.GetDynamicallyHiddenFields);

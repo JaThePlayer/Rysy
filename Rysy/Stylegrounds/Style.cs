@@ -204,7 +204,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         if (from.Name is null)
             throw new Exception("Style with null name???");
 
-        if (EntityRegistry.GetTypeForSID(from.Name) is { } t && t.IsSubclassOf(typeof(Style))) {
+        if (EntityRegistry.GetTypeForSID(from.Name, RegisteredEntityType.Style) is { } t && t.IsSubclassOf(typeof(Style))) {
             var style = (Style) Activator.CreateInstance(t)!;
             style.Unpack(from);
 
@@ -240,7 +240,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
 
     FieldList IBindTarget.GetFields() {
         var defaults = GetDefaultFields();
-        var fields = EntityRegistry.GetFields(Name);
+        var fields = EntityRegistry.GetFields(Name, RegisteredEntityType.Style);
 
         foreach (var (k, v) in defaults) {
             fields.TryAdd(k, v);

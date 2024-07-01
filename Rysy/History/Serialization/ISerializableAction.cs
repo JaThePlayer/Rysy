@@ -73,7 +73,10 @@ public static class HistorySerializer {
     
     public static BinaryPacker.Element SerializeAnyToElement(object obj, Type? asType = null) {
         if (obj is IPackable packable) {
-            return packable.Pack();
+            var packed = packable.Pack();
+            if (obj is Entity e)
+                packed.Attributes["_registeredEntity"] = e.RegistryType.ToString();
+            return packed;
         }
 
         asType ??= obj.GetType();
@@ -113,7 +116,7 @@ public static class HistorySerializer {
     public static bool TryDeserialize<T>(BinaryPacker.Element el, Room room, [NotNullWhen(true)] out T? ret) {
         ret = default;
 
-        Type? type;
+        Type? type = null;
 
         if (el.Name == "Rysy.History.MergedAction") {
             var actions = new List<IHistoryAction>(el.Children.Length);
@@ -126,11 +129,19 @@ public static class HistorySerializer {
             return true;
         }
 
-        type = EntityRegistry.GetTypeForSID(el.Name ?? "");
-        if (type is not null) {
-            ret = (T)(object)EntityRegistry.Create(el, room, false)!;
-            return true;
+        if (el.TryGetValue("_registeredEntity", out var entityType)) {
+            type = EntityRegistry.GetTypeForSID(el.Name ?? "", entityType switch {
+                "Entity" => RegisteredEntityType.Entity,
+                "Trigger" => RegisteredEntityType.Trigger,
+                "Style" => RegisteredEntityType.Style,
+                _ => RegisteredEntityType.Entity
+            });
+            if (type is not null) {
+                ret = (T)(object)EntityRegistry.Create(el, room, false)!;
+                return true;
+            }
         }
+
         
         type ??= GetTypeFromStr(el.Name ?? "");
         if (type is null)
