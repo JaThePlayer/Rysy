@@ -11,7 +11,7 @@ internal sealed class LuaStyle : Style {
     public override void Unpack(BinaryPacker.Element from) {
         base.Unpack(from);
 
-        if (EntityRegistry.GetInfo(from.Name ?? "") is { } info) {
+        if (EntityRegistry.GetInfo(from.Name ?? "", RegisteredEntityType.Style) is { } info) {
             Plugin = info.LonnStylePlugin!;
         }
     }

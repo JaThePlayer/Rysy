@@ -1,21 +1,21 @@
-﻿using Rysy.Layers;
+﻿using Rysy.Helpers;
+using Rysy.Layers;
 
 namespace Rysy.History; 
 
-public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? AutoAssignString) : IHistoryAction {
+public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? AutoAssignString, string? AutoAssignDecalsString) : IHistoryAction {
     private bool _groupCreated;
-    private HashSet<string> _lastAutoAssign;
+    private HashSet<string>? _lastAutoAssign;
+    private List<DecalRegistryPath>? _lastAutoAssignDecals;
+    
     private HashSet<string> _newAutoAssign;
-    private bool _autoAssignChanged;
     private List<Entity>? _preAutoAssignEntities;
-
-    private void UpdateAutoAssigns(EditorGroup group, HashSet<string> newAutoAssign) {
-
-    }
     
     public bool Apply(Map map) {
         var group = Map.EditorGroups.GetOrCreate(GroupName, out _groupCreated);
 
+        bool shouldSetPreAutoAssignEntities = false;
+        
         if (AutoAssignString is {} autoAssignString) {
             _lastAutoAssign = group.AutoAssignTo;
             _newAutoAssign = EditorGroup.CreateAutoAssignFromString(autoAssignString);
@@ -24,16 +24,22 @@ public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? 
                 // update auto assigns on all entities
                 group.AutoAssignTo = _newAutoAssign;
                 
-                _autoAssignChanged = true;
-
-                if (_lastAutoAssign.Count == 0) {
-                    // if the group previously wasn't auto-assigned, it might have some manual entities that will get lost.
-                    // keep track of them, for CTRL+Z
-                    _preAutoAssignEntities = Map.GetEntitiesInGroup(group).ToList();
-                }
-                
-                UpdateAutoAssigns(group, _newAutoAssign);
+                if (_lastAutoAssign.Count == 0)
+                    shouldSetPreAutoAssignEntities = true;
             }
+        }
+
+        if (AutoAssignDecalsString is { }) {
+            _lastAutoAssignDecals = group.AutoAssignToDecals;
+            group.AutoAssignToDecals = EditorGroup.CreateAutoAssignDecalsFromString(AutoAssignDecalsString);
+            if (_lastAutoAssignDecals.Count == 0)
+                shouldSetPreAutoAssignEntities = true;
+        }
+        
+        if (shouldSetPreAutoAssignEntities) {
+            // if the group previously wasn't auto-assigned, it might have some manual entities that will get lost.
+            // keep track of them, for CTRL+Z
+            _preAutoAssignEntities = Map.GetEntitiesInGroup(group).ToList();
         }
         
         Map.GroupsChanged();
@@ -48,9 +54,12 @@ public sealed record ChangeEditorGroupAction(Map Map, string GroupName, string? 
             Map.EditorGroups.Remove(group);
         }
 
-        if (_autoAssignChanged) {
+        if (_lastAutoAssign is {}) {
             group.AutoAssignTo = _lastAutoAssign;
-            UpdateAutoAssigns(group, _lastAutoAssign);
+        }
+        
+        if (_lastAutoAssignDecals is { }) {
+            group.AutoAssignToDecals = _lastAutoAssignDecals;
         }
 
         if (_preAutoAssignEntities is { } prev) {

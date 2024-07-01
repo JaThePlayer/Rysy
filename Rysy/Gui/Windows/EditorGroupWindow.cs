@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
@@ -100,12 +101,15 @@ internal sealed class GroupEditWindow : Window {
     private bool _valid;
     private string _newGroupName;
     private string _autoAssignString;
+    private string _autoAssignDecalsString;
     private bool _autoAssignChanged;
+    private bool _autoAssignDecalsChanged;
     
     private readonly string _nameLabel = "rysy.name".Translate();
     private readonly Map _map;
     private readonly EditorGroupWindow _parent;
     private readonly Field _autoAssignToField;
+    private readonly Field _autoAssignToDecalField;
     private readonly EditorGroup? _sourceGroup;
 
     private const string NewName = "rysy.editor_group_window.edit_group.new";
@@ -120,6 +124,9 @@ internal sealed class GroupEditWindow : Window {
         _sourceGroup = group;
         _autoAssignString = group is { } ? string.Join(",", group.AutoAssignTo) : "";
         _autoAssignToField = Fields.List(_autoAssignString, Fields.Sid("", RegisteredEntityType.Entity | RegisteredEntityType.Trigger)).WithMinElements(0);
+
+        _autoAssignDecalsString = group is { } ? string.Join("|", group.AutoAssignToDecals.Select(x => x.SavedName)) : "";
+        _autoAssignToDecalField = Fields.List(_autoAssignDecalsString, new DecalRegistryPathField()).WithSeparator('|');
         
         UpdateValid();
     }
@@ -144,6 +151,12 @@ internal sealed class GroupEditWindow : Window {
             _autoAssignString = newAutoAssign;
             _autoAssignChanged = _sourceGroup is null || !EditorGroup.CreateAutoAssignFromString(_autoAssignString).SetEquals(_sourceGroup.AutoAssignTo);
         }
+
+        if (_autoAssignToDecalField.RenderGui("Auto Assign to Decals", _autoAssignDecalsString) is string newAutoAssignDecal) {
+            _autoAssignDecalsString = newAutoAssignDecal;
+            _autoAssignDecalsChanged = true;
+        }
+        
         ImGuiManager.PopEditedStyle();
     }
 
@@ -154,7 +167,9 @@ internal sealed class GroupEditWindow : Window {
         
         ImGui.BeginDisabled(!_valid);
         if (ImGuiManager.TranslatedButton("rysy.ok")) {
-            EditorState.History?.ApplyNewAction(new ChangeEditorGroupAction(_map, _newGroupName, _autoAssignChanged ? _autoAssignString : null));
+            EditorState.History?.ApplyNewAction(new ChangeEditorGroupAction(_map, _newGroupName, 
+                _autoAssignChanged ? _autoAssignString : null,
+                _autoAssignDecalsChanged ? _autoAssignDecalsString : null));
             if (_sourceGroup is null)
                 _parent.Select(_map, _map.EditorGroups.GetOrCreate(_newGroupName), input: null);
             _valid = false;

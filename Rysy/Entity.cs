@@ -126,6 +126,17 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                     _editorGroupList!.Remove(gr);
                 }
             }
+
+            if (this is Decal d && gr.AutoAssignToDecals is { Count: > 0 } autoAssignToDecals) {
+                foreach (var p in autoAssignToDecals) {
+                    if (p.AffectsDecalPath(d.Texture)) {
+                        if (!_editorGroupList!.Contains(gr))
+                            _editorGroupList.Add(gr);
+                    } else {
+                        _editorGroupList!.Remove(gr);
+                    }
+                }
+            }
         }
     }
 
@@ -562,7 +573,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Checks whether the given value for a EntityData key is the default value for that key, based on the main placement for this entity's SID.
     /// </summary>
     public bool IsDefault(string key, object val) {
-        var values = EntityRegistry.GetMainPlacementValues(Name);
+        var values = EntityRegistry.GetMainPlacementValues(Name, RegistryType);
 
         if (!values.TryGetValue(key, out var defVal)) {
             return false;
@@ -628,11 +639,15 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         return new Placement(EntityData.SID) {
             SID = EntityData.SID,
             PlacementHandler = this is Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
+            RegisteredEntityType = RegistryType,
             ValueOverrides = overrides,
             Nodes = Nodes?.Select(n => n.Pos).ToArray()
         };
     }
 
+    public RegisteredEntityType RegistryType =>
+        this is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity;
+    
     public Decal? AsDecal() => this as Decal;
     public Trigger? AsTrigger() => this as Trigger;
 

@@ -109,6 +109,49 @@ public sealed class DecalRegistry : IDisposable {
     }
 }
 
+public record struct DecalRegistryPath {
+    public string Value;
+
+    public DecalRegistryEntry.Types Type;
+    
+    public string SavedName => Type switch {
+        DecalRegistryEntry.Types.SingleTexture => Value,
+        DecalRegistryEntry.Types.Directory => $"{Value}/",
+        DecalRegistryEntry.Types.StartsWith => $"{Value}*",
+    };
+
+    public DecalRegistryPath(string path) {
+        Type = path switch {
+            [.., '/'] => DecalRegistryEntry.Types.Directory,
+            [.., '*'] => DecalRegistryEntry.Types.StartsWith,
+            _ => DecalRegistryEntry.Types.SingleTexture
+        };
+        
+        Value = Type switch {
+            DecalRegistryEntry.Types.SingleTexture => path,
+            _ => path[..^1],
+        };
+    }
+    
+    public IEnumerable<VirtTexture> GetAffectedTextures() {
+        return Type switch {
+            DecalRegistryEntry.Types.SingleTexture => [ GFX.Atlas[Decal.MapTextureToPath(Value)] ],
+            DecalRegistryEntry.Types.Directory => [],
+            DecalRegistryEntry.Types.StartsWith => [],
+            _ => []
+        };
+    }
+
+    public bool AffectsDecalPath(string path) {
+        return Type switch {
+            DecalRegistryEntry.Types.SingleTexture => Value == path,
+            DecalRegistryEntry.Types.Directory => path.AsSpan().StartsWith(Value),
+            DecalRegistryEntry.Types.StartsWith => path.AsSpan().StartsWith(Value),
+            _ => false,
+        };
+    }
+}
+
 public sealed class DecalRegistryEntry {
     public string Path { get; set; }
 
@@ -160,14 +203,7 @@ public sealed class DecalRegistryEntry {
         }
     }
 
-    public IEnumerable<VirtTexture> GetAffectedTextures() {
-        return Type switch {
-            Types.SingleTexture => [ GFX.Atlas[Decal.MapTextureToPath(Path)] ],
-            Types.Directory => [],
-            Types.StartsWith => [],
-            _ => []
-        };
-    }
+    public IEnumerable<VirtTexture> GetAffectedTextures() => new DecalRegistryPath(Path).GetAffectedTextures();
 
     public XElement Serialize() {
         var e = new XElement("decal");
@@ -215,7 +251,7 @@ public abstract class DecalRegistryProperty {
         var sid = placement.SID ?? "";
         var prop = CreateNewUninitialized(sid);
         
-        if (EntityRegistry.GetFields(sid) is {} fields) {
+        if (EntityRegistry.GetFields(sid, RegisteredEntityType.DecalRegistryProperty) is {} fields) {
             foreach (var (name, field) in fields) {
                 prop.Data[name] = field.GetDefault();
             }

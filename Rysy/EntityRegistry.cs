@@ -80,41 +80,56 @@ public static class EntityRegistry {
             .SelectMany(kv => kv.Value.Placements);
     
     public static IEnumerable<Placement> StylegroundPlacements
-        => Registered
+        => RegisteredStyles
             .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
             .SelectMany(kv => kv.Value.Placements);
     
     public static IEnumerable<Placement> DecalRegistryPropertyPlacements
-        => Registered
+        => RegisteredDecalRegistryProperties
             .Where(kv => kv.Value.Type == RegisteredEntityType.DecalRegistryProperty)
             .SelectMany(kv => kv.Value.Placements);
 
     public static ListenableDictionary<string, RegisteredEntity> Registered { get; } = new(StringComparer.Ordinal);
+    public static ListenableDictionary<string, RegisteredEntity> RegisteredStyles { get; } = new(StringComparer.Ordinal);
+    
+    public static ListenableDictionary<string, RegisteredEntity> RegisteredDecalRegistryProperties { get; } = new(StringComparer.Ordinal);
 
+    public static ListenableDictionary<string, RegisteredEntity> GetRegistryFor(RegisteredEntityType type) {
+        return type switch {
+            RegisteredEntityType.Style => RegisteredStyles,
+            RegisteredEntityType.DecalRegistryProperty => RegisteredDecalRegistryProperties,
+            _ => Registered,
+        };
+    }
+    
     private static LuaCtx? _LuaCtx = null;
     private static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
 
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
 
-    public static RegisteredEntity? GetInfo(string sid) => Registered.TryGetValue(sid, out var ret) ? ret : null;
+    public static RegisteredEntity? GetInfo(string sid, RegisteredEntityType type) => GetRegistryFor(type).TryGetValue(sid, out var ret) ? ret : null;
 
+    public static RegisteredEntity? GetInfo(Entity e) => GetInfo(e.Name,
+        e is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
+    
     private static RegisteredEntity GetOrCreateInfo(string sid, RegisteredEntityType expectedType) {
-        if (Registered.TryGetValue(sid, out var existing))
+        var reg = GetRegistryFor(expectedType);
+        if (reg.TryGetValue(sid, out var existing))
             return existing;
 
         var newEntity = new RegisteredEntity(sid, expectedType);
-        Registered[sid] = newEntity;
+        reg[sid] = newEntity;
 
         return newEntity;
     }
     
-    public static Placement? GetMainPlacement(string sid) {
-        return GetInfo(sid)?.MainPlacement;
+    public static Placement? GetMainPlacement(string sid, RegisteredEntityType type) {
+        return GetInfo(sid, type)?.MainPlacement;
     }
 
-    public static IReadOnlyDictionary<string, object> GetMainPlacementValues(string sid) {
-        var info = GetInfo(sid);
+    public static IReadOnlyDictionary<string, object> GetMainPlacementValues(string sid, RegisteredEntityType type) {
+        var info = GetInfo(sid, type);
         if (info is null)
             return new Dictionary<string, object>();
 
@@ -130,33 +145,33 @@ public static class EntityRegistry {
     }
 
     public static FieldList GetFields(Entity entity)
-        => GetFields(entity.Name);
+        => GetFields(entity.Name, entity is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
 
-    public static FieldList GetFields(string sid) {
-        var info = GetInfo(sid);
+    public static FieldList GetFields(string sid, RegisteredEntityType type) {
+        var info = GetInfo(sid, type);
         if (info is null)
             return new();
 
         return info.Fields();
     }
 
-    public static Type? GetTypeForSID(string sid) {
-        return GetInfo(sid)?.CSharpType;
+    public static Type? GetTypeForSID(string sid, RegisteredEntityType type) {
+        return GetInfo(sid, type)?.CSharpType;
     }
 
-    public static ModMeta? GetDefiningMod(string sid) {
-        return GetInfo(sid)?.Mod;
+    public static ModMeta? GetDefiningMod(string sid, RegisteredEntityType type) {
+        return GetInfo(sid, type)?.Mod;
     }
 
     public static List<string> GetAssociatedMods(Entity entity) {
-        return entity.AssociatedMods 
-               ?? GetInfo(entity.Name)?.AssociatedModNames
+        return entity.AssociatedMods
+               ?? GetInfo(entity)?.AssociatedModNames
                ?? [DependencyCheker.UnknownModName];
     }
 
     public static List<string> GetAssociatedMods(Style style) {
         return style.AssociatedMods 
-               ?? GetInfo(style.Name)?.AssociatedModNames
+               ?? GetInfo(style.Name, RegisteredEntityType.Style)?.AssociatedModNames
                ?? [DependencyCheker.UnknownModName];
     }
 
@@ -182,9 +197,9 @@ public static class EntityRegistry {
 
     private static void ModScanner(ModMeta mod, Assembly? oldAsm) {
         if (oldAsm is { }) {
-            foreach (var (t, _) in GetEntityTypesFromAsm(oldAsm)) {
+            foreach (var (t, rt) in GetEntityTypesFromAsm(oldAsm)) {
                 foreach (var sid in GetSIDsForType(t)) {
-                    var info = GetInfo(sid);
+                    var info = GetInfo(sid, rt);
                     if (info is null)
                         continue;
                     
@@ -263,6 +278,7 @@ public static class EntityRegistry {
                 
                 foreach (var pl in plugin.Placements) {
                     pl.SID ??= plugin.Name;
+                    pl.RegisteredEntityType = RegisteredEntityType.Style;
 
                     info.Placements.Add(pl);
                 }
@@ -406,6 +422,7 @@ public static class EntityRegistry {
                     ValueOverrides = lonnPlacement.Data,
                     SID = into.Sid,
                     PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
+                    RegisteredEntityType = trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity,
                     FromLonn = true,
                 };
 
@@ -540,6 +557,7 @@ public static class EntityRegistry {
         foreach (var placement in plcementList) {
             placement.SID ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
             placement.PlacementHandler = rt == RegisteredEntityType.Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
+            placement.RegisteredEntityType = rt;
             
             var info = GetOrCreateInfo(placement.SID, rt);
             info.MainPlacement ??= placement;
@@ -551,7 +569,7 @@ public static class EntityRegistry {
         var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
         Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
 
-        if (GetFields(sid) is {} fields) {
+        if (GetFields(sid, from.RegisteredEntityType) is {} fields) {
             foreach (var (name, field) in fields) {
                 if (!data.ContainsKey(name))
                     data.Add(name, field.GetDefault());
@@ -597,7 +615,7 @@ public static class EntityRegistry {
     }
 
     public static Entity CreateFromMainPlacement(string sid, Vector2 pos, Room room, Dictionary<string, object>? overrides = null, bool isTrigger = false) {
-        var main = GetMainPlacement(sid);
+        var main = GetMainPlacement(sid, isTrigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
 
         if (main is { }) {
             var entity = Create(main, pos, room, true, main.IsTrigger());
@@ -618,7 +636,7 @@ public static class EntityRegistry {
         bool fromBinary) {
         Entity e;
 
-        var info = GetInfo(sid);
+        var info = GetInfo(sid, trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
         if (info is null || info.CSharpType is null) {
             if (Settings.Instance?.LogMissingEntities ?? false)
                 Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");

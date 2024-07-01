@@ -15,7 +15,7 @@ public sealed class DecalRegistryWindow : Window {
     
     private readonly Map Map;
 
-    private ModMeta Mod => Map.Mod!;
+    internal ModMeta Mod => Map.Mod!;
     
     bool firstRender = true;
 
@@ -28,7 +28,7 @@ public sealed class DecalRegistryWindow : Window {
     private readonly HotkeyHandler HotkeyHandler;
     private readonly HistoryHandler History;
 
-    private List<DecalRegistryEntry> Entries => GFX.DecalRegistry.GetEntriesForMod(Map.Mod!);
+    internal List<DecalRegistryEntry> Entries => GFX.DecalRegistry.GetEntriesForMod(Map.Mod!);
 
     public DecalRegistryWindow(Map map) : base("Decal Registry", new(1200, 800)) {
         Map = map;
@@ -113,7 +113,7 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     public static FieldList GetFields(DecalRegistryProperty main) {
-        FieldList fieldInfo = EntityRegistry.GetFields(main.Name);
+        FieldList fieldInfo = EntityRegistry.GetFields(main.Name, RegisteredEntityType.DecalRegistryProperty);
 
         var fields = new FieldList();
         var order = new List<string>();
@@ -302,6 +302,7 @@ public sealed class DecalRegistryWindow : Window {
             if (ImGui.Button("Edit")) {
                 _newEntryName = entry.Path.TrimEnd('*');
                 _newEntryType = entry.Type;
+                _pathField = null;
                 ImGui.OpenPopup(CreateNewEntryPopupId);
             }
             RenderEntryEditPopup(Mod, CreateNewEntryPopupId, entry);
@@ -383,51 +384,22 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     private void RenderEntryEditPopup(ModMeta mod, string popupid, DecalRegistryEntry? toChange = null) {
-        if (!ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask))
+        if (!ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            _pathField = null;
             return;
+        }
         
-        ImGuiManager.EnumComboTranslated("rysy.decalRegistryEntryType", ref _newEntryType);
-
         var isInvalid = EntryExistsFor(_newEntryName);
 
-        PathField? field = null;
-        switch (_newEntryType) {
-            case DecalRegistryEntry.Types.StartsWith:
-                isInvalid |= _newEntryName is [.., '*'];
-                    
-                _newEntryDecalPathFieldStartsWith ??= new("", GFX.Atlas, "^decals/(.*)$") {
-                    Filter = IsValidPath,
-                    Editable = true,
-                };
+        _pathField ??= new() {
+            DecalRegistryWindow = this,
+        };
+        var path = new DecalRegistryPath(_newEntryName);
 
-                field = _newEntryDecalPathFieldStartsWith;
-                break;
-            case DecalRegistryEntry.Types.Directory:
-                isInvalid |= !_newEntryName.EndsWith('/');
-                _newEntryDecalPathFieldDirectory ??= new("", GFX.Atlas, "^decals/(.*/).*$") {
-                    Filter = IsValidPath,
-                    Editable = true,
-                };
-
-                field = _newEntryDecalPathFieldDirectory;
-                break;
-            default:
-                if (!isInvalid) {
-                    isInvalid = !(GFX.Atlas.TryGet(Decal.MapTextureToPath(_newEntryName), out var texture) && texture is ModTexture modTexture && modTexture.Mod == mod);
-                }
-
-                _newEntryDecalPathFieldSingleTexture ??= new("", GFX.Atlas, "^decals/(.*)$") {
-                    Filter = IsValidPath,
-                    Editable = true,
-                };
-                field = _newEntryDecalPathFieldSingleTexture;
-                break;
+        if (_pathField.RenderDetailedWindow(ref path)) {
+            _newEntryName = path.SavedName;
+            _newEntryType = path.Type;
         }
-            
-        ImGuiManager.PushInvalidStyleIf(isInvalid);
-        ImGui.SetNextItemWidth(400f);
-        _newEntryName = (string?)field.RenderGui("rysy.decalRegistryWindow.newEntryPath".Translate(), _newEntryName) ?? _newEntryName;
-        ImGuiManager.PopInvalidStyle();
 
         ImGui.BeginDisabled(isInvalid);
         if (ImGuiManager.TranslatedButton("rysy.decalRegistryWindow.create")) {
@@ -444,11 +416,7 @@ public sealed class DecalRegistryWindow : Window {
             }
 
             _newEntryName = "";
-                
-            _newEntryDecalPathFieldSingleTexture?.ClearCache();
-            _newEntryDecalPathFieldDirectory?.ClearCache();
-            _newEntryDecalPathFieldStartsWith?.ClearCache();
-                
+            _pathField = null;
             ImGui.CloseCurrentPopup();
         }
         ImGui.EndDisabled();
@@ -462,11 +430,11 @@ public sealed class DecalRegistryWindow : Window {
         SetSelection(entry, null);
     }
 
-    private bool EntryExistsFor(string path) {
+    internal bool EntryExistsFor(string path) {
         return Entries.Any(e => e.Path == path);
     }
     
-    private bool IsValidPath(FoundPath path)
+    internal bool IsValidPath(FoundPath path)
         => GFX.Atlas.TryGet(path.Path, out var texture) && texture is ModTexture modTexture && modTexture.Mod == Mod && !EntryExistsFor(path.Captured);
     
     private void AddContextWindow(string id, Action? remove = null, Action? render = null) {
@@ -486,11 +454,8 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     private string _newEntryName = "";
-    
-    private PathField? _newEntryDecalPathFieldSingleTexture;
-    private PathField? _newEntryDecalPathFieldStartsWith;
-    private PathField? _newEntryDecalPathFieldDirectory;
     private DecalRegistryEntry.Types _newEntryType = DecalRegistryEntry.Types.SingleTexture;
+    private DecalRegistryPathField? _pathField;
     
     private readonly ComboCache<Placement> _newPropertyComboCache = new();
 

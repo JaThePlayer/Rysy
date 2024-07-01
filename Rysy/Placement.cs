@@ -46,6 +46,8 @@ public record class Placement {
     // set in entity registry
     private IPlacementHandler? _PlacementHandler;
 
+    public RegisteredEntityType RegisteredEntityType { get; set; }
+    
     [JsonIgnore]
     public IPlacementHandler PlacementHandler {
         get => _PlacementHandler ??= GuessHandler()!;
@@ -66,7 +68,7 @@ public record class Placement {
             return trivial;
         };
 
-        var t = EntityRegistry.GetTypeForSID(SID);
+        var t = EntityRegistry.GetTypeForSID(SID, RegisteredEntityType);
 
         if (t is not { }) {
             return null;
@@ -166,7 +168,7 @@ public record class Placement {
         }
 
         if (SID is { } sid) {
-            return EntityRegistry.GetDefiningMod(sid);
+            return EntityRegistry.GetDefiningMod(sid, RegisteredEntityType);
         }
 
         return null;

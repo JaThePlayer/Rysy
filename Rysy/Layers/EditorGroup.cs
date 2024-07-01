@@ -24,6 +24,8 @@ public class EditorGroup {
     /// </summary>
     public HashSet<string> AutoAssignTo { get; set; } = new(0);
 
+    public List<DecalRegistryPath> AutoAssignToDecals { get; set; } = [];
+
     /// <summary>
     /// Do not call manually, use a <see cref="EditorGroupRegistry"/> instead.
     /// </summary>
@@ -43,6 +45,11 @@ public class EditorGroup {
     public static HashSet<string> CreateAutoAssignFromString(string list) =>
         list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet();
+    
+    public static List<DecalRegistryPath> CreateAutoAssignDecalsFromString(string list) =>
+        list.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => new DecalRegistryPath(x))
+            .ToList();
 }
 
 public sealed class EditorGroupRegistry : IEnumerable<EditorGroup>, IPackable {
