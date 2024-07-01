@@ -391,7 +391,7 @@ public sealed class DecalRegistryWindow : Window {
         
         var isInvalid = EntryExistsFor(_newEntryName);
 
-        _pathField ??= new() {
+        _pathField ??= new(true) {
             DecalRegistryWindow = this,
         };
         var path = new DecalRegistryPath(_newEntryName);

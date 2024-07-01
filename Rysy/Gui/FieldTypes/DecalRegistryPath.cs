@@ -7,7 +7,7 @@ using Rysy.Mods;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record DecalRegistryPathField : ComplexTypeField<DecalRegistryPath> {
+public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPrefix = "rysy.decalRegistryEntryType") : ComplexTypeField<DecalRegistryPath> {
     public DecalRegistryWindow? DecalRegistryWindow;
     
     internal ModMeta? Mod => DecalRegistryWindow?.Mod;
@@ -39,7 +39,10 @@ public record DecalRegistryPathField : ComplexTypeField<DecalRegistryPath> {
             _newEntryType = data.Type;
         }
         
-        var changed = ImGuiManager.EnumComboTranslated("rysy.decalRegistryEntryType", ref data.Type);
+        var changed = ImGuiManager.EnumComboTranslated(SupportDirectoryType 
+            ? [ DecalRegistryEntry.Types.SingleTexture, DecalRegistryEntry.Types.Directory, DecalRegistryEntry.Types.StartsWith ] 
+            : [ DecalRegistryEntry.Types.SingleTexture, DecalRegistryEntry.Types.StartsWith], 
+            TooltipPrefix, ref data.Type);
 
         var newEntryName = data.SavedName;
         

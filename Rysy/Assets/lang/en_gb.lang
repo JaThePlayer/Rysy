@@ -182,6 +182,11 @@ rysy.quick_actions.window_name=Add Quick Action
 rysy.editor_group_window=Groups
 rysy.editor_group_window.edit_group.new=New Group
 rysy.editor_group_window.edit_group.edit=Edit Group
+rysy.editor_group_window.autoAssignToDecalType=Type
+rysy.editor_group_window.autoAssignToDecalType.SingleTexture=Single Texture
+rysy.editor_group_window.autoAssignToDecalType.SingleTexture.tooltip=Decals with the provided texture will be added to this group.
+rysy.editor_group_window.autoAssignToDecalType.StartsWith=Path Starts With
+rysy.editor_group_window.autoAssignToDecalType.StartsWith.tooltip=Decals whose texture paths start with the given text will be added to this group.
 
 rysy.createPrefab=Create Prefab
 rysy.createPrefab.tooltip=Creates a prefab from the current selections, available from the Placement tool.

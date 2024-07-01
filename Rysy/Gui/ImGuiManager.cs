@@ -257,6 +257,23 @@ public static class ImGuiManager {
 
         return ret;
     }
+    
+    public static bool EnumComboTranslated<T>(ReadOnlySpan<T> values, ReadOnlySpan<char> prefix, ref T value) where T : struct, Enum {
+        var ret = false;
+        
+        if (ImGui.BeginCombo(prefix.TranslateOrNull() ?? prefix, value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
+            foreach (var item in values) {
+                var itemStr = item.ToString();
+                if (TranslatedMenuItem(itemStr, prefix)) {
+                    value = item;
+                    ret = true;
+                }
+            }
+            ImGui.EndCombo();
+        }
+
+        return ret;
+    }
 
     public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, ref string search, string? tooltip = null, ComboCache<T>? cache = null) where T : notnull {
         if (value is null || !values.TryGetValue(value, out var valueName)) {
