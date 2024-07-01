@@ -759,8 +759,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
                 finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1)).ToList();
             } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
-                // if you double clicked in place, select all simillar entities/decals
-                finalSelections = room.GetSelectionsForSimillar(selections[0].Handler.Parent)!;
+                // if you double clicked in place, select all similar entities/decals
+                finalSelections = room.GetSelectionsForSimilar(selections[0].Handler.Parent)!;
                 ClickInPlaceIdx = 0;
             }
 
