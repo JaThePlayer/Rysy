@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Rysy.Extensions;
+using Rysy.Graphics.TextureTypes;
 using Rysy.Helpers;
+using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -91,6 +93,13 @@ public static class IAtlasExt {
             var list = new List<FoundPath>();
 
             foreach (var (path, texture) in atlas.GetTextures()) {
+                // ignore internal textures
+                if (texture is ModTexture modTex && modTex.Mod == ModRegistry.RysyMod)
+                    continue;
+                if (path.StartsWith("Rysy:", StringComparison.Ordinal) ||
+                    path.StartsWith("@Internal@", StringComparison.Ordinal))
+                    continue;
+                
                 if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
                     var foundPath = new FoundPath(path, secondGroup.Value);
                     if (where?.Invoke(foundPath, texture) ?? true)

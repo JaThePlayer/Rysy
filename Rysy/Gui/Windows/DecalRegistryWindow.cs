@@ -283,7 +283,7 @@ public sealed class DecalRegistryWindow : Window {
     }
     
     private void RenderEntry(DecalRegistryEntry entry) {
-        var id = entry.GetHashCode();
+        var id = entry.Path;
 
         ImGui.TableNextRow();
 
@@ -329,13 +329,16 @@ public sealed class DecalRegistryWindow : Window {
             ImGui.OpenPopupOnItemClick(popupid, ImGuiPopupFlags.MouseButtonLeft);
 
             if (ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
-                var placements = EntityRegistry.DecalRegistryPropertyPlacements;
+                var blocked = entry.Props.Where(p => !p.AllowMultiple).Select(p => p.Name).ToHashSet();
+                var placements = EntityRegistry.DecalRegistryPropertyPlacements.Where(p => !blocked.Contains(p.SID ?? ""));
+                
                 ImGuiManager.List(placements, p => p.SID ?? p.Name, _newPropertyComboCache, (pl) => {
                     var prop = DecalRegistryProperty.CreateFromPlacement(pl);
                     AddProp(entry, prop);
                     
                     ImGui.CloseCurrentPopup();
                 }, favorites: []);
+                _newPropertyComboCache.Clear();
 
                 ImGui.EndPopup();
             }

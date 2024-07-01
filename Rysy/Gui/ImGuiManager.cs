@@ -501,6 +501,10 @@ public static class ImGuiManager {
         return ImGui.Checkbox(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
 
+    public static bool TranslatedInputInt(string id, ref int v) {
+        return ImGui.InputInt(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
     public static bool TranslatedInputFloat2(string id, ref NumVector2 v) {
         return ImGui.InputFloat2(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
