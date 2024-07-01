@@ -118,24 +118,27 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         EditorGroups ??= new();
         
         foreach (var gr in Room.Map.EditorGroups) {
+            var shouldAssign = false;
             if (gr.AutoAssignTo is { Count: > 0 } autoAssignTo) {
                 if (autoAssignTo.Contains(Name)) {
-                    if (!_editorGroupList!.Contains(gr))
-                        _editorGroupList.Add(gr);
-                } else {
-                    _editorGroupList!.Remove(gr);
+                    shouldAssign = true;
                 }
             }
 
-            if (this is Decal d && gr.AutoAssignToDecals is { Count: > 0 } autoAssignToDecals) {
+            if (!shouldAssign && this is Decal d && gr.AutoAssignToDecals is { Count: > 0 } autoAssignToDecals) {
                 foreach (var p in autoAssignToDecals) {
                     if (p.AffectsDecalPath(d.Texture)) {
-                        if (!_editorGroupList!.Contains(gr))
-                            _editorGroupList.Add(gr);
-                    } else {
-                        _editorGroupList!.Remove(gr);
+                        shouldAssign = true;
+                        break;
                     }
                 }
+            }
+            
+            if (shouldAssign) {
+                if (!_editorGroupList!.Contains(gr))
+                    _editorGroupList.Add(gr);
+            } else {
+                _editorGroupList!.Remove(gr);
             }
         }
     }

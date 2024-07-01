@@ -117,7 +117,7 @@ internal sealed class GroupEditWindow : Window {
     
     public GroupEditWindow(EditorGroupWindow parent, Map map, EditorGroup? group) 
         : base((group is {} ? EditName : NewName).Translate(), 
-            new(FormWindow.ITEM_WIDTH * 1.75f, ImGui.GetTextLineHeightWithSpacing() * 8f)) {
+            new(FormWindow.ITEM_WIDTH * 2.25f, ImGui.GetTextLineHeightWithSpacing() * 8f)) {
         _map = map;
         _newGroupName = group?.Name ?? "";
         _parent = parent;
@@ -125,8 +125,8 @@ internal sealed class GroupEditWindow : Window {
         _autoAssignString = group is { } ? string.Join(",", group.AutoAssignTo) : "";
         _autoAssignToField = Fields.List(_autoAssignString, Fields.Sid("", RegisteredEntityType.Entity | RegisteredEntityType.Trigger)).WithMinElements(0);
 
-        _autoAssignDecalsString = group is { } ? string.Join("|", group.AutoAssignToDecals.Select(x => x.SavedName)) : "";
-        _autoAssignToDecalField = Fields.List(_autoAssignDecalsString, new DecalRegistryPathField()).WithSeparator('|');
+        _autoAssignDecalsString = group is { } ? group.AutoAssignDecalsSavedString : "";
+        _autoAssignToDecalField = Fields.List(_autoAssignDecalsString, new DecalRegistryPathField(false, "rysy.editor_group_window.autoAssignToDecalType")).WithSeparator('|');
         
         UpdateValid();
     }
@@ -147,16 +147,20 @@ internal sealed class GroupEditWindow : Window {
 
         if (_autoAssignChanged)
             ImGuiManager.PushEditedStyle();
+        ImGui.SetNextItemWidth(FormWindow.ITEM_WIDTH);
         if (_autoAssignToField.RenderGui("Auto Assign", _autoAssignString) is string newAutoAssign) {
             _autoAssignString = newAutoAssign;
             _autoAssignChanged = _sourceGroup is null || !EditorGroup.CreateAutoAssignFromString(_autoAssignString).SetEquals(_sourceGroup.AutoAssignTo);
         }
-
+        ImGuiManager.PopEditedStyle();
+        
+        if (_autoAssignDecalsChanged)
+            ImGuiManager.PushEditedStyle();
+        ImGui.SetNextItemWidth(FormWindow.ITEM_WIDTH);
         if (_autoAssignToDecalField.RenderGui("Auto Assign to Decals", _autoAssignDecalsString) is string newAutoAssignDecal) {
             _autoAssignDecalsString = newAutoAssignDecal;
             _autoAssignDecalsChanged = true;
         }
-        
         ImGuiManager.PopEditedStyle();
     }
 

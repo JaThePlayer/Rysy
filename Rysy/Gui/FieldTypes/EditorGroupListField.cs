@@ -14,7 +14,7 @@ public record EditorGroupListField : ListField, IFieldConvertible<EditorGroupLis
         ElementCanBeRemoved = CustomElementCanBeRemoved;
     }
 
-    private bool CustomElementCanBeRemoved(string str) => _registry.GetOrCreate(str).AutoAssignTo.Count == 0;
+    private bool CustomElementCanBeRemoved(string str) => !_registry.GetOrCreate(str).IsAutoAssigned;
 
     public EditorGroupList ConvertMapDataValue(object value) {
         return EditorGroupList.FromString(_registry, value.ToString());

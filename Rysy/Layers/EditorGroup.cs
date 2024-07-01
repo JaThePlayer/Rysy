@@ -24,7 +24,12 @@ public class EditorGroup {
     /// </summary>
     public HashSet<string> AutoAssignTo { get; set; } = new(0);
 
+    /// <summary>
+    /// A list of paths for decals that should be auto-assigned to this group.
+    /// </summary>
     public List<DecalRegistryPath> AutoAssignToDecals { get; set; } = [];
+    
+    public string AutoAssignDecalsSavedString => string.Join("|", AutoAssignToDecals.Select(x => x.SavedName));
 
     /// <summary>
     /// Do not call manually, use a <see cref="EditorGroupRegistry"/> instead.
@@ -32,6 +37,8 @@ public class EditorGroup {
     internal EditorGroup(string name) {
         Name = name;
     }
+
+    public bool IsAutoAssigned => AutoAssignTo.Count > 0 || AutoAssignToDecals.Count > 0;
     
     public override string ToString() => Name;
     
@@ -190,6 +197,7 @@ public sealed class EditorGroupRegistry : IEnumerable<EditorGroup>, IPackable {
             el.Children[i] = new BinaryPacker.Element(gr.Name) {
                 Attributes = new() {
                     ["autoAssign"] = string.Join(",", gr.AutoAssignTo),
+                    ["autoAssignDecals"] = gr.AutoAssignDecalsSavedString,
                     ["editorVisible"] = gr.Enabled,
                 }
             };
@@ -202,7 +210,8 @@ public sealed class EditorGroupRegistry : IEnumerable<EditorGroup>, IPackable {
         foreach (var child in from.Children) {
             var gr = GetOrCreate(child.Name ?? throw new Exception($"EditorGroup is missing Name in the .bin: {child.ToJson()}"));
             Add(gr);
-            gr.AutoAssignTo = EditorGroup.CreateAutoAssignFromString(child.Attr("autoAssign", ""));
+            gr.AutoAssignTo = EditorGroup.CreateAutoAssignFromString(child.Attr("autoAssign"));
+            gr.AutoAssignToDecals = EditorGroup.CreateAutoAssignDecalsFromString(child.Attr("autoAssignDecals"));
             gr.Enabled = child.Bool("editorVisible");
         }
     }
@@ -223,7 +232,7 @@ public sealed class EditorGroupList : ListenableList<EditorGroup> {
     public bool IsOnlyDefault {
         get {
             foreach (var group in this) {
-                if (group.AutoAssignTo.Count != 0)
+                if (group.IsAutoAssigned)
                     continue;
                 if (group == EditorGroup.Default)
                     continue;

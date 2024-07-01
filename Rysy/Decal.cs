@@ -77,9 +77,9 @@ public sealed partial class Decal : Entity, IPlaceable {
         }
     }
 
-    public sealed override int Depth => Int("depth", FG ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
+    public override int Depth => Int("depth", FG ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
 
-    public sealed override IEnumerable<ISprite> GetSprites() => GetSprite();
+    public override IEnumerable<ISprite> GetSprites() => GetSprite();
 
     private object? _template;
     
