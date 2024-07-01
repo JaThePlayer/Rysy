@@ -233,6 +233,8 @@ public abstract class DecalRegistryProperty {
 
     public EntityData Data { get; private set; }
 
+    public virtual bool AllowMultiple => false;
+
     public virtual IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
         return ISprite.FromTexture(texture).Centered();
     }
@@ -280,7 +282,7 @@ public abstract class DecalRegistryProperty {
     private static DecalRegistryProperty CreateNewUninitialized(string propType) {
         DecalRegistryProperty prop;
 
-        if (EntityRegistry.Registered.TryGetValue(propType, out var type) && type.Type is RegisteredEntityType.DecalRegistryProperty) {
+        if (EntityRegistry.RegisteredDecalRegistryProperties.TryGetValue(propType, out var type)) {
             prop = (DecalRegistryProperty)Activator.CreateInstance(type.CSharpType)!;
         } else {
             prop = new UnknownDecalRegistryProperty();
@@ -308,103 +310,4 @@ public abstract class DecalRegistryProperty {
 
 public sealed class UnknownDecalRegistryProperty : DecalRegistryProperty {
 
-}
-
-[CustomEntity("light")]
-public sealed class LightDecalRegistryProperty : DecalRegistryProperty, IPlaceable {
-    public static FieldList GetFields() => new(new {
-        offsetX = 0f,
-        offsetY = 0f,
-        color = Fields.RGB("ffffff").AllowNull(),
-        alpha = Fields.Float(1f).WithMin(0f).WithMax(1f),
-        startFade = Fields.Int(16).WithMin(0),
-        endFade = Fields.Int(24).WithMin(0)
-    });
-
-    public static PlacementList GetPlacements() => new("default");
-}
-
-[CustomEntity("bloom")]
-public sealed class BloomDecalRegistryProperty : DecalRegistryProperty, IPlaceable {
-    public static FieldList GetFields() => new(new {
-        offsetX = 0f,
-        offsetY = 0f,
-        alpha = Fields.Float(1f).WithMin(0f).WithMax(1f),
-        radius = Fields.Float(1f).WithMin(0f)
-    });
-
-    public static PlacementList GetPlacements() => new("default");
-
-    public override IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
-        var gradientSprite = GFX.Atlas["util/bloomgradient"];
-        var scale = Data.Float("radius", 1f) * 2f * (1f / gradientSprite.Width);
-        var alpha = Data.Float("alpha", 1f).Div(2f).AtLeast(0f).AtMost(0.6f);
-        var offset = new Vector2(Data.Float("offsetX"), Data.Float("offsetY"));
-        
-        yield return ISprite.FromTexture(offset, gradientSprite).Centered() with {
-            Scale = new(scale),
-            Color = Color.White * alpha
-        };
-        
-        yield return ISprite.FromTexture(texture).Centered();
-    }
-}
-
-[CustomEntity("floaty")]
-public sealed class FloatyDecalRegistryProperty : DecalRegistryProperty, IPlaceable {
-    public static FieldList GetFields() => new(new {
-    });
-
-    public static PlacementList GetPlacements() => new("default");
-
-    public override IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
-       // base.Add(this.wave = new SineWave(Calc.Random.Range(0.1f, 0.4f), Calc.Random.NextFloat() * 6.28318548f));
-       float counter = MathF.PI * 2f * 0.1f * ctx.Time;
-
-       return ISprite.FromTexture(new Vector2(0, float.Sin(counter) * 4f), texture).Centered();
-    }
-}
-
-[CustomEntity("banner")]
-public sealed class BannerDecalRegistryProperty : DecalRegistryProperty, IPlaceable {
-    public static FieldList GetFields() => new(new {
-        speed = 1f,
-        amplitude = 1f,
-        sliceSize = 1,
-        sliceSinIncrement = 0.050f,
-        easeDown = false,
-        offset = 0f,
-        onlyIfWindy = false,
-    });
-
-    public static PlacementList GetPlacements() => new("default");
-
-    public override IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
-        var sliceSize = Data.Int("sliceSize", 1);
-        var easeDown = Data.Bool("easeDown", false);
-        var waveSpeed = Data.Float("speed", 1f);
-        var waveAmplitude = Data.Float("amplitude", 1f);
-        var sliceSinIncrement = Data.Float("sliceSinIncrement", 1f);
-        var offset = Data.Float("offset");
-
-        var count = texture.Height / sliceSize;
-
-        var baseSprite = ISprite.FromTexture(texture);
-        baseSprite.Origin = new Vector2(0.5f, 1);
-
-        var sineTimer = ctx.Time;
-        
-        for (int i = 0; i < texture.Height; i += sliceSize)
-        {
-            var spr = baseSprite.CreateSubtexture(0, i, texture.Width, sliceSize);
-            
-            float percent = easeDown ? i / (float)count : 1f - i / (float)count;
-            
-            float x = float.Sin(sineTimer * waveSpeed + i * sliceSinIncrement) * percent * waveAmplitude + percent * offset;
-
-            spr.Pos += new Vector2(x.Floor(), i - texture.Height / 2f);
-
-            yield return spr;
-        }
-    }
 }

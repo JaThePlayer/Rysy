@@ -70,7 +70,7 @@ public record class ListField : Field, IFieldConvertibleToCollection {
     public override object GetDefault() => Default!;
 
     public override void SetDefault(object newDefault) {
-        Default = (string?)newDefault ?? "";
+        Default = newDefault?.ToString() ?? "";
     }
 
     public ListField WithSeparator(char separator) {
