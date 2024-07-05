@@ -283,7 +283,7 @@ public abstract class Tool {
         }
 
         var cachedSearch = CachedSearch ??= currentLayer is null ? [] :
-            (GetMaterials(currentLayer) ?? new List<object>())
+            (GetMaterials(currentLayer) ?? [])
             .Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search, Favorites)
             .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))

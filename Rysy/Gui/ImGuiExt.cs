@@ -60,15 +60,37 @@ public static class ImGuiExt {
             filter = filter.OrderOrThenByDescending(e => favorites.Contains(e.Name)); // put favorites in front of other options
         }
 
-        filter = filter.OrderOrThenBy(e => e.Name); // order alphabetically.
+        // order alphabetically, but don't include mod name in the ordering.
+        filter = filter.OrderOrThenBy(e => e.Name, new TrimModNameStringComparer());
 
         return filter.Select(e => e.e);
     }
 
-    private static IEnumerable<T> OrderOrThenBy<T, T2>(this IEnumerable<T> self, Func<T, T2> selector) {
+    private struct TrimModNameStringComparer : IComparer<string> {
+        public int Compare(string? x, string? y) {
+            if (x is null || y is null)
+                return StringComparer.Ordinal.Compare(x, y);
+
+            return TrimModName(x).CompareTo(TrimModName(y), StringComparison.Ordinal);
+        }
+
+        private static ReadOnlySpan<char> TrimModName(ReadOnlySpan<char> from) {
+            if (from is not [.., ']'])
+                return from;
+            
+            var bracketI = from.LastIndexOf('[');
+            if (bracketI >= 0) {
+                return from[..bracketI];
+            }
+
+            return from;
+        }
+    }
+
+    private static IEnumerable<T> OrderOrThenBy<T, T2>(this IEnumerable<T> self, Func<T, T2> selector, IComparer<T2>? comparer = null) {
         if (self is IOrderedEnumerable<T> ordered)
-            return ordered.ThenBy(selector);
-        return self.OrderBy(selector);
+            return ordered.ThenBy(selector, comparer);
+        return self.OrderBy(selector, comparer);
     }
 
     private static IEnumerable<T> OrderOrThenByDescending<T, T2>(this IEnumerable<T> self, Func<T, T2> selector) {
