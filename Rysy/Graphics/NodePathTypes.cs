@@ -67,22 +67,24 @@ public static class NodePathTypes {
         }
     }
 
-    public static IEnumerable<ISprite> Circle(Entity entity) {
+    public static IEnumerable<ISprite> Circle(Entity entity, bool nodeIsCenter = false) {
         if (entity.Nodes is not [var node, ..])
             yield break;
 
-        var pos = entity.Pos;
-        var radius = Vector2.Distance(pos, node);
+        var pos = nodeIsCenter ? node.Pos : entity.Pos;
+
+        var radius = Vector2.Distance(entity.Pos, node);
 
         yield return ISprite.Circle(pos, radius, Color, ((int) radius).AtLeast(12));
     }
     
-    public static IEnumerable<ISprite> Circle(Entity entity, Func<Entity, int, Vector2> nodeToPos) {
+    public static IEnumerable<ISprite> Circle(Entity entity, Func<Entity, int, Vector2> nodeToPos, bool nodeIsCenter = false) {
         if (entity.Nodes is not [_, ..])
             yield break;
 
-        var pos = entity.Pos;
-        var radius = Vector2.Distance(pos, nodeToPos(entity, 0));
+        var node = nodeToPos(entity, 0);
+        var pos = nodeIsCenter ? node : entity.Pos;
+        var radius = Vector2.Distance(entity.Pos, node);
 
         yield return ISprite.Circle(pos, radius, Color, ((int) radius).AtLeast(12));
     }

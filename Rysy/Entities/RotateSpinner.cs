@@ -14,7 +14,7 @@ public sealed class RotateSpinner : Entity, IPlaceable {
         => MovingSpinnerHelper.GetSprites(this);
 
     public override IEnumerable<ISprite> GetNodePathSprites()
-        => NodePathTypes.Circle(this);
+        => NodePathTypes.Circle(this, nodeIsCenter: true);
 
     public static FieldList GetFields() => new(new {
         clockwise = true,
