@@ -466,42 +466,24 @@ public class LuaCtx {
 
             return 1;
         });
-
-        /*
-        lua.Register("_RYSY_string_find", static (nint s) => {
+        
+        lua.Register("_RYSY_INTERNAL_makeWrapperShallowCopy", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
-            var str = lua.FastToString(1);
-            var pattern = lua.FastToString(2);
-            var init = (int)(lua.ToIntegerX(3) ?? 1);
-            var plain = lua.ToBoolean(4);
+            var wrapper = lua.UnboxWrapper(1);
 
-            var ret = NeoLuaSupport.LuaLoader.Find(str, pattern, init, plain, dontReturnMatches: true);
-            if (ret is { }) {
-                foreach (var item in ret) {
-                    lua.Push(item);
-                }
-
-                return ret.Length;
-            }
-
-            return 0;
+            lua.PushWrapper(new ShallowCopyWrapper(wrapper));
+            return 1;
         });
-
-        lua.PCallStringThrowIfError("""
-            string.find = _RYSY_string_find
-            """);*/
 
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy
             table.shallowcopy = function(tbl, ...)
-                local copied = orig_table_shallowcopy(tbl, ...)
-                
                 local mt = getmetatable(tbl)
                 if mt and rawget(mt, "_RWR") then
-                    setmetatable(copied, mt)
+                    return _RYSY_INTERNAL_makeWrapperShallowCopy(tbl)
                 end
-
-                return copied
+                
+                return orig_table_shallowcopy(tbl, ...)
             end
             """, "fix_shallow_copy");
 
