@@ -176,9 +176,9 @@ public static class EntityRegistry {
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
-        _LuaCtx = null;
-        
         Registered.Clear();
+        RegisteredStyles.Clear();
+        RegisteredDecalRegistryProperties.Clear();
         
         RegisterHardcoded();
 
