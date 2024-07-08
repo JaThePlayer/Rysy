@@ -241,9 +241,28 @@ public class LonnEntity : Entity {
         return base.GetNodeSelection(nodeIndex);
     }
 
-    public override Range NodeLimits => Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
+    public override Range NodeLimits
+    {
+        get {
+            try {
+                return Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to get nodeLimits for: {ToJson()}");
+                return base.NodeLimits;
+            }
+        }
+    }
 
-    public override Point MinimumSize => Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+    public override Point MinimumSize {
+        get {
+            try {
+                return Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to get minimumSize for: {ToJson()}");
+                return base.MinimumSize;
+            }
+        }
+    }
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);

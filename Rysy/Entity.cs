@@ -210,8 +210,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
             return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
         }
 
-        if (GetNodeSprites(nodeIndex).FirstOrDefault() is { } firstSprite) {
-            return firstSprite.GetCollider();
+        try {
+            if (GetNodeSprites(nodeIndex).FirstOrDefault() is { } firstSprite) {
+                return firstSprite.GetCollider();
+            }
+        } catch (Exception ex) {
+            Logger.Error(ex, $"Failed to get node {nodeIndex} selection for: {ToJson()}");
         }
 
         return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
