@@ -48,6 +48,10 @@ public sealed class LonnEntityPlugin {
     
     // move(room, entity, nodeIndex, offsetX, offsetY)
     public Action<ILuaWrapper, ILuaWrapper, int, float, float>? Move;
+    
+    public Func<Entity, string> NodeLineRenderType { get; private set; }
+    
+    public Func<Entity, Node, int, Vector2>? NodeLineRenderOffset { get; private set; }
 
     public bool HasSelectionFunction;
 
@@ -63,53 +67,10 @@ public sealed class LonnEntityPlugin {
             if (Plugin is null)
                 return;
 
-            /*
-            var lua = Plugin.LuaCtx.Lua;
-
-            if (lua.GetTop() < Amt) {
-                //Console.WriteLine("SKIPPING");
-                Logger.Write("LonnEntity", LogLevel.Warning, $"Lua stack shrunk after using {Plugin.Name}! Previous: {Plugin.StackLoc}, now: {lua.GetTop()}.");
-                lua.PrintStack();
-                lua.Pop(lua.GetTop());
-                Console.WriteLine(new StackTrace());
-                //Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.ToCSharp(lua.GetTop()).ToJson()}");
-                return;
-            }
-
-            if (Plugin.StackLoc < lua.GetTop()) {
-                Logger.Write("LonnEntity", LogLevel.Warning, $"Lua stack grew after using {Plugin.Name}! Previous: {Plugin.StackLoc}, now: {lua.GetTop()}.");
-                lua.PrintStack();
-                //Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.TableToDictionary(lua.GetTop()).ToJson()}");
-                Logger.Write("LonnEntity", LogLevel.Warning, $"Top element on stack: {lua.ToCSharp(lua.GetTop()).ToJson()}");
-                Console.WriteLine(new StackTrace());
-            }
-            lua.Pop(Amt);
-
-            Plugin.StackHolder = null;*/
             var lua = Plugin.LuaCtx.Lua;
             lua.Pop(lua.GetTop());
         }
     }
-
-    /*
-    public LuaStackHolder? PushToStack() {
-        var lua = LuaCtx.Lua;
-
-        SetModNameInLua(lua);
-
-        lua.GetGlobal("_RYSY_entities");
-        var entitiesTableLoc = lua.GetTop();
-
-        lua.PushString(Name);
-        lua.GetTable(entitiesTableLoc);
-
-        StackLoc = lua.GetTop();
-
-        holder = new(this, 2);
-        StackHolder = holder;
-
-        return holder;
-    }*/
 
     public T PushToStack<T>(Func<LonnEntityPlugin, T> cb) {
         lock (LOCK) {
@@ -258,7 +219,27 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods",
             def: (List<string>)null!,
-            funcGetter: (lua, top) => lua.ToList<string>(top));
+            funcGetter: static (lua, top) => lua.ToList<string>(top));
+
+        plugin.NodeLineRenderType = NullConstOrGetter_Entity(plugin, "nodeLineRenderType",
+            def: "line",
+            funcGetter: static (lua, top) => lua.FastToString(top))!;
+
+        switch (lua.PeekTableType(top, "nodeLineRenderOffset")) {
+            case LuaType.Table:
+                var offset = lua.PeekTableVector2Value(top, "nodeLineRenderOffset");
+                plugin.NodeLineRenderOffset = (_, _, _) => offset;
+                break;
+            case LuaType.Function:
+                plugin.NodeLineRenderOffset = (entity, node, nodeId) => {
+                    return plugin.PushToStack((pl) => {
+                        var lua = pl.LuaCtx.Lua;
+                        lua.GetTable(pl.StackLoc, "nodeLineRenderOffset");
+                        return lua.PCallFunction(static (lua, pos) => lua.ToVector2(pos), results: 1, entity, node, nodeId);
+                    });
+                };
+                break;
+        }
 
         if (lua.PeekTableType(top, "flip") is LuaType.Function) {
             plugin.Flip = (room, entity, horizontal, vertical) => {
