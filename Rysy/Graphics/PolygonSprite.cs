@@ -55,7 +55,10 @@ public record struct PolygonSprite : ISprite {
         matrix ??= Matrix.Identity;
 
         if (matrix is { } m) {
-            GFX.DrawVertices(m, VertexPositionColors, VertexPositionColors.Length);
+            if (prevSettings is { ScissorRect: { } scissorRect }) {
+                GFX.Batch.GraphicsDevice.ScissorRectangle = scissorRect;
+            }
+            GFX.DrawVertices(m, VertexPositionColors, VertexPositionColors.Length, rasterizerState: prevSettings?.RasterizerState);
         }
         GFX.BeginBatch(prevSettings);
         
