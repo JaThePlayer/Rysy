@@ -1,5 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Mods;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace Rysy.Graphics.TextureTypes;
 
@@ -26,11 +28,11 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         Texture2D? texture;
 #if FNA
                         if (Mod.Filesystem is FolderModFilesystem) {
-                            texture = Texture2D.FromStream(RysyState.GraphicsDevice, stream);
+                            texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, stream));
                         } else {
                             using var memStr = new MemoryStream();
                             stream.CopyTo(memStr);
-                            texture = Texture2D.FromStream(RysyState.GraphicsDevice, memStr);
+                            texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, memStr));
                         }
 #else
                         texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
@@ -63,4 +65,55 @@ public sealed class ModTexture : VirtTexture, IModAsset {
     }
 
     public override string ToString() => $"ModTexture:{{{VirtPath}, [{Mod.Name}]}}";
+    
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private unsafe Texture2D Premultiply(Texture2D texture) {
+        Color[] data = new Color[texture.Width * texture.Height];
+        texture.GetData(data);
+        
+        //using (var _w = new ScopedStopwatch($"Premultiply: {VirtPath}")) {
+            fixed (Color* raw = data) {
+                var i = 0;
+                var rawInt = (int*) raw;
+            
+                if (Vector256.IsHardwareAccelerated) {
+                    for (; i + Vector256<int>.Count < data.Length; i += Vector256<int>.Count) {
+                        var colorsInt = Vector256.Load(&rawInt[i]);
+                        // If all colors are fully transparent, there's nothing to do
+                        if (colorsInt == Vector256.Create(0))
+                            continue;
+                    
+                        unchecked {
+                            var alpha = colorsInt & Vector256.Create((int)0xff000000);
+                            if (alpha == Vector256.Create((int)0xff000000)) {
+                                continue;
+                            }
+                            var alphaMult = Vector256.ConvertToSingle(alpha >>> 24) / 255f;
+
+                            var packed =  Vector256.ConvertToInt32(Vector256.ConvertToSingle( colorsInt & Vector256.Create(0x000000ff)) * alphaMult)
+                                       | (Vector256.ConvertToInt32(Vector256.ConvertToSingle((colorsInt & Vector256.Create(0x0000ff00)) >>> 8)  * alphaMult) << 8)
+                                       | (Vector256.ConvertToInt32(Vector256.ConvertToSingle((colorsInt & Vector256.Create(0x00ff0000)) >>> 16) * alphaMult) << 16)
+                                       | alpha;
+                            packed.CopyTo(new Span<int>(&rawInt[i], Vector256<int>.Count));
+                        }
+                    }
+                }
+            
+                for (; i < data.Length; i++) {
+                    ref Color c = ref raw[i];
+                    if (c.A is 255)
+                        continue;
+                    byte r = (byte)float.Round(c.R * c.A / 255f);
+                    byte g = (byte)float.Round(c.G * c.A / 255f);
+                    byte b = (byte)float.Round(c.B * c.A / 255f);
+
+                    c.PackedValue = (uint)(r | (g << 8) | (b << 16) | (c.A << 24));
+                }
+            }
+        //}
+        
+
+        texture.SetData(data);
+        return texture;
+    }
 }
