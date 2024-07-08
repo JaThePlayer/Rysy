@@ -178,7 +178,6 @@ public static class RysyState {
             }
         }
 #else
-        /*
         unsafe {
             SDL.SDL_AddEventWatch(MyEventFunction, IntPtr.Zero);
         
@@ -200,7 +199,6 @@ public static class RysyState {
             [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)]
             static extern void SDL_free(IntPtr memblock);
         }
-        */
 #endif
     }
     
