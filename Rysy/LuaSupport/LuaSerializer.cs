@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace Rysy.LuaSupport;
 
 public static partial class LuaSerializer {
-    private static Lua GetSandboxedLua() => new(openLibs: false);
+    private static Lua GetSandboxedLua() => new(openLibs: false) { Encoding = Encoding.UTF8 };
 
     private static string CorrectDecalPathForLonn(string rysyPath) {
         // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...

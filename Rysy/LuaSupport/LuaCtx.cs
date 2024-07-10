@@ -4,11 +4,12 @@ using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Rysy.LuaSupport;
 
 public class LuaCtx {
-    public Lua Lua { get; private set; } = new();
+    public Lua Lua { get; private set; } = new() { Encoding = Encoding.UTF8, };
     
     public static bool SeleneLoaded { get; private set; }
 
