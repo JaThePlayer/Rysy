@@ -246,4 +246,11 @@ public sealed class FieldList : Dictionary<string, Field> {
 
         return this;
     }
+
+    public void AddTranslations(string tooltipKeyPrefix, string nameKeyPrefix, string defaultTooltipKeyPrefix, string defaultNameKeyPrefix) {
+        foreach (var (name, f) in this) {
+            f.Tooltip ??= name.TranslateOrNull(tooltipKeyPrefix) ?? name.TranslateOrNull(defaultTooltipKeyPrefix);
+            f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
+        }
+    }
 }
