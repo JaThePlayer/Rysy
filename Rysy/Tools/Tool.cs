@@ -83,6 +83,8 @@ public abstract class Tool {
                               ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
         }
         set {
+            if (_layer == value)
+                return;
             _layer = value;
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.Layer", value.Name);
