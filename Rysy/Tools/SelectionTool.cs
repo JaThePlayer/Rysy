@@ -79,9 +79,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
 
-        handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => AddNodeKeybind(at: null));
-        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => AddNodeKeybind(at: GetMouseRoomPos(EditorState.Camera!, EditorState.CurrentRoom!).ToVector2().Snap(8)));
-
         handler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
         handler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
         handler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
@@ -164,14 +161,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     };
 
-    private void AddNodeKeybind(Vector2? at) {
+    void ISelectionHotkeyTool.AddNode(Vector2? at) {
         if (CurrentSelections is not { } selections) {
             return;
         }
 
-        List<IHistoryAction> actions = new();
-        List<Selection> newSelections = new();
-        List<Selection> unselected = new();
+        List<IHistoryAction> actions = [];
+        List<Selection> newSelections = [];
+        List<Selection> unselected = [];
 
         foreach (var s in selections) {
             if (s.Handler.TryAddNode(at) is { } res) {
@@ -185,7 +182,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClearColliderCachesInSelections();
             History.ApplyNewAction(actions.MergeActions());
 
-            CurrentSelections = new(selections.Except(unselected).Concat(newSelections));
+            CurrentSelections = [..selections.Except(unselected).Concat(newSelections)];
         }
     }
 
@@ -733,12 +730,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         return pos;
-    }
-
-    private Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
-        if (Layer == EditorLayers.Room)
-            return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
-        return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
     }
 
     private void UpdateDragGesture(Camera camera, Room room) {

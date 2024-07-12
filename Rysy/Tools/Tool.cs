@@ -234,6 +234,12 @@ public abstract class Tool {
     protected bool IsEqual(EditorLayer layer, object? currentMaterial, string name) {
         return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
     }
+    
+    public Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
+        if (Layer == EditorLayers.Room)
+            return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
+        return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
+    }
 
     public void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
         if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse)) {

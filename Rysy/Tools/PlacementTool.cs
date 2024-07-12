@@ -21,6 +21,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     /// </summary>
     private Vector2? AnchorPos;
 
+    /// <summary>
+    /// When dragging a placement, specifies which node should be moved.
+    /// </summary>
+    private int _draggedNodeIndex;
+
+    private bool _shouldDragNodesOfResizableEntity;
+
     public override void InitHotkeys(HotkeyHandler handler) {
         base.InitHotkeys(handler);
 
@@ -102,6 +109,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         };
     }
 
+    private void ResetDragState() {
+        _draggedNodeIndex = 0;
+        _shouldDragNodesOfResizableEntity = false;
+    }
+
     public override void Update(Camera camera, Room room) {
         if (PickNextFrame) {
             PickNextFrame = false;
@@ -111,24 +123,32 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             CurrentPlacement = null;
         }
 
-        if (CurrentPlacement is not { } selection) {
+        if (CurrentPlacement is not { } placement) {
+            ResetDragState();
             CreatePlacementFromMaterial(camera, room);
             return;
         }
 
         if (Material is Placement place) {
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
-                History.ApplyNewAction(place.PlacementHandler.Place(selection, room));
+                History.ApplyNewAction(place.PlacementHandler.Place(placement, room));
                 AnchorPos = null;
+                ResetDragState();
+                if (placement is EntitySelectionHandler entityHandler) {
+                    entityHandler.Entity.EntityData.ReplaceNodes(place.Nodes ?? Enumerable.Range(0, entityHandler.Entity.NodeLimits.Start.Value).Select(_ => new Vector2()));
+                    entityHandler.Entity.InitializeNodePositions();
+                }
             }
 
-            HandleMove(camera, room, selection);
+            HandleMove(camera, room, placement);
         }
     }
 
     private void HandleMove(Camera camera, Room room, ISelectionHandler selection) {
-        if (RectangleGesture.Delta is not { } delta) 
+        if (RectangleGesture.Delta is not { } delta)  {
+            ResetDragState();
             return;
+        }
         
         var offset = delta.Location.ToVector2();
         var resize = delta.Size();
@@ -142,11 +162,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         // TODO: refactor, maybe into a ICustomMoveHandler
         if (selection is EntitySelectionHandler entityHandler) {
             var e = entityHandler.Entity;
-            var resizableX = e.ResizableX;
-            var resizableY = e.ResizableY;
 
-            if (!resizableX && !resizableY && e.Nodes is [var onlyNode]) {
-                new MoveNodeAction(onlyNode, e, GetMousePos(camera, room).ToVector2() - onlyNode).Apply(map);
+            if ((_shouldDragNodesOfResizableEntity || !(e.ResizableX || e.ResizableY)) && e.Nodes.Count > _draggedNodeIndex) {
+                var node = e.Nodes[_draggedNodeIndex];
+                new MoveNodeAction(node, e, GetMousePos(camera, room).ToVector2() - node).Apply(map);
                 AnchorPos ??= e.Pos;
                 return;
             }
@@ -177,7 +196,6 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             Material = PlacementFromString(strPlacement, Layer);
         }
 
-
         if (Material is Placement place) {
             // quick actions might not serialize this properly
             if (place.PlacementHandler is null) {
@@ -187,6 +205,9 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
             var handler = place.PlacementHandler;
             CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
+            if (CurrentPlacement is EntitySelectionHandler entityHandler) {
+                entityHandler.Entity.InitializeNodePositions();
+            }
         }
     }
 
@@ -251,6 +272,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         CurrentPlacement = null;
         PickNextFrame = false;
         AnchorPos = null;
+        ResetDragState();
     }
 
     public override void Init() {
@@ -281,6 +303,41 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             return;
 
         pl.TryRotate(dir)?.Apply(EditorState.Map);
+    }
+
+    void ISelectionHotkeyTool.AddNode(Vector2? at) {
+        if (CurrentPlacement is not EntitySelectionHandler placement) {
+            return;
+        }
+
+        var entity = placement.Entity;
+
+        // If you're currently resizing an entity with nodes, start moving the first node now.
+        var resizable = (entity.ResizableX || entity.ResizableY) && !_shouldDragNodesOfResizableEntity;
+        if (resizable && _draggedNodeIndex == 0 && entity.Nodes.Count > 0 ) {
+            _shouldDragNodesOfResizableEntity = true;
+            return;
+        }
+
+        // If you're not moving the last node, start moving the next one
+        if (_draggedNodeIndex < entity.Nodes.Count - 1) {
+            _draggedNodeIndex++;
+            return;
+        }
+        
+        var action = entity.Nodes.Count > 0 
+            ? entity.CreateNodeSelection(entity.Nodes.Count - 1).Handler.TryAddNode(at)
+            : placement.TryAddNode(at);
+        
+        // Add a new node
+        if (action is { } res) {
+            res.Item1.Apply(EditorState.Map!);
+            if (RectangleGesture.Delta is not { } delta) {
+                entity.InitializeNodePositions();
+            } else {
+                _draggedNodeIndex = entity.Nodes.Count - 1;
+            }
+        }
     }
 
     #region Imgui
