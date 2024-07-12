@@ -545,10 +545,16 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         
         _pos = new(EntityData.X, EntityData.Y);
         _SelectionHandler?.ClearCollideCache();
-        if (_NodeSelectionHandlers is { })
-            foreach (var item in _NodeSelectionHandlers) {
+        if (changed.NodesChanged && _NodeSelectionHandlers is { } handlers) {
+            foreach (var item in handlers) {
                 item?.ClearCollideCache();
+                item?.RecalculateId();
             }
+            _NodeSelectionHandlers = new NodeSelectionHandler?[handlers.Length];
+            for (int i = 0; i < _NodeSelectionHandlers.Length; i++) {
+                _NodeSelectionHandlers[i] = handlers.FirstOrDefault(h => h is {} && h.NodeIdx == i);
+            }
+        }
 
         if (!changed.OnlyPositionChanged) {
             BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
@@ -1006,6 +1012,14 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
         });
 
         Inner = new(attributes);
+    }
+
+    public void ReplaceNodes(IEnumerable<Vector2>? newNodes) {
+        Nodes.Clear();
+        if (newNodes is {})
+            foreach (var node in newNodes) {
+                Nodes.Add(node);
+            }
     }
 
     public void InitializeNodes(int capacity) {
