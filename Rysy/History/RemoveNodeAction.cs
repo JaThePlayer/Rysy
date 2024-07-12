@@ -5,9 +5,6 @@ public record class RemoveNodeAction(Node Node, Entity Entity) : IHistoryAction 
     public bool Apply(Map map) {
         if (Entity.Nodes is { } nodes && (Index = nodes.IndexOf(Node)) != -1) {
             nodes.RemoveAt(Index);
-
-#warning Handle minimum nodes!
-
             Entity.ClearRoomRenderCache();
             return true;
         }
