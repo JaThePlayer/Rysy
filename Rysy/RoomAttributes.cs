@@ -50,8 +50,8 @@ public record class RoomAttributes {
             "y" => Y,
             "width" => Width,
             "height" => Height,
-            "cameraX" => CameraOffsetX,
-            "cameraY" => CameraOffsetY,
+            "cameraOffsetX" => CameraOffsetX,
+            "cameraOffsetY" => CameraOffsetY,
             "windPattern" => WindPattern,
             "dark" => Dark,
             "disableDownTransition" => DisableDownTransition,
@@ -59,13 +59,13 @@ public record class RoomAttributes {
             "checkpoint" => Checkpoint,
             "space" => Space,
             "music" => Music,
-            "altMusic" => AltMusic,
+            "alt_music" => AltMusic,
             "musicProgress" => MusicProgress,
             "ambienceProgress" => AmbienceProgress,
-            "layer1" => MusicLayer1,
-            "layer2" => MusicLayer2,
-            "layer3" => MusicLayer3,
-            "layer4" => MusicLayer4,
+            "musicLayer1" => MusicLayer1,
+            "musicLayer2" => MusicLayer2,
+            "musicLayer3" => MusicLayer3,
+            "musicLayer4" => MusicLayer4,
             "whisper" => Whisper,
             "delayAltMusicFade" => DelayAltMusicFade,
             _ => throw new NotImplementedException(key)
@@ -92,10 +92,10 @@ public record class RoomAttributes {
             case "height":
                 Height = Convert.ToInt32(v);
                 break;
-            case "cameraX":
+            case "cameraOffsetX":
                 CameraOffsetX = Convert.ToSingle(v);
                 break;
-            case "cameraY":
+            case "cameraOffsetY":
                 CameraOffsetY = Convert.ToSingle(v);
                 break;
             case "windPattern":
@@ -119,7 +119,7 @@ public record class RoomAttributes {
             case "music":
                 Music = v.ToString() ?? "";
                 break;
-            case "altMusic":
+            case "alt_music":
                 AltMusic = v.ToString() ?? "";
                 break;
             case "musicProgress":
@@ -128,16 +128,16 @@ public record class RoomAttributes {
             case "ambienceProgress":
                 AmbienceProgress = v.ToString() ?? "";
                 break;
-            case "layer1":
+            case "musicLayer1":
                 MusicLayer1 = Convert.ToBoolean(v);
                 break;
-            case "layer2":
+            case "musicLayer2":
                 MusicLayer2 = Convert.ToBoolean(v);
                 break;
-            case "layer3":
+            case "musicLayer3":
                 MusicLayer3 = Convert.ToBoolean(v);
                 break;
-            case "layer4":
+            case "musicLayer4":
                 MusicLayer4 = Convert.ToBoolean(v);
                 break;
             case "whisper":

@@ -23,8 +23,8 @@ public sealed class RoomEditWindow : Window {
             width = Fields.Int(attrs.Width).WithMin(8).WithDisplayScale(8),
             height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8),
             
-            cameraX = attrs.CameraOffsetX,
-            cameraY = attrs.CameraOffsetY,
+            cameraOffsetX = attrs.CameraOffsetX,
+            cameraOffsetY = attrs.CameraOffsetY,
             
             windPattern = attrs.WindPattern,
             dark = attrs.Dark,
@@ -36,16 +36,20 @@ public sealed class RoomEditWindow : Window {
             __musicSep = new PaddingField("Music"),
 
             music = Fields.Dropdown(attrs.Music, CelesteEnums.Music, editable: true),
-            altMusic = Fields.Dropdown(attrs.AltMusic, CelesteEnums.Music, editable: true),
+            alt_music = Fields.Dropdown(attrs.AltMusic, CelesteEnums.Music, editable: true),
             musicProgress = attrs.MusicProgress,
             ambienceProgress = attrs.AmbienceProgress,
-            layer1 = attrs.MusicLayer1,
-            layer2 = attrs.MusicLayer2,
-            layer3 = attrs.MusicLayer3,
-            layer4 = attrs.MusicLayer4,
+            musicLayer1 = attrs.MusicLayer1,
+            musicLayer2 = attrs.MusicLayer2,
+            musicLayer3 = attrs.MusicLayer3,
+            musicLayer4 = attrs.MusicLayer4,
             whisper = attrs.Whisper,
             delayAltMusicFade = attrs.DelayAltMusicFade,
         });
+        
+        var tooltipKeyPrefix = "room.description";
+        var nameKeyPrefix = "room.attribute";
+        fields.AddTranslations(tooltipKeyPrefix, nameKeyPrefix, tooltipKeyPrefix, nameKeyPrefix);
 
         return fields;
     }
@@ -147,7 +151,7 @@ record RoomDebugColorField : Field {
         
         ImGui.ColorButton(colorNames[c], colors[c].ToNumVec4());
         ImGui.SameLine();
-        if (ImGui.BeginCombo("Color", "", ImGuiComboFlags.NoPreview)) {
+        if (ImGui.BeginCombo("Color", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
             
             for (int i = 0; i < colors.Length; i++) {

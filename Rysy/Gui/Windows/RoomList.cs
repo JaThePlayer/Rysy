@@ -46,7 +46,7 @@ public static class RoomList {
 
         ImGui.BeginListBox("##RoomListBox", new(size.X - 10, size.Y - ImGui.GetTextLineHeightWithSpacing() * 5));
 
-        var rooms = map.Rooms.SearchFilter(r => r.Name, Search).ToList();
+        var rooms = map.Rooms.SearchFilter(r => r.Name, Search);
         foreach (var room in rooms) {
             var name = room.Name;
             if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
@@ -89,7 +89,9 @@ public static class RoomList {
                     editor.AddWindow(new RoomEditWindow(room, newRoom: false));
                 }
                 if (ImGui.MenuItem("Remove")) {
-                    editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(room));
+                    var toRemove = room;
+                    RysyState.OnEndOfThisFrame += () =>
+                        editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(toRemove));
                 }
 
                 if (ImGui.MenuItem("To Clipboard as JSON")) {
