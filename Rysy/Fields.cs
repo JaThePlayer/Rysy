@@ -221,6 +221,8 @@ public static partial class Fields {
         RegisterScannerIfNeeded();
 
         fieldType ??= LonnNameFromValue(val);
+        if (fieldType == "anything")
+            fieldType = "string";
 
         if (LonnFieldGenerators!.TryGetValue(fieldType, out var generator)) {
             try {
@@ -238,25 +240,43 @@ public static partial class Fields {
         return GuessFromValue(val, fromMapData: true);
     }
     
-    public static DropdownField<T>? CreateLonnDropdown<T>(IUntypedData info, object def, Func<object, T> converter) where T : notnull {
+    public static Field? CreateLonnDropdown<T>(IUntypedData info, object def, Func<object, (bool, T)> converter) where T : notnull {
         var editable = info.Bool("editable", true);
+
+        if (converter(def) is not (true, var parsedDef))
+            return null;
         
         if (info.TryGetValue("options", out var options)) {
+            IEnumerable<(object, string)>? values = null;
+            
             switch (options) {
                 case List<object> dropdownOptions:
                     if (dropdownOptions.First() is List<object>) {
                         // {text, value},
                         // {text, value2},
-                        return Dropdown(converter(def),
-                            dropdownOptions.Cast<List<object>>().Where(l => l.Count >= 2).SafeToDictionary(
-                                l => converter(l[1]), l => l[0].ToString()!),
-                            editable);
+                        values = dropdownOptions
+                            .OfType<List<object>>()
+                            .Where(l => l.Count >= 2)
+                            .Select(l => (l[1], l[0].ToString() ?? ""));
+                    } else {
+                        values = dropdownOptions.Select(x => (x, x?.ToString() ?? ""));
                     }
-                    
-                    return Dropdown(converter(def), dropdownOptions.Select(converter).ToList(), null, editable);
+                    break;
                 case Dictionary<string, object> dropdownOptions: {
-                    return Dropdown(converter(def), dropdownOptions.SafeToDictionary(v => converter(v.Value), v => v.Key), editable);
+                    values = dropdownOptions.Select(v => (v.Value, v.Key));
+                    break;
                 }
+            }
+
+            if (values is { }) {
+                var parsedValues = values.Select(x => (converter(x.Item1), x.Item2, x.Item1)).ToList();
+                if (parsedValues.All(p => p.Item1.Item1)) {
+                    return Dropdown(parsedDef, parsedValues.SafeToDictionary(p => (p.Item1.Item2, p.Item2)), editable);
+                }
+                
+                // Not all values could be parsed to the target type.
+                // This happens for tilesets for example, if the plugin is faulty and sets '3' (number) as the default value.
+                return Dropdown(def.ToString() ?? "", parsedValues.SafeToDictionary(p => (p.Item3.ToString() ?? "", p.Item2)), editable);
             }
         }
 

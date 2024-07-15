@@ -75,9 +75,9 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         if (fieldInfoEntry.TryGetValue("options", out _) 
             && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => {
                 try {
-                    return Convert.ToInt32(x, CultureInfo.InvariantCulture);
+                    return (true, Convert.ToInt32(x, CultureInfo.InvariantCulture));
                 } catch {
-                    return 0;
+                    return (false, 0);
                 }
             }) is {} dropdown) {
             return dropdown;

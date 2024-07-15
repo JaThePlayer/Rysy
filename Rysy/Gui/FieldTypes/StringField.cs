@@ -72,7 +72,7 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
 
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
         if (fieldInfoEntry.TryGetValue("options", out _) 
-            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => x?.ToString() ?? "") is {} dropdown) {
+            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => (true, x?.ToString() ?? "")) is {} dropdown) {
             return dropdown;
         }
         

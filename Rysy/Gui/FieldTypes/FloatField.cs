@@ -50,10 +50,9 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
         if (fieldInfoEntry.TryGetValue("options", out _) 
             && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => {
                 try {
-                    return Convert.ToSingle(x, CultureInfo.InvariantCulture);
+                    return (true, Convert.ToSingle(x, CultureInfo.InvariantCulture));
                 } catch {
-                    Console.WriteLine($"FAILED TO CONVERT: {x} [{x?.GetType()}] to single");
-                    return 0f;
+                    return (false, 0f);
                 }
             }) is {} dropdown) {
             return dropdown;
