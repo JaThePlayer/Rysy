@@ -64,27 +64,75 @@ public class LonnEntity : Entity {
     }
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
+        if (Plugin is null)
+            return base.GetNodeSprites(nodeIndex);
+        
+        var node = Nodes[nodeIndex];
+        var i = nodeIndex + 1;
+        
         CachedNodeSprites ??= new();
 
-        var node = Nodes[nodeIndex];
         if (CachedNodeSprites.TryGetValue(node, out var cached)) {
             return cached;
         }
         
-        var oldPos = Pos;
-        SilentSetPos(node);
-        List<ISprite>? sprites = null;
+        var roomWrapper = new RoomLuaWrapper(Room);
         
-        try {
-            sprites = GetSpritesUncached(out var canCache).Select(s => s.WithMultipliedAlpha(NodeSpriteAlpha)).ToList();
+        var sprites = Plugin.PushToStack(pl => {
+            var lua = pl.LuaCtx.Lua;
 
-            if (canCache) {
-                CachedNodeSprites[node] = sprites;
+            if (pl.HasGetNodeSprite) {
+                lua.GetTable(pl.StackLoc, "nodeSprite");
+
+                return lua.PCallFunction(roomWrapper, this, node, i, SpritesFromLonn) ?? [];
             }
-        } finally {
-            SilentSetPos(oldPos);
-            sprites ??= [];
+            
+            if (Plugin.GetNodeTexture is { } getTexture && getTexture(roomWrapper, this, node, i) is { } texturePath) {
+                var offset = Plugin.NodeOffset?.Invoke(roomWrapper, this, node, i);
+                return [
+                    ISprite.FromTexture(Pos + (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
+                        Origin = offset is {} ? Vector2.Zero : Plugin.NodeJustification(roomWrapper, this, node, i),
+                        Color = Plugin.NodeColor(roomWrapper, this, node, i),
+                        Scale = Plugin.NodeScale(roomWrapper, this, node, i),
+                        Rotation = Plugin.NodeRotation(roomWrapper, this, node, i),
+                    }
+                ];
+            }
+            
+            if (pl.NodeRectangle?.Invoke(roomWrapper, this, node, i) is { } nodeRect) {
+                var borderColor = pl.BothNodeColors
+                    ? pl.NodeBorderColor(roomWrapper, this, node, i)
+                    : pl.NodeColor(roomWrapper, this, node, i);
+                var fillColor = pl.BothNodeColors
+                    ? pl.NodeFillColor(roomWrapper, this, node, i)
+                    : pl.NodeColor(roomWrapper, this, node, i);
+                
+                return [
+                    ISprite.OutlinedRect(nodeRect, fillColor, borderColor)
+                ];
+            }
+
+            var oldPos = Pos;
+            SilentSetPos(node);
+            List<ISprite>? sprites;
+        
+            try {
+                sprites = GetSpritesUncached(roomWrapper).Select(s => s.WithMultipliedAlpha(NodeSpriteAlpha)).ToList();
+            } finally {
+                SilentSetPos(oldPos);
+            }
+            
+            return sprites;
+        });
+
+        if (Plugin.NodeDepth?.Invoke(roomWrapper, this, node, i) is { } nodeDepth) {
+            foreach (var s in sprites) {
+                s.Depth ??= nodeDepth;
+            }
         }
+
+        if (!roomWrapper.Used)
+            CachedNodeSprites[Nodes[nodeIndex]] = sprites;
         
         return sprites;
     }
@@ -106,41 +154,9 @@ public class LonnEntity : Entity {
                 return [];
             }
 
-            if (!pl.HasGetNodeSprite) {
-                return base.GetAllNodeSprites();
-            }
+            var sprites = base.GetAllNodeSprites();
 
-            var roomWrapper = new RoomLuaWrapper(Room);
-
-            var lua = pl.LuaCtx.Lua;
-
-            var type = lua.GetTable(pl.StackLoc, "nodeSprite");
-
-            if (type != LuaType.Function) {
-                lua.Pop(1);
-                return [];
-            }
-
-            var spriteFuncLoc = lua.GetTop();
-
-            var sprites = new List<ISprite>();
-            for (int i = 0; i < Nodes.Count; i++) {
-                var node = Nodes[i];
-
-                lua.PushCopy(spriteFuncLoc);
-                try {
-                    sprites.AddRange(lua.PCallFunction(roomWrapper, this, node, i + 1, SpritesFromLonn) ?? []);
-                } catch {
-                    lua.Pop(1); // pop the "nodeSprite" func
-                    throw;
-                }
-            }
-
-            lua.Pop(1); // pop the "nodeSprite" func
-
-            sprites.AddRange(GetNodePathSprites() ?? []);
-
-            return sprites!;
+            return sprites;
         });
     }
 
@@ -148,35 +164,24 @@ public class LonnEntity : Entity {
         if (CachedSprites is { } cached)
             return cached;
 
-        var sprites = GetSpritesUncached(out var canCache);
-        if (canCache)
+        var roomWrapper = new RoomLuaWrapper(Room);
+        var sprites = GetSpritesUncached(roomWrapper);
+        if (!roomWrapper.Used)
             CachedSprites = sprites;
 
         return sprites;
     }
 
-    private List<ISprite> GetSpritesUncached(out bool canCache) {
-        canCache = false;
+    private List<ISprite> GetSpritesUncached(RoomLuaWrapper roomWrapper) {
         if (Plugin is null)
             return [];
-
-        // can't capture out vars into lambdas
-        bool innerCanCache = false;
         
         var sprites = Plugin.PushToStack((pl) => {
-            // push a RoomWrapper instead of the room, so that we can see whether the room ever got accessed or not
-            // if the room never got accessed, we can cache, if it did, we cannot
-            var roomWrapper = new RoomLuaWrapper(Room);
-
             var spr = _GetSprites(roomWrapper);
-
-            if (!roomWrapper.Used)
-                innerCanCache = true; // CachedSprites = spr
 
             return spr;
         });
 
-        canCache = innerCanCache;
         return sprites;
     }
 
@@ -247,7 +252,9 @@ public class LonnEntity : Entity {
                 return ISelectionCollider.FromRect(selectionRect);
             }
 
-            // todo: nodeRectangle
+            if (Plugin.NodeRectangle?.Invoke(Room, this, Nodes[nodeIndex], nodeIndex + 1) is { } nodeRect) {
+                return ISelectionCollider.FromRect(nodeRect);
+            }
 
             if (Plugin.GetRectangle is { } rectFunc) {
                 var oldPos = Pos;

@@ -1,8 +1,9 @@
 ﻿using ImGuiNET;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class BoolField : Field, IFieldConvertible<bool> {
+public record class BoolField : Field, IFieldConvertible<bool>, ILonnField {
     public bool Default { get; set; }
 
     public override object GetDefault() => Default;
@@ -22,4 +23,19 @@ public record class BoolField : Field, IFieldConvertible<bool> {
     public override Field CreateClone() => this with { };
 
     public bool ConvertMapDataValue(object value) => Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+
+    public static string Name => "boolean";
+
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) {
+        bool defB = false;
+        try {
+            defB = Convert.ToBoolean(def);
+        } catch {
+            
+        }
+        
+        return new BoolField {
+            Default = Convert.ToBoolean(defB)
+        };
+    }
 }

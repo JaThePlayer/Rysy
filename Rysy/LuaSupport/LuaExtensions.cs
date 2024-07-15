@@ -172,6 +172,17 @@ public static partial class LuaExt {
 
         return type;
     }
+    
+    /// <summary>
+    /// Peeks whether there's a value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+    /// </summary>
+    public static bool PeekTableHasKey(this Lua lua, int tableStackIndex, string key) {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+        lua.Pop(1);
+
+        return type is not LuaType.Nil and not LuaType.None;
+    }
 
     /// <summary>
     /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>

@@ -6,7 +6,7 @@ namespace Rysy.Gui.FieldTypes.Modded;
 internal sealed record FrostHelperStylegroundTag : StylegroundTagField, ILonnField {
     public static string Name => "FrostHelper.stylegroundTag";
     
-    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) {
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) {
         return new FrostHelperStylegroundTag(def?.ToString() ?? "");
     }
 
@@ -20,7 +20,7 @@ internal sealed record FrostHelperEasing : DropdownField<string>, ILonnField {
     
     public static string Name => "FrostHelper.easing";
     
-    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) => new FrostHelperEasing {
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) => new FrostHelperEasing {
         Default = def?.ToString() ?? "",
         Editable = true,
         Values = _ => CelesteEnums.Easings.ToDictionary(x => x, x => x)
@@ -55,6 +55,6 @@ internal sealed record FrostHelperCloudTag : DropdownField<string>, ILonnField {
             : [];
     }
     
-    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) => new FrostHelperCloudTag(def?.ToString() ?? "");
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) => new FrostHelperCloudTag(def?.ToString() ?? "");
 }
 

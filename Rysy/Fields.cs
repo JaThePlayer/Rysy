@@ -6,6 +6,7 @@ using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Rysy;
@@ -14,7 +15,7 @@ public static partial class Fields {
     [GeneratedRegex("^[0-9a-fA-F]{6,8},(?:[0-9a-fA-F]{6,8},?){1,}$")]
     private static partial Regex HexColorListRegex();
 
-    private delegate Field? FieldGenerator(object? def, Dictionary<string, object> fieldInfo);
+    private delegate Field? FieldGenerator(object? def, IUntypedData fieldInfo);
 
     private static Dictionary<string, FieldGenerator>? LonnFieldGenerators;
 
@@ -175,6 +176,7 @@ public static partial class Fields {
     public static TilegridField Tilegrid(TileLayer layer) => new(layer) { };
 
     private static Field GuessStringFormat(string s) {
+        // TODO: remove
         if (HexColorListRegex().IsMatch(s))
             return new ListField(RGB(Color.White), s);
 
@@ -205,16 +207,24 @@ public static partial class Fields {
         string s => GuessStringFormat(s),
         _ => null,
     };
+    
+    public static string LonnNameFromValue(object? val) => val switch {
+        bool => "boolean",
+        float => "number",
+        int => "integer",
+        long => "integer",
+        char => "string",
+        _ => "string",
+    };
 
     public static Field? CreateFromLonn(object? val, string? fieldType, Dictionary<string, object> fieldInfoEntry) {
         RegisterScannerIfNeeded();
 
-        if (fieldType is "string" or "number" or "boolean" or "anything" or null)
-            return GuessFromValue(val, fromMapData: true);
+        fieldType ??= LonnNameFromValue(val);
 
         if (LonnFieldGenerators!.TryGetValue(fieldType, out var generator)) {
             try {
-                return generator(val, fieldInfoEntry);
+                return generator(val, new DictionaryUntypedData(fieldInfoEntry));
             } catch (Exception ex) {
                 if (Entity.LogErrors)
                     Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
@@ -226,6 +236,31 @@ public static partial class Fields {
         }
 
         return GuessFromValue(val, fromMapData: true);
+    }
+    
+    public static DropdownField<T>? CreateLonnDropdown<T>(IUntypedData info, object def, Func<object, T> converter) where T : notnull {
+        var editable = info.Bool("editable", true);
+        
+        if (info.TryGetValue("options", out var options)) {
+            switch (options) {
+                case List<object> dropdownOptions:
+                    if (dropdownOptions.First() is List<object>) {
+                        // {text, value},
+                        // {text, value2},
+                        return Dropdown(converter(def),
+                            dropdownOptions.Cast<List<object>>().Where(l => l.Count >= 2).SafeToDictionary(
+                                l => converter(l[1]), l => l[0].ToString()!),
+                            editable);
+                    }
+                    
+                    return Dropdown(converter(def), dropdownOptions.Select(converter).ToList(), null, editable);
+                case Dictionary<string, object> dropdownOptions: {
+                    return Dropdown(converter(def), dropdownOptions.SafeToDictionary(v => converter(v.Value), v => v.Key), editable);
+                }
+            }
+        }
+
+        return null;
     }
 
     private static void RegisterScannerIfNeeded() {
@@ -245,8 +280,23 @@ public static partial class Fields {
                     if (t == typeof(ILonnField) || !t.IsAssignableTo(typeof(ILonnField)))
                         continue;
 
-                    var name = (string) t.GetProperty(nameof(ILonnField.Name))!.GetValue(null)!;
-                    var generator = t.GetMethod(nameof(ILonnField.Create), new Type[] { typeof(object), typeof(Dictionary<string, object>) })!.CreateDelegate<FieldGenerator>();
+                    if (t.GetProperty(nameof(ILonnField.Name)) is not { } nameProp) {
+                        // A field type extends from a ILonnField without its own impl, skip.
+                        continue;
+                    }
+
+                    var name = (string) nameProp.GetValue(null)!;
+                    Type[] types = [ typeof(object), typeof(IUntypedData) ];
+                    var bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static;
+                    
+                    var generatorMethod = t.GetMethod(nameof(ILonnField.Create), bindingFlags, types) 
+                                          ?? t.GetMethod("ILonnField.Create", bindingFlags, types);
+
+                    if (generatorMethod is null) {
+                        continue;
+                    }
+                    
+                    var generator = generatorMethod.CreateDelegate<FieldGenerator>();
 
                     LonnFieldGenerators[name] = generator;
                 }

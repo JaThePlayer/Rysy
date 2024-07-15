@@ -10,6 +10,12 @@ public interface IUntypedData {
     public bool TryGetValue(string key, [NotNullWhen(true)] out object? value);
 }
 
+public readonly struct DictionaryUntypedData(Dictionary<string, object> dict) : IUntypedData {
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) => dict.TryGetValue(key, out value);
+
+    public Dictionary<string, object> BackingDictionary => dict;
+}
+
 public static class UntypedDataExt {
     public static string Attr(this IUntypedData self, string attrName, string def = "") {
         if (self.TryGetValue(attrName, out var obj) && obj is { }) {
