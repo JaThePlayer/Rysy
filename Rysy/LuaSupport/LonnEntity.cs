@@ -87,7 +87,7 @@ public class LonnEntity : Entity {
                 return lua.PCallFunction(roomWrapper, this, node, i, SpritesFromLonn) ?? [];
             }
             
-            if (Plugin.GetNodeTexture is { } getTexture && getTexture(roomWrapper, this, node, i) is { } texturePath) {
+            if (Plugin.GetNodeTexture?.Invoke(roomWrapper, this, node, i) is { } texturePath) {
                 var offset = Plugin.NodeOffset?.Invoke(roomWrapper, this, node, i);
                 return [
                     ISprite.FromTexture(Pos + (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
