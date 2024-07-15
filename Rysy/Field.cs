@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
+using Rysy.Helpers;
 
 namespace Rysy;
 
@@ -76,7 +77,7 @@ public interface ILonnField {
     /// <param name="def">The default value for this field</param>
     /// <param name="fieldInfoEntry">Entry in the 'fieldInformation' table from a Lonn plugin</param>
     /// <returns>The field instance</returns>
-    public static abstract Field Create(object? def, Dictionary<string, object> fieldInfoEntry);
+    public static abstract Field Create(object? def, IUntypedData fieldInfoEntry);
 }
 
 public static class FieldExtensions {

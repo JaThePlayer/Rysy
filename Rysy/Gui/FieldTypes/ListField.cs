@@ -4,7 +4,9 @@ using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class ListField : Field, IFieldConvertibleToCollection {
+public record class ListField : Field, IFieldConvertibleToCollection, ILonnField {
+    public static string Name => "list";
+    
     public string Separator = ",";
 
     public Field BaseField { get; set; }
@@ -245,5 +247,36 @@ public record class ListField : Field, IFieldConvertibleToCollection {
         BaseField.Context = Context;
 
         return BaseField;
+    }
+
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) {
+        /*
+        fieldType = "list",
+        valueOptions = {
+            fieldType = "number",
+        },
+        valueSeparator = ",",
+        valueDefault = "0",
+        minimumValues = 3,
+        maximumValues = 5,
+         */
+        fieldInfoEntry.TryGetValue("valueDefault", out var valueDefault);
+
+        Field? baseField = null;
+        
+        if (fieldInfoEntry.TryGetValue("valueOptions", out var valueOptionsObj) 
+            && valueOptionsObj is Dictionary<string, object> valueOptions) {
+            var valueOptionsData = new DictionaryUntypedData(valueOptions);
+            // TODO: check what happens in lonn when valueDefault is not present
+            baseField = Fields.CreateFromLonn(valueDefault, valueOptionsData.Attr("fieldType", null!), valueOptions);
+        }
+
+        baseField ??= Fields.GuessFromValue(valueDefault, fromMapData: false) ?? Fields.String(valueDefault?.ToString() ?? "");
+        
+        return new ListField(baseField, def?.ToString()!) {
+            MinElements = fieldInfoEntry.Int("minimumValues", 0),
+            MaxElements = fieldInfoEntry.Int("maximumValues", int.MaxValue),
+            Separator = fieldInfoEntry.Attr("valueSeparator", ","),
+        };
     }
 }

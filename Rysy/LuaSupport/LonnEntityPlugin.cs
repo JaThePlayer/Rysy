@@ -1,6 +1,7 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,20 +17,34 @@ public sealed class LonnEntityPlugin {
 
     public string Name { get; private set; }
 
-    public Func<ILuaWrapper, Entity, int> GetDepth;
+    public Func<ILuaWrapper, Entity, int> GetDepth { get; private set; }
+    public Func<ILuaWrapper, Entity, Node, int, int>? NodeDepth { get; private set; }
 
     public Func<ILuaWrapper, Entity, string?>? GetTexture;
+    public Func<ILuaWrapper, Entity, Node, int, string?>? GetNodeTexture;
+    
     public bool HasGetSprite;
     public bool HasGetNodeSprite;
 
-    public Func<ILuaWrapper, Entity, Vector2> GetJustification;
-    public Func<ILuaWrapper, Entity, Vector2> GetScale { get; set; }
-    public Func<ILuaWrapper, Entity, float> GetRotation;
+    public Func<ILuaWrapper, Entity, Vector2> GetJustification { get; private set; }
+    public Func<ILuaWrapper, Entity, Vector2> GetScale  { get; private set; }
+    public Func<ILuaWrapper, Entity, float> GetRotation  { get; private set; }
+    
+    public Func<ILuaWrapper, Entity, Node, int, Vector2> NodeJustification  { get; private set; }
+    public Func<ILuaWrapper, Entity, Node, int, Vector2> NodeScale { get; private set; }
+    public Func<ILuaWrapper, Entity, Node, int, float> NodeRotation  { get; private set; }
+    
     public Func<ILuaWrapper, Entity, Vector2>? GetOffset { get; set; }
+    public Func<ILuaWrapper, Entity, Node, int, Vector2>? NodeOffset { get; set; }
 
     public Func<ILuaWrapper, Entity, Color> GetColor;
     public Func<ILuaWrapper, Entity, Color> GetFillColor;
     public Func<ILuaWrapper, Entity, Color> GetBorderColor;
+    
+    public Func<ILuaWrapper, Entity, Node, int, Color> NodeColor { get; private set; }
+    public bool BothNodeColors { get; private set; }
+    public Func<ILuaWrapper, Entity, Node, int, Color> NodeBorderColor { get; private set; }
+    public Func<ILuaWrapper, Entity, Node, int, Color> NodeFillColor { get; private set; }
 
     public Func<Entity, string> GetNodeVisibility;
 
@@ -52,6 +67,8 @@ public sealed class LonnEntityPlugin {
     public Func<Entity, string> NodeLineRenderType { get; private set; }
     
     public Func<Entity, Node, int, Vector2>? NodeLineRenderOffset { get; private set; }
+    
+    public Func<ILuaWrapper, Entity, Node, int, Rectangle>? NodeRectangle { get; private set; }
 
     public bool HasSelectionFunction;
 
@@ -144,8 +161,18 @@ public sealed class LonnEntityPlugin {
             def: 0,
             funcGetter: static (lua, top) => (int) lua.ToInteger(top)
         );
+        
+        plugin.NodeDepth = NullConstOrGetter_Noded(plugin, "nodeDepth",
+            def: null,
+            funcGetter: static (lua, top) => (int) lua.ToInteger(top)
+        );
 
         plugin.GetRotation = NullConstOrGetter(plugin, "rotation",
+            def: 0f,
+            funcGetter: static (lua, top) => (float) lua.ToNumber(top)
+        );
+        
+        plugin.NodeRotation = NullConstOrGetter_Noded(plugin, "nodeRotation",
             def: 0f,
             funcGetter: static (lua, top) => (float) lua.ToNumber(top)
         );
@@ -154,8 +181,19 @@ public sealed class LonnEntityPlugin {
             def: (string?) null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
+        
+        plugin.GetNodeTexture = NullConstOrGetter_Noded(plugin, "nodeTexture",
+            def: plugin.GetTexture is {} ? (r, e, n, i) => plugin.GetTexture(r, e) : null,
+            funcGetter: static (lua, top) => lua.FastToString(top)
+        );
 
         plugin.GetJustification = NullConstOrGetter(plugin, "justification",
+            def: new Vector2(0.5f),
+            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcResults: 2
+        );
+        
+        plugin.NodeJustification = NullConstOrGetter_Noded(plugin, "nodeJustification",
             def: new Vector2(0.5f),
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
@@ -185,7 +223,19 @@ public sealed class LonnEntityPlugin {
             funcResults: 2
         );
         
+        plugin.NodeScale = NullConstOrGetter_Noded(plugin, "nodeScale",
+            def: Vector2.One,
+            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcResults: 2
+        );
+        
         plugin.GetOffset = NullConstOrGetter(plugin, "offset",
+            def: null,
+            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcResults: 2
+        );
+        
+        plugin.NodeOffset = NullConstOrGetter_Noded(plugin, "nodeOffset",
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
@@ -205,12 +255,26 @@ public sealed class LonnEntityPlugin {
             def: plugin.GetColor,
             funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         )!;
+        
+        plugin.NodeColor = NullConstOrGetter_Noded(plugin, "nodeColor",
+            def: (r,e,n,i) => plugin.GetColor(r, e),
+            funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
+        
+        plugin.NodeBorderColor = NullConstOrGetter_Noded(plugin, "nodeBorderColor",
+            def: (r,e,n,i) => plugin.GetBorderColor(r, e),
+            funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
+        
+        plugin.NodeFillColor = NullConstOrGetter_Noded(plugin, "nodeFillColor",
+            def: (r,e,n,i) => plugin.GetFillColor(r, e),
+            funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
+
+        plugin.BothNodeColors = (lua.PeekTableHasKey(top, "nodeFillColor") || lua.PeekTableHasKey(top, "fillColor"))
+                             && (lua.PeekTableHasKey(top, "nodeBorderColor") || lua.PeekTableHasKey(top, "borderColor"));
 
         plugin.GetNodeVisibility = NullConstOrGetter_Entity(plugin, "nodeVisibility",
             def: "selected",
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
-
 
         plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle",
             def: null,
@@ -273,6 +337,17 @@ public sealed class LonnEntityPlugin {
                     return lua.PCallFunction((_, _) => false, results: 1, room, entity, nodeIndex, offsetX, offsetY);
                 });
             };
+        }
+
+        if (lua.PeekTableType(top, "nodeRectangle") is LuaType.Function) {
+            plugin.NodeRectangle = (room, entity, node, nodeIndex) => 
+                plugin.PushToStack((pl) => {
+                    var lua = pl.LuaCtx.Lua;
+
+                    lua.GetTable(pl.StackLoc, "nodeRectangle");
+                    
+                    return lua.PCallFunction(static (lua, top) => lua.ToRectangle(top), results: 1, room, entity, node, nodeIndex);
+                });
         }
 
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
@@ -439,60 +514,11 @@ public sealed class LonnEntityPlugin {
             if (val is not Dictionary<string, object> infoDict)
                 continue;
 
-
-            var editable = (bool) infoDict.GetValueOrDefault("editable", true);
-            var options = infoDict!.GetValueOrDefault("options", null);
             var fieldType = (string?) infoDict!.GetValueOrDefault("fieldType", null);
-            var min = infoDict!.GetValueOrDefault("minimumValue", null);
-            var max = infoDict!.GetValueOrDefault("maximumValue", null);
-
-            var list = infoDict!.GetValueOrDefault("ext:list##todo", null); // for now, the spec is still undefined for this, but I'll leave in the code for later
-            var (listSeparator, listMin, listMax) = list switch {
-                true => (",", 1, -1),
-                Dictionary<string, object> listInfo => (
-                    listInfo.GetValueOrDefault("separator", ",").ToString()!,
-                    Convert.ToInt32(listInfo.GetValueOrDefault("minElements", 1), CultureInfo.InvariantCulture),
-                    Convert.ToInt32(listInfo.GetValueOrDefault("maxElements", -1), CultureInfo.InvariantCulture)
-                ),
-                _ => (",", -1, -1),
-            };
 
             var defVal = mainPlacement.GetValueOrDefault(key);
-            if (list is { } && defVal is string defAsString)
-                defVal = defAsString.Split(listSeparator).FirstOrDefault();
-
-            Field? field = null;
-            // ignore fields we can guess - no need to duplicate code for guessed values
-            //if (fieldType is { } && fieldType is not "string" and not "number" and not "boolean" and not "anything")
-                field = Fields.CreateFromLonn(defVal, fieldType, infoDict);
-
-            if (field is IntField intField) {
-                if (min is { })
-                    intField.WithMin(Convert.ToInt32(min, CultureInfo.InvariantCulture));
-                if (max is { })
-                    intField.WithMax(Convert.ToInt32(max, CultureInfo.InvariantCulture));
-            }
-
-            if (field is FloatField floatField) {
-                if (min is { })
-                    floatField.WithMin(Convert.ToSingle(min, CultureInfo.InvariantCulture));
-                if (max is { })
-                    floatField.WithMax(Convert.ToSingle(max, CultureInfo.InvariantCulture));
-            }
-
-            if (options is { }) {
-                field = HandleDropdown(editable, options, mainPlacement, key, fieldType) ?? field;
-            }
-
-            if (list is { } && field is { }) {
-                field = new ListField(field) {
-                    Separator = listSeparator,
-                    MinElements = listMin,
-                    MaxElements = listMax,
-                };
-            }
-
-            if (field is { }) {
+            
+            if (Fields.CreateFromLonn(defVal, fieldType, infoDict) is { } field) {
                 fieldList[key] = field;
             }
         }
@@ -507,39 +533,6 @@ public sealed class LonnEntityPlugin {
         }
 
         return fieldList;
-    }
-
-    private static Field? HandleDropdown(bool editable, object? options, Dictionary<string, object> mainPlacement, string key, string? fieldType) {
-        if (options is { } && mainPlacement.TryGetValue(key, out var def)) {
-            switch (options) {
-                case List<object> dropdownOptions:
-                    if (dropdownOptions.First() is List<object>) {
-                        // {text, value},
-                        // {text, value2},
-                        return fieldType switch {
-                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Cast<List<object>>().SafeToDictionary(l => Convert.ToInt32(l[1], CultureInfo.InvariantCulture), l => l[0].ToString()!), editable),
-                            _ => Fields.Dropdown(def, dropdownOptions.Cast<List<object>>().SafeToDictionary(l => l[1], l => l[0].ToString()!), editable)
-                        };
-                    } else {
-                        return fieldType switch {
-                            "integer" => Fields.Dropdown(Convert.ToInt32(def, CultureInfo.InvariantCulture), dropdownOptions.Select(o => Convert.ToInt32(o, CultureInfo.InvariantCulture)).ToList(), editable: editable),
-                            _ => Fields.Dropdown(def, dropdownOptions.Select(o => o).ToList(), editable: editable),
-                        };
-                    }
-                case Dictionary<string, object> dropdownOptions: {
-                    var firstVal = dropdownOptions.FirstOrDefault().Value;
-
-                    return fieldType switch {
-                        "integer" => Fields.Dropdown((int)Convert.ToDouble(def, CultureInfo.InvariantCulture), dropdownOptions.SafeToDictionary(v => (int) Convert.ToDouble(v.Value, CultureInfo.InvariantCulture), v => v.Key), editable),
-                        _ => Fields.Dropdown(def, dropdownOptions.SafeToDictionary(v => v.Value, v => v.Key), editable),
-                    };
-                }
-                default:
-                    break;
-            }
-        }
-
-        return null;
     }
 
     internal enum LonnRetrievalStrategy {
@@ -603,6 +596,62 @@ public sealed class LonnEntityPlugin {
                 };
             default:
                 return def is { } ? (r, e) => def : null;
+        }
+    }
+    
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, string fieldName,
+        Func<ILuaWrapper, Entity, Node, int, T?>? def,
+        Func<Lua, int, T> funcGetter,
+        int funcResults = 1
+    ) {
+        var lua = pl.LuaCtx.Lua;
+        var strat = NullConstOrGetterImpl(pl, fieldName);
+
+        switch (strat) {
+            case LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r, e, n, i) => con;
+            case LonnRetrievalStrategy.Function:
+                return (r, e, n, i) => {
+                    return pl.PushToStack((pl) => {
+                        var lua = pl.LuaCtx.Lua;
+
+                        lua.GetTable(pl.StackLoc, fieldName);
+                        return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
+                    });
+                };
+            default:
+                return def;
+        }
+    }
+    
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, string fieldName,
+        T? def,
+        Func<Lua, int, T> funcGetter,
+        int funcResults = 1
+    ) {
+        var lua = pl.LuaCtx.Lua;
+        var strat = NullConstOrGetterImpl(pl, fieldName);
+
+        switch (strat) {
+            case LonnRetrievalStrategy.Const:
+                var con = funcGetter(lua, lua.GetTop());
+                lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                return (r, e, n, i) => con;
+            case LonnRetrievalStrategy.Function:
+                return (r, e, n, i) => {
+                    return pl.PushToStack((pl) => {
+                        var lua = pl.LuaCtx.Lua;
+
+                        lua.GetTable(pl.StackLoc, fieldName);
+                        return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
+                    });
+                };
+            default:
+                return def is {} ? (r, e, n, i) => def : null;
         }
     }
 

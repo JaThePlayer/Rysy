@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
@@ -70,16 +71,24 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public override Field CreateClone() => this with { };
 
-    public static Field Create(object? def, Dictionary<string, object> fieldInfoEntry) {
-        var min = fieldInfoEntry!.GetValueOrDefault("minimumValue", null);
-        var max = fieldInfoEntry!.GetValueOrDefault("maximumValue", null);
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) {
+        if (fieldInfoEntry.TryGetValue("options", out _) 
+            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => {
+                try {
+                    return Convert.ToInt32(x, CultureInfo.InvariantCulture);
+                } catch {
+                    return 0;
+                }
+            }) is {} dropdown) {
+            return dropdown;
+        }
+        
+        var min = fieldInfoEntry.Int("minimumValue", int.MinValue);
+        var max = fieldInfoEntry.Int("maximumValue", int.MaxValue);
 
-        var field = Fields.Int(Convert.ToInt32(def, CultureInfo.InvariantCulture));
-
-        if (min is { })
-            field.WithMin(Convert.ToInt32(min, CultureInfo.InvariantCulture));
-        if (max is { })
-            field.WithMin(Convert.ToInt32(max, CultureInfo.InvariantCulture));
+        var field = Fields.Int(Convert.ToInt32(def, CultureInfo.InvariantCulture))
+            .WithMin(min)
+            .WithMax(max);
 
         return field;
     }

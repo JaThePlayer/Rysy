@@ -1,8 +1,9 @@
 ﻿using ImGuiNET;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class StringField : Field, IFieldConvertible<string> {
+public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     public string Default { get; set; }
 
     public bool NullAllowed { get; set; }
@@ -66,4 +67,17 @@ public record class StringField : Field, IFieldConvertible<string> {
     public override Field CreateClone() => this with { };
 
     public string ConvertMapDataValue(object value) => RealValue(value?.ToString()!)!;
+
+    public static string Name => "string";
+
+    public static Field Create(object? def, IUntypedData fieldInfoEntry) {
+        if (fieldInfoEntry.TryGetValue("options", out _) 
+            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => x?.ToString() ?? "") is {} dropdown) {
+            return dropdown;
+        }
+        
+        return new StringField {
+            Default = def?.ToString()!
+        };
+    }
 }
