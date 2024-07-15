@@ -28,10 +28,8 @@ public record EditorGroupField : DropdownField<EditorGroup> {
         StringToT = CustomStringToT;
         _registry = reg;
         Values = _ => EditorState.Map?.EditorGroups
-            .Where(gr => gr.AutoAssignTo.Count == 0 && gr != EditorGroup.Default)
+            .Where(gr => !gr.IsAutoAssigned && gr != EditorGroup.Default)
             .ToDictionary(gr => gr, gr => gr.Name) ?? new();
-        
-        //EditorState.Map?.EditorGroups.LogAsJson();
     }
 
     public override bool IsValid(object? value) {
