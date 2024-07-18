@@ -367,7 +367,9 @@ public sealed class Room : IPackable, ILuaWrapper, ILuaTable {
 
     public void Render(Camera camera, bool selected) {
         if (!selected && !camera.IsRectVisible(Bounds)) {
-            ClearRenderCacheIfWanted();
+            if (CachedSprites is {} || FullRenderCanvas is {})
+                ClearRenderCacheIfWanted();
+            
             return;
         }
 
