@@ -1,12 +1,11 @@
 ﻿using KeraLua;
-using LuaSharpener;
 using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 
 namespace Rysy;
 
-public sealed class Node : IDepth, ILuaWrapper, ILuaTable {
+public sealed class Node : IDepth, ILuaWrapper {
     public Node(Vector2 pos) { Pos = pos; }
     public Node(float x, float y) { Pos = new(x, y); }
 
@@ -41,30 +40,6 @@ public sealed class Node : IDepth, ILuaWrapper, ILuaTable {
     }
 
     public Vector2 ToVector2() => this;
-
-#if LuaSharpener
-    private float GetTable_x() => X;
-    private float GetTable_y() => Y;
-    
-    object? ILuaTable.this[object? key] {
-        get => key switch {
-            "x" => X,
-            "y" => Y,
-            _ => null,
-        };
-        set =>
-            Pos = key switch {
-                "x" => new(value.TryAsFloat() ?? X, Y),
-                "y" => new(X, value.TryAsFloat() ?? Y),
-                _ => Pos
-            };
-    }
-#endif
-    
-    object? ILuaTable.this[object? key] {
-        get => null;
-        set { }
-    }
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseRotationHandler {

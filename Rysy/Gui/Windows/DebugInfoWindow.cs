@@ -1,16 +1,11 @@
 ﻿using ImGuiNET;
-using LuaSharpener;
-using Markdig;
 using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
-using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Rysy.Gui.Windows;
 
@@ -184,79 +179,11 @@ public class DebugInfoWindow : Window {
                 Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Map.Package ?? room.Map.Filepath}: {elapsed}");
             }
         }
-
-        #if LuaSharpener
-        if (ImGui.CollapsingHeader("Lua Debug")) {
-            LuaDebugEntity ??= EntityRegistry.Registered.First().Value;
-            if (ImGuiManager.Combo("Entity", ref LuaDebugEntity,
-                    LuaDebugEntitySelect ??= EntityRegistry.Registered.SafeToDictionary(p => (p.Value, p.Key)), ref LuaDebugSearch)) {
-                
-            }
-
-            if (LuaDebugEntity is { LonnSharpPlugin: {} plugin }) {
-                if (plugin.MainBlockClosure is { } mainClosure && ImGui.Button("Inspect")) {
-                    var allFuncs = AllFunctions(mainClosure.Func).SafeToDictionary(f => (f, f.Name));
-
-                    var search = "";
-                    LuaFunction? currentFunc = allFuncs.First().Key;
-                    List<string> body = [];
-                    string source = plugin.MainBlock.ToString();
-                    RysyEngine.Scene.AddWindow(new ScriptedWindow($"Debugging {LuaDebugEntity.Sid}", window => {
-                        if (ImGuiManager.Combo("Function", ref currentFunc,
-                                allFuncs, ref search)) {
-                            body = currentFunc?.Body.Select(o => o.ToDebugString()).ToList() ?? [];
-                        }
-                        
-                        var i = 0;
-                        ImGui.Columns(2);
-                        
-                        ImGui.BeginChild("tbl");
-                        ImGui.BeginTable("Body", 2, ImGuiManager.TableFlags);
-                        ImGui.TableSetupColumn("I");
-                        ImGui.TableSetupColumn("Opcode");
-                        ImGui.TableHeadersRow();
-                        
-                        foreach (var opc in body) {
-                            ImGui.TableNextRow();
-                            ImGui.TableNextColumn();
-                            ImGui.Text(Interpolator.Temp($"{i++}"));
-                            ImGui.TableNextColumn();
-                            ImGui.Text(opc);
-                        }
-                        
-                        ImGui.EndTable();
-                        ImGui.EndChild();
-                        
-                        ImGui.NextColumn();
-
-                        ImGui.BeginChild("src");
-                        ImGui.Text(source);
-                        ImGui.EndChild();
-                        
-                        ImGui.Columns();
-                    }));
-                }
-
-                IEnumerable<LuaFunction> AllFunctions(LuaFunction from) {
-                    yield return from;
-                    foreach (var child in from.ChildFunctions) {
-                        foreach (var f in AllFunctions(child)) {
-                            yield return f;
-                        }
-                    }
-                }
-            }
-        }
-        #endif
         
         ImGui.Checkbox("Imgui Demo", ref imguiDemo);
         if (imguiDemo)
             ImGui.ShowDemoWindow();
     }
-
-    private RegisteredEntity? LuaDebugEntity;
-    private string LuaDebugSearch = "";
-    private Dictionary<RegisteredEntity, string>? LuaDebugEntitySelect;
 
     private void Benchmark(Room room, bool aggressive, int times) {
         var watch = Stopwatch.GetTimestamp();

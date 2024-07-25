@@ -12,13 +12,8 @@
 
     <FNA Condition="'$(FNA)' == ''">FNA</FNA>
     <SourceCodePlugins Condition="'$(SourceCodePlugins)' == ''">SourceCodePlugins</SourceCodePlugins>
-    <!--
-    Very WIP lua-in-csharp implementation, might never release
-    <LuaSharpener Condition="'$(LuaSharpener)' == ''">LuaSharpener</LuaSharpener>
-    -->
     <DefineConstants Condition="'$(FNA)' != ''">$(DefineConstants);FNA</DefineConstants>
     <DefineConstants Condition="'$(SourceCodePlugins)' != ''">$(DefineConstants);SourceCodePlugins</DefineConstants>
-    <DefineConstants Condition="'$(LuaSharpener)' != ''">$(DefineConstants);LuaSharpener</DefineConstants>
   </PropertyGroup>
 
   <!--
@@ -67,15 +62,6 @@
 
   <ItemGroup>
     <Folder Include="Assets\Graphics\tilesets\subfolder\" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(LuaSharpener)' != ''">
-    <Reference Include="LuaSharpener">
-      <HintPath>..\..\..\LuaSharpener\LuaSharpener\bin\Debug\net8.0\LuaSharpener.dll</HintPath>
-    </Reference>
-    <Reference Include="Relua">
-      <HintPath>..\..\..\LuaSharpener\LuaSharpener\bin\Debug\net8.0\Relua.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

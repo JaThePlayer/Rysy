@@ -9,11 +9,6 @@ using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Reflection;
 
-#if LuaSharpener
-using LuaSharpener;
-using Rysy.LuaSharpenerSupport;
-#endif
-
 namespace Rysy;
 
 public sealed class RegisteredEntity {
@@ -38,10 +33,6 @@ public sealed class RegisteredEntity {
     public LonnEntityPlugin? LonnPlugin { get; internal set; }
     
     public LonnStylePlugin? LonnStylePlugin { get; internal set; }
-    
-    #if LuaSharpener
-    public LuaPlugin? LonnSharpPlugin { get; internal set; }
-    #endif
 
     public Func<FieldList> Fields { get; internal set; } = () => new();
     
@@ -316,7 +307,6 @@ public static class EntityRegistry {
     }
 
     private static void RegisterFromLua(string lua, string chunkName, bool trigger, ModMeta? mod = null) {
-        #if !LuaSharpener
         try {
             LuaCtx.Lua.SetCurrentModName(mod);
             LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
@@ -358,59 +348,6 @@ public static class EntityRegistry {
             Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName} [{mod?.Name}]: {ex}");
             return;
         }
-#endif
-        
-#if LuaSharpener
-        var ctx = LuaSharpenerCtx.Main;
-
-        ctx.Env["_RYSY_CURRENT_MOD"] = mod?.Name;
-        try {
-            var block = ctx.Executor.LoadString(lua);
-            var parentFunc = LuaFunction.FromBlock(ctx.Env, chunkName, block, [ ]).CreateClosure();
-            
-            IEnumerable<LuaTable> plugins = ctx.Executor.Run(parentFunc, []).FirstOrNull() switch {
-                LuaTable lt => lt["name"] is {} ? [ lt ] : lt.RawIPairs()
-                    .Select(p => p.value)
-                    .OfType<LuaTable>()
-                    .Where(t => t["name"] is {}),
-                _ => [],
-            };
-            
-            foreach (var pluginTable in plugins) {
-                var plugin = new LuaPlugin(block, parentFunc, pluginTable);
-                var info = GetOrCreateInfo(plugin.Name,
-                    trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
-
-                if (!HandleAssociatedMods(info, [], mod)) {
-                    continue;
-                }
-
-                info.CSharpType = trigger ? typeof(LuaSharpTrigger) : typeof(LuaSharpEntity);
-                info.LonnSharpPlugin = plugin;
-                if (mod is { IsVanilla: false }) {
-                    info.Mod = mod;
-                }
-
-                RegisterLuaPlacements(info, trigger, plugin.Placements);
-
-                if (plugin.FieldInfo is { } fields) {
-                    info.Fields = fields;
-                }
-
-                Register(info);
-
-                if (RysyEngine.Scene is EditorScene editor) {
-                    editor.ClearMapRenderCache();
-                }
-            }
-        } catch (Exception ex) {
-            Logger.Write("EntityRegistry.Lua", LogLevel.Error,
-                $"Failed to register lua entity {chunkName} [{mod?.Name}]: {ex}");
-            return;
-        } finally {
-            ctx.Env["_RYSY_CURRENT_MOD"] = null;
-        }
-#endif
     }
 
     internal static void RegisterLuaPlacements(RegisteredEntity into, bool trigger, List<LonnPlacement> placements) {
