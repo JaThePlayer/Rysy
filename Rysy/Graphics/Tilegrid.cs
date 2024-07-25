@@ -1,6 +1,4 @@
 ﻿using KeraLua;
-using LuaSharpener;
-using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
@@ -9,7 +7,7 @@ using System.Text;
 
 namespace Rysy.Graphics;
 
-public class Tilegrid : ILuaWrapper, ILuaTable {
+public class Tilegrid : ILuaWrapper {
     public Tilegrid() { }
 
     public Tilegrid(char[,] tiles) {
@@ -358,7 +356,7 @@ public class Tilegrid : ILuaWrapper, ILuaTable {
         return 0;
     }
 
-    private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper, ILuaTable {
+    private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
         private static int Get(nint n) {
             var lua = Lua.FromIntPtr(n);
 
@@ -392,30 +390,5 @@ public class Tilegrid : ILuaWrapper, ILuaTable {
 
             return 0;
         }
-
-        #if LuaSharpener
-        object? ILuaTable.this[object? key] {
-            get => key is "get" ? GetSharpenerDele : null;
-            set => throw new NotImplementedException();
-        }
-
-        private static readonly NetDelegate GetSharpenerDele = NetDelegate.GetFor(Get_Sharpener);
-        
-        private static string Get_Sharpener(MatrixLuaWrapper wrapper, int x, int y, string? def) {
-            def ??= "0";
-            var tile = wrapper.Grid.SafeTileAt(x, y, def[0]);
-            return tile.ToString();
-        }
-        #else
-        object? ILuaTable.this[object? key] {
-            get => null;
-            set {}
-        }
-        #endif
-    }
-
-    object? ILuaTable.this[object? key] {
-        get => key is "matrix" ? new MatrixLuaWrapper(this) : null;
-        set => throw new NotImplementedException();
     }
 }
