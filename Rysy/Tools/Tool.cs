@@ -74,7 +74,11 @@ public abstract class Tool {
         get {
             if (UsePersistence) {
                 _layerPersistenceKey ??= $"{PersistenceGroup}.Layer";
-                var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null) ?? ValidLayers.FirstOrDefault()?.Name ?? "";
+                var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null);
+                if (string.IsNullOrWhiteSpace(name)) {
+                    name = ValidLayers.FirstOrDefault()?.Name ?? "";
+                    Persistence.Instance.Set(_layerPersistenceKey, name);
+                }
 
                 return _layer = EditorLayers.EditorLayerFromName(name);
             }
