@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.History;
 
@@ -14,6 +15,8 @@ internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,]
 
         Old = Grid.Tiles; // todo: avoid holding a reference to the entire tile grid...
 
+        var cachedSprites = Grid.CachedSprites;
+        
         Grid.Tiles = (char[,]) Orig.Clone();
 
         for (int x = Rect.X; x < Rect.Right; x++)
@@ -25,13 +28,31 @@ internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,]
                 Grid.SafeReplaceTile(c, x + ox, y + oy, out char orig);
             }
 
+        UpdateCache(cachedSprites);
+
         return true;
     }
 
+    private void UpdateCache(AutotiledSpriteList? cachedSprites) {
+        if (cachedSprites is not { }) {
+            return;
+        }
+        
+        // Make use of partial re-autotiling, even though we're swapping out tilegrids,
+        // which normally causes a full re-autotile - in this case, we know exactly what changed!
+
+        Grid.CachedSprites = cachedSprites;
+        var rect = Rect;
+        rect.Offset(Offset);
+        Grid.Autotiler?.BulkUpdateSpriteList(cachedSprites, Grid.Tiles, Rect.EnumerateGridLocations(), true);
+        Grid.Autotiler?.BulkUpdateSpriteList(cachedSprites, Grid.Tiles, rect.EnumerateGridLocations(), true);
+    }
+
     public void Undo(Map map) {
+        var cachedSprites = Grid.CachedSprites;
         Grid.Tiles = Old;
 
-        Grid.RenderCacheToken?.Invalidate();
+        UpdateCache(cachedSprites);
     }
 }
 

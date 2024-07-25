@@ -206,7 +206,7 @@ public class Tilegrid : ILuaWrapper, ILuaTable {
 
     private AutotiledSpriteList? _cachedSprites;
 
-    private AutotiledSpriteList? CachedSprites {
+    internal AutotiledSpriteList? CachedSprites {
         get => _cachedSprites;
         set {
             var renderTargetEnabled = _cachedSprites?.IsRenderTargetEnabled();
