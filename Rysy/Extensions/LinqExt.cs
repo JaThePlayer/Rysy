@@ -11,7 +11,7 @@ public static class LinqExt {
     /// Returns the element at <paramref name="self"/>[<paramref name="index"/>], or <paramref name="def"/> if the list doesn't contain an element at that index.
     /// </summary>
     public static T AtOrDefault<T>(this IList<T> self, int index, T def) {
-        if (index < self.Count)
+        if ((uint)index < self.Count)
             return self[index];
 
         return def;
