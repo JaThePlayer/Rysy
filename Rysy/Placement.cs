@@ -156,6 +156,15 @@ public record class Placement {
         return this;
     }
 
+    public Placement CreateClone() {
+        var pl = new Placement(this) {
+            ValueOverrides = new(ValueOverrides),
+            Nodes = Nodes?.ShallowClone()
+        };
+
+        return pl;
+    }
+
     /// <summary>
     /// Tries to get the mod this placement comes from
     /// </summary>
