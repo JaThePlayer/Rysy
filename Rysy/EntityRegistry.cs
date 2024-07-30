@@ -197,8 +197,20 @@ public static class EntityRegistry {
                     if (info.CSharpType != t) {
                         continue;
                     }
-
-                    Registered.Remove(sid);
+                    
+                    if (info.LonnPlugin is not {} && info.LonnStylePlugin is not {})
+                        Registered.Remove(sid);
+                    else {
+                        // If the entity has a lonn plugin, we shouldn't unregister the entire entity
+                        // just because the c# plugin is getting removed
+                        info.CSharpType = info.Type switch {
+                            RegisteredEntityType.Entity => typeof(LonnEntity),
+                            RegisteredEntityType.Trigger => typeof(LonnTrigger),
+                            RegisteredEntityType.Style => typeof(Style),
+                            RegisteredEntityType.DecalRegistryProperty => typeof(DecalRegistryProperty),
+                            _ => throw new ArgumentOutOfRangeException()
+                        };
+                    }
                 }
             }
         }
