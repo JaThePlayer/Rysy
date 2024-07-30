@@ -12,7 +12,7 @@ public class TileBucketMode : TileMode {
 
     public override string Name => "bucket";
 
-    private BitArray? _prevChangedTiles;
+    private WrappedBitArray? _prevChangedTiles;
     
     public override void Render(Camera camera, Room room) {
         var tile = Tool.GetMouseTilePos(camera, room);
@@ -20,10 +20,11 @@ public class TileBucketMode : TileMode {
 
         var width = Tool.GetGrid(room).Width;
         if (!_prevChangedTiles?.Get2d(tile.X, tile.Y, width) ?? true) {
+            _prevChangedTiles?.ReturnToPool();
             _prevChangedTiles = GetChangedTilesAt(room, tile, Tool.TileOrAlt(), out var filled);
         }
 
-        var tiles = _prevChangedTiles;
+        var tiles = _prevChangedTiles.Value;
         var color = Tool.DefaultColor * 0.3f;
         for (int i = 0; i < tiles.Length; i++) {
             if (!tiles.Get(i))
@@ -42,7 +43,7 @@ public class TileBucketMode : TileMode {
             GFX.Batch.Draw(GFX.Pixel, new Rectangle(x * 8, y * 8, w, 8), null, color);
         }
 
-        if (_prevChangedTiles.Count == 0) {
+        if (tiles.Length == 0) {
             ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, Tool.DefaultColor).Render();
         }
     }
@@ -62,13 +63,15 @@ public class TileBucketMode : TileMode {
         var tile = Tool.TileOrAlt();
         var changedTiles = GetChangedTilesAt(room, pos, tile, out _);
         
-        Tool.History.ApplyNewAction(new History.TileBulkBitArrayChangeAction(tile, changedTiles, Tool.GetGrid(room)));
-        _prevChangedTiles = null;
+        Tool.History.ApplyNewAction(new History.TileBulkBitArrayChangeAction(tile, changedTiles.ToBitArray(), Tool.GetGrid(room)));
+        changedTiles.ReturnToPool();
+        
+        ClearPrevChangedTiles();
     }
 
-    private BitArray GetChangedTilesAt(Room room, Point startPos, char newTile, out bool finishedFilling, int? cap = null, Action<int, int>? onSet = null) {
+    private WrappedBitArray GetChangedTilesAt(Room room, Point startPos, char newTile, out bool finishedFilling, int? cap = null, Action<int, int>? onSet = null) {
         var tiles = Tool.GetGrid(room).Tiles;
-        var changeMask = new BitArray(tiles.Length);
+        var changeMask = WrappedBitArray.Rent(tiles.Length);
         var w = tiles.GetLength(0);
         
         finishedFilling = true;
@@ -92,6 +95,11 @@ public class TileBucketMode : TileMode {
     }
 
     public override void CancelInteraction() {
+        ClearPrevChangedTiles();
+    }
+
+    private void ClearPrevChangedTiles() {
+        _prevChangedTiles?.ReturnToPool();
         _prevChangedTiles = null;
     }
 

@@ -169,10 +169,10 @@ public class Tilegrid : ILuaWrapper {
         locations.Reset();
 
         if (anyChanged) {
-            MarkEdited();
             if (CachedSprites is { } cached) {
                 Autotiler!.BulkUpdateSpriteList(cached, Tiles, locations, true);
             }
+            MarkEdited();
         }
         
         return anyChanged;

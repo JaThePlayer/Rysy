@@ -72,8 +72,9 @@ public abstract class TileShapeMode : TileMode {
     }
 
     public override void CancelInteraction() {
+        if (_dragGesture.Begun)
+            ClearTilegridSpriteCache();
         _dragGesture.CancelStroke();
-        ClearTilegridSpriteCache();
     }
 
     public override void Init() {

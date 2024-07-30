@@ -59,22 +59,22 @@ public class TileBrushMode : TileMode {
                 altGrid is { } ? new TileBulkChangeAction(tile, stroke, altGrid) : null
             ));
         
-            ClearStrokeData(room);
+            ClearStrokeData(room, clearSpriteCache: false);
         }
     }
 
     public override void CancelInteraction() {
-        ClearStrokeData(null);
+        ClearStrokeData(null, clearSpriteCache: true);
     }
 
     public override void Init() {
         _dragGesture = new(Tool.Input);
     }
     
-    private void ClearStrokeData(Room? room) {
+    private void ClearStrokeData(Room? room, bool clearSpriteCache) {
+        if (clearSpriteCache && _dragGesture.Begun)
+            ClearTilegridSpriteCache(room);
         _dragGesture.CancelStroke();
-
-        ClearTilegridSpriteCache(room);
     }
 
     public TileBrushMode(TileTool tool) : base(tool)
