@@ -292,7 +292,7 @@ public sealed class Autotiler {
         int offsetX = MaxScanWidth / 2;
         int offsetY = MaxScanHeight / 2;
 
-        BitArray changeMask = new(tileGrid.Length);
+        var changeMask = WrappedBitArray.Rent(tileGrid.Length);
         var checker = new TilegridTileChecker(tileGrid, tilesOOB);
         
         while (changed.MoveNext()) {
@@ -315,15 +315,8 @@ public sealed class Autotiler {
                 }
             }
         }
-    }
-    
-    /// <summary>
-    /// Updates previously autotiled sprite lists to reflect changes done to all tiles pointed at by true values in <paramref name="changed"/>.
-    /// Also updates nearby tiles as needed by mask size.
-    /// More efficient than individually calling <see cref="UpdateSpriteList"/> on each point.
-    /// </summary>
-    internal void BulkUpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, BitArray changed, bool tilesOOB) {
-        BulkUpdateSpriteList(toUpdate, tileGrid, changed.EnumerateTrue2dLocations(tileGrid.GetLength(0)).GetEnumerator(), tilesOOB);
+
+        changeMask.ReturnToPool();
     }
     
     /// <summary>
