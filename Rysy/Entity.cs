@@ -809,16 +809,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         public int LuaIndex(Lua lua, long i) {
             var node = Entity.Nodes?.ElementAtOrDefault((int) i - 1);
             if (node is { } n) {
-                lua.CreateTable(0, 2);
-                var tableLoc = lua.GetTop();
-
-                lua.PushString("x");
-                lua.PushNumber(n.X);
-                lua.SetTable(tableLoc);
-
-                lua.PushString("y");
-                lua.PushNumber(n.Y);
-                lua.SetTable(tableLoc);
+                lua.PushWrapper(node);
 
                 return 1;
             } else {
