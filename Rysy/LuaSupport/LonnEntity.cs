@@ -238,8 +238,7 @@ public class LonnEntity : Entity {
                 if (lua.Type(top) != LuaType.Table) {
                     return default;
                 }
-
-
+                
                 if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
                     var rect = lua.ToRectangle(lua.GetTop());
                     

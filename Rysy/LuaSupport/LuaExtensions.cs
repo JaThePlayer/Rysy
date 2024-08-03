@@ -298,7 +298,7 @@ public static partial class LuaExt {
         var type = lua.GetField(tableStackIndex, key);
         long? ret = null;
         if (type is LuaType.Number) {
-            ret = lua.ToIntegerX(lua.GetTop());
+            ret = (int)lua.ToNumber(lua.GetTop());
         }
         lua.Pop(1);
 
