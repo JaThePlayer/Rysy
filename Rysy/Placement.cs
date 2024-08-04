@@ -314,7 +314,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
 
     private static void ResetEntitySize(Entity? entity) {
         if (entity is { }) {
-            var min = entity.MinimumSize;
+            var min = entity.RecommendedMinimumSize;
             entity.Width = min.X;
             entity.Height = min.Y;
         }

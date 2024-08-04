@@ -27,13 +27,15 @@ public class EntityPropertyWindow : FormWindow {
         var order = new List<string>();
 
         var minSize = main.MinimumSize;
+        var maxSize = main.MaximumSize;
+        
         if (main.Width != 0) {
-            fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X);
+            fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X).WithMax(maxSize.X);
             order.Add("width");
         }
 
         if (main.Height != 0) {
-            fields["height"] = Fields.Int(main.Height).WithStep(8).WithMin(minSize.Y);
+            fields["height"] = Fields.Int(main.Height).WithStep(8).WithMin(minSize.Y).WithMax(maxSize.Y);
             order.Add("height");
         }
 

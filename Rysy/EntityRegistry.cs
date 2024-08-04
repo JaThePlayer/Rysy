@@ -633,13 +633,13 @@ public static class EntityRegistry {
 
         e.Pos = pos;
 
-        var min = e.MinimumSize;
+        var min = e.RecommendedMinimumSize;
 
-        if (e.ResizableX && e.Width < min.X) {
+        if (e.ResizableX && e.Width < min.X && !entityData.Has("width")) {
             e.Width = min.X;
         }
 
-        if (e.ResizableY && e.Height < min.Y) {
+        if (e.ResizableY && e.Height < min.Y && !entityData.Has("height")) {
             e.Height = min.Y;
         }
 

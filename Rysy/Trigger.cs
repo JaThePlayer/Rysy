@@ -23,7 +23,7 @@ public class Trigger : Entity {
 
     public override bool ResizableX => true;
     public override bool ResizableY => true;
-    public override Point MinimumSize => new(8, 8);
+    public override Point RecommendedMinimumSize => new(8, 8);
 
     public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => self.GetNodeRect(nodeIndex).Center.ToVector2());
 

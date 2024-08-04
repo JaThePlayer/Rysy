@@ -320,8 +320,33 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     [JsonIgnore]
     public virtual bool ResizableY => Height > 0;
 
+    /// <summary>
+    /// Minimum size for this entity, where lower values would cause crashes in-game.
+    /// Values below this will not be accepted by the entity edit window.
+    /// </summary>
     [JsonIgnore]
     public virtual Point MinimumSize => new(ResizableX ? 8 : 0, ResizableY ? 8 : 0);
+    
+    /// <summary>
+    /// Recommended minimum size for this entity, where lower values would cause visual issues, but still work.
+    /// Placement/Selection tool wont resize below this size, but manual editing still allows lower values.
+    /// </summary>
+    [JsonIgnore]
+    public virtual Point RecommendedMinimumSize => MinimumSize;
+    
+    /// <summary>
+    /// Maximum size for this entity, where higher values would cause crashes in-game.
+    /// Values above this will not be accepted by the entity edit window.
+    /// </summary>
+    [JsonIgnore]
+    public virtual Point MaximumSize => new(int.MaxValue, int.MaxValue);
+    
+    /// <summary>
+    /// Recommended maximum size for this entity, where higher values would cause visual issues, but still work.
+    /// Placement/Selection tool wont resize above this size, but manual editing still allows higher values.
+    /// </summary>
+    [JsonIgnore]
+    public virtual Point RecommendedMaximumSize => MaximumSize;
 
     [JsonIgnore]
     public virtual Range NodeLimits => 0..0;
