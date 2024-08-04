@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
 using Rysy.Helpers;
+using Rysy.Platforms;
 using Rysy.Scenes;
 
 namespace Rysy.Gui.Windows;
@@ -341,6 +342,6 @@ public static class Menubar {
             });
 
         if (ImGui.MenuItem("Exit"))
-            RysyEngine.Instance.Exit();
+            RysyPlatform.Current.ExitProcess();
     }
 }
