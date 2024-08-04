@@ -774,5 +774,8 @@ function utils.tryrequire(lib, verbose)
     return success, res
 end
 
+local serializeUtil = require("utils.serialize")
+utils.serialize = serializeUtil.serialize
+utils.unserialize = serializeUtil.unserialize
 
 return utils
