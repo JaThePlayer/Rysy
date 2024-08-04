@@ -4,29 +4,11 @@ using System.Text.Json;
 namespace Rysy;
 
 public class Persistence {
-    static Persistence() {
-        BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(5), () => {
-            if (Instance is not { } || !RecentlyEdited)
-                return;
-
-            RecentlyEdited = false;
-
-            try {
-                Save(Instance);
-            } catch {
-                // oh well, maybe we can save in 5 seconds
-            }
-        });
-    }
-
     #region Helpers
 
     public static Persistence Instance { get; set; } = null!;
 
     private static string FileLocation { get; set; } = $"persistence.json";
-
-
-    private static bool RecentlyEdited { get; set; } = false;
 
     public static Persistence Load() {
         return SettingsHelper.Load<Persistence>(FileLocation, perProfile: true);
@@ -52,7 +34,7 @@ public class Persistence {
     public void Set<T>(string key, T value) {
         Values[key] = value!;
 
-        RecentlyEdited = true;
+        Save(this);
     }
 
     public void PushRecentMap(Map map) {
@@ -88,8 +70,7 @@ public class Persistence {
                 _FGTilesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
-
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
@@ -102,7 +83,7 @@ public class Persistence {
                 _BGTilesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
@@ -115,8 +96,7 @@ public class Persistence {
                 _FGDecalsVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
-
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
@@ -129,8 +109,7 @@ public class Persistence {
                 _BGDecalsVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
-
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
@@ -143,8 +122,7 @@ public class Persistence {
                 _EntitiesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
-
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
@@ -157,8 +135,7 @@ public class Persistence {
                 _TriggersVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
-
-                RecentlyEdited = true;
+                Save(this);
             }
         }
     }
