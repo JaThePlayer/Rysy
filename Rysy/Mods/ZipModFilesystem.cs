@@ -15,24 +15,28 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     public string Root { get; init; }
 
-    private List<ZipArchiveWrapper> Zips = new();
+    private readonly List<ZipArchiveWrapper> Zips = [];
 
-    private ConcurrentBag<Stream> OpenedFiles = new();
+    private readonly ConcurrentBag<Stream> OpenedFiles = [];
 
     private BackgroundTaskInfo CleanupTask;
 
     private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
     
-    // keeps track of whether a file is known to exist or known not to exist in the zip.
-    private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
+    // These keep track of known filenames, so that checking if a file exists in a mod incurs no IO cost.
+    private volatile string[] _allEntryFullNames;
+    private volatile HashSet<string> _allEntryFullNamesHashSet;
+
+    private bool _failedToOpenZip;
 
     public ZipModFilesystem(string zipFilePath) {
         Root = zipFilePath;
 
         // setup a timer to close the zip archive if no more files from it are needed
         CleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
-
+        ScanForAllEntryNames();
+        
         if (!RysyPlatform.Current.SupportFileWatchers) {
             return;
         }
@@ -44,8 +48,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return;
-            
-            _knownExistingFiles.Clear();
+
+            ScanForAllEntryNames();
 
             foreach (var file in WatchedAssets) {
                 foreach (var asset in file.Value) {
@@ -65,6 +69,15 @@ public sealed class ZipModFilesystem : IModFilesystem {
         };
 
         Watcher.EnableRaisingEvents = true;
+    }
+
+    private void ScanForAllEntryNames() {
+        var zip = OpenZipIfNeeded();
+        if (zip is null)
+            return;
+        _allEntryFullNames = zip.Archive.Entries.Select(e => e.FullName).ToArray();
+        zip.Used = false;
+        _allEntryFullNamesHashSet = _allEntryFullNames.ToHashSet();
     }
 
     private void CleanupResources() {
@@ -95,7 +108,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
         }
 
     }
-    private ZipArchiveWrapper OpenZipIfNeeded() {
+    private ZipArchiveWrapper? OpenZipIfNeeded() {
         lock (Zips) {
             for (int i = 0; i < Zips.Count; i++) {
                 var w = Zips[i];
@@ -106,9 +119,20 @@ public sealed class ZipModFilesystem : IModFilesystem {
                 }
             }
 
+            ZipArchive? zip;
+            try {
+                zip = ZipFile.OpenRead(Root);
+            } catch (Exception ex) {
+                if (!_failedToOpenZip)
+                    Logger.Write("ZipModFilesystem", LogLevel.Warning, $"Failed to open mod zip {Root}: {ex}");
+                _failedToOpenZip = true;
+                return null;
+            }
+
+            _failedToOpenZip = false;
+
             {
-                var zip = ZipFile.OpenRead(Root);
-                var w = new ZipArchiveWrapper() {
+                var w = new ZipArchiveWrapper {
                     Archive = zip,
                     Used = true
                 };
@@ -136,7 +160,17 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value) {
+        value = default;
+
+        // If we know the file doesn't exist, no need to open the zip
+        if (!_allEntryFullNamesHashSet.Contains(path)) {
+            return false;
+        }
+        
         var zip = OpenZipIfNeeded();
+        if (zip is null) {
+            return false;
+        }
 
         using var stream = OpenFile(path, zip.Archive);
         if (stream is null) {
@@ -152,17 +186,12 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {
-        var zip = OpenZipIfNeeded();
-
-        var files = zip.Archive.Entries.SelectWhereNotNull(e => {
-            var fullName = e.FullName;
-            var valid = !fullName.EndsWith("/", StringComparison.Ordinal)
+        var files = _allEntryFullNames.SelectWhereNotNull(fullName => {
+            var valid = !fullName.EndsWith('/') 
                      && fullName.StartsWith(directory, StringComparison.Ordinal)
                      && fullName.EndsWith(extension, StringComparison.Ordinal);
             return valid ? fullName : null;
         }).ToList();
-
-        zip.Used = false;
 
         return files;
     }
@@ -180,20 +209,6 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
     
     public bool FileExists(string path) {
-        if (string.IsNullOrWhiteSpace(path))
-            return false;
-
-        if (_knownExistingFiles.TryGetValue(path, out var knownResult))
-            return knownResult;
-
-        var zip = OpenZipIfNeeded();
-
-        var exists = zip.Archive.GetEntry(path) is { };
-
-        zip.Used = false;
-
-        _knownExistingFiles[path] = exists;
-        
-        return exists;
+        return _allEntryFullNamesHashSet.Contains(path);
     }
 }
