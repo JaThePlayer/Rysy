@@ -57,6 +57,7 @@ public class RoomAttributeChangeAction : IHistoryAction {
 
             if (NewRoom) {
                 Room.Map.Rooms.Add(Room);
+                map.SortRooms();
             }
 
             return true;
@@ -77,6 +78,7 @@ public class RoomAttributeChangeAction : IHistoryAction {
         }
         if (NewRoom) {
             Room.Map.Rooms.Remove(Room);
+            map.SortRooms();
         }
     }
 }

@@ -27,6 +27,10 @@ public sealed class Map : IPackable {
 
     public List<Room> Rooms { get; set; } = new();
 
+    public void SortRooms() {
+        Rooms.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+    }
+
     private MapMetadata _Meta = new();
     public MapMetadata Meta { 
         get => _Meta; 

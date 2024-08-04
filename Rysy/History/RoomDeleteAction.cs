@@ -11,10 +11,13 @@ public record RoomDeleteAction(RoomRef Room) : IHistoryAction {
             EditorState.CurrentRoom = null;
         }
 
-        return map.Rooms.Remove(room);
+        var removed = map.Rooms.Remove(room);
+        map.SortRooms();
+        return removed;
     }
 
     public void Undo(Map map) {
         map.Rooms.Add(_removed!);
+        map.SortRooms();
     }
 }
