@@ -120,7 +120,10 @@ public abstract class Tool {
     }
 
     private object? _material;
-    private string PersistenceMaterialKey => $"{PersistenceGroup}.{Layer.Name}.Material";
+    private string PersistenceMaterialKey => GetPersistenceMaterialKeyForLayer(Layer.Name);
+    
+    public string GetPersistenceMaterialKeyForLayer(string layer) => $"{PersistenceGroup}.{layer}.Material";
+    
     /// <summary>
     /// Gets or sets the currently selected material.
     /// </summary>
