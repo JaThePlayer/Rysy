@@ -50,7 +50,9 @@ public sealed class LonnEntityPlugin {
 
     public Func<ILuaWrapper, Entity, Range> GetNodeLimits;
     public Func<ILuaWrapper, Entity, Point>? GetMinimumSize;
-    public Func<ILuaWrapper, Entity, Point> GetMaximumSize;
+    public Func<ILuaWrapper, Entity, Point>? GetWarnBelowSize;
+    public Func<ILuaWrapper, Entity, Point>? GetMaximumSize;
+    public Func<ILuaWrapper, Entity, Point>? GetWarnAboveSize;
 
     public Func<ILuaWrapper, Entity, Rectangle>? GetRectangle;
 
@@ -210,9 +212,21 @@ public sealed class LonnEntityPlugin {
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
+        
+        plugin.GetWarnBelowSize = NullConstOrGetter(plugin, "warnBelowSize",
+            def: null,
+            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcResults: 2
+        );
 
         plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize",
-            def: new Point(int.MaxValue, int.MaxValue),
+            def: null,
+            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcResults: 2
+        );
+        
+        plugin.GetWarnAboveSize = NullConstOrGetter(plugin, "warnAboveSize",
+            def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
