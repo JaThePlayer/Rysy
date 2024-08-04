@@ -35,8 +35,16 @@ public sealed class RegisteredEntity {
     public LonnStylePlugin? LonnStylePlugin { get; internal set; }
 
     public Func<FieldList> Fields { get; internal set; } = () => new();
-    
-    public Placement? MainPlacement { get; internal set; }
+
+    private Placement? _mainPlacement;
+
+    public Placement? MainPlacement {
+        get => _mainPlacement;
+        internal set {
+            _mainPlacement = value;
+            CachedMainPlacementValues = null;
+        }
+    }
 
     public List<Placement> Placements { get; } = [];
     
@@ -338,7 +346,8 @@ public static class EntityRegistry {
                     continue;
                 }
 
-                info.CSharpType = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
+                if (info.CSharpType is not {} prev || prev.IsAssignableTo(typeof(IHasLonnPlugin)))
+                    info.CSharpType = trigger ? typeof(LonnTrigger) : typeof(LonnEntity);
                 info.LonnPlugin = pl;
                 if (mod is { IsVanilla: false }) { // if (!SIDToDefiningMod.ContainsKey(pl.Name))
                     info.Mod = mod;
@@ -366,6 +375,12 @@ public static class EntityRegistry {
         var placementsRegistry = trigger ? TriggerPlacements : EntityPlacements;
 
         lock (placementsRegistry) {
+            if (into.MainPlacement is { FromLonn: true })
+                into.MainPlacement = null;
+            foreach (var placement in into.Placements.Where(p => p.FromLonn).ToList()) {
+                into.Placements.Remove(placement);
+            }
+            
             foreach (var lonnPlacement in placements) {
                 var csPlacement = new Placement(lonnPlacement.Name) {
                     ValueOverrides = lonnPlacement.Data,
@@ -600,14 +615,10 @@ public static class EntityRegistry {
         e.EntityData = entityData;
         e.Id = id ?? room.NextEntityID();
         e.Room = room;
-        
-        if (e is LonnEntity lonnEntity) {
+
+        if (e is IHasLonnPlugin hasLonnPlugin) {
             info.LonnPlugin ??= LonnEntityPlugin.Default(LuaCtx, sid);
-            lonnEntity.PluginRef = Registered.GetReference(sid);
-        }
-        if (e is LonnTrigger lonnTrigger) {
-            info.LonnPlugin ??= LonnEntityPlugin.Default(LuaCtx, sid);
-            lonnTrigger.PluginRef = Registered.GetReference(sid);
+            hasLonnPlugin.LonnPluginRef = Registered.GetReference(sid);
         }
 
         if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is not { } gr || gr.IsNullOrWhitespace()) {
