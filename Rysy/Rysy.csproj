@@ -27,10 +27,11 @@
     <_IsWindows Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</_IsWindows>
     <_IsMacOS Condition="'$(RuntimeIdentifier)' == 'osx'">true</_IsMacOS>
     <_IsLinux Condition="'$(RuntimeIdentifier)' == 'linux-x64'">true</_IsLinux>
+    <_AnyOSTargetFound Condition=" '$(_IsWindows)' != '' Or '$(_IsMacOS)' != '' Or '$(_IsLinux)' != '' ">true</_AnyOSTargetFound>
     
-    <_IsWindows Condition=" '$(_IsWindows)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</_IsWindows>
-    <_IsMacOS Condition=" '$(_IsMacOS)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
-    <_IsLinux Condition=" '$(_IsLinux)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</_IsLinux>
+    <_IsWindows Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</_IsWindows>
+    <_IsMacOS Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
+    <_IsLinux Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</_IsLinux>
 
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'x64'">osx</_NativeRuntime>
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'ARM64'">osx</_NativeRuntime>
