@@ -283,7 +283,7 @@ public abstract class DecalRegistryProperty {
         DecalRegistryProperty prop;
 
         if (EntityRegistry.RegisteredDecalRegistryProperties.TryGetValue(propType, out var type)) {
-            prop = (DecalRegistryProperty)Activator.CreateInstance(type.CSharpType)!;
+            prop = (DecalRegistryProperty)Activator.CreateInstance(type.CSharpType ?? throw new Exception("DecalRegistryProperty with CSharpType=null"))!;
         } else {
             prop = new UnknownDecalRegistryProperty();
         }

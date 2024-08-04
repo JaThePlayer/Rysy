@@ -120,15 +120,15 @@ public static class SelectionContextWindowRegistry {
         return (ISelectionHandler main, IEnumerable<Selection> all, PopupCtx ctx) => {
 
             TilegridEntityTypes ??= EntityRegistry.Registered.CreateCache(sidToType => sidToType
-                .Where(kv => kv.Value.CSharpType.IsSubclassOf(typeof(TilegridEntity)))
-                .Select(kv => (kv.Key, Type: kv.Value.CSharpType, ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(kv.Key, default, Room.DummyRoom)).Layer))
+                .Where(kv => kv.Value.CSharpType?.IsSubclassOf(typeof(TilegridEntity)) ?? false)
+                .Select(kv => (kv.Key, Type: kv.Value.CSharpType!, ((TilegridEntity)EntityRegistry.CreateFromMainPlacement(kv.Key, default, Room.DummyRoom)).Layer))
                 .ToList()
             );
             if (main is not TileSelectionHandler tileHandler) {
                 return;
             }
 
-            if (ImGui.BeginMenu("Convert To Entity")) {
+            if (TilegridEntityTypes.Value.Count > 0 && ImGui.BeginMenu("Convert To Entity")) {
                 foreach (var (sid, type, layer) in TilegridEntityTypes.Value) {
                     if (layer == targetLayer && ImGui.MenuItem($"{sid}")) {
                         List<IHistoryAction> actions = new();
