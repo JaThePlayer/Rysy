@@ -300,6 +300,39 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             }
         }
     }
+    
+    public override Point RecommendedMinimumSize {
+        get {
+            try {
+                return Plugin?.GetWarnBelowSize?.Invoke(Room, this) ?? base.RecommendedMinimumSize;
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to get warnBelowSize for: {ToJson()}");
+                return base.RecommendedMinimumSize;
+            }
+        }
+    }
+    
+    public override Point MaximumSize {
+        get {
+            try {
+                return Plugin?.GetMaximumSize?.Invoke(Room, this) ?? base.MaximumSize;
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to get maximumSize for: {ToJson()}");
+                return base.MaximumSize;
+            }
+        }
+    }
+    
+    public override Point RecommendedMaximumSize {
+        get {
+            try {
+                return Plugin?.GetWarnAboveSize?.Invoke(Room, this) ?? base.RecommendedMaximumSize;
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to get warnAboveSize for: {ToJson()}");
+                return base.RecommendedMaximumSize;
+            }
+        }
+    }
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
