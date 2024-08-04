@@ -47,9 +47,13 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
 
     // https://github.com/maddie480/MaddieHelpingHand/blob/db38d49ab9c2a1a031dff4733f806d77e1d1c869/Entities/RainbowSpinnerColorController.cs#L311
     private static Color GetModHue(ReadOnlyArray<Color> colors, float gradientSize, Vector2 position, bool loopColors, Vector2 center, float gradientSpeed, float time) {
-        if (colors.Count == 1) {
-            // edge case: there is 1 color, just return it!
-            return colors[0];
+        switch (colors.Count)
+        {
+            case 0:
+                return Color.White;
+            case 1:
+                // edge case: there is 1 color, just return it!
+                return colors[0];
         }
 
         float progress = (position - center).Length() + time * gradientSpeed;
@@ -69,7 +73,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
         int colorIndex = (int) globalProgress;
         float progressInIndex = globalProgress - colorIndex;
         
-        return Color.Lerp(colors[colorIndex], colors[colorIndex + 1], progressInIndex);
+        return Color.Lerp(colors.GetAtOr(colorIndex, Color.White), colors.GetAtOr(colorIndex + 1, Color.White), progressInIndex);
     }
 
     
