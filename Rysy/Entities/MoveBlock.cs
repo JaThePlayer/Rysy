@@ -9,6 +9,8 @@ public class MoveBlock : Entity, IPlaceable {
     private static Color FillColor = "474070".FromRGB();
 
     public override int Depth => Depths.Solids;
+    
+    public override Point RecommendedMinimumSize => new(16, 16);
 
     public Directions Direction => Enum("direction", Directions.Left);
 
@@ -73,8 +75,6 @@ public class MoveBlock : Entity, IPlaceable {
 
         yield return ISprite.FromTexture(center, arrowPath).Centered();
     }
-
-    public override Point MinimumSize => new(8, 8);
 
     public override Entity? TryFlipHorizontal() => Direction switch {
         Directions.Right => CloneWith(pl => pl["direction"] = Directions.Left),

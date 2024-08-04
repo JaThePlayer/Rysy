@@ -78,7 +78,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
         var resizableY = Entity.ResizableY;
 
         if ((resizableX && delta.X != 0) || (resizableY && delta.Y != 0)) {
-            return new EntityResizeAction(Entity, delta);
+            return new EntityResizeAction(Entity, delta, UseRecommendedSizes: true);
         }
 
         return null;
