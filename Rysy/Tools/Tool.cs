@@ -173,8 +173,12 @@ public abstract class Tool {
             favorites.Remove(name);
         }
 
-        if (UsePersistence)
+        if (UsePersistence) {
+            // call the setter which sets up persistence
+            Favorites = favorites;
             Persistence.Save(Persistence.Instance);
+        }
+        
         CachedSearch = null;
     }
 
