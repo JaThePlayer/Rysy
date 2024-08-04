@@ -257,13 +257,21 @@ public class LuaCtx {
             var path = $"Loenn/{lib.Replace('.', '/')}.lua";
 
             if (mod.Filesystem.TryReadAllText(path) is not { } libString) {
-
                 //lua.Error($"library {path} [{modName}] not found!");
                 lua.PushNil();
                 return 1;
             }
+            
+            // Notify lua when the library updates, so that it can hot-reload it.
+            mod.Filesystem.RegisterFilewatch(path, new WatchedAsset {
+                OnChanged = (p) => {
+                    lua.GetGlobal("_RYSY_clear_requireFromPlugin_cache");
+                    lua.PushString(lib);
+                    lua.PushString(modName);
+                    lua.Call(2, 0);
+                }
+            });
 
-            //lua.PCallStringThrowIfError(libString, lib, results: 1);
             lua.PushString(libString);
             return 1;
         });
