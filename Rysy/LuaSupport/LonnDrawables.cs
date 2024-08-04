@@ -55,7 +55,7 @@ public static partial class LonnDrawables {
         var offX = lua.PeekTableFloatValue(top, "offsetX") ?? 0;
         var offY = lua.PeekTableFloatValue(top, "offsetY") ?? 0;
         var magnitudeOffset = lua.PeekTableFloatValue(top, "magnitudeOffset") ?? 0;
-        var thickness = lua.PeekTableIntValue(top, "thickness") ?? 1;
+        var thickness = lua.PeekTableFloatValue(top, "thickness") ?? 1f;
         var points = lua.PeekTableNumberList(top, "points") ?? new();
 
         var pointsVec2 = new Vector2[points.Count / 2];
@@ -63,7 +63,7 @@ public static partial class LonnDrawables {
             pointsVec2[i / 2] = new(points[i], points[i + 1]);
         }
 
-        var sprite = new LineSprite(pointsVec2) with {
+        var sprite = new LineSprite(pointsVec2) {
             Color = color, Thickness = thickness, MagnitudeOffset = magnitudeOffset, Offset = new(offX, offY)
         };
 
