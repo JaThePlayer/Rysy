@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
+using Rysy.Platforms;
 
 namespace Rysy.Scenes;
 
@@ -44,7 +45,7 @@ public class CrashScene : Scene {
 
         ImGui.SameLine();
         if (ImGui.Button("Close").WithTooltip("Closes the program.")) {
-            Environment.Exit(0);
+            RysyPlatform.Current.ExitProcess();
         }
 
         ImGui.SameLine();

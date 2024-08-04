@@ -75,4 +75,11 @@ public abstract class RysyPlatform {
         RysyState.Window.SetPosition(new(x, y));
         gdm.ApplyChanges();
     }
+
+    public virtual void ExitProcess() {
+        if (RysyEngine.Instance is {} inst)
+            inst.Exit();
+        else
+            Environment.Exit(-1);
+    }
 }
