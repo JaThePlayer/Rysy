@@ -177,4 +177,19 @@ function fakeTilesHelper.getFieldInformation(materialKey, layer)
     end
 end
 
+function fakeTilesHelper.getPlacementMaterial(fallback, layer, allowAir)
+    fallback = fallback or "3"
+    layer = layer or "tilesFg"
+
+    local material = _RYSY_fakeTilesTileMaterialForLayer(layer) or fallback
+
+    if not allowAir then
+        if material == " " or material == "0" then
+            material = fallback
+        end
+    end
+
+    return material
+end
+
 return fakeTilesHelper

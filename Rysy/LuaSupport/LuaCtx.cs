@@ -2,7 +2,10 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
+using Rysy.Layers;
 using Rysy.Mods;
+using Rysy.Scenes;
+using Rysy.Tools;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -359,6 +362,29 @@ public class LuaCtx {
                 lua.SetField(tablePos, item.Item2);
             }
 
+            return 1;
+        });
+        
+        //_RYSY_fakeTilesTileMaterialForLayer(string layer) -> string
+        lua.Register("_RYSY_fakeTilesTileMaterialForLayer", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var layer = lua.FastToString(1);
+
+            var rysyLayerName = layer switch {
+                "tilesFg" => EditorLayers.Fg.Name,
+                "tilesBg" => EditorLayers.Bg.Name,
+                _ => null,
+            };
+
+            if (rysyLayerName is null
+                || RysyState.Scene is not EditorScene { ToolHandler: { } toolHandler } 
+                || toolHandler.GetTool<TileTool>() is not {} tileTool
+                || Persistence.Instance?.Get(tileTool.GetPersistenceMaterialKeyForLayer(rysyLayerName), (object) null!)?.ToString() is not {} mat) {
+                lua.PushNil();
+                return 1;
+            }
+            
+            lua.PushString(mat);
             return 1;
         });
 
