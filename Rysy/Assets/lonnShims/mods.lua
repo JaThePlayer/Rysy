@@ -122,8 +122,43 @@ function modHandler.unrequireKnownPluginRequires()
     _RYSY_unimplemented()
 end
 
-
 local loadedFromPlugins = {}
+
+local function _handleRequire(lib, modName)
+	local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName)
+	if not required then
+		logging.error(string.format("library %s [%s] not found!", lib, modName))
+		loadedFromPlugins[modName][lib] = "__nil"
+		return nil
+	end
+
+    if type(required) == "string" then
+        required = loadstring(required)()
+    end
+    
+    return required
+end
+
+-- global func called from C# when a library file gets updated
+function _RYSY_clear_requireFromPlugin_cache(lib, modName)
+	if not loadedFromPlugins[modName] then
+		return
+	end
+	
+	-- Update the hot reload metatable to point to the new version of the library.
+	local existing = loadedFromPlugins[modName][lib]
+	if existing and rawget(existing, "___ishotreloadable") then
+	    local newVer = _handleRequire(lib, modName)
+	    if newVer and type(newVer) == "table" then
+	        rawset(existing, "___tbl", newVer)
+	        return
+	    end
+	end
+	
+	-- Couldn't update the metatable, just clear the cache for when users of the library get reloaded later.
+	loadedFromPlugins[modName][lib] = nil
+end
+
 -- Defaults to current mod directory
 function modHandler.requireFromPlugin(lib, modName)
 	modName = modName or _RYSY_CURRENT_MOD
@@ -137,18 +172,22 @@ function modHandler.requireFromPlugin(lib, modName)
 	end
 
     if not loadedFromPlugins[modName][lib] then
-		local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName)
-		if not required then
-			logging.error(string.format("library %s [%s] not found!", lib, modName))
-			loadedFromPlugins[modName][lib] = "__nil"
-			return nil
-		end
-
-        if type(required) == "string" then
-            required = loadstring(required)()
+        local required = _handleRequire(lib, modName)
+        if not required then
+            return nil
         end
 
-		loadedFromPlugins[modName][lib] = required
+        -- Wrap returned tables with a metatable.
+        -- This way, when we hot reload the library, everything using that lib gets their reference automatically updated.
+        local wrapper = required
+        if type(required) == "table" and not getmetatable(required) then
+            wrapper = setmetatable({___tbl = required, ___ishotreloadable = true }, {
+                __index = function(self, key) return rawget(self, "___tbl")[key] end,
+                __newindex = function(self, key, value) rawget(self, "___tbl")[key] = value end,
+            })
+        end
+
+		loadedFromPlugins[modName][lib] = wrapper
 	end
 
 	if loadedFromPlugins[modName][lib] == "__nil" then
