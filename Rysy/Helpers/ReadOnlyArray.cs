@@ -23,6 +23,11 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T> {
 
     public T this[int index] => _backing[index];
 
+    public T GetAtOr(int index, T def) {
+        var arr = _backing;
+        return (uint) index <= arr.Length ? arr[index] : def;
+    }
+
     public struct Enumerator(T[] backing) : IEnumerator<T> {
         private int _i = -1;
         
@@ -34,7 +39,7 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T> {
 
         public T Current => backing[_i];
 
-        object IEnumerator.Current => Current;
+        object IEnumerator.Current => Current!;
 
         public void Dispose() {
             
