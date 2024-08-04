@@ -16,7 +16,7 @@ public class ScriptTool : Tool {
 
     public override string PersistenceGroup => "Scripts";
 
-    public override List<EditorLayer> ValidLayers => new() { CurrentRoomLayer, AllRoomsLayer };
+    public override List<EditorLayer> ValidLayers => [CurrentRoomLayer, AllRoomsLayer];
 
     public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         if (material is Script s) {

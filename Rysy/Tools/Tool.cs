@@ -155,9 +155,8 @@ public abstract class Tool {
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.{Layer.Name}.Favorites", value);
-            } else {
-                _Favorites = value;
             }
+            _Favorites = value;
         }
     }
 

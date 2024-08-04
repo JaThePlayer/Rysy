@@ -249,7 +249,7 @@ public class ToolHandler {
 
         if (ImGui.BeginListBox("##ToolLayerBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * tool.ValidLayers.Count + 5))) {
             foreach (var item in tool.ValidLayers) {
-                if (ImGui.Selectable(item.LocalizedName, currentLayer == item)) {
+                if (ImGui.Selectable(item.LocalizedName, currentLayer.Name == item.Name)) {
                     tool.Layer = item;
                 }
             }
