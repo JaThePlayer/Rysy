@@ -23,11 +23,64 @@
   </PropertyGroup>
   -->
 
+  <PropertyGroup Condition="'$(FNA)' != ''">
+    <_IsWindows Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</_IsWindows>
+    <_IsMacOS Condition="'$(RuntimeIdentifier)' == 'osx'">true</_IsMacOS>
+    <_IsLinux Condition="'$(RuntimeIdentifier)' == 'linux-x64'">true</_IsLinux>
+    
+    <_IsWindows Condition=" '$(_IsWindows)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</_IsWindows>
+    <_IsMacOS Condition=" '$(_IsMacOS)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
+    <_IsLinux Condition=" '$(_IsLinux)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</_IsLinux>
+
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'x64'">osx</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'ARM64'">osx</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsLinux)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">linux-x64</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsWindows)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">win-x64</_NativeRuntime>
+
+    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'win-x64'">dll</_NativeLibExt>
+    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx'">dylib</_NativeLibExt>
+    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'linux-x64'">so</_NativeLibExt>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(FNA)' != ''">
     <Reference Include="FNA">
       <HintPath>lib\FNA.dll</HintPath> <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
     </Reference>
-    <PackageReference Include="FNA.NET.NativeAssets" Version="1.0.3.2403" />
+    
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\SDL2.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FAudio.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FNA3D.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\libtheorafile.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+    
+    <!-- 
+    Macos, untested
+    -->
+    <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libMoltenVK.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+    <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
   </ItemGroup>
   <ItemGroup Condition="'$(FNA)' == ''">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
