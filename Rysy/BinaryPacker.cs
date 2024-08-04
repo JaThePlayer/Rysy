@@ -377,8 +377,10 @@ public sealed class BinaryPacker {
         /// </summary>
         public string? Filename { get; init; }
 
+        [JsonIgnore]
         public IEnumerable<Element> Rooms => Data.Children.FirstOrDefault(e => e.Name == "levels")?.Children ?? [];
 
+        [JsonIgnore]
         public IEnumerable<Element> EntitiesOrTriggers => Rooms.SelectMany(r =>
             r.Children.Where(e => e.Name is "entities" or "triggers").SelectMany(e => e.Children));
     }
