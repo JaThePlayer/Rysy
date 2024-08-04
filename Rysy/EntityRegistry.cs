@@ -1,5 +1,4 @@
 ﻿using Rysy.Entities;
-using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.Loading;
@@ -7,6 +6,7 @@ using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Rysy;
@@ -28,7 +28,7 @@ public sealed class RegisteredEntity {
     private List<string>? _associatedModNames;
     public List<string> AssociatedModNames => _associatedModNames ??= AssociatedMods.Select(m => m.Name).ToList();
     
-    public Type CSharpType { get; internal set; }
+    public Type? CSharpType { get; internal set; }
     
     public LonnEntityPlugin? LonnPlugin { get; internal set; }
     
@@ -601,10 +601,12 @@ public static class EntityRegistry {
         Entity e;
 
         var info = GetInfo(sid, trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
-        if (info is null || info.CSharpType is null) {
+        if (info?.CSharpType is null) {
             if (Settings.Instance?.LogMissingEntities ?? false)
                 Logger.Write("EntityRegistry.Create", LogLevel.Warning, $"Unknown entity: {sid}");
             info = RegisteredEntity.UnknownEntity(sid, trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
+            if (info.CSharpType is null)
+                throw new UnreachableException($"{nameof(UnknownEntity)} returned null CSharpType");
         }
         
         e = Activator.CreateInstance(info.CSharpType) switch {
