@@ -3,13 +3,17 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Selections;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
-public class LonnEntity : Entity {
-    internal ListenableDictionaryRef<string, RegisteredEntity> PluginRef;
+public class LonnEntity : Entity, IHasLonnPlugin {
+    private ListenableDictionaryRef<string, RegisteredEntity> _lonnPluginRef;
+    
+    ListenableDictionaryRef<string, RegisteredEntity> IHasLonnPlugin.LonnPluginRef { 
+        get => _lonnPluginRef;
+        set => _lonnPluginRef = value;
+    }
 
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
@@ -22,7 +26,7 @@ public class LonnEntity : Entity {
     [JsonIgnore]
     public LonnEntityPlugin? Plugin {
         get {
-            var exists = PluginRef.TryGetValue(out var info, out var changed);
+            var exists = _lonnPluginRef.TryGetValue(out var info, out var changed);
 
             if (changed) {
                 ClearInternalCache();

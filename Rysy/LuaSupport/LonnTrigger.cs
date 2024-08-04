@@ -3,11 +3,16 @@ using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
-public sealed class LonnTrigger : Trigger {
-    internal ListenableDictionaryRef<string, RegisteredEntity> PluginRef;
+public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
+    private ListenableDictionaryRef<string, RegisteredEntity> _lonnPluginRef;
+    
+    ListenableDictionaryRef<string, RegisteredEntity> IHasLonnPlugin.LonnPluginRef { 
+        get => _lonnPluginRef;
+        set => _lonnPluginRef = value;
+    }
 
     [JsonIgnore] 
-    public LonnEntityPlugin? Plugin => PluginRef.TryGetValue(out var plugin, out var changed) 
+    public LonnEntityPlugin? Plugin => _lonnPluginRef.TryGetValue(out var plugin, out var changed) 
         ? plugin.LonnPlugin
         : null;
     
