@@ -33,7 +33,7 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
         if (pl is null)
             return base.GetNodePathSprites();
         
-        return pl.GetNodePathSprites(this);
+        return pl.GetNodePathSprites(this, static (self, nodeIndex) => GetNodeRect(self.Nodes[nodeIndex]).Center.ToVector2());
     }
     
     public override IEnumerable<ISprite> GetAllNodeSprites() {

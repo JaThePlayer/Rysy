@@ -88,11 +88,16 @@ public sealed class LonnEntityPlugin {
 
     private object LOCK = new();
 
-    public IEnumerable<ISprite> GetNodePathSprites(Entity entity) {
+    public IEnumerable<ISprite> GetNodePathSprites(Entity entity, Func<Entity, int, Vector2>? defaultOffset = null) {
         var lineType = NodeLineRenderType(entity);
 
+        var offsetFunc = defaultOffset;
+
         if (NodeLineRenderOffset is { } offset) {
-            var f = (Entity e, int i) => e.Nodes[i] + offset(e, e.Nodes[i], i + 1);
+            offsetFunc = (Entity e, int i) => e.Nodes[i] + offset(e, e.Nodes[i], i + 1);
+        }
+
+        if (offsetFunc is { } f) {
             return lineType switch {
                 "line" => NodePathTypes.Line(entity, f),
                 "fan" => NodePathTypes.Fan(entity, f),
