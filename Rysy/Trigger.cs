@@ -17,7 +17,9 @@ public class Trigger : Entity {
 
     public virtual Color FillColor => Color * 0.15f;
 
-    public virtual string Text => TriggerHelpers.Humanize(EntityData.SID);
+    public static string GetDefaultTextForSid(string sid) => TriggerHelpers.Humanize(sid);
+    
+    public virtual string Text => GetDefaultTextForSid(EntityData.SID);
 
     public override int Depth => Depths.Top;
 

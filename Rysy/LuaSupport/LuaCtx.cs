@@ -534,6 +534,14 @@ public class LuaCtx {
             lua.PushWrapper(new ShallowCopyWrapper(wrapper));
             return 1;
         });
+        
+        lua.Register("_RYSY_triggers_getDrawableDisplayTextForSid", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var sid = lua.FastToString(1);
+
+            lua.PushString(Trigger.GetDefaultTextForSid(sid));
+            return 1;
+        });
 
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy
