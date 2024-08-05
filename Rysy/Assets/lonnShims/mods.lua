@@ -124,9 +124,23 @@ end
 
 local loadedFromPlugins = {}
 
-local function _handleRequire(lib, modName)
-	local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName)
+local function revertHotReloadData(prevHotReloadData)
+	_RYSY_OnHotReload_name = prevHotReloadData[1]
+	_RYSY_OnHotReload_type = prevHotReloadData[2]
+	_RYSY_CURRENT_MOD = prevHotReloadData[3]
+end
+
+local function _handleRequire(lib, modName, registerWatcher)
+    -- update globals used to keep track of hot reload data, to handle nested libraries
+    local prevHotReloadData = { _RYSY_OnHotReload_name, _RYSY_OnHotReload_type, _RYSY_CURRENT_MOD }
+    _RYSY_OnHotReload_name = lib
+    _RYSY_OnHotReload_type = "lib"
+    _RYSY_CURRENT_MOD = modName
+
+	local required = _RYSY_INTERNAL_requireFromPlugin(lib, modName, registerWatcher)
+	
 	if not required then
+	    revertHotReloadData(prevHotReloadData)
 		logging.error(string.format("library %s [%s] not found!", lib, modName))
 		loadedFromPlugins[modName][lib] = "__nil"
 		return nil
@@ -135,6 +149,8 @@ local function _handleRequire(lib, modName)
     if type(required) == "string" then
         required = loadstring(required)()
     end
+    
+    revertHotReloadData(prevHotReloadData)
     
     return required
 end
@@ -145,15 +161,33 @@ function _RYSY_clear_requireFromPlugin_cache(lib, modName)
 		return
 	end
 	
-	-- Update the hot reload metatable to point to the new version of the library.
 	local existing = loadedFromPlugins[modName][lib]
-	if existing and rawget(existing, "___ishotreloadable") then
-	    local newVer = _handleRequire(lib, modName)
-	    if newVer and type(newVer) == "table" then
-	        rawset(existing, "___tbl", newVer)
-	        return
-	    end
+	if existing == "__nil" then
+	    loadedFromPlugins[modName][lib] = nil
+	    return
 	end
+	
+	-- Update the table to point to the new version of the library.
+    if existing and type(existing.ret) == "table" then
+        local newVer = _handleRequire(lib, modName, false)
+        
+        local toHotReload = existing.toHotReload
+        existing.toHotReload = {}
+        existing.ret = newVer
+        -- Hot reload anything depending on this lib
+        for k, v in pairs(toHotReload) do
+            print(string.format("Hot reloading %s as it depends on %s", v.lib, lib))
+            if v.type == "entity" then
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, false)
+            elseif v.type == "trigger" then
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, true)
+            elseif v.type == "lib" then
+                _RYSY_clear_requireFromPlugin_cache(v.lib, v.modName)
+            end
+        end
+        
+        return
+    end
 	
 	-- Couldn't update the metatable, just clear the cache for when users of the library get reloaded later.
 	loadedFromPlugins[modName][lib] = nil
@@ -163,38 +197,38 @@ end
 function modHandler.requireFromPlugin(lib, modName)
 	modName = modName or _RYSY_CURRENT_MOD
 
-	if NEO_LUA then
-		return _RYSY_INTERNAL_requireFromPlugin(lib, modName)
-	end
-
 	if not loadedFromPlugins[modName] then
 		loadedFromPlugins[modName] = {}
 	end
 
     if not loadedFromPlugins[modName][lib] then
-        local required = _handleRequire(lib, modName)
+        local required = _handleRequire(lib, modName, true)
         if not required then
+            loadedFromPlugins[modName][lib] = "__nil"
             return nil
         end
 
-        -- Wrap returned tables with a metatable.
-        -- This way, when we hot reload the library, everything using that lib gets their reference automatically updated.
-        local wrapper = required
-        if type(required) == "table" and not getmetatable(required) then
-            wrapper = setmetatable({___tbl = required, ___ishotreloadable = true }, {
-                __index = function(self, key) return rawget(self, "___tbl")[key] end,
-                __newindex = function(self, key, value) rawget(self, "___tbl")[key] = value end,
-            })
-        end
-
-		loadedFromPlugins[modName][lib] = wrapper
+		loadedFromPlugins[modName][lib] = {
+		    ret = required,
+		    toHotReload = { }
+		}
 	end
 
 	if loadedFromPlugins[modName][lib] == "__nil" then
 		return nil
 	end
 
-	return loadedFromPlugins[modName][lib]
+    local toHotReload = loadedFromPlugins[modName][lib].toHotReload
+    if _RYSY_OnHotReload_name then
+        -- print(string.format("%s lib required by %s", lib, _RYSY_OnHotReload_name))
+        toHotReload[modName .. "|" .. _RYSY_OnHotReload_name] = { 
+            lib = _RYSY_OnHotReload_name, 
+            modName = modName,
+            type = _RYSY_OnHotReload_type,
+        }
+    end
+
+	return loadedFromPlugins[modName][lib].ret
 	
 end
 

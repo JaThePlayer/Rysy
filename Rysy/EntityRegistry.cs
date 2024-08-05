@@ -302,11 +302,23 @@ public static class EntityRegistry {
         }
     }
 
-    private static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
+    internal static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
         mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
             var plugin = stream.ReadAllText();
-
+            var lua = LuaCtx.Lua;
+            
+            // Set up some lua globals to support hot reload
+            lua.PushString(pluginPath);
+            lua.SetGlobal("_RYSY_OnHotReload_name");
+            lua.PushString(trigger ? "trigger" : "entity");
+            lua.SetGlobal("_RYSY_OnHotReload_type");
+            
             RegisterFromLua(plugin, pluginPath, trigger, mod);
+            
+            lua.PushNil();
+            lua.SetGlobal("_RYSY_OnHotReload_name");
+            lua.PushNil();
+            lua.SetGlobal("_RYSY_OnHotReload_type");
         });
     }
 
