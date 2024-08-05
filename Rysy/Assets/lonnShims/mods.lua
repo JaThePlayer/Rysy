@@ -178,9 +178,11 @@ function _RYSY_clear_requireFromPlugin_cache(lib, modName)
         for k, v in pairs(toHotReload) do
             print(string.format("Hot reloading %s as it depends on %s", v.lib, lib))
             if v.type == "entity" then
-                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, false)
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "entity")
             elseif v.type == "trigger" then
-                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, true)
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "trigger")
+            elseif v.type == "style" then
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "style")
             elseif v.type == "lib" then
                 _RYSY_clear_requireFromPlugin_cache(v.lib, v.modName)
             end
