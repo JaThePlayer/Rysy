@@ -45,26 +45,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (pl is null)
             return base.GetNodePathSprites();
         
-        var lineType = pl.NodeLineRenderType(this);
-
-        if (pl.NodeLineRenderOffset is { } offset) {
-            var f = (Entity e, int i) => e.Nodes[i] + offset(e, e.Nodes[i], i + 1);
-            return lineType switch {
-                "line" => NodePathTypes.Line(this, f),
-                "fan" => NodePathTypes.Fan(this, f),
-                "circle" => NodePathTypes.Circle(this, f, nodeIsCenter: true),
-                "none" => NodePathTypes.None,
-                _ => NodePathTypes.Line(this, f),
-            };
-        }
-        
-        return lineType switch {
-            "line" => NodePathTypes.Line(this),
-            "fan" => NodePathTypes.Fan(this),
-            "circle" => NodePathTypes.Circle(this, nodeIsCenter: true),
-            "none" => NodePathTypes.None,
-            _ => NodePathTypes.Line(this),
-        };
+        return pl.GetNodePathSprites(this);
     }
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {

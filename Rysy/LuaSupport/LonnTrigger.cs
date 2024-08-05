@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Graphics;
+using Rysy.Helpers;
 using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
@@ -26,4 +27,35 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
     public override string Text => Plugin?.TriggerText?.Invoke(Room, this) ?? base.Text;
 
     public string Category => Plugin?.TriggerCategory?.Invoke(Room, this) ?? "default";
+    
+    public override IEnumerable<ISprite> GetNodePathSprites() {
+        var pl = Plugin;
+        if (pl is null)
+            return base.GetNodePathSprites();
+        
+        return pl.GetNodePathSprites(this);
+    }
+    
+    public override IEnumerable<ISprite> GetAllNodeSprites() {
+        if (Plugin is null)
+            return [];
+
+        return Plugin.PushToStack((pl) => {
+            var visibility = pl.GetNodeVisibility(this);
+
+            var visible = visibility switch {
+                "always" => true,
+                "selected" => true,
+                var other => false,
+            };
+
+            if (!visible) {
+                return [];
+            }
+
+            var sprites = base.GetAllNodeSprites();
+
+            return sprites;
+        });
+    }
 }

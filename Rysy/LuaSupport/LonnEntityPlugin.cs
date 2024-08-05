@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Extensions;
+using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
@@ -86,6 +87,29 @@ public sealed class LonnEntityPlugin {
     public LuaStackHolder? StackHolder { get; private set; }
 
     private object LOCK = new();
+
+    public IEnumerable<ISprite> GetNodePathSprites(Entity entity) {
+        var lineType = NodeLineRenderType(entity);
+
+        if (NodeLineRenderOffset is { } offset) {
+            var f = (Entity e, int i) => e.Nodes[i] + offset(e, e.Nodes[i], i + 1);
+            return lineType switch {
+                "line" => NodePathTypes.Line(entity, f),
+                "fan" => NodePathTypes.Fan(entity, f),
+                "circle" => NodePathTypes.Circle(entity, f, nodeIsCenter: true),
+                "none" => NodePathTypes.None,
+                _ => NodePathTypes.Line(entity, f),
+            };
+        }
+        
+        return lineType switch {
+            "line" => NodePathTypes.Line(entity),
+            "fan" => NodePathTypes.Fan(entity),
+            "circle" => NodePathTypes.Circle(entity, nodeIsCenter: true),
+            "none" => NodePathTypes.None,
+            _ => NodePathTypes.Line(entity),
+        };
+    }
 
     public record struct LuaStackHolder(LonnEntityPlugin Plugin, int Amt) : IDisposable {
         public void Dispose() {
