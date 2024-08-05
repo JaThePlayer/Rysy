@@ -27,10 +27,10 @@ public class Trigger : Entity {
     public override bool ResizableY => true;
     public override Point RecommendedMinimumSize => new(8, 8);
 
-    public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => self.GetNodeRect(nodeIndex).Center.ToVector2());
+    public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Line(this, (self, nodeIndex) => GetNodeRect(Nodes[nodeIndex]).Center.ToVector2());
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
-        var rect = GetNodeRect(nodeIndex);
+        var rect = GetNodeRect(Nodes[nodeIndex]);
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
     }
 
@@ -46,11 +46,10 @@ public class Trigger : Entity {
     }
 
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {
-        return ISelectionCollider.FromRect(GetNodeRect(nodeIndex));
+        return ISelectionCollider.FromRect(GetNodeRect(Nodes[nodeIndex]));
     }
 
-    private Rectangle GetNodeRect(int nodeIndex) {
-        var node = Nodes![nodeIndex];
+    protected static Rectangle GetNodeRect(Node node) {
         var rect = new Rectangle((int) node.X - 2, (int) node.Y - 2, 5, 5);
 
         return rect;
