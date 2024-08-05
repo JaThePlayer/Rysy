@@ -22,4 +22,8 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
     public override Range NodeLimits => Plugin?.GetNodeLimits(Room, this) ?? base.NodeLimits;
 
     public override Point MinimumSize => Plugin?.GetMinimumSize?.Invoke(Room, this) ?? base.MinimumSize;
+
+    public override string Text => Plugin?.TriggerText?.Invoke(Room, this) ?? base.Text;
+
+    public string Category => Plugin?.TriggerCategory?.Invoke(Room, this) ?? "default";
 }

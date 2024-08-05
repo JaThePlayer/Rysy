@@ -71,6 +71,12 @@ public sealed class LonnEntityPlugin {
     public Func<Entity, Node, int, Vector2>? NodeLineRenderOffset { get; private set; }
     
     public Func<ILuaWrapper, Entity, Node, int, Rectangle>? NodeRectangle { get; private set; }
+    
+    //triggerText(room, trigger) -> string
+    public Func<ILuaWrapper, Entity, string?>? TriggerText { get; private set; }
+    
+    //category() -> string
+    public Func<ILuaWrapper, Entity, string?>? TriggerCategory { get; private set; }
 
     public bool HasSelectionFunction;
 
@@ -183,6 +189,17 @@ public sealed class LonnEntityPlugin {
             def: (string?) null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
+        
+        plugin.TriggerText = NullConstOrGetter(plugin, "triggerText",
+            def: (string?) null,
+            funcGetter: static (lua, top) => lua.FastToString(top)
+        );
+        
+        plugin.TriggerCategory = NullConstOrGetter(plugin, "category",
+            def: (string?) null,
+            funcGetter: static (lua, top) => lua.FastToString(top)
+        );
+        
         
         plugin.GetNodeTexture = NullConstOrGetter_Noded(plugin, "nodeTexture",
             def: plugin.GetTexture is {} ? (r, e, n, i) => plugin.GetTexture(r, e) : null,
