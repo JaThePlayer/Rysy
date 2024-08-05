@@ -26,6 +26,7 @@ public sealed class FilesystemExplorerWindow : Window {
         base.Render();
         
         FoundFiles ??= ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod("", "")
+            .Where(p => !p.Item1.StartsWith('.') && !p.Item1.StartsWith("__MACOSX", StringComparison.Ordinal))
             .Select(p => new FileRef(p.Item1, p.Item2))
             .ToList();
 
