@@ -257,11 +257,13 @@ public static class EntityRegistry {
         //Task.WhenAll(tasks).Wait();
     }
 
-    private static void LoadLuaEffectPlugin(ModMeta mod, string pluginPath) {
+    internal static void LoadLuaEffectPlugin(ModMeta mod, string pluginPath) {
         mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
             var plugin = stream.ReadAllText();
 
-            RegisterStyleFromLua(plugin, pluginPath, mod);
+            WithLuaHotReloadInfo(pluginPath, "style", () => {
+                RegisterStyleFromLua(plugin, pluginPath, mod);
+            });
         });
     }
 
@@ -302,23 +304,29 @@ public static class EntityRegistry {
         }
     }
 
+    internal static void WithLuaHotReloadInfo(string pluginPath, string type, Action callback) {
+        var lua = LuaCtx.Lua;
+        // Set up some lua globals to support hot reload
+        lua.PushString(pluginPath);
+        lua.SetGlobal("_RYSY_OnHotReload_name");
+        lua.PushString(type);
+        lua.SetGlobal("_RYSY_OnHotReload_type");
+
+        callback();
+            
+        lua.PushNil();
+        lua.SetGlobal("_RYSY_OnHotReload_name");
+        lua.PushNil();
+        lua.SetGlobal("_RYSY_OnHotReload_type");
+    }
+    
     internal static void LoadLuaPluginFromModFile(ModMeta mod, string pluginPath, bool trigger) {
         mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
             var plugin = stream.ReadAllText();
-            var lua = LuaCtx.Lua;
-            
-            // Set up some lua globals to support hot reload
-            lua.PushString(pluginPath);
-            lua.SetGlobal("_RYSY_OnHotReload_name");
-            lua.PushString(trigger ? "trigger" : "entity");
-            lua.SetGlobal("_RYSY_OnHotReload_type");
-            
-            RegisterFromLua(plugin, pluginPath, trigger, mod);
-            
-            lua.PushNil();
-            lua.SetGlobal("_RYSY_OnHotReload_name");
-            lua.PushNil();
-            lua.SetGlobal("_RYSY_OnHotReload_type");
+
+            WithLuaHotReloadInfo(pluginPath, trigger ? "trigger" : "entity", () => {
+                RegisterFromLua(plugin, pluginPath, trigger, mod);
+            });
         });
     }
 

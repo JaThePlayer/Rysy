@@ -291,7 +291,7 @@ public class LuaCtx {
 
             var lib = lua.FastToString(1, callMetamethod: false);
             var modName = lua.FastToString(2, callMetamethod: false);
-            var isTrigger = lua.ToBoolean(3);
+            var type = lua.FastToString(3, callMetamethod: false);
             lua.Pop(3);
 
             if (ModRegistry.GetModByName(modName) is not { } mod) {
@@ -299,7 +299,18 @@ public class LuaCtx {
                 return 0;
             }
 
-            EntityRegistry.LoadLuaPluginFromModFile(mod, lib, isTrigger);
+            switch (type) {
+                case "entity":
+                    EntityRegistry.LoadLuaPluginFromModFile(mod, lib, trigger:  false);
+                    break;
+                case "trigger":
+                    EntityRegistry.LoadLuaPluginFromModFile(mod, lib, trigger: true);
+                    break;
+                case "style":
+                    EntityRegistry.LoadLuaEffectPlugin(mod, lib);
+                    break;
+            }
+            
             return 0;
         });
     
