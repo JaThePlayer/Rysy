@@ -248,7 +248,8 @@ public class LuaCtx {
 
             var lib = lua.FastToString(1, callMetamethod: false);
             var modName = lua.FastToString(2, callMetamethod: false);
-            lua.Pop(2);
+            var shouldRegisterWatcher = lua.ToBoolean(3);
+            lua.Pop(3);
 
             //Console.WriteLine($"requireFromPlugin {lib}, {modName}");
 
@@ -266,19 +267,43 @@ public class LuaCtx {
             }
             
             // Notify lua when the library updates, so that it can hot-reload it.
-            mod.Filesystem.RegisterFilewatch(path, new WatchedAsset {
-                OnChanged = (p) => {
-                    lua.GetGlobal("_RYSY_clear_requireFromPlugin_cache");
-                    lua.PushString(lib);
-                    lua.PushString(modName);
-                    lua.Call(2, 0);
-                }
-            });
+            if (shouldRegisterWatcher) {
+                mod.Filesystem.RegisterFilewatch(path, new WatchedAsset {
+                    OnChanged = (p) => {
+                        lua.SetCurrentModName(mod);
+                        lua.GetGlobal("_RYSY_clear_requireFromPlugin_cache");
+                        lua.PushString(lib);
+                        lua.PushString(modName);
+                        lua.Call(2, 0);
+                    
+                        if (RysyState.Scene is EditorScene editorScene)
+                            editorScene.Map?.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                    }
+                });
+            }
 
             lua.PushString(libString);
             return 1;
         });
 
+        lua.Register("_RYSY_INTERNAL_hotReloadPlugin", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var lib = lua.FastToString(1, callMetamethod: false);
+            var modName = lua.FastToString(2, callMetamethod: false);
+            var isTrigger = lua.ToBoolean(3);
+            lua.Pop(3);
+
+            if (ModRegistry.GetModByName(modName) is not { } mod) {
+                lua.Error($"Mod {modName} not loaded!");
+                return 0;
+            }
+
+            EntityRegistry.LoadLuaPluginFromModFile(mod, lib, isTrigger);
+            return 0;
+        });
+    
+        
         // _RYSY_MODS_find(string modname) -> ModWrapper - finds a mod by everest yaml name
         lua.Register("_RYSY_MODS_find", (nint s) => {
             var lua = Lua.FromIntPtr(s);
