@@ -123,6 +123,9 @@ public abstract class Tool {
     private string PersistenceMaterialKey => GetPersistenceMaterialKeyForLayer(Layer.Name);
     
     public string GetPersistenceMaterialKeyForLayer(string layer) => $"{PersistenceGroup}.{layer}.Material";
+
+    public virtual object? MaterialToPersistenceObj(object? material) => material;
+    public virtual object? PersistenceObjToMaterial(object? material) => material;
     
     /// <summary>
     /// Gets or sets the currently selected material.
@@ -134,7 +137,7 @@ public abstract class Tool {
             }
 
             if (UsePersistence && Persistence.Instance?.Get(PersistenceMaterialKey, (object) null!) is { } persisted) {
-                _material = persisted;
+                _material = PersistenceObjToMaterial(persisted);
                 return persisted;
             }
 
@@ -143,7 +146,7 @@ public abstract class Tool {
         }
         set {
             if (UsePersistence)
-                Persistence.Instance?.Set(PersistenceMaterialKey, value);
+                Persistence.Instance?.Set(PersistenceMaterialKey, MaterialToPersistenceObj(value));
             _material = value ?? false;
             CancelInteraction();
         }

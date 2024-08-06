@@ -26,6 +26,22 @@ public class ScriptTool : Tool {
         return material.ToString() ?? "";
     }
 
+    public override object? MaterialToPersistenceObj(object? material) {
+        if (material is Script scr) {
+            return scr.Name;
+        }
+
+        return material;
+    }
+
+    public override object? PersistenceObjToMaterial(object? material) {
+        if (material is string str) {
+            return ScriptRegistry.Scripts.FirstOrDefault(s => s.Name == str);
+        }
+
+        return null;
+    }
+
     public override IEnumerable<object>? GetMaterials(EditorLayer layer) 
         => ScriptRegistry.Scripts;
 
