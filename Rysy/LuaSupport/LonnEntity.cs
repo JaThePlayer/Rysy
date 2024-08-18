@@ -20,6 +20,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
     
     private void ClearInternalCache() {
         CachedSprites = null;
+        CachedNodeSprites?.Clear();
         CachedNodeSprites = null;
     }
     
@@ -219,6 +220,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             if (Plugin is null)
                 return base.GetNodeSelection(nodeIndex);
             
+            // 1. Call entity.selection if exists
             if (CallSelectionFunc((lua, top) => {
                 if (lua.Type(top) != LuaType.Table) {
                     return default;
@@ -236,22 +238,20 @@ public class LonnEntity : Entity, IHasLonnPlugin {
                 return ISelectionCollider.FromRect(selectionRect);
             }
 
-            if (Plugin.NodeRectangle?.Invoke(Room, this, Nodes[nodeIndex], nodeIndex + 1) is { } nodeRect) {
-                return ISelectionCollider.FromRect(nodeRect);
-            }
-
-            if (Plugin.GetRectangle is { } rectFunc) {
-                var oldPos = Pos;
-                
-                SilentSetPos(Nodes![nodeIndex]);
-
-                try {
-                    var rectangle = rectFunc(Room, this);
-                    return ISelectionCollider.FromRect(rectangle);
-                } finally {
-                    SilentSetPos(oldPos);
+            // 2. Use nodeRectangle if entity.rectangle exists or it has both width and height.
+            if (Plugin.GetRectangle is { } || (Width > 0 && Height > 0)) {
+                if (Plugin.NodeRectangle?.Invoke(Room, this, Nodes[nodeIndex], nodeIndex + 1) is { } nodeRect) {
+                    return ISelectionCollider.FromRect(nodeRect);
                 }
             }
+
+            // 3. Fall back to sprites
+            if (GetNodeSprites(nodeIndex).FirstOrDefault() is { } firstSprite) {
+                return firstSprite.GetCollider();
+            }
+
+            // 4. If no sprites exist, return missing selection
+            return ISelectionCollider.FromRect(0, 0, 0, 0);
         } catch (Exception ex) {
             Logger.Error(ex, $"Failed to get node {nodeIndex} selection for: {ToJson()}");
         }
@@ -375,9 +375,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
     public override void ClearInnerCaches() {
         base.ClearInnerCaches();
 
-        CachedSprites = null;
-        CachedNodeSprites?.Clear();
-        CachedNodeSprites = null;
+        ClearInternalCache();
     }
     
     #region Sprites
