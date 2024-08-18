@@ -145,7 +145,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             item.Render(SpriteRenderCtx.Default(true));
     }
 
-    internal IEnumerable<ISprite> GetSprites(Color c, Vector2? pos = null) {
+    internal IEnumerable<RectangleSprite> GetSprites(Color c, Vector2? pos = null) {
         var rect = Rect.Div(8);
 
         Vector2 rPos = pos ?? new(rect.X * 8, rect.Y * 8);

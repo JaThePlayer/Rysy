@@ -422,7 +422,8 @@ public sealed class LonnEntityPlugin {
             switch (lua.PeekTableType(placement1loc, "name")) {
                 case LuaType.String:
                     // name is provided, so there's 1 placement
-                    plugin.Placements.Add(new(lua));
+                    defaultPlacement = new(lua);
+                    plugin.Placements.Add(defaultPlacement);
                     break;
                 default:
                     if (lua.GetTable(placement1loc, "default") == LuaType.Table) {
@@ -494,7 +495,7 @@ public sealed class LonnEntityPlugin {
                 plugin.FieldList = () => {
                     var fields = origFieldListGetter();
 
-                    fields.Ordered((entity) => {
+                    return fields.Ordered((entity) => {
                         return plugin.PushToStack((plugin) => {
                             var type = lua.GetTable(plugin.StackLoc, "fieldOrder");
 
@@ -503,16 +504,12 @@ public sealed class LonnEntityPlugin {
                                 return new();
                             }
 
-                            var order = lua.PCallFunction(entity, (lua, i) => {
-                                return lua.ToList(i)?.OfType<string>().ToList();
-                            }) ?? new();
+                            var order = lua.PCallFunction(entity, (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
                             lua.Pop(1);
 
                             return order;
                         });
                     });
-
-                    return fields;
                 };
             }
             break;

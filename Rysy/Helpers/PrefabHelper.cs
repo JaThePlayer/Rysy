@@ -133,7 +133,7 @@ public static class PrefabHelper {
 
                 foreach (var item in tileSelections) {
                     item.Rect = item.Rect.MovedBy(delta ?? (pos - item.Rect.Location.ToVector2()));
-                    sprites.AddRange(item.GetSprites(Color.Red));
+                    sprites.AddRange(item.GetSprites(Color.Red).Cast<ISprite>());
                 }
             }
 

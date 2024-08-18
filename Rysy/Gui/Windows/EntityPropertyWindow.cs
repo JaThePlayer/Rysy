@@ -50,12 +50,16 @@ public class EntityPropertyWindow : FormWindow {
         fields["__padding"] = new PaddingField();
         order.Add("__padding");
 
+        // Make sure fields present in fieldOrder but not in fieldInformation gets ordered.
+        foreach (var orderKey in fieldInfo.Order?.Invoke(main) ?? []) {
+            order.Add(orderKey);
+        }
+
         foreach (var (k, f) in fieldInfo.OrderedEnumerable(main)) {
             if (!IsValidKey(k))
                 continue;
             
             fields[k] = f.CreateClone();
-            order.Add(k);
         }
 
         // Take into account properties defined on this entity, even if not present in FieldInfo
