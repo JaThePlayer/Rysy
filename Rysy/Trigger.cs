@@ -37,11 +37,12 @@ public class Trigger : Entity {
     public override IEnumerable<ISprite> GetSprites() {
         var rect = new Rectangle(X, Y, Width, Height);
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
-        yield return new PicoTextRectSprite() {
+        yield return new PicoTextRectSprite {
             Text = Text,
             Pos = rect,
             Color = Color.White,
             Scale = 0.5f,
+            Depth = Depth - 1
         };
     }
 
