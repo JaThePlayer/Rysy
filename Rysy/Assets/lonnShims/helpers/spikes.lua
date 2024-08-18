@@ -375,13 +375,15 @@ function spikeHelper.getFieldInformations(variants, attribute, default)
     if type(attribute) == "table" then
         for _, attr in ipairs(attribute) do
             result[attr] = {
-                options = variants
+                options = variants,
+                fieldType = "__rysy_spikeTexture",
             }
         end
 
     else
         result[attribute] = {
-            options = variants
+            options = variants,
+            fieldType = "__rysy_spikeTexture",
         }
     end
 
