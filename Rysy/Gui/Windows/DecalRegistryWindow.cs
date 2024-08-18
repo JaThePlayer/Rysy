@@ -38,7 +38,7 @@ public sealed class DecalRegistryWindow : Window {
             OnUndo = HistoryHook
         };
         
-        HotkeyHandler = new(Input.Global, updateInImgui: true);
+        HotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
         HotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
         
         HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => MoveSelections(-1), HotkeyModes.OnHoldSmoothInterval);

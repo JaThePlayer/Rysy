@@ -137,7 +137,7 @@ class EditTileDataWindow : Window {
 
         History = new(EditorState.Map ?? throw new Exception("Not in a map?"));
 
-        Hotkeys = new(Input, updateInImgui: true);
+        Hotkeys = new(Input, HotkeyHandler.ImGuiModes.Ignore);
 
         Tools = new ToolHandler(History, Input).UsePersistence(false);
         Tools.InitHotkeys(Hotkeys);
