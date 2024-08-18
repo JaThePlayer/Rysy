@@ -23,6 +23,10 @@ public interface ILuaWrapper {
         return LuaIndex(lua, buffer[..decoded]);
     }
 
+    public virtual int LuaIndexNull(Lua lua) {
+        return 0;
+    }
+
     /// <summary>
     /// Implements the __len metamethod. Returns the amount of values pushed to the stack.
     /// </summary>
