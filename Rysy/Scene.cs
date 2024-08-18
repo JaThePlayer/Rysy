@@ -33,8 +33,8 @@ public abstract class Scene {
     }
 
     public virtual void SetupHotkeys() {
-        Hotkeys = new(Input.Global, updateInImgui: false);
-        HotkeysIgnoreImGui = new(Input.Global, updateInImgui: true);
+        Hotkeys = new(Input.Global, HotkeyHandler.ImGuiModes.Never);
+        HotkeysIgnoreImGui = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
     }
 
     public virtual void Update() {

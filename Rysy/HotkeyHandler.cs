@@ -9,20 +9,38 @@ namespace Rysy;
 public class HotkeyHandler {
     private List<Hotkey> Hotkeys = new();
 
-    public bool UpdateInImgui = false;
+    /// <summary>
+    /// Specifies how this hotkey manager responds to ImGui usage
+    /// </summary>
+    public ImGuiModes ImGuiMode;
+
+    public enum ImGuiModes {
+        /// <summary>
+        /// Hotkey always works, even if imgui wants keyboard and mouse
+        /// </summary>
+        Ignore,
+        /// <summary>
+        /// Hotkey works only if imgui doesn't want the keyboard
+        /// </summary>
+        NotWhenUsingKeyboard,
+        /// <summary>
+        /// Hotkey doesn't work if imgui wants anything
+        /// </summary>
+        Never,
+    }
 
     public Input Input { get; private set; }
 
     public LockManager LockManager { get; private set; } = new();
 
-    public HotkeyHandler(Input input, bool updateInImgui) {
+    public HotkeyHandler(Input input, ImGuiModes imguiMode) {
         Input = input;
-        UpdateInImgui = updateInImgui;
+        ImGuiMode = imguiMode;
     }
     
     public HotkeyHandler AddHistoryHotkeys(Action undo, Action redo, Action save) {
-        AddHotkeyFromSettings("undo", "ctrl+z|mouse3", undo, HotkeyModes.OnHoldSmoothInterval);
-        AddHotkeyFromSettings("redo", "ctrl+y|mouse4", redo, HotkeyModes.OnHoldSmoothInterval);
+        AddHotkeyFromSettings("undo", "ctrl+z|mouse3", undo, HotkeyModes.OnHoldSmoothInterval, ImGuiModes.NotWhenUsingKeyboard);
+        AddHotkeyFromSettings("redo", "ctrl+y|mouse4", redo, HotkeyModes.OnHoldSmoothInterval, ImGuiModes.NotWhenUsingKeyboard);
         AddHotkeyFromSettings("saveMap", "ctrl+s", save);
         
         return this;
@@ -31,27 +49,23 @@ public class HotkeyHandler {
     /// <summary>
     /// Adds a new hotkey, loading it from settings using <paramref name="name"/>, saving the hotkey to the settings file using <paramref name="defaultKeybind"/> if it doesn't exist.
     /// </summary>
-    /// <param name="name"></param>
-    /// <param name="defaultKeybind"></param>
-    /// <param name="onPress"></param>
-    /// <param name="mode"></param>
-    /// <returns></returns>
-    public HotkeyHandler AddHotkeyFromSettings(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
-        return AddHotkey(Settings.Instance.GetOrCreateHotkey(name, defaultKeybind), onPress, mode);
+    public HotkeyHandler AddHotkeyFromSettings(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick, ImGuiModes imguiMode = ImGuiModes.Ignore) {
+        return AddHotkey(Settings.Instance.GetOrCreateHotkey(name, defaultKeybind), onPress, mode, imguiMode);
     }
 
     /// <summary>
     /// Adds a new hotkey, parsed from <paramref name="hotkeyString"/>.
     /// </summary>
     /// <returns>this</returns>
-    public HotkeyHandler AddHotkey(string hotkeyString, Action onPress, HotkeyModes mode = HotkeyModes.OnClick) {
+    public HotkeyHandler AddHotkey(string hotkeyString, Action onPress, HotkeyModes mode = HotkeyModes.OnClick, ImGuiModes imguiMode = ImGuiModes.Ignore) {
         if (hotkeyString is null)
             return this;
 
         foreach (var splitHotkey in hotkeyString.Split('|')) {
             var hotkey = new Hotkey(splitHotkey) {
                 OnPress = onPress,
-                Mode = mode
+                Mode = mode,
+                ImGuiMode = imguiMode,
             };
 
             lock (Hotkeys)
@@ -61,10 +75,17 @@ public class HotkeyHandler {
         return this;
     }
 
+    private static bool ImGuiModeMet(ImGuiModes mode) {
+        return mode switch {
+            ImGuiModes.NotWhenUsingKeyboard => !ImGuiManager.WantTextInput,
+            ImGuiModes.Never => !ImGuiManager.WantTextInput && !ImGuiManager.WantCaptureMouse,
+            _ => true,
+        };
+    }
+    
     public void Update() {
-        if (!UpdateInImgui && (ImGuiManager.WantTextInput || ImGuiManager.WantCaptureMouse)) {
+        if (!ImGuiModeMet(ImGuiMode))
             return;
-        }
 
         if (LockManager.IsLocked())
             return;
@@ -74,6 +95,8 @@ public class HotkeyHandler {
         var alt = Input.Keyboard.Alt();
         lock (Hotkeys)
             foreach (var hotkey in Hotkeys) {
+                if (!ImGuiModeMet(hotkey.ImGuiMode))
+                    return;
                 if (hotkey.Ctrl == ctrl && hotkey.Shift == shift && hotkey.Alt == alt) {
                     switch (hotkey.Mode) {
                         case HotkeyModes.OnClick:
@@ -208,6 +231,8 @@ public class Hotkey {
 
     public Action OnPress;
     public HotkeyModes Mode;
+
+    public HotkeyHandler.ImGuiModes ImGuiMode = HotkeyHandler.ImGuiModes.Ignore;
 
     internal double SmoothIntervalTime;
 

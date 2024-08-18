@@ -52,7 +52,7 @@ public class StylegroundWindow : Window {
 
         NoSaveData = false;
 
-        HotkeyHandler = new(Input.Global, updateInImgui: true);
+        HotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
         HotkeyHandler.AddHotkeyFromSettings("delete", "delete", () => EditAll(s => Delete(s)));
         HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => EditAll(s => Move(s, -1)), HotkeyModes.OnHoldSmoothInterval);
         HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDown", "down", () => EditAll(s => Move(s, 1), true), HotkeyModes.OnHoldSmoothInterval);
