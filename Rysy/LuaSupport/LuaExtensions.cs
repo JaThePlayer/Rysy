@@ -938,6 +938,9 @@ where TArg1 : class, ILuaWrapper {
 
                     ret = obj.LuaIndex(lua, lua.ToStringIntoASCII(top, callMetamethod: false));
                     break;
+                case LuaType.Nil:
+                    ret = obj.LuaIndexNull(lua);
+                    break;
                 default:
                     throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");
             }

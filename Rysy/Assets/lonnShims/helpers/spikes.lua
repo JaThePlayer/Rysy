@@ -1,5 +1,10 @@
-﻿local drawableSprite = require("structs.drawable_sprite")
+﻿-- TODO - More cleanup once the deprecated code is gone
+-- A lot of the functions now should just take a options table instead
+
+local drawableSprite = require("structs.drawable_sprite")
 local utils = require("utils")
+local entities = require("entities")
+local logging = require("logging")
 
 local spikeHelper = {}
 
@@ -80,6 +85,18 @@ local triggerRotations = {
     left = math.pi * 3 / 2
 }
 
+local sideIndexLookup = {
+    "up",
+    "right",
+    "down",
+    "left",
+
+    up = 1,
+    right = 2,
+    down = 3,
+    left = 4
+}
+
 -- Used to move the spikes into the wall
 local function getOriginalTriggerSpikeOffset(direction)
     return unpack(originalTriggerSpikeOffsets[direction] or {0, 0})
@@ -155,12 +172,8 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
     local positionOffsetKey = horizontal and "y" or "x"
 
     local position = {
-        x = entity.x + offsetX,
-        y = entity.y + offsetY,
-        depth = spikeDepth,
-        rotation = rotation,
-        justificationX = justificationX,
-        justificationY = justificationY,
+        x = entity.x,
+        y = entity.y
     }
 
     local sprites = {}
@@ -172,6 +185,11 @@ local function getSpikeSpritesFromTexture(entity, direction, variant, originalTr
         end
 
         local sprite = drawableSprite.fromTexture(texture, position)
+
+        sprite.depth = spikeDepth
+        sprite.rotation = rotation
+        sprite:setJustification(justificationX, justificationY)
+        sprite:addPosition(offsetX, offsetY)
 
         table.insert(sprites, sprite)
 
@@ -195,8 +213,13 @@ local function getTentacleSprites(entity, direction, variant, step)
     return getSpikeSpritesFromTexture(entity, direction, variant, nil, texture, step or 16)
 end
 
-function spikeHelper.getSpikeSprites(entity, direction, originalTrigger)
-    local variant = entity.type or "default"
+function spikeHelper.getSpikeSprites(entity, direction, originalTrigger, variantKey)
+    -- Use first key if table
+    if type(variantKey) == "table" then
+        variantKey = variantKey[1]
+    end
+
+    local variant = entity[variantKey] or "default"
 
     if variant == "tentacles" then
         return getTentacleSprites(entity, direction, variant, 16)
@@ -206,20 +229,71 @@ function spikeHelper.getSpikeSprites(entity, direction, originalTrigger)
     end
 end
 
-function spikeHelper.getSpikePlacements(direction, variants, originalTrigger)
+local function setPlacementAttributeIfMissing(data, attribute, value)
+    if type(attribute) == "table" then
+        for _, attr in ipairs(attribute) do
+            if not data[attr] then
+                data[attr] = value
+            end
+        end
+
+    else
+        if not data[attribute] then
+            data[attribute] = value
+        end
+    end
+end
+
+-- Check if all variant keys have default data
+local function hasDataForVariantKey(data, variantKey)
+    if type(variantKey) == "table" then
+        for _, attr in ipairs(variantKey) do
+            if not data[attr] then
+                return false
+            end
+        end
+
+    else
+        if not data[variantKey] then
+            return false
+        end
+    end
+
+    return true
+end
+
+function spikeHelper.getSpikePlacements(direction, variants, variantKey, defaultData, placementName)
+    placementName = placementName or "%s_%s"
+
     local placements = {}
     local horizontal = direction == "left" or direction == "right"
     local lengthKey = horizontal and "height" or "width"
 
-    for i, variant in ipairs(variants) do
-        placements[i] = {
-            name = string.format("%s_%s", direction, variant),
-            data = {
-                type = variant,
-            }
+
+    -- If we can't fit the variant into the placement then we just make one simple placement instead
+    if hasDataForVariantKey(defaultData, variantKey) then
+        local placement = {
+            name = string.format(placementName, direction),
+            data = utils.deepcopy(defaultData)
         }
 
-        placements[i].data[lengthKey] = 8
+        placement.data[lengthKey] = 8
+
+        table.insert(placements, placement)
+
+    else
+        for i, variant in ipairs(variants) do
+            local data = utils.deepcopy(defaultData)
+
+            setPlacementAttributeIfMissing(data, variantKey, variant)
+
+            placements[i] = {
+                name = string.format(placementName, direction, variant),
+                data = data
+            }
+
+            placements[i].data[lengthKey] = 8
+        end
     end
 
     return placements
@@ -267,14 +341,16 @@ function spikeHelper.getTriggerSpikeSprites(entity, direction)
     return sprites
 end
 
-function spikeHelper.getTriggerSpikePlacements(direction, variants)
+function spikeHelper.getTriggerSpikePlacements(direction, variants, variantKey, defaultData, placementName)
+    placementName = placementName or "%s"
+
     local horizontal = direction == "left" or direction == "right"
     local lengthKey = horizontal and "height" or "width"
 
     local placements = {
         {
-            name = direction,
-            data = {}
+            name = string.format(placementName, direction),
+            data = utils.deepcopy(defaultData)
         }
     }
 
@@ -291,14 +367,93 @@ function spikeHelper.getCanResize(direction)
     return {true, false}
 end
 
-function spikeHelper.getFieldInformations(variants, attribute)
+function spikeHelper.getFieldInformations(variants, attribute, default)
     attribute = attribute or "type"
 
-    return {
-        [attribute] = {
+    local result = utils.deepcopy(default)
+
+    if type(attribute) == "table" then
+        for _, attr in ipairs(attribute) do
+            result[attr] = {
+                options = variants
+            }
+        end
+
+    else
+        result[attribute] = {
             options = variants
         }
-    }
+    end
+
+    return result
+end
+
+function spikeHelper.rotate(entity, direction, handlerDirectionNames, rotationDirection)
+    local sideIndex = sideIndexLookup[direction]
+    local targetIndex = utils.mod1(sideIndex + rotationDirection, 4)
+
+    if sideIndex ~= targetIndex then
+        local targetDirection = sideIndexLookup[targetIndex]
+        local newHandlerName = handlerDirectionNames[targetDirection]
+
+        entity._name = newHandlerName
+
+        -- Swap width and height if rotation goes from horizontal <-> vertical
+        if sideIndex % 2 ~= targetIndex % 2 then
+            entity.width, entity.height = entity.height, entity.width
+        end
+    end
+
+    return sideIndex ~= targetIndex
+end
+
+function spikeHelper.flip(entity, direction, handlerDirectionNames, horizontal, vertical)
+    local result = false
+
+    if vertical and (direction == "up" or direction == "down") then
+        result = spikeHelper.rotate(entity, direction, handlerDirectionNames, 2)
+    end
+
+    if horizontal and (direction == "left" or direction == "right") then
+        result = spikeHelper.rotate(entity, direction, handlerDirectionNames, 2)
+    end
+
+    return result
+end
+
+
+
+-- DEPRECATION - Remove this later
+local handlerShownMessageFor = {}
+
+local function handlerDeprecationWarning(name)
+    if handlerShownMessageFor[name] then
+        return
+    end
+
+    local message = string.format("The spike handler '%s' is not using the options table version of createEntityHandler. The old argument based version is now deprecated, as it is not flexible.", name)
+
+    logging.warning(message)
+
+    handlerShownMessageFor[name] = true
+end
+
+-- In the future the spike helper should only take options
+local function getHandlerOptions(name, direction, triggerSpike, originalTriggerSpike, variants)
+    local usesOptions = type(triggerSpike) == "table"
+
+    if usesOptions then
+        return triggerSpike
+
+    else
+        handlerDeprecationWarning(name)
+
+        return {
+            triggerSpike = triggerSpike,
+            originalTriggerSpike = originalTriggerSpike,
+            variants = variants
+        }
+    end
 end
 
 local _RYSY_selectionFuncs = {
@@ -316,8 +471,17 @@ local _RYSY_selectionFuncs = {
 	end,
 }
 
-function spikeHelper.createEntityHandler(name, direction, triggerSpike, originalTriggerSpike, variants)
-    variants = variants or (originalTriggerSpike and spikeHelper.triggerSpikeVariants) or spikeHelper.spikeVariants
+function spikeHelper.createEntityHandler(name, direction, ...)
+    local options = getHandlerOptions(name, direction, ...)
+
+    local triggerSpike = options.triggerSpike
+    local originalTriggerSpike = options.originalTriggerSpike
+    local variants = options.variants or (originalTriggerSpike and spikeHelper.triggerSpikeVariants) or spikeHelper.spikeVariants
+    local variantKey = options.variantKey or "type"
+    local defaultFieldInformation = options.fieldInformation or {}
+    local defaultPlacementData = options.placementData or {}
+    local placementName = options.placementName
+    local handlerDirectionNames = options.directionNames
 
     local handler = {}
 
@@ -325,17 +489,40 @@ function spikeHelper.createEntityHandler(name, direction, triggerSpike, original
     local placementFunction = triggerSpike and spikeHelper.getTriggerSpikePlacements or spikeHelper.getSpikePlacements
 
     handler.name = name
-    handler.placements = placementFunction(direction, variants, originalTriggerSpike)
+    handler.placements = placementFunction(direction, variants, variantKey, defaultPlacementData, placementName)
     handler.canResize = spikeHelper.getCanResize(direction)
-    handler.fieldInformation = spikeHelper.getFieldInformations(variants)
+    handler.fieldInformation = spikeHelper.getFieldInformations(variants, variantKey, defaultFieldInformation)
 
     function handler.sprite(room, entity)
-        return spriteFunction(entity, direction, originalTriggerSpike)
+        return spriteFunction(entity, direction, originalTriggerSpike, variantKey)
     end
 
-	handler.selection = _RYSY_selectionFuncs[direction]
+    handler.selection = _RYSY_selectionFuncs[direction]
+
+    if handlerDirectionNames then
+        function handler.flip(room, entity, horizontal, vertical)
+            return spikeHelper.flip(entity, direction, handlerDirectionNames, horizontal, vertical)
+        end
+
+        function handler.rotate(room, entity, rotationDirection)
+            return spikeHelper.rotate(entity, direction, handlerDirectionNames, rotationDirection)
+        end
+    end
 
     return handler
+end
+
+function spikeHelper.createEntityHandlers(options)
+    local handlers = {}
+    local directionNames = options.directionNames or {}
+
+    for direction, handlerName in pairs(directionNames) do
+        local handler = spikeHelper.createEntityHandler(handlerName, direction, options)
+
+        table.insert(handlers, handler)
+    end
+
+    return handlers
 end
 
 return spikeHelper
