@@ -49,16 +49,19 @@ public sealed class Autotiler {
                 var id = tileset.Attributes?["id"]?.InnerText.FirstOrDefault() ?? throw new Exception($"<Tileset> node missing id");
                 var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
 
-                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray();
-                var ignoresAll = ignores?.Contains('*') ?? false;
+                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
+                var ignoreExceptions = tileset.Attributes?["ignoreExceptions"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
+                var ignoresAll = ignores.Contains('*');
 
                 TilesetData tilesetData = new() {
                     Id = id,
                     Autotiler = this,
                     Filename = path,
                     Texture = GFX.Atlas[$"tilesets/{path}"],
-                    Ignores = ignoresAll ? null : ignores,
+                    Ignores = ignores,
+                    IgnoreExceptions = ignoreExceptions,
                     IgnoreAll = ignoresAll,
+                    IgnoresExceptExceptions = ignores.Except(ignoreExceptions).ToArray(),
                     DisplayName = tileset.Attributes?["displayName"]?.InnerText,
                     ScanWidth = tileset.Attributes?["scanWidth"]?.InnerText.ToInt() ?? 3,
                     ScanHeight = tileset.Attributes?["scanHeight"]?.InnerText.ToInt() ?? 3,
