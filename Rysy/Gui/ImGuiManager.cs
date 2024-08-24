@@ -1,10 +1,10 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Gui;
@@ -548,7 +548,7 @@ public static class ImGuiManager {
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
-    public class ImGuiRenderer {
+    public unsafe class ImGuiRenderer {
         private RasterizerState RasterizerState;
         private GraphicsDevice GraphicsDevice => RysyState.GraphicsDevice;
         private BasicEffect Effect;
@@ -731,11 +731,29 @@ public static class ImGuiManager {
             #endif
         }
 
-        protected void SetupInput() {
+        protected unsafe void SetupInput() {
             ImGuiIOPtr io = ImGui.GetIO();
 #if FNA
             TextInputEXT.TextInput += OnTextInput;
             TextInputEXT.StartTextInput();
+            
+            // Setup clipboard callbacks
+            // Not needed for windows, but is needed for other OSes
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static void SetClipboard(nint userdata, byte* txt) {
+                _ = SDL_SetClipboardText(txt);
+            }
+            
+            [DllImport("SDL2", EntryPoint = "SDL_SetClipboardText", CallingConvention = CallingConvention.Cdecl)]
+            static extern int SDL_SetClipboardText(byte* text);
+            
+            [DllImport("SDL2", EntryPoint = "SDL_GetClipboardText", CallingConvention = CallingConvention.Cdecl)]
+            static extern nint SDL_GetClipboardText();
+            
+            delegate* <nint> get = &SDL_GetClipboardText;
+            delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
+            io.GetClipboardTextFn = (nint)get;
+            io.SetClipboardTextFn = (nint)set;
 #else
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => OnTextInput(e.Character);
 #endif
