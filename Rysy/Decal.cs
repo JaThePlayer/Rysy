@@ -9,9 +9,6 @@ using System.Text.RegularExpressions;
 namespace Rysy;
 
 public sealed partial class Decal : Entity, IPlaceable {
-    [GeneratedRegex(@"\d+$|\.png$", RegexOptions.RightToLeft)]
-    internal static partial Regex NumberOrPngExtTrimEnd();
-    
     [GeneratedRegex(@"\d+$", RegexOptions.RightToLeft)]
     internal static partial Regex NumberAtEnd();
 
@@ -113,7 +110,11 @@ public sealed partial class Decal : Entity, IPlaceable {
     public static Decal Create(BinaryPacker.Element from, bool fg, Room room) {
         from.Name = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID;
 
-        return (Decal)EntityRegistry.Create(from, room, false);
+        var dec = (Decal)EntityRegistry.Create(from, room, false);
+
+        dec.Texture = dec.Texture.TrimEnd(".png", StringComparison.Ordinal);
+        
+        return dec;
     }
 
     /// <summary>
@@ -124,7 +125,24 @@ public sealed partial class Decal : Entity, IPlaceable {
             textureFromMap = textureFromMap[..^".png".Length];
         }
 
-        return "decals/" + textureFromMap.RegexReplace(NumberAtEnd(), string.Empty).Unbackslash();
+        var path = textureFromMap.RegexReplace(NumberAtEnd(), string.Empty).Unbackslash();
+        if (!path.StartsWith("decals/", StringComparison.Ordinal))
+            path = $"decals/{path}";
+        
+        return path;
+    }
+
+    /// <summary>
+    /// Converts a texture path into the .bin format
+    /// </summary>
+    public static string PathToMapTexture(string texture) {
+        var tSpan = texture.AsSpan();
+        if (tSpan.StartsWith("decals/")) {
+            tSpan = tSpan["decals/".Length..];
+        }
+
+        // Lonn requires the .png prefix or it will mess up decal paths
+        return tSpan.EndsWith(".png") ? tSpan.ToString() : $"{tSpan}.png";
     }
 
     /// <summary>
@@ -187,7 +205,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         var attr = new Dictionary<string, object>(EntityData.Inner.Count, StringComparer.Ordinal) {
             ["x"] = X,
             ["y"] = Y,
-            ["texture"] = Texture,
+            ["texture"] = PathToMapTexture(Texture),
             // omitting these crashes the game...
             ["scaleX"] = ScaleX,
             ["scaleY"] = ScaleY
