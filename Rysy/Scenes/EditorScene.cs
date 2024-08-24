@@ -320,8 +320,7 @@ public sealed class EditorScene : Scene {
 
             HandleRoomSwapInputs(Input.Global);
 
-            if (CurrentRoom is { })
-                ToolHandler.Update(Camera, CurrentRoom);
+            ToolHandler.Update(Camera, CurrentRoom);
         }
     }
 
@@ -388,9 +387,8 @@ public sealed class EditorScene : Scene {
 
             if (renderStylegrounds && fgInFront)
                 StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
-
-            ToolHandler.Render(Camera, CurrentRoom);
         }
+        ToolHandler.Render(Camera, CurrentRoom);
 
         /*
         RysyEngine.GDM.GraphicsDevice.SetRenderTarget(null);

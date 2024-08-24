@@ -174,18 +174,18 @@ public class ToolHandler {
         tool.Layer = layers[(i + idOffset).MathMod(layers.Count)];
     }
 
-    public void Update(Camera camera, Room currentRoom) {
+    public void Update(Camera camera, Room? currentRoom) {
         CurrentTool.HotkeyHandler.Update();
         CurrentTool.Update(camera, currentRoom);
     }
 
-    public void Render(Camera camera, Room currentRoom) {
-        currentRoom.StartBatch(camera);
-
-        CurrentTool.Render(camera, currentRoom);
-
-        GFX.EndBatch();
-
+    public void Render(Camera camera, Room? currentRoom) {
+        if (currentRoom is { }) {
+            currentRoom.StartBatch(camera);
+            CurrentTool.Render(camera, currentRoom);
+            GFX.EndBatch();
+        }
+        
         GFX.BeginBatch();
         CurrentTool.RenderOverlay();
         GFX.EndBatch();
