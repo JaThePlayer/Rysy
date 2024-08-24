@@ -20,7 +20,8 @@ public sealed class SpikesUp : Entity, IPlaceable {
     public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X, Y - 8, Width, 8);
 
     public static FieldList GetFields() => new(new {
-        type = SpikeHelper.GetTypeField()
+        type = SpikeHelper.GetTypeField(),
+        attachToSolid = true,
     });
 
     public static PlacementList GetPlacements() => SpikeHelper.CreatePlacements(t => $"up_{t}");
@@ -40,7 +41,8 @@ public sealed class SpikesDown : Entity, IPlaceable {
         .WithSID(dir == RotationDirection.Left ? "spikesRight" : "spikesLeft"));
 
     public static FieldList GetFields() => new(new {
-        type = SpikeHelper.GetTypeField()
+        type = SpikeHelper.GetTypeField(),
+        attachToSolid = true,
     });
 
     public static PlacementList GetPlacements() => SpikeHelper.CreatePlacements(t => $"down_{t}");
@@ -60,7 +62,8 @@ public sealed class SpikesRight : Entity, IPlaceable {
         .WithSID(dir == RotationDirection.Left ? "spikesUp" : "spikesDown"));
 
     public static FieldList GetFields() => new(new {
-        type = SpikeHelper.GetTypeField()
+        type = SpikeHelper.GetTypeField(),
+        attachToSolid = true,
     });
 
     public static PlacementList GetPlacements() => SpikeHelper.CreatePlacements(t => $"right_{t}");
@@ -82,7 +85,8 @@ public sealed class SpikesLeft : Entity, IPlaceable {
     public override ISelectionCollider GetMainSelection() => ISelectionCollider.FromRect(X - 8, Y, 8, Height);
 
     public static FieldList GetFields() => new(new {
-        type = SpikeHelper.GetTypeField()
+        type = SpikeHelper.GetTypeField(),
+        attachToSolid = true,
     });
 
     public static PlacementList GetPlacements() => SpikeHelper.CreatePlacements(t => $"left_{t}");
