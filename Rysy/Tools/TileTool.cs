@@ -133,7 +133,10 @@ public class TileTool : Tool {
         }
     }
 
-    public override void Update(Camera camera, Room room) {
+    public override void Update(Camera camera, Room? room) {
+        if (room is null)
+            return;
+        
         var (tx, ty) = GetMouseTilePos(camera, room);
         HandleMiddleClick(room, tx, ty);
         

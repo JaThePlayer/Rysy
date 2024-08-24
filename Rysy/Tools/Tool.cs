@@ -185,7 +185,7 @@ public abstract class Tool {
         CachedSearch = null;
     }
 
-    public abstract void Update(Camera camera, Room room);
+    public abstract void Update(Camera camera, Room? room);
 
     /// <summary>
     /// Renders this tool. Before calling, the sprite batch should be set using currentRoom.StartBatch(camera)
@@ -250,9 +250,10 @@ public abstract class Tool {
         return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
     }
     
-    public Point GetMouseRoomPos(Camera camera, Room room, Point? pos = default) {
+    public Point GetMouseRoomPos(Camera camera, Room? room, Point? pos = default) {
         if (Layer == EditorLayers.Room)
             return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
+        
         return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
     }
 

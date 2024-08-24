@@ -750,7 +750,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         if ((layer & SelectionLayer.Rooms) != 0) {
             var map = Map;
 
-
             foreach (var room in map.Rooms) {
                 var handler = room.GetSelectionHandler();
 

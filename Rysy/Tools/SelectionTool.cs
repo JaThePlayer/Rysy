@@ -332,7 +332,11 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         GFX.EndBatch();
         GFX.BeginBatch(EditorState.Camera!);
 
-        DoRender(EditorState.Camera, EditorState.CurrentRoom);
+        var room = EditorState.CurrentRoom;
+        if (Layer == EditorLayers.Room)
+            room ??= EditorState.Map?.Rooms.FirstOrDefault() ?? Room.DummyRoom;
+        
+        DoRender(EditorState.Camera, room);
     }
 
     private int GetSideGrabLeniency(Camera camera) => (int) (1f / camera.Scale * 6f).AtLeast(1);
@@ -401,7 +405,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             DrawSelectionRect(rect);
         }
 
-        var mousePos = GetMouseRoomPos(camera, room!);
+        var mousePos = GetMouseRoomPos(camera, room);
         var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
         if (CurrentSelections is { } selections) {
@@ -517,7 +521,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    public override void Update(Camera camera, Room room) {
+    public override void Update(Camera camera, Room? room) {
+        if (Layer == EditorLayers.Room)
+            room ??= EditorState.Map?.Rooms.FirstOrDefault() ?? Room.DummyRoom;
+
+        if (room is null)
+            return;
+        
         if (CurrentSelections is { } selections) {
             var mouseRoomPos = GetMouseRoomPos(camera, room);
             var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
@@ -537,7 +547,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
                         selection.Handler.OnRightClicked(selections);
-
                         break;
                     }
                 }

@@ -114,7 +114,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         _shouldDragNodesOfResizableEntity = false;
     }
 
-    public override void Update(Camera camera, Room room) {
+    public override void Update(Camera camera, Room? room) {
+        if (room is null)
+            return;
+        
         if (PickNextFrame) {
             PickNextFrame = false;
             if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, EditorLayers.ToolLayerToEnum(Layer)) is { } underCursor) {

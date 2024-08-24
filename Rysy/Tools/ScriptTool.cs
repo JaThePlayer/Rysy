@@ -144,7 +144,10 @@ public class ScriptTool : Tool {
         }));
     }
 
-    public override void Update(Camera camera, Room room) {
+    public override void Update(Camera camera, Room? room) {
+        if (room is null)
+            return;
+        
         if (Material is not Script script)
             return;
 
