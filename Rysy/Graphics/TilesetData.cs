@@ -152,7 +152,11 @@ public sealed class TilesetData {
     public AutotiledSprite[] Center { get; set; } = null!;
     public AutotiledSprite[] Padding { get; set; } = null!;
     
-    public char[]? Ignores { get; set; }
+    public char[] Ignores { get; set; }
+    public char[] IgnoreExceptions { get; set; }
+
+    // Ignores, but without any of the values contained by IgnoreExceptions
+    internal char[] IgnoresExceptExceptions;
     
     public Dictionary<char, TilesetDefine> Defines { get; set; } = new();
 
@@ -349,9 +353,14 @@ public sealed class TilesetData {
     public bool IsTileConnected(char tile) {
         if (tile == '0')
             return false;
-        if (IgnoreAll && tile != Id)
-            return false;
-        return !Ignores?.Contains(tile) ?? true;
+
+        if (tile == Id)
+            return true;
+        
+        if (IgnoreAll)
+            return IgnoreExceptions.Contains(tile);
+        
+        return !IgnoresExceptExceptions.Contains(tile);
     }
 }
 
