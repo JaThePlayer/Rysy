@@ -15,6 +15,10 @@ public class TempleGate : SpriteBankEntity, IPlaceable {
 
     public override string Animation => "idle";
 
+    public override Point RecommendedMinimumSize => new(0, 48);
+
+    public override bool ResizableY => false;
+
     public override IEnumerable<ISprite> GetSprites() {
         yield return ISprite.Rect(Pos - new Vector2(2f, 8f), 14, 10, Color.Black);
         yield return GetSprite();
