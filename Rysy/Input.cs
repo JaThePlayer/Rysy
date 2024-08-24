@@ -340,14 +340,14 @@ public class Input {
 
     public static class Clipboard {
         public static void Set(string text) {
-            ImGui.SetClipboardText(text);
+            SDL2.SDL.SDL_SetClipboardText(text);
         }
 
         public static void SetAsJson<T>(T obj) {
             Set(obj.ToJson(Settings.Instance.MinifyClipboard));
         }
 
-        public static string Get() => ImGui.GetClipboardText();
+        public static string Get() => SDL2.SDL.SDL_GetClipboardText();
 
         public static T? TryGetFromJson<T>() => JsonExtensions.TryDeserialize<T>(Get());
     }
