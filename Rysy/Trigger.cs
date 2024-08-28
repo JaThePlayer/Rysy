@@ -5,17 +5,28 @@ using Rysy.Selections;
 namespace Rysy;
 
 public class Trigger : Entity {
+    private static readonly string LightSkyBlueHex = Color.LightSkyBlue.ToRGBAString();
+    
     public string EditorColor {
-        get => EntityData.Attr("_editorColor", Color.LightSkyBlue.ToRGBAString());
+        get => EntityData.Attr("_editorColor", LightSkyBlueHex);
         set {
             EntityData["_editorColor"] = value;
             ClearRoomRenderCache();
         }
     }
 
-    public virtual Color Color => EditorColor.FromRGBA();
+    public Color Color {
+        get {
+            var color = EditorColor;
+            if (color.IsNullOrWhitespace()) {
+                return Color.LightSkyBlue;
+            }
 
-    public virtual Color FillColor => Color * 0.15f;
+            return color.FromRGBA();
+        }
+    }
+
+    public Color FillColor => Color * 0.15f;
 
     public static string GetDefaultTextForSid(string sid) => TriggerHelpers.Humanize(sid);
     
@@ -41,7 +52,7 @@ public class Trigger : Entity {
             Text = Text,
             Pos = rect,
             Color = Color.White,
-            Scale = 0.5f,
+            Scale = Settings.Instance.TriggerFontScale,
             Depth = Depth - 1
         };
     }

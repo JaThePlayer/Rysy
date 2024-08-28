@@ -194,8 +194,15 @@ public sealed class SettingsWindow : Window {
         var fontSize = Settings.Instance.FontSize;
         if (ImGui.InputInt("Font Size", ref fontSize)) {
             Settings.Instance.FontSize = fontSize;
-
             Settings.Instance.Save();
+        }
+        
+        var triggerFontSize = Settings.Instance.TriggerFontScale;
+        if (ImGui.InputFloat("Trigger Font Scale", ref triggerFontSize)) {
+            if (triggerFontSize > 0f) {
+                Settings.Instance.TriggerFontScale = triggerFontSize;
+                Settings.Instance.Save();
+            }
         }
 
         ImGui.EndTabItem();
