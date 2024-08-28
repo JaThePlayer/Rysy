@@ -27,7 +27,7 @@ public class Camera {
 
     public Camera() {
         if (Settings.UiEnabled) {
-            RysyEngine.OnViewportChanged += (v) => {
+            RysyState.OnViewportChanged += (v) => {
                 _Viewport = v;
                 RecalculateMatrix();
             };

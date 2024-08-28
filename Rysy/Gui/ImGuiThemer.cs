@@ -12,9 +12,10 @@ public static class ImGuiThemer {
     }
 
     public static unsafe void LoadTheme(string filename) {
-        if (!File.Exists(filename)) {
-            var internalPath = $"Assets/themes/{filename}.json";
-            if (File.Exists(internalPath)) {
+        var fs = RysyPlatform.Current.GetRysyFilesystem();
+        if (!fs.FileExists(filename)) {
+            var internalPath = $"themes/{filename}.json";
+            if (fs.FileExists(internalPath)) {
                 filename = internalPath;
             } else {
                 Logger.Write("ImGuiThemer", LogLevel.Warning, $"Theme doesn't exist: {filename}.");
@@ -22,16 +23,18 @@ public static class ImGuiThemer {
             }
         }
 
-        ImGuiStylePtr ptr = ImGui.GetStyle();
-        ImGuiStyle s = JsonSerializer.Deserialize<ImGuiStyle>(File.ReadAllText(filename), new JsonSerializerOptions() {
-            IncludeFields = true,
-        });
-        var nptr = ptr.NativePtr;
-        *nptr = s;
+        if (fs.TryReadAllText(filename) is {} themeJson) {
+            ImGuiStylePtr ptr = ImGui.GetStyle();
+            ImGuiStyle s = JsonSerializer.Deserialize<ImGuiStyle>(themeJson, new JsonSerializerOptions() {
+                IncludeFields = true,
+            });
+            var nptr = ptr.NativePtr;
+            *nptr = s;
 
-        nptr->DockingSeparatorSize = 1;
-        nptr->SeparatorTextAlign = new(.5f, .5f);
-        nptr->SeparatorTextBorderSize = 1;
+            nptr->DockingSeparatorSize = 1;
+            nptr->SeparatorTextAlign = new(.5f, .5f);
+            nptr->SeparatorTextBorderSize = 1;
+        }
     }
 
     public static unsafe void SetFontSize(float fontSize) {
@@ -47,7 +50,7 @@ public static class ImGuiThemer {
         Header2Font = AddFont("RobotoMono-Bold.ttf", fontSize * 1.5f);
 
         io.Fonts.Build();
-        ImGuiManager.GuiRenderer.BuildFontAtlas();
+        ImGuiManager.GuiResourceManager.BuildFontAtlas();
         
         ImFontPtr AddFont(string name, float size) {
             var fs = RysyPlatform.Current.GetRysyFilesystem();

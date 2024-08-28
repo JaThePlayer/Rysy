@@ -11,6 +11,8 @@ namespace Rysy.Gui;
 
 public static class ImGuiManager {
     public static ImGuiRenderer GuiRenderer { get; private set; }
+    
+    public static IImGuiResourceManager GuiResourceManager { get; set; }
 
     public static float MenubarHeight { get; set; }
 
@@ -42,6 +44,7 @@ public static class ImGuiManager {
     
     public static void Load() {
         GuiRenderer = new ImGuiRenderer();
+        GuiResourceManager = GuiRenderer;
 
         ImGuiThemer.SetFontSize(16f);
 
@@ -460,12 +463,12 @@ public static class ImGuiManager {
         bool isNew = false;
         if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
             if (t.Target != null) {
-                GuiRenderer.UnbindTexture(t.ID);
+                GuiResourceManager.UnbindTexture(t.ID);
                 t.Target.Dispose();
             }
 
             t.Target = new(RysyState.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-            t.ID = GuiRenderer.BindTexture(t.Target);
+            t.ID = GuiResourceManager.BindTexture(t.Target);
             Targets[id] = t;
             isNew = true;
         }
@@ -475,19 +478,21 @@ public static class ImGuiManager {
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
-            var g = RysyState.GraphicsDevice;
-            g.SetRenderTarget(t.Target);
-            g.Clear(Color.Transparent);
-            GFX.BeginBatch(camera);
-            renderFunc();
-            GFX.EndBatch();
-            g.SetRenderTarget(null);
+            RysyState.OnEndOfThisFrame += () => {
+                var g = RysyState.GraphicsDevice;
+                g.SetRenderTarget(t.Target);
+                g.Clear(Color.Transparent);
+                GFX.BeginBatch(camera);
+                renderFunc();
+                GFX.EndBatch();
+                g.SetRenderTarget(null);
+            };
         }
     }
 
     public static void DisposeXnaWidget(string id) {
         if (Targets.TryGetValue(id, out var t)) {
-            GuiRenderer.UnbindTexture(t.ID);
+            GuiResourceManager.UnbindTexture(t.ID);
             t.Target?.Dispose();
             Targets.Remove(id);
         }
@@ -548,7 +553,7 @@ public static class ImGuiManager {
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
-    public unsafe class ImGuiRenderer {
+    public unsafe class ImGuiRenderer : IImGuiResourceManager {
         private RasterizerState RasterizerState;
         private GraphicsDevice GraphicsDevice => RysyState.GraphicsDevice;
         private BasicEffect Effect;
