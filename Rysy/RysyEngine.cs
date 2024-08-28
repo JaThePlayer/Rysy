@@ -27,8 +27,6 @@ public sealed class RysyEngine : Game {
         
         IsMouseVisible = true;
 
-        Window.ClientSizeChanged += Window_ClientSizeChanged;
-
         SetTargetFps(60);
         ToggleVSync(false);
         IsFixedTimeStep = true;
@@ -83,20 +81,6 @@ public sealed class RysyEngine : Game {
             instance.Window.IsBorderlessEXT = toggle;
         };
 #endif
-    }
-
-    public static Action<Viewport>? OnViewportChanged { get; set; }
-
-    internal void Window_ClientSizeChanged(object? sender, EventArgs e) {
-        OnViewportChanged?.Invoke(RysyState.GraphicsDevice.Viewport);
-
-        if (Settings.Instance is { } settings && !RysyState.Window.IsBorderlessShared()) {
-            settings.StartingWindowWidth = RysyState.GraphicsDevice.Viewport.Width;
-            settings.StartingWindowHeight = RysyState.GraphicsDevice.Viewport.Height;
-            settings.StartingWindowX = Window.GetPosition().X;
-            settings.StartingWindowY = Window.GetPosition().Y;
-            settings.Save();
-        }
     }
 
     protected override void Initialize() {
@@ -215,7 +199,7 @@ public sealed class RysyEngine : Game {
     private void ResizeWindow(int w, int h, int x, int y) {
         RysyState.OnEndOfThisFrame += () => {
             RysyPlatform.Current.ResizeWindow(x, y, w, h);
-            Instance.Window_ClientSizeChanged(null, null!);
+            RysyState.Window_ClientSizeChanged(null, null!);
         };
     }
 

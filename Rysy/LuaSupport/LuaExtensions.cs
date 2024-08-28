@@ -670,6 +670,7 @@ where TArg1 : class, ILuaWrapper {
     /// </summary>
     /// <param name="lua"></param>
     /// <param name="onElement">(lua, index, valueLocation)</param>
+    /// <param name="tableStackLoc"></param>
     public static void IPairs(this Lua lua, Action<Lua, int, int> onElement, int tableStackLoc = -1) {
         for (int i = 1; ; i++) {
             var t = lua.RawGetInteger(tableStackLoc, i);

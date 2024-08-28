@@ -16,7 +16,7 @@ public static class RoomList {
     internal static string Search = "";
 
     static RoomList() {
-        RysyEngine.OnViewportChanged += OnViewportChanged;
+        RysyState.OnViewportChanged += OnViewportChanged;
     }
 
     private static void OnViewportChanged(Viewport viewport) {

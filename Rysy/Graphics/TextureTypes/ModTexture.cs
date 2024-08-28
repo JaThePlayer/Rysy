@@ -74,8 +74,9 @@ public sealed class ModTexture : VirtTexture, IModAsset {
         //using (var _w = new ScopedStopwatch($"Premultiply: {VirtPath}")) {
             fixed (Color* raw = data) {
                 var i = 0;
-                var rawInt = (int*) raw;
             
+                #if NET8_0_OR_GREATER
+                var rawInt = (int*) raw;
                 if (Vector256.IsHardwareAccelerated) {
                     for (; i + Vector256<int>.Count < data.Length; i += Vector256<int>.Count) {
                         var colorsInt = Vector256.Load(&rawInt[i]);
@@ -98,6 +99,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         }
                     }
                 }
+                #endif
             
                 for (; i < data.Length; i++) {
                     ref Color c = ref raw[i];

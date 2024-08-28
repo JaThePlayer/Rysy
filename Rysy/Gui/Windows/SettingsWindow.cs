@@ -173,7 +173,8 @@ public sealed class SettingsWindow : Window {
 
         var theme = Settings.Instance.Theme;
 
-        windowData.ThemeList ??= Directory.EnumerateFiles("Assets/themes", "*.json").Select(f => Path.GetRelativePath("Assets/themes", f).TrimEnd(".json")).ToArray();
+        windowData.ThemeList ??= ModRegistry.RysyMod.Filesystem.FindFilesInDirectoryRecursive("themes", "json")
+            .Select(f => Path.GetRelativePath("themes", f).TrimEnd(".json")).ToArray();
 
         if (ImGui.BeginCombo("Theme", theme)) {
             foreach (var themeName in windowData.ThemeList) {

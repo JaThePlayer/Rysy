@@ -57,8 +57,10 @@ public static class RysyState {
     public static event Action? OnRender = null;
 
     public static event Action? OnNextReload;
+    
+    public static Action<Viewport>? OnViewportChanged { get; set; }
     #endregion
-
+    
     /// <summary>
     /// The current FPS
     /// </summary>
@@ -77,6 +79,20 @@ public static class RysyState {
         GraphicsDeviceManager = gdm;
 
         EnableFileDrop();
+
+        Window.ClientSizeChanged += Window_ClientSizeChanged;
+    }
+    
+    internal static void Window_ClientSizeChanged(object? sender, EventArgs e) {
+        OnViewportChanged?.Invoke(GraphicsDevice.Viewport);
+
+        if (Settings.Instance is { } settings && !Window.IsBorderlessShared()) {
+            settings.StartingWindowWidth = GraphicsDevice.Viewport.Width;
+            settings.StartingWindowHeight = GraphicsDevice.Viewport.Height;
+            settings.StartingWindowX = Window.GetPosition().X;
+            settings.StartingWindowY = Window.GetPosition().Y;
+            settings.Save();
+        }
     }
     
     public static void DispatchUpdate(float elapsed) {
