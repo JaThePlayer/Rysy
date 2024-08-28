@@ -34,7 +34,7 @@ public sealed class RegisteredEntity {
     
     public LonnStylePlugin? LonnStylePlugin { get; internal set; }
 
-    public Func<FieldList> Fields { get; internal set; } = () => new();
+    public Func<object, FieldList> Fields { get; internal set; } = (_) => new();
 
     private Placement? _mainPlacement;
 
@@ -143,15 +143,26 @@ public static class EntityRegistry {
         return values;
     }
 
-    public static FieldList GetFields(Entity entity)
-        => GetFields(entity.Name, entity is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity);
+    public static FieldList GetFields(Entity entity) {
+        var type = entity is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity;
+        var info = GetInfo(entity.Name, type);
+        if (info is null)
+            return new();
+
+        return info.Fields(entity);
+    }
+        
 
     public static FieldList GetFields(string sid, RegisteredEntityType type) {
         var info = GetInfo(sid, type);
         if (info is null)
             return new();
 
-        return info.Fields();
+        var obj = type is RegisteredEntityType.Trigger or RegisteredEntityType.Entity 
+            ? CreateCore(sid, default, 0, new(sid, info.MainPlacement?.ValueOverrides ?? []), Room.DummyRoom, type == RegisteredEntityType.Trigger, false)
+            : null;
+
+        return info.Fields(obj!);
     }
 
     public static Type? GetTypeForSID(string sid, RegisteredEntityType type) {
@@ -284,7 +295,7 @@ public static class EntityRegistry {
                 info.LonnStylePlugin = plugin;
                 info.Mod = mod;
                 if (plugin.FieldList is { })
-                    info.Fields = () => plugin.FieldList(Style.FromName("parallax"));
+                    info.Fields = _ => plugin.FieldList(Style.FromName("parallax"));
                 if (plugin.Placements.FirstOrDefault() is { } firstPlacement) {
                     info.MainPlacement = firstPlacement;
                 }
@@ -342,7 +353,7 @@ public static class EntityRegistry {
 
         RegisteredEntity CreateDecalInfo(string sid) => new(sid, RegisteredEntityType.Entity) {
             CSharpType = typeof(Decal),
-            Fields = () => decalFields,
+            Fields = _ => decalFields,
         };
     }
 
@@ -486,13 +497,13 @@ public static class EntityRegistry {
         var getFieldsMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
         if (getFieldsMethod is { }) {
             var dele = getFieldsMethod.CreateDelegate<Func<FieldList>>();
-            info.Fields = dele;
+            info.Fields = _ => dele();
         }
 
         var getFieldsForSIDMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
         if (getFieldsForSIDMethod is { }) {
             var dele = getFieldsForSIDMethod.CreateDelegate<Func<string, FieldList>>();
-            info.Fields = () => dele(sid);
+            info.Fields = _ => dele(sid);
         }
     }
 

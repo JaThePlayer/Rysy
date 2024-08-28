@@ -82,7 +82,7 @@ public sealed class LonnEntityPlugin {
     public bool HasSelectionFunction;
 
     public List<LonnPlacement> Placements { get; set; } = new();
-    public Func<FieldList>? FieldList { get; set; }
+    public Func<object, FieldList>? FieldList { get; set; }
 
     public LuaStackHolder? StackHolder { get; private set; }
 
@@ -446,10 +446,10 @@ public sealed class LonnEntityPlugin {
                 var dict = lua.TableToDictionary(fieldInfoLoc);
                 var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
-                plugin.FieldList = () => LonnFieldIntoToFieldList(dict, mainPlacement);
+                plugin.FieldList = (e) => LonnFieldIntoToFieldList(dict, mainPlacement);
                 break;
             case LuaType.Function:
-                plugin.FieldList = () => {
+                plugin.FieldList = (e) => {
                     return plugin.PushToStack((plugin) => {
                         var type = lua.GetTable(plugin.StackLoc, "fieldInformation");
 
@@ -458,7 +458,7 @@ public sealed class LonnEntityPlugin {
                             return new();
                         }
 
-                        var fields = lua.PCallFunction((lua, i) => {
+                        var fields = lua.PCallFunction((ILuaWrapper)e, (lua, i) => {
                             var dict = lua.TableToDictionary(i);
                             var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
@@ -471,9 +471,9 @@ public sealed class LonnEntityPlugin {
                 break;
             default:
                 if (defaultPlacement is { }) {
-                    plugin.FieldList = () => LonnFieldIntoToFieldList(new(), defaultPlacement);
+                    plugin.FieldList = (e) => LonnFieldIntoToFieldList(new(), defaultPlacement);
                 } else {
-                    plugin.FieldList = () => new();
+                    plugin.FieldList = (e) => new();
                 }
                 break;
         }
@@ -484,7 +484,7 @@ public sealed class LonnEntityPlugin {
                 var order = lua.ToList(lua.GetTop())?.OfType<string>().ToList();
                 if (order is { }) {
                     var origFieldListGetter = plugin.FieldList;
-                    plugin.FieldList = () => origFieldListGetter().Ordered(order);
+                    plugin.FieldList = (e) => origFieldListGetter(e).Ordered(order);
                 }
             }
             break;
@@ -492,8 +492,8 @@ public sealed class LonnEntityPlugin {
                 Console.WriteLine($"Field Order is a function: {plugin.Name}");
                 var origFieldListGetter = plugin.FieldList;
 
-                plugin.FieldList = () => {
-                    var fields = origFieldListGetter();
+                plugin.FieldList = (e) => {
+                    var fields = origFieldListGetter(e);
 
                     return fields.Ordered((entity) => {
                         return plugin.PushToStack((plugin) => {
@@ -520,15 +520,15 @@ public sealed class LonnEntityPlugin {
             case LuaType.Table: {
                 if (lua.ToList(lua.GetTop())?.OfType<string>().ToList() is { } ignored) {
                     var origFieldListGetter = plugin.FieldList;
-                    plugin.FieldList = () => origFieldListGetter().SetHiddenFields(ignored);
+                    plugin.FieldList = e => origFieldListGetter(e).SetHiddenFields(ignored);
                 }
                 break;
             }
             case LuaType.Function: {
                 var origFieldListGetter = plugin.FieldList;
 
-                plugin.FieldList = () => {
-                    var fields = origFieldListGetter();
+                plugin.FieldList = e => {
+                    var fields = origFieldListGetter(e);
 
                     return fields.SetHiddenFields(ctx => {
                         return plugin.PushToStack(plugin => {
