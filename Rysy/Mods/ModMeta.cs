@@ -182,7 +182,7 @@ public sealed class EverestModuleMetadata {
     /// Unused by Rysy, but still read to not break the yaml upon saving.
     /// </summary>
     [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
-    public string DLL { get; set; }
+    public string? DLL { get; set; }
 
     /// <summary>
     /// The mod version.
@@ -219,6 +219,10 @@ public sealed class EverestModuleMetadata {
 
     public override string ToString() {
         return Name + " " + Version;
+    }
+
+    public bool IsValid() {
+        return !Name.IsNullOrWhitespace() && Version != null;
     }
 }
 

@@ -294,22 +294,19 @@ public static class ModRegistry {
         var parsedYaml = filesystem.OpenFile("everest.yaml", ParseEverestYaml)
                       ?? filesystem.OpenFile("everest.yml", ParseEverestYaml);
 
-        if (parsedYaml is { }) {
+        if (parsedYaml is { } && parsedYaml.Count != 0 && parsedYaml.All(m => m.IsValid())) {
             mod.EverestYaml = parsedYaml;
-            if (mod.EverestYaml.Count != 0) {
-                return;
-            }
-            // there's no actual mod in the yaml?
+            return;
         }
 
         var guessedName = guessedNameGetter?.Invoke() ?? $"<unknown:{Guid.NewGuid()}>";
         Logger.Write("ModRegistry", LogLevel.Info, $"Found mod with no everest.yaml or an invalid one: {guessedName} [{filesystem.Root}]");
-        mod.EverestYaml = new() {
+        mod.EverestYaml = [
             new() {
                 Name = guessedName,
                 Version = new(1, 0, 0, 0),
             }
-        };
+        ];
     }
 
     private static List<EverestModuleMetadata>? ParseEverestYaml(Stream stream) {
