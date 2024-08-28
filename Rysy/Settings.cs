@@ -172,6 +172,17 @@ public sealed class Settings {
                 RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
         }
     }
+    
+    private float _triggerFontScale = 0.5f;
+    public float TriggerFontScale {
+        get => _triggerFontScale;
+        set {
+            _triggerFontScale = value;
+            if (EditorState.Map is { } map) {
+                map.ClearRenderCache();
+            }
+        }
+    }
 
     public Dictionary<string, string> Hotkeys { get; set; } = new();
 
