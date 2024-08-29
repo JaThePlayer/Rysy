@@ -39,9 +39,10 @@ public static class PicoFont {
             loc = CharacterLocations['?'];
         }
 
-        return ISprite.FromTexture(pos, t).CreateSubtexture(loc.X, loc.Y, W, H) with {
+        return new Sprite(t).CreateSubtexture(loc.X, loc.Y, W, H) with {
             Scale = new(scale),
             Color = color,
+            Pos = pos,
         };
     }
 
@@ -88,10 +89,10 @@ public static class PicoFont {
     /// Prints text inside of a rectangle. Will try to make the text fit inside of the rectangle as best as possible.
     /// Doesn't support newlines.
     /// </summary>
-    public static void Print(ReadOnlySpan<char> txt, Rectangle bounds, Color color, float scale = 1f) {
+    public static void Print(ReadOnlySpan<char> txt, Rectangle bounds, Color color, Color outlineColor = default, float scale = 1f) {
         Init();
 
-        if (scale == 0f)
+        if (scale <= 0f)
             return;
 
         if (bounds.Width == 0 || bounds.Height == 0) {
@@ -99,10 +100,90 @@ public static class PicoFont {
             return;
         }
 
+        bounds.Inflate(-1, -1);
+        
         var rw = W * scale;
-        var boundWidth = bounds.Width - 2;
+        var boundWidth = bounds.Width;
         var maxPerLine = (int) (boundWidth / rw).AtLeast(1);
 
+        var lines = new List<(List<Range>, int)>(1);
+        var words = new List<Range>(1);
+        var remainingText = txt;
+        var i = 0;
+        var lineLen = 0;
+        
+        while (!remainingText.IsEmpty) {
+            var wordEnd = remainingText.IndexOfAny(" \n");
+            char terminator;
+            if (wordEnd == -1) {
+                wordEnd = remainingText.Length;
+                terminator = ' ';
+            } else {
+                terminator = remainingText[wordEnd];
+            }
+
+            if ((words.Count > 0 && lineLen + wordEnd >= maxPerLine)) {
+                // next line
+                lines.Add((words, lineLen));
+                words = [];
+                lineLen = 0;
+            }
+
+            lineLen += wordEnd;
+            words.Add(i..(i+wordEnd));
+            i += wordEnd + 1;
+            if (wordEnd == remainingText.Length)
+                break;
+
+            if (terminator == '\n') {
+                // next line
+                lines.Add((words, lineLen));
+                words = [];
+                lineLen = 0;
+            }
+            
+            remainingText = remainingText[(wordEnd+1)..];
+        }
+        if (words.Count > 0)
+            lines.Add((words,lineLen));
+
+        var pos = new Vector2(0f);
+
+        if (outlineColor != default) {
+            pos.Y = bounds.Center.Y - ((H * scale * lines.Count) / 2f) + 0.5f * scale;
+            foreach (var line in lines) {
+                var linePixelLen = (line.Item2 + line.Item1.Count - 1) * rw;
+                pos.X = bounds.Center.X - ((linePixelLen) / 2f) + 0.5f * scale;
+                foreach (var wordRange in line.Item1) {
+                    var word = txt[wordRange].Trim();
+                
+                    Print(word, pos.Floored().Add(scale, 0f), outlineColor, scale);
+                    Print(word, pos.Floored().Add(-scale, 0f), outlineColor, scale);
+                    Print(word, pos.Floored().Add(0f, scale), outlineColor, scale);
+                    Print(word, pos.Floored().Add(0f, -scale), outlineColor, scale);
+                    
+                    pos.X += rw * (word.Length + 1);
+                }
+            
+                pos.Y += H * scale;
+            }
+        }
+        
+        pos.Y = bounds.Center.Y - ((H * scale * lines.Count) / 2f) + 0.5f * scale;
+        foreach (var line in lines) {
+            var linePixelLen = (line.Item2 + line.Item1.Count - 1) * rw;
+            pos.X = bounds.Center.X - ((linePixelLen) / 2f) + 0.5f * scale;
+            foreach (var wordRange in line.Item1) {
+                var word = txt[wordRange].Trim();
+                
+                Print(word, pos.Floored(), color, scale);
+                pos.X += rw * (word.Length + 1);
+            }
+            
+            pos.Y += H * scale;
+        }
+        
+        /*
         // Split the text into as few vertical lines as we can fit.
         var lines = (int) Math.Floor((txt.Length / (float) maxPerLine));
         // Check for a non-full line
@@ -110,14 +191,14 @@ public static class PicoFont {
             lines++;
         }
 
-        if (lines > 0 && (txt.Length % lines == 0 || EqualWordSizes(txt)) && txt.Length / lines * rw < boundWidth) {
+        if (lines > 0 && (txt.Length % lines == 0 || EqualWordSizes(txt)) && txt.Length / (float)lines * rw < boundWidth) {
             // If we can fit an equal amount of chars on each line, do so.
             maxPerLine = txt.Length / lines;
         }
 
         var pos = bounds.Location.ToVector2();
         // center the text
-        pos += new Vector2((bounds.Width / 2) - (maxPerLine * rw / 2), bounds.Height / 2 - (H * scale * lines / 2));
+        pos += new Vector2((bounds.Width / 2f) - (maxPerLine * rw / 2), bounds.Height / 2f - (H * scale * lines / 2));
 
         // The text cannot fit in our box.
         if (pos.Y < bounds.Top) {
@@ -141,5 +222,6 @@ public static class PicoFont {
             i += maxPerLine;
             pos.Y += H * scale;
         }
+        */
     }
 }

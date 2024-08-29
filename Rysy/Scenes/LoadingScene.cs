@@ -36,13 +36,13 @@ public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Sce
 
         const int scale = 4;
         
-        PicoFont.Print("Rysy (dev)", new Rectangle(0, windowSize.Y / 4, windowSize.X, windowSize.Y / 2), Color.White, scale);
-        PicoFont.Print($"{TimeActive:0.00s}", new Rectangle(0, windowSize.Y / 3, windowSize.X, windowSize.Y / 2), Color.LightSkyBlue, scale);
+        PicoFont.Print("Rysy (dev)", new Rectangle(0, windowSize.Y / 4, windowSize.X, windowSize.Y / 2), Color.White, scale: scale);
+        PicoFont.Print($"{TimeActive:0.00s}", new Rectangle(0, windowSize.Y / 3, windowSize.X, windowSize.Y / 2), Color.LightSkyBlue, scale: scale);
 
         var messages = taskManager.GetCurrentMessages();
         int yOffset = 0;
         foreach (var text in messages) {
-            PicoFont.Print(text, new Rectangle(0, windowSize.Y / 2 + yOffset, windowSize.X, windowSize.Y / 2), Color.LightSkyBlue, scale);
+            PicoFont.Print(text, new Rectangle(0, windowSize.Y / 2 + yOffset, windowSize.X, windowSize.Y / 2), Color.LightSkyBlue, scale: scale);
             yOffset += PicoFont.H * scale;
         }
         GFX.EndBatch();

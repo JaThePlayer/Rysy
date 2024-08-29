@@ -20,6 +20,8 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
 
     public bool NullAllowed;
 
+    public bool EmptyIsNull;
+
     public override object GetDefault() => ValueString ?? Default?.ToString(Format)!;
 
     public override void SetDefault(object newDefault) {
@@ -43,6 +45,7 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
 
     public override string ValueToString(object? value) {
         return value switch {
+            "" when EmptyIsNull => null!,
             Color c => ColorHelper.ToString(c, Format),
             _ => base.ValueToString(value),
         };
@@ -59,16 +62,23 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
         string? hexCodeOverride = value?.ToString() ?? "";
         if (!ValueToColor(value, out var color)) {
             color = Color.White;
-            hexCodeOverride = value?.ToString() ?? "";
         }
 
         if (value is string str)
             ValueString = str;
 
-        if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip, hexCodeOverride)) {
-            ValueString = null;
-            return color.ToString(Format);
+        if (NullAllowed && EmptyIsNull) {
+            if (ImGuiManager.ColorEditAllowEmpty(fieldName, ref hexCodeOverride, Format, Tooltip)) {
+                ValueString = hexCodeOverride;
+                return hexCodeOverride;
+            }
+        } else {
+            if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip, hexCodeOverride)) {
+                ValueString = null;
+                return color.ToString(Format);
+            }
         }
+
 
         return null;
     }
@@ -83,6 +93,12 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
 
     public ColorField AllowNull() {
         NullAllowed = true;
+
+        return this;
+    }
+    
+    public ColorField TreatEmptyAsNull() {
+        EmptyIsNull = true;
 
         return this;
     }

@@ -144,13 +144,20 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         foreach (var item in GetSprites(c))
             item.Render(SpriteRenderCtx.Default(true));
     }
+    
+    public void RenderHollow(Color c) {
+        foreach (var item in GetSprites(c, hollow: true))
+            item.Render(SpriteRenderCtx.Default(true));
+    }
 
-    internal IEnumerable<RectangleSprite> GetSprites(Color c, Vector2? pos = null) {
+    internal IEnumerable<RectangleSprite> GetSprites(Color c, Vector2? pos = null, bool hollow = false) {
         var rect = Rect.Div(8);
 
         Vector2 rPos = pos ?? new(rect.X * 8, rect.Y * 8);
 
         ToMove ??= CreateToMove();
+
+        var fillColor = hollow ? Color.Transparent : c * 0.3f;
 
         if (ToMove is { } toMove)
             // if we've moved the tiles, make sure to render ToMove instead of the current grid,
@@ -158,7 +165,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             for (int x = 0; x < toMove.GetLength(0); x++)
                 for (int y = 0; y < toMove.GetLength(1); y++)
                     if (toMove[x, y] != '0')
-                        yield return ISprite.OutlinedRect(new(x * 8 + rPos.X, y * 8 + rPos.Y), 8, 8, c * 0.3f, c * 0.7f);
+                        yield return ISprite.OutlinedRect(new(x * 8 + rPos.X, y * 8 + rPos.Y), 8, 8, fillColor, c * 0.7f);
         //yield return ISprite.OutlinedRect(Rect, Color.Pink * 0.1f, Color.Pink);
     }
 
@@ -198,6 +205,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public void RenderSelection(Color c) => Render(c);
+    public void RenderSelectionHollow(Color c) => RenderHollow(c);
 
     public void ClearCollideCache() {
 

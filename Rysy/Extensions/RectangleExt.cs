@@ -115,6 +115,8 @@ public static class RectangleExt {
     public static Rectangle MovedTo(this Rectangle r, Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
 
     public static Point Size(this Rectangle r) => new(r.Width, r.Height);
+    
+    public static int Area(this Rectangle r) => r.Width * r.Height;
 
     public static NineSliceLocation? GetLocationInRect(this Rectangle r, Point pos, int leniency = 1) {
         if (!r.Contains(pos))

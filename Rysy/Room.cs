@@ -992,6 +992,10 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     public void RenderSelection(Color c) {
         ISelectionCollider.FromRect(Bounds).Render(c);
     }
+    
+    public void RenderSelectionHollow(Color c) {
+        ISelectionCollider.FromRect(Bounds).RenderHollow(c);
+    }
 
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null) {
         return null;

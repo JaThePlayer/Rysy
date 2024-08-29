@@ -56,7 +56,7 @@ public static class ColorHelper {
         return hexCode.Length switch {
             // allow 7-length as RGB because of Temple of Zoom from SC having 00bc000 as spinner tint... why
             6 or 7 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
-            _ => default,
+            _ => throw new Exception($"Color with invalid length for RGB format: {hexCode}"),
         };
     }
 
@@ -70,7 +70,7 @@ public static class ColorHelper {
         return hexCode.Length switch {
             6 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
             8 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue, (byte) (packedValue >> 24)), // argb
-            _ => default,
+            _ => throw new Exception($"Color with invalid length for ARGB format: {hexCode}"),
         };
     }
 
@@ -85,7 +85,7 @@ public static class ColorHelper {
             // allow 7-length as RGB because of Temple of Zoom from SC having 00bc000 as spinner tint... why
             6 or 7 => new Color((byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), //rgb
             8 => new Color((byte) (packedValue >> 24), (byte) (packedValue >> 16), (byte) (packedValue >> 8), (byte) packedValue), // rgba
-            _ => default,
+            _ => throw new Exception($"Color with invalid length for RGBA format: {hexCode}"),
         };
     }
 

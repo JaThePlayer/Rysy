@@ -248,9 +248,9 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (!ImGuiManager.WantCaptureMouse && !ImGui.IsAnyItemHovered()) {
             var mousePos = GetMousePos(camera, room);
 
-            SelectionTool.HandleHoveredSelections(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1),
-                EditorLayers.ToolLayerToEnum(Layer), selected: null, Input, render: false
-            );
+            var selectionsUnderCursor = room?.GetSelectionsInRect(new Rectangle(mousePos.X, mousePos.Y, 1, 1), EditorLayers.ToolLayerToEnum(Layer));
+            
+            SelectionTool.HandleHoveredSelections(room, selectionsUnderCursor, selected: null, Input);
         }
     }
 

@@ -39,8 +39,9 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private SelectionLayer CustomLayer;
 
-    private int ClickInPlaceIdx;
-
+    private static int ClickInPlaceIdx;
+    private static ISelectionHandler? ClickInPlaceNextHandler;
+    
     private Point? RotationGestureStart;
     private float? RotationGestureLastAngle;
 
@@ -392,6 +393,23 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         return grabbed;
     }
 
+    private Selection? GetSelectionToBeSelectedOnClick(List<Selection> selections) {
+        if (selections.Count <= 0) {
+            ClickInPlaceIdx = 0;
+            return null;
+        }
+
+        var exceptCurrent = selections.Except(CurrentSelections ?? []).ToList();
+        if (exceptCurrent.Count > 0)
+            selections = exceptCurrent;
+
+        var exceptTiles = selections.Where(s => s.Handler is not TileSelectionHandler).ToList();
+        if (exceptTiles.Count > 0)
+            selections = exceptTiles;
+        
+        return selections[ClickInPlaceIdx % selections.Count];
+    }
+
     private void DoRender(Camera camera, Room? room) {
         if (CurrentSelections is not { Count: > 0 }) {
             // If we're in room selection mode, always select the current room if there are no other selections
@@ -408,10 +426,23 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         var mousePos = GetMouseRoomPos(camera, room);
         var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
+        var selectionsUnderCursor = 
+            room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), 
+                EditorLayers.ToolLayerToEnum(Layer, CustomLayer)) ?? [];
+
+        selectionsUnderCursor = GetSortedSelections(selectionsUnderCursor.Where(s => s.Handler is not TileSelectionHandler));
+
+        Selection? selectionToBeSelectedOnClick = !SelectionGestureHandler.Started && State == States.Idle
+                ? GetSelectionToBeSelectedOnClick(selectionsUnderCursor)
+                : null;
+        
         if (CurrentSelections is { } selections) {
             foreach (var selection in selections) {
                 if (!imguiWantsMouse && (State != States.Idle || selection.Check(mousePos.X, mousePos.Y))) {
-                    SelectionsToHighlight.Add(selection);
+                    if (selectionToBeSelectedOnClick is {})
+                        selection.Render(Color.Red);
+                    else
+                        SelectionsToHighlight.Add(selection);
 
                     if (State == States.Idle) {
                         var r = selection.Handler.Rect;
@@ -425,18 +456,30 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 }
             }
         }
-
+        
         if (State == States.Idle && !imguiWantsMouse) {
-            HandleHoveredSelections(room, SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1),
-                EditorLayers.ToolLayerToEnum(Layer, CustomLayer), CurrentSelections, Input, middleClick: true
-            );
+            HandleHoveredSelections(room, selectionsUnderCursor, CurrentSelections, Input, middleClick: true);
+
+            if (selectionToBeSelectedOnClick is {} s) {
+                if (!CurrentSelections?.Contains(s) ?? true)
+                    s.Render(Color.Pink);
+                if (s.Handler is EntitySelectionHandler { Entity: Trigger trigger }) {
+                    var text = trigger.GetTextSprite(Color.Gold, Color.Black);
+                    text.Render();
+                }
+            } else {
+                foreach (var s2 in selectionsUnderCursor) {
+                    s2.Render(Color.OrangeRed * 0.75f);
+                }
+            }
+            
         }
 
         if (SelectionsToHighlight is { Count: > 0 }) {
             foreach (var selection in SelectionsToHighlight) {
                 selection.Render(Color.Gold);
             }
-
+            
             SelectionsToHighlight.Clear();
         }
 
@@ -450,16 +493,15 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    internal static void HandleHoveredSelections(Room? room, Rectangle rectangle, SelectionLayer layer,
-        IEnumerable<Selection>? selected = null, Input? input = null, bool render = true, bool middleClick = false) {
+    internal static void HandleHoveredSelections(Room? room, List<Selection>? selectionsUnderCursor,
+        IEnumerable<Selection>? selected = null, Input? input = null, bool middleClick = false) {
         input ??= Input.Global;
         
         var canRightClick = input.Mouse.RightClickedInPlace();
 
-        if (!canRightClick && !render && !middleClick)
+        if (!canRightClick && !middleClick)
             return;
 
-        var selectionsUnderCursor = room?.GetSelectionsInRect(rectangle, layer);
         if (selectionsUnderCursor is not { Count: > 0 }) {
             return;
         }
@@ -467,15 +509,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         var firstSelection = selectionsUnderCursor[0];
         if (firstSelection.Handler is TileSelectionHandler) {
             canRightClick = false;
-        }
-
-        if (render) {
-            foreach (var selection in selectionsUnderCursor) {
-                if (selection.Handler is TileSelectionHandler)
-                    continue;
-                
-                selection.Render(Color.Pink);
-            }
         }
 
         if (canRightClick && selected is { }) {
@@ -746,18 +779,27 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             SelectWithin(room, rect);
         }
     }
+    
+    private List<Selection> GetSortedSelections(IEnumerable<Selection> selections)
+        => selections
+            .OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue)
+            .ThenBy(s => s.Handler.Rect.Area())
+            .ToList();
 
     private void SelectWithin(Room room, Rectangle rect) {
         var selections = room.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+        selections = GetSortedSelections(selections);
+        
         List<Selection>? finalSelections = null;
 
         if (rect.Width <= 1 && rect.Height <= 1 && selections.Count > 0) {
             // you just clicked in place, select only 1 selection
             if (selections.Count > 1) {
                 int idx = ClickInPlaceIdx % selections.Count;
+                var toSelect = GetSelectionToBeSelectedOnClick(selections)!.Value;
                 ClickInPlaceIdx = (idx + 1) % selections.Count;
 
-                finalSelections = selections.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue).Take(idx..(idx + 1)).ToList();
+                finalSelections = [ toSelect ];
             } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
                 // if you double clicked in place, select all similar entities/decals
                 finalSelections = room.GetSelectionsForSimilar(selections[0].Handler.Parent)!;
