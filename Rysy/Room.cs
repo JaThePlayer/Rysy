@@ -744,7 +744,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
     /// Respects editor layers.
     /// </summary>
-    public List<Selection> GetSelectionsInRect(Rectangle rect, SelectionLayer layer) {
+    public List<Selection> GetSelectionsInRect(Rectangle? rect, SelectionLayer layer) {
         var list = new List<Selection>();
 
         if ((layer & SelectionLayer.Rooms) != 0) {
@@ -753,7 +753,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             foreach (var room in map.Rooms) {
                 var handler = room.GetSelectionHandler();
 
-                if (handler.IsWithinRectangle(rect)) {
+                if (rect is null || handler.IsWithinRectangle(rect.Value)) {
                     list.Add(new Selection(handler));
                 }
             }
@@ -789,9 +789,9 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     /// <summary>
-    /// Returns a list of all selections for objects similar to this one, to be used for double clicking in the selection tool.
+    /// Returns a list of all selections for objects of the same type as this one, to be used for double clicking in the selection tool.
     /// </summary>
-    public List<Selection>? GetSelectionsForSimilar(object obj) {
+    public List<Selection>? GetSelectionsForSameType(object obj) {
         switch (obj) {
             case Entity e:
                 var sid = e.EntityData.SID;
@@ -805,8 +805,37 @@ public sealed class Room : IPackable, ILuaWrapper {
                 return null;
         }
     }
+    
+    /// <summary>
+    /// Returns a list of all selections for objects of the similar to this one, to be used for double clicking in the selection tool.
+    /// </summary>
+    public List<Selection>? GetSelectionsForSimilar(ISelectionHandler selectionHandler) {
+        var obj = selectionHandler.Parent;
+        switch (obj) {
+            case Entity e:
+                if (e.Nodes.Count > 0)
+                    return MakeSelectionsForNodedEntity(e);
+                var sid = e.EntityData.SID;
+                return e.GetRoomList().Where(x => x.EntityData.SID == sid && x.EditorGroups.Enabled && e.SimilarTo(x)).Select(CreateSelectionFrom).ToList();
+            case Room room:
+                if (room.Map is { } map) {
+                    return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
+                }
+                return null;
+            case Node when selectionHandler is NodeSelectionHandler {Entity: {} e}:
+                return MakeSelectionsForNodedEntity(e);
+            default:
+                return null;
+        }
 
-    private void GetSelectionsInRectForGrid(Rectangle rect, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
+        List<Selection> MakeSelectionsForNodedEntity(Entity e) {
+            return [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
+        }
+    }
+
+    private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
+        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
+        
         var pos = rect.Location.ToVector2().GridPosFloor(8);
         var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
 
@@ -814,21 +843,21 @@ public sealed class Room : IPackable, ILuaWrapper {
             into.Add(s);
     }
 
-    private void GetSelectionsInRectForEntities(Rectangle rect, TypeTrackedList<Entity> entities, List<Selection> into) {
+    private void GetSelectionsInRectForEntities(Rectangle? rect, TypeTrackedList<Entity> entities, List<Selection> into) {
         foreach (var entity in entities) {
             if (!entity.EditorGroups.Enabled)
                 continue;
 
             var selection = entity.CreateSelection();
 
-            if (selection.Check(rect)) {
+            if (rect is null || selection.Check(rect.Value)) {
                 into.Add(selection);
             }
 
             if (entity.Nodes is { } nodes)
                 for (int i = 0; i < nodes.Count; i++) {
                     var nodeSelect = entity.CreateNodeSelection(i);
-                    if (nodeSelect.Check(rect)) {
+                    if (rect is null || nodeSelect.Check(rect.Value)) {
                         into.Add(nodeSelect);
                     }
                 }
@@ -837,14 +866,14 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private static Selection CreateSelectionFrom(Entity entity) => entity.CreateSelection();
 
-    private void GetSelectionsInRectForDecals(Rectangle rect, ListenableList<Entity> decals, List<Selection> into) {
+    private void GetSelectionsInRectForDecals(Rectangle? rect, ListenableList<Entity> decals, List<Selection> into) {
         foreach (var decal in decals) {
             if (!decal.EditorGroups.Enabled)
                 continue;
 
             var selection = decal.GetMainSelection();
 
-            if (selection.IsWithinRectangle(rect)) {
+            if (rect is null || selection.IsWithinRectangle(rect.Value)) {
                 into.Add(decal.CreateSelection());
             }
         }

@@ -1,6 +1,4 @@
 ﻿using ImGuiNET;
-using Rysy;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
@@ -9,7 +7,6 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.Scenes;
 using Rysy.Selections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Tools;
 
@@ -75,7 +72,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         handler.AddHotkeyFromSettings("selection.downsizeRight", "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.downsizeTop", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
-
+        
+        handler.AddHotkeyFromSettings("selection.selectAll", "ctrl+a", SelectAll);
+        handler.AddHotkeyFromSettings("selection.selectAllSimilar", "ctrl+shift+a", SelectAllSimilar);
+        
         this.AddSelectionHotkeys(handler);
 
         handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
@@ -87,6 +87,25 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         handler.AddHotkeyFromSettings(CreatePrefabKeybindName, "alt+c", CreatePrefab);
 
         History.OnApply += ClearColliderCachesInSelections;
+    }
+
+    private void SelectAll() {
+        if (EditorState.CurrentRoom is { } room) {
+            Deselect();
+            CurrentSelections = room.GetSelectionsInRect(null, 
+                EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+        }
+    }
+    
+    private void SelectAllSimilar() {
+        if (CurrentSelections is not { Count: > 0})
+            return;
+        
+        if (EditorState.CurrentRoom is { } room) {
+            var newSelections = room.GetSelectionsForSimilar(CurrentSelections[0].Handler);
+            Deselect();
+            CurrentSelections = newSelections;
+        }
     }
 
     private void CreatePrefab() {
@@ -461,18 +480,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             HandleHoveredSelections(room, selectionsUnderCursor, CurrentSelections, Input, middleClick: true);
 
             if (selectionToBeSelectedOnClick is {} s) {
-                if (!CurrentSelections?.Contains(s) ?? true)
-                    s.Render(Color.Pink);
+                var isToBeSelectedAlreadySelected = CurrentSelections?.Contains(s) ?? false;
+                var color = isToBeSelectedAlreadySelected ? Color.Gold : Color.Pink;
+                s.Render(color);
                 if (s.Handler is EntitySelectionHandler { Entity: Trigger trigger }) {
-                    var text = trigger.GetTextSprite(Color.Gold, Color.Black);
-                    text.Render();
+                    trigger.GetTextSprite(color, Color.Black).Render();
                 }
             } else {
                 foreach (var s2 in selectionsUnderCursor) {
-                    s2.Render(Color.OrangeRed * 0.75f);
+                    s2.Render(Color.Pink);
                 }
             }
-            
         }
 
         if (SelectionsToHighlight is { Count: > 0 }) {
@@ -628,22 +646,29 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         return actions.MergeActions();
     }
 
-    private void EndRotationGesture(float angle) {
+    private void EndRotationGesture(Camera camera, Room room, float angle) {
         if (CurrentSelections is null) {
             return;
         }
-
+        
         History.UndoSimulations();
-        if (angle != 0f)
-            History.ApplyNewAction(GetPreciseRotationAction(angle));
-        ClearColliderCachesInSelections();
+        
+        if (Input.Mouse.LeftDoubleClicked() && angle == 0f) {
+            Point mousePos = GetMouseRoomPos(camera, room);
+            SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
+        } else {
+            if (angle != 0f)
+                History.ApplyNewAction(GetPreciseRotationAction(angle));
+            ClearColliderCachesInSelections();
+        }
+        
         RotationGestureStart = null;
     }
 
     private void UpdateRotationGesture(Camera camera, Room room) {
         if (CurrentSelections is null) {
             State = States.Idle;
-            EndRotationGesture(0f);
+            EndRotationGesture(camera, room, 0f);
             return;
         }
 
@@ -664,7 +689,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         if (!Input.Keyboard.Shift() || CurrentSelections is null) {
-            EndRotationGesture(angle);
+            EndRotationGesture(camera, room, angle);
             State = States.MoveOrResizeGesture;
             return;
         }
@@ -677,7 +702,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 break;
             }
             case MouseInputState.Released: {
-                EndRotationGesture(realAngle);
+                EndRotationGesture(camera, room, realAngle);
                 State = States.Idle;
 
                 break;
@@ -782,8 +807,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     
     private List<Selection> GetSortedSelections(IEnumerable<Selection> selections)
         => selections
-            .OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue)
-            .ThenBy(s => s.Handler.Rect.Area())
+            //.OrderBy(s => s.Handler.Parent is IDepth d ? d.Depth : int.MinValue)
+            .OrderBy(s => s.Handler.Rect.Area())
             .ToList();
 
     private void SelectWithin(Room room, Rectangle rect) {
@@ -802,7 +827,9 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 finalSelections = [ toSelect ];
             } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
                 // if you double clicked in place, select all similar entities/decals
-                finalSelections = room.GetSelectionsForSimilar(selections[0].Handler.Parent)!;
+                finalSelections = Input.Keyboard.Shift() 
+                    ? room.GetSelectionsForSimilar(selections[0].Handler)!
+                    : room.GetSelectionsForSameType(selections[0].Handler.Parent)!;
                 ClickInPlaceIdx = 0;
             }
 
