@@ -416,6 +416,49 @@ public static class ImGuiManager {
 
         return edited;
     }
+    
+    public static bool ColorEditAllowEmpty(string label, ref string colorStr, ColorFormat format, string? tooltip) {
+        bool edited = false;
+
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var buttonWidth = ImGui.GetFrameHeight();
+
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
+        if (ImGui.InputText(Interpolator.Temp($"##text{label}"), ref colorStr, 24).WithTooltip(tooltip)) {
+            edited = true;
+        }
+
+        ImGui.SameLine(0f, xPadding);
+
+        ColorHelper.TryGet(colorStr, format, out var color);
+
+        switch (format) {
+            case ColorFormat.RGB:
+                var colorN3 = color.ToNumVec3();
+                if (ImGui.ColorEdit3(Interpolator.Temp($"##combo{label}"), ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                    colorStr = new Color(colorN3.ToXna()).ToString(format);
+                    edited = true;
+                }
+                break;
+            case ColorFormat.RGBA:
+            case ColorFormat.ARGB:
+                var colorN4 = color.ToNumVec4();
+                if (ImGui.ColorEdit4(Interpolator.Temp($"##combo{label}"), ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                    colorStr = new Color(colorN4.ToXna()).ToString(format);
+                    edited = true;
+                }
+                break;
+            default:
+                break;
+        }
+
+
+        ImGui.SameLine(0f, xPadding);
+        ImGui.Text(label);
+        true.WithTooltip(tooltip);
+
+        return edited;
+    }
 
     public static void WithBottomBar(Action renderMain, Action renderBottomBar, uint? id = null) {
         var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 4f;
@@ -478,15 +521,13 @@ public static class ImGuiManager {
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
-            RysyState.OnEndOfThisFrame += () => {
-                var g = RysyState.GraphicsDevice;
-                g.SetRenderTarget(t.Target);
-                g.Clear(Color.Transparent);
-                GFX.BeginBatch(camera);
-                renderFunc();
-                GFX.EndBatch();
-                g.SetRenderTarget(null);
-            };
+            var g = RysyState.GraphicsDevice;
+            g.SetRenderTarget(t.Target);
+            g.Clear(Color.Transparent);
+            GFX.BeginBatch(camera);
+            renderFunc();
+            GFX.EndBatch();
+            g.SetRenderTarget(null);
         }
     }
 

@@ -33,9 +33,9 @@ public class PickCelesteInstallScene : Scene {
         var windowSize = RysyState.Window.ClientBounds.Size();
         var height = 4 * 6;
         var center = windowSize.Y / 2;
-        PicoFont.Print("Please drop the", new Rectangle(0, center - 32, windowSize.X, height), Color.White, 4f);
-        PicoFont.Print("Celeste.exe/Celeste.dll", new Rectangle(0, center, windowSize.X, height), Color.LightSkyBlue, 4f);
-        PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, 4f);
+        PicoFont.Print("Please drop the", new Rectangle(0, center - 32, windowSize.X, height), Color.White, scale: 4f);
+        PicoFont.Print("Celeste.exe/Celeste.dll", new Rectangle(0, center, windowSize.X, height), Color.LightSkyBlue, scale: 4f);
+        PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, scale: 4f);
         GFX.EndBatch();
     }
 }

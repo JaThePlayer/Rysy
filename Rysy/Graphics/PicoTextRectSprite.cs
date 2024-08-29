@@ -9,9 +9,12 @@ namespace Rysy.Graphics;
 public record struct PicoTextRectSprite : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; } = Color.White;
+    public Color OutlineColor { get; set; } = default;
+    
     public ISprite WithMultipliedAlpha(float alpha) {
         return this with {
             Color = Color * alpha,
+            OutlineColor = OutlineColor * alpha,
         };
     }
 
@@ -31,7 +34,7 @@ public record struct PicoTextRectSprite : ISprite {
     }
 
     public void Render() {
-        PicoFont.Print(Text, Pos, Color, Scale);
+        PicoFont.Print(Text, Pos, Color, OutlineColor, Scale);
     }
 
     public void Render(SpriteRenderCtx ctx) {

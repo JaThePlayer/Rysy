@@ -220,6 +220,12 @@ public static class PrefabHelper {
                     s.Render(c);
                 }
             }
+            
+            public void RenderSelectionHollow(Color c) {
+                foreach (var s in Selections) {
+                    s.RenderHollow(c);
+                }
+            }
 
             public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null) {
                 return null;

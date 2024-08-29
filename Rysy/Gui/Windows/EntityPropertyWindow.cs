@@ -43,7 +43,7 @@ public class EntityPropertyWindow : FormWindow {
         order.Add(Entity.EditorGroupEntityDataKey);
 
         if (main is Trigger tr) {
-            fields["_editorColor"] = Fields.RGBA(tr.EditorColor.ToColor(ColorFormat.RGBA));
+            fields["_editorColor"] = Fields.RGBA(tr.EditorColor.ToColor(ColorFormat.RGBA)).AllowNull().TreatEmptyAsNull();
             order.Add("_editorColor");
         }
 

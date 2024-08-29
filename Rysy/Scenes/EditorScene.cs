@@ -353,9 +353,9 @@ public sealed class EditorScene : Scene {
             var center = windowSize.Y / 2;
 
             GFX.BeginBatch();
-            PicoFont.Print("No map loaded.", new Rectangle(0, center - 32, windowSize.X, height), Color.LightSkyBlue, 4f);
-            PicoFont.Print("Please drop a .bin", new Rectangle(0, center, windowSize.X, height), Color.White, 4f);
-            PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, 4f);
+            PicoFont.Print("No map loaded.", new Rectangle(0, center - 32, windowSize.X, height), Color.LightSkyBlue, scale: 4f);
+            PicoFont.Print("Please drop a .bin", new Rectangle(0, center, windowSize.X, height), Color.White, scale: 4f);
+            PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, scale: 4f);
             GFX.EndBatch();
             return;
         }

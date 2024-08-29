@@ -72,6 +72,13 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public void RenderSelection(Color c) {
         Collider.Render(c);
     }
+    
+    public void RenderSelectionHollow(Color c) {
+        Collider.RenderHollow(c);
+        if (Entity is Trigger tr) {
+            tr.GetTextSprite(Color.Gold, default).Render();
+        }
+    }
 
     public IHistoryAction? TryResize(Point delta) {
         var resizableX = Entity.ResizableX;

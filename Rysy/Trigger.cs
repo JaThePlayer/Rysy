@@ -44,17 +44,19 @@ public class Trigger : Entity {
         var rect = GetNodeRect(Nodes[nodeIndex]);
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
     }
+    
+    internal PicoTextRectSprite GetTextSprite(Color color, Color outlineColor) => new PicoTextRectSprite {
+        Text = Text,
+        Pos = new Rectangle(X, Y, Width, Height),
+        Color = color,
+        OutlineColor = outlineColor,
+        Scale = Settings.Instance.TriggerFontScale,
+        Depth = Depth - 1
+    };
 
     public override IEnumerable<ISprite> GetSprites() {
-        var rect = new Rectangle(X, Y, Width, Height);
-        yield return ISprite.OutlinedRect(rect, FillColor, Color);
-        yield return new PicoTextRectSprite {
-            Text = Text,
-            Pos = rect,
-            Color = Color.White,
-            Scale = Settings.Instance.TriggerFontScale,
-            Depth = Depth - 1
-        };
+        yield return ISprite.OutlinedRect(new Rectangle(X, Y, Width, Height), FillColor, Color);
+        yield return GetTextSprite(Color.White, default);
     }
 
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {

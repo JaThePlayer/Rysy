@@ -44,6 +44,7 @@ public struct Selection {
     }
 
     public void Render(Color c) => Handler.RenderSelection(c);
+    public void RenderHollow(Color c) => Handler.RenderSelectionHollow(c);
 }
 
 public interface ISelectionCollider {
@@ -52,6 +53,7 @@ public interface ISelectionCollider {
     public bool IsWithinRectangle(Rectangle roomPos);
 
     public void Render(Color c);
+    public void RenderHollow(Color c);
 
     public static ISelectionCollider FromRect(Rectangle rect) => new RectangleSelection() { Rect = rect };
     public static ISelectionCollider FromRect(int x, int y, int w, int h) => FromRect(new(x, y, w, h));
@@ -78,6 +80,8 @@ public interface ISelectionHandler {
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null);
 
     public void RenderSelection(Color c);
+    public void RenderSelectionHollow(Color c);
+    
     public bool IsWithinRectangle(Rectangle roomPos);
     public void ClearCollideCache();
     public void OnRightClicked(IEnumerable<Selection> selections);
@@ -186,6 +190,10 @@ public sealed record class RectangleSelection : ISelectionCollider {
     public void Render(Color c) {
         ISprite.OutlinedRect(Rect, c * 0.4f, c).Render();
     }
+    
+    public void RenderHollow(Color c) {
+        ISprite.OutlinedRect(Rect, Color.Transparent, c).Render();
+    }
 }
 
 public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T : ITextureSprite {
@@ -223,6 +231,10 @@ public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T :
 
     public void Render(Color c) {
         ISprite.OutlinedRect(Rect, c * 0.4f, c).Render();
+    }
+    
+    public void RenderHollow(Color c) {
+        ISprite.OutlinedRect(Rect, Color.Transparent, c).Render();
     }
 
     private Rectangle? GetSpriteRenderRect() {
@@ -263,5 +275,10 @@ public sealed class MergedSpriteSelection : ISelectionCollider {
     public void Render(Color c) {
         if (GetRectangle() is { } r)
             ISprite.OutlinedRect(r.MovedBy(DrawOffset), c * 0.4f, c).Render();
+    }
+    
+    public void RenderHollow(Color c) {
+        if (GetRectangle() is { } r)
+            ISprite.OutlinedRect(r.MovedBy(DrawOffset), Color.Transparent, c).Render();
     }
 }

@@ -130,6 +130,10 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     public void RenderSelection(Color c) {
         Collider.Render(c);
     }
+    
+    public void RenderSelectionHollow(Color c) {
+        Collider.RenderHollow(c);
+    }
 
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
 
