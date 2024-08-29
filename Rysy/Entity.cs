@@ -353,6 +353,28 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
     [JsonIgnore]
     public virtual List<string>? AssociatedMods => null;
+    
+    /// <summary>
+    /// Checks whether this is similar to the given entity, used for the select-similar hotkey.
+    /// </summary>
+    public virtual bool SimilarTo(Entity entity) {
+        if (entity.Name != Name)
+            return false;
+        
+        var otherData = entity.EntityData;
+        if (otherData.Count != EntityData.Count)
+            return false;
+        
+        foreach (var (k, v) in EntityData) {
+            if (k is "x" or "y" or "width" or "height" or "id")
+                continue;
+
+            if (!otherData.TryGetValue(k, out var otherVal) || !otherVal.Equals(v))
+                return false;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Whether this entity is currently selected.
