@@ -1,14 +1,16 @@
-﻿using Rysy.Extensions;
+﻿using KeraLua;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
+using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Stylegrounds;
 
 namespace Rysy;
 
-public sealed class Map : IPackable {
+public sealed class Map : IPackable, ILuaWrapper {
     private static Map _dummyMap;
     
     /// <summary>
@@ -270,6 +272,34 @@ public sealed class Map : IPackable {
     
     internal IEnumerable<Entity> GetEntitiesInGroup(EditorGroup group) => 
         GetAllEntities().Where(e => e.EditorGroups.Contains(group));
+
+    public int LuaIndex(Lua lua, long key) {
+        throw new NotImplementedException();
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
+        switch (key) {
+            case "package":
+                lua.PushString(Package);
+                return 1;
+            case "rooms":
+                lua.PushWrapper(new WrapperListWrapper<Room>(Rooms));
+                return 1;
+            // todo: impl when rysy parses fillers.
+            //case "fillers":
+            //    lua.Push(new WrapperListWrapper<Filler>(Filler));
+            //    return 1;
+            case "stylesFg":
+                lua.PushWrapper(new WrapperListWrapper<Style>(Style.Foregrounds));
+                return 1;
+            case "stylesBg":
+                lua.PushWrapper(new WrapperListWrapper<Style>(Style.Backgrounds));
+                return 1;
+        }
+        
+        lua.PushNil();
+        return 1;
+    }
 }
 
 public sealed record class MapMetadata {

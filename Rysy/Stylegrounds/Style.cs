@@ -269,8 +269,31 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
     }
 
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
-        lua.PushNil();
-        return 1;
+        switch (key) {
+            case "_type":
+                lua.PushString(this switch {
+                    Apply => "apply",
+                    Parallax => "parallax",
+                    _ => "effect",
+                });
+                return 1;
+            case "_name":
+                if (this is not Parallax and not Apply)
+                    lua.PushString(Name);
+                else
+                    lua.PushNil();
+                return 1;
+            case "children" when this is Apply apply:
+                lua.PushWrapper(new WrapperListWrapper<Style>(apply.Styles));
+                return 1;
+            default:
+                if (Data.TryGetValue(key.ToString(), out var value)) {
+                    lua.Push(value);
+                } else {
+                    lua.PushNil();
+                }
+                return 1;
+        }
     }
     #endregion
 
