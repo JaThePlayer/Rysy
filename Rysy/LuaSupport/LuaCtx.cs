@@ -553,6 +553,34 @@ public class LuaCtx {
             lua.PushString(Trigger.GetDefaultTextForSid(sid));
             return 1;
         });
+        
+        lua.Register("_RYSY_loaded_state_getSelectedRoom", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            lua.Push((object?)EditorState.CurrentRoom ?? false);
+            return 1;
+        });
+        
+        lua.Register("_RYSY_loaded_state_getMap", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            lua.Push(EditorState.Map);
+            return 1;
+        });
+        
+        lua.Register("_RYSY_loaded_state_getRoomByName", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var name = lua.FastToString(1);
+
+            if (EditorState.Map?.TryGetRoomByName(name) is { } room) {
+                lua.Push(room);
+                lua.PushInteger(EditorState.Map.Rooms.IndexOf(room) + 1);
+            } else {
+                lua.PushNil();
+                lua.PushNil();
+            }
+            return 2;
+        });
 
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy

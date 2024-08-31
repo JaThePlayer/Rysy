@@ -892,6 +892,9 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
+            case "triggers":
+                lua.PushWrapper(new EntityListWrapper(Triggers));
+                return 1;
             case "entities":
                 lua.PushWrapper(new EntityListWrapper(Entities));
                 return 1;
