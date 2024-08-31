@@ -19,6 +19,9 @@ public sealed class Autotiler {
             Center = [ AutotiledSprite.Missing ],
             Padding = [ AutotiledSprite.Missing ],
             Tiles = [],
+            IgnoresExceptExceptions = [],
+            Ignores = [],
+            IgnoreExceptions = [],
         };
     }
     
