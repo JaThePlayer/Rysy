@@ -12,24 +12,36 @@ local function createPlacementsShim(sid)
 	})
 end
 
+local createRegisteredEntityShim = function(key, registered)
+	if registered then
+		--local copy = utils.deepcopy(registered)
+		--copy.placements = createPlacementsShim(key)
+
+		return registered
+	end
+
+	--_RYSY_log("WARNING", string.format("Requested unknown entity [%s] from Lonn", key))
+
+	return {
+		name = key,
+		placements = createPlacementsShim(key)
+	}
+end
+
 local registeredEntitiesMt = {
 	__index = function (self, key)
 		local registered = _RYSY_entities[key]
 
-		if registered then
-			local copy = utils.deepcopy(registered)
-			copy.placements = createPlacementsShim(key)
-
-			return copy
-		end
-
-		--_RYSY_log("WARNING", string.format("Requested unknown entity [%s] from Lonn", key))
-
-		return {
-			name = key,
-			placements = createPlacementsShim(key)
-		}
+		return createRegisteredEntityShim(key, registered)
 	end,
+	__pairs = function (self)
+	    return function(self, lastIdx)
+	        local k, v = next(_RYSY_entities, lastIdx)
+
+	        if not k then return nil end
+	        return k, createRegisteredEntityShim(k, v)
+	    end, self, nil
+	end
 }
 
 entities.registeredEntities = setmetatable({}, registeredEntitiesMt)

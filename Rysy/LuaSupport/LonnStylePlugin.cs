@@ -142,8 +142,7 @@ public sealed class LonnStylePlugin {
         switch (lua.GetTable(top, "fieldInformation")) {
             case LuaType.Table:
                 var fieldInfoLoc = lua.GetTop();
-                var dict = lua.TableToDictionary(fieldInfoLoc);
-                var mainPlacement = defaultPlacement;
+                var dict = lua.TableToDictionary(fieldInfoLoc, makeLuaFuncRefs: true);
 
                 plugin.FieldList = (style) => LonnEntityPlugin.LonnFieldIntoToFieldList(dict, plugin.DefaultData(style));
                 break;
@@ -158,8 +157,7 @@ public sealed class LonnStylePlugin {
                         }
 
                         var fields = lua.PCallFunction((lua, i) => {
-                            var dict = lua.TableToDictionary(i);
-                            var mainPlacement = defaultPlacement;
+                            var dict = lua.TableToDictionary(i, makeLuaFuncRefs: true);
 
                             return LonnEntityPlugin.LonnFieldIntoToFieldList(dict, plugin.DefaultData(style));
                         }) ?? new();

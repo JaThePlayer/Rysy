@@ -4,6 +4,7 @@ using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Layers;
+using Rysy.LuaSupport;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -224,9 +225,11 @@ public static partial class Fields {
         if (fieldType == "anything")
             fieldType = "string";
 
+        Field? field = null;
+
         if (LonnFieldGenerators!.TryGetValue(fieldType, out var generator)) {
             try {
-                return generator(val, new DictionaryUntypedData(fieldInfoEntry));
+                field = generator(val, new DictionaryUntypedData(fieldInfoEntry));
             } catch (Exception ex) {
                 if (Entity.LogErrors)
                     Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
@@ -237,7 +240,21 @@ public static partial class Fields {
             }
         }
 
-        return GuessFromValue(val, fromMapData: true);
+        field ??= GuessFromValue(val, fromMapData: true);
+
+        if (field is {} && fieldInfoEntry.TryGetValue("validator", out var validatorObj) && validatorObj is LuaFunctionRef func) {
+            field.Validator = (x) => {
+                var lua = func.Lua;
+                func.PushToStack();
+                lua.Push(x);
+                lua.Call(1, 1);
+                var isValid = lua.ToBoolean(lua.GetTop());
+                lua.Pop(1);
+                return isValid;
+            };
+        }
+
+        return field;
     }
     
     public static Field? CreateLonnDropdown<T>(IUntypedData info, object def, Func<object, (bool, T)> converter) where T : notnull {

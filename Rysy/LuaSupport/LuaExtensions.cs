@@ -151,13 +151,13 @@ public static partial class LuaExt {
         }
     }
 
-    public static void PrintStack(this Lua state,
+    public static void PrintStack(this Lua state, int startI = 1,
         [CallerMemberName] string callerMethod = "",
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int lineNumber = 0
     ) {
         Logger.Write("Lua", LogLevel.Info, "Stack:", callerMethod, callerFile, lineNumber);
-        for (int i = 1; i <= state.GetTop(); i++) {
+        for (int i = startI; i <= state.GetTop(); i++) {
             Console.WriteLine($"[{i}]: {state.FastToString(i)}");
         }
     }
@@ -642,7 +642,8 @@ where TArg1 : class, ILuaWrapper {
     /// <summary>
     /// Converts a lua table at index <paramref name="index"/> on the stack into a C# dictionary
     /// </summary>
-    public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null, int depth = 0) {
+    public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null, 
+        int depth = 0, bool makeLuaFuncRefs = false) {
         var dict = new Dictionary<string, object>();
         var dataStart = index;
 
@@ -653,7 +654,7 @@ where TArg1 : class, ILuaWrapper {
                 goto next;
             }
 
-            var value = ToCSharp(lua, lua.GetTop(), depth: depth);
+            var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs);
             dict[key] = value;
 
             next:
@@ -735,18 +736,18 @@ where TArg1 : class, ILuaWrapper {
 
 
 
-    internal static object ToListOrDict(Lua lua, int index, int depth = 0) {
+    internal static object ToListOrDict(Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false) {
         List<object> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharp(lua, loc, depth + 1));
+            list.Add(ToCSharp(lua, loc, depth + 1, makeLuaFuncRefs));
         });
 
         if (list.Count > 0) {
             return list;
         }
 
-        return lua.TableToDictionary(index, depth: depth + 1);
+        return lua.TableToDictionary(index, depth: depth + 1, makeLuaFuncRefs: makeLuaFuncRefs);
     }
 
     public static List<object>? ToList(this Lua lua, int index, int depth = 0) {
@@ -771,14 +772,14 @@ where TArg1 : class, ILuaWrapper {
         return list;
     }
 
-    public static object ToCSharp(this Lua s, int index, int depth = 0) {
+    public static object ToCSharp(this Lua s, int index, int depth = 0, bool makeLuaFuncRefs = false) {
         object val = s.Type(index) switch {
             LuaType.Nil => null!,
             LuaType.Boolean => s.ToBoolean(index),
             LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
-            LuaType.Function => s.FastToString(index, false),
-            LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1),//"table",
+            LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.FastToString(index, false),
+            LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;
@@ -987,6 +988,7 @@ where TArg1 : class, ILuaWrapper {
 
     private static List<ILuaWrapper> LuaWrapperList = new();
     private static List<GCHandle> LuaUsedHandles = new();
+    internal static List<Action> LuaCleanupActions = new();
 
     public static void ClearLuaResources() {
         LuaWrapperList.Clear();
@@ -994,6 +996,12 @@ where TArg1 : class, ILuaWrapper {
         foreach (var handler in LuaUsedHandles) {
             handler.Free();
         }
+
+        foreach (var act in LuaCleanupActions) {
+            act();
+        }
+        
+        LuaCleanupActions.Clear();
         LuaUsedHandles.Clear();
     }
 
@@ -1010,7 +1018,7 @@ where TArg1 : class, ILuaWrapper {
         lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
-    public static unsafe LuaType GetGlobalASCII(this Lua lua, byte[] asciiName) {
+    public static unsafe LuaType GetGlobalASCII(this Lua lua, ReadOnlySpan<byte> asciiName) {
         fixed (byte* ptr = &asciiName[0]) {
             return (LuaType)lua_getglobal(lua.Handle, ptr);
         }

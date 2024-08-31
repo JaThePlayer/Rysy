@@ -147,7 +147,12 @@ local function _handleRequire(lib, modName, registerWatcher)
 	end
 
     if type(required) == "string" then
-        required = loadstring(required)()
+        local r, err = loadstring(required, string.format("%s [%s]", lib, modName))
+        if r then
+            required = r()
+        else
+            error(err)
+        end
     end
     
     revertHotReloadData(prevHotReloadData)

@@ -31,17 +31,36 @@ public class LuaCtx {
         lua.Register("loadstring", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
+            var moduleName = "?";
+
+            if (lua.GetTop() >= 2) {
+                moduleName = lua.FastToString(2);
+                lua.Pop(1);
+            }
+
             lua.GetGlobal("selene");
             var seleneLoc = lua.GetTop();
             lua.PushString("parse");
             lua.GetTable(seleneLoc);
 
             lua.Rotate(1, 2); // put the string from arg1 to the top of the stack
-            lua.Call(1, 1); // call selene.parse(arg)
+            var result = lua.PCall(1, 1, 0); // call selene.parse(arg)
+            if (result != LuaStatus.OK) {
+                var errMsgPos = lua.GetTop();
+                
+                lua.PushNil();
+                lua.PushCopy(errMsgPos);
+                lua.PrintStack(lua.GetTop() - 1);
+                return 2;
+            }
 
-            var st = lua.LoadString(lua.FastToString(-1));
+            var st = lua.LoadString(lua.FastToString(-1), moduleName);
             if (st != LuaStatus.OK) {
-                throw new LuaException(lua);
+                var errMsgPos = lua.GetTop();
+                
+                lua.PushNil();
+                lua.PushCopy(errMsgPos);
+                return 2;
             }
 
             return 1;
@@ -139,6 +158,27 @@ public class LuaCtx {
         end
 
         math.atan2 = math.atan
+        
+        local funcs = {}
+        function __rysy_make_luaFuncRef(f)
+            local i = 0
+            while funcs[i] do
+                i = i + 1
+            end
+            
+            funcs[i] = f
+            
+            return i
+        end
+        
+        function __rysy_get_luaFuncRef(id)
+            return funcs[id]
+        end
+        
+        function __rysy_gc_luaFuncRef(id)
+            print("__rysy_gc_luaFuncRef" .. id)
+            funcs[id] = nil
+        end
         """, "setup_globals");
 
         /*
