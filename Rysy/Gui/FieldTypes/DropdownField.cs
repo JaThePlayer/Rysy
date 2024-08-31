@@ -153,6 +153,13 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     }
 
     T1 IFieldConvertible.ConvertMapDataValue<T1>(object value) {
+        if (value is T1 t1)
+            return t1;
+        
+        if (typeof(T1) == typeof(int) && value is float f) {
+            return (T1)(object)(int)f;
+        }
+        
         if (!typeof(T1).IsEnum) {
             throw new Exception($"{typeof(DropdownField<T>)} can't convert to {typeof(T1)} as its not {typeof(T)} or an enum type");
         }

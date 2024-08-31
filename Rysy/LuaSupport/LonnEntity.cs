@@ -17,11 +17,13 @@ public class LonnEntity : Entity, IHasLonnPlugin {
 
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
+    private (ISelectionCollider?, ISelectionCollider?[]?)? _cachedSelections;
     
     private void ClearInternalCache() {
         CachedSprites = null;
         CachedNodeSprites?.Clear();
         CachedNodeSprites = null;
+        _cachedSelections = null;
     }
     
     [JsonIgnore]
@@ -170,27 +172,44 @@ public class LonnEntity : Entity, IHasLonnPlugin {
 
         return sprites;
     }
-
-    private bool CallSelectionFunc<T>(Func<Lua, int, T> valueRetriever, out T? value) {
+    
+    private (ISelectionCollider? Main, ISelectionCollider?[]? Nodes)? GetSelectionHandlersFromSelectionFunc() {
         if (Plugin is null || !Plugin.HasSelectionFunction) {
-            value = default;
-            return false;
+            return default;
         }
         var lua = Plugin.LuaCtx.Lua;
 
-        (var ret, value) = Plugin.PushToStack((pl) => {
+        if (_cachedSelections is { }) {
+            return _cachedSelections;
+        }
+
+        _cachedSelections = Plugin.PushToStack((pl) => {
             var type = lua.GetTable(pl.StackLoc, "selection");
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
-                return (false, default);
+                return default;
             }
 
-            var value = lua.PCallFunction(Room, this, valueRetriever, results: 2);
-            return (true, value);
+            var value = lua.PCallFunction(Room, this, (lua, top) => {
+                var main = lua.ToRectangle(top - 1);
+                var nodes = new ISelectionCollider?[Nodes.Count];
+                
+                if (lua.Type(top) == LuaType.Table) {
+                    lua.IPairs((lua, index, valueLocation) => {
+                        var rect = lua.ToRectangle(valueLocation);
+                        nodes[index - 1] = ISelectionCollider.FromRect(rect);
+                    }, top);
+                }
+
+                lua.Pop(1);
+                
+                return (ISelectionCollider.FromRect(main), nodes);
+            }, results: 2);
+            return value;
         });
 
-        return ret;
+        return _cachedSelections;
     }
 
     public override ISelectionCollider GetMainSelection() {
@@ -199,8 +218,8 @@ public class LonnEntity : Entity, IHasLonnPlugin {
                 return base.GetMainSelection();
             
             //selection(room, entity):rectangle, table of rectangles
-            if (CallSelectionFunc((lua, top) => lua.ToRectangle(top - 1), out var selectionRect)) {
-                return ISelectionCollider.FromRect(selectionRect);
+            if (GetSelectionHandlersFromSelectionFunc() is {} selection) {
+                return selection.Main;
             }
 
             if (Plugin?.GetRectangle is { } rectFunc) {
@@ -214,28 +233,15 @@ public class LonnEntity : Entity, IHasLonnPlugin {
 
         return base.GetMainSelection();
     }
-
+    
     public override ISelectionCollider GetNodeSelection(int nodeIndex) {
         try {
             if (Plugin is null)
                 return base.GetNodeSelection(nodeIndex);
             
             // 1. Call entity.selection if exists
-            if (CallSelectionFunc((lua, top) => {
-                if (lua.Type(top) != LuaType.Table) {
-                    return default;
-                }
-                
-                if (lua.RawGetInteger(top, nodeIndex + 1) == LuaType.Table) {
-                    var rect = lua.ToRectangle(lua.GetTop());
-                    
-                    lua.Pop(1);
-                    return rect;
-                }
-                lua.Pop(1);
-                return default;
-            }, out var selectionRect) && selectionRect != default) {
-                return ISelectionCollider.FromRect(selectionRect);
+            if (GetSelectionHandlersFromSelectionFunc() is {} selections) {
+                return selections.Nodes[nodeIndex];
             }
 
             // 2. Use nodeRectangle if entity.rectangle exists or it has both width and height.
