@@ -241,7 +241,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             
             // 1. Call entity.selection if exists
             if (GetSelectionHandlersFromSelectionFunc() is {} selections) {
-                return selections.Nodes[nodeIndex];
+                return selections.Nodes[nodeIndex] ?? ISelectionCollider.FromRect(0, 0, 0, 0);
             }
 
             // 2. Use nodeRectangle if entity.rectangle exists or it has both width and height.
