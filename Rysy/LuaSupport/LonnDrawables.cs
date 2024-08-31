@@ -235,13 +235,15 @@ public static partial class LonnDrawables {
         var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
         var w = lua.PeekTableIntValue(top, "width");
         var h = lua.PeekTableIntValue(top, "height");
-        var fontSize = lua.PeekTableIntValue(top, "fontSize") ?? 1;
+        var fontSize = lua.PeekTableFloatValue(top, "fontSize") ?? 1f;
         // var font = lua.PeekTableStringValue(top, "font");
         var text = lua.PeekTableStringValue(top, "text") ?? "";
+        var color = lua.PeekTableColorValue(top, "color", Color.White);
 
         var bounds = new Rectangle((int)x, (int)y, w ?? 0, h ?? 0);
         return new PicoTextRectSprite(text, bounds) {
-            Scale = fontSize
+            Scale = fontSize,
+            Color = color,
         };
     }
     
