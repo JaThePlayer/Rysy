@@ -176,7 +176,6 @@ public class LuaCtx {
         end
         
         function __rysy_gc_luaFuncRef(id)
-            print("__rysy_gc_luaFuncRef" .. id)
             funcs[id] = nil
         end
         """, "setup_globals");
