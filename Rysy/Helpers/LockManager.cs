@@ -4,19 +4,19 @@
 /// Allows multiple sources to create independently managed locks
 /// </summary>
 public sealed class LockManager {
-    private List<Lock> _locks = new(0);
+    private List<ManagedLock> _locks = new(0);
 
     /// <summary>
     /// Creates a new lock tied to this manager. By default, the lock is *not* active!
     /// </summary>
-    public Lock CreateLock() {
-        var l = new Lock(this);
+    public ManagedLock CreateLock() {
+        var l = new ManagedLock(this);
         _locks.Add(l);
 
         return l;
     }
 
-    public void ReleaseLock(Lock l) {
+    public void ReleaseLock(ManagedLock l) {
         _locks.Remove(l);
     }
 
@@ -33,10 +33,10 @@ public sealed class LockManager {
 /// <summary>
 /// Represents a lock created by a <see cref="LockManager"/>
 /// </summary>
-public sealed class Lock {
+public sealed class ManagedLock {
     private LockManager? Parent;
 
-    internal Lock(LockManager parent) { Parent = parent; }
+    internal ManagedLock(LockManager parent) { Parent = parent; }
 
     /// <summary>
     /// Toggles whether the lock is active or not. Setting this to false does not remove the lock from the manager.
