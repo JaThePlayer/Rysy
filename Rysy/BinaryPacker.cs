@@ -319,7 +319,7 @@ public sealed class BinaryPacker {
     internal string DecodeRLE() {
         var dataLen = Reader.ReadInt16();
         Span<byte> rle = dataLen < 1024 ? stackalloc byte[dataLen] : new byte[dataLen];
-        Reader.BaseStream.Read(rle);
+        Reader.BaseStream.ReadExactly(rle);
 
         StringBuilder builder = new();
         for (int i = 0; i < rle.Length; i += 2) {
