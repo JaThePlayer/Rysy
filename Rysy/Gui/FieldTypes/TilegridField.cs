@@ -188,7 +188,7 @@ class EditTileDataWindow : Window {
         base.RemoveSelf();
     }
 
-    ManagedLock? GlobalHotkeyLock;
+    private ManagedLock? GlobalHotkeyLock;
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         Width = (Width + resize.X).AtLeast(8);
