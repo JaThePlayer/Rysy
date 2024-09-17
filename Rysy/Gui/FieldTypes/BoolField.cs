@@ -29,7 +29,7 @@ public record class BoolField : Field, IFieldConvertible<bool>, ILonnField {
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
         bool defB = false;
         try {
-            defB = Convert.ToBoolean(def);
+            defB = Convert.ToBoolean(def, CultureInfo.InvariantCulture);
         } catch {
             
         }

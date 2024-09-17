@@ -190,7 +190,7 @@ file static class TileMapHelper {
         }
 
         // Backwards compatibility, tileMap strings previously used `,` as the row separator
-        char delim = tileMap.Contains(',') ? ',' : '\n';
+        char delim = tileMap.Contains(',', StringComparison.Ordinal) ? ',' : '\n';
 
         string[] tileStrings = tileMap.Split(delim);
         tileStrings = Array.ConvertAll(tileStrings, s => s.Trim());

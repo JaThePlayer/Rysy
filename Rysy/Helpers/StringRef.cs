@@ -117,7 +117,7 @@ public readonly struct StringRef : IEquatable<StringRef> {
         return Data.SequenceEqual(other.Data);
     }
 
-    public override int GetHashCode() => string.GetHashCode(Data);
+    public override int GetHashCode() => string.GetHashCode(Data, StringComparison.Ordinal);
         
     public override bool Equals(object? obj)
         => obj is StringRef other && Equals(other);

@@ -309,7 +309,7 @@ namespace Triangulator {
 
         #region ClipNextEar
 
-        private static void ClipNextEar(ICollection<Triangle> triangles) {
+        private static void ClipNextEar(List<Triangle> triangles) {
             //find the triangle
             Vertex ear = earVertices[0].Value;
             Vertex prev = polygonVertices[polygonVertices.IndexOf(ear) - 1].Value;

@@ -171,7 +171,7 @@ public sealed class VirtGrid<T> : IEnumerable<T?> where T : IEquatable<T> {
         return GetEnumerator();
     }
 
-    public struct Enumerator : IEnumerator<T> {
+    public struct Enumerator : IEnumerator<T?> {
         private readonly VirtGrid<T> _grid;
         private int _chunkIdx;
         private int _i;
@@ -217,9 +217,9 @@ public sealed class VirtGrid<T> : IEnumerable<T?> where T : IEquatable<T> {
             _mode = 0;
         }
 
-        public readonly T Current => _grid.DirectGet(_chunkIdx, _i);
+        public readonly T? Current => _grid.DirectGet(_chunkIdx, _i);
 
-        object IEnumerator.Current => Current;
+        object IEnumerator.Current => Current!;
 
         public readonly void Dispose() {
         }

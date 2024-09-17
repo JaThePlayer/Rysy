@@ -149,7 +149,7 @@ public sealed class MetadataWindow : Window {
     }
 }
 
-internal record TitleCardPreviewField : Field {
+internal sealed record TitleCardPreviewField : Field {
     public override object? RenderGui(string fieldName, object value) {
         ImGui.Columns();
         

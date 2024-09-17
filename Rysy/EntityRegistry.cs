@@ -440,14 +440,14 @@ public static class EntityRegistry {
     private static List<string> GetSIDsForType(Type type)
         => type.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToList();
     
-    private static bool HandleAssociatedMods(RegisteredEntity into, IList<string> associated, ModMeta? mod) {
-        if (associated.Count == 0 && mod is { }) {
+    private static bool HandleAssociatedMods(RegisteredEntity into, string[] associated, ModMeta? mod) {
+        if (associated.Length == 0 && mod is { }) {
             if (mod.IsVanilla) {
                 into.AssociatedMods = [];
                 return true;
             }
 
-            associated = new[] { mod.Name };
+            associated = [ mod.Name ];
         }
 
         var sid = into.Sid;
@@ -482,10 +482,10 @@ public static class EntityRegistry {
             info.Mod = mod;
         }
 
-        var getPlacementsForSIDMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
+        var getPlacementsForSidMethod = t.GetMethod("GetPlacements", BindingFlags.Public | BindingFlags.Static, [ typeof(string) ]);
         try {
-            if (getPlacementsForSIDMethod is { }) {
-                var placements = (IEnumerable<Placement>?) getPlacementsForSIDMethod.Invoke(null, new object[] { sid });
+            if (getPlacementsForSidMethod is { }) {
+                var placements = (IEnumerable<Placement>?) getPlacementsForSidMethod.Invoke(null, [ sid ]);
 
                 if (placements is { })
                     AddPlacements(t, [sid], placements);
@@ -500,9 +500,9 @@ public static class EntityRegistry {
             info.Fields = _ => dele();
         }
 
-        var getFieldsForSIDMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(string) });
-        if (getFieldsForSIDMethod is { }) {
-            var dele = getFieldsForSIDMethod.CreateDelegate<Func<string, FieldList>>();
+        var getFieldsForSidMethod = t.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Static, [ typeof(string) ]);
+        if (getFieldsForSidMethod is { }) {
+            var dele = getFieldsForSidMethod.CreateDelegate<Func<string, FieldList>>();
             info.Fields = _ => dele(sid);
         }
     }

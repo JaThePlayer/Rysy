@@ -30,5 +30,5 @@ public sealed class NorthernLights : Style, IPlaceable {
 
     public static PlacementList GetPlacements() => new("default");
     
-    private static readonly LinearGradient Gradient = LinearGradient.Parse("020825,170c2f,100");
+    private static readonly LinearGradient Gradient = LinearGradient.Parse("020825,170c2f,100", CultureInfo.InvariantCulture);
 }

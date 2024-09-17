@@ -121,7 +121,9 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             ZipArchive? zip;
             try {
+#pragma warning disable CA2000
                 zip = ZipFile.OpenRead(Root);
+#pragma warning restore CA2000
             } catch (Exception ex) {
                 if (!_failedToOpenZip)
                     Logger.Write("ZipModFilesystem", LogLevel.Warning, $"Failed to open mod zip {Root}: {ex}");

@@ -613,7 +613,7 @@ public static class ImGuiManager {
 
         private int ScrollWheelValue;
         
-        record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
+        sealed record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
         
         private static readonly List<ImGuiXnaKeyBind> ImGuiKeys = new()
         {
@@ -941,7 +941,7 @@ public static class ImGuiManager {
 
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
                     ImDrawCmdPtr cmd = cmdList.CmdBuffer[cmdi];
-                    if (!Textures.ContainsKey(cmd.TextureId)) {
+                    if (!Textures.TryGetValue(cmd.TextureId, out Texture2D? texture)) {
                         throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.TextureId}");
                     }
                     
@@ -952,7 +952,7 @@ public static class ImGuiManager {
                         (int) (cmd.ClipRect.W - cmd.ClipRect.Y)
                     );
 
-                    Effect e = UpdateEffect(Textures[cmd.TextureId]);
+                    Effect e = UpdateEffect(texture);
                     for (int passIndex = 0; passIndex < e.CurrentTechnique.Passes.Count; passIndex++) {
                         EffectPass pass = e.CurrentTechnique.Passes[passIndex];
                         pass.Apply();

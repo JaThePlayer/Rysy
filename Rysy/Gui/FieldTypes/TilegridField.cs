@@ -84,7 +84,7 @@ public record class TilegridField : Field {
     public static string DefaultGridToSavedString(char[,] tiles) => Tilegrid.GetSaveString(tiles);
 }
 
-class EditTileDataWindow : Window {
+internal sealed class EditTileDataWindow : Window {
     public bool Edited;
 
     private readonly string XnaBufferID;

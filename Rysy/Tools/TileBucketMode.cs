@@ -24,7 +24,7 @@ public class TileBucketMode : TileMode {
             _prevChangedTiles = GetChangedTilesAt(room, tile, Tool.TileOrAlt(), out var filled);
         }
 
-        var tiles = _prevChangedTiles.Value;
+        var tiles = _prevChangedTiles!.Value;
         var color = Tool.DefaultColor * 0.3f;
         for (int i = 0; i < tiles.Length; i++) {
             if (!tiles.Get(i))

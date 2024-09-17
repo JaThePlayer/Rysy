@@ -257,10 +257,10 @@ public class FormContext : ILuaWrapper, IUntypedData {
     private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => Window.FieldList.FirstOrDefault(f => f.Name == fieldName);
     
     /// <summary>
-    /// Tries to get the value of the field of name <paramref name="fieldName"/>
+    /// Tries to get the value of the field of name <paramref name="key"/>
     /// </summary>
-    public bool TryGetValue(string fieldName, [NotNullWhen(true)] out object? value) {
-        var field = GetPropByNameOrNull(fieldName);
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+        var field = GetPropByNameOrNull(key);
         if (field is null) {
             value = null;
             return false;

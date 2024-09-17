@@ -37,7 +37,7 @@ public class HistoryWindow : Window {
 
                     var bytes = memstream.ToArray();
 
-                    _selectedActionByteCount = bytes.Length.ToString();
+                    _selectedActionByteCount = bytes.Length.ToString(CultureInfo.InvariantCulture);
                     //_selectedActionHex = string.Join("",bytes.Select(b => $"{b:X2}"));
                 }
             }

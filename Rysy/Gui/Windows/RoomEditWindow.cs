@@ -129,7 +129,7 @@ public sealed class RoomEditWindow : Window {
     }
 }
 
-record RoomDebugColorField : Field {
+internal sealed record RoomDebugColorField : Field {
     public RoomDebugColorField(int def) {
         _default = def;
     }
@@ -139,11 +139,11 @@ record RoomDebugColorField : Field {
     public override object GetDefault() => _default;
 
     public override void SetDefault(object newDefault) {
-        _default = Convert.ToInt32(newDefault);
+        _default = Convert.ToInt32(newDefault, CultureInfo.InvariantCulture);
     }
 
     public override object? RenderGui(string fieldName, object value) {
-        var c = Convert.ToInt32(value);
+        var c = Convert.ToInt32(value, CultureInfo.InvariantCulture);
         object? ret = null;
         
         var colors = CelesteEnums.RoomColors;

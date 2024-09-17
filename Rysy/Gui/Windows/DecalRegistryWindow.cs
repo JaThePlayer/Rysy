@@ -243,7 +243,7 @@ public sealed class DecalRegistryWindow : Window {
         if (clicked) {
             SetSelection(entry, prop);
         }
-        AddContextWindow(id.ToString(), remove: () => {
+        AddContextWindow(id.ToString(CultureInfo.InvariantCulture), remove: () => {
             RemoveProp(entry, prop);
         });
 

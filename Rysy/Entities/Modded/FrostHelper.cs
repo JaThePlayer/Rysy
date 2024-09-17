@@ -38,7 +38,7 @@ internal sealed class CustomSpinner : LonnEntity {
             _cache = GetBaseSprites(Depth, Color, BorderColor);
     }
 
-    record SpinnerPathCache(ColoredSpriteTemplate Fg, ColoredSpriteTemplate FgBack, ColoredSpriteTemplate FgOutline, 
+    sealed record SpinnerPathCache(ColoredSpriteTemplate Fg, ColoredSpriteTemplate FgBack, ColoredSpriteTemplate FgOutline, 
         ColoredSpriteTemplate Bg, ColoredSpriteTemplate BgBack, ColoredSpriteTemplate BgOutline);
 
     private static Dictionary<(string directory, string spritePathSuffix, Color color, Color borderColor), SpinnerPathCache> SpriteCache = new();
@@ -239,7 +239,7 @@ internal sealed class ArbitraryShapeCloud : Entity
 
     private const string DefaultTextureString = @"decals/10-farewell/clouds/cloud_c,decals/10-farewell/clouds/cloud_cc,decals/10-farewell/clouds/cloud_cd,decals/10-farewell/clouds/cloud_ce";
 
-    private record CloudTexture(string Path, float DefaultRotation);
+    private sealed record CloudTexture(string Path, float DefaultRotation);
 
     private static readonly Dictionary<string, List<CloudTexture>> CloudTextureCache = new(StringComparer.Ordinal);
 }
