@@ -176,7 +176,7 @@ public sealed class MapSizeoscopeWindow : Window {
                                      }
                                  })
                                  .OrderByDescending(c => c.Info.TotalSize)) {
-                        RenderElement(group.Group.Key, group.Group.Key.GetHashCode(), group.Info, null, null, false);
+                        RenderElement(group.Group.Key, group.Group.Key.GetHashCode(StringComparison.Ordinal), group.Info, null, null, false);
                     }
                 } else {
                     foreach (var child in children.OrderByDescending(c => Info(c).TotalSize)) {

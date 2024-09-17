@@ -125,11 +125,11 @@ public sealed class EditorScene : Scene {
         ClearMapRenderCache();
     }
 
-    protected internal override void OnFileDrop(string file) {
-        base.OnFileDrop(file);
+    protected internal override void OnFileDrop(string filePath) {
+        base.OnFileDrop(filePath);
 
-        if (File.Exists(file) && Path.GetExtension(file) == ".bin") {
-            LoadMapFromBin(file);
+        if (File.Exists(filePath) && Path.GetExtension(filePath) == ".bin") {
+            LoadMapFromBin(filePath);
         }
     }
 

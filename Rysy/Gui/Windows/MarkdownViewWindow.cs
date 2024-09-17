@@ -9,7 +9,7 @@ public sealed class MarkdownViewWindow : Window {
     private readonly MarkdownDocument _document;
 
     private static float GetSizeX(string md) => ImGui
-        .CalcTextSize(md.Contains('\n') ? md.Split('\n').MaxBy(l => l.Length) : md).X
+        .CalcTextSize(md.Contains('\n', StringComparison.Ordinal) ? md.Split('\n').MaxBy(l => l.Length) : md).X
         .AtMost(RysyState.Window.ClientBounds.Width * 0.75f);
         
     

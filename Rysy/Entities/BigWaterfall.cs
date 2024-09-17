@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("bigWaterfall")]
 public class BigWaterfall : RectangleEntity, IPlaceable {
-    record Sprites(SpriteTemplate LeftFill, SpriteTemplate RightFill, SpriteTemplate LeftOutline, SpriteTemplate RightOutline);
+    private sealed record Sprites(SpriteTemplate LeftFill, SpriteTemplate RightFill, SpriteTemplate LeftOutline, SpriteTemplate RightOutline);
 
     private static readonly Sprites FgSprites = new(
         SpriteTemplate.FromTexture("Rysy:bigWaterfallFillLeft", -49900),

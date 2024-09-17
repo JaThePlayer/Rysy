@@ -29,7 +29,7 @@ internal sealed class MigrateLayersToGroups : Script {
                 continue;
             
             try {
-                var layer = Convert.ToInt32(layerObj);
+                var layer = Convert.ToInt32(layerObj, CultureInfo.InvariantCulture);
                 if (layer == targetLayer) {
                     Console.WriteLine(e.ToJson());
                     e.EditorGroups.AddIfUnique(groups);

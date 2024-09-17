@@ -161,7 +161,7 @@ internal readonly ref struct ParserRes
     public static implicit operator SpanParser(ParserRes res) => res.IsSuccess ? res.ValOrDef : throw new SpanParseFailException();
 }
 
-internal class SpanParseFailException : Exception
+internal sealed class SpanParseFailException : Exception
 {
     public override string Message => "Tried to get value from Res<T> when its IsSuccess property was false.";
 }

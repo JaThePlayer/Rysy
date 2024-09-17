@@ -169,7 +169,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
             
             if (!RoomNameMatchRegexCache.TryGetValue(StringRef.FromSpanIntoShared(filter), out var regex)) {
                 var filterString = filter.ToString();
-                string pattern = "^" + Regex.Escape(filterString).Replace("\\*", ".*") + "$";
+                string pattern = "^" + Regex.Escape(filterString).Replace("\\*", ".*", StringComparison.Ordinal) + "$";
 
                 regex = new Regex(pattern, RegexOptions.Compiled);
                 RoomNameMatchRegexCache[StringRef.FromString(filterString)] = regex;

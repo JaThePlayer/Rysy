@@ -71,7 +71,7 @@ public class CloneEntityWrapper(Entity entity) : ILuaWrapper {
         }
     });
     
-    private class NodesWrapper(CloneEntityWrapper entityWrapper) : ILuaWrapper {
+    private sealed class NodesWrapper(CloneEntityWrapper entityWrapper) : ILuaWrapper {
         internal NodeWrapper?[]? Wrappers;
         
         public int LuaIndex(Lua lua, long key) {
@@ -95,7 +95,7 @@ public class CloneEntityWrapper(Entity entity) : ILuaWrapper {
             return 1;
         }
 
-        internal class NodeWrapper(CloneEntityWrapper wrapper, Node node) : ILuaWrapper {
+        internal sealed class NodeWrapper(CloneEntityWrapper wrapper, Node node) : ILuaWrapper {
             public float? X, Y;
             
             public int LuaIndex(Lua lua, long key) {
@@ -119,11 +119,11 @@ public class CloneEntityWrapper(Entity entity) : ILuaWrapper {
             public void LuaNewIndex(Lua lua, ReadOnlySpan<char> key, object value) {
                 switch (key) {
                     case "x":
-                        X = Convert.ToSingle(value);
+                        X = Convert.ToSingle(value, CultureInfo.InvariantCulture);
                         wrapper.IsChanged = true;
                         return;
                     case "y":
-                        Y = Convert.ToSingle(value);
+                        Y = Convert.ToSingle(value, CultureInfo.InvariantCulture);
                         wrapper.IsChanged = true;
                         return;
                 }

@@ -161,7 +161,7 @@ public sealed class BindAttribute : Attribute {
         return field.GetDefault();
     }
 
-    internal class Ctx<T> where T : IBindTarget {
+    internal sealed class Ctx<T> where T : IBindTarget {
         internal Dictionary<string, Action<T>> UpdateFuncs = new(StringComparer.Ordinal);
 
         internal Type Type;

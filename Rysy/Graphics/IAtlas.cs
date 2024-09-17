@@ -79,10 +79,10 @@ public interface IAtlas {
 }
 
 /// <summary>
-/// An object representing a return value from <see cref="IAtlasExt.FindTextures(IAtlas, Regex)"/>
+/// An object representing a return value from <see cref="IAtlasExt.FindTextures"/>
 /// </summary>
 /// <param name="Path">The path of this texture, in full</param>
-/// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures(IAtlas, Regex)"/></param>
+/// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures"/></param>
 public record class FoundPath(string Path, string Captured);
 
 public static class IAtlasExt {

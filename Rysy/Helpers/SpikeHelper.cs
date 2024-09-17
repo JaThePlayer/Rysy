@@ -172,7 +172,7 @@ public static class SpikeHelper {
         };
     }
 
-    public static PlacementList CreatePlacements(Func<string, string> typeToPlacementName) => new string[] {
+    public static PlacementList CreatePlacements(Func<string, string> typeToPlacementName) => new[] {
         "default",
         "outline",
         "cliffside",

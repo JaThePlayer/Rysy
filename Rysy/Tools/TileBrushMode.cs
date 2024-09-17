@@ -82,7 +82,7 @@ public class TileBrushMode : TileMode {
     }
     
     // data used by the mouse drag gesture
-    internal class BrushStrokeData {
+    internal sealed class BrushStrokeData {
         public readonly HashSet<Point> ChangedTilePositions = new();
     
         // stores a copy of the current room's tilegrid, with all of the changes from this brush stroke.

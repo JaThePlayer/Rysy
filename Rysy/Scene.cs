@@ -1,16 +1,14 @@
-﻿using ImGuiNET;
-using Rysy.Gui;
-using Rysy.Gui.Windows;
+﻿using Rysy.Gui.Windows;
 
 namespace Rysy;
 
 public abstract class Scene {
-    private List<Window> Windows = new();
+    private readonly List<Window> Windows = [];
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
 
-    public Scene() {
+    protected Scene() {
         RemoveWindow = (w) => {
             RysyState.OnEndOfThisFrame += () => Windows.Remove(w);
         };
@@ -55,7 +53,7 @@ public abstract class Scene {
         }
     }
 
-    private Action<Window> RemoveWindow;
+    private readonly Action<Window> RemoveWindow;
 
     /// <summary>
     /// Adds a window to this scene.

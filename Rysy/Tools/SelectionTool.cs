@@ -37,7 +37,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private SelectionLayer CustomLayer;
 
     private static int ClickInPlaceIdx;
-    private static ISelectionHandler? ClickInPlaceNextHandler;
     
     private Point? RotationGestureStart;
     private float? RotationGestureLastAngle;

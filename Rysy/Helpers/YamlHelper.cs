@@ -16,7 +16,7 @@ public static class YamlHelper {
     /// <param name="objectToBind">The object to set fields on</param>
     /// <returns>The newly-created deserializer</returns>
     public static IDeserializer DeserializerUsing(object objectToBind) {
-        IObjectFactory defaultObjectFactory = new DefaultObjectFactory();
+        var defaultObjectFactory = new DefaultObjectFactory();
         Type objectType = objectToBind.GetType();
 
         return new DeserializerBuilder()

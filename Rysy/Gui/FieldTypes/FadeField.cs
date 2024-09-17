@@ -2,7 +2,7 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-internal record FadeRegionField : ComplexTypeField<Fade.Region> {
+internal sealed record FadeRegionField : ComplexTypeField<Fade.Region> {
     public override Fade.Region Parse(string data)
         => Fade.Region.Parse(data);
 

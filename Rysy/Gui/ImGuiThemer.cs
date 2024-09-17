@@ -11,6 +11,10 @@ public static class ImGuiThemer {
         };
     }
 
+    private static readonly JsonSerializerOptions ThemerJsonOptions = new() {
+        IncludeFields = true,
+    };
+
     public static unsafe void LoadTheme(string filename) {
         var fs = RysyPlatform.Current.GetRysyFilesystem();
         if (!fs.FileExists(filename)) {
@@ -25,9 +29,7 @@ public static class ImGuiThemer {
 
         if (fs.TryReadAllText(filename) is {} themeJson) {
             ImGuiStylePtr ptr = ImGui.GetStyle();
-            ImGuiStyle s = JsonSerializer.Deserialize<ImGuiStyle>(themeJson, new JsonSerializerOptions() {
-                IncludeFields = true,
-            });
+            ImGuiStyle s = JsonSerializer.Deserialize<ImGuiStyle>(themeJson, ThemerJsonOptions);
             var nptr = ptr.NativePtr;
             *nptr = s;
 

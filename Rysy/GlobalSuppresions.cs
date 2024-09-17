@@ -29,3 +29,9 @@
 [assembly: SuppressMessage("Usage", "CA2201:Do not raise reserved exception types", Justification = "annoying, should be done at some point though", Scope = "module")]
 [assembly: SuppressMessage("Usage", "CA1721:Property names should not match get methods", Justification = "", Scope = "module")]
 [assembly: SuppressMessage("Usage", "CA1724:Type names should not match namespaces", Justification = "", Scope = "module")]
+
+[assembly: SuppressMessage("Usage", "CA1515", Justification = "", Scope = "module")]
+[assembly: SuppressMessage("Usage", "CA1711:Do not end types with 'Collection'", Justification = "why", Scope = "module")]
+[assembly: SuppressMessage("Usage", "CA1024:Use properties where appropriate", Justification = "way too agressive", Scope = "module")]
+[assembly: SuppressMessage("Usage", "CA1033", Justification = "", Scope = "module")]
+[assembly: SuppressMessage("Usage", "CA5394:Random is an insecure rng", Justification = "Don't need crypto-safe rng", Scope = "module")]

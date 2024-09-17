@@ -155,7 +155,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public bool TryWriteToFile(string path, Action<Stream> write) {
         var realPath = VirtToRealPath(path);
 
-        if (!realPath.StartsWith(Root))
+        if (!realPath.StartsWith(Root, StringComparison.Ordinal))
             return false;
         
         if (Path.GetDirectoryName(realPath) is {} dir)

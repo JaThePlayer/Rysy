@@ -3,7 +3,7 @@ using Rysy.Graphics;
 
 namespace Rysy.History;
 
-internal record class TilegridMoveActionAfterResize(Tilegrid Grid, char[,] PreResizeTiles, int OffX, int OffY) : IHistoryAction {
+internal sealed record TilegridMoveActionAfterResize(Tilegrid Grid, char[,] PreResizeTiles, int OffX, int OffY) : IHistoryAction {
     public bool Apply(Map map) {
         if (OffX == 0 && OffY == 0) 
             return false;

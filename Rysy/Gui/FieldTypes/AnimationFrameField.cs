@@ -47,7 +47,7 @@ public struct AnimationFrameEntry {
     }
 
     public override string ToString() => Type switch {
-        Kind.SingleFrame => Id.ToString(),
+        Kind.SingleFrame => Id.ToString(CultureInfo.InvariantCulture),
         Kind.Range => $"{Id}-{SecondNum}",
         Kind.Repeat => $"{Id}*{SecondNum}",
         _ => throw new UnreachableException()

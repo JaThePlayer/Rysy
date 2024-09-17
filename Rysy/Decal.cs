@@ -260,7 +260,7 @@ public sealed partial class Decal : Entity, IPlaceable {
                 .Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal))
                 .SelectWhereNotNull(p => {
                     if (NumberAtEnd().Match(p.virtPath) is { Success: true } match) {
-                        var frameNumber = int.Parse(match.ValueSpan);
+                        var frameNumber = int.Parse(match.ValueSpan, CultureInfo.InvariantCulture);
                         if (frameNumber > 0) {
                             return null;
                         }

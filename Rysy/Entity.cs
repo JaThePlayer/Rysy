@@ -469,10 +469,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         clone.Id = Id;
         
         if (placement.ValueOverrides.TryGetValue("x", out var x) && x is IConvertible) {
-            clone.X = Convert.ToInt32(x);
+            clone.X = Convert.ToInt32(x, CultureInfo.CurrentCulture);
         }
         if (placement.ValueOverrides.TryGetValue("y", out var y) && y is IConvertible) {
-            clone.Y = Convert.ToInt32(y);
+            clone.Y = Convert.ToInt32(y, CultureInfo.CurrentCulture);
         }
 
         return clone;
@@ -887,7 +887,7 @@ public readonly struct EntityDataChangeCtx {
 
     public bool OnlyPositionChanged => !AllChanged && ChangedFieldName is "x" or "y";
 
-    public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName);
+    public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName, StringComparison.Ordinal);
 }
 
 public class EntityData : IDictionary<string, object>, IUntypedData {

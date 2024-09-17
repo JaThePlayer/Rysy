@@ -33,7 +33,7 @@ public static class LinkOpenHelper {
     }
 }
 
-internal class LinkOpenConfirmationWindow : Window {
+internal sealed class LinkOpenConfirmationWindow : Window {
     private readonly Uri _uri;
 
     private static float XSize(Uri uri) => 

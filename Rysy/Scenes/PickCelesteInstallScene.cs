@@ -9,11 +9,11 @@ public class PickCelesteInstallScene : Scene {
         NextScene = nextScene;
     }
 
-    protected internal override void OnFileDrop(string file) {
-        base.OnFileDrop(file);
+    protected internal override void OnFileDrop(string filePath) {
+        base.OnFileDrop(filePath);
 
-        if (Path.GetFileName(file) is "Celeste.exe" or "Celeste.dll") {
-            Profile.Instance.CelesteDirectory = Path.GetDirectoryName(file)!;
+        if (Path.GetFileName(filePath) is "Celeste.exe" or "Celeste.dll") {
+            Profile.Instance.CelesteDirectory = Path.GetDirectoryName(filePath)!;
             Profile.Instance.Save();
 
             RysyEngine.Scene = NextScene;
