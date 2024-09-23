@@ -1,18 +1,16 @@
 ﻿using ImGuiNET;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
-using Rysy.Mods;
 using Rysy.Selections;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool, ISelectionHotkeyTool {
-    public ISelectionHandler? CurrentPlacement;
+    public ISelectionHandler? CurrentPlacement { get; private set; }
+    private object? _currentPlacementSourceMaterial;
 
     public SelectRectangleGesture RectangleGesture;
 
@@ -126,6 +124,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 Material = underCursor;
             }
             CurrentPlacement = null;
+            _currentPlacementSourceMaterial = null;
         }
 
         if (CurrentPlacement is not { } placement) {
@@ -210,6 +209,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
             var handler = place.PlacementHandler;
             CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
+            _currentPlacementSourceMaterial = Material;
             if (CurrentPlacement is EntitySelectionHandler entityHandler) {
                 entityHandler.Entity.InitializeNodePositions();
             }
@@ -274,7 +274,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override void CancelInteraction() {
         base.CancelInteraction();
 
-        CurrentPlacement = null;
+        if (CurrentPlacement is { } pl && 
+            (pl.Layer != Layer.SelectionLayer || _currentPlacementSourceMaterial != Material)) {
+            CurrentPlacement = null;
+            _currentPlacementSourceMaterial = null;
+        }
         PickNextFrame = false;
         AnchorPos = null;
         ResetDragState();
