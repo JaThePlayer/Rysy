@@ -215,7 +215,7 @@ public static class IAtlasExt {
         using var stream = File.OpenRead(fullPath);
         using var dataReader = new BinaryReader(stream);
 
-        stream.ReadExactly(readDataBytes, 0, bytesSize);
+        stream.Read(readDataBytes, 0, bytesSize);
 
         int pos = 0;
 
@@ -271,7 +271,7 @@ public static class IAtlasExt {
                     for (int l = 0; l < reset; l++) {
                         readDataBytes[l] = readDataBytes[pos + l];
                     }
-                    stream.ReadExactly(readDataBytes, reset, bytesSize - reset);
+                    stream.Read(readDataBytes, reset, bytesSize - reset);
                     pos = 0;
                 }
             }
