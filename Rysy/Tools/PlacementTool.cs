@@ -4,6 +4,7 @@ using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
+using Rysy.Mods;
 using Rysy.Selections;
 using System.Diagnostics;
 
@@ -64,7 +65,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
             var associated = pl.GetAssociatedMods();
             if (associated is { Count: > 0}) {
-                return $"{name} [{string.Join(',', associated)}]";
+                return $"{name} [{string.Join(',', associated.Select(ModMeta.ModNameToDisplayName))}]";
             }
 
             return $"{name} [Vanilla]";
@@ -509,12 +510,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             if (associated.Count == 1)
                 ImGui.SameLine();
             foreach (var mod in associated) {
+                var displayName = ModMeta.ModNameToDisplayName(mod);
                 if (currentMod is { } && !currentMod.DependencyMet(mod)) {
                     ImGui.PushStyleColor(ImGuiCol.Text, Color.Red.ToNumVec4());
-                    ImGui.TextWrapped(mod);
+                    ImGui.TextWrapped(displayName);
                     ImGui.PopStyleColor(1);
                 } else {
-                    ImGui.TextWrapped(mod);
+                    ImGui.TextWrapped(displayName);
                 }
             }
 
@@ -522,7 +524,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 ImGui.BeginDisabled();
                 ImGui.Text("Defined by:");
                 ImGui.SameLine();
-                ImGui.TextWrapped(defining.Name);
+                ImGui.TextWrapped(defining.DisplayName);
                 ImGui.EndDisabled();
             }
             ImGui.EndTooltip();

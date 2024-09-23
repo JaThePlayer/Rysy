@@ -272,14 +272,14 @@ public static class ModRegistry {
             return;
 
         if (emitResult is { } && !emitResult.Success) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Warning, $"Failed compiling Rysy .cs plugins for: {mod.Name}:\n{emitResult.Diagnostics.FormatDiagnostics()}");
+            Logger.Write("Rysy Plugin Loader", LogLevel.Warning, $"Failed compiling Rysy .cs plugins for: {mod.DisplayName}:\n{emitResult.Diagnostics.FormatDiagnostics()}");
             return;
         }
 
         if (emitResult is { Success: true }) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully compiled Rysy .cs plugins for: {mod.Name}");
+            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully compiled Rysy .cs plugins for: {mod.DisplayName}");
         } else if (modAsm is { }) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully loaded cached Rysy .cs plugins for: {mod.Name}");
+            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully loaded cached Rysy .cs plugins for: {mod.DisplayName}");
         }
 
         mod.PluginAssembly = modAsm;

@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Helpers;
 using Rysy.LuaSupport;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -106,6 +107,11 @@ public sealed class ModMeta : ILuaWrapper {
     public string Name => EverestYaml.First().Name;
 
     /// <summary>
+    /// Display name of the mod, taking into consideration the lang file.
+    /// </summary>
+    public string DisplayName => ModNameToDisplayName(Name);
+
+    /// <summary>
     /// The mod version, taken from the everest.yaml
     /// </summary>
     public Version Version => EverestYaml.First().Version;
@@ -164,6 +170,10 @@ public sealed class ModMeta : ILuaWrapper {
         }
 
         return false;
+    }
+
+    public static string ModNameToDisplayName(string modname) {
+        return Interpolator.Temp($"mods.{modname}.name").TranslateOrNull() ?? modname;
     }
 }
 

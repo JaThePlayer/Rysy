@@ -83,7 +83,7 @@ public record class PathField : Field, IFieldConvertible<string> {
         KnownPaths = RawPaths.Chain(textures => textures.Where(Filter).SafeToDictionary(p => {
             var name = CaptureConverter(p);
             var mod = ModResolver(p.Path);
-            return (name, mod is { } ? $"{name} [{mod.Name}]" : name);
+            return (name, mod is { } ? $"{name} [{mod.DisplayName}]" : name);
         }));
     }
 
