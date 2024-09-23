@@ -281,7 +281,7 @@ public class StylegroundWindow : Window {
             ?? placement.SID!.Split('/')[^1].Humanize();
 
         if (placement.GetDefiningMod() is { } mod) {
-            return $"{name} [{mod.Name}]";
+            return $"{name} [{mod.DisplayName}]";
         }
 
         return name;

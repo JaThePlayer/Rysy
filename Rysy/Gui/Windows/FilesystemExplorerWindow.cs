@@ -33,7 +33,7 @@ public sealed class FilesystemExplorerWindow : Window {
         if (FoundFiles is { }) {
             OpenedFile ??= new("", ModRegistry.VanillaMod);
             
-            FoundFilesDict ??= FoundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.Name}]");
+            FoundFilesDict ??= FoundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.DisplayName}]");
 
             if (ImGuiManager.Combo("Files", ref OpenedFile, FoundFilesDict, ref Search, null, _cache)) {
                 if (OpenedFile!.Mod.Filesystem.TryReadAllText(OpenedFile.Path) is { } text) {

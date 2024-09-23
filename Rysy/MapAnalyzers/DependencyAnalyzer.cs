@@ -61,7 +61,7 @@ public class DependencyAnalyzer : MapAnalyzer {
 
         public string Message => IsUnknown 
             ? "rysy.analyzers.dependency.missing.unknown".Translate()
-            : "rysy.analyzers.dependency.missing".TranslateFormatted(DepModName);
+            : "rysy.analyzers.dependency.missing".TranslateFormatted(ModMeta.ModNameToDisplayName(DepModName));
 
         public bool AutoFixable => !IsUnknown && DepModMeta is { } && BaseMod.Filesystem is IWriteableModFilesystem;
 

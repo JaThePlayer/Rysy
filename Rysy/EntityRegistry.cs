@@ -197,7 +197,7 @@ public static class EntityRegistry {
         using var watch = new ScopedStopwatch("Registering entities");
 
         foreach (var (_, mod) in ModRegistry.Mods) {
-            task?.SetMessage(1, mod.Name);
+            task?.SetMessage(1, mod.DisplayName);
 
             LoadPluginsFromMod(mod, loadLuaPlugins, loadCSharpPlugins, task);
         }
@@ -310,7 +310,7 @@ public static class EntityRegistry {
                 Registered[info.Sid] = info;
             }
         } catch (Exception ex) {
-            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua style {chunkName} [{mod?.Name}]: {ex}");
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua style {chunkName} [{mod?.DisplayName}]: {ex}");
             return;
         }
     }
@@ -397,7 +397,7 @@ public static class EntityRegistry {
                 }
             }
         } catch (Exception ex) {
-            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName} [{mod?.Name}]: {ex}");
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua entity {chunkName} [{mod?.DisplayName}]: {ex}");
             return;
         }
     }

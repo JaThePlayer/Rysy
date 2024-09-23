@@ -40,7 +40,7 @@ internal sealed class ModSettingsWindow : Window {
 
     public FormWindow? MainForm, OtherForm;
 
-    public ModSettingsWindow(ModMeta mod) : base("rysy.modSettings.windowName".TranslateFormatted(mod.Name), new(500, 200)) {
+    public ModSettingsWindow(ModMeta mod) : base("rysy.modSettings.windowName".TranslateFormatted(mod.DisplayName), new(500, 200)) {
         Mod = mod;
 
         var (mainFields, otherFields) = GetFields(Mod);
