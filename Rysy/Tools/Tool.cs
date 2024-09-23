@@ -491,7 +491,7 @@ public abstract class Tool {
             size.Y = preview.H;
         }
         
-        var displayName = favorites is { } && favorites.Contains(name) ? $"* {name}" : name;
+        var displayName = name;
         if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), currentMaterial == material, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
@@ -539,7 +539,7 @@ public abstract class Tool {
         if (showPlacementIcons)
             cursorStart.Y += previewOrNull?.H / 4 ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
-        ImGui.Text(displayName);
+        ImGui.Text(favorites is { } && favorites.Contains(name) ? Interpolator.Temp($"* {displayName}") : displayName);
 
         return ret;
     }
