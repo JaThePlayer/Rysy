@@ -157,10 +157,10 @@ public static class PicoFont {
                 foreach (var wordRange in line.Item1) {
                     var word = txt[wordRange].Trim();
                 
-                    Print(word, pos.Floored().Add(scale, 0f), outlineColor, scale);
-                    Print(word, pos.Floored().Add(-scale, 0f), outlineColor, scale);
-                    Print(word, pos.Floored().Add(0f, scale), outlineColor, scale);
-                    Print(word, pos.Floored().Add(0f, -scale), outlineColor, scale);
+                    Print(word, pos.Add(scale, 0f), outlineColor, scale);
+                    Print(word, pos.Add(-scale, 0f), outlineColor, scale);
+                    Print(word, pos.Add(0f, scale), outlineColor, scale);
+                    Print(word, pos.Add(0f, -scale), outlineColor, scale);
                     
                     pos.X += rw * (word.Length + 1);
                 }
@@ -176,7 +176,7 @@ public static class PicoFont {
             foreach (var wordRange in line.Item1) {
                 var word = txt[wordRange].Trim();
                 
-                Print(word, pos.Floored(), color, scale);
+                Print(word, pos, color, scale);
                 pos.X += rw * (word.Length + 1);
             }
             
