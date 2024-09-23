@@ -510,14 +510,21 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 ImGui.SameLine();
             foreach (var mod in associated) {
                 if (currentMod is { } && !currentMod.DependencyMet(mod)) {
-                    ImGui.TextColored(Color.Red.ToNumVec4(), mod);
+                    ImGui.PushStyleColor(ImGuiCol.Text, Color.Red.ToNumVec4());
+                    ImGui.TextWrapped(mod);
+                    ImGui.PopStyleColor(1);
                 } else {
-                    ImGui.Text(mod);
+                    ImGui.TextWrapped(mod);
                 }
             }
 
-            if (placement.GetDefiningMod() is { } defining)
-                ImGui.TextDisabled(Interpolator.Shared.Interpolate($"Defined by: {defining.Name}"));
+            if (placement.GetDefiningMod() is { } defining && (associated.Count != 1 || associated[0] != defining.Name)) {
+                ImGui.BeginDisabled();
+                ImGui.Text("Defined by:");
+                ImGui.SameLine();
+                ImGui.TextWrapped(defining.Name);
+                ImGui.EndDisabled();
+            }
             ImGui.EndTooltip();
         }
     }
