@@ -45,12 +45,12 @@ public class Trigger : Entity {
         yield return ISprite.OutlinedRect(rect, FillColor, Color);
     }
     
-    internal PicoTextRectSprite GetTextSprite(Color color, Color outlineColor) => new PicoTextRectSprite {
+    internal PicoTextRectSprite GetTextSprite(Color color, Color outlineColor, float? fontScale = null) => new PicoTextRectSprite {
         Text = Text,
         Pos = new Rectangle(X, Y, Width, Height),
         Color = color,
         OutlineColor = outlineColor,
-        Scale = Settings.Instance.TriggerFontScale,
+        Scale = fontScale ?? Settings.Instance.TriggerFontScale,
         Depth = Depth - 1
     };
 
@@ -73,5 +73,14 @@ public class Trigger : Entity {
         if (Room is { } r) {
             r.ClearTriggerRenderCache();
         }
+    }
+
+    public IEnumerable<ISprite> GetPreviewSprites() {
+        yield return ISprite.OutlinedRect(new Rectangle(X, Y, Width, Height), FillColor, Color) with {
+            Depth = Depth
+        };
+        yield return GetTextSprite(Color.White, default, 1f) with {
+            Depth = Depth - 1
+        };
     }
 }
