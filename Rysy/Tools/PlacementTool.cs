@@ -7,6 +7,8 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Tools;
 public class PlacementTool : Tool, ISelectionHotkeyTool {
@@ -358,7 +360,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (material is not Placement placement)
             return base.GetMaterialPreview(material);
 
-        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}");
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}"/*_{(long)DateTime.Now.TimeOfDay.TotalSeconds}"*/);
         if (MaterialPreviewCache.TryGetValue(StringRef.FromSharedBuffer(Interpolator.Shared.Buffer, keySpan.Length), out var value)) {
             return value;
         }
@@ -407,20 +409,25 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     private XnaWidgetDef CreateWidget(Map map, Placement placement, string key) {
         List<ISprite>? sprites = null;
+        var cam = new Camera();
+        Vector2 camOffset = default;
+        var ctx = new SpriteRenderCtx(cam, default, Room.DummyRoom, false);
+        var didResize = false;
+        var didFixups = false;
+        ISelectionHandler? selection = null;
+        
         var def = new XnaWidgetDef(key, PreviewSize, PreviewSize, () => {
             if (sprites is null) {
                 try {
                     var prevLogErrors = Entity.LogErrors;
 
-                    var r = Room.DummyRoom;
-                    var s = placement.PlacementHandler.CreateSelection(placement, default, r);
+                    selection = placement.PlacementHandler.CreateSelection(placement, default, Room.DummyRoom);
 
                     var offset = new Vector2(PreviewSize / 2, PreviewSize / 2);
-                    var rect = s.Rect;
-                    var didResize = false;
+                    var rect = selection.Rect;
 
                     Entity.LogErrors = false;
-                    if (s.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
+                    if (selection.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
                         resizeAct.Apply(map);
                         resizeAct = null;
                         offset = default;
@@ -428,29 +435,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                     }
 
                     try {
-                        sprites = placement.GetPreviewSprites(s, offset, r).ToList();
+                        sprites = placement.GetWidgetSprites(selection, offset, Room.DummyRoom).ToList();
                     } catch {
-                        sprites = new();
+                        sprites = [];
                         return;
                     } finally {
                         Entity.LogErrors = prevLogErrors;
                     }
-
-                    if (!didResize) {
-                        /*
-                        var spriteBounds = ISprite.GetBounds(sprites);
-                        offset = (spriteBounds.Size.ToVector2()) / 2;
-
-                        sprites = placement.GetPreviewSprites(s, offset, r).ToList();*/
-                        if (sprites is [Sprite onlySprite]) {
-                            offset *= onlySprite.Origin;
-                            onlySprite.Origin = default;
-                        }
-                    }
-                    
-                    // clear old references to let them get GC'd
-                    r = null;
-                    s = null;
                 } catch {
                     sprites = [];
                 }
@@ -458,12 +449,48 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 // clear old references to let them get GC'd
                 placement = null!;
             }
+            
+            // fixup phase - offset sprites and/or camera to make them fix within the preview rectangle better.
+            if (!didFixups) {
+                selection = selection ?? throw new UnreachableException($"{nameof(selection)} is null!");
+                
+                // Wait with fixing up the preview offsets until all textures are ready
+                if (sprites.Any(x => !x.IsLoaded))
+                    return;
+                
+                if (!didResize) {
+                    if (sprites is [Sprite onlySprite]) {
+                        onlySprite.Origin = new(0.5f, 0.5f);
+                        sprites[0] = onlySprite;
+                    }
+                }
+                else if (didResize && sprites.Count > 1 && selection.Parent is Entity e && (e.ResizableX || e.ResizableY) && sprites.All(s => s is Sprite)) {
+                    var spriteBounds = RectangleExt.Merge(sprites.OfType<Sprite>().Select(s => s.GetRenderRect() ?? default));
 
-            var ctx = SpriteRenderCtx.Default();
-            foreach (var item in sprites) {
-                item.Render(ctx);
+                    camOffset.X = spriteBounds.Left;
+                    camOffset.Y = spriteBounds.Top;
+
+                    if (e.ResizableX) {
+                        camOffset.Y = -PreviewSize / 2f + spriteBounds.Center.Y;
+                    } 
+                    if (e.ResizableY) {
+                        camOffset.X = -PreviewSize / 2f + spriteBounds.Center.X;
+                    }
+                }
+
+                didFixups = true;
+                
+                selection = null;
             }
-        }, Rerender: true);
+
+            if (didFixups) {
+                cam.Goto(camOffset);
+            
+                foreach (var item in sprites) {
+                    item.Render(ctx);
+                }
+            }
+        }, cam, Rerender: true);
         return def;
     }
 

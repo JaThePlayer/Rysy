@@ -244,6 +244,9 @@ public record class Placement {
 
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler selection, Vector2 pos, Room room) 
         => PlacementHandler.GetPreviewSprites(selection, pos, room);
+    
+    public IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler selection, Vector2 pos, Room room) 
+        => PlacementHandler.GetWidgetSprites(selection, pos, room);
 
     public static Placement? TryCreateFromObject(object obj) => obj switch {
         IConvertibleToPlacement convertible => convertible.ToPlacement(),
@@ -272,7 +275,9 @@ public class PlacementList : List<Placement> {
 public interface IPlacementHandler {
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room);
 
-
+    public virtual IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler handler, Vector2 pos, Room room)
+        => GetPreviewSprites(handler, pos, room);
+    
     //public ISelectionHandler GetHandler(Placement placement);
 
     public IHistoryAction Place(ISelectionHandler handler, Room room);
@@ -341,6 +346,29 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         return Array.Empty<ISprite>();
     }
 
+    public IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler handler, Vector2 pos, Room room) {
+        if (handler is EntitySelectionHandler entityHandler) {
+            var entity = entityHandler.Entity;
+
+            if (entity.Pos != pos) {
+                entity.Pos = pos;
+                entity.InitializeNodePositions();
+            }
+
+            // todo: hacky!!!
+            entity.Selected = true;
+            var sprites = (entity is Trigger trigger
+                ? trigger.GetPreviewSprites()
+                : entity.GetSpritesWithNodes()).OrderByDescending(x => x.Depth).ToList();
+            entity.Selected = false;
+
+            return sprites;
+        }
+            
+
+        return Array.Empty<ISprite>();
+    }
+    
     public IHistoryAction Place(ISelectionHandler handler, Room room) {
         var act = handler.PlaceClone(room);
         handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(room.Map);
