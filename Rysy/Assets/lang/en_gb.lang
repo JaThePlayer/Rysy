@@ -129,6 +129,19 @@ rysy.settings.mods.editSettings.tooltip=Opens a window to edit the settings for 
 rysy.settings.perf.clearRenderCacheForOffScreenRooms=Clear Render Cache For Off-Screen Rooms
 rysy.settings.perf.clearRenderCacheForOffScreenRooms.tooltip=Clears the render cache for rooms as soon as they're off-screen.\nThis vastly reduces RAM and VRAM usage, at the cost of more lag spikes when zooming out in maps with large rooms.
 
+rysy.settings.general.maxBackups=Max Backups
+rysy.settings.general.maxBackups.tooltip=The maximum amount of backups stored at once. Once this limit is exceeded, old backups will get deleted.
+rysy.settings.general.hiddenLayerAlpha=Hidden Layer Alpha
+rysy.settings.general.hiddenLayerAlpha.tooltip=The alpha value used for tinting entities that are not in the currently visible editor layer.
+rysy.settings.general.minifyClipboard=Minify Clipboard
+rysy.settings.general.minifyClipboard.tooltip=Minifies selections copied to the clipboard to reduce their size.
+rysy.settings.general.trimEntities=Trim Entities
+rysy.settings.general.trimEntities.tooltip=Trims default values from entities when saving, decreasing .bin filesize and load times.\nBreaks Lonn and Ahorn compatibility!
+rysy.settings.general.mouseWrap=Mouse Wrap
+rysy.settings.general.mouseWrap.tooltip=Enables mouse wrapping around the edges of the screen when panning the editor view.
+rysy.settings.general.touchpadPanSpeed=Touchpad Pan Speed
+rysy.settings.general.touchpadPanSpeed.tooltip=Controls how fast the editor view gets panned by the touchpad two-finger panning gesture.
+
 # Mod Settings window
 rysy.modSettings.windowName=Mod Settings - {0}
 rysy.modSettings.mainTab=Main

@@ -135,8 +135,8 @@ public class ToolHandler {
             tool.InitHotkeys(tool.HotkeyHandler);
         }
 
-        handler.AddHotkeyFromSettings("tools.nextTool", "ctrl+scrolldown", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("tools.prevTool", "ctrl+scrollup", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.nextTool", "", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevTool", "", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
         
         handler.AddHotkeyFromSettings("tools.nextMode", "shift+scrolldown", () => SwapToNextMode(1), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("tools.prevMode", "shift+scrollup", () => SwapToNextMode(-1), HotkeyModes.OnHoldSmoothInterval);

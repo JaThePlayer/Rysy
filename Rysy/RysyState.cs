@@ -78,7 +78,7 @@ public static class RysyState {
         Game = game;
         GraphicsDeviceManager = gdm;
 
-        EnableFileDrop();
+        EnableEventListeners();
 
         Window.ClientSizeChanged += Window_ClientSizeChanged;
     }
@@ -184,7 +184,10 @@ public static class RysyState {
         }
     }
 
-    private static void EnableFileDrop() {
+    internal static Vector2 TouchpadPan;
+    
+
+    private static void EnableEventListeners() {
 #if !FNA
         Window.FileDrop += (object? sender, FileDropEventArgs e) {
             Console.WriteLine(string.Join(' ', e.Files));
@@ -199,14 +202,35 @@ public static class RysyState {
         
             static int MyEventFunction(IntPtr userdata, IntPtr sdlEventPtr) {
                 var sdlEvent = (SDL.SDL_Event*) sdlEventPtr;
-                if (sdlEvent->type == SDL.SDL_EventType.SDL_DROPFILE) {
-                    var droppedFileDir = sdlEvent->drop.file;
-                    var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
-                    var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
-                    SDL_free(droppedFileDir);
+                switch (sdlEvent->type)
+                {
+                    case SDL.SDL_EventType.SDL_DROPFILE:
+                    {
+                        var droppedFileDir = sdlEvent->drop.file;
+                        var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
+                        var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
+                        SDL_free(droppedFileDir);
                     
-                    Console.WriteLine(pathString);
-                    Scene?.OnFileDrop(pathString);
+                        Console.WriteLine(pathString);
+                        Scene?.OnFileDrop(pathString);
+                        break;
+                    }
+                    case SDL.SDL_EventType.SDL_MOUSEWHEEL: {
+                        var wheel = sdlEvent->wheel;
+                        
+                        // TODO: test on linux
+
+                        // XNA does not expose horizontal mouse wheel.
+                        // We'll use this event instead to store precise wheel state for later use
+                        // in detecting touch pad panning, which Windows exposes as mouse wheel movement.
+                        if (!float.IsInteger(wheel.preciseX)) {
+                            TouchpadPan.X = wheel.preciseX;
+                        }
+                        if (!float.IsInteger(wheel.preciseY)) {
+                            TouchpadPan.Y = wheel.preciseY;
+                        }
+                        break;
+                    }
                 }
                 
                 return 0; // Value will be ignored

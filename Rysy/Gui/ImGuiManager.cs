@@ -551,6 +551,18 @@ public static class ImGuiManager {
         return ImGui.InputInt(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
     
+    public static bool TranslatedInputFloat(string id, ref float v) {
+        return ImGui.InputFloat(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
+    public static bool TranslatedInputFloat(string id, ref float v, float step) {
+        return ImGui.InputFloat(id.Translate(), ref v, step).WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
+    public static bool TranslatedInputFloat(string id, ref float v, float step, ReadOnlySpan<char> format) {
+        return ImGui.InputFloat(id.Translate(), ref v, step, step, format).WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
     public static bool TranslatedInputFloat2(string id, ref NumVector2 v) {
         return ImGui.InputFloat2(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }

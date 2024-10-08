@@ -16,6 +16,11 @@ public interface IMouseInput {
     float X1HoldTime { get; }
     MouseInputState X2 { get; }
     float X2HoldTime { get; }
+    
+    /// <summary>
+    /// Handles the two-finger touchpad panning gesture.
+    /// </summary>
+    Vector2 TouchpadPan { get; }
 
     bool Clicked(int button);
     void Consume(int button);
@@ -45,4 +50,9 @@ public static class MouseInputExt {
     /// Gets the location of the mouse in the previous frame
     /// </summary>
     public static Point PrevPos(this IMouseInput mouse) => mouse.Pos - mouse.PositionDelta;
+
+    /// <summary>
+    /// Whether this mouse can wrap, taking into account both user settings and mouse input settings.
+    /// </summary>
+    public static bool CanWrap(this IMouseInput mouse) => (Settings.Instance?.MouseWrapping ?? false) && mouse.Wrap;
 }

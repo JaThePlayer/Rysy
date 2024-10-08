@@ -49,6 +49,8 @@ public class Input {
 
         public Point Pos => RealPos + Offset;
         public Point PositionDelta { get; private set; }
+        
+        public Vector2 TouchpadPan { get; private set; }
 
         public float LeftHoldTime => HoldTimes[0];
         public float RightHoldTime => HoldTimes[1];
@@ -118,6 +120,9 @@ public class Input {
 
         public void Update(float deltaSeconds) {
             WrappedThisFrame = false;
+
+            TouchpadPan = RysyState.TouchpadPan;
+            RysyState.TouchpadPan = default;
             
             // From FNA wiki
             mousePrevState = mouseState;
@@ -127,14 +132,14 @@ public class Input {
             lastMouseScroll = realMouseScroll;
             realMouseScroll = mouseState.ScrollWheelValue;
 
-            ScrollDelta = realMouseScroll - lastMouseScroll;
+            ScrollDelta = TouchpadPan == default ? (realMouseScroll - lastMouseScroll) : default;
             
             var viewport = RysyState.GraphicsDevice.Viewport;
             var lastPos = RealPos;
             RealPos = new(mouseState.X, mouseState.Y);
             PositionDelta = RealPos - lastPos;
 
-            if (Wrap && AnyClickedOrHeld && !ImGuiManager.WantCaptureMouse) {
+            if (this.CanWrap() && AnyClickedOrHeld && !ImGuiManager.WantCaptureMouse) {
                 var setPos = false;
                 
                 if (PositionDelta.X > 0 && RealPos.X >= viewport.Width - 3) {

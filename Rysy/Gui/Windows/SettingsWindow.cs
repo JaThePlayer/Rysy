@@ -96,29 +96,41 @@ public sealed class SettingsWindow : Window {
             return;
 
         var backups = Settings.Instance.MaxBackups;
-        if (ImGui.InputInt("Max Backups", ref backups).WithTooltip("The maximum amount of backups stored at once. Once this limit is exceeded, old backups will get deleted.")) {
+        if (ImGuiManager.TranslatedInputInt("rysy.settings.general.maxBackups", ref backups)) {
             Settings.Instance.MaxBackups = backups.AtLeast(0);
             Settings.Instance.Save();
         }
 
         var alpha = Settings.Instance.HiddenLayerAlpha;
-        if (ImGui.InputFloat("Hidden Layer Alpha", ref alpha, step: 0.1f).WithTooltip("The alpha value used for tinting entities that are not in the currently visible editor layer.")) {
+        if (ImGuiManager.TranslatedInputFloat("rysy.settings.general.hiddenLayerAlpha", ref alpha, step: 0.1f)) {
             Settings.Instance.HiddenLayerAlpha = alpha.SnapBetween(0f, 1f);
             Settings.Instance.Save();
         }
 
         var minifyClipboard = Settings.Instance.MinifyClipboard;
-        if (ImGui.Checkbox("Minify Clipboard", ref minifyClipboard).WithTooltip("Minifies selections copied to the clipboard to reduce their size.")) {
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.minifyClipboard", ref minifyClipboard)) {
             Settings.Instance.MinifyClipboard = minifyClipboard;
             Settings.Instance.Save();
         }
 
         var trim = Settings.Instance.TrimEntities;
-        if (ImGui.Checkbox("Trim Entities", ref trim).WithTooltip("Trims default values from entities when saving, decreasing .bin filesize and load times.\nBreaks Lonn and Ahorn compatibility!")) {
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.trimEntities", ref trim)) {
             Settings.Instance.TrimEntities = trim;
             Settings.Instance.Save();
         }
 
+        var wrap = Settings.Instance.MouseWrapping;
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.mouseWrap", ref wrap)) {
+            Settings.Instance.MouseWrapping = wrap;
+            Settings.Instance.Save();
+        }
+        
+        var panSpeed = Settings.Instance.TouchpadPanSpeed;
+        if (ImGuiManager.TranslatedInputFloat("rysy.settings.general.touchpadPanSpeed", ref panSpeed, step: 25f, "%g%%")) {
+            Settings.Instance.TouchpadPanSpeed = panSpeed.SnapBetween(25f, 300f);
+            Settings.Instance.Save();
+        }
+        
         ImGui.EndTabItem();
     }
 
