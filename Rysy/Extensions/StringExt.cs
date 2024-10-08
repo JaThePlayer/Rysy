@@ -301,4 +301,12 @@ public static partial class StringExt {
         }
         return sum;
     }
+
+    public static string TrimPrefix(this string s, ReadOnlySpan<char> prefix) {
+        if (s.AsSpan().StartsWith(prefix, StringComparison.Ordinal)) {
+            return s.Substring(prefix.Length);
+        }
+
+        return s;
+    }
 }
