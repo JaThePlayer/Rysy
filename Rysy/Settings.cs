@@ -265,5 +265,9 @@ public sealed class Settings {
 
     public bool TrimEntities { get; set; } = false;
 
+    public bool MouseWrapping { get; set; } = false;
+
+    public float TouchpadPanSpeed { get; set; } = 100f;
+
     #endregion
 }

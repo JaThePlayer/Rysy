@@ -210,11 +210,19 @@ public class Camera {
         if (input.Mouse.Right.Held() && input.Mouse.PositionDelta != default) {
             Move(-input.Mouse.PositionDelta.ToNVector2() / Scale);
         }
+
+        // Handle touchpad panning
+        if (input.Mouse.TouchpadPan != default) {
+            var pan = input.Mouse.TouchpadPan;
+            pan.X = -pan.X;
+            Move(-(pan * 32f * Settings.Instance.TouchpadPanSpeed / 100f) / Scale);
+        }
     }
 
     public void CreateCameraHotkeys(HotkeyHandler hotkeys) {
-        hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup", () => ZoomIn(hotkeys.Input));
-        hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown", () => ZoomOut(hotkeys.Input));
+        // Windows converts a pinch gesture to ctrl+scrollwheel, make sure this is supported.
+        hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup|ctrl+scrollup", () => ZoomIn(hotkeys.Input));
+        hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown|ctrl+scrolldown", () => ZoomOut(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomRealScale", "", () => Zoom(6f));
     }
 }
