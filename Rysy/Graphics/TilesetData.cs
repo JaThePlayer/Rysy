@@ -197,7 +197,7 @@ public sealed class TilesetData {
     });
 
     public string GetDisplayName() 
-        => DisplayName ??= Filename.Split('/').Last().TrimStart("bg").Humanize();
+        => DisplayName ??= Filename.Split('/').Last().TrimPrefix("bg").Humanize();
 
     public bool Validate() {
         bool valid = true;
