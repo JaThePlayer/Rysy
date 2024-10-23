@@ -1,5 +1,4 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Selections;
@@ -18,12 +17,14 @@ public class LonnEntity : Entity, IHasLonnPlugin {
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
     private (ISelectionCollider?, ISelectionCollider?[]?)? _cachedSelections;
+    private bool? _canMakeFastTemplate;
     
     private void ClearInternalCache() {
         CachedSprites = null;
         CachedNodeSprites?.Clear();
         CachedNodeSprites = null;
         _cachedSelections = null;
+        _canMakeFastTemplate = null;
     }
     
     [JsonIgnore]
@@ -382,6 +383,23 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         base.ClearInnerCaches();
 
         ClearInternalCache();
+    }
+    
+    internal bool CanMakeLonnDrawableTemplate() {
+        if (_canMakeFastTemplate is { } v)
+            return v;
+
+        if (EntityData.Has("jx") || EntityData.Has("jy")
+        || EntityData.Has("justificationX") || EntityData.Has("justificationY")
+        || EntityData.Has("sx") || EntityData.Has("sy")
+        || EntityData.Has("scaleX") || EntityData.Has("scaleY")
+        || EntityData.Has("r") || EntityData.Has("rotation")) {
+            _canMakeFastTemplate = false;
+        } else {
+            _canMakeFastTemplate = true;
+        }
+
+        return _canMakeFastTemplate.Value;
     }
     
     #region Sprites

@@ -184,23 +184,28 @@ function RYSY_UNPACKSPR(drawableSprite)
 end
 
 local function __create(meta, data, texture)
-    data = data or {}
-    
     if not meta and not texture then
         return nil
     end
 
-    local drawableSprite = {
-        _type = "drawableSprite",
-        x = data.x or 0,
-        y = data.y or 0,
-        justificationX = data.jx or data.justificationX or 0.5,
-        justificationY = data.jy or data.justificationY or 0.5,
-        scaleX = data.sx or data.scaleX or 1,
-        scaleY = data.sy or data.scaleY or 1,
-        rotation = data.r or data.rotation or 0,
-        depth = data.depth,
-    }
+    data = data or {}
+
+    local drawableSprite = _RYSY_DRAWABLE_makeFromEntity(data, texture) or nil
+    
+    if not drawableSprite then
+        drawableSprite = {
+            _type = "drawableSprite",
+            x = data.x or 0,
+            y = data.y or 0,
+            -- long names swapped with short ones, because most plugins use long names (if any)
+            justificationX = data.justificationX or data.jx or 0.5,
+            justificationY = data.justificationY or data.jy or 0.5,
+            scaleX = data.scaleX or data.sx or 1,
+            scaleY = data.scaleY or data.sy or 1,
+            rotation = data.rotation or data.r or 0,
+            depth = data.depth,
+        }
+    end
     
     if texture then
         drawableSprite._RYSY_INTERNAL_texture = texture

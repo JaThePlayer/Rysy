@@ -620,6 +620,56 @@ public class LuaCtx {
             }
             return 2;
         });
+        
+        // (data, texture)
+        lua.Register("_RYSY_DRAWABLE_makeFromEntity", static (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+            var data = lua.GetTop() - 1;
+            var texture = lua.FastToString(lua.GetTop());
+
+            if (!lua.IsWrapper(data) || lua.UnboxWrapper(data) is not LonnEntity entity || !entity.CanMakeLonnDrawableTemplate())
+                return 0;
+            
+            lua.CreateTable(0, 8);
+            var output = lua.GetTop();
+            
+            lua.PushUtf8RVAString("_type"u8);
+            lua.PushUtf8RVAString("drawableSprite"u8);
+            lua.SetTable(output);
+            
+            lua.PushUtf8RVAString("x"u8);
+            lua.PushNumber(entity.X);
+            lua.SetTable(output);
+            lua.PushUtf8RVAString("y"u8);
+            lua.PushNumber(entity.Y);
+            lua.SetTable(output);
+            
+            lua.PushUtf8RVAString("justificationX"u8);
+            lua.PushNumber(0.5);
+            lua.SetTable(output);
+            lua.PushUtf8RVAString("justificationY"u8);
+            lua.PushNumber(0.5);
+            lua.SetTable(output);
+            
+            lua.PushUtf8RVAString("scaleX"u8);
+            lua.PushNumber(1);
+            lua.SetTable(output);
+            lua.PushUtf8RVAString("scaleY"u8);
+            lua.PushNumber(1);
+            lua.SetTable(output);
+            
+            lua.PushUtf8RVAString("rotation"u8);
+            lua.PushNumber(0);
+            lua.SetTable(output);
+
+            if (entity.EntityData.TryGetValue("depth", out var d) && d is IConvertible) {
+                lua.PushUtf8RVAString("depth"u8);
+                lua.PushNumber(Convert.ToDouble(d));
+                lua.SetTable(output);
+            }
+
+            return 1;
+        });
 
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy

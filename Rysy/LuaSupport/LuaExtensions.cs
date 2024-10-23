@@ -107,6 +107,15 @@ public static partial class LuaExt {
         lua.PushBuffer(value);
     }
 
+    public static unsafe void PushUtf8RVAString(this Lua lua, ReadOnlySpan<byte> value) {
+        fixed (byte* ptr = &value[0])
+            lua_pushlstring(lua.Handle, ptr, (nuint)value.Length);
+    }
+    
+    
+    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern unsafe nint lua_pushlstring(nint luaState, byte* s, UIntPtr len);
+
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
         string code;
         if (LuaCtx.SeleneLoaded) {
