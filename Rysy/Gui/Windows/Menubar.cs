@@ -218,10 +218,6 @@ public static class Menubar {
             return;
         }
 
-        if (ImGui.Checkbox("History", ref Persistence.Instance.HistoryWindowOpen)) {
-            RysyEngine.Scene.AddWindowIfNeeded<HistoryWindow>();
-        }
-
         if (ImGui.Button("Filesystem Explorer")) {
             RysyEngine.Scene.ToggleWindow<FilesystemExplorerWindow>();
         }
@@ -237,10 +233,14 @@ public static class Menubar {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
 
-        if (ImGui.MenuItem("Style Editor")) {
+        if (ImGui.MenuItem("Style Editor").WithTooltip("WARNING: For development purposes only, changes done in this window don't save!")) {
             editor.AddWindow(new ScriptedWindow("Style Editor", (w) => {
                 ImGui.ShowStyleEditor();
             }));
+        }
+        
+        if (ImGui.Checkbox("History Window (DEBUG)", ref Persistence.Instance.HistoryWindowOpen)) {
+            RysyEngine.Scene.AddWindowIfNeeded<HistoryWindow>();
         }
 
         if (editor.Map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {

@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
 
@@ -42,15 +43,38 @@ public sealed class FilesystemExplorerWindow : Window {
             }
         }
 
+        var shouldDisplayText = true;
+        
         if (OpenedFile is { } opened) {
-            if (opened.Path.FileExtension() == ".bin" && ImGui.Button("Open Map")) {
+            var ext = opened.Path.FileExtension();
+            
+            if (ext == ".bin" && ImGui.Button("Open Map")) {
                 opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
                     EditorState.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
                 });
-               
+
+                shouldDisplayText = false;
+            }
+            else if (ext == ".png") {
+                shouldDisplayText = false;
+                var w = (int) ImGui.GetContentRegionAvail().X;
+                var h = (int)(ImGui.GetContentRegionAvail().Y - ImGui.GetTextLineHeightWithSpacing() * 4f);
+                // TODO: zoom in/out???
+                ImGuiManager.XnaWidget("fsExplorerPreview", w, h,
+                    () => {
+                        if (GFX.Atlas.TryGet(opened.Path.TrimPrefix("Graphics/Atlases/Gameplay/")
+                                    .TrimPostfix(".png"),
+                                out var t)) {
+                            var spr = ISprite.FromTexture(t).Centered();
+                            spr.Scale = new(6f);
+                            spr.Pos = new Vector2(w, h) / 2f;
+                            spr.Render(SpriteRenderCtx.Default());
+                        }
+                        
+                    });
             }
 
-            if (ImGui.Button("Save as...") && FileDialogHelper.TrySave("", out var chosenFile)) {
+            if (ImGui.Button("Save as...") && FileDialogHelper.TrySave(opened.Path.FileExtensionNoDot() ?? "", out var chosenFile)) {
                 opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
                     using var filestream = File.OpenWrite(chosenFile);
 
@@ -60,6 +84,7 @@ public sealed class FilesystemExplorerWindow : Window {
             }
         }
 
-        ImGui.InputTextMultiline("", ref FileText, (uint) FileText.Length, new(800 - ImGui.GetStyle().WindowPadding.X, 700), ImGuiInputTextFlags.ReadOnly);
+        if (shouldDisplayText)
+            ImGui.InputTextMultiline("", ref FileText, (uint) FileText.Length, new(800 - ImGui.GetStyle().WindowPadding.X, 700), ImGuiInputTextFlags.ReadOnly);
     }
 }

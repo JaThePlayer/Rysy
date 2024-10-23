@@ -100,6 +100,13 @@ public static partial class StringExt {
     public static string? FileExtension(this string? path) {
         return Path.GetExtension(path);
     }
+    
+    /// <summary>
+    /// Calls <see cref="Path.GetExtension(string?)"/> on this string, returns a string without the dot at the start of the file extension.
+    /// </summary>
+    public static string? FileExtensionNoDot(this string? path) {
+        return Path.GetExtension(path)?.TrimPrefix(".");
+    }
 
     /// <summary>
     /// Calls <see cref="Regex.Replace(string, string)"/> with the provided regex with the given strings
@@ -305,6 +312,14 @@ public static partial class StringExt {
     public static string TrimPrefix(this string s, ReadOnlySpan<char> prefix) {
         if (s.AsSpan().StartsWith(prefix, StringComparison.Ordinal)) {
             return s.Substring(prefix.Length);
+        }
+
+        return s;
+    }
+    
+    public static string TrimPostfix(this string s, ReadOnlySpan<char> prefix) {
+        if (s.AsSpan().EndsWith(prefix, StringComparison.Ordinal)) {
+            return s[..^prefix.Length];
         }
 
         return s;
