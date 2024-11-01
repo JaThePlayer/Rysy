@@ -633,38 +633,38 @@ public class LuaCtx {
             lua.CreateTable(0, 8);
             var output = lua.GetTop();
             
-            lua.PushUtf8RVAString("_type"u8);
-            lua.PushUtf8RVAString("drawableSprite"u8);
+            lua.PushUtf8RvaString("_type"u8);
+            lua.PushUtf8RvaString("drawableSprite"u8);
             lua.SetTable(output);
             
-            lua.PushUtf8RVAString("x"u8);
+            lua.PushUtf8RvaString("x"u8);
             lua.PushNumber(entity.X);
             lua.SetTable(output);
-            lua.PushUtf8RVAString("y"u8);
+            lua.PushUtf8RvaString("y"u8);
             lua.PushNumber(entity.Y);
             lua.SetTable(output);
             
-            lua.PushUtf8RVAString("justificationX"u8);
+            lua.PushUtf8RvaString("justificationX"u8);
             lua.PushNumber(0.5);
             lua.SetTable(output);
-            lua.PushUtf8RVAString("justificationY"u8);
+            lua.PushUtf8RvaString("justificationY"u8);
             lua.PushNumber(0.5);
             lua.SetTable(output);
             
-            lua.PushUtf8RVAString("scaleX"u8);
+            lua.PushUtf8RvaString("scaleX"u8);
             lua.PushNumber(1);
             lua.SetTable(output);
-            lua.PushUtf8RVAString("scaleY"u8);
+            lua.PushUtf8RvaString("scaleY"u8);
             lua.PushNumber(1);
             lua.SetTable(output);
             
-            lua.PushUtf8RVAString("rotation"u8);
+            lua.PushUtf8RvaString("rotation"u8);
             lua.PushNumber(0);
             lua.SetTable(output);
 
             if (entity.EntityData.TryGetValue("depth", out var d) && d is IConvertible) {
-                lua.PushUtf8RVAString("depth"u8);
-                lua.PushNumber(Convert.ToDouble(d));
+                lua.PushUtf8RvaString("depth"u8);
+                lua.PushNumber(Convert.ToDouble(d, CultureInfo.InvariantCulture));
                 lua.SetTable(output);
             }
 

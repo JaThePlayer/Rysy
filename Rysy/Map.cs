@@ -61,12 +61,22 @@ public sealed class Map : IPackable, ILuaWrapper {
     public BinaryPacker.Element Filler;
 
     private ModMeta? _mod;
-    
+    private bool _modChecked;
+
     /// <summary>
     /// Mod from which this map is from.
     /// Null means that the map is either un-packaged, or in a directory outside of the mods folder.
     /// </summary>
-    public ModMeta? Mod => _mod ??= ModRegistry.GetModContainingRealPath(Filepath);
+    public ModMeta? Mod {
+        get {
+            if (_modChecked)
+                return _mod;
+
+            _mod = ModRegistry.GetModContainingRealPath(Filepath);
+            _modChecked = true;
+            return _mod;
+        }
+    }
 
     public EditorGroupRegistry EditorGroups { get; private set; } = new(EditorGroup.Default);
 

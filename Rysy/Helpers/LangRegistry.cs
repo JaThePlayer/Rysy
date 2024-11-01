@@ -53,9 +53,13 @@ public static class LangRegistry {
 
     public static Task LoadFromModAsync(ModMeta mod) {
         var fs = mod.Filesystem;
-        var files = fs.FindFilesInDirectoryRecursive("Loenn/lang", "lang")
-            .Concat(fs.FindFilesInDirectoryRecursive("lang", "lang"));
+        var files = fs.FindFilesInDirectoryRecursive("Loenn/lang", "lang");
 
+        if (mod.IsRysy) {
+            // Load rysy's lang files as well
+            files = files.Concat(fs.FindFilesInDirectoryRecursive("lang", "lang"));
+        }
+        
         foreach (var file in files.ToList()) {
             var langName = file.FilenameNoExt()!;
             fs.TryWatchAndOpen(file, stream => {
@@ -81,16 +85,17 @@ public static class LangRegistry {
             Languages[name] = lang;
         }
 
-        foreach (var line in langFileContents.Split('\n')) {
+        foreach (var line in langFileContents.AsSpan().EnumerateSplits('\n')) {
             if (line.StartsWith('#'))
                 continue;
 
-            if (line.Split('=', count: 2, StringSplitOptions.RemoveEmptyEntries) is not [var key, var value]) {
+            var splitIdx = line.IndexOf('=');
+            if (splitIdx < 0)
                 continue;
-            }
+            var key = line[..splitIdx];
 
-            value = value?.Replace(@"\n", "\n", StringComparison.Ordinal).Trim() ?? "";
-            lang.Translations[StringRef.FromString(key)] = value;
+            var value = line[(splitIdx + 1)..].Trim().ToString().Replace(@"\n", "\n", StringComparison.Ordinal) ?? "";
+            lang.Translations[StringRef.FromString(key.ToString())] = value;
         }
     }
 }

@@ -24,20 +24,6 @@ public static class MiscExtensions {
     }
 
     /// <summary>
-    /// If this is true, then performs the action
-    /// </summary>
-    public static void IfTrue(this bool val, Action act) {
-        if (val)
-            act();
-    }
-
-    /// <summary>
-    /// Performs <see cref="Unsafe.As{TFrom, TTo}(ref TFrom)"/> to reinterpret this bool to a byte.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static byte AsByte(this bool b) => Unsafe.As<bool, byte>(ref b);
-
-    /// <summary>
     /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
     /// </summary>
     public static NumVector3 ToNumVec3(this Color color) => color.ToVector3().ToNumerics();

@@ -703,15 +703,17 @@ public static class ImGuiManager {
             ImGuiIOPtr io = ImGui.GetIO();
             io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bpp);
 
+            Texture2D fontTex = new Texture2D(GraphicsDevice, width, height, false, SurfaceFormat.Color);
+            #if FNA
+            fontTex.SetDataPointerEXT(0, null, new IntPtr(pixelData), width * height * bpp);
+            #else
             // Copy data to managed array
             byte[] pixels = new byte[width * height * bpp];
             unsafe {
                 Marshal.Copy(new IntPtr(pixelData), pixels, 0, pixels.Length);
             }
-
-            // Create XNA texture of font
-            Texture2D fontTex = new Texture2D(GraphicsDevice, width, height, false, SurfaceFormat.Color);
             fontTex.SetData(pixels);
+            #endif
 
             // Deallocate and unbind any previously built font texture
             if (FontTextureID.HasValue)

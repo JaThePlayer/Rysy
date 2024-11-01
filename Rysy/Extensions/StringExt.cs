@@ -1,6 +1,8 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using System;
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -146,9 +148,9 @@ public static partial class StringExt {
         });
     }
 
-    private static char[] HumanizeReplacedChars = new[] { '.', '_'};
+    private static readonly char[] HumanizeReplacedChars = new[] { '.', '_'};
 
-    private static Dictionary<string, string> _humanizeCache = new();
+    private static readonly ConcurrentDictionary<string, string> _humanizeCache = new();
 
     /// <summary>
     /// Combines <see cref="SplitPascalCase(string)"/> and <see cref="UppercaseFirst(string)"/>
@@ -158,11 +160,8 @@ public static partial class StringExt {
     public static string Humanize(this string? text) {
         if (text is null)
             return "";
-        
-        ref var humanized = ref CollectionsMarshal.GetValueRefOrAddDefault(_humanizeCache, text, out var exists);
-        humanized ??= text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "";
 
-        return humanized;
+        return _humanizeCache.GetOrAdd(text, static text => text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "");
     }
 
     /// <summary>
@@ -192,7 +191,7 @@ public static partial class StringExt {
     /// <summary>
     /// Converts the given string to create a string that's a valid filename, by replacing all illegal characters with an underscore.
     /// </summary>
-    public static string ToValidFilename(this string str) {
+    public static string ToValidFilename(this string? str) {
         if (str == null)
             return string.Empty;
 
@@ -311,7 +310,7 @@ public static partial class StringExt {
 
     public static string TrimPrefix(this string s, ReadOnlySpan<char> prefix) {
         if (s.AsSpan().StartsWith(prefix, StringComparison.Ordinal)) {
-            return s.Substring(prefix.Length);
+            return s[prefix.Length..];
         }
 
         return s;

@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>12.0</LangVersion>
+    <LangVersion>preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!--<DebugSymbols>true</DebugSymbols>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -16,12 +16,12 @@
     <DefineConstants Condition="'$(SourceCodePlugins)' != ''">$(DefineConstants);SourceCodePlugins</DefineConstants>
   </PropertyGroup>
 
-  <!--
   <PropertyGroup>
     <AnalysisMode>All</AnalysisMode>
+  <!--
     <WarningsAsErrors>$(WarningsAsErrors);CA1307;CA1309;CA1310;CA1305;CA1311</WarningsAsErrors>
-  </PropertyGroup>
   -->
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(FNA)' != ''">
     <_IsWindows Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</_IsWindows>
@@ -50,22 +50,22 @@
     
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\SDL2.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FAudio.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FNA3D.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\libtheorafile.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
     
@@ -74,12 +74,12 @@
     -->
     <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libMoltenVK.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
     <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </Content>
   </ItemGroup>

@@ -44,9 +44,7 @@ public static class TwoDimensionalArrayExt {
     /// Gets the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>], or <paramref name="def"/> if the index is out of bounds
     /// </summary>
     public static T GetOrDefault<T>(this T[,] arr, int x, int y, T def) {
-        if (x < 0 || y < 0)
-            return def;
-        if (x >= arr.GetLength(0) || y >= arr.GetLength(1))
+        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1))
             return def;
 
         return arr[x, y];
@@ -56,12 +54,7 @@ public static class TwoDimensionalArrayExt {
     /// Tries to get the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
     /// </summary>
     public static bool TryGet<T>(this T[,] arr, int x, int y, out T? val) {
-        if (x < 0 || y < 0) {
-            val = default;
-            return false;
-        }
-
-        if (x >= arr.GetLength(0) || y >= arr.GetLength(1)) {
+        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
             val = default;
             return false;
         }
@@ -74,11 +67,7 @@ public static class TwoDimensionalArrayExt {
     /// Tries to set the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
     /// </summary>
     public static bool TrySet<T>(this T[,] arr, int x, int y, T val) {
-        if (x < 0 || y < 0) {
-            return false;
-        }
-        
-        if (x >= arr.GetLength(0) || y >= arr.GetLength(1)) {
+        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
             return false;
         }
 
@@ -89,11 +78,7 @@ public static class TwoDimensionalArrayExt {
     public static bool TryReplace<T>(this T[,] arr, int x, int y, T val, out T? prev) where T : IEquatable<T> {
         prev = default;
         
-        if (x < 0 || y < 0) {
-            return false;
-        }
-        
-        if (x >= arr.GetLength(0) || y >= arr.GetLength(1)) {
+        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
             return false;
         }
 

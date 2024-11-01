@@ -9,7 +9,7 @@ namespace Rysy.Mods;
 public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public string Root { get; init; }
 
-    private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
+    private ConcurrentDictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
     // keeps track of whether a file is known to exist or known not to exist in the directory.
     private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
@@ -169,11 +169,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
-        if (!WatchedAssets.TryGetValue(path, out var assets)) {
-            assets = new(1);
-
-            WatchedAssets.Add(path, assets);
-        }
+        var assets = WatchedAssets.GetOrAdd(path, static _ => new(1));
 
         assets.Add(asset);
     }

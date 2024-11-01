@@ -70,7 +70,6 @@ public sealed class FilesystemExplorerWindow : Window {
                             spr.Pos = new Vector2(w, h) / 2f;
                             spr.Render(SpriteRenderCtx.Default());
                         }
-                        
                     });
             }
 

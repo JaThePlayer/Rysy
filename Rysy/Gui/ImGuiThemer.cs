@@ -57,8 +57,18 @@ public static class ImGuiThemer {
         ImFontPtr AddFont(string name, float size) {
             var fs = RysyPlatform.Current.GetRysyFilesystem();
 
+            ImFontConfig cfg = new() {
+                RasterizerDensity = 1f,
+                FontDataOwnedByAtlas = 1,
+                OversampleH = 2,
+                OversampleV = 2,
+                GlyphMaxAdvanceX = float.MaxValue,
+                RasterizerMultiply = 1.0f,
+                EllipsisChar = unchecked((ushort)-1),
+            };
+            
             if (File.Exists($"{fs.Root}/{name}")) {
-                return io.Fonts.AddFontFromFileTTF($"{fs.Root}/{name}", size);
+                return io.Fonts.AddFontFromFileTTF($"{fs.Root}/{name}", size, new ImFontConfigPtr(&cfg));
             }
 
             Console.WriteLine("using slow fallback for font loading...");
@@ -66,7 +76,8 @@ public static class ImGuiThemer {
             if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
                 var temp = Path.GetTempFileName();
                 File.WriteAllBytes(temp, bytes);
-                var ret = io.Fonts.AddFontFromFileTTF(temp, size);
+                var ret = io.Fonts.AddFontFromFileTTF(temp, size, new ImFontConfigPtr(&cfg));
+                //io.Fonts.AddFont(new ())
                 File.Delete(temp);
                 return ret;
 

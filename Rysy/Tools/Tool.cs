@@ -273,7 +273,7 @@ public abstract class Tool {
 
     public virtual float MaterialListElementHeight() => ImGui.GetTextLineHeightWithSpacing();
 
-    public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer}.ColumnCount", 1) : 1;
+    public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.ColumnCount", 1) : 1;
     
 
     public virtual object GetGroupKeyForMaterial(object material) => material;
