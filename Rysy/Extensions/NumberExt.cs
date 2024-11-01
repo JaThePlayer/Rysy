@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Rysy.Helpers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Extensions;
@@ -97,17 +98,39 @@ public static class NumberExt {
     /// <summary>
     /// Formats a number into a filesize, like 1024 -> 1KB
     /// </summary>
-    public static string ToFilesize(this long byteCount) {
-        var suf = _filesizeAbbreviations;
+    public static Filesize ToFilesize(this long byteCount) {
+        return new Filesize(byteCount);
+    }
+
+    public readonly struct Filesize : ISpanFormattable {
+        private static readonly string[] FilesizeAbbreviations = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];  //Longs run out around EB
         
-        if (byteCount == 0)
-            return "0" + suf[0];
+        public string UnitAbbreviation { get; }
+        public double Value { get; }
+
+        public Filesize(long byteCount) {
+            var bytes = Math.Abs(byteCount);
+            
+            int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            double num = Math.Round(bytes / Math.Pow(1024, place), 2);
+            
+            UnitAbbreviation = FilesizeAbbreviations[place];
+            Value = num * long.Sign(byteCount);
+        }
+
+        public string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
+            return destination.TryWrite(provider, $"{Value}{UnitAbbreviation}", out charsWritten);
+        }
+
+        public override string ToString() => $"{Value}{UnitAbbreviation}";
         
-        long bytes = Math.Abs(byteCount);
-        int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-        double num = Math.Round(bytes / Math.Pow(1024, place), 2);
-        
-        return (Math.Sign(byteCount) * num) + suf[place];
+        /// <summary>
+        /// Formats the filesize to a span using <see cref="Interpolator.Temp"/>
+        /// </summary>
+        /// <returns></returns>
+        public ReadOnlySpan<char> ToSpanShared() => Interpolator.Temp($"{Value}{UnitAbbreviation}");
     }
 
     /// <summary>
@@ -122,6 +145,4 @@ public static class NumberExt {
             _ => false,
         };
     }
-
-    private static readonly string[] _filesizeAbbreviations = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];  //Longs run out around EB
 }

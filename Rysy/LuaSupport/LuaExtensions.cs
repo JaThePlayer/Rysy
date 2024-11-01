@@ -101,13 +101,18 @@ public static partial class LuaExt {
     }
 
     /// <summary>
-    /// Pushes an ASCII string onto the stack
+    /// Pushes an utf8 string onto the stack
     /// </summary>
-    public static void PushASCIIString(this Lua lua, byte[] value) {
+    public static void PushUtf8String(this Lua lua, byte[] value) {
         lua.PushBuffer(value);
     }
 
-    public static unsafe void PushUtf8RVAString(this Lua lua, ReadOnlySpan<byte> value) {
+    /// <summary>
+    /// Pushes an utf8 string stored in RVA onto the stack
+    /// </summary>
+    /// <param name="lua"></param>
+    /// <param name="value"></param>
+    public static unsafe void PushUtf8RvaString(this Lua lua, ReadOnlySpan<byte> value) {
         fixed (byte* ptr = &value[0])
             lua_pushlstring(lua.Handle, ptr, (nuint)value.Length);
     }
@@ -212,7 +217,7 @@ public static partial class LuaExt {
     /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
     public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         var type = lua.GetTable(tableStackIndex);
         string? ret = null;
         if (type == LuaType.String) {
@@ -224,7 +229,7 @@ public static partial class LuaExt {
     }
 
     public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, byte[] keyASCII, out Span<char> chars) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         var type = lua.GetTable(tableStackIndex);
         if (type == LuaType.String) {
             chars = lua.ToStringInto(lua.GetTop(), SharedToStringBuffer);
@@ -256,7 +261,7 @@ public static partial class LuaExt {
     /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
     public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         var type = lua.GetTable(tableStackIndex);
         double? ret = null;
         if (type == LuaType.Number) {
@@ -272,7 +277,7 @@ public static partial class LuaExt {
     }
 
     public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         var type = lua.GetTable(tableStackIndex);
         float? ret = null;
         if (type == LuaType.Number) {
@@ -334,7 +339,7 @@ public static partial class LuaExt {
     /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
     /// </summary>
     public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         var type = lua.GetTable(tableStackIndex);
 
         long? ret = null;
@@ -386,7 +391,7 @@ public static partial class LuaExt {
     }
 
     public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, byte[] key, Color def) {
-        lua.PushASCIIString(key);
+        lua.PushUtf8String(key);
         var type = lua.GetTable(tableStackIndex);
         Color ret = def;
         if (type is LuaType.Table or LuaType.String) {
@@ -483,7 +488,7 @@ public static partial class LuaExt {
     /// Pushes t[<paramref name="keyASCII"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
     public static LuaType GetTable(this Lua lua, int index, byte[] keyASCII) {
-        lua.PushASCIIString(keyASCII);
+        lua.PushUtf8String(keyASCII);
         return lua.GetTable(index);
     }
 
@@ -508,7 +513,7 @@ public static partial class LuaExt {
                 lua.PushWrapper(wrapper);
                 break;
             case byte[] asciiStr:
-                lua.PushASCIIString(asciiStr);
+                lua.PushUtf8String(asciiStr);
                 break;
             case long l:
                 lua.PushInteger(l);
@@ -832,7 +837,7 @@ where TArg1 : class, ILuaWrapper {
         state.PushNumber(wrapperIndex);
         state.RawSetInteger(metatableStackLoc, WrapperIDLoc);
 
-        state.PushASCIIString(WrapperMarkerNameASCII);
+        state.PushUtf8String(WrapperMarkerNameASCII);
         state.PushBoolean(true);
         state.RawSet(metatableStackLoc);
 
@@ -961,7 +966,7 @@ where TArg1 : class, ILuaWrapper {
     }
 
     public static bool IsWrapper(this Lua lua, int loc) {
-        lua.PushASCIIString(WrapperMarkerNameASCII);
+        lua.PushUtf8String(WrapperMarkerNameASCII);
         var t = lua.RawGet(loc);
         lua.Pop(1);
 

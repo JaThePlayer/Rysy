@@ -4,6 +4,7 @@ using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -144,6 +145,8 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
     public virtual SpriteBatchState? GetSpriteBatchState() => null;
 
     public virtual void OnChanged(EntityDataChangeCtx ctx) {
+        _isMasked = null;
+        
         BindAttribute.GetBindContext<Style>(this).UpdateBoundFields(this, ctx);
     }
 
@@ -159,10 +162,15 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         if (roomName.StartsWith("lvl_")) {
             roomName = roomName["lvl_".Length..];
         }
-
+        
+        if (RoomNameMatchCacheAltLookup.TryGetValue(new(predicate, roomName), out var cache)) {
+            return cache;
+        }
+        
         foreach (var filter in predicate.EnumerateSplits(',')) {
-            if (filter.SequenceEqual(roomName))
-                return true;
+            if (filter.SequenceEqual(roomName)) {
+                return SetCache(predicate, roomName, true);
+            }
 
             if (!filter.Contains('*'))
                 continue;
@@ -176,17 +184,24 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
             }
 
             if (regex.IsMatch(roomName))
-                return true;
+                return SetCache(predicate, roomName, true);
         }
 
-        return false;
+        return SetCache(predicate, roomName, false);
+
+        static bool SetCache(ReadOnlySpan<char> predicate, ReadOnlySpan<char> roomName, bool value) {
+            RoomNameMatchCache[(predicate.ToString(), roomName.ToString())] = value;
+            return value;
+        }
     }
 
     private static readonly Dictionary<StringRef, Regex> RoomNameMatchRegexCache = new();
+    private static readonly Dictionary<(string, string), bool> RoomNameMatchCache = new(new StringPairComparer());
+    private static readonly Dictionary<(string, string), bool>.AlternateLookup<SpanPair> RoomNameMatchCacheAltLookup = RoomNameMatchCache.GetAlternateLookup<SpanPair>();
 
     public static Style FromName(string name) {
         return FromElement(new(name) {
-            Children = Array.Empty<BinaryPacker.Element>(),
+            Children = [],
             Attributes = new()
         });
     }
@@ -234,6 +249,30 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         }
 
         return null;
+    }
+
+    private bool? _isMasked;
+    
+    /// <summary>
+    /// Checks whether this styleground is masked by some styleground masks.
+    /// </summary>
+    /// <returns></returns>
+    internal bool IsMasked() {
+        if (_isMasked is { } cached)
+            return cached;
+        
+        foreach (var tag in Tags) {
+            if (tag is null)
+                continue;
+            
+            if (tag.StartsWith("mask_", StringComparison.Ordinal) || tag.StartsWith("sjstylemask_", StringComparison.Ordinal)) {
+                _isMasked = true;
+                return true;
+            }
+        }
+
+        _isMasked = false;
+        return false;
     }
 
     #region IBindTarget

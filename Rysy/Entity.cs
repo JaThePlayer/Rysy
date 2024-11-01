@@ -815,7 +815,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
                 return 1;
             case "_name":
-                lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             default:
                 EntityData.TryGetValue(key.ToString(), out var value);
@@ -836,7 +836,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 lua.PushNumber(Id);
                 return 1;
             case [(byte) '_', (byte) 'n', (byte) 'a', (byte) 'm', (byte) 'e']:
-                lua.PushASCIIString(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             case [(byte) 'n', (byte) 'o', (byte) 'd', (byte) 'e', (byte) 's']:
                 if (Nodes is { }) {

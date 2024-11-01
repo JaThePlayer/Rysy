@@ -11,6 +11,7 @@ public sealed class BinaryPacker {
 
     BinaryReader Reader = null!;
     BinaryWriter Writer = null!;
+    BinaryWriter HeaderWriter = null!;
 
     short nextLookupId = 0;
     Dictionary<string, short> WritingLookup = new();
@@ -38,8 +39,7 @@ public sealed class BinaryPacker {
         using var watch = new ScopedStopwatch("FromBinary");
 #endif
 
-        if (filename == null)
-            throw new ArgumentNullException(nameof(filename));
+        ArgumentNullException.ThrowIfNull(filename);
         if (!File.Exists(filename))
             throw new FileNotFoundException(filename);
 
@@ -94,29 +94,23 @@ public sealed class BinaryPacker {
         var packer = new BinaryPacker();
         // Write the map to a different writer, as we now need the lookup table.
         packer.Writer = contentWriter;
+        packer.HeaderWriter = headerWriter;
+        
         if (saveDetailedInformation) {
             packer.DetailedWriteInfos = [];
             packer.DetailedWriteLookupInfos = [];
         }
         
+        // reserve space for string lookup length, we'll write it later
+        var lookupLenPos = headerWriter.BaseStream.Position;
+        headerWriter.Write((short)0);
+        
+        // write the data, which will populate the string lookup table as well
         packer.WriteElement(package.Data);
 
-        // write lookup table
+        // write lookup table length now
+        headerWriter.Seek((int)lookupLenPos, SeekOrigin.Begin);
         headerWriter.Write((short) packer.WritingLookup.Count);
-        var orderedLookup = packer.WritingLookup.OrderBy(k => k.Value);
-        if (packer.DetailedWriteLookupInfos is { } detailed) {
-            foreach (var item in orderedLookup) {
-                var start = headerWriter.BaseStream.Position;
-                headerWriter.Write(item.Key);
-                detailed[item.Key] = new() { Size = headerWriter.BaseStream.Position - start };
-            }
-        } else {
-            foreach (var item in orderedLookup) {
-                headerWriter.Write(item.Key);
-            }
-        }
-        
-
 
         headerStream.Seek(0, SeekOrigin.Begin);
         headerStream.CopyTo(output);
@@ -192,6 +186,16 @@ public sealed class BinaryPacker {
         if (!WritingLookup.TryGetValue(str, out short id)) {
             id = nextLookupId;
             WritingLookup[str] = nextLookupId++;
+
+            // Write the string to the lookup table in the map header
+            var headerWriter = HeaderWriter;
+            if (DetailedWriteLookupInfos is { } detailed) {
+                var start = headerWriter.BaseStream.Position;
+                headerWriter.Write(str);
+                detailed[str] = new() { Size = headerWriter.BaseStream.Position - start };
+            } else {
+                headerWriter.Write(str);
+            }
         }
         Writer.Write(id);
     }
@@ -332,7 +336,7 @@ public sealed class BinaryPacker {
     private static readonly byte[] _rleEncodeBuffer = new byte[short.MaxValue];
     
     internal static bool TryEncodeRLE(string str, out ReadOnlySpan<byte> encoded) {
-        if (str.Length < 128) {
+        if (str.Length < 16) {
             //Console.WriteLine($"Can't encode RLE: {str} - too short!");
             encoded = default;
             return false;
@@ -377,11 +381,9 @@ public sealed class BinaryPacker {
         /// </summary>
         public string? Filename { get; init; }
 
-        [JsonIgnore]
-        public IEnumerable<Element> Rooms => Data.Children.FirstOrDefault(e => e.Name == "levels")?.Children ?? [];
+        public IEnumerable<Element> GetRooms() => Data.Children.FirstOrDefault(e => e.Name == "levels")?.Children ?? [];
 
-        [JsonIgnore]
-        public IEnumerable<Element> EntitiesOrTriggers => Rooms.SelectMany(r =>
+        public IEnumerable<Element> GetEntitiesAndTriggers() => GetRooms().SelectMany(r =>
             r.Children.Where(e => e.Name is "entities" or "triggers").SelectMany(e => e.Children));
     }
 

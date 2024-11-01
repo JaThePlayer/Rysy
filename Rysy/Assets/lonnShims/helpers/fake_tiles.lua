@@ -74,17 +74,6 @@ function fakeTilesHelper.getEntitySpriteFunction(materialKey, blendKey, layer, c
     end
 end
 
---[[
-function fakeTilesHelper.getCombinedMaterialMatrix(entities, materialKey, default)
-    _RYSY_unimplemented()
-end
-
-function fakeTilesHelper.getCombinedEntitySpriteFunction(entities, materialKey, blendIn, layer, color, x, y)
-	print("yo")
-    _RYSY_unimplemented()
-end
-]]
-
 local function getMaterialCorners(entities)
     local tlx, tly = math.huge, math.huge
     local brx, bry = -math.huge, -math.huge

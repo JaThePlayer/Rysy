@@ -21,7 +21,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     private BackgroundTaskInfo CleanupTask;
 
-    private Dictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
+    private ConcurrentDictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
     private FileSystemWatcher Watcher;
     
     // These keep track of known filenames, so that checking if a file exists in a mod incurs no IO cost.
@@ -200,12 +200,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
         lock (WatchedAssets) {
-            if (!WatchedAssets.TryGetValue(path, out var assets)) {
-                assets = new(1);
-
-                WatchedAssets.Add(path, assets);
-            }
-
+            var assets = WatchedAssets.GetOrAdd(path, static _ => new(1));
             assets.Add(asset);
         }
     }

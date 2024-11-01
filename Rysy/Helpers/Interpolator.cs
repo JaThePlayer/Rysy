@@ -140,5 +140,9 @@ public sealed class Interpolator {
             
             _len += written;
         }
+        
+        public void AppendFormatted(object v) {
+            AppendLiteral(v.ToString());
+        }
     }
 }

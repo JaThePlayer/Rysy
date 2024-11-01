@@ -17,7 +17,30 @@ public class Persistence {
     public static Persistence Save(Persistence settings) {
         return SettingsHelper.Save<Persistence>(settings, FileLocation, perProfile: true);
     }
+    
+#if NET9_0_OR_GREATER
+    public T Get<T>(ReadOnlySpan<char> key, T defaultValue) {
+        var values = Values.GetAlternateLookup<ReadOnlySpan<char>>();
+        if (values.TryGetValue(key, out var ret)) {
+            if (ret is JsonElement e) {
+                ret = e.Deserialize<T>();
+                values[key] = ret!;
+            }
+            return (T) ret!;
+        }
+        Set(key.ToString(), defaultValue);
 
+        return defaultValue;
+    }
+    
+    public T Get<T>(string key, T defaultValue) {
+        return Get(key.AsSpan(), defaultValue); 
+    }
+    
+    public T Get<T>(Interpolator.Handler key, T defaultValue) {
+        return Get(key.Result, defaultValue);
+    }
+#else    
     public T Get<T>(string key, T defaultValue) {
         if (Values.TryGetValue(key, out var ret)) {
             if (ret is JsonElement e) {
@@ -30,6 +53,7 @@ public class Persistence {
 
         return defaultValue;
     }
+#endif
 
     public void Set<T>(string key, T value) {
         Values[key] = value!;

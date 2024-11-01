@@ -67,13 +67,13 @@ public readonly struct WrappedBitArray {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Get2d(int x, int y, int gridWidth) {
         var i = Get1dLoc(x, y, gridWidth);
-        return i >= 0 && i < Length && Get(i);
+        return (uint)i < Length && Get(i);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Set2d(int x, int y, int gridWidth, bool value) {
         var i = Get1dLoc(x, y, gridWidth);
-        if (i >= 0 && i < Length)
+        if ((uint)i < Length)
             Set(i, value);
     }
 

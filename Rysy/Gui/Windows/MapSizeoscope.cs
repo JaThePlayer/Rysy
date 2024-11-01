@@ -39,7 +39,7 @@ public sealed class MapSizeoscopeWindow : Window {
         BinaryPacker.SaveToStream(_package, memStream, saveDetailedInformation: true, out _packer);
         _fullSize = memStream.Length;
 
-        _lookupSize = _packer.GetWritingLookupTable().Sum(p => Info(p.Key).Size).ToFilesize();
+        _lookupSize = _packer.GetWritingLookupTable().Sum(p => Info(p.Key).Size).ToFilesize().ToString();
     }
 
     protected override void Render() {
@@ -86,7 +86,7 @@ public sealed class MapSizeoscopeWindow : Window {
                         ImGui.SetTooltip(trimmedName);
                     }
                     
-                    var size = Info(str).Size.ToFilesize();
+                    var size = Info(str).Size.ToFilesize().ToSpanShared();
                     ImGui.TableNextColumn();
                     ImGui.Text(size);
                     ImGui.TableNextColumn();
@@ -147,9 +147,9 @@ public sealed class MapSizeoscopeWindow : Window {
             children is { Length: > 0 } ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.Bullet);
         
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.TotalSize.ToFilesize());
+        ImGui.Text(detailed.TotalSize.ToFilesize().ToSpanShared());
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.SelfSize.ToFilesize());
+        ImGui.Text(detailed.SelfSize.ToFilesize().ToSpanShared());
         
         if (opened) {
             if (attributes is { }) {

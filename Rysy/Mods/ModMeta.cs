@@ -118,6 +118,8 @@ public sealed class ModMeta : ILuaWrapper {
 
     public bool IsVanilla => Name is "Rysy" or "Celeste";
 
+    public bool IsRysy => Name is "Rysy";
+    
     [JsonIgnore]
     public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
 
