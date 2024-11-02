@@ -122,7 +122,7 @@ public class DependencyAnalyzer : MapAnalyzer {
         }
 
         public void Fix() {
-            if (DepModMeta is null || BaseMod.Filesystem is not IWriteableModFilesystem fs)
+            if (DepModMeta is null || BaseMod.Filesystem is not IWriteableModFilesystem)
                 return;
 
             BaseMod.EverestYaml.First().Dependencies.Add(new() {
@@ -130,12 +130,7 @@ public class DependencyAnalyzer : MapAnalyzer {
                 Version = DepModMeta.Version,
             });
 
-            var yaml = YamlHelper.Serializer.Serialize(BaseMod.EverestYaml);
-            
-            var yamlPath = fs.FileExists("everest.yml") ? "everest.yml" : "everest.yaml";
-
-            fs.CopyFileTo(yamlPath, yamlPath + ".backup");
-            fs.TryWriteToFile(yamlPath, yaml);
+            BaseMod.TrySaveEverestYaml();
         }
     }
 }

@@ -323,4 +323,11 @@ public static partial class StringExt {
 
         return s;
     }
+
+    public static string TrimBeyondLength(this string s, int length) {
+        if (s.Length <= length)
+            return s;
+
+        return string.Concat(s.AsSpan(0, length), "(...)");
+    }
 }

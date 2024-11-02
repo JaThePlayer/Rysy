@@ -177,6 +177,19 @@ public sealed class ModMeta : ILuaWrapper {
     public static string ModNameToDisplayName(string modname) {
         return Interpolator.Temp($"mods.{modname}.name").TranslateOrNull() ?? modname;
     }
+
+    public bool TrySaveEverestYaml() {
+        if (Filesystem is not IWriteableModFilesystem fs)
+            return false;
+        
+        var yaml = YamlHelper.Serializer.Serialize(EverestYaml);
+        var yamlPath = fs.FileExists("everest.yml") ? "everest.yml" : "everest.yaml";
+        
+        if (fs.FileExists(yamlPath))
+            fs.CopyFileTo(yamlPath, yamlPath + ".backup");
+        
+        return fs.TryWriteToFile(yamlPath, yaml);
+    }
 }
 
 /// <summary>

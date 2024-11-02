@@ -21,6 +21,12 @@ public class LayeredFilesystem : IModFilesystem {
         }
     }
 
+    public void NotifyFileCreated(string virtPath) {
+        foreach (var m in Mods) {
+            m.Filesystem.NotifyFileCreated(virtPath);
+        }
+    }
+
     /// <summary>
     /// Same as <see cref="FindFilesInDirectoryRecursive(string, string)"/>, but also returns the mod the path comes from.
     /// </summary>

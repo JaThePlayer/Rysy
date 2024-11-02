@@ -152,6 +152,10 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.AllDirectories).Select(f => Path.GetRelativePath(Root, f).Unbackslash());
     }
 
+    public void NotifyFileCreated(string virtPath) {
+        _knownExistingFiles[virtPath] = true;
+    }
+
     public bool TryWriteToFile(string path, Action<Stream> write) {
         var realPath = VirtToRealPath(path);
 
@@ -164,6 +168,14 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         using var fileStream = File.Open(realPath, FileMode.Create);
 
         write(fileStream);
+
+        return true;
+    }
+
+    public bool TryCreateDirectory(string path) {
+        var realPath = VirtToRealPath(path);
+
+        Directory.CreateDirectory(realPath);
 
         return true;
     }

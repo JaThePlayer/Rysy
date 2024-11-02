@@ -9,21 +9,21 @@ using System.Diagnostics;
 namespace Rysy.Gui;
 
 public record struct TextEmphasis {
-    public int HeaderLevel { get; private set; }
+    public int HeaderLevel { get; set; }
     
-    public bool Bold { get; private set; }
+    public bool Bold { get; set; }
 
-    public bool Italic { get; private set; }
+    public bool Italic { get; set; }
 
-    public bool Strikethrough { get; private set; }
+    public bool Strikethrough { get; set; }
 
-    public bool Underline { get; private set; }
+    public bool Underline { get; set; }
 
-    public string? Link { get; private set; }
+    public string? Link { get; set; }
 
     public bool Autolink { get; private set; }
 
-    public bool LinkIsImage { get; private set; }
+    public bool LinkIsImage { get; set; }
 
     public TextEmphasis(Inline obj, int headerLevel = 0) {
         HeaderLevel = headerLevel;

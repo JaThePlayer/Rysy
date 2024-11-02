@@ -109,6 +109,12 @@ public static class NumberExt {
         public double Value { get; }
 
         public Filesize(long byteCount) {
+            if (byteCount == 0) {
+                Value = 0;
+                UnitAbbreviation = FilesizeAbbreviations[0];
+                return;
+            }
+            
             var bytes = Math.Abs(byteCount);
             
             int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));

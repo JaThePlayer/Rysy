@@ -9,6 +9,7 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.Loading;
 using Rysy.MapAnalyzers;
+using Rysy.Mods;
 using Rysy.Stylegrounds;
 using Rysy.Tools;
 
@@ -214,7 +215,7 @@ public sealed class EditorScene : Scene {
             }
             ImGui.EndDisabled();
         },
-        size: new(350, ImGui.GetTextLineHeightWithSpacing() * 8));
+        size: new(350, ImGui.GetTextLineHeightWithSpacing() * 10));
 
         AddWindow(window);
     }
@@ -249,6 +250,8 @@ public sealed class EditorScene : Scene {
         using var watch = new ScopedStopwatch("Saving");
         var pack = Map!.IntoBinary();
         BinaryPacker.SaveToFile(pack, pack.Filename!);
+        ModRegistry.NotifyFileCreatedAtRealPath(pack.Filename);
+        Map.Filepath = pack.Filename;
     }
 
     public void Open() {

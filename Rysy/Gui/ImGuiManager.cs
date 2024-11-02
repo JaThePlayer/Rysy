@@ -547,6 +547,10 @@ public static class ImGuiManager {
         return ImGui.Checkbox(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
 
+    public static bool TranslatedInputText(string id, ref string v, uint maxLen) {
+        return ImGui.InputText(id.Translate(), ref v, maxLen).WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
     public static bool TranslatedInputInt(string id, ref int v) {
         return ImGui.InputInt(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
@@ -603,6 +607,14 @@ public static class ImGuiManager {
         }
 
         return dropped;
+    }
+
+    public static void Link(string text) {
+        var em = new TextEmphasis { Link = text, Underline = true };
+        var ctx = em.PushToImgui();
+        ImGui.Text(text);
+        em.PopFromImgui(ctx);
+        ImGui.NewLine();
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

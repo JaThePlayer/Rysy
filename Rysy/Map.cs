@@ -22,10 +22,19 @@ public sealed class Map : IPackable, ILuaWrapper {
     /// The package name of the map.
     /// </summary>
     public string? Package;
+
+    private string? _filepath;
+
     /// <summary>
     /// The filename of the file this map comes from, if it came from a file.
     /// </summary>
-    public string? Filepath;
+    public string? Filepath {
+        get => _filepath;
+        set {
+            _filepath = value;
+            _modChecked = false;
+        }
+    }
 
     public List<Room> Rooms { get; set; } = new();
 
@@ -92,6 +101,22 @@ public sealed class Map : IPackable, ILuaWrapper {
         };
         map.UseVanillaTilesetsIfNeeded();
         map.InitStyleAndFillerIfNeeded();
+
+        var room = new Room(map, 40 * 8, 23 * 8) {
+            Name = "a_00",
+        };
+        
+        map.Rooms.Add(room);
+        
+        room.Entities.Add(EntityRegistry.Create(new("player") {
+            Attributes = new() {
+                ["x"] = 2 * 8,
+                ["y"] = 21 * 8,
+            },
+        }, room, false));
+
+        room.FG.SafeSetTile('1', 1, 21);
+        room.FG.SafeSetTile('1', 2, 21);
 
         return map;
     }

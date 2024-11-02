@@ -208,4 +208,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
     public bool FileExists(string path) {
         return _allEntryFullNamesHashSet.Contains(path);
     }
+    
+    public void NotifyFileCreated(string virtPath) {
+        _allEntryFullNamesHashSet.Add(virtPath);
+    }
 }
