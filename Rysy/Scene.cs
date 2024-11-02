@@ -47,8 +47,7 @@ public abstract class Scene {
     }
 
     public virtual void RenderImGui() {
-        // Loop in reverse because windows might get removed during the loop.
-        for (int i = Windows.Count - 1; i >= 0; i--) {
+        for (int i = 0; i < Windows.Count; i++) {
             Windows[i].RenderGui();
         }
     }

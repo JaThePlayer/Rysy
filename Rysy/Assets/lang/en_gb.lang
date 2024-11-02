@@ -224,6 +224,22 @@ rysy.animationFrame.firstFrame.tooltip=The first frame to use.
 rysy.animationFrame.lastFrame=Last Frame
 rysy.animationFrame.lastFrame.tooltip=The last frame to use.
 
+# New Mod Window
+rysy.newMod.windowName=New Mod
+rysy.newMod.id=Mod ID
+rysy.newMod.id.tooltip=Internal name of your mod, used to uniquely identify it.\nUsed in the everest.yaml and in folder structure.\nShould not be changed after uploading to Gamebanana, or mod auto-updates will break!
+rysy.newMod.id.used=This mod id is already in use by a different mod.
+rysy.newMod.author=Mod Author
+rysy.newMod.author.tooltip=The name of the mod's author.\nUsed in folder structure.
+rysy.newMod.dialog=Dialog
+rysy.newMod.map.name=Map Name
+rysy.newMod.map.name.tooltip=English name of the map, displayed in the overworld.
+rysy.newMod.map.levelsetName=Levelset Name
+rysy.newMod.map.levelsetName.tooltip=The English name of the Levelset the map comes from, displayed in the overworld.
+
+rysy.newMod.structure=File Structure
+rysy.newMod.create=Create Mod
+
 # FROM LONN:
 
 # -- Entities --

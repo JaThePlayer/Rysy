@@ -27,7 +27,7 @@ public static class LinkOpenHelper {
             return false;
         }
         
-        RysyState.OnEndOfThisFrame += () => RysyEngine.Scene.AddWindow(new LinkOpenConfirmationWindow(uri));
+        RysyEngine.Scene.AddWindow(new LinkOpenConfirmationWindow(uri));
 
         return true;
     }

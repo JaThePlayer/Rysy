@@ -317,6 +317,10 @@ public static class Menubar {
         if (ImGui.MenuItem("New Map", Settings.Instance.GetOrCreateHotkey("newMap"))) {
             editor.LoadNewMap();
         }
+        
+        if (ImGui.MenuItem("New Mod")) {
+            editor.AddWindowIfNeeded<NewModWindow>();
+        }
 
         if (ImGui.MenuItem("Open", Settings.Instance.GetOrCreateHotkey("openMap"))) {
             editor.Open();

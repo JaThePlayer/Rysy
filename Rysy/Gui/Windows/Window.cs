@@ -66,7 +66,6 @@ public class Window {
 
         if (Size is { } size)
             ImGui.SetNextWindowSize(size, _ForceResize ? ImGuiCond.Always : ImGuiCond.Once);
-        
 
         ImGuiManager.PushWindowStyle();
         var open = true;
@@ -82,7 +81,7 @@ public class Window {
 
         if (Closeable ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags)) : ImGui.Begin(WindowID, EditWindowFlags(flags))) {
             if (HasBottomBar) {
-                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)GetHashCode());
+                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)$"{WindowID}.child".GetHashCode());
             } else {
                 Render();
             }

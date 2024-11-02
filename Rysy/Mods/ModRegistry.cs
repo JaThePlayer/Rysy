@@ -73,6 +73,21 @@ public static class ModRegistry {
 
         return null;
     }
+    
+    public static void NotifyFileCreatedAtRealPath(string? realPath) {
+        if (realPath is null)
+            return;
+        
+        var unbackslashed = Interpolator.Shared.Clone(realPath);
+        unbackslashed.Replace('\\', '/');
+
+        foreach (var (_, mod) in _Mods) {
+            if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
+                var vpath = unbackslashed[mod.Filesystem.Root.Length..].TrimStart('/').ToString();
+                mod.Filesystem.NotifyFileCreated(vpath);
+            }
+        }
+    }
 
     public static async Task LoadAllAsync(string modDir, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         task?.SetMessage("Registering Mods");
@@ -119,13 +134,41 @@ public static class ModRegistry {
         var all = await Task.WhenAll(allMods);
 
         foreach (var meta in all) {
-            Filesystem.AddMod(meta);
-
-            if (_Mods.TryGetValue(meta.Name, out var prevMod)) {
-                Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
-            }
-            _Mods[meta.Name] = meta;
+            RegisterMod(meta);
         }
+    }
+
+    private static void RegisterMod(ModMeta meta)
+    {
+        Filesystem.AddMod(meta);
+
+        if (_Mods.TryGetValue(meta.Name, out var prevMod)) {
+            Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
+        }
+        _Mods[meta.Name] = meta;
+    }
+
+    public static ModMeta CreateNewMod(string id) {
+        var dir = Path.Combine(Profile.Instance.ModsDirectory, id.ToValidFilename());
+
+        Directory.CreateDirectory(dir);
+
+        var meta = new ModMeta {
+            Filesystem = new FolderModFilesystem(dir.Unbackslash()),
+            EverestYaml = [
+                new EverestModuleMetadata {
+                    Name = id,
+                    Version = new(1,0,0),
+                    Dependencies = [],
+                }
+            ],
+        };
+
+        meta.TrySaveEverestYaml();
+
+        RegisterMod(meta);
+
+        return meta;
     }
     
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
