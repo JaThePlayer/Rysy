@@ -8,7 +8,7 @@ public sealed class BannerDecalRegistryProperty : DecalRegistryProperty, IPlacea
     public static FieldList GetFields() => new(new {
         speed = 1f,
         amplitude = 1f,
-        sliceSize = 1,
+        sliceSize = Fields.Int(1).WithMin(1),
         sliceSinIncrement = 0.050f,
         easeDown = false,
         offset = 0f,
@@ -18,7 +18,7 @@ public sealed class BannerDecalRegistryProperty : DecalRegistryProperty, IPlacea
     public static PlacementList GetPlacements() => new("default");
 
     public override IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
-        var sliceSize = Data.Int("sliceSize", 1);
+        var sliceSize = Data.Int("sliceSize", 1).AtLeast(1);
         var easeDown = Data.Bool("easeDown", false);
         var waveSpeed = Data.Float("speed", 1f);
         var waveAmplitude = Data.Float("amplitude", 1f);
