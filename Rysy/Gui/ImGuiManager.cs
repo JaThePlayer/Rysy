@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -278,7 +279,12 @@ public static class ImGuiManager {
         return ret;
     }
 
-    public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, ref string search, string? tooltip = null, ComboCache<T>? cache = null) where T : notnull {
+    public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, 
+        ref string search, string? tooltip = null, ComboCache<T>? cache = null,
+        Func<T, string, bool>? menuItemRenderer = null) where T : notnull {
+
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
+        
         if (value is null || !values.TryGetValue(value, out var valueName)) {
             valueName = value?.ToString() ?? "";
         }
@@ -293,7 +299,7 @@ public static class ImGuiManager {
             var filtered = cache.GetValue(values, search);
 
             foreach (var item in filtered) {
-                if (ImGui.MenuItem(item.Value)) {
+                if (menuItemRenderer(item.Key, item.Value)) {
                     value = item.Key;
                     changed = true;
                 }
@@ -306,31 +312,105 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null, ImGuiComboFlags flags = ImGuiComboFlags.None) where T : notnull {
+    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null) where T : notnull {
+        string? search = null;
+        return Combo(name, ref value, values, toString, ref search, tooltip, null);
+    }
+
+    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, 
+        [NotNullIfNotNull(nameof(search))] ref string? search, string? tooltip = null,
+        ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null) 
+        where T : notnull {
         var valueName = toString(value);
         bool changed = false;
+        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName);
 
-        if (ImGui.BeginCombo(name, valueName, flags).WithTooltip(tooltip)) {
+        if (ImGui.BeginCombo(name, valueName, ImGuiComboFlags.None).WithTooltip(tooltip)) {
+            var oldStyles = PopAllStyles();
+
+            if (search is { }) {
+                ImGui.InputText("Search", ref search, 512);
+
+                cache ??= new();
+                values = cache.GetValue(values, toString, search);
+            }
+            
             foreach (var item in values) {
-                if (ImGui.MenuItem(toString(item))) {
-                    value = item;
+                if (renderMenuItem(item, toString(item))) {
+                    if (!changed)
+                        value = item;
                     changed = true;
                 }
             }
-
+            
             ImGui.EndCombo();
+            PushAllStyles(oldStyles);
         }
 
         return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, ref string search,
-        string? tooltip = null, ComboCache<T>? cache = null)
+    public static bool EditableCombo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, Func<string, T> stringToValue,
+        [NotNullIfNotNull(nameof(search))] ref string? search, string? tooltip = null,
+        ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null,
+        Func<T, string>? textInputStringGetter = null) {
+        bool changed = false;
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var buttonWidth = ImGui.GetFrameHeight();
+        
+        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name);
+        
+        var valueToString = textInputStringGetter?.Invoke(value) ?? toString(value);
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
+        if (ImGui.InputText($"##text{name}", ref valueToString, 128).WithTooltip(tooltip)) {
+            value = stringToValue(valueToString);
+            changed = true;
+        }
+
+        cache ??= new();
+
+        ImGui.SameLine(0f, xPadding);
+
+        var size = cache.Size ??= CalcListSize(values.Select(toString));
+        ImGui.SetNextWindowSize(new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(values.Count + 1) + ImGui.GetFrameHeight()));
+        if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
+            var oldStyles = PopAllStyles();
+            
+            ImGui.InputText("Search", ref search, 512);
+
+            ImGui.BeginChild($"comboInner{name}");
+
+            var filtered = cache.GetValue(values, toString, search);
+
+            foreach (var item in filtered) {
+                if (renderMenuItem(item, toString(item))) {
+                    value = item;
+                    changed = true;
+                }
+            }
+
+            ImGui.EndChild();
+            ImGui.EndCombo();
+            
+            PushAllStyles(oldStyles);
+        }
+        ImGui.SameLine(0f, xPadding);
+        ImGui.Text(name);
+        true.WithTooltip(tooltip);
+
+        return changed;
+    }
+
+    public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, 
+        ref string search, string? tooltip = null, ComboCache<T>? cache = null,
+        Func<T, string, bool>? menuItemRenderer = null)
         where T : notnull {
 
         bool changed = false;
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
+
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
 
         var valueToString = value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
@@ -355,11 +435,12 @@ public static class ImGuiManager {
             var filtered = cache.GetValue(values, search);
 
             foreach (var item in filtered) {
-                if (ImGui.MenuItem(item.Value)) {
+                if (menuItemRenderer(item.Key, item.Value)) {
                     value = item.Key;
                     changed = true;
                 }
             }
+
             ImGui.EndChild();
             ImGui.EndCombo();
             
@@ -536,6 +617,53 @@ public static class ImGuiManager {
             GuiResourceManager.UnbindTexture(t.ID);
             t.Target?.Dispose();
             Targets.Remove(id);
+        }
+    }
+
+    public static void XnaWidgetSprite(string id, ISprite sprite, Point? size = null, bool rerender = true) {
+        if (!sprite.IsLoaded)
+            return;
+        
+        int w, h;
+        Camera? camera = null;
+        if (size is null) {
+            var c = sprite.GetCollider().Rect;
+            w = c.Width;
+            h = c.Height;
+
+            if (c.X != 0 || c.Y != 0) {
+                camera ??= new Camera();
+                camera.Move(new(c.X, c.Y));
+            }
+
+            while (w * h < 64 * 64) {
+                camera ??= new Camera(new Viewport(0, 0, w, h));
+                camera.Scale *= 2f;
+                w *= 2;
+                h *= 2;
+            }
+            
+            while (w * h > 320 * 180) {
+                camera ??= new Camera(new Viewport(0, 0, w, h));
+                camera.Scale /= 1.5f;
+                w = w * 2 / 3;
+                h = h * 2 / 3;
+            }
+        } else {
+            w = size.Value.X;
+            h = size.Value.Y;
+        }
+        
+        XnaWidget(id, w, h, () => sprite.Render(SpriteRenderCtx.Default()), camera, rerender);
+    }
+
+    public static void SpriteTooltip(string id, ISprite? sprite) {
+        if (sprite is null)
+            return;
+        
+        if (ImGui.BeginTooltip()) {
+            XnaWidgetSprite(id, sprite);
+            ImGui.EndTooltip();
         }
     }
 

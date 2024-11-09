@@ -1,15 +1,18 @@
-﻿using Rysy.Extensions;
+﻿using ImGuiNET;
+using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Rysy.Gui.FieldTypes;
 
-using TextureCache = Cache<Dictionary<string, string>>;
+using TextureCacheKey = (string saved, string display, FoundPath path);
+using TextureCache = Cache<List<(string saved, string display, FoundPath path)>>;
 using RawTextureCache = Cache<List<FoundPath>>;
 
 public record class PathField : Field, IFieldConvertible<string> {
@@ -58,6 +61,16 @@ public record class PathField : Field, IFieldConvertible<string> {
 
     private Func<string, ModMeta?> ModResolver;
 
+    private readonly Regex _regex;
+
+    public Func<FoundPath, ISprite?>? PreviewSpriteGetter { get; set; } = static path => ISprite.FromTexture(path.Path);
+
+    public PathField WithPreviewSprites(Func<FoundPath, ISprite?> getter) {
+        PreviewSpriteGetter = getter;
+
+        return this;
+    }
+
     private void Init(object cacheObject, string regexStr, Func<FoundPath, string>? captureConverter, Func<RawTextureCache> textureFinder, Func<string, ModMeta?> modResolver) {
         ModResolver = modResolver;
         
@@ -79,30 +92,46 @@ public record class PathField : Field, IFieldConvertible<string> {
         CreateKnownPathsCache();
     }
 
+    private TextureCacheKey CreateKnownPathsEntry(FoundPath p) {
+        var name = CaptureConverter(p);
+        var mod = ModResolver(p.Path);
+
+        return (name, mod is { } ? $"{name} [{mod.DisplayName}]" : name, p);
+    }
+    
     private void CreateKnownPathsCache() {
+        /*
         KnownPaths = RawPaths.Chain(textures => textures.Where(Filter).SafeToDictionary(p => {
             var name = CaptureConverter(p);
             var mod = ModResolver(p.Path);
             return (name, mod is { } ? $"{name} [{mod.DisplayName}]" : name);
         }));
+        */
+        KnownPaths = RawPaths.Chain(textures => textures
+            .Where(Filter)
+            .Select(CreateKnownPathsEntry)
+            .DistinctBy(p => p.saved)
+            .ToList());
     }
+    
+    private ConcurrentDictionary<string, Regex> _regexCache = new();
 
     public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
+        _regex = _regexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
 
-        Regex? regex = null;
         Init(atlas, regexStr, captureConverter,
-            textureFinder: () => atlas.FindTextures(regex ??= new Regex(regexStr, RegexOptions.Compiled)),
+            textureFinder: () => atlas.FindTextures(_regex),
             modResolver: (path) => atlas[path] is ModTexture modTexture ? modTexture.Mod : null
         );
     }
 
     public PathField(string @default, SpriteBank bank, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
-
-        Regex? regex = null;
+        _regex = _regexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
+        
         Init(bank, regexStr, captureConverter,
-            () => bank.FindTextures(regex ??= new Regex(regexStr, RegexOptions.Compiled)),
+            () => bank.FindTextures(_regex),
             (path) => bank.Get(path)?.Mod
         );
     }
@@ -133,16 +162,56 @@ public record class PathField : Field, IFieldConvertible<string> {
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault) => Default = newDefault.ToString()!;
 
+
+    private bool RenderMenuItem(TextureCacheKey key, string displayPath) {
+        if (PreviewSpriteGetter is null)
+            return ImGui.MenuItem(displayPath);
+        
+        var clicked = ImGui.MenuItem(displayPath);
+
+        if (ImGui.IsItemHovered()) {
+            var sprite = PreviewSpriteGetter(key.path);
+            ImGuiManager.SpriteTooltip("path_field_preview", sprite);
+        }
+        
+        return clicked;
+    }
+
+    private ComboCache<TextureCacheKey> _comboCache = new();
+    private TextureCacheKey _lastChosen;
+    
     public override object? RenderGui(string fieldName, object value) {
         var strValue = value?.ToString() ?? "";
 
         var paths = KnownPaths.Value;
+        Func<TextureCacheKey, string, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
+            ? RenderMenuItem
+            : null;
 
+        TextureCacheKey chosen;
+        if (strValue == _lastChosen.saved)
+            chosen = _lastChosen;
+        else
+            chosen = paths.Find(p => p.saved == strValue);
+        
+        if (chosen == default)
+            chosen = CreateKnownPathsEntry(FoundPath.Create(strValue, _regex) ?? new FoundPath(strValue, "N/A"));
+
+        _lastChosen = chosen;
+        
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref strValue, paths, (s) => s, ref Search, Tooltip, ComboCache) ? strValue : null;
+            if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.display, str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(strValue, _regex)), tooltip: null,
+                    search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
+                return chosen.saved;
+            }
         } else {
-            return ImGuiManager.Combo(fieldName, ref strValue, paths, ref Search, Tooltip, ComboCache) ? strValue : null;
+            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.display, tooltip: null,
+                    search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
+                return chosen.saved;
+            }
         }
+
+        return null;
     }
 
     /// <summary>

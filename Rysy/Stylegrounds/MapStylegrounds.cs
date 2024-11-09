@@ -55,14 +55,14 @@ public class MapStylegrounds : IPackable {
 
     public BinaryPacker.Element Pack() {
         return new("Style") {
-            Children = new BinaryPacker.Element[] {
+            Children = [
                 new("Foregrounds") {
                     Children = Foregrounds.Select(f => f.Pack()).ToArray(),
                 },
                 new("Backgrounds") {
                     Children = Backgrounds.Select(f => f.Pack()).ToArray(),
-                },
-            },
+                }
+            ],
         };
     }
 
