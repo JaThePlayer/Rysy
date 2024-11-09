@@ -24,6 +24,8 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     public Func<string?, T> StringToT;
 
+    public Func<T, string, bool>? MenuItemRenderer;
+
     public bool Editable { get; set; }
 
     public T Default { get; set; }
@@ -84,9 +86,11 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         var prevVal = val;
 
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip) ? RealValue(val) : null;
+            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip,
+                menuItemRenderer: MenuItemRenderer) ? RealValue(val) : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip) ? RealValue(val) : null;
+            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip, 
+                menuItemRenderer: MenuItemRenderer) ? RealValue(val) : null;
         }
     }
 

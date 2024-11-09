@@ -108,9 +108,8 @@ public class SpriteBank {
             var list = new List<FoundPath>();
 
             foreach (var (path, _) in Entries) {
-                if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
-                    list.Add(new(path, secondGroup.Value));
-                }
+                if (FoundPath.Create(path, regex) is {} found)
+                    list.Add(found);
             }
 
             token.Reset();

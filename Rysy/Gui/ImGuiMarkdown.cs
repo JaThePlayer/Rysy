@@ -215,7 +215,7 @@ internal static partial class ImGuiMarkdown {
 
             if (endPrevLine == textEnd) {
                 //ImGuiNative.igText(utf8ptr);
-                ImGui.Text(textUtf16.ToString());
+                ImGui.Text(textUtf16);
                 return;
             }
             ImGuiNative.igTextUnformatted(utf8Ptr, endPrevLine);
