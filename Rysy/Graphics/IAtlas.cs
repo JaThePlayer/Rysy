@@ -83,7 +83,19 @@ public interface IAtlas {
 /// </summary>
 /// <param name="Path">The path of this texture, in full</param>
 /// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures"/></param>
-public record class FoundPath(string Path, string Captured);
+public record class FoundPath(string Path, string Captured) {
+
+    public static FoundPath? Create(string path, Regex regex) {
+        if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match)
+            return new FoundPath(path, secondGroup.Value);
+
+        return null;
+    }
+    
+    public static FoundPath CreateMaybeInvalid(string path, Regex regex) {
+        return Create(path, regex) ?? new(path, "");
+    }
+}
 
 public static class IAtlasExt {
     public static Cache<List<FoundPath>> FindTextures(this IAtlas atlas, Regex regex, 
@@ -99,9 +111,8 @@ public static class IAtlasExt {
                 if (path.StartsWith("Rysy:", StringComparison.Ordinal) ||
                     path.StartsWith("@Internal@", StringComparison.Ordinal))
                     continue;
-                
-                if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match) {
-                    var foundPath = new FoundPath(path, secondGroup.Value);
+
+                if (FoundPath.Create(path, regex) is {} foundPath) {
                     if (where?.Invoke(foundPath, texture) ?? true)
                         list.Add(foundPath);
                 }
