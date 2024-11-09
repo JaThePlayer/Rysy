@@ -8,6 +8,9 @@ internal sealed class LuaStyle : Style {
     public override List<string>? AssociatedMods
         => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
+    public override bool CanBeInBackground => Plugin?.GetCanBackground?.Invoke(this) ?? base.CanBeInBackground;
+    public override bool CanBeInForeground => Plugin?.GetCanForeground?.Invoke(this) ?? base.CanBeInForeground;
+
     public override void Unpack(BinaryPacker.Element from) {
         base.Unpack(from);
 

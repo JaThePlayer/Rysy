@@ -282,7 +282,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         var fields = EntityRegistry.GetFields(Name, RegisteredEntityType.Style);
 
         foreach (var (k, v) in defaults) {
-            fields.TryAdd(k, v);
+            fields[k] = v;
         }
 
         return fields;
