@@ -36,7 +36,7 @@ public class LuaFunctionRef {
         // Clear the reference on the lua side
         var lua = Lua;
         var id = _id;
-        LuaExt.LuaCleanupActions.Add(() => {
+        LuaExt.RegisterLuaCleanupAction(() => {
             lua.GetGlobalASCII("__rysy_gc_luaFuncRef"u8);
             lua.PushInteger(id);
             lua.Call(1, 0);

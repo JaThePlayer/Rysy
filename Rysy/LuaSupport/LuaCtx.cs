@@ -140,6 +140,7 @@ public class LuaCtx {
         lua.PCallStringThrowIfError("""
         RYSY = {} -- Set up a global RYSY variable, so that plugins know they're running in Rysy if needed.
         _RYSY_entities = {}
+        _RYSY_styles = {}
 
         _MAP_VIEWER = {
             name = "rysy",
