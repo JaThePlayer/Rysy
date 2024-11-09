@@ -307,7 +307,7 @@ public class StylegroundWindow : Window {
         ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonLeft);
 
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
-            var placements = EntityRegistry.StylegroundPlacements;
+            var placements = FG ? EntityRegistry.FgStylegroundPlacements : EntityRegistry.BgStylegroundPlacements;
             ImGuiManager.List(placements, GetPlacementName, PlacementComboCache, (pl) => {
                 var newStyle = Style.FromPlacement(pl);
                 var styles = folder?.Styles ?? GetStyleListContaining();

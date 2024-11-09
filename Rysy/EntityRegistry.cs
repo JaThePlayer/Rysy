@@ -77,11 +77,21 @@ public static class EntityRegistry {
         => Registered
             .Where(kv => kv.Value.Type == RegisteredEntityType.Trigger)
             .SelectMany(kv => kv.Value.Placements);
+
+    private static readonly Lazy<Cache<List<Placement>>> _stylegroundPlacements = new(() => RegisteredStyles.CreateCache(d => d
+        .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
+        .SelectMany(kv => kv.Value.Placements)
+        .ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
+
+    private static readonly Lazy<Cache<List<Placement>>> _bgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
+        x.Where(pl => Style.FromPlacement(pl).CanBeInBackground).ToList()));
     
-    public static IEnumerable<Placement> StylegroundPlacements
-        => RegisteredStyles
-            .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
-            .SelectMany(kv => kv.Value.Placements);
+    private static readonly Lazy<Cache<List<Placement>>> _fgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
+        x.Where(pl => Style.FromPlacement(pl).CanBeInForeground).ToList()));
+    
+    public static IEnumerable<Placement> StylegroundPlacements => _stylegroundPlacements.Value.Value;
+    public static IEnumerable<Placement> BgStylegroundPlacements => _bgStylegroundPlacements.Value.Value;
+    public static IEnumerable<Placement> FgStylegroundPlacements => _fgStylegroundPlacements.Value.Value;
     
     public static IEnumerable<Placement> DecalRegistryPropertyPlacements
         => RegisteredDecalRegistryProperties
@@ -174,15 +184,31 @@ public static class EntityRegistry {
     }
 
     public static List<string> GetAssociatedMods(Entity entity) {
-        return entity.AssociatedMods
-               ?? GetInfo(entity)?.AssociatedModNames
-               ?? [DependencyCheker.UnknownModName];
+        List<string>? ret;
+        try {
+            ret = entity.AssociatedMods;
+        } catch (Exception e) {
+            if (Entity.LogErrors)
+                Logger.Write("EntityRegistry", LogLevel.Error, $"Erroring AssociatedMods for {entity.Name} {entity.Pack().Attributes.ToJson()}: {e}");
+            ret = null;
+        }
+        
+        return ret ?? GetInfo(entity)?.AssociatedModNames
+                   ?? [DependencyCheker.UnknownModName];
     }
 
     public static List<string> GetAssociatedMods(Style style) {
-        return style.AssociatedMods 
-               ?? GetInfo(style.Name, RegisteredEntityType.Style)?.AssociatedModNames
-               ?? [DependencyCheker.UnknownModName];
+        List<string>? ret;
+        try {
+            ret = style.AssociatedMods;
+        } catch (Exception e) {
+            if (Entity.LogErrors)
+                Logger.Write("EntityRegistry", LogLevel.Error, $"Erroring AssociatedMods for {style.Name} {style.Pack().Attributes.ToJson()}: {e}");
+            ret = null;
+        }
+        
+        return ret ?? GetInfo(style.Name, RegisteredEntityType.Style)?.AssociatedModNames
+                   ?? [DependencyCheker.UnknownModName];
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
@@ -218,14 +244,14 @@ public static class EntityRegistry {
                     }
                     
                     if (info.LonnPlugin is not {} && info.LonnStylePlugin is not {})
-                        Registered.Remove(sid);
+                        GetRegistryFor(info.Type).Remove(sid);
                     else {
                         // If the entity has a lonn plugin, we shouldn't unregister the entire entity
                         // just because the c# plugin is getting removed
                         info.CSharpType = info.Type switch {
                             RegisteredEntityType.Entity => typeof(LonnEntity),
                             RegisteredEntityType.Trigger => typeof(LonnTrigger),
-                            RegisteredEntityType.Style => typeof(Style),
+                            RegisteredEntityType.Style => typeof(LuaStyle),
                             RegisteredEntityType.DecalRegistryProperty => typeof(DecalRegistryProperty),
                             _ => throw new ArgumentOutOfRangeException()
                         };
@@ -287,7 +313,7 @@ public static class EntityRegistry {
             foreach (var plugin in plugins) {
                 var info = GetOrCreateInfo(plugin.Name, RegisteredEntityType.Style);
                 
-                if (!HandleAssociatedMods(info, Array.Empty<string>(), mod)) {
+                if (!HandleAssociatedMods(info, [], mod)) {
                     continue;
                 }
                 
@@ -295,7 +321,7 @@ public static class EntityRegistry {
                 info.LonnStylePlugin = plugin;
                 info.Mod = mod;
                 if (plugin.FieldList is { })
-                    info.Fields = _ => plugin.FieldList(Style.FromName("parallax"));
+                    info.Fields = x => plugin.FieldList(x is Style s ? s : Style.FromName("parallax"));
                 if (plugin.Placements.FirstOrDefault() is { } firstPlacement) {
                     info.MainPlacement = firstPlacement;
                 }

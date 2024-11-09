@@ -15,13 +15,16 @@ public sealed class LonnStylePlugin {
 
     public LuaStackHolder? StackHolder { get; private set; }
 
-    private object LOCK = new();
+    private readonly object LOCK = new();
 
     public PlacementList Placements { get; set; } = [];
     public Func<Style, FieldList>? FieldList { get; set; }
     public Func<Style, Dictionary<string, object>> DefaultData { get; set; }
     
     public Func<Style, List<string>?> GetAssociatedMods { get; private set; }
+    
+    public Func<Style, bool> GetCanForeground { get; private set; }
+    public Func<Style, bool> GetCanBackground { get; private set; }
 
     public record struct LuaStackHolder(LonnStylePlugin Plugin, int Amt) : IDisposable {
         public void Dispose() {
@@ -58,14 +61,14 @@ public sealed class LonnStylePlugin {
             SetModNameInLua(lua);
 
             // push the handler
-            lua.GetGlobal("_RYSY_entities");
+            lua.GetGlobal("_RYSY_styles");
             var entitiesTableLoc = lua.GetTop();
             lua.PushString(Name);
             lua.GetTable(entitiesTableLoc);
 
             StackLoc = lua.GetTop();
 
-            using var holder = new LuaStackHolder(this, 2);
+            using var holder = new LuaStackHolder(this, 1);
 
             return cb(this);
         }
@@ -102,6 +105,14 @@ public sealed class LonnStylePlugin {
         plugin.GetAssociatedMods = NullConstOrGetter_Style(plugin, "associatedMods",
             def: (List<string>)null!,
             funcGetter: (lua, top) => lua.ToList<string>(top));
+        
+        plugin.GetCanForeground = NullConstOrGetter_Style(plugin, "canForeground",
+            def: true,
+            funcGetter: (lua, top) => lua.ToBoolean(top));
+        
+        plugin.GetCanBackground = NullConstOrGetter_Style(plugin, "canBackground",
+            def: true,
+            funcGetter: (lua, top) => lua.ToBoolean(top));
         
         switch (lua.GetTable(top, "defaultData")) {
             case LuaType.Table:
@@ -175,6 +186,84 @@ public sealed class LonnStylePlugin {
                 }
                 break;
         }
+        lua.Pop(1);
+        
+        switch (lua.GetTable(top, "fieldOrder")) {
+            case LuaType.Table: {
+                var order = lua.ToList(lua.GetTop())?.OfType<string>().ToList();
+                if (order is { }) {
+                    var origFieldListGetter = plugin.FieldList;
+                    plugin.FieldList = (e) => origFieldListGetter(e).Ordered(order);
+                }
+            }
+                break;
+            case LuaType.Function: {
+                var origFieldListGetter = plugin.FieldList;
+
+                plugin.FieldList = (e) => {
+                    var fields = origFieldListGetter(e);
+
+                    return fields.Ordered<Style>((style) => {
+                        return plugin.PushToStack((plugin) => {
+                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder");
+
+                            if (type != LuaType.Function) {
+                                lua.Pop(1);
+                                return new();
+                            }
+
+                            var order = lua.PCallFunction(style, (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                            lua.Pop(1);
+
+                            return order;
+                        });
+                    });
+                };
+            }
+                break;
+        }
+        lua.Pop(1);
+        
+        switch (lua.GetTable(top, "ignoredFields")) {
+            case LuaType.Table: {
+                if (lua.ToList(lua.GetTop())?.OfType<string>().ToList() is { } ignored) {
+                    var origFieldListGetter = plugin.FieldList;
+                    plugin.FieldList = e => origFieldListGetter(e).SetHiddenFields(ignored);
+                }
+                break;
+            }
+            case LuaType.Function: {
+                var origFieldListGetter = plugin.FieldList;
+
+                plugin.FieldList = e => {
+                    var fields = origFieldListGetter(e);
+
+                    return fields.SetHiddenFields(ctx => {
+                        return plugin.PushToStack(plugin => {
+                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields");
+
+                            if (type != LuaType.Function) {
+                                lua.Pop(1);
+                                return [];
+                            }
+
+                            var order = lua.PCallFunction(ctx, 
+                                (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                            lua.Pop(1);
+
+                            return order;
+                        });
+                    });
+                };
+                break;
+            }
+        }
+        lua.Pop(1);
+        
+        lua.GetGlobal("_RYSY_styles");
+        var entitiesTableLoc = lua.GetTop();
+        lua.PushCopy(top);
+        lua.SetField(entitiesTableLoc, plugin.Name);
         lua.Pop(1);
 
         return plugin;
