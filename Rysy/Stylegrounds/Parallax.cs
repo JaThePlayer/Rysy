@@ -58,7 +58,7 @@ public sealed class Parallax : Style, IPlaceable {
     public bool LoopY;
 
     public static FieldList GetFields() => new(new {
-        texture = Fields.AtlasPath("bgs/07/07/bg00", "(bgs/.*)"),
+        texture = Fields.AtlasPath("bgs/07/07/bg00", "^(bgs/.*[^0-9](?:[^0-9]|0+))$"),
         blendmode = Fields.Dropdown("alphablend", BlendModes.Select(kv => kv.Key).ToList(), editable: true),
         alpha = 1f,
         color = Fields.RGB(Color.White).AllowNull(),
