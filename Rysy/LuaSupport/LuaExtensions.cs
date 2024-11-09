@@ -1000,23 +1000,31 @@ where TArg1 : class, ILuaWrapper {
         return room;
     }
 
-    private static List<ILuaWrapper> LuaWrapperList = new();
-    private static List<GCHandle> LuaUsedHandles = new();
-    internal static List<Action> LuaCleanupActions = new();
-
+    private static readonly List<ILuaWrapper> LuaWrapperList = new();
+    private static readonly List<GCHandle> LuaUsedHandles = new();
+    private static readonly List<Action> LuaCleanupActions = new();
+    private static readonly object LuaResourceLock = new();
+    
     public static void ClearLuaResources() {
-        LuaWrapperList.Clear();
+        lock (LuaResourceLock) {
+            LuaWrapperList.Clear();
 
-        foreach (var handler in LuaUsedHandles) {
-            handler.Free();
-        }
+            foreach (var handler in LuaUsedHandles) {
+                handler.Free();
+            }
 
-        foreach (var act in LuaCleanupActions) {
-            act();
-        }
+            foreach (var act in LuaCleanupActions) {
+                act();
+            }
         
-        LuaCleanupActions.Clear();
-        LuaUsedHandles.Clear();
+            LuaCleanupActions.Clear();
+            LuaUsedHandles.Clear();
+        }
+    }
+
+    public static void RegisterLuaCleanupAction(Action cb) {
+        lock (LuaResourceLock)
+            LuaCleanupActions.Add(cb);
     }
 
     public static void PushAndPinFunction(this Lua lua, LuaFunction func) {
