@@ -26,6 +26,15 @@ public class Atlas : IAtlas {
         return false;
     }
 
+    public bool TryGetWithoutTryingFrames(string key, [NotNullWhen(true)] out VirtTexture? texture) {
+        if (key is null) {
+            texture = null;
+            return false;
+        }
+
+        return Textures.TryGetValue(key, out texture);
+    }
+
     public bool TryGet(string key, int frame, [NotNullWhen(true)] out VirtTexture? texture) {
         texture = null;
 

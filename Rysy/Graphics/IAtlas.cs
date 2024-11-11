@@ -49,6 +49,12 @@ public interface IAtlas {
 
     public bool TryGet(string key, [NotNullWhen(true)] out VirtTexture? texture);
     public bool TryGet(string key, int frame, [NotNullWhen(true)] out VirtTexture? texture);
+    
+    /// <summary>
+    /// Like TryGet, but doesn't try to append zeroes at the end of the path to find animated sprites.
+    /// Used for lonn interop.
+    /// </summary>
+    public bool TryGetWithoutTryingFrames(string key, [NotNullWhen(true)] out VirtTexture? texture);
 
     /// <summary>
     /// Equivalent to Celeste's Atlas.GetAtlasSubtextures

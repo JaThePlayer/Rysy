@@ -230,12 +230,13 @@ public class LuaCtx {
             return 1;
         });
 
-        // _RYSY_DRAWABLE_getTextureSize(texturePath) -> number, number, number, number, number, number
+        // _RYSY_DRAWABLE_getTextureSize(texturePath, atlaspath) -> number, number, number, number, number, number
         // gets the clip rectangle and draw offset for a texture, potentially causing preloading.
         lua.Register("_RYSY_DRAWABLE_getTextureSize", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
-            var path = lua.FastToString(-1);
+            var path = lua.FastToString(1);
+            var atlasName = lua.FastToString(2);
 
             var texture = GFX.Atlas[path];
             var clipRect = texture.ClipRect;
@@ -368,17 +369,52 @@ public class LuaCtx {
                 return 1;
             }
 
-            lua.PushWrapper(mod);
+            lua.PushWrapper(mod.EverestYaml.Find(y => y.Name == modName)!);
+            lua.PushWrapper(new ListWrapper<EverestModuleMetadata>(mod.EverestYaml));
+            return 2;
+        });
+        
+        lua.Register("_RYSY_MODS_getModNameFromPath", (s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var path = lua.FastToString(1, callMetamethod: false);
+
+            ModMeta? mod = null;
+
+            if (path.StartsWith('$')) {
+                var firstSlash = path.IndexOf('/', StringComparison.Ordinal);
+                if (firstSlash == -1)
+                    firstSlash = path.Length;
+                var name = path[1..firstSlash];
+                mod = ModRegistry.GetModByName(name);
+            }
+            else if (path.StartsWith("@ModsCommon@/", StringComparison.Ordinal)) {
+                var vPath = path["@ModsCommon@/".Length..];
+                mod = ModRegistry.Filesystem.FindFirstModContaining(vPath);
+            } else {
+                mod = ModRegistry.Filesystem.FindFirstModContaining(path);
+            }
+            
+            if (mod is null) {
+                lua.PushNil();
+                return 1;
+            }
+
+            lua.PushString(mod.Name);
             return 1;
         });
+        
 
-        // _RYSY_DRAWABLE_exists(string texturepath) -> bool - checks if a texture exists
+        // _RYSY_DRAWABLE_exists(string texturepath, string atlasName) -> bool - checks if a texture exists
         lua.Register("_RYSY_DRAWABLE_exists", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
             var texture = lua.FastToString(1, callMetamethod: false);
+            var atlas = lua.FastToString(2, callMetamethod: false);
+            
+            // TODO: handle different atlases
 
-            lua.PushBoolean(GFX.Atlas.Exists(texture));
+            lua.PushBoolean(GFX.Atlas.TryGetWithoutTryingFrames(texture, out _));
 
             return 1;
         });

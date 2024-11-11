@@ -1,6 +1,5 @@
 ﻿local modHandler = require("mods")
 local utils = require("utils")
-local drawableSpriteStruct = require("structs.drawable_sprite")
 
 local atlases = {}
 local atlasNames = {}
@@ -27,7 +26,7 @@ end
 setmetatable(atlases, atlasesMt)
 
 local function addAtlasMetatable(name)
-    local atlas = atlases[name] or {}
+    local atlas = atlases[name] or { _metaCache = {} }
     local atlasMt = {
         __index = function(self, key)
             return atlases.getResource(key, name)
@@ -36,6 +35,9 @@ local function addAtlasMetatable(name)
 
     atlases[name] = setmetatable(atlas, atlasMt)
 end
+
+addAtlasMetatable("Gameplay")
+addAtlasMetatable("Gui")
 
 function atlases.loadCelesteAtlas(name, meta, path)
 	_RYSY_unimplemented()
@@ -69,13 +71,69 @@ function atlases.getInternalResource(resource, name)
     _RYSY_unimplemented()
 end
 
-function atlases.getResource(resource, name)
-	if name == "Gameplay" then
-	    local texture = drawableSpriteStruct.fromTexture(resource)
-		return texture and texture.meta
-	end
+
+--[[
+RYSY INTERNALS
+]]
+local __metaMt = {}
+
+-- Add support for Rysy lazyloading - only load in the size of the texture if actually needed.
+function __metaMt.__index(self, key)
+    local loaded = rawget(self, "_RYSY_loaded")
+    if not loaded then
+        local texture = rawget(self, "_RYSY_INTERNAL_texture")
+        local atlasName = rawget(self, "_RYSY_INTERNAL_atlasName")
+        local x, y, width, height, offsetX, offsetY = _RYSY_DRAWABLE_getTextureSize(texture, atlasName)
+        
+        rawset(self, "x", x)
+        rawset(self, "y", y)
+        rawset(self, "width", width)
+        rawset(self, "height", height)
+		rawset(self, "offsetX", offsetX)
+		rawset(self, "offsetY", offsetY)
+        rawset(self, "_RYSY_loaded", true)
+
+		rawset(self, "realWidth", width)
+		rawset(self, "realHeight", height)
+		rawset(self, "filename", string.format("@ModsCommon@/Graphics/Atlases/%s/%s.png", atlasName, texture))
+    end
+
+    local raw = rawget(self, key)
+    if raw then 
+        return raw 
+    end
 
     return nil
+end
+
+local function __getMeta(atlasName, texture)
+    texture = _RYSY_DRAWABLE_fixPath(texture)
+
+    local atlas = atlases[atlasName]
+    local cache = rawget(atlas, "_metaCache")
+    
+    local cached = cache[texture]
+    if cached then
+        return cached
+    end
+
+    if not _RYSY_DRAWABLE_exists(texture, atlasName) then
+        return nil
+    end
+    
+	local m = {
+        _RYSY_INTERNAL_atlasName = atlasName,
+        _RYSY_INTERNAL_texture = texture
+    }
+    setmetatable(m, __metaMt)
+    cache[texture] = m
+
+    return m
+end
+-- END RYSY INTERNALS
+
+function atlases.getResource(resource, name)
+	return __getMeta(name, resource)
 end
 
 function atlases.loadExternalAtlases()

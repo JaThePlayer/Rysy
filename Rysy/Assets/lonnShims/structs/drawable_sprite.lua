@@ -1,54 +1,6 @@
 ﻿local utils = require("utils")
 local drawing = require("utils.drawing")
-
---[[
-RYSY INTERNALS
-]]
-local __metaMt = {}
-
--- Add support for Rysy lazyloading - only load in the size of the texture if actually needed.
-function __metaMt.__index(self, key)
-    local loaded = rawget(self, "_RYSY_loaded")
-    if not loaded then
-        local x, y, width, height, offsetX, offsetY = _RYSY_DRAWABLE_getTextureSize(rawget(self, "_RYSY_INTERNAL_texture"))
-        
-        rawset(self, "x", x)
-        rawset(self, "y", y)
-        rawset(self, "width", width)
-        rawset(self, "height", height)
-		rawset(self, "offsetX", offsetX)
-		rawset(self, "offsetY", offsetY)
-        rawset(self, "_RYSY_loaded", true)
-
-		rawset(self, "realWidth", width)
-		rawset(self, "realHeight", height)
-    end
-
-    local raw = rawget(self, key)
-    if raw then 
-        return raw 
-    end
-
-    return nil
-end
-
-local _metaCache = {}
-
-local function __newMeta(texture)
-    local cached = _metaCache[texture]
-    if cached then
-        return cached
-    end
-    
-	local m = {
-        _RYSY_INTERNAL_texture = texture
-    }
-    setmetatable(m, __metaMt)
-    _metaCache[texture] = m
-
-    return m
-end
--- END RYSY INTERNALS
+local atlases = require("atlases")
 
 local drawableSpriteStruct = {}
 
@@ -227,13 +179,12 @@ function drawableSpriteStruct.fromMeta(meta, data)
 end
 
 function drawableSpriteStruct.fromTexture(texture, data)
-    texture = _RYSY_DRAWABLE_fixPath(texture)
-
-	if not _RYSY_DRAWABLE_exists(texture) then
-		return nil
-	end
-
-    return __create(nil, data, texture)
+    local atlas = data and data.atlas or "Gameplay"
+    local spriteMeta = atlases.getResource(texture, atlas)
+    
+    if spriteMeta then
+        return __create(spriteMeta, data)
+    end
 end
 
 function drawableSpriteStruct.fromInternalTexture(texture, data)

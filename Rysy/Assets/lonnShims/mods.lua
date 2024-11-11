@@ -98,19 +98,46 @@ function modHandler.readModMetadata(path, mountPoint, folderName, updateCache)
     _RYSY_unimplemented()
 end
 
-function modHandler.findLoadedMod(name)
-    local mod = _RYSY_MODS_find(name)
+local cachedModTables = {}
+local cachedModMetaTables = {}
 
-	if not mod then 
-		return nil 
+local function getModTable(modWrapper)
+    local name = modWrapper.Name
+    if cachedModTables[name] then
+        return cachedModTables[name]
+    end
+
+    local t = {
+        Name = name,
+        Version = modWrapper.Version
+    }
+    cachedModTables[name] = t
+    return t
+end
+
+local function getModMetaTable(modWrapper, meta)
+    local name = modWrapper.Name
+    if cachedModMetaTables[name] then
+        return cachedModMetaTables[name]
+    end
+
+    local realMeta = {}
+    for i, v in ipairs(meta) do
+        table.insert(realMeta, getModTable(v))
+    end
+
+    cachedModMetaTables[name] = realMeta
+    return realMeta
+end
+
+function modHandler.findLoadedMod(name)
+    local info, meta = _RYSY_MODS_find(name)
+
+	if not info then
+		return nil
 	end
 
-	local realMod = {
-		Name = mod.Name,
-		Version = mod.Version
-	}
-
-	return realMod, realMod
+	return getModTable(info), getModMetaTable(info, meta)
 end
 
 function modHandler.hasLoadedMod(name)
@@ -306,24 +333,36 @@ function modHandler.mountMods(directory, force)
     _RYSY_unimplemented()
 end
 
-local function getModMetadataByKeyCached(value, key, hasTriedMount)
-    _RYSY_unimplemented()
-end
-
-local function getModMetadataFromRealFilename(filename)
-    _RYSY_unimplemented()
-end
-
-local function getModMetadataFromSpecific(filename)
-    _RYSY_unimplemented()
-end
-
 function modHandler.getModMetadataFromPath(path)
-    _RYSY_unimplemented()
+    if not path then
+        return
+    end
+
+    local modName = _RYSY_MODS_getModNameFromPath(path)
+    if not modName then return end
+    
+    local mod, meta = modHandler.findLoadedMod(modName)
+    
+    return meta
 end
 
 function modHandler.getModNamesFromMetadata(metadata)
-    _RYSY_unimplemented()
+    if metadata then
+        if #metadata == 1 and metadata[1].Name then
+            return {metadata[1].Name}
+
+        else
+            local names = {}
+
+            for _, info in ipairs(metadata) do
+                if info.Name then
+                    table.insert(names, info.Name)
+                end
+            end
+
+            return names
+        end
+    end
 end
 
 function modHandler.getDependencyModNames(metadata, addSelf)
