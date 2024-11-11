@@ -7,7 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace Rysy.Mods;
 
-public sealed class ModMeta : ILuaWrapper {
+public sealed class ModMeta {
     internal ModMeta() { }
 
     /// <summary>
@@ -123,24 +123,6 @@ public sealed class ModMeta : ILuaWrapper {
     [JsonIgnore]
     public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
 
-    public int LuaIndex(Lua lua, long key) {
-        throw new NotImplementedException();
-    }
-
-    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
-        switch (key) {
-            case "Name":
-                lua.PushString(Name);
-                return 1;
-            case "Version":
-                lua.PushString(Version.ToString());
-                return 1;
-        }
-
-        lua.PushNil();
-        return 1;
-    }
-
     public override string ToString() => string.Join(',', EverestYaml.Select(x => x.ToString()));
 
     public bool DependencyMet(ModMeta other) {
@@ -196,7 +178,7 @@ public sealed class ModMeta : ILuaWrapper {
 /// Any module metadata, usually mirroring the data in your metadata.yaml.
 /// Copied from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Module/EverestModuleMetadata.cs
 /// </summary>
-public sealed class EverestModuleMetadata {
+public sealed class EverestModuleMetadata : ILuaWrapper {
     /// <summary>
     /// The name of the mod.
     /// </summary>
@@ -248,6 +230,24 @@ public sealed class EverestModuleMetadata {
 
     public bool IsValid() {
         return !Name.IsNullOrWhitespace() && Version != null;
+    }
+    
+    public int LuaIndex(Lua lua, long key) {
+        throw new NotImplementedException();
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
+        switch (key) {
+            case "Name":
+                lua.PushString(Name);
+                return 1;
+            case "Version":
+                lua.PushString(Version.ToString());
+                return 1;
+        }
+
+        lua.PushNil();
+        return 1;
     }
 }
 
