@@ -36,7 +36,7 @@ public record class PathField : Field, IFieldConvertible<string> {
         get => _CaptureConverter;
         set {
             _CaptureConverter = value;
-            KnownPaths.Clear();
+            KnownPaths?.Clear();
             CreateKnownPathsCache();
         }
     }
@@ -76,7 +76,7 @@ public record class PathField : Field, IFieldConvertible<string> {
         
 
         if (captureConverter is { })
-            CaptureConverter = captureConverter;
+            _CaptureConverter = captureConverter;
 
         if (!Caches.TryGetValue(cacheObject, out var cache)) {
             cache = new();
@@ -141,7 +141,8 @@ public record class PathField : Field, IFieldConvertible<string> {
 
         var token = new CacheToken();
         RawTextureCache cache = new(token, () => {
-            return filesystem.FindFilesInDirectoryRecursive(directory, extension).Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}"))).ToList();
+            return filesystem.FindFilesInDirectoryRecursive(directory, extension)
+                .Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}"), null)).ToList();
         });
 
         // TODO: unregister!
@@ -195,12 +196,13 @@ public record class PathField : Field, IFieldConvertible<string> {
             chosen = paths.Find(p => p.saved == strValue);
         
         if (chosen == default)
-            chosen = CreateKnownPathsEntry(FoundPath.Create(strValue, _regex) ?? new FoundPath(strValue, "N/A"));
+            chosen = CreateKnownPathsEntry(FoundPath.Create(strValue, _regex) ?? new FoundPath(strValue, strValue, null));
 
         _lastChosen = chosen;
         
         if (Editable) {
-            if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.display, str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(strValue, _regex)), tooltip: null,
+            if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.display, 
+                    str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(str, _regex)), tooltip: null,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
                 return chosen.saved;
             }

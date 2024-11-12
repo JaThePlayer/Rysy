@@ -362,7 +362,7 @@ public static class ImGuiManager {
         
         var valueToString = textInputStringGetter?.Invoke(value) ?? toString(value);
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText($"##text{name}", ref valueToString, 128).WithTooltip(tooltip)) {
+        if (ImGui.InputText($"##text{name}", ref valueToString, 256).WithTooltip(tooltip)) {
             value = stringToValue(valueToString);
             changed = true;
         }

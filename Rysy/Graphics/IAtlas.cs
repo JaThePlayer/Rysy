@@ -89,17 +89,16 @@ public interface IAtlas {
 /// </summary>
 /// <param name="Path">The path of this texture, in full</param>
 /// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures"/></param>
-public record class FoundPath(string Path, string Captured) {
-
+public record class FoundPath(string Path, string Captured, Match? Match) {
     public static FoundPath? Create(string path, Regex regex) {
         if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match)
-            return new FoundPath(path, secondGroup.Value);
+            return new FoundPath(path, secondGroup.Value, match);
 
         return null;
     }
     
     public static FoundPath CreateMaybeInvalid(string path, Regex regex) {
-        return Create(path, regex) ?? new(path, "");
+        return Create(path, regex) ?? new(path, path, null);
     }
 }
 
@@ -114,6 +113,9 @@ public static class IAtlasExt {
                 // ignore internal textures
                 if (texture is ModTexture modTex && modTex.Mod == ModRegistry.RysyMod)
                     continue;
+                if (texture == GFX.UnknownTexture)
+                    continue;
+                
                 if (path.StartsWith("Rysy:", StringComparison.Ordinal) ||
                     path.StartsWith("@Internal@", StringComparison.Ordinal))
                     continue;
