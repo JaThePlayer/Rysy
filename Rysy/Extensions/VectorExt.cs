@@ -14,6 +14,12 @@ public static class VectorExt {
     public static Vector2 Add(this Vector2 v, float x, float y) => new(v.X + x, v.Y + y);
     public static Vector2 AddX(this Vector2 v, float toAdd) => new(v.X + toAdd, v.Y);
     public static Vector2 AddY(this Vector2 v, float toAdd) => new(v.X, v.Y + toAdd);
+    
+    public static float Angle(this Vector2 vector)
+    {
+        return (float)Math.Atan2(vector.Y, vector.X);
+    }
+    
     public static float Angle(Vector2 from, Vector2 to)
     => float.Atan2(to.Y - from.Y, to.X - from.X);
 
@@ -65,10 +71,37 @@ public static class VectorExt {
 
         return origin + diffRotated;
     }
+    
+    public static Vector2 RotateTowards(this Vector2 vec, float targetAngleRadians, float maxMoveRadians)
+    {
+        return AngleToVector(AngleApproach(vec.Angle(), targetAngleRadians, maxMoveRadians), vec.Length());
+    }
 
     public static Vector2 ToXna(this NumVector2 v) => new(v.X, v.Y);
     public static Vector3 ToXna(this NumVector3 v) => new(v.X, v.Y, v.Z);
     public static Vector4 ToXna(this NumVector4 v) => new(v.X, v.Y, v.Z, v.W);
     
     public static ref NumVector2 AsNumerics(this ref XnaVector2 v) => ref Unsafe.As<XnaVector2, NumVector2>(ref v);
+    
+    public static float AngleApproach(float val, float target, float maxMove)
+    {
+        float value = AngleDiff(val, target);
+        if (Math.Abs(value) < maxMove)
+        {
+            return target;
+        }
+        return val + MathHelper.Clamp(value, 0f - maxMove, maxMove);
+    }
+    
+    public static float AngleDiff(float radiansA, float radiansB)
+    {
+        float num;
+        for (num = radiansB - radiansA; num > (float)Math.PI; num -= (float)Math.PI * 2f)
+        {
+        }
+        for (; num <= -(float)Math.PI; num += (float)Math.PI * 2f)
+        {
+        }
+        return num;
+    }
 }

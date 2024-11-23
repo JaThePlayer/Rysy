@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
 
@@ -8,6 +9,8 @@ namespace Rysy.LuaSupport;
 /// </summary>
 public class LuaFunctionRef {
     private long _id;
+    
+    [JsonIgnore]
     public readonly Lua Lua;
 
     private LuaFunctionRef(Lua lua, long id) {

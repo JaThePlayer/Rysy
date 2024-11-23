@@ -6,7 +6,7 @@ using Rysy.History;
 
 namespace Rysy.Selections;
 
-public struct Selection {
+public struct Selection : IEquatable<Selection> {
     public Selection() { }
 
     public Selection(ISelectionHandler handler) => Handler = handler;
@@ -45,6 +45,29 @@ public struct Selection {
 
     public void Render(Color c) => Handler.RenderSelection(c);
     public void RenderHollow(Color c) => Handler.RenderSelectionHollow(c);
+
+    public bool Equals(Selection other)
+    {
+        return Handler.Equals(other.Handler);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Selection other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return Handler.GetHashCode();
+    }
+
+    public static bool operator ==(Selection left, Selection right) {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Selection left, Selection right) {
+        return !(left == right);
+    }
 }
 
 public interface ISelectionCollider {

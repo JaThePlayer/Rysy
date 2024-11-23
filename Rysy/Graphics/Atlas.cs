@@ -77,6 +77,11 @@ public class Atlas : IAtlas {
             padding += "0";
         }
 
+        if (list.Count == 0) {
+            if (Textures.TryGetValue(key, out var unanimated))
+                list.Add(unanimated);
+        }
+
         return list;
     }
 
