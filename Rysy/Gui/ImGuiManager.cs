@@ -941,16 +941,10 @@ public static class ImGuiManager {
             // Not needed for windows, but is needed for other OSes
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void SetClipboard(nint userdata, byte* txt) {
-                _ = SDL_SetClipboardText(txt);
+                _ = SDL2Ext.SDL_SetClipboardText(txt);
             }
             
-            [DllImport("SDL2", EntryPoint = "SDL_SetClipboardText", CallingConvention = CallingConvention.Cdecl)]
-            static extern int SDL_SetClipboardText(byte* text);
-            
-            [DllImport("SDL2", EntryPoint = "SDL_GetClipboardText", CallingConvention = CallingConvention.Cdecl)]
-            static extern nint SDL_GetClipboardText();
-            
-            delegate* <nint> get = &SDL_GetClipboardText;
+            delegate* <byte*> get = &SDL2Ext.SDL_GetClipboardText;
             delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
             io.GetClipboardTextFn = (nint)get;
             io.SetClipboardTextFn = (nint)set;
