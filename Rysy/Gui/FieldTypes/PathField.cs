@@ -19,7 +19,7 @@ public record class PathField : Field, IFieldConvertible<string> {
     private static ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
 
     private RawTextureCache RawPaths;
-    private TextureCache KnownPaths;
+    private TextureCache? KnownPaths;
 
     private ComboCache<string> ComboCache = new();
 
@@ -37,7 +37,7 @@ public record class PathField : Field, IFieldConvertible<string> {
         set {
             _CaptureConverter = value;
             KnownPaths?.Clear();
-            CreateKnownPathsCache();
+            KnownPaths = null;
         }
     }
 
@@ -54,8 +54,8 @@ public record class PathField : Field, IFieldConvertible<string> {
         get => _Filter;
         set {
             _Filter = value;
-            KnownPaths.Clear();
-            CreateKnownPathsCache();
+            KnownPaths?.Clear();
+            KnownPaths = null;
         }
     }
 
@@ -63,6 +63,17 @@ public record class PathField : Field, IFieldConvertible<string> {
 
     private readonly Regex _regex;
 
+    private Func<FoundPath, string, string?>? _DisplayNameGetter;
+
+    public Func<FoundPath, string, string?>? DisplayNameGetter {
+        get => _DisplayNameGetter;
+        set {
+            _DisplayNameGetter = value;
+            KnownPaths?.Clear();
+            KnownPaths = null;
+        }
+    }
+    
     public Func<FoundPath, ISprite?>? PreviewSpriteGetter { get; set; } = static path => ISprite.FromTexture(path.Path);
 
     public PathField WithPreviewSprites(Func<FoundPath, ISprite?> getter) {
@@ -88,26 +99,19 @@ public record class PathField : Field, IFieldConvertible<string> {
             cache[regexStr] = textureCache;
         }
         RawPaths = textureCache;
-
-        CreateKnownPathsCache();
     }
 
     private TextureCacheKey CreateKnownPathsEntry(FoundPath p) {
         var name = CaptureConverter(p);
         var mod = ModResolver(p.Path);
 
-        return (name, mod is { } ? $"{name} [{mod.DisplayName}]" : name, p);
+        var displayName = DisplayNameGetter?.Invoke(p, name) ?? name;
+
+        return (name, mod is { } ? $"{displayName} [{mod.DisplayName}]" : displayName, p);
     }
     
-    private void CreateKnownPathsCache() {
-        /*
-        KnownPaths = RawPaths.Chain(textures => textures.Where(Filter).SafeToDictionary(p => {
-            var name = CaptureConverter(p);
-            var mod = ModResolver(p.Path);
-            return (name, mod is { } ? $"{name} [{mod.DisplayName}]" : name);
-        }));
-        */
-        KnownPaths = RawPaths.Chain(textures => textures
+    private TextureCache CreateKnownPathsCache() {
+        return RawPaths.Chain(textures => textures
             .Where(Filter)
             .Select(CreateKnownPathsEntry)
             .DistinctBy(p => p.saved)
@@ -184,6 +188,8 @@ public record class PathField : Field, IFieldConvertible<string> {
     public override object? RenderGui(string fieldName, object value) {
         var strValue = value?.ToString() ?? "";
 
+        KnownPaths ??= CreateKnownPathsCache();
+
         var paths = KnownPaths.Value;
         Func<TextureCacheKey, string, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
             ? RenderMenuItem
@@ -220,7 +226,8 @@ public record class PathField : Field, IFieldConvertible<string> {
     /// Clears all the caches inside of this path field.
     /// </summary>
     public void ClearCache() {
-        KnownPaths.Clear();
+        KnownPaths?.Clear();
+        KnownPaths = null;
         RawPaths.Clear();
         ComboCache.Clear();
     }
