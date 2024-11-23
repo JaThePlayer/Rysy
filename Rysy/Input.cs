@@ -1,12 +1,8 @@
 ﻿using Rysy.Gui;
+using Rysy.Helpers;
+using Microsoft.Xna.Framework.Input;
 
 namespace Rysy;
-
-using ImGuiNET;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using Rysy.Extensions;
-using System;
 
 public class Input {
     public static Input Global { get; private set; } = new() { Mouse = { Wrap = true } };
@@ -352,7 +348,7 @@ public class Input {
             Set(obj.ToJson(Settings.Instance.MinifyClipboard));
         }
 
-        public static string Get() => SDL2.SDL.SDL_GetClipboardText();
+        public static string Get() => SDL2Ext.GetClipboardFixed();
 
         public static T? TryGetFromJson<T>() => JsonExtensions.TryDeserialize<T>(Get());
     }

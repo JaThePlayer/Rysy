@@ -3,6 +3,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
 #if FNA
+using Rysy.Helpers;
 using SDL2;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -209,7 +210,7 @@ public static class RysyState {
                         var droppedFileDir = sdlEvent->drop.file;
                         var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
-                        SDL_free(droppedFileDir);
+                        SDL2Ext.SDL_free(droppedFileDir);
                     
                         Console.WriteLine(pathString);
                         Scene?.OnFileDrop(pathString);
@@ -235,9 +236,6 @@ public static class RysyState {
                 
                 return 0; // Value will be ignored
             }
-            
-            [DllImport("SDL2", CallingConvention = CallingConvention.Cdecl)]
-            static extern void SDL_free(IntPtr memblock);
         }
 #endif
     }
