@@ -112,7 +112,7 @@ public static partial class LuaExt {
     /// </summary>
     /// <param name="lua"></param>
     /// <param name="value"></param>
-    public static unsafe void PushUtf8RvaString(this Lua lua, ReadOnlySpan<byte> value) {
+    public static unsafe void PushString(this Lua lua, ReadOnlySpan<byte> value) {
         fixed (byte* ptr = &value[0])
             lua_pushlstring(lua.Handle, ptr, (nuint)value.Length);
     }
@@ -179,9 +179,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks the type of the value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
-    public static LuaType PeekTableType(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static LuaType PeekTableType(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         lua.Pop(1);
 
         return type;
@@ -190,9 +189,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks whether there's a value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
-    public static bool PeekTableHasKey(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static bool PeekTableHasKey(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         lua.Pop(1);
 
         return type is not LuaType.Nil and not LuaType.None;
@@ -201,9 +199,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
-    public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         string? ret = null;
         if (type == LuaType.String) {
             ret = lua.FastToString(lua.GetTop());
@@ -213,24 +210,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    /// <summary>
-    /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushUtf8String(keyASCII);
-        var type = lua.GetTable(tableStackIndex);
-        string? ret = null;
-        if (type == LuaType.String) {
-            ret = lua.FastToString(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, byte[] keyASCII, out Span<char> chars) {
-        lua.PushUtf8String(keyASCII);
-        var type = lua.GetTable(tableStackIndex);
+    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyASCII, out Span<char> chars) {
+        var type = lua.GetFieldRva(tableStackIndex, keyASCII);
         if (type == LuaType.String) {
             chars = lua.ToStringInto(lua.GetTop(), SharedToStringBuffer);
             lua.Pop(1);
@@ -260,9 +241,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
-    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushUtf8String(keyASCII);
-        var type = lua.GetTable(tableStackIndex);
+    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         double? ret = null;
         if (type == LuaType.Number) {
             ret = lua.ToNumber(lua.GetTop());
@@ -272,13 +252,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, string key) {
-        return PeekTableNumberValue(lua, tableStackIndex, key) is double d ? (float) d : null;
-    }
-
-    public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushUtf8String(keyASCII);
-        var type = lua.GetTable(tableStackIndex);
+    public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         float? ret = null;
         if (type == LuaType.Number) {
             ret = (float)lua.ToNumber(lua.GetTop());
@@ -302,14 +277,12 @@ public static partial class LuaExt {
 
         return ret;
     }
-
+    
     /// <summary>
     /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
     /// </summary>
-    public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, string key) {
-        //lua.PushString(key);
-        //var type = lua.GetTable(tableStackIndex);
-        var type = lua.GetField(tableStackIndex, key);
+    public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyRva) {
+        var type = lua.GetFieldRva(tableStackIndex, keyRva);
         long? ret = null;
         if (type is LuaType.Number) {
             ret = (int)lua.ToNumber(lua.GetTop());
@@ -322,10 +295,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks the bool value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
     /// </summary>
-    public static bool? PeekTableBoolValue(this Lua lua, int tableStackIndex, string key) {
-        //lua.PushString(key);
-        //var type = lua.GetTable(tableStackIndex);
-        var type = lua.GetField(tableStackIndex, key);
+    public static bool? PeekTableBoolValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         bool? ret = null;
         if (type is LuaType.Boolean) {
             ret = lua.ToBoolean(lua.GetTop());
@@ -335,25 +306,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    /// <summary>
-    /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
-    /// </summary>
-    public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, byte[] keyASCII) {
-        lua.PushUtf8String(keyASCII);
-        var type = lua.GetTable(tableStackIndex);
-
-        long? ret = null;
-        if (type is LuaType.Number) {
-            ret = lua.ToIntegerX(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret is { } r ? (int) r : null;
-    }
-
-    public static Vector2 PeekTableVector2Value(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static Vector2 PeekTableVector2Value(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         Vector2 ret = default;
         if (type is LuaType.Table) {
             ret = lua.ToVector2(lua.GetTop());
@@ -366,9 +320,8 @@ public static partial class LuaExt {
     /// <summary>
     /// Peeks a value at <paramref name="tableStackIndex"/>[<paramref name="key"/>], converting it to a range using <see cref="ToRangeNegativeIsFromEnd(Lua, int)"/>
     /// </summary>
-    public static Range PeekTableRangeValue(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static Range PeekTableRangeValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         Range ret = default;
         if (type is LuaType.Table) {
             ret = lua.ToRangeNegativeIsFromEnd(lua.GetTop());
@@ -378,9 +331,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, string key, Color def) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Color def) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         Color ret = def;
         if (type is LuaType.Table or LuaType.String) {
             ret = lua.ToColor(lua.GetTop(), def);
@@ -390,21 +342,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, byte[] key, Color def) {
-        lua.PushUtf8String(key);
-        var type = lua.GetTable(tableStackIndex);
-        Color ret = def;
-        if (type is LuaType.Table or LuaType.String) {
-            ret = lua.ToColor(lua.GetTop(), def);
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static Rectangle PeekTableRectangleValue(this Lua lua, int tableStackIndex, string key, Rectangle def) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static Rectangle PeekTableRectangleValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Rectangle def) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
         var ret = def;
         if (type is LuaType.Table or LuaType.String) {
             ret = lua.ToRectangle(lua.GetTop());
@@ -414,9 +353,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    public static List<float>? PeekTableNumberList(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static List<float>? PeekTableNumberList(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
 
         if (type != LuaType.Table) {
             return null;
@@ -433,9 +371,8 @@ public static partial class LuaExt {
         return list;
     }
     
-    public static List<T>? PeekTableList<T>(this Lua lua, int tableStackIndex, string key, Func<Lua, int, T> valueGetter) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static List<T>? PeekTableList<T>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Func<Lua, int, T> valueGetter) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
 
         if (type != LuaType.Table) {
             return null;
@@ -452,9 +389,8 @@ public static partial class LuaExt {
         return list;
     }
     
-    public static T? PeekTableWrapper<T>(this Lua lua, int tableStackIndex, string key) where T : class, ILuaWrapper {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
+    public static T? PeekTableWrapper<T>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) where T : class, ILuaWrapper {
+        var type = lua.GetFieldRva(tableStackIndex, key);
 
         if (type != LuaType.Table) {
             return null;
@@ -479,17 +415,14 @@ public static partial class LuaExt {
     /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
     public static LuaType GetTable(this Lua lua, int index, string key) {
-        //lua.PushString(key);
-        //return lua.GetTable(index);
         return lua.GetField(index, key);
     }
 
     /// <summary>
-    /// Pushes t[<paramref name="keyASCII"/>], where t is on the stack at <paramref name="index"/>
+    /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
     /// </summary>
-    public static LuaType GetTable(this Lua lua, int index, byte[] keyASCII) {
-        lua.PushUtf8String(keyASCII);
-        return lua.GetTable(index);
+    public static LuaType GetTable(this Lua lua, int index, ReadOnlySpan<byte> key) {
+        return lua.GetFieldRva(index, key);
     }
 
     public static void Push(this Lua lua, object? obj) {
@@ -800,10 +733,10 @@ where TArg1 : class, ILuaWrapper {
     }
 
     public static Rectangle ToRectangle(this Lua lua, int index) {
-        var x = lua.PeekTableIntValue(index, "x") ?? 0;
-        var y = lua.PeekTableIntValue(index, "y") ?? 0;
-        var w = lua.PeekTableIntValue(index, "width") ?? 8;
-        var h = lua.PeekTableIntValue(index, "height") ?? 8;
+        var x = lua.PeekTableIntValue(index, "x"u8) ?? 0;
+        var y = lua.PeekTableIntValue(index, "y"u8) ?? 0;
+        var w = lua.PeekTableIntValue(index, "width"u8) ?? 8;
+        var h = lua.PeekTableIntValue(index, "height"u8) ?? 8;
 
         return new Rectangle(x, y, w, h);
     }
@@ -813,7 +746,8 @@ where TArg1 : class, ILuaWrapper {
     private static List<LuaFunction> WrapperFuncs = new();
     private static List<byte[]> WrapperMetatableNames = new();
 
-    private static byte[] WrapperMarkerNameASCII = Encoding.ASCII.GetBytes("_RWR");
+    private static ReadOnlySpan<byte> WrapperMarkerName => "_RWR"u8;
+    
     /// <summary>
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
@@ -822,14 +756,14 @@ where TArg1 : class, ILuaWrapper {
         var name = WrapperMetatableNames[newIndex];
         
         if (isNew) {
-            if (state.NewMetatableASCII(name)) {
+            if (state.NewMetatable(name)) {
                 // Create a metatable that will call the C# methods:
                 int metatableIndex = state.GetTop();
 
                 SetupWrapperMetatable(state, newIndex, metatableIndex);
             }
         } else {
-            state.GetMetatableASCII(name);
+            state.GetMetatable(name);
         }
     }
 
@@ -837,11 +771,11 @@ where TArg1 : class, ILuaWrapper {
         state.PushNumber(wrapperIndex);
         state.RawSetInteger(metatableStackLoc, WrapperIDLoc);
 
-        state.PushUtf8String(WrapperMarkerNameASCII);
+        state.PushString(WrapperMarkerName);
         state.PushBoolean(true);
         state.RawSet(metatableStackLoc);
 
-        state.PushString("__index");
+        state.PushString("__index"u8);
         if (wrapperIndex == WrapperFuncs.Count) {
             var f = CreateLuaWrapperForIdx(wrapperIndex);
             GCHandle.Alloc(f);
@@ -850,7 +784,7 @@ where TArg1 : class, ILuaWrapper {
         state.PushCFunction(WrapperFuncs[wrapperIndex]);
         state.SetTable(metatableStackLoc);
 
-        state.PushString("__newindex");
+        state.PushString("__newindex"u8);
         state.PushCFunction(static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -877,7 +811,7 @@ where TArg1 : class, ILuaWrapper {
         state.SetTable(metatableStackLoc);
 
         // # operator
-        state.PushString("__len");
+        state.PushString("__len"u8);
         state.PushCFunction(static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -888,7 +822,7 @@ where TArg1 : class, ILuaWrapper {
         state.SetTable(metatableStackLoc);
 
         // equality operator
-        state.PushString("__eq");
+        state.PushString("__eq"u8);
         state.PushCFunction(static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -966,7 +900,7 @@ where TArg1 : class, ILuaWrapper {
     }
 
     public static bool IsWrapper(this Lua lua, int loc) {
-        lua.PushUtf8String(WrapperMarkerNameASCII);
+        lua.PushString(WrapperMarkerName);
         var t = lua.RawGet(loc);
         lua.Pop(1);
 
@@ -1040,21 +974,21 @@ where TArg1 : class, ILuaWrapper {
         lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
-    public static unsafe LuaType GetGlobalASCII(this Lua lua, ReadOnlySpan<byte> asciiName) {
+    public static unsafe LuaType GetGlobal(this Lua lua, ReadOnlySpan<byte> asciiName) {
         fixed (byte* ptr = &asciiName[0]) {
             return (LuaType)lua_getglobal(lua.Handle, ptr);
         }
     }
 
-    public static unsafe bool NewMetatableASCII(this Lua lua, byte[] asciiName) {
+    public static unsafe bool NewMetatable(this Lua lua, ReadOnlySpan<byte> asciiName) {
         fixed (byte* ptr = &asciiName[0]) {
             return luaL_newmetatable(lua.Handle, ptr) != 0;
         }
     }
     
-    public static unsafe void GetMetatableASCII(this Lua lua, byte[] asciiName) {
-        fixed (byte* ptr = &asciiName[0]) {
-            lua_getfield(lua.Handle, (int)LuaRegistry.Index, ptr);
+    public static unsafe void GetMetatable(this Lua lua, ReadOnlySpan<byte> utf8Name) {
+        fixed (byte* ptr = &utf8Name[0]) {
+            _ = lua_getfield(lua.Handle, (int)LuaRegistry.Index, ptr);
         }
     }
 
@@ -1062,30 +996,31 @@ where TArg1 : class, ILuaWrapper {
         return lua.ToIntegerX(index) ?? throw new LuaException(lua, new InvalidCastException($"Can't convert lua {lua.Type(index)} [{lua.ToString(index)}] to c# integer"));
     }
 
+    public static unsafe LuaType GetFieldRva(this Lua lua, int tableStackIdx, ReadOnlySpan<byte> fieldName) {
+        fixed (byte* ptr = &fieldName[0])
+            return (LuaType)lua_getfield(lua.Handle, tableStackIdx, ptr);
+    }
+
 
     [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-    //[DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial IntPtr luaL_tolstring(IntPtr luaState, int index, out UIntPtr len);
 
     [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-    //[DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial IntPtr lua_tolstring(IntPtr luaState, int index, out UIntPtr strLen);
 
-    //[LibraryImport("lua54", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
-    //[UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-    //internal static partial int lua_getglobal(IntPtr luaState, string name);
-
     [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static unsafe partial int lua_getglobal(nint luaState, byte* name);
 
     [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static unsafe partial int luaL_newmetatable(nint luaState, byte* name);
     
     [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-    internal static unsafe partial void lua_getfield(nint luaState, int index, byte* name);
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static unsafe partial int lua_getfield(nint luaState, int index, byte* name);
+    
+    
 }

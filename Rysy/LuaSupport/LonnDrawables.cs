@@ -8,39 +8,36 @@ using System.Text.RegularExpressions;
 namespace Rysy.LuaSupport;
 
 public static partial class LonnDrawables {
-    private static byte[] RYSY_UNPACKSPRASCII = "RYSY_UNPACKSPR"u8.ToArray();
-    private static byte[] _typeASCII = "_type"u8.ToArray();
-
     public static RectangleSprite LuaToRect(Lua lua, int top) {
-        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-        var w = lua.PeekTableIntValue(top, "width") ?? 8;
-        var h = lua.PeekTableIntValue(top, "height") ?? 8;
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
-        var mode = lua.PeekTableStringValue(top, "mode");
+        var x = lua.PeekTableFloatValue(top, "x"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y"u8) ?? 0f;
+        var w = lua.PeekTableIntValue(top, "width"u8) ?? 8;
+        var h = lua.PeekTableIntValue(top, "height"u8) ?? 8;
+        var color = lua.PeekTableColorValue(top, "color"u8, Color.White);
+        var mode = lua.PeekTableStringValue(top, "mode"u8);
         var rect = new Rectangle((int) x, (int) y, w, h);
 
         var sprite = mode switch {
             "fill" => ISprite.Rect(rect, color),
             "line" => ISprite.OutlinedRect(rect, Color.Transparent, color),
             "bordered" => ISprite.OutlinedRect(rect, color,
-                lua.PeekTableColorValue(top, "secondaryColor", Color.White)),
+                lua.PeekTableColorValue(top, "secondaryColor"u8, Color.White)),
             _ => ISprite.Rect(rect, color),
         };
 
-        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+        if (lua.PeekTableIntValue(top, "depth"u8) is { } depth)
             sprite.Depth = depth;
 
         return sprite;
     }
 
-    public static IEnumerable<ISprite>? LuaToFakeTiles(Lua lua, int top, Room room) {
-        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-        var w = lua.PeekTableIntValue(top, "w") ?? 8;
-        var h = lua.PeekTableIntValue(top, "h") ?? 8;
-        var material = lua.PeekTableStringValue(top, "material") ?? "3";
-        var layer = lua.PeekTableStringValue(top, "layer") ?? "tilesFg";
+    public static AutotiledSpriteList? LuaToFakeTiles(Lua lua, int top, Room room) {
+        var x = lua.PeekTableFloatValue(top, "x"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y"u8) ?? 0f;
+        var w = lua.PeekTableIntValue(top, "w"u8) ?? 8;
+        var h = lua.PeekTableIntValue(top, "h"u8) ?? 8;
+        var material = lua.PeekTableStringValue(top, "material"u8) ?? "3";
+        var layer = lua.PeekTableStringValue(top, "layer"u8) ?? "tilesFg";
 
         var sprites = layer switch {
             "tilesFg" => room.FG.Autotiler?.GetFilledRectSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
@@ -51,12 +48,12 @@ public static partial class LonnDrawables {
     }
 
     public static LineSprite LuaToLine(Lua lua, int top) {
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
-        var offX = lua.PeekTableFloatValue(top, "offsetX") ?? 0;
-        var offY = lua.PeekTableFloatValue(top, "offsetY") ?? 0;
-        var magnitudeOffset = lua.PeekTableFloatValue(top, "magnitudeOffset") ?? 0;
-        var thickness = lua.PeekTableFloatValue(top, "thickness") ?? 1f;
-        var points = lua.PeekTableNumberList(top, "points") ?? new();
+        var color = lua.PeekTableColorValue(top, "color"u8, Color.White);
+        var offX = lua.PeekTableFloatValue(top, "offsetX"u8) ?? 0;
+        var offY = lua.PeekTableFloatValue(top, "offsetY"u8) ?? 0;
+        var magnitudeOffset = lua.PeekTableFloatValue(top, "magnitudeOffset"u8) ?? 0;
+        var thickness = lua.PeekTableFloatValue(top, "thickness"u8) ?? 1f;
+        var points = lua.PeekTableNumberList(top, "points"u8) ?? new();
 
         var pointsVec2 = new Vector2[points.Count / 2];
         for (int i = 0; i < points.Count; i += 2) {
@@ -67,25 +64,14 @@ public static partial class LonnDrawables {
             Color = color, Thickness = thickness, MagnitudeOffset = magnitudeOffset, Offset = new(offX, offY)
         };
 
-        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+        if (lua.PeekTableIntValue(top, "depth"u8) is { } depth)
             sprite.Depth = depth;
 
         return sprite;
     }
 
     public static Sprite LuaToSprite(Lua lua, int top, Vector2 defaultPos) {
-        /*
-        var texture = lua.PeekTableStringValue(top, _RYSY_INTERNAL_textureASCII) ?? throw new Exception("DrawableSprite doesn't have the '_RYSY_INTERNAL_texture' field set!");
-        var x = lua.PeekTableFloatValue(top, xASCII);
-        var y = lua.PeekTableFloatValue(top, yASCII);
-        var scaleX = lua.PeekTableFloatValue(top, scaleXASCII);
-        var scaleY = lua.PeekTableFloatValue(top, scaleYASCII);
-        var originX = lua.PeekTableFloatValue(top, justificationXASCII);
-        var originY = lua.PeekTableFloatValue(top, justificationYASCII);
-        var color = lua.PeekTableColorValue(top, colorASCII, Color.White);
-        var rotation = lua.PeekTableFloatValue(top, rotationASCII);
-        var depth = lua.PeekTableIntValue(top, depthASCII);*/
-        lua.GetGlobalASCII(RYSY_UNPACKSPRASCII);
+        lua.GetGlobal("RYSY_UNPACKSPR"u8);
         lua.PushCopy(top);
         lua.Call(1, 11);
 
@@ -114,9 +100,9 @@ public static partial class LonnDrawables {
         if (quadX is { } qx) {
             sprite = sprite.CreateSubtexture(
                 (int) qx,
-                lua.PeekTableIntValue(top, "_RYSYqY") ?? 0,
-                lua.PeekTableIntValue(top, "_RYSYqW") ?? 0,
-                lua.PeekTableIntValue(top, "_RYSYqH") ?? 0
+                lua.PeekTableIntValue(top, "_RYSYqY"u8) ?? 0,
+                lua.PeekTableIntValue(top, "_RYSYqW"u8) ?? 0,
+                lua.PeekTableIntValue(top, "_RYSYqH"u8) ?? 0
             );
 
             sprite.Origin = default; // lonn ignores origin when using a subtexture...
@@ -140,15 +126,15 @@ public static partial class LonnDrawables {
     private static partial Regex MessedUpDigitsRegex();
 
     public static NineSliceSprite LuaToNineSlice(Lua lua, int top) {
-        var texture = lua.PeekTableStringValue(top, "texture") ?? "";
+        var texture = lua.PeekTableStringValue(top, "texture"u8) ?? "";
 
-        var x = lua.PeekTableFloatValue(top, "drawX") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "drawY") ?? 0f;
-        var w = lua.PeekTableIntValue(top, "drawWidth") ?? 8;
-        var h = lua.PeekTableIntValue(top, "drawHeight") ?? 8;
+        var x = lua.PeekTableFloatValue(top, "drawX"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "drawY"u8) ?? 0f;
+        var w = lua.PeekTableIntValue(top, "drawWidth"u8) ?? 8;
+        var h = lua.PeekTableIntValue(top, "drawHeight"u8) ?? 8;
         var rect = new Rectangle((int) x, (int) y, w, h);
 
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
+        var color = lua.PeekTableColorValue(top, "color"u8, Color.White);
 
         /*
     ninePatch.hideOverflow = options.hideOverflow or true
@@ -159,7 +145,7 @@ public static partial class LonnDrawables {
 
         var sprite = ISprite.NineSliceFromTexture(rect, texture) with { Color = color, };
 
-        if (lua.PeekTableIntValue(top, "depth") is { } depth)
+        if (lua.PeekTableIntValue(top, "depth"u8) is { } depth)
             sprite.Depth = depth;
 
         return sprite;
@@ -173,10 +159,10 @@ public static partial class LonnDrawables {
             fillColor = fillColor or waterfallFillColor,
             borderColor = borderColor or waterfallBorderColor,
          */
-        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-        var fillColor = lua.PeekTableColorValue(top, "fillColor", Color.White);
-        var borderColor = lua.PeekTableColorValue(top, "borderColor", Color.White);
+        var x = lua.PeekTableFloatValue(top, "x"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y"u8) ?? 0f;
+        var fillColor = lua.PeekTableColorValue(top, "fillColor"u8, Color.White);
+        var borderColor = lua.PeekTableColorValue(top, "borderColor"u8, Color.White);
         
         return Waterfall.GetSprites(room, new(x, y), fillColor, borderColor);
     }
@@ -192,27 +178,27 @@ public static partial class LonnDrawables {
             borderColor = borderColor,
             fg = waterfallHelper.isForeground(entity)
          */
-        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-        var w = lua.PeekTableIntValue(top, "w") ?? 0;
-        var h = lua.PeekTableIntValue(top, "h") ?? 0;
-        var fillColor = lua.PeekTableColorValue(top, "fillColor", Color.White);
-        var borderColor = lua.PeekTableColorValue(top, "borderColor", Color.White);
-        var layer = lua.PeekTableBoolValue(top, "fg") is true ? BigWaterfall.Layers.FG : BigWaterfall.Layers.BG;
+        var x = lua.PeekTableFloatValue(top, "x"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y"u8) ?? 0f;
+        var w = lua.PeekTableIntValue(top, "w"u8) ?? 0;
+        var h = lua.PeekTableIntValue(top, "h"u8) ?? 0;
+        var fillColor = lua.PeekTableColorValue(top, "fillColor"u8, Color.White);
+        var borderColor = lua.PeekTableColorValue(top, "borderColor"u8, Color.White);
+        var layer = lua.PeekTableBoolValue(top, "fg"u8) is true ? BigWaterfall.Layers.FG : BigWaterfall.Layers.BG;
         
         return BigWaterfall.GetSprites(new(x, y), w, h, fillColor, borderColor, layer);
     }
     
     public static ISprite LuaToPolygon(Lua lua, int top) {
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
-        var secondaryColor = lua.PeekTableColorValue(top, "secondaryColor", Color.White);
-        var mode = lua.PeekTableStringValue(top, "mode");
+        var color = lua.PeekTableColorValue(top, "color"u8, Color.White);
+        var secondaryColor = lua.PeekTableColorValue(top, "secondaryColor"u8, Color.White);
+        var mode = lua.PeekTableStringValue(top, "mode"u8);
         
-        var points = lua.PeekTableList(top, "points", (lua, top) => lua.ToVector2(top));
+        var points = lua.PeekTableList(top, "points"u8, (lua, top) => lua.ToVector2(top));
         var connectFirstWithLast = false;
         
         if (points is null) {
-            if (lua.PeekTableWrapper<Entity>(top, "__RYSY_entity") is { } srcEntity) {
+            if (lua.PeekTableWrapper<Entity>(top, "__RYSY_entity"u8) is { } srcEntity) {
                 points = [srcEntity.Pos, .. srcEntity.Nodes];
                 connectFirstWithLast = true;
             } else {
@@ -231,14 +217,14 @@ public static partial class LonnDrawables {
     }
     
     private static ISprite LuaToDrawableText(Lua lua, int top) {
-        var x = lua.PeekTableFloatValue(top, "x") ?? 0f;
-        var y = lua.PeekTableFloatValue(top, "y") ?? 0f;
-        var w = lua.PeekTableIntValue(top, "width");
-        var h = lua.PeekTableIntValue(top, "height");
-        var fontSize = lua.PeekTableFloatValue(top, "fontSize") ?? 1f;
+        var x = lua.PeekTableFloatValue(top, "x"u8) ?? 0f;
+        var y = lua.PeekTableFloatValue(top, "y"u8) ?? 0f;
+        var w = lua.PeekTableIntValue(top, "width"u8);
+        var h = lua.PeekTableIntValue(top, "height"u8);
+        var fontSize = lua.PeekTableFloatValue(top, "fontSize"u8) ?? 1f;
         // var font = lua.PeekTableStringValue(top, "font");
-        var text = lua.PeekTableStringValue(top, "text") ?? "";
-        var color = lua.PeekTableColorValue(top, "color", Color.White);
+        var text = lua.PeekTableStringValue(top, "text"u8) ?? "";
+        var color = lua.PeekTableColorValue(top, "color"u8, Color.White);
 
         var bounds = new Rectangle((int)x, (int)y, w ?? 0, h ?? 0);
         return new PicoTextRectSprite(text, bounds) {
@@ -248,7 +234,7 @@ public static partial class LonnDrawables {
     }
     
     public static void AppendSprite(Lua lua, int top, Entity entity, List<ISprite> addTo) {
-        if (!lua.TryPeekTableStringValueToSpanInSharedBuffer(top, _typeASCII, out var type)) {
+        if (!lua.TryPeekTableStringValueToSpanInSharedBuffer(top, "_type"u8, out var type)) {
             return;
         }
 
@@ -276,7 +262,8 @@ public static partial class LonnDrawables {
                 break;
             // rysy-specific
             case "_RYSY_fakeTiles":
-                addTo.AddRange(LuaToFakeTiles(lua, top, entity.Room) ?? Array.Empty<ISprite>());
+                if (LuaToFakeTiles(lua, top, entity.Room) is {} fakeTiles)
+                    addTo.Add(fakeTiles);
                 break;
             case "_RYSY_waterfall":
                 addTo.AddRange(LuaToWaterfall(entity.Room, lua, top));

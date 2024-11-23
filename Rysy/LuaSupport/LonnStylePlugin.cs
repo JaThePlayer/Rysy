@@ -84,7 +84,7 @@ public sealed class LonnStylePlugin {
             return new();
         }
 
-        var entityName = lua.PeekTableStringValue(top, "name");
+        var entityName = lua.PeekTableStringValue(top, "name"u8);
         if (entityName is { }) {
             plugins.Add(FromLocation(ctx, lua, top));
         } else {
@@ -100,21 +100,21 @@ public sealed class LonnStylePlugin {
         var plugin = new LonnStylePlugin();
         plugin.LuaCtx = ctx;
 
-        plugin.Name = lua.PeekTableStringValue(top, "name") ?? throw new Exception("Name isn't a string!");
+        plugin.Name = lua.PeekTableStringValue(top, "name"u8) ?? throw new Exception("Name isn't a string!");
 
-        plugin.GetAssociatedMods = NullConstOrGetter_Style(plugin, "associatedMods",
+        plugin.GetAssociatedMods = NullConstOrGetter_Style(plugin, "associatedMods"u8,
             def: (List<string>)null!,
             funcGetter: (lua, top) => lua.ToList<string>(top));
         
-        plugin.GetCanForeground = NullConstOrGetter_Style(plugin, "canForeground",
+        plugin.GetCanForeground = NullConstOrGetter_Style(plugin, "canForeground"u8,
             def: true,
             funcGetter: (lua, top) => lua.ToBoolean(top));
         
-        plugin.GetCanBackground = NullConstOrGetter_Style(plugin, "canBackground",
+        plugin.GetCanBackground = NullConstOrGetter_Style(plugin, "canBackground"u8,
             def: true,
             funcGetter: (lua, top) => lua.ToBoolean(top));
         
-        switch (lua.GetTable(top, "defaultData")) {
+        switch (lua.GetTable(top, "defaultData"u8)) {
             case LuaType.Table:
                 var data = lua.TableToDictionary(lua.GetTop());
                 plugin.DefaultData = (style) => data;
@@ -125,7 +125,7 @@ public sealed class LonnStylePlugin {
             case LuaType.Function:
                 plugin.DefaultData = (style) => {
                     return plugin.PushToStack((plugin) => {
-                        var type = lua.GetTable(plugin.StackLoc, "defaultData");
+                        var type = lua.GetTable(plugin.StackLoc, "defaultData"u8);
 
                         if (type != LuaType.Function) {
                             lua.Pop(1);
@@ -150,7 +150,7 @@ public sealed class LonnStylePlugin {
         
         var defaultPlacement = plugin.Placements[0];
 
-        switch (lua.GetTable(top, "fieldInformation")) {
+        switch (lua.GetTable(top, "fieldInformation"u8)) {
             case LuaType.Table:
                 var fieldInfoLoc = lua.GetTop();
                 var dict = lua.TableToDictionary(fieldInfoLoc, makeLuaFuncRefs: true);
@@ -160,7 +160,7 @@ public sealed class LonnStylePlugin {
             case LuaType.Function:
                 plugin.FieldList = (style) => {
                     return plugin.PushToStack((plugin) => {
-                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation");
+                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation"u8);
 
                         if (type != LuaType.Function) {
                             lua.Pop(1);
@@ -188,7 +188,7 @@ public sealed class LonnStylePlugin {
         }
         lua.Pop(1);
         
-        switch (lua.GetTable(top, "fieldOrder")) {
+        switch (lua.GetTable(top, "fieldOrder"u8)) {
             case LuaType.Table: {
                 var order = lua.ToList(lua.GetTop())?.OfType<string>().ToList();
                 if (order is { }) {
@@ -205,7 +205,7 @@ public sealed class LonnStylePlugin {
 
                     return fields.Ordered<Style>((style) => {
                         return plugin.PushToStack((plugin) => {
-                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder");
+                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder"u8);
 
                             if (type != LuaType.Function) {
                                 lua.Pop(1);
@@ -224,7 +224,7 @@ public sealed class LonnStylePlugin {
         }
         lua.Pop(1);
         
-        switch (lua.GetTable(top, "ignoredFields")) {
+        switch (lua.GetTable(top, "ignoredFields"u8)) {
             case LuaType.Table: {
                 if (lua.ToList(lua.GetTop())?.OfType<string>().ToList() is { } ignored) {
                     var origFieldListGetter = plugin.FieldList;
@@ -240,7 +240,7 @@ public sealed class LonnStylePlugin {
 
                     return fields.SetHiddenFields(ctx => {
                         return plugin.PushToStack(plugin => {
-                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields");
+                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields"u8);
 
                             if (type != LuaType.Function) {
                                 lua.Pop(1);
@@ -270,7 +270,7 @@ public sealed class LonnStylePlugin {
     }
     
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<Style, T?>? NullConstOrGetter_Style<T>(LonnStylePlugin pl, string fieldName,
+    private static Func<Style, T?>? NullConstOrGetter_Style<T>(LonnStylePlugin pl, ReadOnlySpan<byte> fieldName,
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -284,11 +284,12 @@ public sealed class LonnStylePlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r) => con;
             case LonnEntityPlugin.LonnRetrievalStrategy.Function:
+                var fieldNameBytes = fieldName.ToArray();
                 return (r) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, funcGetter, results: funcResults)!;
                     });
                 };

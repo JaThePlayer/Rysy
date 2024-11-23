@@ -580,7 +580,7 @@ public class LuaCtx {
             var lua = Lua.FromIntPtr(s);
 
             List<Rectangle> rectangles;
-            if (lua.GetTable(1, "_rysy_rect") != LuaType.Nil) {
+            if (lua.GetTable(1, "_rysy_rect"u8) != LuaType.Nil) {
                 rectangles = lua.UnboxWrapper<ListWrapper<Rectangle>>(lua.GetTop()).Inner;
                 lua.Pop(1);
             } else {
@@ -591,7 +591,7 @@ public class LuaCtx {
                     rectangles.Add(lua.ToRectangle(loc));
                 }, tableStackLoc: 1);
                 
-                lua.PushString("_rysy_rect");
+                lua.PushString("_rysy_rect"u8);
                 lua.PushWrapper(new ListWrapper<Rectangle>(rectangles));
                 lua.SetTable(1);
             }
@@ -670,37 +670,37 @@ public class LuaCtx {
             lua.CreateTable(0, 8);
             var output = lua.GetTop();
             
-            lua.PushUtf8RvaString("_type"u8);
-            lua.PushUtf8RvaString("drawableSprite"u8);
+            lua.PushString("_type"u8);
+            lua.PushString("drawableSprite"u8);
             lua.SetTable(output);
             
-            lua.PushUtf8RvaString("x"u8);
+            lua.PushString("x"u8);
             lua.PushNumber(entity.X);
             lua.SetTable(output);
-            lua.PushUtf8RvaString("y"u8);
+            lua.PushString("y"u8);
             lua.PushNumber(entity.Y);
             lua.SetTable(output);
             
-            lua.PushUtf8RvaString("justificationX"u8);
+            lua.PushString("justificationX"u8);
             lua.PushNumber(0.5);
             lua.SetTable(output);
-            lua.PushUtf8RvaString("justificationY"u8);
+            lua.PushString("justificationY"u8);
             lua.PushNumber(0.5);
             lua.SetTable(output);
             
-            lua.PushUtf8RvaString("scaleX"u8);
+            lua.PushString("scaleX"u8);
             lua.PushNumber(1);
             lua.SetTable(output);
-            lua.PushUtf8RvaString("scaleY"u8);
+            lua.PushString("scaleY"u8);
             lua.PushNumber(1);
             lua.SetTable(output);
             
-            lua.PushUtf8RvaString("rotation"u8);
+            lua.PushString("rotation"u8);
             lua.PushNumber(0);
             lua.SetTable(output);
 
             if (entity.EntityData.TryGetValue("depth", out var d) && d is IConvertible) {
-                lua.PushUtf8RvaString("depth"u8);
+                lua.PushString("depth"u8);
                 lua.PushNumber(Convert.ToDouble(d, CultureInfo.InvariantCulture));
                 lua.SetTable(output);
             }
