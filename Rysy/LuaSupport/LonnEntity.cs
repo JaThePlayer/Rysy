@@ -71,7 +71,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             var lua = pl.LuaCtx.Lua;
 
             if (pl.HasGetNodeSprite) {
-                lua.GetTable(pl.StackLoc, "nodeSprite");
+                lua.GetTable(pl.StackLoc, "nodeSprite"u8);
 
                 return lua.PCallFunction(roomWrapper, this, node, i, SpritesFromLonn) ?? [];
             }
@@ -185,7 +185,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         }
 
         _cachedSelections = Plugin.PushToStack((pl) => {
-            var type = lua.GetTable(pl.StackLoc, "selection");
+            var type = lua.GetTable(pl.StackLoc, "selection"u8);
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
@@ -409,7 +409,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (lua.Type(top) != LuaType.Table)
             return list;
 
-        switch (lua.PeekTableType(top, "_type")) {
+        switch (lua.PeekTableType(top, "_type"u8)) {
             case LuaType.String:
                 var prevTop = lua.GetTop();
                 // name is provided, so there's 1 sprite
@@ -437,7 +437,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (Plugin.HasGetSprite) {
             var lua = Plugin.LuaCtx.Lua;
 
-            var type = lua.GetTable(Plugin.StackLoc, "sprite");
+            var type = lua.GetTable(Plugin.StackLoc, "sprite"u8);
 
             if (type != LuaType.Function) {
                 lua.Pop(1);

@@ -19,7 +19,7 @@ public class LuaFunctionRef {
     }
 
     public static LuaFunctionRef MakeFrom(Lua lua, int loc) {
-        lua.GetGlobalASCII("__rysy_make_luaFuncRef"u8);
+        lua.GetGlobal("__rysy_make_luaFuncRef"u8);
         lua.PushCopy(loc);
         lua.Call(1, 1);
         var id = lua.ToInteger(lua.GetTop());
@@ -30,7 +30,7 @@ public class LuaFunctionRef {
 
     public void PushToStack(Lua? lua = null) {
         lua ??= Lua;
-        lua.GetGlobalASCII("__rysy_get_luaFuncRef"u8);
+        lua.GetGlobal("__rysy_get_luaFuncRef"u8);
         lua.PushInteger(_id);
         lua.Call(1, 1);
     }
@@ -40,7 +40,7 @@ public class LuaFunctionRef {
         var lua = Lua;
         var id = _id;
         LuaExt.RegisterLuaCleanupAction(() => {
-            lua.GetGlobalASCII("__rysy_gc_luaFuncRef"u8);
+            lua.GetGlobal("__rysy_gc_luaFuncRef"u8);
             lua.PushInteger(id);
             lua.Call(1, 0);
         });

@@ -176,7 +176,7 @@ public sealed class LonnEntityPlugin {
             return new();
         }
 
-        var entityName = lua.PeekTableStringValue(top, "name");
+        var entityName = lua.PeekTableStringValue(top, "name"u8);
         if (entityName is { }) {
             plugins.Add(FromLocation(ctx, lua, top));
         } else {
@@ -192,241 +192,241 @@ public sealed class LonnEntityPlugin {
         var plugin = new LonnEntityPlugin();
         plugin.LuaCtx = ctx;
 
-        plugin.Name = lua.PeekTableStringValue(top, "name") ?? throw new Exception("Name isn't a string!");
+        plugin.Name = lua.PeekTableStringValue(top, "name"u8) ?? throw new Exception("Name isn't a string!");
 
-        plugin.GetDepth = NullConstOrGetter(plugin, "depth",
+        plugin.GetDepth = NullConstOrGetter(plugin, "depth"u8,
             def: 0,
             funcGetter: static (lua, top) => (int) lua.ToInteger(top)
         );
         
-        plugin.NodeDepth = NullConstOrGetter_Noded(plugin, "nodeDepth",
+        plugin.NodeDepth = NullConstOrGetter_Noded(plugin, "nodeDepth"u8,
             def: null,
             funcGetter: static (lua, top) => (int) lua.ToInteger(top)
         );
 
-        plugin.GetRotation = NullConstOrGetter(plugin, "rotation",
+        plugin.GetRotation = NullConstOrGetter(plugin, "rotation"u8,
             def: 0f,
             funcGetter: static (lua, top) => (float) lua.ToNumber(top)
         );
         
-        plugin.NodeRotation = NullConstOrGetter_Noded(plugin, "nodeRotation",
+        plugin.NodeRotation = NullConstOrGetter_Noded(plugin, "nodeRotation"u8,
             def: 0f,
             funcGetter: static (lua, top) => (float) lua.ToNumber(top)
         );
 
-        plugin.GetTexture = NullConstOrGetter(plugin, "texture",
+        plugin.GetTexture = NullConstOrGetter(plugin, "texture"u8,
             def: (string?) null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
         
-        plugin.TriggerText = NullConstOrGetter(plugin, "triggerText",
+        plugin.TriggerText = NullConstOrGetter(plugin, "triggerText"u8,
             def: (string?) null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
         
-        plugin.TriggerCategory = NullConstOrGetter(plugin, "category",
+        plugin.TriggerCategory = NullConstOrGetter(plugin, "category"u8,
             def: (string?) null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
         
         
-        plugin.GetNodeTexture = NullConstOrGetter_Noded(plugin, "nodeTexture",
+        plugin.GetNodeTexture = NullConstOrGetter_Noded(plugin, "nodeTexture"u8,
             def: plugin.GetTexture is {} ? (r, e, n, i) => plugin.GetTexture(r, e) : null,
             funcGetter: static (lua, top) => lua.FastToString(top)
         );
 
-        plugin.GetJustification = NullConstOrGetter(plugin, "justification",
+        plugin.GetJustification = NullConstOrGetter(plugin, "justification"u8,
             def: new Vector2(0.5f),
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
         
-        plugin.NodeJustification = NullConstOrGetter_Noded(plugin, "nodeJustification",
+        plugin.NodeJustification = NullConstOrGetter_Noded(plugin, "nodeJustification"u8,
             def: new Vector2(0.5f),
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
 
-        plugin.GetNodeLimits = NullConstOrGetter(plugin, "nodeLimits",
+        plugin.GetNodeLimits = NullConstOrGetter(plugin, "nodeLimits"u8,
             def: 0..0,
             funcGetter: static (lua, top) => lua.ToRangeNegativeIsFromEnd(top),
             funcResults: 2
         );
 
-        plugin.GetMinimumSize = NullConstOrGetter(plugin, "minimumSize",
+        plugin.GetMinimumSize = NullConstOrGetter(plugin, "minimumSize"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
         
-        plugin.GetWarnBelowSize = NullConstOrGetter(plugin, "warnBelowSize",
+        plugin.GetWarnBelowSize = NullConstOrGetter(plugin, "warnBelowSize"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
 
-        plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize",
+        plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
         
-        plugin.GetWarnAboveSize = NullConstOrGetter(plugin, "warnAboveSize",
+        plugin.GetWarnAboveSize = NullConstOrGetter(plugin, "warnAboveSize"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
             funcResults: 2
         );
 
-        plugin.GetScale = NullConstOrGetter(plugin, "scale",
+        plugin.GetScale = NullConstOrGetter(plugin, "scale"u8,
             def: Vector2.One,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
         
-        plugin.NodeScale = NullConstOrGetter_Noded(plugin, "nodeScale",
+        plugin.NodeScale = NullConstOrGetter_Noded(plugin, "nodeScale"u8,
             def: Vector2.One,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
         
-        plugin.GetOffset = NullConstOrGetter(plugin, "offset",
+        plugin.GetOffset = NullConstOrGetter(plugin, "offset"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
         
-        plugin.NodeOffset = NullConstOrGetter_Noded(plugin, "nodeOffset",
+        plugin.NodeOffset = NullConstOrGetter_Noded(plugin, "nodeOffset"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToVector2(top),
             funcResults: 2
         );
 
-        plugin.GetColor = NullConstOrGetter(plugin, "color",
+        plugin.GetColor = NullConstOrGetter(plugin, "color"u8,
             def: Color.White,
             funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         );
 
-        plugin.GetFillColor = NullConstOrGetter(plugin, "fillColor",
+        plugin.GetFillColor = NullConstOrGetter(plugin, "fillColor"u8,
             def: plugin.GetColor,
             funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         )!;
 
-        plugin.GetBorderColor = NullConstOrGetter(plugin, "borderColor",
+        plugin.GetBorderColor = NullConstOrGetter(plugin, "borderColor"u8,
             def: plugin.GetColor,
             funcGetter: static (lua, top) => lua.ToColor(top, Color.White)
         )!;
         
-        plugin.NodeColor = NullConstOrGetter_Noded(plugin, "nodeColor",
+        plugin.NodeColor = NullConstOrGetter_Noded(plugin, "nodeColor"u8,
             def: (r,e,n,i) => plugin.GetColor(r, e),
             funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
         
-        plugin.NodeBorderColor = NullConstOrGetter_Noded(plugin, "nodeBorderColor",
+        plugin.NodeBorderColor = NullConstOrGetter_Noded(plugin, "nodeBorderColor"u8,
             def: (r,e,n,i) => plugin.GetBorderColor(r, e),
             funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
         
-        plugin.NodeFillColor = NullConstOrGetter_Noded(plugin, "nodeFillColor",
+        plugin.NodeFillColor = NullConstOrGetter_Noded(plugin, "nodeFillColor"u8,
             def: (r,e,n,i) => plugin.GetFillColor(r, e),
             funcGetter: static (lua, top)  => lua.ToColor(top, Color.White));
 
-        plugin.BothNodeColors = (lua.PeekTableHasKey(top, "nodeFillColor") || lua.PeekTableHasKey(top, "fillColor"))
-                             && (lua.PeekTableHasKey(top, "nodeBorderColor") || lua.PeekTableHasKey(top, "borderColor"));
+        plugin.BothNodeColors = (lua.PeekTableHasKey(top, "nodeFillColor"u8) || lua.PeekTableHasKey(top, "fillColor"u8))
+                             && (lua.PeekTableHasKey(top, "nodeBorderColor"u8) || lua.PeekTableHasKey(top, "borderColor"u8));
 
-        plugin.GetNodeVisibility = NullConstOrGetter_Entity(plugin, "nodeVisibility",
+        plugin.GetNodeVisibility = NullConstOrGetter_Entity(plugin, "nodeVisibility"u8,
             def: "selected",
             funcGetter: static (lua, top) => lua.FastToString(top)
         )!;
 
-        plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle",
+        plugin.GetRectangle = NullConstOrGetter(plugin, "rectangle"u8,
             def: null,
             funcGetter: static (lua, top) => lua.ToRectangle(top)
         );
 
-        plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods",
+        plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods"u8,
             def: (List<string>)null!,
             funcGetter: static (lua, top) => lua.ToList<string>(top));
 
-        plugin.NodeLineRenderType = NullConstOrGetter_Entity(plugin, "nodeLineRenderType",
+        plugin.NodeLineRenderType = NullConstOrGetter_Entity(plugin, "nodeLineRenderType"u8,
             def: "line",
             funcGetter: static (lua, top) => lua.FastToString(top))!;
 
-        switch (lua.PeekTableType(top, "nodeLineRenderOffset")) {
+        switch (lua.PeekTableType(top, "nodeLineRenderOffset"u8)) {
             case LuaType.Table:
-                var offset = lua.PeekTableVector2Value(top, "nodeLineRenderOffset");
+                var offset = lua.PeekTableVector2Value(top, "nodeLineRenderOffset"u8);
                 plugin.NodeLineRenderOffset = (_, _, _) => offset;
                 break;
             case LuaType.Function:
                 plugin.NodeLineRenderOffset = (entity, node, nodeId) => {
                     return plugin.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
-                        lua.GetTable(pl.StackLoc, "nodeLineRenderOffset");
+                        lua.GetTable(pl.StackLoc, "nodeLineRenderOffset"u8);
                         return lua.PCallFunction(static (lua, pos) => lua.ToVector2(pos), results: 1, entity, node, nodeId);
                     });
                 };
                 break;
         }
 
-        if (lua.PeekTableType(top, "flip") is LuaType.Function) {
+        if (lua.PeekTableType(top, "flip"u8) is LuaType.Function) {
             plugin.Flip = (room, entity, horizontal, vertical) => {
                 return plugin.PushToStack((pl) => {
                     var lua = pl.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "flip");
+                    lua.GetTable(pl.StackLoc, "flip"u8);
                     return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, horizontal, vertical);
                 });
             };
         }
 
-        if (lua.PeekTableType(top, "rotate") is LuaType.Function) {
+        if (lua.PeekTableType(top, "rotate"u8) is LuaType.Function) {
             plugin.Rotate = (room, entity, dir) => {
                 return plugin.PushToStack((pl) => {
                     var lua = pl.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "rotate");
+                    lua.GetTable(pl.StackLoc, "rotate"u8);
                     return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, dir);
                 });
             };
         }
 
-        if (lua.PeekTableType(top, "move") is LuaType.Function) {
+        if (lua.PeekTableType(top, "move"u8) is LuaType.Function) {
             plugin.Move = (room, entity, nodeIndex, offsetX, offsetY) => {
                 plugin.PushToStack((pl) => {
                     var lua = pl.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "move");
+                    lua.GetTable(pl.StackLoc, "move"u8);
                     
                     return lua.PCallFunction((_, _) => false, results: 1, room, entity, nodeIndex, offsetX, offsetY);
                 });
             };
         }
 
-        if (lua.PeekTableType(top, "nodeRectangle") is LuaType.Function) {
+        if (lua.PeekTableType(top, "nodeRectangle"u8) is LuaType.Function) {
             plugin.NodeRectangle = (room, entity, node, nodeIndex) => 
                 plugin.PushToStack((pl) => {
                     var lua = pl.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "nodeRectangle");
+                    lua.GetTable(pl.StackLoc, "nodeRectangle"u8);
                     
                     return lua.PCallFunction(static (lua, top) => lua.ToRectangle(top), results: 1, room, entity, node, nodeIndex);
                 });
         }
 
-        plugin.HasGetSprite = lua.PeekTableType(top, "sprite") is LuaType.Function;
-        plugin.HasGetNodeSprite = lua.PeekTableType(top, "nodeSprite") is LuaType.Function;
-        plugin.HasSelectionFunction = lua.PeekTableType(top, "selection") is LuaType.Function;
+        plugin.HasGetSprite = lua.PeekTableType(top, "sprite"u8) is LuaType.Function;
+        plugin.HasGetNodeSprite = lua.PeekTableType(top, "nodeSprite"u8) is LuaType.Function;
+        plugin.HasSelectionFunction = lua.PeekTableType(top, "selection"u8) is LuaType.Function;
 
         LonnPlacement? defaultPlacement = null;
 
-        if (lua.GetTable(top, "placements") == LuaType.Table) {
+        if (lua.GetTable(top, "placements"u8) == LuaType.Table) {
             var placement1loc = lua.GetTop();
 
-            switch (lua.PeekTableType(placement1loc, "name")) {
+            switch (lua.PeekTableType(placement1loc, "name"u8)) {
                 case LuaType.String:
                     // name is provided, so there's 1 placement
                     defaultPlacement = new(lua);
                     plugin.Placements.Add(defaultPlacement);
                     break;
                 default:
-                    if (lua.GetTable(placement1loc, "default") == LuaType.Table) {
+                    if (lua.GetTable(placement1loc, "default"u8) == LuaType.Table) {
                         //plugin.Placements.Add(new(lua));
                         defaultPlacement = new(lua);
                     }
@@ -440,7 +440,7 @@ public sealed class LonnEntityPlugin {
         }
         lua.Pop(1);
 
-        switch (lua.GetTable(top, "fieldInformation")) {
+        switch (lua.GetTable(top, "fieldInformation"u8)) {
             case LuaType.Table:
                 var fieldInfoLoc = lua.GetTop();
                 var dict = lua.TableToDictionary(fieldInfoLoc, makeLuaFuncRefs: true);
@@ -451,7 +451,7 @@ public sealed class LonnEntityPlugin {
             case LuaType.Function:
                 plugin.FieldList = (e) => {
                     return plugin.PushToStack((plugin) => {
-                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation");
+                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation"u8);
 
                         if (type != LuaType.Function) {
                             lua.Pop(1);
@@ -479,7 +479,7 @@ public sealed class LonnEntityPlugin {
         }
         lua.Pop(1);
 
-        switch (lua.GetTable(top, "fieldOrder")) {
+        switch (lua.GetTable(top, "fieldOrder"u8)) {
             case LuaType.Table: {
                 var order = lua.ToList(lua.GetTop())?.OfType<string>().ToList();
                 if (order is { }) {
@@ -497,7 +497,7 @@ public sealed class LonnEntityPlugin {
 
                     return fields.Ordered((entity) => {
                         return plugin.PushToStack((plugin) => {
-                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder");
+                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder"u8);
 
                             if (type != LuaType.Function) {
                                 lua.Pop(1);
@@ -516,7 +516,7 @@ public sealed class LonnEntityPlugin {
         }
         lua.Pop(1);
         
-        switch (lua.GetTable(top, "ignoredFields")) {
+        switch (lua.GetTable(top, "ignoredFields"u8)) {
             case LuaType.Table: {
                 if (lua.ToList(lua.GetTop())?.OfType<string>().ToList() is { } ignored) {
                     var origFieldListGetter = plugin.FieldList;
@@ -532,7 +532,7 @@ public sealed class LonnEntityPlugin {
 
                     return fields.SetHiddenFields(ctx => {
                         return plugin.PushToStack(plugin => {
-                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields");
+                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields"u8);
 
                             if (type != LuaType.Function) {
                                 lua.Pop(1);
@@ -598,13 +598,13 @@ public sealed class LonnEntityPlugin {
         Function
     }
 
-    private static LonnRetrievalStrategy NullConstOrGetterImpl(LonnEntityPlugin pl, string fieldName)
+    private static LonnRetrievalStrategy NullConstOrGetterImpl(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName)
         => NullConstOrGetterImpl(pl.LuaCtx.Lua, fieldName);
     
-    internal static LonnRetrievalStrategy NullConstOrGetterImpl(Lua lua, string fieldName) {
+    internal static LonnRetrievalStrategy NullConstOrGetterImpl(Lua lua, ReadOnlySpan<byte> fieldName) {
         var top = lua.GetTop();
 
-        switch (lua.GetField(top, fieldName)) {
+        switch (lua.GetFieldRva(top, fieldName)) {
             case LuaType.None:
             case LuaType.Nil:
                 lua.Pop(1);
@@ -629,7 +629,7 @@ public sealed class LonnEntityPlugin {
     }
 
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<ILuaWrapper, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, string fieldName,
+    private static Func<ILuaWrapper, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -643,11 +643,12 @@ public sealed class LonnEntityPlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r, e) => con;
             case LonnRetrievalStrategy.Function:
+                byte[] fieldNameBytes = fieldName.ToArray();
                 return (r, e) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                     });
                 };
@@ -657,7 +658,7 @@ public sealed class LonnEntityPlugin {
     }
     
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, string fieldName,
+    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
         Func<ILuaWrapper, Entity, Node, int, T?>? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -671,11 +672,12 @@ public sealed class LonnEntityPlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r, e, n, i) => con;
             case LonnRetrievalStrategy.Function:
+                var fieldNameBytes = fieldName.ToArray();
                 return (r, e, n, i) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
                     });
                 };
@@ -685,7 +687,7 @@ public sealed class LonnEntityPlugin {
     }
     
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, string fieldName,
+    private static Func<ILuaWrapper, Entity, Node, int, T?>? NullConstOrGetter_Noded<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -699,11 +701,12 @@ public sealed class LonnEntityPlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r, e, n, i) => con;
             case LonnRetrievalStrategy.Function:
+                var fieldNameBytes = fieldName.ToArray();
                 return (r, e, n, i) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
                     });
                 };
@@ -713,7 +716,7 @@ public sealed class LonnEntityPlugin {
     }
 
     [return: NotNullIfNotNull(nameof(def))]
-    private static Func<Entity, T?>? NullConstOrGetter_Entity<T>(LonnEntityPlugin pl, string fieldName,
+    private static Func<Entity, T?>? NullConstOrGetter_Entity<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -727,11 +730,12 @@ public sealed class LonnEntityPlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r) => con;
             case LonnRetrievalStrategy.Function:
+                var fieldNameBytes = fieldName.ToArray();
                 return (r) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, funcGetter, results: funcResults)!;
                     });
                 };
@@ -740,7 +744,7 @@ public sealed class LonnEntityPlugin {
         }
     }
 
-    private static Func<ILuaWrapper, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, string fieldName,
+    private static Func<ILuaWrapper, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
         Func<ILuaWrapper, Entity, T?>? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
@@ -754,11 +758,12 @@ public sealed class LonnEntityPlugin {
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
                 return (r, e) => con;
             case LonnRetrievalStrategy.Function:
+                var fieldNameBytes = fieldName.ToArray();
                 return (r, e) => {
                     return pl.PushToStack((pl) => {
                         var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldName);
+                        lua.GetTable(pl.StackLoc, fieldNameBytes);
                         return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                     });
                 };
@@ -780,15 +785,15 @@ public class LonnPlacement {
     public LonnPlacement(Lua lua, int? loc = null) {
         var start = loc ?? lua.GetTop();
 
-        Name = lua.PeekTableStringValue(start, "name") ?? "default";
+        Name = lua.PeekTableStringValue(start, "name"u8) ?? "default";
 
 
-        if (lua.GetTable(start, "data") is LuaType.Table)
+        if (lua.GetTable(start, "data"u8) is LuaType.Table)
             Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist);
         // pop the "data" table
         lua.Pop(1);
         
-        if (lua.GetTable(start, "associatedMods") is LuaType.Table) {
+        if (lua.GetTable(start, "associatedMods"u8) is LuaType.Table) {
             AssociatedMods = lua.ToList<string>(lua.GetTop());
         }
         // pop the "associatedMods" table
