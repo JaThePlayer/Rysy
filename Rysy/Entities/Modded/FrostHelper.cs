@@ -25,6 +25,12 @@ internal sealed class CustomSpinner : LonnEntity {
     [Bind("tint")]
     public Color Color;
 
+    [Bind("scale")]
+    public float Scale;
+    
+    [Bind("imageScale")]
+    public float ImageScale;
+
     public Color BorderColor => RGBA("borderColor", Color.Black);
 
     private SpinnerPathCache _cache;
@@ -35,33 +41,56 @@ internal sealed class CustomSpinner : LonnEntity {
         base.OnChanged(changed);
 
         if (!changed.OnlyPositionChanged)
-            _cache = GetBaseSprites(Depth, Color, BorderColor);
+            _cache = GetBaseSprites(Depth, Color, BorderColor, ImageScale);
     }
 
-    sealed record SpinnerPathCache(ColoredSpriteTemplate Fg, ColoredSpriteTemplate FgBack, ColoredSpriteTemplate FgOutline, 
-        ColoredSpriteTemplate Bg, ColoredSpriteTemplate BgBack, ColoredSpriteTemplate BgOutline);
+    sealed record SpinnerPathCache(
+        (ColoredSpriteTemplate Main, ColoredSpriteTemplate Back, ColoredSpriteTemplate Outline)[] Fgs, 
+        (ColoredSpriteTemplate Main, ColoredSpriteTemplate Back, ColoredSpriteTemplate Outline)[] Bgs,
+        float ConnectionDistance,
+        float Width);
 
-    private static Dictionary<(string directory, string spritePathSuffix, Color color, Color borderColor), SpinnerPathCache> SpriteCache = new();
-    private SpinnerPathCache GetBaseSprites(int depth, Color color, Color borderColor) {
+    private static readonly Dictionary<(string directory, string spritePathSuffix, Color color, Color borderColor, float imageScale), SpinnerPathCache> SpriteCache = new();
+    
+    private SpinnerPathCache GetBaseSprites(int depth, Color color, Color borderColor, float imageScale) {
         var directory = Attr("directory", "danger/FrostHelper/icecrystal");
         var suffix = Attr("spritePathSuffix", "");
 
-        if (SpriteCache.TryGetValue((directory, suffix, color, borderColor), out var cached)) {
+        if (SpriteCache.TryGetValue((directory, suffix, color, borderColor, imageScale), out var cached)) {
             return cached;
         }
 
-        var fg = SpriteTemplate.FromTexture($"{directory}/fg{suffix}", depth).Centered();
-        var bg = SpriteTemplate.FromTexture($"{directory}/bg{suffix}", depth).Centered() with { Depth = depth + 1, };
+        var suffixIdx = directory.IndexOf('>', StringComparison.Ordinal);
+        if (suffixIdx >= 0) {
+            suffix = directory[(suffixIdx + 1)..];
+            directory = directory[..suffixIdx];
+        }
+
+        var fgs = 
+            GFX.Atlas.GetSubtexturesOrPlaceholder($"{directory}/fg{suffix}")
+                .Select(t => SpriteTemplate.FromTexture(t, depth).Centered() with { Scale = new(imageScale) })
+                .ToList();
+        var bgs = 
+            GFX.Atlas.GetSubtexturesOrPlaceholder($"{directory}/bg{suffix}")
+                .Select(t => SpriteTemplate.FromTexture(t, depth).Centered() with { Depth = depth + 1, Scale = new(imageScale) })
+                .ToList();
+
         var cache = new SpinnerPathCache(
-            fg.CreateColoredTemplate(color),
-            fg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
-            fg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor),
-            bg.CreateColoredTemplate(color),
-            bg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
-            bg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor)
+            fgs.Select(fg => (
+                fg.CreateColoredTemplate(color),
+                fg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
+                fg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor)
+            )).ToArray(),
+            bgs.Select(bg => (
+                bg.CreateColoredTemplate(color),
+                bg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
+                bg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor)
+            )).ToArray(),
+            ConnectionDistance: fgs[0].Texture.Width * fgs[0].Texture.Height,
+            Width: fgs[0].Texture.Width
         );
         
-        SpriteCache[(directory, suffix, color, borderColor)] = cache;
+        SpriteCache[(directory, suffix, color, borderColor, imageScale)] = cache;
 
         return cache;
     }
@@ -79,42 +108,50 @@ internal sealed class CustomSpinner : LonnEntity {
         var cache = _cache;
         var sprites = new List<ISprite>(capacity: _lastSpriteCount);
 
+        var fg = pos.SeededRandomFrom(cache.Fgs);
+        var bg = pos.SeededRandomFrom(cache.Bgs);
+
         if (rainbow) {
-            sprites.Add(cache.Fg.CreateRainbow(pos));
+            sprites.Add(fg.Main.CreateRainbow(pos));
         } else {
-            sprites.Add(cache.Fg.Create(pos));
+            sprites.Add(fg.Main.Create(pos));
         }
 
         // the border has to be a separate sprite to render it at a different depth
         if (useOutlineTexture) {
             // use an outline texture to optimise rendering
-            sprites.Add(cache.FgOutline.Create(pos));
+            sprites.Add(fg.Outline.Create(pos));
         }
         else if (drawOutline) {
-            sprites.Add(cache.FgBack.Create(pos));
+            sprites.Add(fg.Back.Create(pos));
         }
 
+        var s = cache.Width;
+
         foreach (CustomSpinner spinner in Room.Entities[typeof(CustomSpinner)]) {
-            if (spinner == this)
-                break;
+            if (spinner.Id <= Id)
+                continue;
 
             var otherPos = spinner.Pos;
+            var oc = spinner._cache;
 
-            if (Spinner.DistanceSquaredLessThan(pos, otherPos, 24f * 24f) && spinner.AttachToSolid == attachToSolid && spinner.AttachGroup == attachGroup) {
+            if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.Width*float.Pow(ImageScale + spinner.ImageScale, 2f) / 4f)
+                && spinner.AttachToSolid == attachToSolid 
+                && spinner.AttachGroup == attachGroup) {
                 var connectorPos = (pos + otherPos) / 2f;
 
                 if (rainbow) {
-                    sprites.Add(cache.Bg.CreateRainbow(connectorPos));
+                    sprites.Add(bg.Main.CreateRainbow(connectorPos));
                 } else {
-                    sprites.Add(cache.Bg.Create(connectorPos));
+                    sprites.Add(bg.Main.Create(connectorPos));
                 }
                 
                 if (useOutlineTexture) {
                     // use an outline texture to optimise rendering
-                    sprites.Add(cache.BgOutline.Create(connectorPos));
+                    sprites.Add(bg.Outline.Create(connectorPos));
                 }
                 else if (drawOutline) {
-                    sprites.Add(cache.BgBack.Create(connectorPos));
+                    sprites.Add(bg.Back.Create(connectorPos));
                 }
             }
         }
@@ -125,6 +162,7 @@ internal sealed class CustomSpinner : LonnEntity {
     
     public override bool CanTrim(string key, object val) => key switch {
         "destroyColor" => val.ToString() == "639bff", // the C# side has a different default than lonn for this 1 thing...
+        "attachGroup" => false,
         _ => IsDefault(key, val),
     };
 }

@@ -339,4 +339,11 @@ public static class IAtlasExt {
         return texture;
     }
 
+    /// <summary>
+    /// Same as <see cref="IAtlas.GetSubtextures"/>, but returns a 1-element array of the placeholder texture if no textures were found.
+    /// </summary>
+    public static IReadOnlyList<VirtTexture> GetSubtexturesOrPlaceholder(this IAtlas atlas, string key) {
+        var ret = atlas.GetSubtextures(key);
+        return ret.Count == 0 ? [ GFX.UnknownTexture ] : ret;
+    }
 }
