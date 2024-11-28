@@ -70,6 +70,8 @@ public static class RysyState {
     public static float ForceActiveTimer { get; set; } = 0.0f;
 
     public static bool ImGuiAvailable { get; internal set; }
+
+    public static CommandlineArguments CmdArguments { get; internal set; } = new([]);
     
     private static bool _hideUi;
     private static bool _lastActive;

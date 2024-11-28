@@ -80,6 +80,11 @@ public sealed class EditorScene : Scene {
     }
 
     public Task LoadFromPersistence() {
+        if (RysyState.CmdArguments.LoadIntoMap is { } path) {
+            RysyState.CmdArguments.LoadIntoMap = null;
+            return LoadMapFromBinCore(path);
+        }
+        
         if (!string.IsNullOrWhiteSpace(Persistence.Instance?.LastEditedMap))
             return LoadMapFromBinCore(Persistence.Instance.LastEditedMap, fromPersistence: true);
         
