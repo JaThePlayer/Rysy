@@ -302,7 +302,7 @@ public sealed class SettingsWindow : Window {
         var celesteDir = windowData.ProfileCelesteDir;
         ImGuiManager.WithBottomBar(
             () => {
-                if (ImGui.BeginCombo("Current Profile", Settings.Instance.Profile)) {
+                if (ImGui.BeginCombo("Current Profile", Settings.Instance.CurrentProfile)) {
                     #region Profile Picker
                     var profileDir = $"{RysyPlatform.Current.GetSaveLocation()}/Profiles";
                     var dirs = windowData.ProfileListDirectories ??= Directory.GetDirectories(profileDir);
@@ -360,18 +360,7 @@ public sealed class SettingsWindow : Window {
     }
 
     private static void SetProfile(string name, bool isNew) {
-        Settings.Instance.Profile = name;
-        Settings.Save(Settings.Instance);
-
-        if (isNew) {
-            var profile = new Profile();
-            profile.Save();
-            Profile.Instance = profile;
-            Persistence.Instance = new();
-            Persistence.Save(Persistence.Instance);
-        }
-
-        QueueReload();
+        Settings.ChangeProfile(name, isNew);
     }
 
     private static void QueueReload() {

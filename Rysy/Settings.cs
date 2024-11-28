@@ -14,7 +14,7 @@ public static class SettingsHelper {
     public static bool ReadSettings { get; set; } = true;
 
     public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
-    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.Profile}/{settingFileName}"
+    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.CurrentProfile}/{settingFileName}"
     : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
 
     //public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
@@ -135,6 +135,28 @@ public sealed class Settings {
         }
     }
 
+    public static void ChangeProfile(string name, bool isNew) {
+        RysyState.CmdArguments.Profile = null;
+        
+        Instance.Profile = name;
+        Save(Instance);
+        
+        if (isNew) {
+            var profile = new Profile();
+            profile.Save();
+            Rysy.Profile.Instance = profile;
+            Persistence.Instance = new();
+            Persistence.Save(Persistence.Instance);
+        }
+
+        RysyEngine.QueueReload();
+    }
+
+    /// <summary>
+    /// Current profile, taking into accound command line arguments before the actual value stored in the settings file.
+    /// </summary>
+    public string CurrentProfile => RysyState.CmdArguments.Profile ?? Profile;
+    
     #region Serialized
     public string Profile { get; set; } = "Default";
 

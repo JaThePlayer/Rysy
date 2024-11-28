@@ -84,10 +84,10 @@ public static class EntityRegistry {
         .ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
 
     private static readonly Lazy<Cache<List<Placement>>> _bgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
-        x.Where(pl => Style.FromPlacement(pl).CanBeInBackground).ToList()));
+        x.Where(pl => Style.FromPlacement(pl).CanBeInBackground).ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
     
     private static readonly Lazy<Cache<List<Placement>>> _fgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
-        x.Where(pl => Style.FromPlacement(pl).CanBeInForeground).ToList()));
+        x.Where(pl => Style.FromPlacement(pl).CanBeInForeground).ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
     
     public static IEnumerable<Placement> StylegroundPlacements => _stylegroundPlacements.Value.Value;
     public static IEnumerable<Placement> BgStylegroundPlacements => _bgStylegroundPlacements.Value.Value;
