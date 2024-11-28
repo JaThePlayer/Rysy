@@ -18,38 +18,40 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
     public List<string>? DependencyModNames => null;
 
-    protected override Task? QueueLoad() {
+    private Task _QueueLoad() {
         return Task.Run(() => {
-            try {
-                Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
-                    lock (this) {
-                        _texture?.Dispose();
+                try {
+                    Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
+                        lock (this) {
+                            _texture?.Dispose();
 
-                        Texture2D? texture;
+                            Texture2D? texture;
 #if FNA
-                        if (Mod.Filesystem is FolderModFilesystem) {
-                            texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, stream));
-                        } else {
-                            using var memStr = new MemoryStream();
-                            stream.CopyTo(memStr);
-                            texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, memStr));
-                        }
+                            if (Mod.Filesystem is FolderModFilesystem) {
+                                texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, stream));
+                            } else {
+                                using var memStr = new MemoryStream();
+                                stream.CopyTo(memStr);
+                                texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, memStr));
+                            }
 #else
                         texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
 #endif
-                        ClipRect = new(0, 0, texture.Width, texture.Height);
-                        _texture = texture;
-                    }
-                });
-            } catch (Exception e) {
-                Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {e}");
-                throw;
-            }
+                            ClipRect = new(0, 0, texture.Width, texture.Height);
+                            _texture = texture;
+                        }
+                    });
+                } catch (Exception e) {
+                    Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {e}");
+                    throw;
+                }
 
-            _state = State.Loaded;
-        }
+                _state = State.Loaded;
+            }
         );
     }
+
+    protected override Task QueueLoad() => _QueueLoad();
 
     protected override bool TryPreloadClipRect() {
         lock (Mod.Filesystem) {

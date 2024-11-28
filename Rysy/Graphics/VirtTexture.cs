@@ -11,7 +11,7 @@ public class VirtTexture : IDisposable {
 
     public Vector2 DrawOffset { get; set; }
     
-    private Rectangle? _clipRect;
+    protected Rectangle? _clipRect;
 
     private OutlineVirtTexture? _outlineTexture;
     

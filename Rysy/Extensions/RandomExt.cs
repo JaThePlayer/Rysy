@@ -66,6 +66,17 @@ public static class RandomExt {
     //
     //    return values[pos.SeededRandomInclusive(0, len - 1)];
     //}
+    
+    public static float Range(this Random random, float min, float max)
+    {
+        return min + random.NextSingle() * (max - min);
+    }
+
+    public static T ChooseFrom<T>(this Random random, IList<T> values) {
+        var len = values.Count;
+
+        return values[random.Next(0, len - 1)];
+    }
 
     #region Splitmix64
     /*  Written in 2015 by Sebastiano Vigna (vigna@acm.org)

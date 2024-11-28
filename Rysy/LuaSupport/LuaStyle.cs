@@ -2,7 +2,7 @@
 
 namespace Rysy.LuaSupport;
 
-internal sealed class LuaStyle : Style {
+internal class LuaStyle : Style {
     internal LonnStylePlugin Plugin { get; set; }
     
     public override List<string>? AssociatedMods

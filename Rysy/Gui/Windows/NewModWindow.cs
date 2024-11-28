@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy.Gui.Windows;
 
-internal partial class NewModWindow : Window {
+internal sealed partial class NewModWindow : Window {
     [GeneratedRegex("^[a-zA-Z0-9_]+$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex NameRegex();
     
@@ -190,7 +190,7 @@ internal partial class NewModWindow : Window {
         new("everest.yaml", Contents: GetEverestYamlContents()),
     ]);
 
-    record FileInfo(string Name, List<FileInfo>? ChildFiles = null, string? Contents = null);
+    sealed record FileInfo(string Name, List<FileInfo>? ChildFiles = null, string? Contents = null);
     
     private string GetEnglishDialogContents() => $"""
     {_modAuthor}_{_modName}={_levelsetEnglishName}

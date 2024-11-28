@@ -22,7 +22,7 @@ public class SwitchGate : NineSliceEntity, ISolid, IPlaceable {
         persistent = false
     });
 
-    public static PlacementList GetPlacements() => new string[] { "block", "mirror", "temple", "stars" }
+    public static PlacementList GetPlacements() => new[] { "block", "mirror", "temple", "stars" }
         .Select(t => new Placement(t, new {
             sprite = t
         }))

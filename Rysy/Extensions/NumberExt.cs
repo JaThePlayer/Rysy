@@ -95,6 +95,15 @@ public static class NumberExt {
         }
     }
     
+    public static T Approach<T>(this T val, T target, T maxMove) where T : INumber<T>
+    {
+        if (!(val > target))
+        {
+            return T.Min(val + maxMove, target);
+        }
+        return T.Max(val - maxMove, target);
+    }
+    
     /// <summary>
     /// Formats a number into a filesize, like 1024 -> 1KB
     /// </summary>
