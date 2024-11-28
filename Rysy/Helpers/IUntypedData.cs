@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 
 namespace Rysy.Helpers;
 
@@ -14,6 +15,18 @@ public readonly struct DictionaryUntypedData(Dictionary<string, object> dict) : 
     public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) => dict.TryGetValue(key, out value);
 
     public Dictionary<string, object> BackingDictionary => dict;
+}
+
+public readonly struct XElementUntypedData(XElement element) : IUntypedData {
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+        if (element.Attribute(key) is { } attr) {
+            value = attr.Value;
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
 }
 
 public static class UntypedDataExt {

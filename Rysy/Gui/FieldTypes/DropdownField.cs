@@ -9,8 +9,8 @@ static class DropdownHelper {
         [typeof(string)] = (Func<string?, string>) ((string? s) => s ?? ""),
         [typeof(char)] = (Func<string?, char>) ((string? s) => s is [char c] ? c : '\0'),
         [typeof(object)] = (Func<string?, object>) ((string? s) => s ?? ""),
-        [typeof(int)] = (Func<string?, int>) ((string? s) => s is { } ? int.Parse(s, CultureInfo.InvariantCulture) : 0),
-        [typeof(float)] = (Func<string?, float>) ((string? s) => s is { } ? float.Parse(s, CultureInfo.InvariantCulture) : 0),
+        [typeof(int)] = (Func<string?, int>) ((string? s) => s is { } ? int.TryParse(s, CultureInfo.InvariantCulture, out var ret) ? ret : 0 : 0),
+        [typeof(float)] = (Func<string?, float>) ((string? s) => s is { } ? float.TryParse(s, CultureInfo.InvariantCulture, out var ret) ? ret : 0 : 0),
     };
 }
 
