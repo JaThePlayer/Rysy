@@ -1,11 +1,10 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Extensions;
-using Rysy.Graphics.TextureTypes;
+﻿using Rysy.Graphics.TextureTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Rysy.Graphics;
 
@@ -214,6 +213,44 @@ public static class IAtlasExt {
         _sharedTextureBuffer = null;
     }
 
+    public static void LoadFromCrunchXml(this IAtlas self, ModMeta mod, string path) {
+        var fs = mod.Filesystem;
+        var doc = fs.OpenFile(path, XDocument.Load);
+        if (doc is null)
+            return;
+        if (doc.Root is null) {
+            Logger.Write("Atlas.Crunch", LogLevel.Error, $"Failed to read Crunch .xml file: missing root element");
+            return;
+        }
+        
+        foreach (var tex in doc.Root.Nodes().OfType<XElement>())
+        {
+            #pragma warning disable CA2000
+            var virtualTexture = new ModTexture(mod, Path.Combine(Path.GetDirectoryName(path)!, tex.Attribute("n")!.Value + ".png"));
+            self.AddTexture($"_src_crunch_{path}", virtualTexture);
+            
+            foreach (var img in tex.Nodes().OfType<XElement>()) {
+                var imgData = new XElementUntypedData(img);
+                string name = imgData.Attr("n");
+                Rectangle clipRect2 = new Rectangle(imgData.Int("x"), imgData.Int("y"), imgData.Int("w"), imgData.Int("h"));
+                var clip = virtualTexture.GetSubtextureRect(clipRect2.X, clipRect2.Y, clipRect2.Width, clipRect2.Height, out var offset);
+                if (img.Attribute("fx") is {}) {
+                    var realSize = (new Vector2(-imgData.Int("fx"), -imgData.Int("fy")), imgData.Int("fw"), imgData.Int("fh"));
+                    self.AddTexture(name, new ModSubtexture(virtualTexture, clip) {
+                        DrawOffset = realSize.Item1,
+                        RealWidth = realSize.Item2,
+                        RealHeight = realSize.Item3
+                    });
+                }
+                else
+                {
+                    self.AddTexture(name, new ModSubtexture(virtualTexture, clip));
+                }
+            }
+            #pragma warning restore CA2000
+        }
+    }
+    
     private static byte[]? _sharedTextureBuffer;
     
     // TODO: cleanup
