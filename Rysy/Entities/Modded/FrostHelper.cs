@@ -33,7 +33,11 @@ internal sealed class CustomSpinner : LonnEntity {
 
     public Color BorderColor => RGBA("borderColor", Color.Black);
 
-    private SpinnerPathCache _cache;
+    private SpinnerPathCache? _cache;
+
+    private SpinnerPathCache GetCache() {
+        return _cache ??= GetBaseSprites(Depth, Color, BorderColor, ImageScale);
+    }
     
     public override string? Documentation => "https://github.com/JaThePlayer/FrostHelper/wiki/Custom-Spinners";
 
@@ -41,7 +45,7 @@ internal sealed class CustomSpinner : LonnEntity {
         base.OnChanged(changed);
 
         if (!changed.OnlyPositionChanged)
-            _cache = GetBaseSprites(Depth, Color, BorderColor, ImageScale);
+            _cache = null;
     }
 
     sealed record SpinnerPathCache(
@@ -105,7 +109,7 @@ internal sealed class CustomSpinner : LonnEntity {
         var drawOutline = DrawOutline;
         var useOutlineTexture = drawOutline && BorderColor == Color.Black;
 
-        var cache = _cache;
+        var cache = GetCache();
         var sprites = new List<ISprite>(capacity: _lastSpriteCount);
 
         var fg = pos.SeededRandomFrom(cache.Fgs);
@@ -133,7 +137,7 @@ internal sealed class CustomSpinner : LonnEntity {
                 continue;
 
             var otherPos = spinner.Pos;
-            var oc = spinner._cache;
+            var oc = spinner.GetCache();
 
             if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.Width*float.Pow(ImageScale + spinner.ImageScale, 2f) / 4f)
                 && spinner.AttachToSolid == attachToSolid 

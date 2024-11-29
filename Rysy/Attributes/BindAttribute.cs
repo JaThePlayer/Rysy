@@ -58,7 +58,23 @@ public sealed class BindAttribute : Attribute {
                 var il = method.GetILGenerator();
 
                 if (!fieldList.TryGetValue(attr.FieldName, out var field)) {
-                    throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName}, which is not defined by {nameof(IPlaceable.GetFields)}");
+                    if (fieldInfo.FieldType == typeof(float)) {
+                        field = Fields.Float(0f);
+                    } else if (fieldInfo.FieldType == typeof(int)) {
+                        field = Fields.Int(0);
+                    } else if (fieldInfo.FieldType == typeof(string)) {
+                        field = Fields.String("");
+                    } else if (fieldInfo.FieldType == typeof(bool)) {
+                        field = Fields.Bool(false);
+                    } else if (fieldInfo.FieldType == typeof(char)) {
+                        field = Fields.Char('0');
+                    }
+
+                    if (field is { }) {
+                        Logger.Write("BindAttribute", LogLevel.Warning, $"{entityType} tried to [Bind] field {attr.FieldName}, which is not defined by {nameof(IPlaceable.GetFields)}. Assuming field type {field} with a default value: {field.GetDefault()}");
+                    } else {
+                        throw new Exception($"{entityType} tried to [Bind] field {attr.FieldName}, which is not defined by {nameof(IPlaceable.GetFields)} and is not a simple type.");
+                    }
                 }
 
                 var converterMethod = FindConverterMethod(entityType, fieldInfo, attr, field);
