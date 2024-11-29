@@ -3,7 +3,7 @@
 public class MacOS : RysyPlatform {
     private static string SaveLocation = UncachedGetSaveLocation();
 
-    public override string GetSaveLocation() => SaveLocation;
+    public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
 
     private static string UncachedGetSaveLocation() {
         // from FNA wiki

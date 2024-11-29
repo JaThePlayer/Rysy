@@ -36,7 +36,7 @@ public static class SettingsHelper {
             return settings;
         }
         
-        Logger.Write("Settings.Load", LogLevel.Error, $"Creating and saving new {typeof(T)}");
+        Logger.Write("Settings.Load", LogLevel.Info, $"Creating and saving new {typeof(T).Name} at {filename}{(perProfile ? " (per-profile)" : "")}");
         return Save<T>(new() { }, filename, perProfile);
     }
 

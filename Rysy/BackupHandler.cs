@@ -8,18 +8,6 @@ namespace Rysy;
 public record class BackupInfo(string MapName, DateTime Time, string BackupFilepath, string OrigFilepath) {
     [JsonIgnore]
     public Lazy<long> Filesize = new(() => File.Exists(BackupFilepath) ? new FileInfo(BackupFilepath).Length : -1);
-
-    /*
-    public static BackupInfo FromFilepath(string path) {
-        var relative = Path.GetRelativePath(BackupHandler.BackupFolder, path);
-
-        var mapName = Path.GetDirectoryName(relative)!;
-        var time = File.GetLastWriteTime(path);
-        
-        return new(mapName, time, path) {
-            Filesize = new FileInfo(path).Length,
-        };
-    }*/
 }
 
 public static class BackupHandler {
@@ -30,7 +18,8 @@ public static class BackupHandler {
     private static Dictionary<int, BackupInfo>? CachedIndex;
     private static List<BackupInfo>? CachedBackups;
 
-    public static Dictionary<int, BackupInfo> LoadIndex() => CachedIndex ??= SettingsHelper.Load<Dictionary<int, BackupInfo>>(IndexPath, false);
+    public static Dictionary<int, BackupInfo> LoadIndex() 
+        => CachedIndex ??= SettingsHelper.Load<Dictionary<int, BackupInfo>>(IndexPath, false);
 
     public static List<BackupInfo> GetBackups() {
         if (CachedBackups is { })
@@ -38,13 +27,6 @@ public static class BackupHandler {
 
         var index = LoadIndex();
         return index.OrderByDescending(kv => kv.Key).Select(kv => kv.Value).ToList();
-        /*
-        var backupFolder = BackupFolder;
-        return CachedBackups = index
-            .Where(p => File.Exists(p.Value))
-            .OrderByDescending(p => p.Key)
-            .Select(p => BackupInfo.FromFilepath(p.Value))
-            .ToList();*/
     }
 
     public static DateTime? GetMostRecentBackupDate() {
@@ -55,8 +37,8 @@ public static class BackupHandler {
         if (!File.Exists(latest.BackupFilepath)) {
             return null;
         }
-
-        return File.GetLastWriteTime(latest.BackupFilepath);
+        
+        return latest.Time;
     }
 
     public static Map? LoadMostRecentBackup() {

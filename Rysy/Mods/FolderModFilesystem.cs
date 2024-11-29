@@ -22,6 +22,8 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         if (!RysyPlatform.Current.SupportFileWatchers) {
             return;
         }
+
+        Directory.CreateDirectory(dirName);
         
         Watcher = new FileSystemWatcher(dirName.CorrectSlashes());
         Watcher.Changed += (s, e) => {
@@ -161,6 +163,16 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         var searchFilter = string.IsNullOrWhiteSpace(extension) ? "*" : $"*.{extension}";
 
         return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.TopDirectoryOnly)
+            .Select(f => Path.GetRelativePath(Root, f).Unbackslash());
+    }
+    
+    public IEnumerable<string> FindDirectories(string directory) {
+        var realPath = VirtToRealPath(directory);
+        if (!Directory.Exists(realPath)) {
+            return [];
+        }
+        
+        return Directory.EnumerateDirectories(realPath, "*", SearchOption.TopDirectoryOnly)
             .Select(f => Path.GetRelativePath(Root, f).Unbackslash());
     }
 
