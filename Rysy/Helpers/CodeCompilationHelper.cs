@@ -5,9 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
-using Rysy.Extensions;
+using Rysy.Mods;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -82,35 +81,40 @@ public static class CodeCompilationHelper {
 #pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
     }
 
-    public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string cachePath, bool addGlobalUsings, out Assembly? asm, out EmitResult? emitResult) {
+    public static bool CompileFiles(string asmName, List<(string SourceCode, string Filename)> files, string? cachePath, 
+        bool addGlobalUsings, out Assembly? asm, out EmitResult? emitResult, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary) {
         asm = null;
         emitResult = null;
 
         if (files.Count == 0)
             return false;
 
-        
+        string? cachedDLLPath = null, cachedPdbPath = null, cachedSrcPath = null, currentSource = null;
+        var cacheFs = SettingsHelper.GetFilesystem(perProfile: true);
 
-        var cachedDLLPath = $"{cachePath}/c.dll";
-        var cachedPdbPath = $"{cachePath}/c.pdb";
-        var cachedSrcPath = $"{cachePath}/src.txt";
-        var currentSource = (files, RysyAssemblyHash ??= GetAsmHash(typeof(CodeCompilationHelper).Assembly)).ToJson(minified: true);
+        if (cachePath is { }) {
+            cachedDLLPath = $"{cachePath}/c.dll";
+            cachedPdbPath = $"{cachePath}/c.pdb";
+            cachedSrcPath = $"{cachePath}/src.txt";
+            currentSource = (files, RysyAssemblyHash ??= GetAsmHash(typeof(CodeCompilationHelper).Assembly)).ToJson(minified: true);
+            
+            if (cacheFs.FileExists(cachedDLLPath) && cacheFs.FileExists(cachedSrcPath)) {
+                var cachedSource = cacheFs.TryReadAllText(cachedSrcPath);
+                
+                if (currentSource == cachedSource) {
+                    var pdb = cacheFs.TryReadAllBytes(cachedPdbPath);
+                    var rawAsm = cacheFs.TryReadAllBytes(cachedDLLPath)!;
 
-        if (File.Exists(cachedDLLPath) && File.Exists(cachedSrcPath)) {
-            var cachedSource = File.ReadAllText(cachedSrcPath);
+                    asm = Assembly.Load(rawAsm, pdb);
 
-            if (currentSource == cachedSource) {
-                var pdb = File.Exists(cachedPdbPath) ? File.ReadAllBytes(cachedPdbPath) : null;
-
-                asm = Assembly.Load(File.ReadAllBytes(cachedDLLPath), pdb);
-
-                return true;
+                    return true;
+                }
+                
+                cacheFs.TryDeleteFile(cachedDLLPath);
+                cacheFs.TryDeleteFile(cachedSrcPath);
             }
-            //Console.WriteLine("invalidating cache");
-
-            File.Delete(cachedDLLPath);
-            File.Delete(cachedSrcPath);
         }
+
 
         var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
 
@@ -124,7 +128,7 @@ public static class CodeCompilationHelper {
         var csCompilation = CSharpCompilation.Create(asmName,
             trees,
             references: GetReferences(),
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+            options: new CSharpCompilationOptions(outputKind,
                 optimizationLevel: OptimizationLevel.Release,
                 assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
 
@@ -140,10 +144,9 @@ public static class CodeCompilationHelper {
             asm = Assembly.Load(asmBytes, pdbBytes);
 
             if (cachePath is { }) {
-                Directory.CreateDirectory(cachePath);
-                File.WriteAllText(cachedSrcPath, currentSource);
-                File.WriteAllBytes(cachedDLLPath, asmBytes);
-                File.WriteAllBytes(cachedPdbPath, pdbBytes);
+                cacheFs.TryWriteToFile(cachedSrcPath!, currentSource ?? "");
+                cacheFs.TryWriteToFile(cachedDLLPath!, asmBytes);
+                cacheFs.TryWriteToFile(cachedPdbPath!, pdbBytes);
             }
 
             return true;

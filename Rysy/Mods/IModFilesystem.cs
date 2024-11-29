@@ -1,4 +1,6 @@
-﻿namespace Rysy.Mods;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Rysy.Mods;
 
 /// <summary>
 /// Provides methods for accessing files for a given mod, regardless of it being in a zip or folder.
@@ -25,7 +27,7 @@ public interface IModFilesystem {
     /// If not, the function returns false.
     /// DO NOT capture the <see cref="Stream"/> received in the callback, as it might get disposed as soon as this method finishes.
     /// </summary>
-    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value);
+    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, [NotNullWhen(true)] out T? value);
 
     /// <summary>
     /// Registers a file watcher for the given virtual path.

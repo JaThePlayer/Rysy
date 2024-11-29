@@ -109,6 +109,7 @@ public sealed class Settings {
 
     public static void ChangeProfile(string name, bool isNew) {
         RysyState.CmdArguments.Profile = null;
+        RysyState.CmdArguments.CelesteDir = null;
         
         Instance.Profile = name;
         Save(Instance);
