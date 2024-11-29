@@ -132,6 +132,14 @@ public sealed class Map : IPackable, ILuaWrapper {
 
     public static Map FromFile(string filepath) => FromBinaryPackage(BinaryPacker.FromBinary(filepath));
 
+    public static Map? FromFileOrNull(string virtPath, IModFilesystem fs) {
+        if (fs.TryOpenFile(virtPath, stream => BinaryPacker.FromBinary(stream, virtPath), out var package)) {
+            return FromBinaryPackage(package);
+        }
+
+        return null;
+    }
+
     public BinaryPacker.Element Pack() {
         BinaryPacker.Element el = new("Map");
 

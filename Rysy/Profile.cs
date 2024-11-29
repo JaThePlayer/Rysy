@@ -6,7 +6,21 @@ namespace Rysy;
 public class Profile {
     public static Profile Instance { get; internal set; }
 
-    public string CelesteDirectory { get; set; } = "";
+    /// <summary>
+    /// The celeste directory saved to the profile.
+    /// For most purposes, <see cref="CelesteDirectory"/> should be used instead, as it takes commandline arguments into account.
+    /// </summary>
+    [JsonPropertyName("CelesteDirectory")]
+    public string StoredCelesteDirectory { get; set; }
+
+    [JsonIgnore]
+    public string CelesteDirectory {
+        get => RysyState.CmdArguments.CelesteDir ?? StoredCelesteDirectory;
+        set {
+            StoredCelesteDirectory = value;
+            RysyState.CmdArguments.CelesteDir = null;
+        }
+    }
 
     public string? ModDirectoryOverride { get; set; } = null;
 
@@ -36,6 +50,10 @@ public class Profile {
 
         if (setInstance) {
             Instance = profile;
+        }
+
+        if (profile.CelesteDirectory.IsNullOrWhitespace() && RysyState.CmdArguments.CelesteDir is {} celesteDir) {
+            profile.CelesteDirectory = celesteDir;
         }
 
         return profile;
