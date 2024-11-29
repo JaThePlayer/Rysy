@@ -7,10 +7,15 @@ namespace Rysy;
 /// A singleton containing information about the current state of the editor.
 /// </summary>
 public static class EditorState {
+    private static Camera? _camera;
+
     /// <summary>
     /// The current camera.
     /// </summary>
-    public static Camera Camera { get; set; } = new();
+    public static Camera Camera {
+        get => _camera ??= new();
+        set => _camera = value;
+    }
 
     private static Room? _currentRoom = null;
 
