@@ -25,6 +25,7 @@ public abstract class RysyPlatform {
     }
 
     protected IModFilesystem? CachedRysyFilesystem;
+    protected Dictionary<string, IWriteableModFilesystem> CachedRysyAppDataFilesystems = [];
     
     public virtual IModFilesystem GetRysyFilesystem() {
 #if DEBUG
@@ -35,6 +36,21 @@ public abstract class RysyPlatform {
 #else
         return CachedRysyFilesystem ??= new FolderModFilesystem("Assets");
 #endif
+    }
+
+    public virtual IWriteableModFilesystem GetRysyAppDataFilesystem(string? profile) {
+        if (CachedRysyAppDataFilesystems.TryGetValue(profile ?? "$none$", out var cached))
+            return cached;
+        
+        var dir = GetSaveLocation();
+        if (profile is { }) {
+            dir = Path.Combine(dir, "Profiles", profile);
+        }
+
+        var fs = new FolderModFilesystem(dir);
+        CachedRysyAppDataFilesystems[profile ?? "$none$"] = fs;
+        
+        return fs;
     }
 
     public virtual (string Name, Profile Profile)? ForcedProfile() => null;

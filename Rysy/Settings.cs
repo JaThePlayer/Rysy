@@ -2,6 +2,7 @@
 
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using System.Runtime.CompilerServices;
@@ -13,66 +14,41 @@ namespace Rysy;
 public static class SettingsHelper {
     public static bool ReadSettings { get; set; } = true;
 
-    public static string GetFullPath(string settingFileName, bool perProfile) => perProfile && Settings.Instance is { }
-    ? $"{RysyPlatform.Current.GetSaveLocation()}/Profiles/{RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.CurrentProfile}/{settingFileName}"
-    : $"{RysyPlatform.Current.GetSaveLocation()}/{settingFileName}";
-
-    //public static bool SaveFileExists(string filename) => File.Exists(GetFullPath(filename));
+    public static IWriteableModFilesystem GetFilesystem(bool perProfile) {
+        return RysyPlatform.Current.GetRysyAppDataFilesystem(
+            perProfile ? RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.CurrentProfile : null);
+    }
 
     public static T Load<T>(string filename, bool perProfile = false) where T : class, new() {
         if (!ReadSettings)
             return new();
-        
-        var settingsFile = GetFullPath(filename, perProfile);
-        var saveLocation = Path.GetDirectoryName(settingsFile);
 
-        T? settings = null;
+        var fs = GetFilesystem(perProfile);
 
-        if (!Directory.Exists(saveLocation)) {
-            Directory.CreateDirectory(saveLocation!);
-        }
-
-        if (File.Exists(settingsFile)) {
-#if DOT_TRACE
-            int attempts = 0;
-        tryRead:
-#endif
-            try {
-                using var stream = File.OpenRead(settingsFile);
-                settings = JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.SettingsOptions);
-            } catch (Exception e) {
-                Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
-#if DOT_TRACE
-                // dot trace's precise profiler breaks file reading while loading??????
-                attempts++;
-                if (attempts < 100) {
-                    Thread.Sleep(10);
-                    goto tryRead;
+        if (fs.OpenFile(filename, stream => {
+                try {
+                    return JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.SettingsOptions);
+                } catch (Exception e) {
+                    Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
+                    return null;
                 }
-#endif
-                throw;
-            }
+            }) is {} settings) {
+            return settings;
         }
-
-        return settings ?? Save<T>(new() { }, filename, perProfile);
+        
+        Logger.Write("Settings.Load", LogLevel.Error, $"Creating and saving new {typeof(T)}");
+        return Save<T>(new() { }, filename, perProfile);
     }
 
     public static T Save<T>(T settings, string filename, bool perProfile = false) where T : class, new() {
         if (!ReadSettings)
             return new();
 
-        var settingsFile = GetFullPath(filename, perProfile);
-        var saveLocation = Path.GetDirectoryName(settingsFile);
-
-        if (!Directory.Exists(saveLocation)) {
-            Directory.CreateDirectory(saveLocation!);
-        }
-
-        using var stream = File.Exists(settingsFile)
-            ? File.Open(settingsFile, FileMode.Truncate)
-            : File.Open(settingsFile, FileMode.CreateNew);
-        JsonSerializer.Serialize(stream, settings, JsonSerializerHelper.SettingsOptions);
-
+        var fs = GetFilesystem(perProfile);
+        fs.TryWriteToFile(filename, stream => {
+            JsonSerializer.Serialize(stream, settings, JsonSerializerHelper.SettingsOptions);
+        });
+        
         return settings;
     }
 }
@@ -102,11 +78,7 @@ public sealed class Settings {
     }
 
     public string GetHotkey(string name) {
-        if (!Hotkeys.TryGetValue(name, out var hotkey)) {
-            return "";
-        }
-
-        return hotkey;
+        return Hotkeys.GetValueOrDefault(name, "");
     }
 
     public string GetOrCreateHotkey(string name, string? defaultHotkey = null) {

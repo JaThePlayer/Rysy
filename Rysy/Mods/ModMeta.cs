@@ -121,7 +121,7 @@ public sealed class ModMeta {
     public bool IsRysy => Name is "Rysy";
     
     [JsonIgnore]
-    public string SettingsFileLocation => SettingsHelper.GetFullPath($"ModSettings/{Name.ToValidFilename()}.json", perProfile: false);
+    public string SettingsFileLocation => $"ModSettings/{Name.ToValidFilename()}.json";
 
     public override string ToString() => string.Join(',', EverestYaml.Select(x => x.ToString()));
 

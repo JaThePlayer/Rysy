@@ -40,6 +40,8 @@ public interface IModFilesystem {
     /// Calling OpenFile(path) using paths returned by this function allows you to access the file.
     /// </summary>
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension);
+    
+    public IEnumerable<string> FindFilesInDirectory(string directory, string extension);
 
     /// <summary>
     /// Notifies the filesystem that a file at the given virtual path just got created.
@@ -51,6 +53,10 @@ public interface IWriteableModFilesystem : IModFilesystem {
     public bool TryWriteToFile(string path, Action<Stream> write);
 
     public bool TryCreateDirectory(string path);
+
+    public bool TryDeleteFile(string path);
+
+    public void AppendAllText(string path, string contents);
 }
 
 public static class WriteableModFilesystemExt {
@@ -63,6 +69,12 @@ public static class WriteableModFilesystemExt {
             using var writer = new StreamWriter(s);
             
             writer.Write(fileContents);
+        });
+    }
+    
+    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, byte[] fileContents) {
+        return fs.TryWriteToFile(path, s => {
+            s.Write(fileContents);
         });
     }
     

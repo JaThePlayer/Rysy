@@ -15,7 +15,8 @@ public class ModSettings {
     public Dictionary<string, object> OtherValues { get; set; } = new();
 
     public void Save() {
-        File.WriteAllBytes(Meta.SettingsFileLocation, this.ToJsonUTF8(GetType(), minified: false));
+        var fs = SettingsHelper.GetFilesystem(perProfile: false);
+        fs.TryWriteToFile(Meta.SettingsFileLocation, this.ToJsonUTF8(GetType(), minified: false));
     }
 
     public bool HasAnyData() => GetType() != typeof(ModSettings) || OtherValues.Count > 0;

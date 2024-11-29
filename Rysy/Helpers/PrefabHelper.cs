@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Mods;
 using Rysy.Selections;
 using System.Text.Json.Serialization;
 
@@ -13,12 +14,10 @@ public static class PrefabHelper {
     private static ListenableDictionary<string, Prefab> Load() {
         _CurrentPrefabs = new(StringComparer.Ordinal);
 
-        var prefabPath = GetPrefabDir();
+        var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
-        if (Directory.Exists(prefabPath)) {
-            foreach (var file in Directory.EnumerateFiles(prefabPath, "*.json", SearchOption.AllDirectories)) {
-                LoadFromFile(file);
-            }
+        foreach (var file in fs.FindFilesInDirectoryRecursive("prefabs", "json")) {
+            LoadFromFile(file);
         }
 
         RysyState.OnNextReload += () => _CurrentPrefabs = null;
@@ -26,20 +25,26 @@ public static class PrefabHelper {
         return _CurrentPrefabs;
     }
 
-    internal static void LoadFromFile(string path) {
-        if (!File.Exists(path))
-            return;
+    internal static Prefab? LoadFromFile(string path) {
+        var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
-        using var stream = File.Open(path, FileMode.Open);
-        if (JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText()) is not { } prefab)
-            return;
+        if (fs.OpenFile(path, stream => { 
+            if (JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText()) is not { } prefab)
+                return null;
 
-        _CurrentPrefabs[prefab.Name] = prefab;
+            prefab.Filename = path;
 
-        prefab.Filename = path;
+            return prefab;
+        }) is {} prefab) {
+            _CurrentPrefabs[prefab.Name] = prefab;
+            return prefab;
+        }
+
+        return null;
     }
 
-    public static bool SelectionsLegal(List<CopypasteHelper.CopiedSelection> selections) => !selections.Any(s => s.Layer == SelectionLayer.Rooms);
+    public static bool SelectionsLegal(List<CopypasteHelper.CopiedSelection> selections) 
+        => selections.All(s => s.Layer != SelectionLayer.Rooms);
 
     public static void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
         if (!SelectionsLegal(selections))
@@ -55,10 +60,10 @@ public static class PrefabHelper {
         }
 
         var path = GetPrefabPath(prefab);
+        var fs = SettingsHelper.GetFilesystem(perProfile: true);
         prefab.Filename = path;
-
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, prefab.ToJsonUTF8());
+        
+        fs.TryWriteToFile(path, prefab.ToJsonUTF8());
     }
 
     public static void Remove(string name) {
@@ -68,8 +73,8 @@ public static class PrefabHelper {
         CurrentPrefabs.Remove(name);
 
         var path = prefab.Filename;
-        if (File.Exists(path))
-            File.Delete(path);
+        var fs = SettingsHelper.GetFilesystem(perProfile: true);
+        fs.TryDeleteFile(path);
     }
 
     public static Placement? PlacementFromName(string name) {
@@ -83,16 +88,15 @@ public static class PrefabHelper {
         return placement;
     }
 
-    private static string GetPrefabDir(bool perProfile = true) => SettingsHelper.GetFullPath("prefabs", perProfile: perProfile);
     private static string GetPrefabPath(Prefab prefab) {
-        var prefabDir = GetPrefabDir();
+        var fs = SettingsHelper.GetFilesystem(perProfile: true);
+        
         var filename = prefab.Name.ToValidFilename();
 
-        if (Directory.Exists(prefabDir)) {
-            filename = filename.GetDeduplicatedIn(Directory.GetFiles(prefabDir).Select(f => Path.GetFileNameWithoutExtension(f)));
-        }
+        filename = filename.GetDeduplicatedIn(fs.FindFilesInDirectory("prefabs", "")
+            .Select(f => Path.GetFileNameWithoutExtension(f)));
 
-        return $"{prefabDir}/{filename}.json";
+        return $"prefabs/{filename}.json";
     }
 
     public class Prefab {

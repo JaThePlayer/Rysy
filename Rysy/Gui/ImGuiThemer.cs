@@ -13,6 +13,7 @@ public static class ImGuiThemer {
 
     private static readonly JsonSerializerOptions ThemerJsonOptions = new() {
         IncludeFields = true,
+        WriteIndented = true,
     };
 
     public static unsafe void LoadTheme(string filename) {
