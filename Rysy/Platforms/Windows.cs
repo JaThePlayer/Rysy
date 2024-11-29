@@ -9,7 +9,7 @@ public partial class Windows : RysyPlatform {
         "Rysy"
     ).Unbackslash();
 
-    public override string GetSaveLocation() => SaveLocation;
+    public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
 
     public override void Init() {
         base.Init();

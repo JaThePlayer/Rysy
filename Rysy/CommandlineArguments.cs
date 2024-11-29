@@ -1,29 +1,45 @@
 ﻿namespace Rysy;
 
 public sealed class CommandlineArguments {
+    private const string LogTag = "CommandlineArguments";
+    
     public string? LoadIntoMap { get; set; }
     
     public string? Profile { get; set; }
     
+    public bool Portable { get; set; }
+    
     public CommandlineArguments(string[] args) {
-        if (args is [var map]) {
+        if (args is [var map] && File.Exists(map)) {
             LoadIntoMap = map;
             return;
         }
 
-        for (int i = 0; i + 1 < args.Length; i += 2) {
+        for (int i = 0; i < args.Length; i++) {
             var option = args[i];
-            var arg = args[i + 1];
 
             switch (option) {
                 case "--map" or "-m":
-                    LoadIntoMap = arg;
+                    if (i + 1 < args.Length) {
+                        LoadIntoMap = args[i + 1];
+                        i++;
+                    } else {
+                        Logger.Write(LogTag, LogLevel.Error, $"Missing map path for argument: {option}");
+                    }
                     break;
                 case "--profile" or "-p":
-                    Profile = arg;
+                    if (i + 1 < args.Length) {
+                        Profile = args[i + 1];
+                        i++;
+                    } else {
+                        Logger.Write(LogTag, LogLevel.Error, $"Missing profile name for argument: {option}");
+                    }
+                    break;
+                case "--portable":
+                    Portable = true;
                     break;
                 default:
-                    Logger.Write("CommandlineArguments", LogLevel.Error, $"Unknown cmd option option: {option}");
+                    Logger.Write(LogTag, LogLevel.Error, $"Unknown cmd option option: {option}");
                     break;
             }
         }

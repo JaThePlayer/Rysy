@@ -304,8 +304,11 @@ public sealed class SettingsWindow : Window {
             () => {
                 if (ImGui.BeginCombo("Current Profile", Settings.Instance.CurrentProfile)) {
                     #region Profile Picker
-                    var profileDir = $"{RysyPlatform.Current.GetSaveLocation()}/Profiles";
-                    var dirs = windowData.ProfileListDirectories ??= Directory.GetDirectories(profileDir);
+
+                    var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(null);
+                    
+                    var profileDir = "Profiles";
+                    var dirs = windowData.ProfileListDirectories ??= fs.FindDirectories(profileDir).ToArray();
                     foreach (var dir in dirs) {
                         var name = Path.GetRelativePath(profileDir, dir);
                         if (ImGui.Selectable(name).WithTooltip(REQUIRES_RELOAD)) {

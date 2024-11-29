@@ -42,6 +42,8 @@ public interface IModFilesystem {
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension);
     
     public IEnumerable<string> FindFilesInDirectory(string directory, string extension);
+    
+    public IEnumerable<string> FindDirectories(string directory);
 
     /// <summary>
     /// Notifies the filesystem that a file at the given virtual path just got created.
