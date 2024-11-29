@@ -1,4 +1,5 @@
 ﻿using Rysy.Helpers;
+using System.Diagnostics.CodeAnalysis;
 using YamlDotNet.Core.Tokens;
 
 namespace Rysy.Mods;
@@ -111,7 +112,7 @@ public class LayeredFilesystem : IModFilesystem {
         return Task.WhenAll(Mods.Select(f => Task.Run(async () => await f.Filesystem.InitialScan())));
     }
 
-    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value) {
+    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, [NotNullWhen(true)] out T? value) {
         lock (Mods) {
             foreach (var fs in Mods) {
                 if (fs.Filesystem.TryOpenFile(path, callback, out value))

@@ -2,6 +2,7 @@
 using Rysy.Helpers;
 using Rysy.Platforms;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Rysy.Mods;
@@ -129,12 +130,12 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         return null;
     }
 
-    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value) {
+    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, [NotNullWhen(true)] out T? value) {
         ArgumentNullException.ThrowIfNull(callback);
 
         using var stream = OpenFile(path);
         if (stream is { }) {
-            value = callback(stream);
+            value = callback(stream)!;
             return true;
         }
 
