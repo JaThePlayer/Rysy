@@ -2,6 +2,7 @@
 using Rysy.Helpers;
 using Rysy.Platforms;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 
@@ -161,7 +162,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
         return stream;
     }
 
-    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, out T? value) {
+    public bool TryOpenFile<T>(string path, Func<Stream, T> callback, [NotNullWhen(true)] out T? value) {
         value = default;
 
         // If we know the file doesn't exist, no need to open the zip
@@ -181,7 +182,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
             return false;
         }
 
-        value = callback(stream);
+        value = callback(stream)!;
         zip.Used = false;
 
         return true;

@@ -48,15 +48,15 @@ public class Input {
         
         public Vector2 TouchpadPan { get; private set; }
 
-        public float LeftHoldTime => HoldTimes[0];
-        public float RightHoldTime => HoldTimes[1];
-        public float X1HoldTime => HoldTimes[3];
-        public float X2HoldTime => HoldTimes[4];
+        public float LeftHoldTime => _holdTimes[0];
+        public float RightHoldTime => _holdTimes[1];
+        public float X1HoldTime => _holdTimes[3];
+        public float X2HoldTime => _holdTimes[4];
 
-        public bool LeftDoubleClicked() => TimeSinceLastClick[0] < DOUBLE_CLICK_TIME && DoubleClicks[0];
+        public bool LeftDoubleClicked() => _timeSinceLastClick[0] < DOUBLE_CLICK_TIME && _doubleClicks[0];
 
-        public bool RightClickedInPlace() => Right.Released() && mousePrevState.RightButton == ButtonState.Pressed &&
-                ClickPositions[1] == RealPos;
+        public bool RightClickedInPlace() => Right.Released() && _mousePrevState.RightButton == ButtonState.Pressed &&
+                _clickPositions[1] == RealPos;
 
         public bool AnyClickedOrHeld =>
             Left is not MouseInputState.Released ||
@@ -70,47 +70,47 @@ public class Input {
         /// </summary>
         public bool Wrap { get; set; }
 
-        private int lastMouseScroll;
-        private int realMouseScroll;
+        private int _lastMouseScroll;
+        private int _realMouseScroll;
         // GetState storage
-        private MouseState mousePrevState, mouseState = new();
-        private float[] HoldTimes = new float[5];
-        private bool[] ConsumedInputs = new bool[5];
-        private float[] TimeSinceLastClick = new float[5];
-        private bool[] DoubleClicks = new bool[5];
-        private Point[] ClickPositions = new Point[5];
+        private MouseState _mousePrevState, _mouseState = new();
+        private readonly float[] _holdTimes = new float[5];
+        private readonly bool[] _consumedInputs = new bool[5];
+        private readonly float[] _timeSinceLastClick = new float[5];
+        private readonly bool[] _doubleClicks = new bool[5];
+        private readonly Point[] _clickPositions = new Point[5];
 
         private MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
             if (PositionDelta != Point.Zero) {
                 // if the mouse moves, cancel and prevent any double clicks
-                DoubleClicks[index] = false;
-                TimeSinceLastClick[index] = float.MaxValue;
+                _doubleClicks[index] = false;
+                _timeSinceLastClick[index] = float.MaxValue;
             }
 
             if (current == ButtonState.Released) {
-                HoldTimes[index] = 0f;
-                ConsumedInputs[index] = false;
-                TimeSinceLastClick[index] += timeDeltaSeconds;
+                _holdTimes[index] = 0f;
+                _consumedInputs[index] = false;
+                _timeSinceLastClick[index] += timeDeltaSeconds;
 
                 return MouseInputState.Released;
             }
 
             // Currently held/clicked
 
-            if (ConsumedInputs[index]) {
+            if (_consumedInputs[index]) {
                 return MouseInputState.Released;
             }
 
             if (prev == ButtonState.Released) {
                 // just clicked this frame
-                DoubleClicks[index] = TimeSinceLastClick[index] < DOUBLE_CLICK_TIME;
-                ClickPositions[index] = new Point(mouseState.X, mouseState.Y);
-                HoldTimes[index] = 0f;
-                TimeSinceLastClick[index] = 0f;
+                _doubleClicks[index] = _timeSinceLastClick[index] < DOUBLE_CLICK_TIME;
+                _clickPositions[index] = new Point(_mouseState.X, _mouseState.Y);
+                _holdTimes[index] = 0f;
+                _timeSinceLastClick[index] = 0f;
                 return MouseInputState.Clicked;
             }
 
-            HoldTimes[index] += timeDeltaSeconds;
+            _holdTimes[index] += timeDeltaSeconds;
             return MouseInputState.Held;
         }
 
@@ -121,18 +121,18 @@ public class Input {
             RysyState.TouchpadPan = default;
             
             // From FNA wiki
-            mousePrevState = mouseState;
-            mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+            _mousePrevState = _mouseState;
+            _mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
             var delta = deltaSeconds;
 
-            lastMouseScroll = realMouseScroll;
-            realMouseScroll = mouseState.ScrollWheelValue;
+            _lastMouseScroll = _realMouseScroll;
+            _realMouseScroll = _mouseState.ScrollWheelValue;
 
-            ScrollDelta = TouchpadPan == default ? (realMouseScroll - lastMouseScroll) : default;
+            ScrollDelta = TouchpadPan == default ? (_realMouseScroll - _lastMouseScroll) : default;
             
             var viewport = RysyState.GraphicsDevice.Viewport;
             var lastPos = RealPos;
-            RealPos = new(mouseState.X, mouseState.Y);
+            RealPos = new(_mouseState.X, _mouseState.Y);
             PositionDelta = RealPos - lastPos;
 
             if (this.CanWrap() && AnyClickedOrHeld && !ImGuiManager.WantCaptureMouse) {
@@ -161,50 +161,50 @@ public class Input {
                 }
             }
             
-            var canInput = viewport.Bounds.Contains(new Point(mouseState.X, mouseState.Y));
+            var canInput = viewport.Bounds.Contains(new Point(_mouseState.X, _mouseState.Y));
 
             // Easiest route is to 'or' the click with the current state
-            ButtonState leftButton = canInput ? mouseState.LeftButton : ButtonState.Released;
-            ButtonState rightButton = canInput ? mouseState.RightButton : ButtonState.Released;
-            ButtonState middleButton = canInput ? mouseState.MiddleButton : ButtonState.Released;
-            ButtonState x1Button = canInput ? mouseState.XButton1 : ButtonState.Released;
-            ButtonState x2Button = canInput ? mouseState.XButton2 : ButtonState.Released;
+            ButtonState leftButton = canInput ? _mouseState.LeftButton : ButtonState.Released;
+            ButtonState rightButton = canInput ? _mouseState.RightButton : ButtonState.Released;
+            ButtonState middleButton = canInput ? _mouseState.MiddleButton : ButtonState.Released;
+            ButtonState x1Button = canInput ? _mouseState.XButton1 : ButtonState.Released;
+            ButtonState x2Button = canInput ? _mouseState.XButton2 : ButtonState.Released;
 
-            Left = GetCorrectState(leftButton, mousePrevState.LeftButton, 0, delta);
-            Right = GetCorrectState(rightButton, mousePrevState.RightButton, 1, delta);
-            Middle = GetCorrectState(middleButton, mousePrevState.MiddleButton, 2, delta);
-            X1 = GetCorrectState(x1Button, mousePrevState.XButton1, 3, delta);
-            X2 = GetCorrectState(x2Button, mousePrevState.XButton2, 4, delta);
+            Left = GetCorrectState(leftButton, _mousePrevState.LeftButton, 0, delta);
+            Right = GetCorrectState(rightButton, _mousePrevState.RightButton, 1, delta);
+            Middle = GetCorrectState(middleButton, _mousePrevState.MiddleButton, 2, delta);
+            X1 = GetCorrectState(x1Button, _mousePrevState.XButton1, 3, delta);
+            X2 = GetCorrectState(x2Button, _mousePrevState.XButton2, 4, delta);
         }
 
         public void ConsumeLeft() {
             Left = MouseInputState.Released;
-            HoldTimes[0] = 0f;
-            ConsumedInputs[0] = true;
+            _holdTimes[0] = 0f;
+            _consumedInputs[0] = true;
         }
 
         public void ConsumeRight() {
             Right = MouseInputState.Released;
-            HoldTimes[1] = 0f;
-            ConsumedInputs[1] = true;
+            _holdTimes[1] = 0f;
+            _consumedInputs[1] = true;
         }
 
         public void ConsumeMiddle() {
             Right = MouseInputState.Released;
-            HoldTimes[2] = 0f;
-            ConsumedInputs[2] = true;
+            _holdTimes[2] = 0f;
+            _consumedInputs[2] = true;
         }
 
         public void ConsumeX1() {
             X1 = MouseInputState.Released;
-            HoldTimes[3] = 0f;
-            ConsumedInputs[3] = true;
+            _holdTimes[3] = 0f;
+            _consumedInputs[3] = true;
         }
 
         public void ConsumeX2() {
             X2 = MouseInputState.Released;
-            HoldTimes[4] = 0f;
-            ConsumedInputs[4] = true;
+            _holdTimes[4] = 0f;
+            _consumedInputs[4] = true;
         }
 
         public bool Clicked(int button) {
@@ -241,7 +241,7 @@ public class Input {
         }
 
         public float HeldTime(int button) {
-            return HoldTimes[button];
+            return _holdTimes[button];
         }
 
         public void Consume(int button) {
@@ -268,48 +268,39 @@ public class Input {
     }
 
     private sealed class KeyboardInput : IKeyboardInput {
-        private KeyboardState LastState;
+        private KeyboardState _lastState;
 
-        private Keys[] ClickedKeys = new Keys[32];
+        private readonly Keys[] _clickedKeys = new Keys[32];
 
-        private Dictionary<Keys, float> HoldTimes = new();
-
-        private bool Contains(Keys[] keys, Keys key) {
-            for (int i = 0; i < keys.Length; i++) {
-                if (keys[i] == key)
-                    return true;
-            }
-
-            return false;
-        }
+        private readonly Dictionary<Keys, float> _holdTimes = new();
 
         /// <summary>
         /// Returns whether a key has just been clicked this frame
         /// </summary>
-        public bool IsKeyClicked(Keys key) => Contains(ClickedKeys, key); //HoldTimes.TryGetValue(key, out var time) && time < 1f / 60f;
-        public bool IsKeyHeld(Keys key) => HoldTimes.TryGetValue(key, out var timer) && timer > 0f
-            && LastState.IsKeyDown(key) && !IsKeyClicked(key);
-        public bool HeldOrClicked(Keys key) => LastState.IsKeyDown(key);
+        public bool IsKeyClicked(Keys key) => _clickedKeys.Contains(key); //HoldTimes.TryGetValue(key, out var time) && time < 1f / 60f;
+        public bool IsKeyHeld(Keys key) => _holdTimes.TryGetValue(key, out var timer) && timer > 0f
+            && _lastState.IsKeyDown(key) && !IsKeyClicked(key);
+        public bool HeldOrClicked(Keys key) => _lastState.IsKeyDown(key);
 
         public bool Ctrl() => IsKeyHeld(Keys.LeftControl) || IsKeyHeld(Keys.RightControl);//LastState.IsKeyDown(Keys.LeftControl) || LastState.IsKeyDown(Keys.RightControl);
-        public bool Shift() => LastState.IsKeyDown(Keys.LeftShift) || LastState.IsKeyDown(Keys.RightShift);
-        public bool Alt() => LastState.IsKeyDown(Keys.LeftAlt) || LastState.IsKeyDown(Keys.RightAlt);
+        public bool Shift() => _lastState.IsKeyDown(Keys.LeftShift) || _lastState.IsKeyDown(Keys.RightShift);
+        public bool Alt() => _lastState.IsKeyDown(Keys.LeftAlt) || _lastState.IsKeyDown(Keys.RightAlt);
 
         public bool AnyKeyHeld { get; private set; }
 
         public float GetHoldTime(Keys key) {
             if (IsKeyHeld(key)) {
-                return HoldTimes[key];
-            } else {
-                return 0f;
+                return _holdTimes[key];
             }
+
+            return 0f;
         }
 
 
         public void ConsumeKeyClick(Keys key) {
-            var i = Array.IndexOf(ClickedKeys, key);
+            var i = Array.IndexOf(_clickedKeys, key);
             if (i != -1)
-                ClickedKeys[i] = Keys.None;
+                _clickedKeys[i] = Keys.None;
         }
 
         public void Setup() {
@@ -321,21 +312,21 @@ public class Input {
             var delta = deltaSeconds;
 
             var clickedKeyIndex = 0;
-            Array.Clear(ClickedKeys, 0, ClickedKeys.Length);
+            Array.Clear(_clickedKeys, 0, _clickedKeys.Length);
 
             var keys = state.GetPressedKeys();
             AnyKeyHeld = keys.Length > 0;
 
             foreach (var key in keys) {
-                if (!LastState.IsKeyDown(key) && clickedKeyIndex < ClickedKeys.Length) {
-                    ClickedKeys[clickedKeyIndex++] = key;
-                    HoldTimes[key] = 0;
+                if (!_lastState.IsKeyDown(key) && clickedKeyIndex < _clickedKeys.Length) {
+                    _clickedKeys[clickedKeyIndex++] = key;
+                    _holdTimes[key] = 0;
                 } else {
-                    HoldTimes[key] = HoldTimes.TryGetValue(key, out var timer) ? timer + delta : delta;
+                    _holdTimes[key] = _holdTimes.TryGetValue(key, out var timer) ? timer + delta : delta;
                 }
             }
 
-            LastState = state;
+            _lastState = state;
         }
     }
 

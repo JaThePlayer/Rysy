@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.Mods;
+using Rysy.Platforms;
 
 namespace Rysy;
 
@@ -17,6 +18,7 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
     /// Loads everything needed for a headless run of Rysy.
     /// </summary>
     public static async Task LoadHeadless(bool cSharpPlugins, bool luaPlugins) {
+        RysyPlatform.Current.Init();
         Settings.Load(uiEnabled: false);
         Profile.Instance = Profile.Load();
         Persistence.Instance = Persistence.Load();

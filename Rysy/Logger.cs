@@ -7,10 +7,10 @@ using System.Text;
 namespace Rysy;
 
 public static class Logger {
-    private static readonly string LogFile = "log.txt";
-    private static readonly string LastLogFile = "prev-log.txt";
+    private const string LogFile = "log.txt";
+    private const string LastLogFile = "prev-log.txt";
 
-    private static object FILE_LOCK = new();
+    private static readonly Lock FileLock = new();
 
     /// <summary>
     /// The path where Rysy was compiled from. Unlike most paths, it's not unbackslashed, to be able to call .TrimStart with it directly.
@@ -41,7 +41,7 @@ public static class Logger {
     }
 
     private static string PrependLocation(string txt, string callerMethod, string callerFile, int lineNumber)
-        => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.RESET_COLOR}] {txt}";
+        => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.ResetColor}] {txt}";
 
     private static bool ValidLogLevel(LogLevel level) => Init() && level >= MinimumLevel;
 
@@ -149,7 +149,7 @@ public static class Logger {
 
         var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(null);
         
-        lock (FILE_LOCK) {
+        lock (FileLock) {
             if (UseColorsInConsole) {
                 Console.Write(str.Censor());
                 fs.AppendAllText(LogFile, unformatted.Censor());
@@ -183,9 +183,9 @@ public static class LogLevelExtensions {
     public static string ToColoredString(this LogLevel logLevel)
         => logLevel switch {
             LogLevel.Debug => "Debug",
-            LogLevel.Info => "\u001b[96mInfo\u001b[0m",
-            LogLevel.Warning => "\u001b[93mWarning\u001b[0m",
-            LogLevel.Error => "\u001b[91mError\u001b[0m",
+            LogLevel.Info => "\e[96mInfo\e[0m",
+            LogLevel.Warning => "\e[93mWarning\e[0m",
+            LogLevel.Error => "\e[91mError\e[0m",
             _ => "unknown",
         };
 
@@ -199,50 +199,50 @@ public static class LogLevelExtensions {
 }
 
 internal static class FancyTextHelper {
-    public const string RESET_COLOR = "\u001b[0m";
+    public const string ResetColor = "\e[0m";
 
-    public static readonly string[] Colors = new[] {
-        "\u001b[96m", // bright cyan
-        "\u001b[92m", // bright green
-        "\u001b[95m", // bright magenta
-        //"\u001b[94m", // bright blue
-        "\u001b[93m", // bright yellow
-        "\u001b[91m", // bright Red
-        "\u001b[31m", // red
-        "\u001b[32m", // green
-        "\u001b[33m", // yellow
-        "\u001b[34m", // blue
-        "\u001b[35m", // magenta
-        "\u001b[36m", // cyan
-    };
+    private static readonly string[] Colors = [
+        "\e[96m", // bright cyan
+        "\e[92m", // bright green
+        "\e[95m", // bright magenta
+        //"\e[94m", // bright blue
+        "\e[93m", // bright yellow
+        "\e[91m", // bright Red
+        "\e[31m", // red
+        "\e[32m", // green
+        "\e[33m", // yellow
+        "\e[34m", // blue
+        "\e[35m", // magenta
+        "\e[36m" // cyan
+    ];
 
-    public const string Gray = "\u001b[90m";
+    public const string Gray = "\e[90m";
 
     public static string GetColorCode(int i) => Colors[i % Colors.Length];
 
     public static string GetColoredString(string from, int colorId) {
-        return $"{GetColorCode(colorId++)}{from}{RESET_COLOR}";
+        return $"{GetColorCode(colorId)}{from}{ResetColor}";
     }
 
     public static void AppendFancyText(StringBuilder builder, string? text, int colorId) {
-        builder.Append(GetColorCode(colorId++));
+        builder.Append(GetColorCode(colorId));
         builder.Append(text ?? "null");
-        builder.Append(RESET_COLOR);
+        builder.Append(ResetColor);
     }
 }
 
 [InterpolatedStringHandler]
 public ref partial struct FancyInterpolatedStringHandler {
-    readonly StringBuilder builder;
-    int colorId = 0;
+    private readonly StringBuilder _builder;
+    private int _colorId = 0;
 
     public FancyInterpolatedStringHandler(int literalLength, int formattedCount)
-        => builder = new(literalLength);
+        => _builder = new(literalLength);
 
-    public void AppendLiteral(string s) => builder.Append(s);
+    public void AppendLiteral(string s) => _builder.Append(s);
 
     public void AppendFormatted<T>(T t) {
-        FancyTextHelper.AppendFancyText(builder, t?.ToString(), colorId++);
+        FancyTextHelper.AppendFancyText(_builder, t?.ToString(), _colorId++);
     }
 
     public void AppendFormatted<T>(T t, string? format) {
@@ -252,9 +252,9 @@ public ref partial struct FancyInterpolatedStringHandler {
         } else {
             text = t?.ToString();
         }
-        FancyTextHelper.AppendFancyText(builder, text, colorId++);
+        FancyTextHelper.AppendFancyText(_builder, text, _colorId++);
     }
 
-    internal string GetFormattedText() => builder.ToString();
+    internal string GetFormattedText() => _builder.ToString();
 
 }
