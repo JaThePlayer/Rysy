@@ -97,9 +97,6 @@ public static class ModRegistry {
 
         Filesystem = new();
 
-        var rysyPluginPath = SettingsHelper.GetFullPath("Plugins", perProfile: false);
-        Directory.CreateDirectory(rysyPluginPath);
-
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");
 
         var blacklisted = (Settings.Instance?.ReadBlacklist ?? true) ?
@@ -116,8 +113,6 @@ public static class ModRegistry {
             .Concat(Directory.GetFiles(modDir, "*.zip"))
             .Select(f => f.Unbackslash())
             .Where(f => !blacklisted.Contains(f))
-            // add Rysy global plugins
-            .Concat(Directory.GetDirectories(rysyPluginPath))
             .Select(f => {
                 if (f.EndsWith(".zip", StringComparison.Ordinal))
                     return CreateModAsync(f, zip: true, loadCSharpPlugins);
@@ -231,12 +226,10 @@ public static class ModRegistry {
         var settingsType = mod.PluginAssembly?.GetTypes().FirstOrDefault(t => t.IsSubclassOf(typeof(ModSettings))) ?? typeof(ModSettings);
 
         var path = mod.SettingsFileLocation;
-        Directory.CreateDirectory(path.Directory()!);
+        var fs = SettingsHelper.GetFilesystem(perProfile: false);
 
-        if (File.Exists(path)) {
-            using var stream = File.OpenRead(path);
-
-            mod.Settings = (ModSettings) JsonSerializer.Deserialize(stream, settingsType, JsonSerializerHelper.DefaultOptions)!;
+        if (fs.TryReadAllText(path) is { } settingsJson) {
+            mod.Settings = (ModSettings) JsonSerializer.Deserialize(settingsJson, settingsType, JsonSerializerHelper.DefaultOptions)!;
             mod.Settings.Meta = mod;
         } else {
             mod.Settings = (ModSettings) Activator.CreateInstance(settingsType)!;
@@ -308,7 +301,9 @@ public static class ModRegistry {
             .Where(p => p.Item1 is not null).ToList();
 
         var hasCsproj = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "csproj").Any();
-        var cachePath = SettingsHelper.GetFullPath($"CompileCache/{mod.Name.ToValidFilename()}", perProfile: true);
+        
+        var cachePath = $"CompileCache/{mod.Name.ToValidFilename()}";
+        
         var anyFiles = CodeCompilationHelper.CompileFiles(mod.Name, fileInfo, cachePath, addGlobalUsings: !hasCsproj, out var modAsm, out var emitResult);
 
         if (!anyFiles)

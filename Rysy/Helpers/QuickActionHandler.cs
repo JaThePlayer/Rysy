@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Layers;
+using Rysy.Mods;
 using Rysy.Tools;
 using System.Text.Json;
 
@@ -58,7 +59,9 @@ public class QuickActionHandler {
                 info.Hotkey = edited["hotkey"]?.ToString() ?? "";
 
                 Actions.Value.Add(info);
-                File.WriteAllText(Filename, Actions.Value.ToJson());
+
+                var fs = SettingsHelper.GetFilesystem(perProfile: true);
+                fs.TryWriteToFile(Filename, Actions.Value.ToJson());
 
                 form.RemoveSelf();
 
@@ -69,18 +72,18 @@ public class QuickActionHandler {
         });
     }
 
-    private static string Filename => SettingsHelper.GetFullPath("quickActions.json", perProfile: true);
+    private static string Filename => "quickActions.json";
 
     private static Lazy<List<QuickActionInfo>> Actions = new(() => LoadActions(Filename));
 
     private static List<QuickActionInfo> LoadActions(string file) {
         try {
-            if (Path.GetDirectoryName(file) is { } dir)
-                Directory.CreateDirectory(dir);
-            if (!File.Exists(file))
-                return new();
+            var fs = SettingsHelper.GetFilesystem(perProfile: true);
+            if (fs.TryReadAllText(file) is { } txt) {
+                return JsonSerializer.Deserialize<List<QuickActionInfo>>(txt, JsonSerializerHelper.DefaultOptions) ?? new();
+            }
 
-            return JsonSerializer.Deserialize<List<QuickActionInfo>>(File.ReadAllText(file), JsonSerializerHelper.DefaultOptions) ?? new();
+            return [];
         } catch (Exception e) {
             Logger.Error(e, $"Error loading quick actions");
             return new();

@@ -197,6 +197,22 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
         return files;
     }
+    
+    public IEnumerable<string> FindFilesInDirectory(string directory, string extension) {
+        var files = _allEntryFullNames.SelectWhereNotNull(fullName => {
+            var valid = !fullName.EndsWith('/') 
+                        && fullName.StartsWith(directory, StringComparison.Ordinal)
+                        && fullName.EndsWith(extension, StringComparison.Ordinal);
+            
+            if (valid && fullName.AsSpan()[(directory.Length+1)..].Contains('/')) {
+                valid = false;
+            }
+            
+            return valid ? fullName : null;
+        }).ToList();
+
+        return files;
+    }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
         lock (WatchedAssets) {

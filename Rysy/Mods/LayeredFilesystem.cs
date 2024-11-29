@@ -20,6 +20,14 @@ public class LayeredFilesystem : IModFilesystem {
             }
         }
     }
+    
+    public IEnumerable<string> FindFilesInDirectory(string directory, string extension) {
+        foreach (var fs in Mods) {
+            foreach (var item in fs.Filesystem.FindFilesInDirectory(directory, extension)) {
+                yield return item;
+            }
+        }
+    }
 
     public void NotifyFileCreated(string virtPath) {
         foreach (var m in Mods) {

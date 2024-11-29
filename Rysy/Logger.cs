@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Mods;
 using Rysy.Platforms;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -6,8 +7,8 @@ using System.Text;
 namespace Rysy;
 
 public static class Logger {
-    private static string LogFile = $"{RysyPlatform.Current.GetSaveLocation()}/log.txt";
-    private static string LastLogFile = $"{RysyPlatform.Current.GetSaveLocation()}/prev-log.txt";
+    private static readonly string LogFile = "log.txt";
+    private static readonly string LastLogFile = "prev-log.txt";
 
     private static object FILE_LOCK = new();
 
@@ -33,13 +34,9 @@ public static class Logger {
         void DoInit([CallerFilePath] string filePath = "") {
             CompilePath = (Path.GetDirectoryName(filePath) ?? "") + Path.DirectorySeparatorChar;
 
-            if (Path.GetDirectoryName(LogFile) is { } dir)
-                Directory.CreateDirectory(dir);
-
-            if (File.Exists(LogFile)) {
-                File.Copy(LogFile, LastLogFile, true);
-                File.Delete(LogFile);
-            }
+            var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(profile: null);
+            fs.CopyFileTo(LogFile, LastLogFile);
+            fs.TryDeleteFile(LogFile);
         }
     }
 
@@ -150,14 +147,16 @@ public static class Logger {
     private static void WriteImpl(string str) {
         var unformatted = str.UnformatColors();
 
+        var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(null);
+        
         lock (FILE_LOCK) {
             if (UseColorsInConsole) {
                 Console.Write(str.Censor());
-                File.AppendAllText(LogFile, unformatted.Censor());
+                fs.AppendAllText(LogFile, unformatted.Censor());
             } else {
                 var censored = unformatted.Censor();
                 Console.Write(censored);
-                File.AppendAllText(LogFile, censored);
+                fs.AppendAllText(LogFile, censored);
             }
         }
 

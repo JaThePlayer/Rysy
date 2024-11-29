@@ -143,13 +143,25 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {
         var realPath = VirtToRealPath(directory);
         if (!Directory.Exists(realPath)) {
-            return Array.Empty<string>();
+            return [];
         }
+        
+        var searchFilter = string.IsNullOrWhiteSpace(extension) ? "*" : $"*.{extension}";
 
+        return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(Root, f).Unbackslash());
+    }
+    
+    public IEnumerable<string> FindFilesInDirectory(string directory, string extension) {
+        var realPath = VirtToRealPath(directory);
+        if (!Directory.Exists(realPath)) {
+            return [];
+        }
 
         var searchFilter = string.IsNullOrWhiteSpace(extension) ? "*" : $"*.{extension}";
 
-        return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.AllDirectories).Select(f => Path.GetRelativePath(Root, f).Unbackslash());
+        return Directory.EnumerateFiles(realPath, searchFilter, SearchOption.TopDirectoryOnly)
+            .Select(f => Path.GetRelativePath(Root, f).Unbackslash());
     }
 
     public void NotifyFileCreated(string virtPath) {
@@ -180,9 +192,27 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         return true;
     }
 
+    public bool TryDeleteFile(string path) {
+        var realPath = VirtToRealPath(path);
+        File.Delete(realPath);
+
+        return true;
+    }
+
     public void RegisterFilewatch(string path, WatchedAsset asset) {
         var assets = WatchedAssets.GetOrAdd(path, static _ => new(1));
 
         assets.Add(asset);
+    }
+
+    public void AppendAllText(string path, string contents) {
+        var realPath = VirtToRealPath(path);
+        if (!realPath.StartsWith(Root, StringComparison.Ordinal))
+            return;
+        
+        if (Path.GetDirectoryName(realPath) is {} dir)
+            Directory.CreateDirectory(dir);
+        
+        File.AppendAllText(realPath, contents);
     }
 }
