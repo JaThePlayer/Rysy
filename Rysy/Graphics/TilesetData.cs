@@ -149,14 +149,14 @@ public sealed class TilesetData {
     public VirtTexture Texture { get; set; } = null!;
     public List<TilesetSet> Tiles { get; set; } = new();
 
-    public AutotiledSprite[] Center { get; set; } = null!;
-    public AutotiledSprite[] Padding { get; set; } = null!;
-    
-    public char[] Ignores { get; set; }
-    public char[] IgnoreExceptions { get; set; }
+    public AutotiledSprite[] Center { get; set; } = [];
+    public AutotiledSprite[] Padding { get; set; } = [];
+
+    public char[] Ignores { get; set; } = [];
+    public char[] IgnoreExceptions { get; set; } = [];
 
     // Ignores, but without any of the values contained by IgnoreExceptions
-    internal char[] IgnoresExceptExceptions;
+    internal char[] IgnoresExceptExceptions = [];
     
     public Dictionary<char, TilesetDefine> Defines { get; set; } = new();
 
