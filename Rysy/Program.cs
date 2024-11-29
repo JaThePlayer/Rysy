@@ -4,6 +4,9 @@ using Rysy.Helpers;
 
 RysyState.CmdArguments = new(args);
 
+if (RysyState.CmdArguments.HelpDisplayed)
+    return;
+
 Environment.CurrentDirectory = Path.GetDirectoryName(typeof(RysyEngine).Assembly.Location) ?? Environment.CurrentDirectory;
 
 if (RysyState.CmdArguments.Headless) {
