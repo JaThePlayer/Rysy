@@ -334,6 +334,11 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
                 entity.InitializeNodePositions();
             }
 
+            if (entity.Room != room) {
+                entity.Room = room;
+                entity.ClearInnerCaches();
+            }
+
             // todo: hacky!!!
             entity.Selected = true;
             var sprites = entity.GetSpritesWithNodes().OrderByDescending(x => x.Depth).ToList();
