@@ -9,6 +9,7 @@ public record MoveNodeAction(Node Node, EntityRef Entity, Vector2 By) : IHistory
         entity.ClearRoomRenderCache();
         entity.OnChanged(new() {
             NodesChanged = true,
+            NodeCountChanged = false,
         });
 
         return true;
