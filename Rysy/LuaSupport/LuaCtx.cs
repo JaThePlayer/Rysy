@@ -295,14 +295,15 @@ public class LuaCtx {
             //Console.WriteLine($"requireFromPlugin {lib}, {modName}");
 
             if (ModRegistry.GetModByName(modName) is not { } mod) {
-                lua.Error($"Mod {modName} not loaded!");
+                Logger.Write("Lua.mods.requireFromPlugin", LogLevel.Warning, $"Attempted to load library '{lib}' from missing mod {modName}");
+                lua.PushNil();
                 return 1;
             }
 
             var path = $"Loenn/{lib.Replace('.', '/')}.lua";
 
             if (mod.Filesystem.TryReadAllText(path) is not { } libString) {
-                //lua.Error($"library {path} [{modName}] not found!");
+                Logger.Write("Lua.mods.requireFromPlugin", LogLevel.Warning, $"Library '{lib}' [{modName}] not found!");
                 lua.PushNil();
                 return 1;
             }

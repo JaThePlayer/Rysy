@@ -168,7 +168,6 @@ local function _handleRequire(lib, modName, registerWatcher)
 	
 	if not required then
 	    revertHotReloadData(prevHotReloadData)
-		logging.error(string.format("library %s [%s] not found!", lib, modName))
 		loadedFromPlugins[modName][lib] = "__nil"
 		return nil
 	end
