@@ -90,7 +90,7 @@ internal sealed class CustomSpinner : LonnEntity {
                 bg.WithDepth(depth + 2).CreateColoredTemplate(default, borderColor),
                 bg.WithOutlineTexture().WithDepth(depth + 2).CreateColoredTemplate(borderColor)
             )).ToArray(),
-            ConnectionDistance: fgs[0].Texture.Width * fgs[0].Texture.Height,
+            ConnectionDistance: (fgs[0].Texture.Width/12*12) + (fgs[0].Texture.Width%12>0 ? 12 : 0),
             Width: fgs[0].Texture.Width
         );
         
@@ -130,7 +130,7 @@ internal sealed class CustomSpinner : LonnEntity {
             sprites.Add(fg.Back.Create(pos));
         }
 
-        var s = cache.Width;
+        var s = cache.ConnectionDistance;
 
         foreach (CustomSpinner spinner in Room.Entities[typeof(CustomSpinner)]) {
             if (spinner.Id <= Id)
@@ -139,7 +139,7 @@ internal sealed class CustomSpinner : LonnEntity {
             var otherPos = spinner.Pos;
             var oc = spinner.GetCache();
 
-            if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.Width*float.Pow(ImageScale + spinner.ImageScale, 2f) / 4f)
+            if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.ConnectionDistance*float.Pow(ImageScale + spinner.ImageScale, 2f) / 4f)
                 && spinner.AttachToSolid == attachToSolid 
                 && spinner.AttachGroup == attachGroup) {
                 var connectorPos = (pos + otherPos) / 2f;
