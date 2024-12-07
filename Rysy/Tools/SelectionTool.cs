@@ -190,10 +190,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         List<Selection> unselected = [];
 
         foreach (var s in selections) {
-            if (s.Handler.TryAddNode(at) is { } res) {
+            if (unselected.All(x => x.Handler != s.Handler) && s.Handler.TryAddNode(at) is { } res) {
                 actions.Add(res.Item1);
                 newSelections.Add(new() { Handler = res.Item2 });
                 unselected.Add(s);
+                unselected.AddRange(selections.Where(x => 
+                    s.Handler switch{ NodeSelectionHandler n => n.Entity, var xx => xx.Parent } == 
+                    x.Handler switch{ NodeSelectionHandler n => n.Entity, var xx => xx.Parent }));
             }
         }
 

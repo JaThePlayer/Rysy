@@ -595,9 +595,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 item?.ClearCollideCache();
                 item?.RecalculateId();
             }
-            _NodeSelectionHandlers = new NodeSelectionHandler?[handlers.Length];
-            for (int i = 0; i < _NodeSelectionHandlers.Length; i++) {
-                _NodeSelectionHandlers[i] = handlers.FirstOrDefault(h => h is {} && h.NodeIdx == i);
+
+            if (changed.NodeCountChanged) {
+                _NodeSelectionHandlers = new NodeSelectionHandler?[handlers.Length];
+                for (int i = 0; i < _NodeSelectionHandlers.Length; i++) {
+                    _NodeSelectionHandlers[i] = handlers.FirstOrDefault(h => h is {} && h.NodeIdx == i);
+                }
             }
         }
 
@@ -882,6 +885,8 @@ public readonly struct EntityDataChangeCtx {
     public object? NewValue { get; init; }
 
     public bool NodesChanged { get; init; }
+    
+    public bool NodeCountChanged { get; init; }
 
     public bool AllChanged { get; init; }
 
@@ -954,6 +959,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
         Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
         Nodes.OnChanged = () => OnChanged?.Invoke(new EntityDataChangeCtx {
             NodesChanged = true,
+            NodeCountChanged = true,
         });
 
         Inner = new(attributes);
@@ -970,6 +976,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     public void InitializeNodes(int capacity) {
         Nodes = new(() => OnChanged?.Invoke(new EntityDataChangeCtx {
             NodesChanged = true,
+            NodeCountChanged = true,
         }), capacity: capacity);
     }
 
