@@ -6,10 +6,12 @@ using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Tools;
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithInheritors)]
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public abstract class Tool {
     public bool UsePersistence { get; set; }
 
@@ -136,7 +138,7 @@ public abstract class Tool {
                 return mat is false ? null : mat;
             }
 
-            if (UsePersistence && Persistence.Instance?.Get(PersistenceMaterialKey, (object) null!) is { } persisted) {
+            if (UsePersistence && Persistence.Instance?.Get<object>(PersistenceMaterialKey, null!) is { } persisted) {
                 _material = PersistenceObjToMaterial(persisted);
                 return persisted;
             }

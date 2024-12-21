@@ -1,9 +1,11 @@
-﻿using Rysy.Platforms;
+﻿using Rysy.Helpers;
+using Rysy.Platforms;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
 
-public class Profile {
+public class Profile : IHasJsonCtx<Profile> {
     public static Profile Instance { get; internal set; }
 
     /// <summary>
@@ -58,4 +60,6 @@ public class Profile {
 
         return profile;
     }
+
+    public static JsonTypeInfo<Profile> JsonCtx => DefaultJsonContext.Default.Profile;
 }

@@ -1,9 +1,11 @@
 ﻿using Rysy.Extensions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Rysy.Mods;
 
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public class ModSettings {
     [JsonIgnore]
     public ModMeta Meta { get; internal set; }
@@ -37,7 +39,7 @@ public sealed class LonnBindingAttribute : Attribute {
 internal static class LonnBindingHelper {
     private static Dictionary<Type, Dictionary<string, PropertyInfo>> AllBindings = new();
 
-    public static Dictionary<string, PropertyInfo> GetAllBindings(Type settingsType) {
+    public static Dictionary<string, PropertyInfo> GetAllBindings([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type settingsType) {
         if (AllBindings.TryGetValue(settingsType, out var bindings)) {
             return bindings;
         }

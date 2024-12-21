@@ -15,6 +15,7 @@ using LuaException = Rysy.LuaSupport.LuaException;
 
 namespace Rysy;
 
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;

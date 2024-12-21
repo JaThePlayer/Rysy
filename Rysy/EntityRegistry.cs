@@ -7,6 +7,7 @@ using Rysy.Mods;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Rysy;
@@ -495,7 +496,7 @@ public static class EntityRegistry {
         return true;
     }
 
-    private static void RegisterType(Type t, RegisteredEntityType rt, CustomEntityAttribute attr, ModMeta? mod = null) {
+    private static void RegisterType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t, RegisteredEntityType rt, CustomEntityAttribute attr, ModMeta? mod = null) {
         var sid = attr.Name;
 
         var info = GetOrCreateInfo(sid, rt);
