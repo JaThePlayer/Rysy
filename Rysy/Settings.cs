@@ -7,6 +7,8 @@ using Rysy.Platforms;
 using Rysy.Scenes;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
 
@@ -19,7 +21,7 @@ public static class SettingsHelper {
             perProfile ? RysyPlatform.Current.ForcedProfile()?.Name ?? Settings.Instance.CurrentProfile : null);
     }
 
-    public static T Load<T>(string filename, bool perProfile = false) where T : class, new() {
+    public static T Load<T>(string filename, bool perProfile = false) where T : class, IHasJsonCtx<T>, new() {
         if (!ReadSettings)
             return new();
 
@@ -27,7 +29,7 @@ public static class SettingsHelper {
 
         if (fs.OpenFile(filename, stream => {
                 try {
-                    return JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.SettingsOptions);
+                    return JsonSerializer.Deserialize(stream, T.JsonCtx);
                 } catch (Exception e) {
                     Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
                     return null;
@@ -40,20 +42,20 @@ public static class SettingsHelper {
         return Save<T>(new() { }, filename, perProfile);
     }
 
-    public static T Save<T>(T settings, string filename, bool perProfile = false) where T : class, new() {
+    public static T Save<T>(T settings, string filename, bool perProfile = false) where T : class, IHasJsonCtx<T>, new() {
         if (!ReadSettings)
             return new();
 
         var fs = GetFilesystem(perProfile);
         fs.TryWriteToFile(filename, stream => {
-            JsonSerializer.Serialize(stream, settings, JsonSerializerHelper.SettingsOptions);
+            JsonSerializer.Serialize(stream, settings, T.JsonCtx);
         });
         
         return settings;
     }
 }
 
-public sealed class Settings {
+public sealed partial class Settings : IHasJsonCtx<Settings> {
     public static bool UiEnabled { get; set; }
     
     public static string SettingsFileLocation { get; } = $"settings.json";
@@ -265,4 +267,7 @@ public sealed class Settings {
     public float TouchpadPanSpeed { get; set; } = 100f;
 
     #endregion
+
+    public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;
+    
 }

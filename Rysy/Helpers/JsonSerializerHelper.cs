@@ -1,6 +1,7 @@
 ﻿using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy.Helpers;
 
@@ -53,7 +54,31 @@ public static class JsonSerializerHelper {
         public override void Write(
             Utf8JsonWriter writer,
             object value,
-            JsonSerializerOptions options) =>
+            JsonSerializerOptions options) => 
             JsonSerializer.Serialize(writer, value, value.GetType(), options);
     }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true,  
+    IncludeFields = true,
+    IgnoreReadOnlyFields = true,
+    IgnoreReadOnlyProperties = true,
+    ReadCommentHandling = JsonCommentHandling.Skip,
+    AllowTrailingCommas = true)]
+[JsonSerializable(typeof(BackupIndex))]
+[JsonSerializable(typeof(Settings))]
+[JsonSerializable(typeof(Profile))]
+[JsonSerializable(typeof(Persistence))]
+[JsonSerializable(typeof(Placement))]
+[JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(int))]
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(float))]
+public partial class DefaultJsonContext : JsonSerializerContext
+{
+}
+
+
+public interface IHasJsonCtx<T> {
+    public static abstract JsonTypeInfo<T> JsonCtx { get; }
 }

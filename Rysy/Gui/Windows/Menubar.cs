@@ -332,7 +332,7 @@ public static class Menubar {
                 : p.Name,
             p => editor.LoadMapFromBin(p.Filename));
 
-        if (ImGui.MenuItem("Save", Settings.Instance.GetOrCreateHotkey("saveMap")).WithTooltip(editor.Map?.Filepath?.Censor() ?? "[null]")) {
+        if (ImGui.MenuItem("Save", Settings.Instance.GetOrCreateHotkey("saveMap")).WithTooltip(editor.Map?.Filepath?.Censor())) {
             editor.Save();
         }
         if (ImGui.MenuItem("Save as")) {

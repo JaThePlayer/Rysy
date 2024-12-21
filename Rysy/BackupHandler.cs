@@ -1,7 +1,10 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.Platforms;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
 
@@ -10,16 +13,28 @@ public record class BackupInfo(string MapName, DateTime Time, string BackupFilep
     public Lazy<long> Filesize = new(() => File.Exists(BackupFilepath) ? new FileInfo(BackupFilepath).Length : -1);
 }
 
+public partial class BackupIndex : Dictionary<int, BackupInfo>, IHasJsonCtx<BackupIndex> {
+    public static JsonTypeInfo<BackupIndex> JsonCtx => DefaultJsonContext.Default.BackupIndex;
+
+    public BackupIndex() {
+        
+    }
+
+    public BackupIndex(Dictionary<int, BackupInfo> d) : base(d) {
+        
+    }
+}
+
 public static class BackupHandler {
     public static string BackupFolder => $"{RysyPlatform.Current.GetSaveLocation()}/Backups";
 
     public const string IndexPath = "Backups/index.json";
 
-    private static Dictionary<int, BackupInfo>? CachedIndex;
+    private static BackupIndex? CachedIndex;
     private static List<BackupInfo>? CachedBackups;
 
-    public static Dictionary<int, BackupInfo> LoadIndex() 
-        => CachedIndex ??= SettingsHelper.Load<Dictionary<int, BackupInfo>>(IndexPath, false);
+    public static BackupIndex LoadIndex() 
+        => CachedIndex ??= SettingsHelper.Load<BackupIndex>(IndexPath, false);
 
     public static List<BackupInfo> GetBackups() {
         if (CachedBackups is { })
@@ -96,7 +111,7 @@ public static class BackupHandler {
             index.Remove(0);
 
             // shift all indexes down by 1
-            index = index.Select(p => (key: p.Key - 1, value: p.Value)).ToDictionary(p => p.key, p => p.value);
+            index = new(index.Select(p => (key: p.Key - 1, value: p.Value)).ToDictionary(p => p.key, p => p.value));
         }
 
         // add our new backup to the index

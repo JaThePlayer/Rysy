@@ -1,9 +1,10 @@
 ﻿using Rysy.Helpers;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
 
-public class Persistence {
+public class Persistence : IHasJsonCtx<Persistence> {
     #region Helpers
 
     public static Persistence Instance { get; set; } = null!;
@@ -171,4 +172,6 @@ public class Persistence {
         public string Filename { get; set; }
         public string Name { get; set; }
     }
+
+    public static JsonTypeInfo<Persistence> JsonCtx => DefaultJsonContext.Default.Persistence;
 }
