@@ -29,12 +29,12 @@ public abstract class RysyPlatform {
     
     public virtual IModFilesystem GetRysyFilesystem() {
 #if DEBUG
-        return CachedRysyFilesystem ??= Directory.Exists("../../../Assets")
+        return CachedRysyFilesystem ??= new ReadonlyModFilesystem(Directory.Exists("../../../Assets")
         ? new FolderModFilesystem(Path.GetFullPath("../../../Assets"))
-        : new FolderModFilesystem("Assets");
+        : new FolderModFilesystem("Assets"));
 
 #else
-        return CachedRysyFilesystem ??= new FolderModFilesystem("Assets");
+        return CachedRysyFilesystem ??= new ReadonlyModFilesystem(new FolderModFilesystem("Assets"));
 #endif
     }
 

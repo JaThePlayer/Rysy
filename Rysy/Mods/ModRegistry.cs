@@ -173,7 +173,7 @@ public static class ModRegistry {
                 Version = new(1, 4, 0, 0),
             }
         },
-        Filesystem = new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content"),
+        Filesystem = new ReadonlyModFilesystem(new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content")),
     };
 
     private static ModMeta CreateRysyMod() => RysyMod = new() {
