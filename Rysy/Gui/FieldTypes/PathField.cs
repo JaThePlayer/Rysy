@@ -15,7 +15,7 @@ using TextureCacheKey = (string saved, string display, FoundPath path);
 using TextureCache = Cache<List<(string saved, string display, FoundPath path)>>;
 using RawTextureCache = Cache<List<FoundPath>>;
 
-public record class PathField : Field, IFieldConvertible<string> {
+public partial record class PathField : Field, IFieldConvertible<string> {
     private static ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
 
     private RawTextureCache RawPaths;
@@ -142,6 +142,8 @@ public record class PathField : Field, IFieldConvertible<string> {
 
     public PathField(string @default, IModFilesystem filesystem, string directory, string extension, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
+        _regex = EmptyRegex();
+        PreviewSpriteGetter = null;
 
         var token = new CacheToken();
         RawTextureCache cache = new(token, () => {
@@ -261,4 +263,8 @@ public record class PathField : Field, IFieldConvertible<string> {
     }
 
     public string ConvertMapDataValue(object value) => value?.ToString() ?? "";
+    
+    
+    [GeneratedRegex(".*", RegexOptions.Compiled)]
+    private static partial Regex EmptyRegex();
 }
