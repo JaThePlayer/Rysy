@@ -294,11 +294,12 @@ entities.default.attributes.placements.name.y=Y
 entities.default.attributes.placements.name.width=Width
 entities.default.attributes.placements.name.height=Height
 entities.default.attributes.placements.name.nodes=Nodes
-entities.default.attributes.description.x=X position of entity.
-entities.default.attributes.description.y=Y position of entity.
-entities.default.attributes.description.width=Width of entity.
-entities.default.attributes.description.height=Height of entity.
+entities.default.attributes.description.x=X position of this entity.
+entities.default.attributes.description.y=Y position of this entity.
+entities.default.attributes.description.width=Width of this entity, in pixels.
+entities.default.attributes.description.height=Height of this entity, in pixels.
 entities.default.attributes.description.nodes=Nodes for the entity.
+entities.default.attributes.description._editorGroup=List of Editor Groups this entity is in.
 
 # Refill
 entities.refill.placements.name.one_dash=Refill

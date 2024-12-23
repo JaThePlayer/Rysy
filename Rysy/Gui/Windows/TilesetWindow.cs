@@ -83,14 +83,8 @@ public sealed class TilesetWindow : Window {
                 order.Add(k);
             }
         }
-
-        var defaultTooltipKeyPrefix = $"rysy.tilesetWindow.description";
-        var defaultNameKeyPrefix = $"rysy.tilesetWindow.attribute";
-
-        foreach (var (name, f) in fields) {
-            f.Tooltip ??= name.TranslateOrNull(defaultTooltipKeyPrefix);
-            f.NameOverride ??= name.TranslateOrNull(defaultNameKeyPrefix);
-        }
+        
+        fields.AddTranslations("rysy.tilesetWindow.description", "rysy.tilesetWindow.attribute");
 
         return fields.Ordered(order);
     }

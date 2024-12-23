@@ -8,11 +8,7 @@ namespace Rysy.Gui.Windows;
 
 public sealed class MetadataWindow : Window {
     private static FieldList AddTooltips(FieldList fields) {
-        foreach (var (name, field) in fields) {
-            field.Tooltip ??= name.TranslateOrNull("rysy.metadata.field.description");
-            field.NameOverride ??= name.TranslateOrNull("rysy.metadata.field.name");
-        }
-
+        fields.AddTranslations("rysy.metadata.field.description", "rysy.metadata.field.name");
         return fields;
     }
 

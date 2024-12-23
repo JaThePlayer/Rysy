@@ -218,10 +218,7 @@ public class StylegroundWindow : Window {
         var defaultTooltipKeyPrefix = $"style.effects.default.description";
         var defaultNameKeyPrefix = $"style.effects.default.attribute";
 
-        foreach (var (name, f) in fields) {
-            f.Tooltip ??= name.TranslateOrNull(tooltipKeyPrefix) ?? name.TranslateOrNull(defaultTooltipKeyPrefix);
-            f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
-        }
+        fields.AddTranslations(tooltipKeyPrefix, nameKeyPrefix, defaultTooltipKeyPrefix, defaultNameKeyPrefix);
 
         return fields.Ordered(order);
     }

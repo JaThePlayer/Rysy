@@ -138,10 +138,7 @@ public sealed class DecalRegistryWindow : Window {
         var defaultTooltipKeyPrefix = $"rysy.decal_registry.default.description";
         var defaultNameKeyPrefix = $"rysy.decal_registry.default.attribute";
 
-        foreach (var (name, f) in fields) {
-            f.Tooltip ??= name.TranslateOrNull(tooltipKeyPrefix) ?? name.TranslateOrNull(defaultTooltipKeyPrefix);
-            f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
-        }
+        fields.AddTranslations(tooltipKeyPrefix, nameKeyPrefix, defaultTooltipKeyPrefix, defaultNameKeyPrefix);
 
         return fields.Ordered(order);
     }

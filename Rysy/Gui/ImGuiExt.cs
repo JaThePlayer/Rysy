@@ -17,6 +17,16 @@ public static class ImGuiExt {
 
         return val;
     }
+    
+    public static bool WithTooltip(this bool val, Tooltip tooltip) {
+        if (!tooltip.IsEmpty && ImGui.IsItemHovered()) {
+            ImGui.BeginTooltip();
+            tooltip.RenderImGui();
+            ImGui.EndTooltip();
+        }
+
+        return val;
+    }
 
     /// <summary>
     /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.

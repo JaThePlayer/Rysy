@@ -280,7 +280,7 @@ public static class ImGuiManager {
     }
 
     public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, 
-        ref string search, string? tooltip = null, ComboCache<T>? cache = null,
+        ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
         Func<T, string, bool>? menuItemRenderer = null) where T : notnull {
 
         menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
@@ -312,13 +312,13 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, string? tooltip = null) where T : notnull {
+    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, Tooltip tooltip = default) where T : notnull {
         string? search = null;
         return Combo(name, ref value, values, toString, ref search, tooltip, null);
     }
 
     public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, 
-        [NotNullIfNotNull(nameof(search))] ref string? search, string? tooltip = null,
+        [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
         ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null) 
         where T : notnull {
         var valueName = toString(value);
@@ -351,7 +351,7 @@ public static class ImGuiManager {
     }
 
     public static bool EditableCombo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, Func<string, T> stringToValue,
-        [NotNullIfNotNull(nameof(search))] ref string? search, string? tooltip = null,
+        [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
         ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null,
         Func<T, string>? textInputStringGetter = null) {
         bool changed = false;
@@ -402,7 +402,7 @@ public static class ImGuiManager {
     }
 
     public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, 
-        ref string search, string? tooltip = null, ComboCache<T>? cache = null,
+        ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
         Func<T, string, bool>? menuItemRenderer = null)
         where T : notnull {
 
@@ -453,7 +453,7 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip, string? hexCodeOverride = null) {
+    public static bool ColorEdit(string label, ref Color color, ColorFormat format, Tooltip tooltip = default, string? hexCodeOverride = null) {
         var colorHex = hexCodeOverride ?? ColorHelper.ToString(color, format);
         bool edited = false;
 
@@ -498,7 +498,7 @@ public static class ImGuiManager {
         return edited;
     }
     
-    public static bool ColorEditAllowEmpty(string label, ref string colorStr, ColorFormat format, string? tooltip) {
+    public static bool ColorEditAllowEmpty(string label, ref string colorStr, ColorFormat format, Tooltip tooltip = default) {
         bool edited = false;
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
