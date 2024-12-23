@@ -5,6 +5,16 @@ using System.Xml;
 namespace Rysy.Graphics;
 
 public sealed class AnimatedTileBank {
+    private static AnimatedTileData? _missingTile;
+    
+    public static AnimatedTileData MissingTile => _missingTile ??= new() {
+        Name = "Missing",
+        Delay = 1f,
+        Frames = [ GFX.Atlas["Rysy:tilesets/missingAnimatedTile"] ],
+        Offset = new Vector2(-4f, -12f),
+        Origin = new Vector2(0.0f),
+    };
+    
     private Dictionary<string, AnimatedTileData> _tiles;
 
     public AnimatedTileBank() {
@@ -15,8 +25,8 @@ public sealed class AnimatedTileBank {
         _tiles = tiles;
     }
 
-    public AnimatedTileData? Get(string key) {
-        return _tiles.GetValueOrDefault(key);
+    public AnimatedTileData Get(string key) {
+        return _tiles.GetValueOrDefault(key) ?? MissingTile;
     }
 
     public void ReadFromXml(Stream xmlStream) {
