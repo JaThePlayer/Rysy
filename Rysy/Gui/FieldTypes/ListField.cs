@@ -44,22 +44,23 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
         Default = @default;
     }
 
-    public override bool IsValid(object? value) {
+    public override ValidationResult IsValid(object? value) {
         if (value is not string str) {
             return base.IsValid(value);
         }
         var split = Split(str);
 
         if (split.Length < MinElements) {
-            return false;
+            return ValidationResult.TooFewElements(MinElements);
         }
         if (MaxElements > -1 && split.Length > MaxElements) {
-            return false;
+            return ValidationResult.TooManyElements(MaxElements);
         }
 
         foreach (var item in split) {
-            if (!PrepareBaseField().IsValid(item))
-                return false;
+            var innerResult = PrepareBaseField().IsValid(item);
+            if (!innerResult.IsOk)
+                return innerResult;
         }
 
         return base.IsValid(value);
@@ -144,18 +145,15 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
             
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
+                var valid = PrepareBaseField().IsValid(item);
 
-                if (!PrepareBaseField().IsValid(item))
-                    ImGuiManager.PushInvalidStyle();
-
-                if (PrepareBaseField().RenderGui(i.ToString(CultureInfo.InvariantCulture), item) is { } newValue) {
+                if (PrepareBaseField().RenderGuiWithValidation(i.ToString(CultureInfo.InvariantCulture), item, valid) is { } newValue) {
                     var newStr = InnerObjToString(newValue);
                     if (!newStr.Contains(Separator, StringComparison.Ordinal)) {
                         split[i] = InnerObjToString(newValue);
                         anyChanged = true;
                     }
                 }
-                ImGuiManager.PopInvalidStyle();
 
                 ImGui.SameLine();
 

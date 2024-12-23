@@ -8,17 +8,41 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
 
     public float Min { get; set; } = float.MinValue;
     public float Max { get; set; } = float.MaxValue;
+    
+    public float RecommendedMin { get; set; } = float.MinValue;
+    public float RecommendedMax { get; set; } = float.MaxValue;
 
     public override object GetDefault() => Default;
 
     public override void SetDefault(object newDefault)
         => Default = Convert.ToSingle(newDefault, CultureInfo.InvariantCulture);
 
-    public override bool IsValid(object? value) => (value switch {
-        int i when i >= Min && i <= Max => true,
-        float i when i >= Min && i <= Max => true,
-        _ => false
-    }) && base.IsValid(value);
+    public override ValidationResult IsValid(object? value) {
+        float v = value switch {
+            int i => i,
+            float f => f,
+            string s when float.TryParse(s, CultureInfo.InvariantCulture, out var f) => f,
+            _ => float.NaN,
+        };
+        if (float.IsNaN(v)) {
+            return ValidationResult.MustBeNumber;
+        }
+
+        if (v < Min)
+            return ValidationResult.TooSmall(Min);
+        if (v > Max)
+            return ValidationResult.TooLarge(Max);
+        
+        var baseValid = base.IsValid(value);
+        if (!baseValid.IsOk)
+            return baseValid;
+        
+        return ValidationResult.Combine(
+            baseValid,
+            ValidationMessage.TooSmallRecommended(v, RecommendedMin),
+            ValidationMessage.TooLargeRecommended(v, RecommendedMax)
+        );
+    }
 
     public override object? RenderGui(string fieldName, object value) {
         float b = Convert.ToSingle(value, CultureInfo.InvariantCulture);
@@ -37,6 +61,16 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
 
     public FloatField WithMax(float max) {
         Max = max;
+        return this;
+    }
+    
+    public FloatField WithRecommendedMin(float min) {
+        RecommendedMin = min;
+        return this;
+    }
+
+    public FloatField WithRecommendedMax(float max) {
+        RecommendedMax = max;
         return this;
     }
 

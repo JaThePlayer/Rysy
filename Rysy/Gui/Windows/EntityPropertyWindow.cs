@@ -28,14 +28,22 @@ public class EntityPropertyWindow : FormWindow {
 
         var minSize = main.MinimumSize;
         var maxSize = main.MaximumSize;
+        var minRecSize = main.RecommendedMinimumSize;
+        var maxRecSize = main.RecommendedMaximumSize;
         
         if (main.Width != 0) {
-            fields["width"] = Fields.Int(main.Width).WithStep(8).WithMin(minSize.X).WithMax(maxSize.X);
+            fields["width"] = Fields.Int(main.Width)
+                .WithRecommendedStep(8)
+                .WithMin(minSize.X).WithMax(maxSize.X)
+                .WithRecommendedMin(minRecSize.X).WithRecommendedMax(maxRecSize.X);
             order.Add("width");
         }
 
         if (main.Height != 0) {
-            fields["height"] = Fields.Int(main.Height).WithStep(8).WithMin(minSize.Y).WithMax(maxSize.Y);
+            fields["height"] = Fields.Int(main.Height)
+                .WithRecommendedStep(8)
+                .WithMin(minSize.Y).WithMax(maxSize.Y)
+                .WithRecommendedMin(minRecSize.Y).WithRecommendedMax(maxRecSize.Y);
             order.Add("height");
         }
 

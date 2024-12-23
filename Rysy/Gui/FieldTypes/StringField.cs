@@ -17,14 +17,14 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     private string? RealValue(string? from)
         => (EmptyIsNull && string.IsNullOrWhiteSpace(from)) ? null : from;
 
-    public override bool IsValid(object? value) {
-        if (value is string s) {
-            string? str = RealValue(s);
-
-            return (str is string || (NullAllowed && str is null)) && base.IsValid(value);
-        }
-
-        return (NullAllowed && value is null) && base.IsValid(value);
+    public override ValidationResult IsValid(object? value) {
+        if (value is string s)
+            value = RealValue(s);
+        
+        if (NullAllowed && value is null)
+            return base.IsValid(value);
+        
+        return value is string ? base.IsValid(value) : ValidationResult.GenericError;
     }
 
     public override object? RenderGui(string fieldName, object value) {

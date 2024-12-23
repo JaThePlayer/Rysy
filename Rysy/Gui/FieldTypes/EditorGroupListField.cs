@@ -32,8 +32,8 @@ public record EditorGroupField : DropdownField<EditorGroup> {
             .ToDictionary(gr => gr, gr => gr.Name) ?? new();
     }
 
-    public override bool IsValid(object? value) {
-        return true;
+    public override ValidationResult IsValid(object? value) {
+        return ValidationResult.Ok;
     }
 
     private EditorGroup CustomStringToT(string? str) => str is null ? EditorGroup.Default : _registry.GetOrCreate(str);

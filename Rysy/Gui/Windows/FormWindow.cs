@@ -211,8 +211,9 @@ public class FormWindow : Window {
 
         // determine color
         var valid = prop.Field.IsValid(val);
-        if (!valid)
-            ImGuiManager.PushInvalidStyle();
+        if (!valid.IsOk) {
+            // Error/Warning colors get handled by RenderGuiWithValidation
+        }
         else if (EditedValues.ContainsKey(name))
             ImGuiManager.PushEditedStyle();
         else if (!Exists(prop.Name))
@@ -222,9 +223,8 @@ public class FormWindow : Window {
         ImGui.SetNextItemWidth(ITEM_WIDTH);
         try {
             var field = prop.Field;
-            newVal = field.RenderGui(field.NameOverride ??= name.Humanize(), val);
+            newVal = field.RenderGuiWithValidation(field.NameOverride ??= name.Humanize(), val, valid);
         } finally {
-            ImGuiManager.PopInvalidStyle();
             ImGuiManager.PopEditedStyle();
             ImGuiManager.PopNullStyle();
         }
@@ -233,7 +233,7 @@ public class FormWindow : Window {
             Set(prop, newVal);
         }
 
-        return valid;
+        return valid.IsOk;
     }
 
     internal void Set(Prop prop, object newVal) {

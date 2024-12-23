@@ -73,41 +73,58 @@ public static class ImGuiManager {
         return condition;
     }
 
-    private static bool _invalidStyleEnabled;
+    private static int _invalidStyleEnabled;
     public static void PushInvalidStyle() {
         ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(255, 0, 0, 255));
         ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(255, 0, 0, 255));
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
-        _invalidStyleEnabled = true;
+        _invalidStyleEnabled++;
     }
 
     public static void PopInvalidStyle() {
-        if (_invalidStyleEnabled) {
+        if (_invalidStyleEnabled > 0) {
             ImGui.PopStyleColor(2);
             ImGui.PopStyleVar(2);
-            _invalidStyleEnabled = false;
+            _invalidStyleEnabled--;
+        }
+    }
+    
+    private static int _warnStyleEnabled;
+    public static void PushWarningStyle() {
+        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(255, 255, 0, 255));
+        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(255, 255, 0, 255));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
+        _warnStyleEnabled++;
+    }
+
+    public static void PopWarningStyle() {
+        if (_warnStyleEnabled > 0) {
+            ImGui.PopStyleColor(2);
+            ImGui.PopStyleVar(2);
+            _warnStyleEnabled--;
         }
     }
 
-    private static bool _editedStylePushed;
+    private static int _editedStylePushed;
     public static void PushEditedStyle() {
         ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(0, 255, 0, 255));
         ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(0, 255, 0, 255));
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
-        _editedStylePushed = true;
+        _editedStylePushed++;
     }
 
     public static void PopEditedStyle() {
-        if (_editedStylePushed) {
+        if (_editedStylePushed > 0) {
             ImGui.PopStyleColor(2);
             ImGui.PopStyleVar(2);
-            _editedStylePushed = false;
+            _editedStylePushed--;
         }
     }
 
-    private static bool _nullStylePushed;
+    private static int _nullStylePushed;
     public static unsafe void PushNullStyle() {
         var color = *ImGui.GetStyleColorVec4(ImGuiCol.TextDisabled);//(Color.LightGray * 0.8f).ToNumVec4();
 
@@ -115,14 +132,14 @@ public static class ImGuiManager {
         ImGui.PushStyleColor(ImGuiCol.Border, color);
         //ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         //ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
-        _nullStylePushed = true;
+        _nullStylePushed++;
     }
 
     public static void PopNullStyle() {
-        if (_nullStylePushed) {
+        if (_nullStylePushed > 0) {
             ImGui.PopStyleColor(2);
             //ImGui.PopStyleVar(2);
-            _nullStylePushed = false;
+            _nullStylePushed--;
         }
     }
 
@@ -141,29 +158,38 @@ public static class ImGuiManager {
     }
 
     public struct StyleHolder {
-        public bool Null { get; set; }
-        public bool Edited { get; set; }
-        public bool Invalid { get; set; }
+        public int Null { get; set; }
+        public int Edited { get; set; }
+        public int Invalid { get; set; }
+        
+        public int Warning { get; set; }
+        
         public TextEmphasis? Emphasis { get; set; }
     }
 
     public static void PushAllStyles(StyleHolder holder) {
-        if (holder.Null) {
+        if (holder.Null > 0) {
             PushNullStyle();
         } else {
             PopNullStyle();
         }
 
-        if (holder.Edited) {
+        if (holder.Edited > 0) {
             PushEditedStyle();
         } else {
             PopEditedStyle();
         }
 
-        if (holder.Invalid) {
+        if (holder.Invalid > 0) {
             PushInvalidStyle();
         } else {
             PopInvalidStyle();
+        }
+        
+        if (holder.Warning > 0) {
+            PushWarningStyle();
+        } else {
+            PopWarningStyle();
         }
 
         PopEmphasis();
@@ -176,11 +202,13 @@ public static class ImGuiManager {
             Null = _nullStylePushed,
             Edited = _editedStylePushed,
             Invalid = _invalidStyleEnabled,
+            Warning = _warnStyleEnabled,
         };
 
         PopEditedStyle();
         PopInvalidStyle();
         PopNullStyle();
+        PopWarningStyle();
         holder.Emphasis = PopEmphasis();
 
         return holder;

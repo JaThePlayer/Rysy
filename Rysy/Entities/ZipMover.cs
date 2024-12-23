@@ -38,7 +38,9 @@ public class ZipMover : Entity, ISolid, IPlaceable {
         };
     }
 
-    public override Point RecommendedMinimumSize => new(8, 8);
+    public override Point MinimumSize => new(8, 8);
+
+    public override Point RecommendedMinimumSize => new(16, 16);
 
     public static FieldList GetFields() => new(new {
         theme = Themes.Normal

@@ -10,6 +10,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public int Min { get; set; } = int.MinValue;
     public int Max { get; set; } = int.MaxValue;
+    
+    public int RecommendedMin { get; set; } = int.MinValue;
+    public int RecommendedMax { get; set; } = int.MaxValue;
+
+    public int RecommendedStep { get; set; } = 1;
 
     public bool NullAllowed { get; set; }
     
@@ -24,12 +29,44 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     public override void SetDefault(object newDefault)
         => Default = Convert.ToInt32(newDefault, CultureInfo.InvariantCulture);
 
-    public override bool IsValid(object? value) => 
-        (NullAllowed && value is null)
-        || value is int i && i >= Min && i <= Max && base.IsValid(value);
+    private int? ParseInput(object? value) {
+        return value switch {
+            int i => i,
+            float f when float.IsInteger(f) => (int)f,
+            string s when int.TryParse(s, CultureInfo.InvariantCulture, out var f) => f,
+            _ => null,
+        };
+    }
+    
+    public override ValidationResult IsValid(object? value) {
+        if ((NullAllowed && value is null)) {
+            return ValidationResult.Ok;
+        }
+        
+        if (ParseInput(value) is not {} v) {
+            return ValidationResult.MustBeInt;
+        }
+
+        if (v < Min)
+            return ValidationResult.TooSmall(Min);
+        if (v > Max)
+            return ValidationResult.TooLarge(Max);
+
+        var baseValid = base.IsValid(value);
+        if (!baseValid.IsOk)
+            return baseValid;
+        
+        return ValidationResult.Combine(
+            baseValid,
+            ValidationMessage.TooSmallRecommended(v, RecommendedMin),
+            ValidationMessage.TooLargeRecommended(v, RecommendedMax),
+            ValidationMessage.NotRecommendedMultiple(v, RecommendedStep)
+        );
+    }
 
     public override object? RenderGui(string fieldName, object value) {
-        int b = Convert.ToInt32(value ?? 0, CultureInfo.InvariantCulture) / DisplayScale;
+        var v = ParseInput(value) ?? 0;
+        int b = v / DisplayScale;
         if (ImGui.InputInt(fieldName, ref b, Step).WithTooltip(Tooltip))
             return b * DisplayScale;
 
@@ -46,9 +83,25 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         Min = min;
         return this;
     }
+    
+    public IntField WithRecommendedMin(int min) {
+        RecommendedMin = min;
+        return this;
+    }
 
     public IntField WithMax(int max) {
         Max = max;
+        return this;
+    }
+    
+    public IntField WithRecommendedMax(int max) {
+        RecommendedMax = max;
+        return this;
+    }
+    
+    public IntField WithRecommendedStep(int step) {
+        Step = step;
+        RecommendedStep = step;
         return this;
     }
     

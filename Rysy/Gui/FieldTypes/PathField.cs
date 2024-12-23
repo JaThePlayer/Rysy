@@ -41,11 +41,11 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         }
     }
 
-    public override bool IsValid(object? value) {
+    public override ValidationResult IsValid(object? value) {
         if (value is null && !NullAllowed)
-            return false;
+            return ValidationResult.CantBeNull;
 
-        return true;
+        return base.IsValid(value);
     }
 
 

@@ -21,7 +21,9 @@ public static class ImGuiExt {
     public static bool WithTooltip(this bool val, Tooltip tooltip) {
         if (!tooltip.IsEmpty && ImGui.IsItemHovered()) {
             ImGui.BeginTooltip();
+            var prev = ImGuiManager.PopAllStyles();
             tooltip.RenderImGui();
+            ImGuiManager.PushAllStyles(prev);
             ImGui.EndTooltip();
         }
 

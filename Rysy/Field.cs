@@ -40,12 +40,33 @@ public abstract record class Field {
     /// <returns>If the value got changed by the user, returns that new value. Otherwise, returns null</returns>
     public abstract object? RenderGui(string fieldName, object value);
 
+    public object? RenderGuiWithValidation(string fieldName, object value, ValidationResult validationResult) {
+        var prevTooltip = Tooltip;
+        if (validationResult.HasErrors)
+            ImGuiManager.PushInvalidStyle();
+        else if (validationResult.HasWarnings)
+            ImGuiManager.PushWarningStyle();
+        
+        try {
+            Tooltip = Tooltip.WrapWithValidation(validationResult);
+            return RenderGui(fieldName, value);
+        } finally {
+            ImGuiManager.PopInvalidStyle();
+            ImGuiManager.PopWarningStyle();
+            Tooltip = prevTooltip;
+        }
+    }
+
     /// <summary>
     /// Checks whether <paramref name="value"/> is a valid value for this field. Make sure to call base.IsValid, as it handles the <see cref="Validator"/>
     /// </summary>
     /// <param name="value">The value to check</param>
     /// <returns>Whether this value is valid</returns>
-    public virtual bool IsValid(object? value) => Validator?.Invoke(value) ?? true;
+    public virtual ValidationResult IsValid(object? value) {
+        if (Validator is null)
+            return ValidationResult.Ok;
+        return Validator.Invoke(value) ? ValidationResult.Ok : ValidationResult.GenericError;
+    }
 
     /// <summary>
     /// Converts the value to a string, such that it can be parsed back into the value by this field.
