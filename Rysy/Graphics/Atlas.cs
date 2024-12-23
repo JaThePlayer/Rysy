@@ -117,10 +117,23 @@ public class Atlas : IAtlas {
         OnChanged?.Invoke();
     }
 
-    public void RemoveTextures(List<string> paths) {
+    public void RemoveTextures(params List<string> paths) {
         lock (Textures) {
             foreach (var item in paths) {
                 Textures.Remove(item);
+            }
+
+            OnChanged?.Invoke();
+        }
+    }
+    
+    public void RemoveTextures(params List<VirtTexture> paths) {
+        lock (Textures) {
+            foreach (var item in paths) {
+                var key = Textures.FirstOrDefault(x => x.Value == item).Key;
+                if (key is { }) {
+                    Textures.Remove(key);
+                }
             }
 
             OnChanged?.Invoke();

@@ -46,30 +46,6 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         ImGuiMarkdown.RenderMarkdown(_tip);
         
         RenderTab();
-        return;
-
-        ImGui.BeginTabBar("Layer");
-
-        bool isBg = _isBg;
-        bool isFg = !_isBg;
-        
-        if (ImGui.BeginTabItem("Fg", ref isFg)) {
-            if (_isBg)
-                TabChanged();
-            _isBg = false;
-            RenderTab();
-            ImGui.EndTabItem();
-        }
-
-        if (ImGui.BeginTabItem("Bg", ref isBg)) {
-            if (!_isBg)
-                TabChanged();
-            _isBg = true;
-            RenderTab();
-            ImGui.EndTabItem();
-        }
-        
-        ImGui.EndTabBar();
     }
 
     private void RenderTab() {
@@ -139,6 +115,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
                 CreateTextureClone = true,
                 Texture = previewTask!.Result,
             }));
+            RemoveSelf();
         }
         
         ImGui.EndDisabled();
@@ -340,11 +317,6 @@ internal sealed partial class CreateTilesetWindow : Window {
                     var t = _tileset.Texture.Texture!;
                     t.SaveAsPng(stream, t.Width, t.Height);
                 });
-                var virtPath = $"tilesets/{_path}";
-#pragma warning disable CA2000
-                GFX.Atlas.AddTexture(virtPath, new ModTexture(mod, virtPath));
-#pragma warning restore CA2000
-
             }
             
             var map = EditorState.Map;

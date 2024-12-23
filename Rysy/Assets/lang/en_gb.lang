@@ -16,6 +16,7 @@ rysy.name=Name
 rysy.delete=Delete
 rysy.rename=Rename
 rysy.edit=Edit
+rysy.save=Save
 
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers
@@ -244,11 +245,12 @@ rysy.newMod.create=Create Mod
 
 rysy.tilesetWindow.name=Tileset Manager
 rysy.tilesetWindow.needToBeInMap=You need to load a packaged map to edit tilesets.
-rysy.tilesetWindow.xmlCantBeEdited=Tilesets cannot be loaded because the tileset xml file is not writeable.
+rysy.tilesetWindow.xmlCantBeEdited=Tilesets cannot be edited because the tileset xml file is not writeable.
 rysy.tilesetWindow.removeSourceTexture.name=Remove source texture?
 rysy.tilesetWindow.removeSourceTexture=Do you want to also remove the texture used for this tileset from your mod?
 rysy.tilesetWindow.clone=Clone
 rysy.tilesetWindow.clone.tooltip=Create a clone of this tileset.
+rysy.tilesetWindow.editXml=Edit XML
 
 rysy.tilesetWindow.description.displayName=Name of this tileset used in map editors. Leave it blank to let map editors derive the name themselves.
 rysy.tilesetWindow.description.sound=Surface Sound ID used when walking on this tileset.
@@ -262,9 +264,13 @@ rysy.tilesetWindow.description.debris=Path to debris to use when this tileset ge
 # Tileset importing
 rysy.tilesetImport.fromAssetDrive=Import from Asset Drive...
 rysy.tilesetImport.fromAssetDrive.tooltip=Import a new tileset from the Community Asset Drive.
+rysy.tilesetImport.fromExistingSprite=Import from Existing Texture...
+rysy.tilesetImport.fromExistingSprite.tooltip=Import a tileset from a texture already located in your mod or a helper mod.
 rysy.tilesetImport.import=Import
 rysy.tilesetImport.createWindow=Importing tileset...
 rysy.tilesetImport.browserTip=Tip: It's recommended to use the [Asset Drive Browser](https://maddie480.ovh/celeste/asset-drive) to find tilesets for a better browsing experience. Then simply input the tileset name into the below dropdown's searchbox.
+rysy.tilesetImport.template=Template
+rysy.tilesetImport.template.tooltip=Specifies which known template should be used for this tileset. If you need custom XML, use the 'Custom' option.
 
 rysy.tilesetImport.id=Id
 rysy.tilesetImport.id.tooltip=Internal 1-character id for this tileset.\nHard to change once the tileset is created!
@@ -277,6 +283,11 @@ rysy.tilesetImport.displayName.tooltip=Name of this tileset used in map editors.
 
 rysy.tilesetImport.path=Path
 rysy.tilesetImport.path.tooltip=The path to this tileset's image file.\nShould be unique across mods!
+
+rysy.tilesetImport.importPath=Path
+rysy.tilesetImport.importPath.tooltip=The path to this tileset's image file.
+
+rysy.tilesetImport.templatePlaceholder=Copy custom XML here if needed...
 
 rysy.new=New...
 

@@ -8,6 +8,10 @@ using System.Xml.Linq;
 
 namespace Rysy.Graphics;
 
+file static class LogMissingTexturesData {
+    public static HashSet<string> LoggedMissingTextures = new();
+}
+
 public interface IAtlas {
     //public Dictionary<string, VirtTexture> Textures { get; }
     public static bool LogMissingTextures => Settings.UiEnabled && Settings.Instance.LogMissingTextures;
@@ -22,10 +26,9 @@ public interface IAtlas {
             if (TryGet(key, out var texture))
                 return texture;
 
-            if (LogMissingTextures)
+            if (LogMissingTextures && LogMissingTexturesData.LoggedMissingTextures.Add(key))
                 Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
         
-            AddTexture(key, GFX.UnknownTexture);
             return GFX.UnknownTexture;
         }
     }
@@ -38,10 +41,9 @@ public interface IAtlas {
             if (TryGet(key, frame, out var texture))
                 return texture;
 
-            if (LogMissingTextures)
+            if (LogMissingTextures && LogMissingTexturesData.LoggedMissingTextures.Add(key))
                 Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
         
-            AddTexture(key, GFX.UnknownTexture);
             return GFX.UnknownTexture;
         }
     }
@@ -76,7 +78,9 @@ public interface IAtlas {
 
     public void AddTexture(string virtPath, VirtTexture texture);
 
-    public void RemoveTextures(List<string> paths);
+    public void RemoveTextures(params List<string> paths);
+    
+    public void RemoveTextures(params List<VirtTexture> paths);
 
     public event Action<string> OnTextureLoad;
     public event Action OnUnload;

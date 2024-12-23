@@ -89,6 +89,10 @@ public static class WriteableModFilesystemExt {
 
 public sealed class WatchedAsset {
     public Action<string>? OnChanged { get; set; }
+    
+    public Action<string>? OnRemoved { get; set; }
+    
+    public Action<string>? OnCreated { get; set; }
 }
 
 
