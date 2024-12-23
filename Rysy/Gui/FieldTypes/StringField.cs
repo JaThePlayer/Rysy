@@ -8,6 +8,8 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
 
     public bool NullAllowed { get; set; }
     public bool EmptyIsNull { get; set; }
+    
+    public Func<string?, string?> UserInputFinalizer { get; set; } = static x => x;
 
     public override object GetDefault() => Default;
 
@@ -30,7 +32,7 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     public override object? RenderGui(string fieldName, object value) {
         var b = (value ?? "").ToString();
         if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip)) {
-            if (RealValue(b) is { } ret)
+            if (UserInputFinalizer(RealValue(b)) is { } ret)
                 return ret;
 
             return new FieldNullReturn();
@@ -60,6 +62,15 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     /// </summary>
     public StringField WithValidator(Func<string?, ValidationResult> validator) {
         Validator += (v) => validator(v?.ToString());
+
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds a finalizer which converts user input into a format stored in the binary.
+    /// </summary>
+    public StringField WithUserInputFinalizer(Func<string?, string?> validator) {
+        UserInputFinalizer += validator;
 
         return this;
     }
