@@ -15,7 +15,7 @@ public abstract record class Field {
     /// <summary>
     /// An arbitrary function that checks whether a value is valid. Called by <see cref="IsValid(object)"/>
     /// </summary>
-    public Func<object?, bool>? Validator { get; set; }
+    public Func<object?, ValidationResult>? Validator { get; set; }
 
     /// <summary>
     /// Whether this field is hidden and should not be shown in the entity edit window
@@ -65,7 +65,8 @@ public abstract record class Field {
     public virtual ValidationResult IsValid(object? value) {
         if (Validator is null)
             return ValidationResult.Ok;
-        return Validator.Invoke(value) ? ValidationResult.Ok : ValidationResult.GenericError;
+        
+        return Validator.Invoke(value);
     }
 
     /// <summary>
@@ -144,7 +145,7 @@ public static class FieldExtensions {
     /// <summary>
     /// Adds a validator to this field, which disallows saving the property if it returns false
     /// </summary>
-    public static T WithValidator<T>(this T field, Func<object?, bool> validator) where T : Field {
+    public static T WithValidator<T>(this T field, Func<object?, ValidationResult> validator) where T : Field {
         field.Validator += validator;
 
         return field;

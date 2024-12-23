@@ -58,7 +58,7 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     /// <summary>
     /// Adds a validator to this field, which disallows saving the property if it returns false
     /// </summary>
-    public StringField WithValidator(Func<string?, bool> validator) {
+    public StringField WithValidator(Func<string?, ValidationResult> validator) {
         Validator += (v) => validator(v?.ToString());
 
         return this;

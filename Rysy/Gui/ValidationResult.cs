@@ -16,6 +16,8 @@ public sealed class ValidationResult : ITooltip {
     
     public static ValidationResult InvalidDropdownElement { get; } = new(ValidationMessage.InvalidDropdownElement);
     
+    public static ValidationResult DuplicateRoomName { get; } = new(ValidationMessage.DuplicateRoomName); 
+    
     public static ValidationResult TooLarge(object max) => new(ValidationMessage.TooLarge(max));
     public static ValidationResult TooSmall(object min) => new(ValidationMessage.TooSmall(min));
     
@@ -164,4 +166,7 @@ public sealed record ValidationMessage {
 
     public static ValidationMessage InvalidDropdownElement { get; }
         = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidElement"));
+    
+    public static ValidationMessage DuplicateRoomName { get; }
+        = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.duplicateRoomName"));
 }
