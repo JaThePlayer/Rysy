@@ -56,6 +56,7 @@ public sealed class ModMeta {
         var mods = new List<ModMeta>();
 
         fs.AddMod(this);
+        fs.AddMod(ModRegistry.VanillaMod);
 
         foreach (var yaml in EverestYaml) {
             AppendDependencies(mods, addedMods, yaml, includeOptionalDeps);
