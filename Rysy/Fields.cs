@@ -129,8 +129,18 @@ public static partial class Fields {
     /// <param name="def">The default value to use for this field</param>
     /// <param name="regex">The regex to use to find texture paths</param>
     /// <param name="captureConverter">A function which converts a texture found by the regex into the key to use to save to mapdata. By default, it returns texture.Captured</param>
-    public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundPath, string>? captureConverter = null)
-        => new PathField(def, EditorState.Map?.Sprites!, regex, captureConverter).AllowEdits();
+    public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex,
+        Func<FoundPath, string>? captureConverter = null, string? previewAnimation = null) {
+        var field = new PathField(def, EditorState.Map?.Sprites!, regex, captureConverter).AllowEdits();
+
+        if (previewAnimation is { }) {
+            field.PreviewSpriteGetter = (path) => ISprite.FromSpriteBank(default, path.Path, previewAnimation);
+        } else {
+            field.PreviewSpriteGetter = null;
+        }
+        
+        return field;
+    }
 
     /// <summary>
     /// Creates a field with a dropdown that automatically gets populated with all files located at <paramref name="directory"/> in all mods (including vanilla).
@@ -207,6 +217,19 @@ public static partial class Fields {
     public static EntitySidField Sid(string def, RegisteredEntityType allowedTypes) {
         return new(def, allowedTypes);
     }
+    
+    internal static StringField TilesetDisplayName(string def, Func<bool> bg, bool selfIsTileset) => String(def).WithValidator(x => {
+        var map = EditorState.Map;
+        if (map is null)
+            return ValidationResult.Ok;
+        
+        var autotiler = bg() ? map.BGAutotiler : map.FGAutotiler;
+
+        if (autotiler.Tilesets.Count(kv => kv.Value.GetDisplayName() == x) > (selfIsTileset ? 1 : 0))
+            return ValidationResult.TilesetDisplayNameInUse;
+            
+        return ValidationResult.Ok;
+    });
 
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),

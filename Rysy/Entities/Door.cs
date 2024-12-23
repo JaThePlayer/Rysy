@@ -21,7 +21,7 @@ public class Door : SpriteBankEntity, IPlaceable {
     public static PlacementList GetPlacements() => new("wood");
 
     public static PathField GetTypeField() =>
-        Fields.SpriteBankPath("wood", "(.*)door$")
+        Fields.SpriteBankPath("wood", "(.*)door$", previewAnimation: "idle")
         .WithConverter((found) => found.Captured switch {
             "" => "wood", // the wood doors don't follow the naming convention...
             var other => other,

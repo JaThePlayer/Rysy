@@ -26,7 +26,7 @@ public class TempleGate : SpriteBankEntity, IPlaceable {
 
     public static FieldList GetFields() => new(new {
         type = TempleGateModes.CloseBehindPlayer,
-        sprite = Fields.SpriteBankPath("default", "^templegate_(.*)$")
+        sprite = Fields.SpriteBankPath("default", "^templegate_(.*)$", previewAnimation: "idle")
     });
 
     public static PlacementList GetPlacements() => new[] { 
