@@ -80,13 +80,13 @@ public class DashSwitch : Entity, IMultiSIDPlaceable {
 
     public static FieldList GetFields(string sid) => new(sid switch {
         "dashSwitchV" => new {
-            sprite = Fields.SpriteBankPath("default", "^dashSwitch_(.*)"),
+            sprite = Fields.SpriteBankPath("default", "^dashSwitch_(.*)", previewAnimation: "idle"),
             persistent = false,
             allGates = false,
             ceiling = false,
         },
         _ => new {
-            sprite = Fields.SpriteBankPath("default", "^dashSwitch_(.*)"),
+            sprite = Fields.SpriteBankPath("default", "^dashSwitch_(.*)", previewAnimation: "idle"),
             persistent = false,
             allGates = false,
             leftSide = false,

@@ -13,7 +13,7 @@ public sealed class KeyDoor : SpriteBankEntity, IPlaceable {
     public override Vector2 Offset => new(16f);
 
     public static FieldList GetFields() => new(new {
-        sprite = Fields.SpriteBankPath("wood", "^lockdoor_(.*)"),
+        sprite = Fields.SpriteBankPath("wood", "^lockdoor_(.*)", previewAnimation: "idle"),
         unlock_sfx = "",
         stepMusicProgress = false
     });
