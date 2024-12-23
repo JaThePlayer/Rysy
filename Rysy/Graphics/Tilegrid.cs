@@ -59,6 +59,7 @@ public class Tilegrid : ILuaWrapper {
     private void MarkEdited() {
         _cachedElement = null;
         RenderCacheToken?.Invalidate();
+        CachedSprites = null;
     }
 
     public char SafeTileAt(int x, int y) {

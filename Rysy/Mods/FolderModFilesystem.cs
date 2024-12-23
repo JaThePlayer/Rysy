@@ -81,18 +81,12 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     private void CallWatchers(string path, List<WatchedAsset>? watched) {
+        if (watched is null)
+            return;
+        
         RysyState.OnEndOfThisFrame += () => {
+            Logger.Write(nameof(FolderModFilesystem), LogLevel.Info, $"Hot reloading {path}, with {watched.Count} watchers.");
             foreach (var asset in watched?.ToList() ?? new()) {
-                /*
-                using var stream = OpenFile(path);
-                if (stream is null)
-                    return;
-                try {
-                    asset.OnChanged?.Invoke(stream);
-                } catch (Exception ex) {
-                    Logger.Error(ex, $"Error when hot reloading {path}");
-                }*/
-                Logger.Write(nameof(FolderModFilesystem), LogLevel.Info, $"Hot reloading {path}");
                 try {
                     asset.OnChanged?.Invoke(path);
                 } catch (Exception ex) {
@@ -193,6 +187,8 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         using var fileStream = File.Open(realPath, FileMode.Create);
 
         write(fileStream);
+        
+        NotifyFileCreated(path);
 
         return true;
     }

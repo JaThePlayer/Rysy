@@ -56,8 +56,12 @@ public class TileTool : Tool {
         if (autotiler is not { })
             return null;
 
-        autotiler.TilesetDataCacheToken.OnNextInvalidate += ClearMaterialListCache;
-        return autotiler.Tilesets.Keys.Where(k => k is not ('z' or 'y')).Append('0').Select(k => (object) k);
+        autotiler.TilesetDataCacheToken.OnInvalidate += ClearMaterialListCache;
+        return autotiler.Tilesets
+            .Where(x => !x.Value.IsTemplate)
+            .Select(x => x.Key)
+            .Append('0')
+            .Select(k => (object) k);
     }
 
     public override string GetMaterialDisplayName(EditorLayer layer, object material) {

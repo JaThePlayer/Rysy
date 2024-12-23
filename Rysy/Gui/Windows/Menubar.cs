@@ -101,6 +101,10 @@ public static class Menubar {
             if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
                 editor.AddWindowIfNeeded(() => new DecalRegistryWindow(map));
             }
+            
+            if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindowIfNeeded(() => new TilesetWindow());
+            }
             ImGui.EndDisabled();
             
             if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {

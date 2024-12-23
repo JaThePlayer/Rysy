@@ -77,28 +77,9 @@ internal sealed partial class NewModWindow : Window {
 
         var file = CreateFileStructure();
 
-        RenderFile(file);
+        ImGuiManager.RenderFileStructure(file);
 
         _anyInvalidFields = anyInvalid;
-    }
-
-    void RenderFile(FileInfo file) {
-        var isDir = file.ChildFiles is not null;
-        ImGui.PushID("PREVIEW");
-        var opened = ImGui.TreeNodeEx($"{file.Name}##PREVIEW",
-            isDir ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.Bullet);
-        if (file.Contents is {} txt && ImGui.IsItemHovered())
-            ImGui.SetItemTooltip(txt.TrimBeyondLength(200));
-        
-        if (opened) {
-            if (file.ChildFiles is { } childFiles) {
-                foreach (var f in childFiles) {
-                    RenderFile(f);
-                }
-            }
-            
-            ImGui.TreePop();
-        }
     }
 
     public override bool HasBottomBar => true;
@@ -133,7 +114,7 @@ internal sealed partial class NewModWindow : Window {
         ImGui.EndDisabled();
     }
 
-    private void WriteFile(IWriteableModFilesystem fs, string dir, FileInfo file) {
+    private void WriteFile(IWriteableModFilesystem fs, string dir, FileStructureInfo file) {
         var path = $"{dir}/{file.Name}";
         
         if (file.ChildFiles is { } childFiles) {
@@ -146,7 +127,7 @@ internal sealed partial class NewModWindow : Window {
         }
     }
 
-    FileInfo CreateFileStructure() => new(_modName, [
+    FileStructureInfo CreateFileStructure() => new(_modName, [
         new ("Dialog", [
             new("English.txt", Contents: GetEnglishDialogContents()),
         ]),
@@ -189,8 +170,6 @@ internal sealed partial class NewModWindow : Window {
         
         new("everest.yaml", Contents: GetEverestYamlContents()),
     ]);
-
-    sealed record FileInfo(string Name, List<FileInfo>? ChildFiles = null, string? Contents = null);
     
     private string GetEnglishDialogContents() => $"""
     {_modAuthor}_{_modName}={_levelsetEnglishName}

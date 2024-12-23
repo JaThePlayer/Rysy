@@ -210,12 +210,12 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         
         if (Editable) {
             if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.display, 
-                    str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(str, _regex)), tooltip: null,
+                    str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(str, _regex)), tooltip: Tooltip,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
                 return chosen.saved;
             }
         } else {
-            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.display, tooltip: null,
+            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.display, tooltip: Tooltip,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
                 return chosen.saved;
             }

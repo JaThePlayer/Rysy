@@ -322,7 +322,7 @@ public sealed class DecalRegistryWindow : Window {
             ImGui.TableNextColumn();
             
             ImGuiManager.PushNullStyle();
-            ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+            ImGui.TreeNodeEx("rysy.new".Translate(), ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
             ImGuiManager.PopNullStyle();
 
             var popupid = $"new_{entry.Path}";
@@ -375,7 +375,7 @@ public sealed class DecalRegistryWindow : Window {
         ImGui.TableNextColumn();
         
         ImGuiManager.PushNullStyle();
-        ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        ImGui.TreeNodeEx("rysy.new".Translate(), ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
         ImGuiManager.PopNullStyle();
         
         if (!ImGui.IsPopupOpen(CreateNewEntryPopupId))

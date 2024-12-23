@@ -148,8 +148,9 @@ public static class GFX {
         if (registerFilewatch)
         mod.Filesystem.RegisterFilewatch(folder, new() {
             OnChanged = (string newPath) => {
+                var virtPath = newPath.TrimPrefix(folder).TrimPostfix(".png");
                 var list = atlas.GetTextures()
-                    .Where(p => p.texture is ModTexture { Mod: var textureMod } && textureMod == mod)
+                    .Where(p => p.texture is ModTexture { Mod: var textureMod } && textureMod == mod && p.virtPath == virtPath)
                     .Select(p => p.virtPath)
                     .ToList();
 
@@ -262,7 +263,7 @@ public static class GFX {
         }
     }
 
-    private static readonly Dictionary<Uri, VirtTexture> WebTextures = new();
+    private static readonly Dictionary<Uri, Task<VirtTexture>> WebTextures = new();
 
     /// <summary>
     /// Gets a cached texture from the given <paramref name="uri"/>.
@@ -271,16 +272,13 @@ public static class GFX {
     public static VirtTexture? GetTextureFromWebIfReady(Uri uri) {
         lock (WebTextures) {
             if (WebTextures.TryGetValue(uri, out var cached)) {
-                if (cached == VirtPixel)
+                if (!cached.IsCompletedSuccessfully)
                     return null;
-                return cached;
+                return cached.Result;
             }
 
-            WebTextures[uri] = VirtPixel;
+            WebTextures[uri] = Task.Run(async () => await CacheWebTexture(uri, new CancellationToken()));
         }
-
-        // fire and forget
-        Task.Run(async () => await CacheWebTexture(uri, new CancellationToken()));
 
         return null;
     }
@@ -288,45 +286,48 @@ public static class GFX {
     /// <summary>
     /// Asynchronously get a texture from a web location. Cached. 
     /// </summary>
-    public static ValueTask<VirtTexture> GetTextureFromWebAsync(Uri uri, CancellationToken token) {
+    public static Task<VirtTexture> GetTextureFromWebAsync(Uri uri, CancellationToken token) {
         lock (WebTextures) {
             if (WebTextures.TryGetValue(uri, out var cached)) {
-                return new(cached);
+                return cached;
             }
 
-            WebTextures[uri] = VirtPixel;
+            return WebTextures[uri] = CacheWebTexture(uri, token);
         }
-        
-        return CacheWebTexture(uri, token);
     }
     
-    private static async ValueTask<VirtTexture> CacheWebTexture(Uri uri, CancellationToken token) {
+    private static async Task<VirtTexture> CacheWebTexture(Uri uri, CancellationToken token) {
         Logger.Write("GFX.WebTexture", LogLevel.Info, $"Loading texture from {uri}");
         using var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(30);
 
-        Stream? bytes;
+        MemoryStream bytesRead = new();
         try {
-            bytes = await client.GetStreamAsync(uri, token);
+            var bytes = await client.GetStreamAsync(uri, token);
+            await bytes.CopyToAsync(bytesRead, token);
         } catch (Exception e) {
             Logger.Write("GFX.WebTexture", LogLevel.Warning, $"Failed to download texture from {uri}: {e}");
             return VirtPixel;
         }
 
-        Texture2D texture;
-        try {
-            texture = Texture2D.FromStream(Batch.GraphicsDevice, bytes);
-        } catch (Exception e) {
-            Logger.Write("GFX.WebTexture", LogLevel.Warning, $"Failed to load texture from {uri}: {e}");
-            return VirtPixel;
+        Texture2D? texture = null;
+        RysyState.OnEndOfThisFrame += () => {
+            try {
+                texture = Texture2D.FromStream(Batch.GraphicsDevice, bytesRead);
+                Logger.Write("GFX.WebTexture", LogLevel.Info, $"Successfully loaded texture from {uri}");
+            } catch (Exception e) {
+                Logger.Write("GFX.WebTexture", LogLevel.Warning, $"Failed to load texture from {uri}: {e}");
+                texture = VirtPixel.Texture;
+            } finally {
+                bytesRead.Dispose();
+            }
+        };
+
+        while (texture is null) {
+            await Task.Delay(16, token);
         }
         
-        Logger.Write("GFX.WebTexture", LogLevel.Info, $"Successfully loaded texture from {uri}");
-        lock (WebTextures) {
-            var virtTex = VirtTexture.FromTexture(texture);
-            WebTextures[uri] = virtTex;
-            return virtTex;
-        }
+        return VirtTexture.FromTexture(texture);
     }
 }
 

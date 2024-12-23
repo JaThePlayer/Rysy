@@ -54,12 +54,6 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             foreach (var file in WatchedAssets) {
                 foreach (var asset in file.Value) {
-                    /*
-                    TryOpenFile(file.Key, (stream) => {
-                        asset.OnChanged(stream);
-
-                        return true;
-                    }, out _);*/
                     try {
                         asset.OnChanged?.Invoke(file.Key);
                     } catch (Exception ex) {

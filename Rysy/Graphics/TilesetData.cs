@@ -141,9 +141,9 @@ public sealed record TilesetSet(TilesetMask Mask, AutotiledSprite[] Tiles);
 public sealed class TilesetData {
     public string Filename;
 
-    public char Id { get; init; }
+    public char Id { get; set; }
         
-    public Autotiler Autotiler { get; init; }
+    public Autotiler Autotiler { get; set; }
 
     [JsonIgnore]
     public VirtTexture Texture { get; set; } = null!;
@@ -167,8 +167,78 @@ public sealed class TilesetData {
     internal string? DisplayName { get; set; }
     
     public bool Rainbow { get; set; }
+    
+    public bool IsTemplate => Filename.Contains("template", StringComparison.OrdinalIgnoreCase);
 
+    public char? CopyFrom => Xml?.Attributes?["copy"]?.Value is [var first, ..] ? first : null;
+
+    public XmlNode? Xml { get; set; }
+    
     private AutotiledSpriteList? _preview;
+    private XnaWidgetDef? _xnaWidgetDef;
+    private char[]? _tileDataSharedBuffer;
+    private EntityData? _fakeData;
+    private readonly Dictionary<StringRef, AutotiledSprite[]?> _fastTileDataToTiles = new();
+
+    internal List<XmlAttribute> UpdateData(IDictionary<string, object?> values) {
+        List<XmlAttribute> added = [];
+        
+        if (Xml is not { Attributes: {} attributes } xml)
+            return added;
+        
+        foreach (var (k, v) in values) {
+            if (attributes[k] is { } existing) {
+                if (v is null) {
+                    attributes.Remove(existing);
+                    continue;
+                }
+                existing.Value = v.ToString();
+            } else if (v is not null) {
+                var attr = xml.OwnerDocument!.CreateAttribute(k);
+                attr.Value = v.ToString();
+                attributes.Append(attr);
+                added.Add(attr);
+            }
+        }
+        
+        Autotiler.ReadTilesetNode(Xml, into: this);
+
+        return added;
+    }
+
+    private EntityData CreateFakeData() {
+        var attrs = new Dictionary<string, object>() {  };
+
+        if (Xml is { Attributes: { } xmlAttrs }) {
+            foreach (XmlAttribute attr in xmlAttrs) {
+                var k = attr.Name;
+                var v = attr.Value;
+                
+                attrs[k] = v;
+            }
+        }
+
+        var data = new EntityData(Filename, attrs);
+
+        return data;
+    }
+    
+    public EntityData FakeData => _fakeData ??= CreateFakeData();
+
+    public FieldList GetFields(bool bg) {
+        var fields = new FieldList(new {
+            displayName = Fields.String("").AllowNull().ConvertEmptyToNull(),
+            sound = Fields.Dropdown(-1, CelesteEnums.SurfaceSounds, editable: false),
+            path = Fields.AtlasPath(Filename, @"^tilesets/(.*)$"),
+            copy = Fields.TileDropdown('\0', bg, addDontCopyOption: true),
+            ignores = Fields.List("", Fields.TileDropdown('1', bg, addWildcardOption: true)).WithMinElements(0),
+            ignoreExceptions = Fields.List("", Fields.TileDropdown('1', bg)).WithMinElements(0),
+            debris = Fields.AtlasPath("", @"^debris/(.*?)(?:00)?$"),
+        });
+
+        return fields;
+    }
+    
     public AutotiledSpriteList GetPreview(int previewSizePixels) {
         if (_preview is { } cached && cached.Sprites.GetLength(0) == previewSizePixels / 8)
             return cached;
@@ -180,7 +250,6 @@ public sealed class TilesetData {
         return _preview;
     }
 
-    private XnaWidgetDef? _xnaWidgetDef;
     public XnaWidgetDef GetPreviewWidget(int previewSizePixels) {
         if (_xnaWidgetDef is { } existing) {
             if (existing.W != previewSizePixels)
@@ -212,8 +281,6 @@ public sealed class TilesetData {
 
         return valid;
     }
-
-    private char[]? _tileDataSharedBuffer;
     
     public bool GetFirstMatch<T>(T checker, int x, int y, [NotNullWhen(true)] out AutotiledSprite[]? tiles)
     where T : struct, ITileChecker {
@@ -280,8 +347,6 @@ public sealed class TilesetData {
 
         return true;
     }
-
-    private readonly Dictionary<StringRef, AutotiledSprite[]?> _fastTileDataToTiles = new();
     
     private bool TryFindFirstMaskMatch(char[] tileData,
         [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
@@ -359,6 +424,14 @@ public sealed class TilesetData {
             return IgnoreExceptions.Contains(tile);
         
         return !IgnoresExceptExceptions.Contains(tile);
+    }
+
+    public void ClearCaches() {
+        _tileDataSharedBuffer = null;
+        _xnaWidgetDef = null;
+        _preview = null;
+       // _fakeData = null;
+        _fastTileDataToTiles.Clear();
     }
 }
 

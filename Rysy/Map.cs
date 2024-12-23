@@ -316,6 +316,26 @@ public sealed class Map : IPackable, ILuaWrapper {
     internal IEnumerable<Entity> GetEntitiesInGroup(EditorGroup group) => 
         GetAllEntities().Where(e => e.EditorGroups.Contains(group));
 
+    public ModMeta? GetModContainingTilesetXml(bool bg) {
+        var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
+        var xmlMod = ModRegistry.Filesystem.FindFirstModContaining(path);
+
+        return xmlMod;
+    }
+    
+    public void SaveTilesetXml(bool bg) {
+        var autotiler = bg ? BGAutotiler : FGAutotiler;
+        var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
+        
+        if (GetModContainingTilesetXml(bg) is not { Filesystem: IWriteableModFilesystem fs })
+            return;
+        
+        using var mem = new MemoryStream();
+        autotiler.Xml.Save(mem);
+        mem.Seek(0, SeekOrigin.Begin);
+        fs.TryWriteToFile(path, mem);
+    }
+
     public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }

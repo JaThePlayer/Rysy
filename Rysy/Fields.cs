@@ -74,7 +74,7 @@ public static partial class Fields {
         Editable = editable,
     }.SetValues(values.ToDictionary(k => k, k => toString is { } ? toString(k) : k.ToString()!));
 
-    public static DropdownField<string> TileDropdown(char def, bool bg) => new DropdownField<string>() {
+    public static DropdownField<string> TileDropdown(char def, bool bg, bool addDontCopyOption = false, bool addWildcardOption = false) => new DropdownField<string>() {
         Default = def.ToString(),
     }.SetValues(() => {
         if (EditorState.Map is not { } map) {
@@ -83,7 +83,18 @@ public static partial class Fields {
 
         var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
 
-        return autotiler.Tilesets.ToDictionary(t => t.Key.ToString(), t => autotiler.GetTilesetDisplayName(t.Key));
+        var dict = autotiler.Tilesets
+            .ToDictionary(t => t.Key.ToString(), t => $"[{t.Key}] {autotiler.GetTilesetDisplayName(t.Key)}");
+
+        if (addDontCopyOption) {
+            dict["\0"] = "rysy.tilesetImport.dontCopy".Translate();
+        }
+
+        if (addWildcardOption) {
+            dict["*"] = "rysy.tilesetImport.wildcard".Translate();
+        }
+        
+        return dict;
     });
     
     public static DropdownField<char> TileDropdown(char def, Func<FormContext, bool> bg) => new DropdownField<char>() {
