@@ -6,7 +6,8 @@ public record class CharField : Field, IFieldConvertible<char> {
 
     public char Default { get; set; }
 
-    public override bool IsValid(object? value) => value is char && base.IsValid(value);
+    public override ValidationResult IsValid(object? value)
+        => value is char ? base.IsValid(value) : ValidationResult.MustBeChar;
 
     public override object GetDefault() => Default;
 

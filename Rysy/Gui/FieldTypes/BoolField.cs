@@ -10,7 +10,8 @@ public record class BoolField : Field, IFieldConvertible<bool>, ILonnField {
     public override void SetDefault(object newDefault)
         => Default = ConvertMapDataValue(newDefault);
 
-    public override bool IsValid(object? value) => value is bool && base.IsValid(value);
+    public override ValidationResult IsValid(object? value) 
+        => value is bool ? base.IsValid(value) : ValidationResult.MustBeBool;
 
     public override object? RenderGui(string fieldName, object value) {
         bool b = Convert.ToBoolean(value, CultureInfo.InvariantCulture);

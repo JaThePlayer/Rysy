@@ -280,6 +280,28 @@ rysy.tilesetImport.path.tooltip=The path to this tileset's image file.\nShould b
 
 rysy.new=New...
 
+# Validation Results
+rysy.validate.genericError=Input is not in a valid format.
+rysy.validate.mustBeInt=Value must be an integer.
+rysy.validate.mustBeNumber=Value must be a number.
+rysy.validate.mustBeBool=Value must be a boolean.
+rysy.validate.mustBeChar=Value must be a single character.
+rysy.validate.mustBeColor.rgb=Value must be a 6-digit RGB hex color code, like '12eeff'.
+rysy.validate.mustBeColor.rgba=Value must be a 6 or 8-digit RGBA hex color code, like '12eeff' or '12eeff60'.
+
+rysy.validate.cannotBeNull=Value must not be empty.
+
+rysy.validate.numberTooLarge=Value is too large, maximum is {0}.
+rysy.validate.numberTooSmall=Value is too small, minimum is {0}.
+rysy.validate.numberBelowRecommended=Value is below the recommended minimum of {0}. It might still work, but cause odd behavior.
+rysy.validate.numberAboveRecommended=Value is above the recommended maximum of {0}. It might still work, but cause odd behavior.
+rysy.validate.numberNotRecommendedMultiple=Value is not a multiple of {0}, as recommended. It might still work, but cause odd behavior.
+
+rysy.validate.tooManyElements=Too many elements in list, maximum is {0}.
+rysy.validate.tooFewElements=Too few elements in list, minimum is {0}.
+
+rysy.validate.invalidElement=Value is not one of the valid options in the dropdown.
+
 # FROM LONN:
 
 # -- Entities --

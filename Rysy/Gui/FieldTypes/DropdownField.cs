@@ -66,18 +66,18 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         return value;
     }
     
-    public override bool IsValid(object? value) {
+    public override ValidationResult IsValid(object? value) {
         if (value is null) {
-            return NullAllowed;
+            return NullAllowed ? ValidationResult.Ok : ValidationResult.CantBeNull;
         }
         
         var val = ConvertMapDataValue(value);
 
         if (val is not { }) {
-            return (NullAllowed && val is null) && base.IsValid(value);
+            return NullAllowed ? ValidationResult.Ok : ValidationResult.CantBeNull;
         }
 
-        return (Editable || GetValues().TryGetValue(val, out _)) && base.IsValid(value);
+        return (Editable || GetValues().TryGetValue(val, out _)) ? base.IsValid(value) : ValidationResult.InvalidDropdownElement;
     }
 
     public override object? RenderGui(string fieldName, object value) {

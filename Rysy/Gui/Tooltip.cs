@@ -15,6 +15,16 @@ public readonly struct Tooltip : ITooltip {
         _text = null;
         _tooltip = tooltip;
     }
+
+    public Tooltip(Tooltip inner, ITooltip? tooltip) {
+        _text = inner._text;
+        
+        if (tooltip != null) {
+            _tooltip = inner._tooltip is {} innerTooltip ? new MergedTooltip(innerTooltip, tooltip) : tooltip;
+        } else {
+            _tooltip = inner._tooltip;
+        }
+    }
     
     public bool IsNull => _text == null && _tooltip is null;
     
@@ -26,11 +36,18 @@ public readonly struct Tooltip : ITooltip {
         if (_tooltip is {} tooltip)
             tooltip.RenderImGui();
     }
+
+    public Tooltip WrapWithValidation(ValidationResult result) {
+        return new Tooltip(this, result);
+    }
     
     public static implicit operator Tooltip(string? text) => new(text);
 
     public static Tooltip CreateTranslatedOrNull(string id, string? fallbackId = null)
         => new Tooltip(new TranslatedOrNullTooltip(id, fallbackId));
+    
+    public static Tooltip CreateTranslatedFormatted(string id, params object[] args)
+        => new Tooltip(new TranslatedFormattedTooltip(id, args));
 }
 
 public interface ITooltip {
@@ -49,4 +66,25 @@ public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITo
     }
 
     public bool IsEmpty => (id.TranslateOrNull() ?? fallbackId?.TranslateOrNull()) is null;
+}
+
+public sealed class TranslatedFormattedTooltip(string id, object[] args) : ITooltip {
+    public void RenderImGui() {
+        var text = id.TranslateFormatted(args);
+
+        if (text is { }) {
+            ImGui.Text(text);
+        }
+    }
+
+    public bool IsEmpty => id.TranslateOrNull() is null;
+}
+
+sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
+    public void RenderImGui() {
+        first.RenderImGui();
+        second.RenderImGui();
+    }
+
+    public bool IsEmpty => first.IsEmpty && second.IsEmpty;
 }

@@ -51,11 +51,11 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
         };
     }
 
-    public override bool IsValid(object? value) {
+    public override ValidationResult IsValid(object? value) {
         if (value is null && !NullAllowed) 
-            return false;
+            return ValidationResult.CantBeNull;
 
-        return ValueToColor(value, out _) && base.IsValid(value);
+        return ValueToColor(value, out _) ? base.IsValid(value) : ValidationResult.MustBeColor(Format);
     }
 
     public override object? RenderGui(string fieldName, object? value) {
