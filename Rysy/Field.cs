@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Gui;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
@@ -6,7 +7,7 @@ using Rysy.Helpers;
 namespace Rysy;
 
 public abstract record class Field {
-    public string? Tooltip { get; set; }
+    public Tooltip Tooltip { get; set; }
     public string? NameOverride { get; set; }
 
     public FormContext Context { get; internal set; }
@@ -250,8 +251,19 @@ public sealed class FieldList : Dictionary<string, Field> {
 
     public void AddTranslations(string tooltipKeyPrefix, string nameKeyPrefix, string defaultTooltipKeyPrefix, string defaultNameKeyPrefix) {
         foreach (var (name, f) in this) {
-            f.Tooltip ??= name.TranslateOrNull(tooltipKeyPrefix) ?? name.TranslateOrNull(defaultTooltipKeyPrefix);
+            if (f.Tooltip.IsNull) {
+                f.Tooltip = Tooltip.CreateTranslatedOrNull($"{tooltipKeyPrefix}.{name}", $"{defaultTooltipKeyPrefix}.{name}");
+            }
             f.NameOverride ??= name.TranslateOrNull(nameKeyPrefix) ?? name.TranslateOrNull(defaultNameKeyPrefix);
+        }
+    }
+    
+    public void AddTranslations(string defaultTooltipKeyPrefix, string defaultNameKeyPrefix) {
+        foreach (var (name, f) in this) {
+            if (f.Tooltip.IsNull) {
+                f.Tooltip = Tooltip.CreateTranslatedOrNull($"{defaultTooltipKeyPrefix}.{name}");
+            }
+            f.NameOverride ??= name.TranslateOrNull(defaultNameKeyPrefix);
         }
     }
 }
