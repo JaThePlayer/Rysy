@@ -146,7 +146,7 @@ public sealed class SettingsWindow : Window {
                     var hotkey = origHotkey;
                     if (Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
                         hotkey = changed;
-                        invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey));
+                        invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey).IsOk);
                     }
 
                     if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {

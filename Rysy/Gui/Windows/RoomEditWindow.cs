@@ -53,12 +53,21 @@ public sealed class RoomEditWindow : Window {
 
         return fields;
     }
-    
-    private static bool RoomNameValid(RoomEditWindow window, string? name) =>
-        !string.IsNullOrWhiteSpace(name) && (
-            (!window._newRoom && name == window._room.Name) // if we haven't changed the name, then it must be correct
-            || !window._room.Map.Rooms.Any(r => r.Name == name)
-        );
+
+    private static ValidationResult RoomNameValid(RoomEditWindow window, string? name) {
+        if (string.IsNullOrWhiteSpace(name))
+            return ValidationResult.CantBeNull;
+        
+        if (!window._newRoom && name == window._room.Name) // if we haven't changed the name, then it must be correct
+            return ValidationResult.Ok;
+
+        if (window._room.Map.Rooms.Any(r => r.Name == name)) {
+            return ValidationResult.DuplicateRoomName;
+        }
+        
+        return ValidationResult.Ok;
+    }
+        
     
     public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
         Room room1 = room;

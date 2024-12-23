@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
@@ -261,7 +262,7 @@ public static partial class Fields {
                 lua.Call(1, 1);
                 var isValid = lua.ToBoolean(lua.GetTop());
                 lua.Pop(1);
-                return isValid;
+                return isValid ? ValidationResult.Ok : ValidationResult.GenericError;
             };
         }
 

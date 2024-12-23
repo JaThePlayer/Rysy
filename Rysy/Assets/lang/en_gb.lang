@@ -302,6 +302,8 @@ rysy.validate.tooFewElements=Too few elements in list, minimum is {0}.
 
 rysy.validate.invalidElement=Value is not one of the valid options in the dropdown.
 
+rysy.validate.duplicateRoomName=A room with this name already exists.
+
 # FROM LONN:
 
 # -- Entities --

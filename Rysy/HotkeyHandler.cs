@@ -192,24 +192,24 @@ public class HotkeyHandler {
         double NextInterval(float holdTime) => 0.50 - (holdTime / 2.5f);
     }
 
-    public static bool IsValid(string? hotkeyString) {
+    public static ValidationResult IsValid(string? hotkeyString) {
         if (hotkeyString is "")
-            return true;
+            return ValidationResult.Ok;
         
         if (hotkeyString is null)
-            return false;
+            return ValidationResult.CantBeNull;
 
         foreach (var hotkey in hotkeyString.Split('|')) {
             foreach (var item in hotkey.Replace(" ", "", StringComparison.Ordinal).Split('+')) {
                 var lower = item.ToLowerInvariant();
                 if (lower is not ("shift" or "ctrl" or "alt" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or (['m', 'o', 'u', 's', 'e', _]))) {
                     if (!Enum.TryParse<Keys>(lower, true, out var key))
-                        return false;
+                        return ValidationResult.GenericError;
                 }
             }
         }
 
-        return true;
+        return ValidationResult.Ok;
     }
 }
 
