@@ -1,11 +1,32 @@
 ﻿namespace Rysy.Graphics;
 
 public static class TilesetTemplates {
+    public enum Templates {
+        Vanilla,
+        PixelatorAlternate,
+        JadeBetter,
+        Custom,
+    }
+    
+    public const string PixelatorAlternateName = "alternate";
+    public const string JadeBetterName = "better";
+    
     public static string? CreateTemplate(char id, string name) {
         switch (name) {
-            case "better":
+            case JadeBetterName:
                 return JadeBetterTemplate(id);
-            case "alternate":
+            case PixelatorAlternateName:
+                return PixelatorAlternateTemplate(id);
+        }
+
+        return null;
+    }
+    
+    public static string? CreateTemplate(char id, Templates name) {
+        switch (name) {
+            case Templates.JadeBetter:
+                return JadeBetterTemplate(id);
+            case Templates.PixelatorAlternate:
                 return PixelatorAlternateTemplate(id);
         }
 

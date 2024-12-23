@@ -27,68 +27,62 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         Directory.CreateDirectory(dirName);
         
         Watcher = new FileSystemWatcher(dirName.CorrectSlashes());
-        Watcher.Changed += (s, e) => {
+
+        FileSystemEventHandler watcherCallback = (_, e) => {
             if (e.Name is null)
                 return;
-            
+
             _knownExistingFiles.Clear();
-            //e.LogAsJson();
             var path = e.Name.Unbackslash();
-            switch (e.ChangeType) {
-                case WatcherChangeTypes.Created: {
-                    break;
+
+            if (WatchedAssets.TryGetValue(path, out var watched)) {
+                Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
+                    $"Hot reloading {path}, with {watched.Count} watchers. [{e.ChangeType}]");
+                CallWatchers(path, watched, e.ChangeType);
+            }
+
+            // handle directory watchers
+            foreach (var directoryWatchers in WatchedAssets.Where(w =>
+                         path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
+                if (Directory.Exists(VirtToRealPath(path))) {
+                    Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
+                        $"Hot reloading directory {path}, with {directoryWatchers.Value.Count} watchers. [{e.ChangeType}]");
+                    foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
+                        CallWatchers(item, directoryWatchers.Value, e.ChangeType);
+                    }
+                } else {
+                    CallWatchers(path, directoryWatchers.Value, e.ChangeType);
                 }
-                case WatcherChangeTypes.Deleted:
-                    break;
-                case WatcherChangeTypes.Changed: {
-                    //WatchedAssets.Keys.LogAsJson();
-                    /*
-                    if (!WatchedAssets.TryGetValue(path, out var watched)) {
-                        // handle cases where you're editing a folder - all files in that folder need to be updated
-                        if (WatchedAssets.FirstOrDefault(w => !Path.GetRelativePath(relativeTo: w.Key, path).StartsWith("..")) is not { Value: { } } watchedDir)
-                            return;
-                        Console.WriteLine(watchedDir.Key);
-                        watched ??= watchedDir.Value;
-                    }
-
-                    CallWatchers(path, watched);*/
-                    if (WatchedAssets.TryGetValue(path, out var watched)) {
-                        CallWatchers(path, watched);
-                    }
-
-                    // handle directory watchers
-                    foreach (var directoryWatchers in WatchedAssets.Where(w => path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
-                        if (Directory.Exists(VirtToRealPath(path))) {
-                            foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
-                                CallWatchers(item, directoryWatchers.Value);
-                            }
-                        } else {
-                            CallWatchers(path, directoryWatchers.Value);
-                        }
-
-                    }
-
-                    break;
-                }
-                case WatcherChangeTypes.Renamed:
-                    break;
-                default:
-                    break;
             }
         };
+        
+        Watcher.Changed += watcherCallback;
+        Watcher.Deleted += watcherCallback;
+        Watcher.Created += watcherCallback;
+        
         Watcher.IncludeSubdirectories = true;
         Watcher.EnableRaisingEvents = true;
     }
 
-    private void CallWatchers(string path, List<WatchedAsset>? watched) {
+    private void CallWatchers(string path, List<WatchedAsset>? watched, WatcherChangeTypes type) {
         if (watched is null)
             return;
         
         RysyState.OnEndOfThisFrame += () => {
-            Logger.Write(nameof(FolderModFilesystem), LogLevel.Info, $"Hot reloading {path}, with {watched.Count} watchers.");
             foreach (var asset in watched?.ToList() ?? new()) {
                 try {
-                    asset.OnChanged?.Invoke(path);
+                    switch (type) {
+                        case WatcherChangeTypes.Changed:
+                            asset.OnChanged?.Invoke(path);
+                            break;
+                        case WatcherChangeTypes.Deleted:
+                            asset.OnRemoved?.Invoke(path);
+                            break;
+                        case WatcherChangeTypes.Created:
+                            asset.OnCreated?.Invoke(path);
+                            break;
+                    }
+                    
                 } catch (Exception ex) {
                     Logger.Error(ex, $"Error when hot reloading {path}");
                 }

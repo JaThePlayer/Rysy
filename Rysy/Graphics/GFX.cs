@@ -146,28 +146,18 @@ public static class GFX {
         }
 
         if (registerFilewatch)
-        mod.Filesystem.RegisterFilewatch(folder, new() {
-            OnChanged = (string newPath) => {
-                var virtPath = newPath.TrimPrefix(folder).TrimPostfix(".png");
-                var list = atlas.GetTextures()
-                    .Where(p => p.texture is ModTexture { Mod: var textureMod } && textureMod == mod && p.virtPath == virtPath)
-                    .Select(p => p.virtPath)
-                    .ToList();
-
-                // todo: make this smarter
-                atlas.RemoveTextures(list);
-                LoadModAsync(mod, registerFilewatch: false).AsTask().Wait();
-                /*
-                if (newPath.FileExtension() is ".png") {
-                    AddTexture(newPath);
-                }*/
-            }
-        });
+            mod.Filesystem.RegisterFilewatch(folder, new() {
+                // ModTexture has its own filewatch for handling updates, we just need to look for new and deleted textures.
+                OnCreated = AddTexture,
+                OnRemoved = newPath => {
+                    atlas.RemoveTextures(newPath[(folder.Length+1)..^".png".Length]);
+                }
+            });
 
         return ValueTask.CompletedTask;
 
         void AddTexture(string path) {
-            var virt = path[(folder.Length+1)..(^".png".Length)];
+            var virt = path[(folder.Length+1)..^".png".Length];
 
             if (prefix is { }) {
                 virt = $"{prefix}:{virt}";

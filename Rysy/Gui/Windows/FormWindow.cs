@@ -204,6 +204,18 @@ public class FormWindow : Window {
             id: (uint)GetHashCode()
         );
     }
+    
+    public void RenderBody(Action renderBottomBar) {
+        ImGuiManager.WithBottomBar(
+            renderMain: Render,
+            renderBottomBar: () => {
+                RenderBottomBar();
+                ImGui.SameLine();
+                renderBottomBar?.Invoke();
+            },
+            id: (uint)GetHashCode()
+        );
+    }
 
     private bool HandleProp(Prop prop) {
         var name = prop.Name;
