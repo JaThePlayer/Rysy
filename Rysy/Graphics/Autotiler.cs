@@ -2,6 +2,7 @@
 using Rysy.Helpers;
 using Rysy.Selections;
 using System.Collections;
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Xml;
 
@@ -39,144 +40,197 @@ public sealed class Autotiler {
     public int MaxScanHeight { get; private set; } = 5;
 
     public AnimatedTileBank? AnimatedTiles;
+    
+    public XmlDocument Xml { get; private set; }
+
+    public char? FindTemplate(string templateName) {
+        
+        var toRet = templateName switch {
+            "vanilla" or "default" => 'z',
+            "better" => Tilesets
+                .FirstOrDefault(x => x.Value.Filename.Contains("betterTemplate", StringComparison.Ordinal))
+                .Key,
+            "alternate" => Tilesets
+                .FirstOrDefault(x => x.Value.Filename.Contains("alternateTemplate", StringComparison.Ordinal))
+                .Key,
+            _ => (char?)null
+        };
+
+        if (toRet is '\0')
+            return null;
+        return toRet;
+    }
 
     public void ReadFromXml(Stream stream) {
-        Tilesets.Clear();
+        //Tilesets.Clear();
 
         var xml = new XmlDocument();
         xml.Load(stream);
 
+        ReadFromXml(xml);
+
+        foreach (var v in Tilesets.Values.ToList()) {
+            if (v is { Xml: { } tilesetXml } && tilesetXml.OwnerDocument != xml) {
+                Tilesets.Remove(v.Id);
+            }
+        }
+    }
+
+    public void ReadFromXml(XmlDocument xml) {
+        Xml = xml;
+        
         var data = xml["Data"] ?? throw new Exception("Tileset .xml missing starting <Data> tag");
         foreach (var child in data.ChildNodes) {
             if (child is XmlNode { Name: "Tileset" } tileset) {
-                var id = tileset.Attributes?["id"]?.InnerText.FirstOrDefault() ?? throw new Exception($"<Tileset> node missing id");
-                var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
-
-                var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
-                var ignoreExceptions = tileset.Attributes?["ignoreExceptions"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
-                var ignoresAll = ignores.Contains('*');
-
-                TilesetData tilesetData = new() {
-                    Id = id,
-                    Autotiler = this,
-                    Filename = path,
-                    Texture = GFX.Atlas[$"tilesets/{path}"],
-                    Ignores = ignores,
-                    IgnoreExceptions = ignoreExceptions,
-                    IgnoreAll = ignoresAll,
-                    IgnoresExceptExceptions = ignores.Except(ignoreExceptions).ToArray(),
-                    DisplayName = tileset.Attributes?["displayName"]?.InnerText,
-                    ScanWidth = tileset.Attributes?["scanWidth"]?.InnerText.ToInt() ?? 3,
-                    ScanHeight = tileset.Attributes?["scanHeight"]?.InnerText.ToInt() ?? 3,
-                };
-
-                if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
-                    var copied = Tilesets[copy];
-                    tilesetData.Tiles = copied.Tiles.Select(t => t with { Tiles = t.Tiles.Select(x => x.WithTileset(tilesetData)).ToArray() }).ToList();
-                    tilesetData.Padding = copied.Padding.Select(x => x.WithTileset(tilesetData)).ToArray();
-                    tilesetData.Center = copied.Center.Select(x => x.WithTileset(tilesetData)).ToArray();
-                }
-                
-                tilesetData.Defines = tileset.ChildNodes.OfType<XmlNode>()
-                    .Where(n => n.Name == "define")
-                    .Select(n => new TilesetDefine(n, id))
-                    .ToDictionary(d => d.Id, d => d);
-
-                var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
-                    var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
-                    var tilesString = n.Attributes?["tiles"]?.InnerText ?? throw new Exception($"<set> missing tiles for tileset {id}");
-
-                    var tiles = ParseTiles(tilesString, tilesetData);
-
-                    if (AnimatedTiles is {} && n.Attributes?["sprites"]?.Value is { } spritesString) {
-                        var sprites = spritesString.Split(',')
-                            .SelectWhereNotNull(s => AnimatedTiles.Get(s));
-                        
-                        // To keep memory usage of individual tiles low, we store the animated tile together with each tile.
-                        // This does mean we need to create tons of clones though...
-                        tiles = IterationHelper.EachPair(tiles, sprites)
-                            .SelectTuple((t, s) => t.WithAnimatedTile(s))
-                            .ToArray();
-                    }
-                    
-                    switch (mask) {
-                        case "padding":
-                            tilesetData.Padding = tiles;
-                            return null;
-                        case "center":
-                            tilesetData.Center = tiles;
-                            return null;
-                        default:
-                            return new TilesetSet(new TilesetMask(mask), tiles);
-                    }
-                }).ToList();
-
-                tiles.Sort((a, b) => {
-                    // From Everest: https://github.com/EverestAPI/Everest/pull/241/files#diff-99921ff7c00e4bb7b7f2fb8dc659b13960215d3656dfafe8c466daccb229f86dR65
-                    // Sorts the masks to give preference to more specific masks.
-                    // Order is Custom Filters -> "Not This" -> "Any" -> Everything else
-                    int aFilters = 0;
-                    int bFilters = 0;
-                    int aNots = 0;
-                    int bNots = 0;
-                    int aAnys = 0;
-                    int bAnys = 0;
-
-                    var aMask = a.Mask;
-                    var bMask = b.Mask;
-                    
-                    for (int i = 0; i < aMask.Length && i < bMask.Length; i++) {
-                        var aType = aMask.TypeAt(i);
-                        var bType = bMask.TypeAt(i);
-
-                        switch (aType) {
-                            case TilesetMask.MaskType.Any:
-                                aAnys++;
-                                break;
-                            case TilesetMask.MaskType.NotThis:
-                                aNots++;
-                                break;
-                            case TilesetMask.MaskType.Custom:
-                                aFilters++;
-                                break;
-                        }
-                        
-                        switch (bType) {
-                            case TilesetMask.MaskType.Any:
-                                bAnys++;
-                                break;
-                            case TilesetMask.MaskType.NotThis:
-                                bNots++;
-                                break;
-                            case TilesetMask.MaskType.Custom:
-                                bFilters++;
-                                break;
-                        }
-                    }
-                    if (aFilters > 0 || bFilters > 0)
-                        return aFilters - bFilters;
-                    if (aNots > 0 || bNots > 0)
-                        return aNots - bNots;
-                    return aAnys - bAnys;
-                });
-
-                tilesetData.Tiles.AddRange(tiles);
-
-                if (!tilesetData.Validate()) {
-                    Logger.Write("Autotiler", LogLevel.Error, $"Tileset {tilesetData.Id} has validation errors, not adding it to the tileset list!");
-                    continue;
-                }
-
-                MaxScanWidth = int.Max(MaxScanWidth, tilesetData.ScanWidth);
-                MaxScanHeight = int.Max(MaxScanHeight, tilesetData.ScanHeight);
-                
-                Tilesets[id] = tilesetData;
+                ReadTilesetNode(tileset, clearCache: false, addToXml: false);
             }
         }
 
         TilesetDataCacheToken.Invalidate();
         TilesetDataCacheToken.Reset();
         _Loaded = true;
+    }
+
+    public void ReadTilesetNode(XmlNode tileset, bool clearCache = true, bool addToXml = false, TilesetData? into = null) {
+        if (tileset is XmlDocument doc)
+            tileset = doc.DocumentElement!;
+        var id = tileset.Attributes?["id"]?.InnerText.FirstOrDefault() ?? throw new Exception($"<Tileset> node missing id");
+        var path = tileset.Attributes?["path"]?.InnerText ?? throw new Exception($"<Tileset> node missing path");
+
+        var ignores = tileset.Attributes?["ignores"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
+        var ignoreExceptions = tileset.Attributes?["ignoreExceptions"]?.InnerText?.Split(',')?.Select(t => t.FirstOrDefault())?.ToArray() ?? [];
+        var ignoresAll = ignores.Contains('*');
+
+        TilesetData tilesetData = into ?? Tilesets.GetValueOrDefault(id) ?? new();
+        tilesetData.ClearCaches();
+        tilesetData.Id = id;
+        tilesetData.Autotiler = this;
+        tilesetData.Filename = path;
+        tilesetData.Texture = GFX.Atlas[$"tilesets/{path}"];
+        tilesetData.Ignores = ignores;
+        tilesetData.IgnoreExceptions = ignoreExceptions;
+        tilesetData.IgnoreAll = ignoresAll;
+        tilesetData.IgnoresExceptExceptions = ignores.Except(ignoreExceptions).ToArray();
+        tilesetData.DisplayName = tileset.Attributes?["displayName"]?.InnerText;
+        tilesetData.ScanWidth = tileset.Attributes?["scanWidth"]?.InnerText.ToInt() ?? 3;
+        tilesetData.ScanHeight = tileset.Attributes?["scanHeight"]?.InnerText.ToInt() ?? 3;
+        tilesetData.Xml = tileset;
+        tilesetData.Tiles.Clear();
+        tilesetData.Defines.Clear();
+        tilesetData.Center = [];
+        tilesetData.Padding = [];
+
+        if (tileset.Attributes?["copy"]?.InnerText is [var copy]) {
+            var copied = Tilesets[copy];
+            tilesetData.Tiles = copied.Tiles.Select(t => t with { Tiles = t.Tiles.Select(x => x.WithTileset(tilesetData)).ToArray() }).ToList();
+            tilesetData.Padding = copied.Padding.Select(x => x.WithTileset(tilesetData)).ToArray();
+            tilesetData.Center = copied.Center.Select(x => x.WithTileset(tilesetData)).ToArray();
+        }
+                
+        tilesetData.Defines = tileset.ChildNodes.OfType<XmlNode>()
+            .Where(n => n.Name == "define")
+            .Select(n => new TilesetDefine(n, id))
+            .ToDictionary(d => d.Id, d => d);
+
+        var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
+            var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
+            var tilesString = n.Attributes?["tiles"]?.InnerText ?? throw new Exception($"<set> missing tiles for tileset {id}");
+
+            var tiles = ParseTiles(tilesString, tilesetData);
+
+            if (AnimatedTiles is {} && n.Attributes?["sprites"]?.Value is { } spritesString) {
+                var sprites = spritesString.Split(',')
+                    .SelectWhereNotNull(s => AnimatedTiles.Get(s));
+                        
+                // To keep memory usage of individual tiles low, we store the animated tile together with each tile.
+                // This does mean we need to create tons of clones though...
+                tiles = IterationHelper.EachPair(tiles, sprites)
+                    .SelectTuple((t, s) => t.WithAnimatedTile(s))
+                    .ToArray();
+            }
+                    
+            switch (mask) {
+                case "padding":
+                    tilesetData.Padding = tiles;
+                    return null;
+                case "center":
+                    tilesetData.Center = tiles;
+                    return null;
+                default:
+                    return new TilesetSet(new TilesetMask(mask), tiles);
+            }
+        }).ToList();
+
+        tiles.Sort((a, b) => {
+            // From Everest: https://github.com/EverestAPI/Everest/pull/241/files#diff-99921ff7c00e4bb7b7f2fb8dc659b13960215d3656dfafe8c466daccb229f86dR65
+            // Sorts the masks to give preference to more specific masks.
+            // Order is Custom Filters -> "Not This" -> "Any" -> Everything else
+            int aFilters = 0;
+            int bFilters = 0;
+            int aNots = 0;
+            int bNots = 0;
+            int aAnys = 0;
+            int bAnys = 0;
+
+            var aMask = a.Mask;
+            var bMask = b.Mask;
+                    
+            for (int i = 0; i < aMask.Length && i < bMask.Length; i++) {
+                var aType = aMask.TypeAt(i);
+                var bType = bMask.TypeAt(i);
+
+                switch (aType) {
+                    case TilesetMask.MaskType.Any:
+                        aAnys++;
+                        break;
+                    case TilesetMask.MaskType.NotThis:
+                        aNots++;
+                        break;
+                    case TilesetMask.MaskType.Custom:
+                        aFilters++;
+                        break;
+                }
+                        
+                switch (bType) {
+                    case TilesetMask.MaskType.Any:
+                        bAnys++;
+                        break;
+                    case TilesetMask.MaskType.NotThis:
+                        bNots++;
+                        break;
+                    case TilesetMask.MaskType.Custom:
+                        bFilters++;
+                        break;
+                }
+            }
+            if (aFilters > 0 || bFilters > 0)
+                return aFilters - bFilters;
+            if (aNots > 0 || bNots > 0)
+                return aNots - bNots;
+            return aAnys - bAnys;
+        });
+
+        tilesetData.Tiles.AddRange(tiles);
+
+        if (!tilesetData.Validate()) {
+            Logger.Write("Autotiler", LogLevel.Error, $"Tileset {tilesetData.Id} has validation errors, not adding it to the tileset list!");
+            return;
+        }
+
+        MaxScanWidth = int.Max(MaxScanWidth, tilesetData.ScanWidth);
+        MaxScanHeight = int.Max(MaxScanHeight, tilesetData.ScanHeight);
+                
+        Tilesets[id] = tilesetData;
+
+        if (addToXml) {
+            Xml.DocumentElement!.AppendChild(tileset);
+        }
+        
+        if (clearCache) {
+            TilesetDataCacheToken.Invalidate();
+            TilesetDataCacheToken.Reset();
+            _Loaded = true;
+        }
     }
 
     private static AutotiledSprite[] ParseTiles(string tiles, TilesetData tileset) {
@@ -339,6 +393,56 @@ public sealed class Autotiler {
                     tileset.Rainbow = true;
             }
         }
+    }
+
+    public bool IsInvalidTilesetId(char id) => char.IsControl(id) || char.IsWhiteSpace(id) || char.IsSurrogate(id) || InvalidTilesetIds.Contains(id);
+
+    public bool IsFreeTilesetId(char id) => !Tilesets.ContainsKey(id) && !IsInvalidTilesetId(id);
+    
+    public char GetNextFreeTilesetId() {
+        char nextId = '\0';
+
+        while (!IsFreeTilesetId(nextId)) {
+            nextId++;
+        }
+
+        return nextId;
+    }
+
+    private static readonly FrozenSet<char> InvalidTilesetIds = [
+        '\'', '\"', '<', '>', '&', '/', '\\', '0', '\0', '*', '-', 'x', ','
+    ];
+
+
+    public bool Remove(TilesetData tilesetData) {
+        if (tilesetData.Id == '0')
+            return false;
+        
+        var r = Tilesets.Remove(tilesetData.Id);
+        if (r) {
+            if (tilesetData.Xml is {})
+                Xml.DocumentElement!.RemoveChild(tilesetData.Xml);
+            TilesetDataCacheToken.Invalidate();
+            TilesetDataCacheToken.Reset();
+        }
+
+        return r;
+    }
+    
+    public void Add(TilesetData tilesetData) {
+        Tilesets[tilesetData.Id] = tilesetData;
+        if (tilesetData.Xml is { } xml) {
+            if (xml.OwnerDocument != Xml)
+            {
+                using var reader = new XmlNodeReader(xml);
+                xml = Xml.ReadNode(reader)!;
+                tilesetData.Xml = xml;
+            }
+            Xml.DocumentElement!.AppendChild(xml);
+        }
+        
+        TilesetDataCacheToken.Invalidate();
+        TilesetDataCacheToken.Reset();
     }
 }
 

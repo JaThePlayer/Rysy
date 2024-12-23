@@ -744,6 +744,25 @@ public static class ImGuiManager {
         em.PopFromImgui(ctx);
         ImGui.NewLine();
     }
+    
+    public static void RenderFileStructure(FileStructureInfo file) {
+        var isDir = file.ChildFiles is not null;
+        ImGui.PushID("PREVIEW");
+        var opened = ImGui.TreeNodeEx($"{file.Name}##PREVIEW",
+            isDir ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.Bullet);
+        if (file.Contents is {} txt && ImGui.IsItemHovered())
+            ImGui.SetItemTooltip(txt.TrimBeyondLength(200));
+        
+        if (opened) {
+            if (file.ChildFiles is { } childFiles) {
+                foreach (var f in childFiles) {
+                    RenderFileStructure(f);
+                }
+            }
+            
+            ImGui.TreePop();
+        }
+    }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public unsafe class ImGuiRenderer : IImGuiResourceManager {

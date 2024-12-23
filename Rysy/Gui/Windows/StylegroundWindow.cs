@@ -299,7 +299,7 @@ public class StylegroundWindow : Window {
 
     private void RenderAddNewEntry(StyleFolder? folder) {
         ImGuiManager.PushNullStyle();
-        ImGui.TreeNodeEx("New...", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        ImGui.TreeNodeEx("rysy.new".Translate(), ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
         ImGuiManager.PopNullStyle();
 
         var hashString = folder?.GetHashCode().ToString(CultureInfo.InvariantCulture) ?? "";

@@ -197,6 +197,18 @@ public static partial class StringExt {
 
         return str.ReplaceAll(Path.GetInvalidFileNameChars(), '_');
     }
+    
+    /// <summary>
+    /// Converts the given string to create a string that's a valid filepath, by replacing all illegal characters with an underscore.
+    /// </summary>
+    public static string ToValidFilePath(this string? str) {
+        if (str == null)
+            return string.Empty;
+
+        return str.ReplaceAll(_invalidFilePathChars, '_');
+    }
+
+    private static readonly char[] _invalidFilePathChars = Path.GetInvalidFileNameChars().Except(['/', '\\']).ToArray();
 
     public static string ReplaceAll(this string str, char[] chars, char replacement) {
         return string.Create(str.Length, (str, chars, replacement), static (span, state) => {
@@ -330,4 +342,6 @@ public static partial class StringExt {
 
         return string.Concat(s.AsSpan(0, length), "(...)");
     }
+
+    public static string ToImguiEscapedString(this char c) => c is '%' ? "%%" : c.ToString();
 }
