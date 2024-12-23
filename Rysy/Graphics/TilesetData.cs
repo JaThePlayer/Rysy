@@ -227,9 +227,9 @@ public sealed class TilesetData {
 
     public FieldList GetFields(bool bg) {
         var fields = new FieldList(new {
-            displayName = Fields.String("").AllowNull().ConvertEmptyToNull(),
+            displayName = Fields.TilesetDisplayName("", () => bg, selfIsTileset: true).AllowNull().ConvertEmptyToNull(),
             sound = Fields.Dropdown(-1, CelesteEnums.SurfaceSounds, editable: false),
-            path = Fields.AtlasPath(Filename, @"^tilesets/(.*)$"),
+            path = Fields.AtlasPath("", @"^tilesets/(.*)$"),
             copy = Fields.TileDropdown('\0', bg, addDontCopyOption: true),
             ignores = Fields.List("", Fields.TileDropdown('1', bg, addWildcardOption: true)).WithMinElements(0),
             ignoreExceptions = Fields.List("", Fields.TileDropdown('1', bg)).WithMinElements(0),

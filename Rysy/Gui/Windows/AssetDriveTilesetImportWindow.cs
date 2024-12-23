@@ -13,7 +13,7 @@ using System.Xml;
 
 namespace Rysy.Gui.Windows;
 
-public class AssetDriveTilesetImportWindow : Window {
+public sealed class AssetDriveTilesetImportWindow : Window {
     private Task<List<AssetDriveTileset>> _bg;
     private Task<List<AssetDriveTileset>> _fg;
 
@@ -145,7 +145,7 @@ public class AssetDriveTilesetImportWindow : Window {
     }
 }
 
-internal partial class CreateTilesetWindow : Window {
+internal sealed partial class CreateTilesetWindow : Window {
     private readonly ImportedTileset _tileset;
 
     private char _id;
@@ -165,7 +165,10 @@ internal partial class CreateTilesetWindow : Window {
     [GeneratedRegex(@"^<Tileset.*?>(.*?)</Tileset>$", RegexOptions.Singleline)]
     private static partial Regex RedundantTilesetTagRegex();
 
+    private readonly Field _idField;
     private readonly DropdownField<string> _copyFromField;
+    private readonly Field _displayNameField;
+    private readonly Field _pathField;
     
     public CreateTilesetWindow(ImportedTileset tileset) : base("rysy.tilesetImport.createWindow".Translate(), new(620, 400)) {
         _isBg = tileset.IsBg;
@@ -209,6 +212,37 @@ internal partial class CreateTilesetWindow : Window {
 
         _copyFromField = Fields.TileDropdown(_copyFromId, _isBg, addDontCopyOption: true);
         _copyFromField.Tooltip = "rysy.tilesetImport.copyFromId.tooltip".Translate();
+
+        _idField = Fields.Char(_id).WithValidator((x) => {
+            if (x is not char c)
+                return ValidationResult.MustBeChar;
+            var map = EditorState.Map;
+            if (map is null)
+                return ValidationResult.Ok;
+            var autotiler = GetAutotiler(map);
+
+            if (autotiler.IsInvalidTilesetId(c))
+                return ValidationResult.InvalidTilesetId;
+
+            if (!autotiler.IsFreeTilesetId(c))
+                return ValidationResult.MustBeFreeTilesetId;
+            
+            return ValidationResult.Ok;
+        });
+
+        _displayNameField = Fields.TilesetDisplayName(_displayName, () => _isBg, selfIsTileset: false);
+
+        _pathField = Fields.String(_path).WithValidator(static x => {
+            if (string.IsNullOrWhiteSpace(x))
+                return ValidationResult.CantBeNull;
+
+            if (GFX.Atlas.TryGet($"tilesets/{x}", out var tex)) {
+                var mod = tex is IModAsset modAsset ? modAsset.SourceModName : null;
+                return ValidationResult.TexturePathInUse(mod);
+            }
+            
+            return ValidationResult.Ok;
+        }).WithUserInputFinalizer(x => x?.Unbackslash().ToValidFilePath().TrimPostfix(".png"));
     }
 
     protected override void Render() {
@@ -230,30 +264,40 @@ internal partial class CreateTilesetWindow : Window {
         ImGui.Text($"Template Name: {_tileset.TemplateName}");
         ImGui.Text($"Editing xml at: {GetXmlPath(map)}");
 
-        var idString = _id.ToString();
-        _wasInvalid |= ImGuiManager.PushInvalidStyleIf(!autotiler.IsFreeTilesetId(_id));
-        if (ImGuiManager.TranslatedInputText("rysy.tilesetImport.id", ref idString, 1)) {
-            if (idString.Length > 0) {
-                _id = idString[0];
-            }
-        }
-        ImGuiManager.PopInvalidStyle();
+        var isValid = _idField.IsValid(_id);
+        _id = _idField.RenderGuiWithValidation("rysy.tilesetImport.id".Translate(), _id, isValid) is char c ? c : _id;
+        _wasInvalid |= !isValid.IsOk;
 
         if (_tileset.CopyFrom is null) {
-            idString = _copyFromId.ToString();
+            var idString = _copyFromId.ToString();
+            isValid = _copyFromField.IsValid(idString);
+            if (_copyFromField.RenderGuiWithValidation("rysy.tilesetImport.copyFromId".Translate(), idString, isValid)
+                is string newId) {
+                _copyFromId = newId.Length > 0 ? newId[0] : '\0';
+            }
+            _wasInvalid |= !isValid.IsOk;
+            /*
+            var idString = _copyFromId.ToString();
             _wasInvalid |= ImGuiManager.PushInvalidStyleIf(autotiler.IsFreeTilesetId(_copyFromId));
 
             if (_copyFromField.RenderGui("rysy.tilesetImport.copyFromId".Translate(), idString) is string newId) {
                 _copyFromId = newId.Length > 0 ? newId[0] : '\0';
             }
             ImGuiManager.PopInvalidStyle();
+            */
         }
         
+        /*
         _wasInvalid |= ImGuiManager.PushInvalidStyleIf(autotiler.Tilesets.Any(kv => kv.Value.GetDisplayName() == _displayName));
         ImGuiManager.TranslatedInputText("rysy.tilesetImport.displayName", ref _displayName, 128);
         ImGuiManager.PopInvalidStyle();
+        */
+        isValid = _displayNameField.IsValid(_displayName);
+        _displayName = _displayNameField.RenderGuiWithValidation("rysy.tilesetImport.displayName".Translate(), _displayName, isValid) as string ?? _displayName;
+        _wasInvalid |= !isValid.IsOk;
 
         if (_tileset.CreateTextureClone) {
+            /*
             _wasInvalid |= ImGuiManager.PushInvalidStyleIf(string.IsNullOrWhiteSpace(_path) || GFX.Atlas.TryGet($"tilesets/{_path}", out _));
             var prevPath = _path;
             ImGuiManager.TranslatedInputText("rysy.tilesetImport.path", ref _path, 128);
@@ -261,6 +305,10 @@ internal partial class CreateTilesetWindow : Window {
                 _path = _path.Unbackslash().ToValidFilePath().TrimPostfix(".png");
             }
             ImGuiManager.PopInvalidStyle();
+            */
+            isValid = _pathField.IsValid(_path);
+            _path = _pathField.RenderGuiWithValidation("rysy.tilesetImport.path".Translate(), _path, isValid) as string ?? _path;
+            _wasInvalid |= !isValid.IsOk;
             
             var fileTree = FileStructureInfo.FromPath($"Graphics/Atlases/Gameplay/tilesets/{_path}.png");
 
@@ -340,7 +388,7 @@ internal partial class CreateTilesetWindow : Window {
     }
 }
 
-internal record ImportedTileset {
+internal sealed record ImportedTileset {
     public required string Template { get; init; }
     
     public required string Name { get; init; }
@@ -361,7 +409,7 @@ internal record ImportedTileset {
         Template.Contains('<', StringComparison.Ordinal) ? "(custom)" : Template;
 }
 
-internal record AssetDriveTileset {
+internal sealed record AssetDriveTileset {
     [JsonPropertyName("template")]
     public string Template { get; set; }
 
@@ -402,7 +450,7 @@ internal record AssetDriveTileset {
             : Task.FromResult("(No Readme provided)");
 }
 
-internal class MaddieAssetDriveTilesetApi(string uri) : StaticWebResource<List<AssetDriveTileset>>(uri) {
+internal sealed class MaddieAssetDriveTilesetApi(string uri) : StaticWebResource<List<AssetDriveTileset>>(uri) {
     public override Formats Format => Formats.Json;
     
     protected override List<AssetDriveTileset> GetFallback() => [];

@@ -1,4 +1,5 @@
 ﻿using Rysy.Helpers;
+using Rysy.Mods;
 using System.Numerics;
 
 namespace Rysy.Gui;
@@ -14,9 +15,19 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult MustBeRgb { get; } = new(ValidationMessage.ValueMustBeRgb);
     public static ValidationResult MustBeRgba { get; } = new(ValidationMessage.ValueMustBeRgba);
     
-    public static ValidationResult InvalidDropdownElement { get; } = new(ValidationMessage.InvalidDropdownElement);
+    public static ValidationResult MustBeFreeTilesetId { get; } = new(ValidationMessage.ValueMustBeFreeTilesetId);
     
-    public static ValidationResult DuplicateRoomName { get; } = new(ValidationMessage.DuplicateRoomName); 
+    public static ValidationResult InvalidDropdownElement { get; } = new(ValidationMessage.InvalidDropdownElement);
+    public static ValidationResult InvalidTilesetId { get; } = new(ValidationMessage.InvalidTilesetId);
+    
+    public static ValidationResult TilesetDisplayNameInUse { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.tilesetDisplayNameInUse")));
+    public static ValidationResult TexturePathInUse(string? modName)
+        => modName is {} 
+            ? new(ValidationMessage.Error(Tooltip.CreateTranslatedFormatted("rysy.validate.texturePathInUseByMod", ModRegistry.GetModByName(modName)?.DisplayName ?? modName)))
+            : new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.texturePathInUse")));
+    
+    public static ValidationResult DuplicateRoomName { get; } = new(ValidationMessage.DuplicateRoomName);
     
     public static ValidationResult TooLarge(object max) => new(ValidationMessage.TooLarge(max));
     public static ValidationResult TooSmall(object min) => new(ValidationMessage.TooSmall(min));
@@ -134,6 +145,9 @@ public sealed record ValidationMessage {
     public static ValidationMessage ValueMustBeRgba { get; } =
         Error(Tooltip.CreateTranslatedOrNull("rysy.validate.mustBeColor.rgba"));
     
+    public static ValidationMessage ValueMustBeFreeTilesetId { get; } =
+        Error(Tooltip.CreateTranslatedOrNull("rysy.validate.mustBeFreeTilesetId"));
+    
     public static ValidationMessage ValueCantBeNull { get; } =
         Error(Tooltip.CreateTranslatedOrNull("rysy.validate.cannotBeNull"));
     
@@ -166,6 +180,9 @@ public sealed record ValidationMessage {
 
     public static ValidationMessage InvalidDropdownElement { get; }
         = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidElement"));
+    
+    public static ValidationMessage InvalidTilesetId { get; }
+        = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidTilesetId"));
     
     public static ValidationMessage DuplicateRoomName { get; }
         = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.duplicateRoomName"));

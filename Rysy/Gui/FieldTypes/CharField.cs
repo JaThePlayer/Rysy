@@ -18,7 +18,7 @@ public record class CharField : Field, IFieldConvertible<char> {
     public override object? RenderGui(string fieldName, object value) {
         var b = Convert.ToChar(value, CultureInfo.InvariantCulture).ToString();
         if (ImGui.InputText(fieldName, ref b, 1).WithTooltip(Tooltip))
-            return b[0];
+            return b.Length > 0 ? b[0] : null;
 
         return null;
     }

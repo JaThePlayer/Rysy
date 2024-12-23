@@ -29,7 +29,7 @@ public static class SettingsHelper {
 
         if (fs.OpenFile(filename, stream => {
                 try {
-                    return JsonSerializer.Deserialize(stream, T.JsonCtx);
+                    return JsonSerializer.Deserialize<T>(stream, JsonSerializerHelper.SettingsOptions);
                 } catch (Exception e) {
                     Logger.Write("Settings.Load", LogLevel.Error, $"Failed loading {typeof(T)}! {e}");
                     return null;
@@ -48,7 +48,7 @@ public static class SettingsHelper {
 
         var fs = GetFilesystem(perProfile);
         fs.TryWriteToFile(filename, stream => {
-            JsonSerializer.Serialize(stream, settings, T.JsonCtx);
+            JsonSerializer.Serialize(stream, settings, JsonSerializerHelper.SettingsOptions);
         });
         
         return settings;

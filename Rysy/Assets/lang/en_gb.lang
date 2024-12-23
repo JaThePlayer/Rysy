@@ -288,7 +288,11 @@ rysy.validate.mustBeBool=Value must be a boolean.
 rysy.validate.mustBeChar=Value must be a single character.
 rysy.validate.mustBeColor.rgb=Value must be a 6-digit RGB hex color code, like '12eeff'.
 rysy.validate.mustBeColor.rgba=Value must be a 6 or 8-digit RGBA hex color code, like '12eeff' or '12eeff60'.
-
+rysy.validate.mustBeFreeTilesetId=This tileset id is already in use.
+rysy.validate.invalidTilesetId=This tileset id is not valid.
+rysy.validate.tilesetDisplayNameInUse=Another tileset already has the same effective display name.
+rysy.validate.texturePathInUse=This texture path is already in use.
+rysy.validate.texturePathInUseByMod=This texture path is already in use by mod {0}.
 rysy.validate.cannotBeNull=Value must not be empty.
 
 rysy.validate.numberTooLarge=Value is too large, maximum is {0}.
