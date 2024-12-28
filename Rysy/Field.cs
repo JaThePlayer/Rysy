@@ -49,12 +49,17 @@ public abstract record class Field {
         
         try {
             Tooltip = Tooltip.WrapWithValidation(validationResult);
-            return RenderGui(fieldName, value);
+            return RenderGui(NameOverride ??= fieldName, value);
         } finally {
             ImGuiManager.PopInvalidStyle();
             ImGuiManager.PopWarningStyle();
             Tooltip = prevTooltip;
         }
+    }
+
+    public object? RenderGuiWithValidation(object value, out ValidationResult validationResult) {
+        validationResult = IsValid(value);
+        return RenderGuiWithValidation(NameOverride ??= "???", value, validationResult);
     }
 
     /// <summary>
@@ -139,6 +144,16 @@ public static class FieldExtensions {
     public static T WithNameTranslated<T>(this T field, string? name) where T : Field {
         field.NameOverride = name?.TranslateOrNull();
 
+        return field;
+    }
+
+    /// <summary>
+    /// Makes this field use translation keys for its name and tooltips, using the standard .tooltip postfix.
+    /// </summary>
+    public static T Translated<T>(this T field, string key) where T : Field {
+        field.NameOverride = key.TranslateOrNull();
+        field.Tooltip = Tooltip.CreateTranslatedOrNull($"{key}.tooltip");
+        
         return field;
     }
 

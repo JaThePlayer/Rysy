@@ -231,6 +231,26 @@ public static partial class Fields {
         return ValidationResult.Ok;
     });
 
+    internal static StringField NewPath(string def, Func<string, string> userInputToRealPath) => String(def).WithValidator(x => {
+        if (string.IsNullOrWhiteSpace(x))
+            return ValidationResult.CantBeNull;
+
+        var real = userInputToRealPath(x);
+        if (ModRegistry.Filesystem.FindFirstModContaining(real) is { } containingMod)
+            return ValidationResult.AssetPathInUse(containingMod.Name);
+
+        if (real.Contains("//", StringComparison.Ordinal))
+            return ValidationResult.PathNotValidEmptyDir;
+
+        if (real.AsSpan().ContainsAny(StringExt.InvalidFilePathChars))
+            return ValidationResult.PathNotValidInvalidChars;
+
+        if (!x.Contains('/', StringComparison.Ordinal))
+            return ValidationResult.PathNotUnique;
+
+        return ValidationResult.Ok;
+    }).WithUserInputFinalizer(x => x?.Replace('\\', '/').Trim('/'));
+
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),
         float b => Float(b),

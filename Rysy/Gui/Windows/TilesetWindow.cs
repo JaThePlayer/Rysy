@@ -161,12 +161,6 @@ public sealed class TilesetWindow : Window {
             return;
         }
 
-        if (Map.GetModContainingTilesetXml(_bg)?.Filesystem is not IWriteableModFilesystem) {
-            ImGuiManager.TranslatedText("rysy.tilesetWindow.xmlCantBeEdited");
-            return; 
-        }
-        
-
         if (_history?.Map != Map) {
             _history = null;
         }
@@ -368,6 +362,21 @@ public sealed class TilesetWindow : Window {
     public void RenderList(bool bg) {
         if (Map is null)
             return;
+
+        var xmlPath = _bg ? Map.Meta.BackgroundTiles : Map.Meta.ForegroundTiles;
+        if (string.IsNullOrWhiteSpace(xmlPath)) {
+            ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.xmlCantBeEdited.notSet");
+            if (ImGuiManager.TranslatedButton("rysy.tilesetWindow.xmlCantBeEdited.createNew")) {
+                RysyState.Scene.AddWindow(new CreateDefaultXmlWindow(_bg));
+            }
+            
+            return; 
+        }
+        
+        if (Map.GetModContainingTilesetXml(_bg)?.Filesystem is not IWriteableModFilesystem) {
+            ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.xmlCantBeEdited.notWriteable");
+            return; 
+        }
         
         if (!ImGui.BeginChild("list", new(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y)))
             return;
@@ -435,7 +444,7 @@ public sealed class TilesetWindow : Window {
     }
 }
 
-public class ExistingSpriteTilesetImportWindow : Window {
+internal class ExistingSpriteTilesetImportWindow : Window {
     private Field _pathField;
     private Field _templateField;
     
@@ -506,6 +515,70 @@ public class ExistingSpriteTilesetImportWindow : Window {
             
             RemoveSelf();
         }
+        ImGui.EndDisabled();
+    }
+}
+
+internal class CreateDefaultXmlWindow : Window {
+    private readonly bool _bg;
+    private readonly Field _pathField;
+    
+    private string _path;
+    private bool _wasInvalid;
+
+    private string RealPath(string userPath) {
+        return $"Graphics/{userPath}.xml";
+    }
+    
+    public CreateDefaultXmlWindow(bool bg) : base("rysy.tilesetWindow.xmlCantBeEdited.createNew".Translate(), new(400, 300)) {
+        _bg = bg;
+        var map = EditorState.Map;
+        if (map is null) {
+            throw new Exception($"Map cant be null when {nameof(CreateDefaultXmlWindow)} is created");
+        }
+        
+        var defaultFileName = _bg ? "BackgroundTiles" : "ForegroundTiles";
+        
+        _path = $"{map.GetDefaultAssetSubdirectory()?.TrimEnd('/') ?? ""}/{defaultFileName}".TrimStart('/');
+        
+        _pathField = Fields.NewPath("", RealPath).Translated("rysy.tilesetWindow.xmlCantBeEdited.path");
+    }
+
+    protected override void Render() {
+        _wasInvalid = false;
+        
+        if (_pathField.RenderGuiWithValidation(_path, out var isValid) is { } newVal) {
+            _path = newVal.ToString() ?? "";
+        }
+        
+        ImGuiManager.RenderFileStructure(FileStructureInfo.FromPath(RealPath(_path)));
+
+        _wasInvalid |= !isValid.IsOk;
+    }
+
+    public override bool HasBottomBar => true;
+
+    public override void RenderBottomBar() {
+        if (EditorState.Map is not { Mod.Filesystem: IWriteableModFilesystem })
+            _wasInvalid = true;
+        
+        ImGui.BeginDisabled(_wasInvalid);
+
+        if (ImGuiManager.TranslatedButton("rysy.ok") && !_wasInvalid) {
+            var fs = (IWriteableModFilesystem) EditorState.Map!.Mod!.Filesystem;
+
+            var path = RealPath(_path);
+            var xmlContents = _bg ? NewModWindow.BackgroundTilesXmlContents : NewModWindow.ForegroundTilesXmlContents;
+            if (fs.TryWriteToFile(path, xmlContents.Value)) {
+                if (_bg)
+                    EditorState.Map.Meta.BackgroundTiles = path;
+                else
+                    EditorState.Map.Meta.ForegroundTiles = path;
+            }
+            
+            RemoveSelf();
+        }
+        
         ImGui.EndDisabled();
     }
 }

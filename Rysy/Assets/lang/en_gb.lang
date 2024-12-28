@@ -245,7 +245,14 @@ rysy.newMod.create=Create Mod
 
 rysy.tilesetWindow.name=Tileset Manager
 rysy.tilesetWindow.needToBeInMap=You need to load a packaged map to edit tilesets.
-rysy.tilesetWindow.xmlCantBeEdited=Tilesets cannot be edited because the tileset xml file is not writeable.
+
+rysy.tilesetWindow.xmlCantBeEdited.notSet=Tilesets cannot be edited, because the map does not have an xml file for tiles set in its metadata.
+rysy.tilesetWindow.xmlCantBeEdited.notWriteable=Tilesets cannot be edited because the tileset xml file is not writeable. (Most likely belongs to a zipped mod.)
+rysy.tilesetWindow.xmlCantBeEdited.createNew=Create Tileset xml
+rysy.tilesetWindow.xmlCantBeEdited.createNew.tooltip=Create a default xml file in your mod folder to use in this map.
+rysy.tilesetWindow.xmlCantBeEdited.path=Path
+rysy.tilesetWindow.xmlCantBeEdited.path.tooltip=Path in which the xml file will get created. Needs to be unique across all mods.
+
 rysy.tilesetWindow.removeSourceTexture.name=Remove source texture?
 rysy.tilesetWindow.removeSourceTexture=Do you want to also remove the texture used for this tileset from your mod?
 rysy.tilesetWindow.clone=Clone
@@ -304,13 +311,18 @@ rysy.validate.invalidTilesetId=This tileset id is not valid.
 rysy.validate.tilesetDisplayNameInUse=Another tileset already has the same effective display name.
 rysy.validate.texturePathInUse=This texture path is already in use.
 rysy.validate.texturePathInUseByMod=This texture path is already in use by mod {0}.
+rysy.validate.assetPathInUse=This asset path is already in use.
+rysy.validate.assetPathInUseByMod=This asset path is already in use by mod {0}.
 rysy.validate.cannotBeNull=Value must not be empty.
+rysy.validate.pathInvalid.invalidChars=Path contains invalid characters.
+rysy.validate.pathInvalid.emptyDir=Path is not valid, as it contains an empty directory.
 
 rysy.validate.numberTooLarge=Value is too large, maximum is {0}.
 rysy.validate.numberTooSmall=Value is too small, minimum is {0}.
 rysy.validate.numberBelowRecommended=Value is below the recommended minimum of {0}. It might still work, but cause odd behavior.
 rysy.validate.numberAboveRecommended=Value is above the recommended maximum of {0}. It might still work, but cause odd behavior.
 rysy.validate.numberNotRecommendedMultiple=Value is not a multiple of {0}, as recommended. It might still work, but cause odd behavior.
+rysy.validate.pathNotUnique=This path is not unique enough, and could conflict with other mods.\nMake sure to include at least 1 subdirectory, preferably containing your mod name and/or map author name.
 
 rysy.validate.tooManyElements=Too many elements in list, maximum is {0}.
 rysy.validate.tooFewElements=Too few elements in list, minimum is {0}.
