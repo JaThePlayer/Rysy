@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.History;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -138,7 +139,7 @@ public sealed class TilesetMask {
 /// </summary>
 public sealed record TilesetSet(TilesetMask Mask, AutotiledSprite[] Tiles);
 
-public sealed class TilesetData {
+public sealed class TilesetData : IXmlBackedEntityData {
     public string Filename;
 
     public char Id { get; set; }
@@ -173,68 +174,20 @@ public sealed class TilesetData {
     public char? CopyFrom => Xml?.Attributes?["copy"]?.Value is [var first, ..] ? first : null;
 
     public XmlNode? Xml { get; set; }
-    
+
+    string IXmlBackedEntityData.EntityDataName => Filename;
+
+    void IXmlBackedEntityData.OnXmlChanged() {
+        Autotiler.ReadTilesetNode(Xml!, into: this);
+    }
+
     private AutotiledSpriteList? _preview;
     private XnaWidgetDef? _xnaWidgetDef;
     private char[]? _tileDataSharedBuffer;
     private EntityData? _fakeData;
     private readonly Dictionary<StringRef, AutotiledSprite[]?> _fastTileDataToTiles = new();
-
-    internal List<XmlAttribute> UpdateData(IDictionary<string, object?> values) {
-        List<XmlAttribute> added = [];
-        
-        if (Xml is not { Attributes: {} attributes } xml)
-            return added;
-
-        bool anyChanges = false;
-        
-        foreach (var (k, v) in values) {
-            if (attributes[k] is { } existing) {
-                if (v is null) {
-                    attributes.Remove(existing);
-                    anyChanges = true;
-                    continue;
-                }
-
-                var newVal = v.ToString();
-                if (existing.Value != newVal) {
-                    existing.Value = newVal;
-                    anyChanges = true;
-                }
-                
-            } else if (v is not null) {
-                var attr = xml.OwnerDocument!.CreateAttribute(k);
-                attr.Value = v.ToString();
-                attributes.Append(attr);
-                added.Add(attr);
-                anyChanges = true;
-            }
-        }
-        
-        if (anyChanges)
-            Autotiler.ReadTilesetNode(Xml, into: this);
-
-        return added;
-    }
-
-    private EntityData CreateFakeData() {
-        var attrs = new Dictionary<string, object>() {  };
-
-        if (Xml is { Attributes: { } xmlAttrs }) {
-            foreach (XmlAttribute attr in xmlAttrs) {
-                var k = attr.Name;
-                var v = attr.Value;
-                
-                attrs[k] = v;
-            }
-        }
-
-        var data = new EntityData(Filename, attrs);
-
-        return data;
-    }
     
-    public EntityData FakeData => _fakeData ??= CreateFakeData();
+    public EntityData FakeData => _fakeData ??= this.CreateFakeData();
 
     public FieldList GetFields(bool bg) {
         var fields = new FieldList(new {

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Rysy.Helpers;
@@ -29,6 +30,22 @@ public readonly struct XElementUntypedData(XElement element) : IUntypedData {
     }
 }
 
+public readonly struct XmlNodeUntypedData(XmlNode node) : IUntypedData {
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+        value = null;
+        if (node.Attributes is not { } attrs)
+            return false;
+        
+        if (attrs[key] is { } attr) {
+            value = attr.Value;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+
 public static class UntypedDataExt {
     public static string Attr(this IUntypedData self, string attrName, string def = "") {
         if (self.TryGetValue(attrName, out var obj) && obj is { }) {
@@ -40,15 +57,28 @@ public static class UntypedDataExt {
     
     public static int Int(this IUntypedData self, string attrName, int def = 0) {
         if (self.TryGetValue(attrName, out var obj)) {
-            return obj is int i ? i : Convert.ToInt32(obj, CultureInfo.InvariantCulture);
+            return obj switch {
+                float f => (int)f,
+                int i => i,
+                short s => s,
+                byte b => b,
+                _ => int.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var i) ? i : def
+            };
         }
 
         return def;
     }
 
     public static float Float(this IUntypedData self, string attrName, float def = 0f) {
-        if (self.TryGetValue(attrName, out var obj))
-            return Convert.ToSingle(obj, CultureInfo.InvariantCulture);
+        if (self.TryGetValue(attrName, out var obj)) {
+            return obj switch {
+                float f => f,
+                int i => i,
+                short s => s,
+                byte b => b,
+                _ => float.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var f) ? f : def
+            };
+        }
 
         return def;
     }

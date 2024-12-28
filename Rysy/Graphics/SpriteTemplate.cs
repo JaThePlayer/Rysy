@@ -266,7 +266,7 @@ public sealed record AnimatedSpriteTemplate(SpriteTemplate Template, ITextureSou
         }
         
         var textureIdx = TextureSource.GetTextureIndex(ctx.Time + timeOffset);
-        var animatedTemplate = textureIdx > 0 && textureIdx < realTemplates.Count ? realTemplates[textureIdx] : default;
+        var animatedTemplate = textureIdx >= 0 && textureIdx < realTemplates.Count ? realTemplates[textureIdx] : default;
         
         if (animatedTemplate is { Texture.Texture: {} templateTexture }) {
             animatedTemplate.RenderAt(ctx, pos, color, outlineColor, templateTexture);
