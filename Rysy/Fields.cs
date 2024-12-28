@@ -249,7 +249,29 @@ public static partial class Fields {
             return ValidationResult.PathNotUnique;
 
         return ValidationResult.Ok;
-    }).WithUserInputFinalizer(x => x?.Replace('\\', '/').Trim('/'));
+    }).WithUserInputFinalizer(x => x?.Unbackslash().Trim('/'));
+    
+    internal static StringField NewAtlasPath(string def, string prefix) => String(def).WithValidator(x => {
+        if (string.IsNullOrWhiteSpace(x))
+            return ValidationResult.CantBeNull;
+
+        var real = $"{prefix}{x}";
+        if (GFX.Atlas.TryGet(real, out var tex)) {
+            var mod = tex is IModAsset modAsset ? modAsset.SourceModName : null;
+            return ValidationResult.TexturePathInUse(mod);
+        }
+        
+        if (real.Contains("//", StringComparison.Ordinal))
+            return ValidationResult.PathNotValidEmptyDir;
+
+        if (real.AsSpan().ContainsAny(StringExt.InvalidFilePathChars))
+            return ValidationResult.PathNotValidInvalidChars;
+
+        if (!x.Contains('/', StringComparison.Ordinal))
+            return ValidationResult.PathNotUnique;
+
+        return ValidationResult.Ok;
+    }).WithUserInputFinalizer(x => x?.Unbackslash().Trim('/').TrimPostfix(".png"));
 
     public static Field? GuessFromValue(object? val, bool fromMapData) => val switch {
         bool b => Bool(b),
