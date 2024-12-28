@@ -208,18 +208,7 @@ internal sealed partial class CreateTilesetWindow : Window {
         });
 
         _displayNameField = Fields.TilesetDisplayName(_displayName, () => _isBg, selfIsTileset: false);
-
-        _pathField = Fields.String(_path).WithValidator(static x => {
-            if (string.IsNullOrWhiteSpace(x))
-                return ValidationResult.CantBeNull;
-
-            if (GFX.Atlas.TryGet($"tilesets/{x}", out var tex)) {
-                var mod = tex is IModAsset modAsset ? modAsset.SourceModName : null;
-                return ValidationResult.TexturePathInUse(mod);
-            }
-            
-            return ValidationResult.Ok;
-        }).WithUserInputFinalizer(x => x?.Unbackslash().ToValidFilePath().TrimPostfix(".png"));
+        _pathField = Fields.NewAtlasPath("", "tilesets/");
     }
 
     protected override void Render() {
@@ -253,36 +242,13 @@ internal sealed partial class CreateTilesetWindow : Window {
                 _copyFromId = newId.Length > 0 ? newId[0] : '\0';
             }
             _wasInvalid |= !isValid.IsOk;
-            /*
-            var idString = _copyFromId.ToString();
-            _wasInvalid |= ImGuiManager.PushInvalidStyleIf(autotiler.IsFreeTilesetId(_copyFromId));
-
-            if (_copyFromField.RenderGui("rysy.tilesetImport.copyFromId".Translate(), idString) is string newId) {
-                _copyFromId = newId.Length > 0 ? newId[0] : '\0';
-            }
-            ImGuiManager.PopInvalidStyle();
-            */
         }
         
-        /*
-        _wasInvalid |= ImGuiManager.PushInvalidStyleIf(autotiler.Tilesets.Any(kv => kv.Value.GetDisplayName() == _displayName));
-        ImGuiManager.TranslatedInputText("rysy.tilesetImport.displayName", ref _displayName, 128);
-        ImGuiManager.PopInvalidStyle();
-        */
         isValid = _displayNameField.IsValid(_displayName);
         _displayName = _displayNameField.RenderGuiWithValidation("rysy.tilesetImport.displayName".Translate(), _displayName, isValid) as string ?? _displayName;
         _wasInvalid |= !isValid.IsOk;
 
         if (_tileset.CreateTextureClone) {
-            /*
-            _wasInvalid |= ImGuiManager.PushInvalidStyleIf(string.IsNullOrWhiteSpace(_path) || GFX.Atlas.TryGet($"tilesets/{_path}", out _));
-            var prevPath = _path;
-            ImGuiManager.TranslatedInputText("rysy.tilesetImport.path", ref _path, 128);
-            if (_path != prevPath) {
-                _path = _path.Unbackslash().ToValidFilePath().TrimPostfix(".png");
-            }
-            ImGuiManager.PopInvalidStyle();
-            */
             isValid = _pathField.IsValid(_path);
             _path = _pathField.RenderGuiWithValidation("rysy.tilesetImport.path".Translate(), _path, isValid) as string ?? _path;
             _wasInvalid |= !isValid.IsOk;
