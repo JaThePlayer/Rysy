@@ -51,11 +51,26 @@ public sealed class ValidationResult : ITooltip {
     
     public static ValidationResult PathNotUnique { get; } = new(ValidationMessage.PathNotUnique);
     
+    public static ValidationResult AnimTileNameNotUnique { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.mustBeUniqueAnimTileName")));
+    
     public static ValidationResult PathNotValidInvalidChars { get; } 
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.invalidChars")));
     
     public static ValidationResult PathNotValidEmptyDir { get; } 
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.emptyDir")));
+    
+    public static ValidationResult ModNameUsedAlready { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.modIdUsedAlready")));
+    
+    public static ValidationResult InvalidCodeName { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidCodeName")));
+    
+    public static ValidationResult ModFolderNameUsedAlready { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.modFolderNameUsedAlready")));
+    
+    public static ValidationResult InvalidEnglishDialogName { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidEnglishDialogName")));
     
     public bool IsOk => !HasErrors;
     

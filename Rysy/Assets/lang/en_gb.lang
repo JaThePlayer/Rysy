@@ -17,6 +17,8 @@ rysy.delete=Delete
 rysy.rename=Rename
 rysy.edit=Edit
 rysy.save=Save
+rysy.new=New...
+rysy.create=Create
 
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers
@@ -246,6 +248,10 @@ rysy.newMod.create=Create Mod
 rysy.tilesetWindow.name=Tileset Manager
 rysy.tilesetWindow.needToBeInMap=You need to load a packaged map to edit tilesets.
 
+rysy.tilesetWindow.tabs.fg=FG
+rysy.tilesetWindow.tabs.bg=BG
+rysy.tilesetWindow.tabs.anim=Animated Tiles
+
 rysy.tilesetWindow.xmlCantBeEdited.notSet=Tilesets cannot be edited, because the map does not have an xml file for tiles set in its metadata.
 rysy.tilesetWindow.xmlCantBeEdited.notWriteable=Tilesets cannot be edited because the tileset xml file is not writeable. (Most likely belongs to a zipped mod.)
 rysy.tilesetWindow.xmlCantBeEdited.createNew=Create Tileset xml
@@ -267,6 +273,16 @@ rysy.tilesetWindow.description.copy=Tileset to copy defaults from.
 rysy.tilesetWindow.description.ignores=List of tileset id's that this tileset will ignore when looking for connections.\n'*' Makes it ignore ALL tilesets, except those defined in Ignore Exceptions
 rysy.tilesetWindow.description.ignoreExceptions=When Ignores is set to '*', these tilesets will NOT be ignored by this tileset.
 rysy.tilesetWindow.description.debris=Path to debris to use when this tileset gets destroyed, relative to the debris/ folder.
+
+rysy.tilesetWindow.anim.description.name=The name of this animated tile, used in tileset xml files.
+rysy.tilesetWindow.anim.description.path=Path to this animated tile's sprites.
+rysy.tilesetWindow.anim.description.posX=X offset of this tile's sprite.
+rysy.tilesetWindow.anim.description.posY=Y offset of this tile's sprite.
+rysy.tilesetWindow.anim.description.origX=X origin of this tile's sprite, used for centering it.
+rysy.tilesetWindow.anim.attribute.origX=Origin X
+rysy.tilesetWindow.anim.description.origY=Y origin of this tile's sprite, used for centering it.
+rysy.tilesetWindow.anim.attribute.origY=Origin Y
+rysy.tilesetWindow.anim.description.delay=How long it takes (in seconds) to swap to the next animation frame.
 
 # Tileset importing
 rysy.tilesetImport.fromAssetDrive=Import from Asset Drive...
@@ -296,7 +312,17 @@ rysy.tilesetImport.importPath.tooltip=The path to this tileset's image file.
 
 rysy.tilesetImport.templatePlaceholder=Copy custom XML here if needed...
 
-rysy.new=New...
+# Animated tile importing
+rysy.animTileImport.new=New
+rysy.animTileImport.new.tooltip=Create a new animated tile.
+rysy.animTileImport.new.windowName=New Animated Tile
+rysy.animTileImport.importFromXml=Import from XML
+rysy.animTileImport.importFromXml.tooltip=Import one or more animated tiles from an xml snippet.
+rysy.animTileImport.importFromXml.windowName=Import Animated Tile from XML
+rysy.animTileImport.importFromXml.tip=Paste an xml snippet containing one or more <sprite> elements below to import them.
+
+rysy.animTileImport.name=Name
+rysy.animTileImport.name.tooltip=The internal name of the sprite, referenced by tilesets. Hard to change once set.
 
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
@@ -316,6 +342,7 @@ rysy.validate.assetPathInUseByMod=This asset path is already in use by mod {0}.
 rysy.validate.cannotBeNull=Value must not be empty.
 rysy.validate.pathInvalid.invalidChars=Path contains invalid characters.
 rysy.validate.pathInvalid.emptyDir=Path is not valid, as it contains an empty directory.
+rysy.validate.mustBeUniqueAnimTileName=Name must be unique.
 
 rysy.validate.numberTooLarge=Value is too large, maximum is {0}.
 rysy.validate.numberTooSmall=Value is too small, minimum is {0}.
@@ -330,6 +357,11 @@ rysy.validate.tooFewElements=Too few elements in list, minimum is {0}.
 rysy.validate.invalidElement=Value is not one of the valid options in the dropdown.
 
 rysy.validate.duplicateRoomName=A room with this name already exists.
+
+rysy.validate.modIdUsedAlready=This mod name is already in use by a different mod on Gamebanana or locally.
+rysy.validate.invalidCodeName=Code names must consist only of English letters, digits and underscores.
+rysy.validate.modFolderNameUsedAlready=A folder with this name exists in your Mods directory already.
+rysy.validate.invalidEnglishDialogName=Name can't contain newlines and special Dialog characters: = [ ]
 
 # FROM LONN:
 

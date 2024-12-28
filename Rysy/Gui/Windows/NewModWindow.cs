@@ -18,14 +18,82 @@ internal sealed partial class NewModWindow : Window {
     private string _mapEnglishName = "";
     private string _levelsetEnglishName = "";
 
-    private bool _folderExists;
-
     private bool _anyInvalidFields = true;
     
     private Task<Dictionary<string, DatabaseModInfo>> _databaseMods;
     
+    private readonly Field _modNameField;
+    private readonly Field _modAuthorField;
+    private readonly Field _englishMapNameField;
+    private readonly Field _englishLevelsetNameField;
+    
+    private (string, bool) _modFolderExists;
+    
     public NewModWindow() : base("rysy.newMod.windowName".Translate(), new(500, ImGui.GetMainViewport().Size.Y * 0.8f)) {
         _databaseMods = IModDatabase.DefaultDatabase.GetKnownModsAsync();
+
+        _modNameField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (_modFolderExists.Item1 != x) {
+                _modFolderExists = (x, Path.Exists($"{Profile.Instance.ModsDirectory}/{_modName}"));
+            }
+
+            if (_modFolderExists.Item2)
+                return ValidationResult.ModFolderNameUsedAlready;
+            
+            if (!IsCodeNameValid(x))
+                return ValidationResult.InvalidCodeName;
+            
+            if (IsModIdUsedAlready(x))
+                return ValidationResult.ModNameUsedAlready;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.id");
+
+        _modAuthorField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (!IsCodeNameValid(x))
+                return ValidationResult.InvalidCodeName;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.author");
+
+        _englishMapNameField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (!IsEnglishNameValid(x))
+                return ValidationResult.InvalidEnglishDialogName;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.map.name");
+        
+        _englishLevelsetNameField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (!IsEnglishNameValid(x))
+                return ValidationResult.InvalidEnglishDialogName;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.map.levelsetName");
+    }
+
+    private Dictionary<string, DatabaseModInfo>? GetKnownMods()
+    {
+        return _databaseMods.IsCompleted ? _databaseMods.Result : null;
     }
 
 
@@ -34,22 +102,21 @@ internal sealed partial class NewModWindow : Window {
     }
     
     private bool IsEnglishNameValid(string name) {
-        return name.Length > 0 && name.AsSpan().IndexOfAny("\r\n=") == -1;
+        return name.Length > 0 && name.AsSpan().IndexOfAny("\r\n=[]") == -1;
     }
 
     protected override void Render() {
         base.Render();
 
         var anyInvalid = false;
-        
-        var knownMods = _databaseMods.IsCompleted ? _databaseMods.Result : null;
 
-        var isModIdUsedAlready = ModRegistry.GetModByName(_modName) is {} || (knownMods?.TryGetValue(_modName, out _) ?? false);
-        
-        anyInvalid |= ImGuiManager.PushInvalidStyleIf(_folderExists || !IsCodeNameValid(_modName) || isModIdUsedAlready);
-        if (ImGuiManager.TranslatedInputText("rysy.newMod.id", ref _modName, 32)) {
-            _folderExists = Path.Exists($"{Profile.Instance.ModsDirectory}/{_modName}");
+        var knownMods = GetKnownMods();
+        var isModIdUsedAlready = IsModIdUsedAlready(_modName);
+
+        if (_modNameField.RenderGuiWithValidation(_modName, out var isValid) is string newModName) {
+            _modName = newModName;
         }
+        anyInvalid |= !isValid.IsOk;
 
         if (isModIdUsedAlready) {
             ImGuiManager.TranslatedText("rysy.newMod.id.used");
@@ -58,20 +125,23 @@ internal sealed partial class NewModWindow : Window {
                 ImGuiManager.Link(link);
             }
         }
-        ImGuiManager.PopInvalidStyle();
         
-        anyInvalid |= ImGuiManager.PushInvalidStyleIf(!IsCodeNameValid(_modAuthor));
-        ImGuiManager.TranslatedInputText("rysy.newMod.author", ref _modAuthor, 32);
-        ImGuiManager.PopInvalidStyle();
+        if (_modAuthorField.RenderGuiWithValidation(_modAuthor, out isValid) is string newAuthorName) {
+            _modAuthor = newAuthorName;
+        }
+        anyInvalid |= !isValid.IsOk;
         
         ImGui.SeparatorText("rysy.newMod.dialog".Translate());
-        anyInvalid |= ImGuiManager.PushInvalidStyleIf(!IsEnglishNameValid(_mapEnglishName));
-        ImGuiManager.TranslatedInputText("rysy.newMod.map.name", ref _mapEnglishName, 256);
-        ImGuiManager.PopInvalidStyle();
         
-        anyInvalid |= ImGuiManager.PushInvalidStyleIf(!IsEnglishNameValid(_levelsetEnglishName));
-        ImGuiManager.TranslatedInputText("rysy.newMod.map.levelsetName", ref _levelsetEnglishName, 256);
-        ImGuiManager.PopInvalidStyle();
+        if (_englishMapNameField.RenderGuiWithValidation(_mapEnglishName, out isValid) is string newEnglishMapName) {
+            _mapEnglishName = newEnglishMapName;
+        }
+        anyInvalid |= !isValid.IsOk;
+        
+        if (_englishLevelsetNameField.RenderGuiWithValidation(_levelsetEnglishName, out isValid) is string newEnglishLevelsetName) {
+            _levelsetEnglishName = newEnglishLevelsetName;
+        }
+        anyInvalid |= !isValid.IsOk;
         
         ImGui.SeparatorText("rysy.newMod.structure".Translate());
 
@@ -80,6 +150,12 @@ internal sealed partial class NewModWindow : Window {
         ImGuiManager.RenderFileStructure(file);
 
         _anyInvalidFields = anyInvalid;
+    }
+
+    private bool IsModIdUsedAlready(string name)
+    {
+        var knownMods = _databaseMods.IsCompleted ? _databaseMods.Result : null;
+        return ModRegistry.GetModByName(name) is {} || (knownMods?.TryGetValue(name, out _) ?? false);
     }
 
     public override bool HasBottomBar => true;
@@ -101,10 +177,10 @@ internal sealed partial class NewModWindow : Window {
 
             var map = Map.NewMap(_binFilename);
             map.Filepath = Path.Combine(fs.Root, "Maps", _modAuthor, _modName, $"{_binFilename}.bin");
-            map.Meta.Sprites = $"Graphics/{_modAuthor}/{_modName}XMLs/Sprites.xml";
-            map.Meta.ForegroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/ForegroundTiles.xml";
-            map.Meta.BackgroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/BackgroundTiles.xml";
-            map.Meta.AnimatedTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/AnimatedTiles.xml";
+           // map.Meta.Sprites = $"Graphics/{_modAuthor}/{_modName}XMLs/Sprites.xml";
+           // map.Meta.ForegroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/ForegroundTiles.xml";
+           // map.Meta.BackgroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/BackgroundTiles.xml";
+           // map.Meta.AnimatedTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/AnimatedTiles.xml";
             
             editor.Map = map;            
 
@@ -151,14 +227,17 @@ internal sealed partial class NewModWindow : Window {
                     ])
                 ]),
             ]),
+            /*
             new(_modAuthor, [
                 new($"{_modName}XMLs", [
-                    new("Sprites.xml", Contents: SpritesXmlContents.Value),
-                    new("ForegroundTiles.xml", Contents: ForegroundTilesXmlContents.Value),
-                    new("BackgroundTiles.xml", Contents: BackgroundTilesXmlContents.Value),
-                    new("AnimatedTiles.xml", Contents: AnimatedTilesXmlContents.Value),
+                   // new("Sprites.xml", Contents: SpritesXmlContents.Value),
+                   // Tileset Window can create these now, no need to create them upfront
+                   // new("ForegroundTiles.xml", Contents: ForegroundTilesXmlContents.Value),
+                   // new("BackgroundTiles.xml", Contents: BackgroundTilesXmlContents.Value),
+                   // new("AnimatedTiles.xml", Contents: AnimatedTilesXmlContents.Value),
                 ])
             ])
+            */
         ]),
         new("Maps", [
             new(_modAuthor, [
@@ -184,5 +263,5 @@ internal sealed partial class NewModWindow : Window {
     private static readonly Lazy<string> SpritesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/Sprites.xml") ?? "");
     public static readonly Lazy<string> ForegroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/ForegroundTiles.xml") ?? "");
     public static readonly Lazy<string> BackgroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/BackgroundTiles.xml") ?? "");
-    private static readonly Lazy<string> AnimatedTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/AnimatedTiles.xml") ?? "");
+    public static readonly Lazy<string> AnimatedTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/AnimatedTiles.xml") ?? "");
 }

@@ -7,6 +7,8 @@ using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Stylegrounds;
+using System.Text;
+using System.Xml;
 
 namespace Rysy;
 
@@ -341,6 +343,19 @@ public sealed class Map : IPackable, ILuaWrapper {
         
         using var mem = new MemoryStream();
         autotiler.Xml.Save(mem);
+        mem.Seek(0, SeekOrigin.Begin);
+        fs.TryWriteToFile(path, mem);
+    }
+
+    public void SaveAnimatedTilesXml() {
+        var path = Meta.AnimatedTiles;
+        var tiles = AnimatedTiles;
+        
+        if (ModRegistry.Filesystem.FindFirstModContaining(path) is not { Filesystem: IWriteableModFilesystem fs })
+            return;
+        
+        using var mem = new MemoryStream();
+        tiles.Xml.Save(mem);
         mem.Seek(0, SeekOrigin.Begin);
         fs.TryWriteToFile(path, mem);
     }
