@@ -185,23 +185,34 @@ public sealed class TilesetData {
         
         if (Xml is not { Attributes: {} attributes } xml)
             return added;
+
+        bool anyChanges = false;
         
         foreach (var (k, v) in values) {
             if (attributes[k] is { } existing) {
                 if (v is null) {
                     attributes.Remove(existing);
+                    anyChanges = true;
                     continue;
                 }
-                existing.Value = v.ToString();
+
+                var newVal = v.ToString();
+                if (existing.Value != newVal) {
+                    existing.Value = newVal;
+                    anyChanges = true;
+                }
+                
             } else if (v is not null) {
                 var attr = xml.OwnerDocument!.CreateAttribute(k);
                 attr.Value = v.ToString();
                 attributes.Append(attr);
                 added.Add(attr);
+                anyChanges = true;
             }
         }
         
-        Autotiler.ReadTilesetNode(Xml, into: this);
+        if (anyChanges)
+            Autotiler.ReadTilesetNode(Xml, into: this);
 
         return added;
     }
