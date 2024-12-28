@@ -27,6 +27,12 @@ public sealed class ValidationResult : ITooltip {
             ? new(ValidationMessage.Error(Tooltip.CreateTranslatedFormatted("rysy.validate.texturePathInUseByMod", ModRegistry.GetModByName(modName)?.DisplayName ?? modName)))
             : new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.texturePathInUse")));
     
+    public static ValidationResult AssetPathInUse(string? modName)
+        => modName is {} 
+            ? new(ValidationMessage.Error(Tooltip.CreateTranslatedFormatted("rysy.validate.assetPathInUseByMod", ModRegistry.GetModByName(modName)?.DisplayName ?? modName)))
+            : new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.assetPathInUse")));
+
+    
     public static ValidationResult DuplicateRoomName { get; } = new(ValidationMessage.DuplicateRoomName);
     
     public static ValidationResult TooLarge(object max) => new(ValidationMessage.TooLarge(max));
@@ -42,6 +48,14 @@ public sealed class ValidationResult : ITooltip {
     };
     
     public static ValidationResult CantBeNull { get; } = new(ValidationMessage.ValueCantBeNull);
+    
+    public static ValidationResult PathNotUnique { get; } = new(ValidationMessage.PathNotUnique);
+    
+    public static ValidationResult PathNotValidInvalidChars { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.invalidChars")));
+    
+    public static ValidationResult PathNotValidEmptyDir { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.emptyDir")));
     
     public bool IsOk => !HasErrors;
     
@@ -186,4 +200,7 @@ public sealed record ValidationMessage {
     
     public static ValidationMessage DuplicateRoomName { get; }
         = Error(Tooltip.CreateTranslatedOrNull("rysy.validate.duplicateRoomName"));
+    
+    public static ValidationMessage PathNotUnique { get; }
+        = Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.pathNotUnique"));
 }

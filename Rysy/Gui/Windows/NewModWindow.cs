@@ -182,7 +182,7 @@ internal sealed partial class NewModWindow : Window {
     """;
 
     private static readonly Lazy<string> SpritesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/Sprites.xml") ?? "");
-    private static readonly Lazy<string> ForegroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/ForegroundTiles.xml") ?? "");
-    private static readonly Lazy<string> BackgroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/BackgroundTiles.xml") ?? "");
+    public static readonly Lazy<string> ForegroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/ForegroundTiles.xml") ?? "");
+    public static readonly Lazy<string> BackgroundTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/BackgroundTiles.xml") ?? "");
     private static readonly Lazy<string> AnimatedTilesXmlContents = new(() => ModRegistry.VanillaMod.Filesystem.TryReadAllText("Graphics/AnimatedTiles.xml") ?? "");
 }

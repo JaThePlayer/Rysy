@@ -205,10 +205,10 @@ public static partial class StringExt {
         if (str == null)
             return string.Empty;
 
-        return str.ReplaceAll(_invalidFilePathChars, '_');
+        return str.ReplaceAll(InvalidFilePathChars, '_');
     }
 
-    private static readonly char[] _invalidFilePathChars = Path.GetInvalidFileNameChars().Except(['/', '\\']).ToArray();
+    internal static readonly char[] InvalidFilePathChars = Path.GetInvalidFileNameChars().Except(['/', '\\']).ToArray();
 
     public static string ReplaceAll(this string str, char[] chars, char replacement) {
         return string.Create(str.Length, (str, chars, replacement), static (span, state) => {

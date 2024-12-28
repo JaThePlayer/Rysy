@@ -262,6 +262,15 @@ public sealed class Map : IPackable, ILuaWrapper {
         UseVanillaTilesetsIfNeeded();
         InitStyleAndFillerIfNeeded();
     }
+
+    public string? GetDefaultAssetSubdirectory() {
+        if (Filepath is null)
+            return null;
+        if (Mod is not { } mod)
+            return null;
+        
+        return Path.GetDirectoryName(Path.GetRelativePath(Path.Combine(mod.Filesystem.Root, "Maps"), Filepath))!.Unbackslash();
+    }
     
     private void InitStyleAndFillerIfNeeded() {
         Style ??= new();

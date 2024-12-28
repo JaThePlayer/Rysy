@@ -158,7 +158,7 @@ internal sealed partial class CreateTilesetWindow : Window {
             var map = EditorState.Map;
 
             if (_tileset.TexturePath is null) {
-                var path = Path.GetDirectoryName(Path.GetRelativePath(Path.Combine(mod.Filesystem.Root, "Maps"), map.Filepath))!.Unbackslash();
+                var path = map.GetDefaultAssetSubdirectory();
                 _path = $"{path}/{_path}".ToValidFilePath();
             }
 
