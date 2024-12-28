@@ -24,9 +24,6 @@ public class Input {
         Keyboard.Update(deltaSeconds);
     }
 
-    internal static void UpdateGlobal(GameTime gameTime) 
-        => Global.Update(gameTime);
-
     public class MouseInput : IMouseInput {
         public const float DOUBLE_CLICK_TIME = .3f;
 
@@ -53,7 +50,7 @@ public class Input {
         public float X1HoldTime => _holdTimes[3];
         public float X2HoldTime => _holdTimes[4];
 
-        public bool LeftDoubleClicked() => _timeSinceLastClick[0] < DOUBLE_CLICK_TIME && _doubleClicks[0];
+        public bool LeftDoubleClicked() => /*_timeSinceLastClick[0] < DOUBLE_CLICK_TIME &&*/ _doubleClicks[0];
 
         public bool RightClickedInPlace() => Right.Released() && _mousePrevState.RightButton == ButtonState.Pressed &&
                 _clickPositions[1] == RealPos;
@@ -81,8 +78,14 @@ public class Input {
         private readonly Point[] _clickPositions = new Point[5];
 
         private MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
+            _doubleClicks[index] = !_consumedInputs[index] && (DateTime.Now - RysyState.MouseDoubleClicks[index]).TotalSeconds <= DOUBLE_CLICK_TIME;
+            if (_doubleClicks[index]) {
+              //  RysyState.MouseDoubleClicks[index] = default;
+            }
+            
             if (PositionDelta != Point.Zero) {
                 // if the mouse moves, cancel and prevent any double clicks
+                //RysyState.MouseDoubleClicks[index] = default;
                 _doubleClicks[index] = false;
                 _timeSinceLastClick[index] = float.MaxValue;
             }
@@ -98,12 +101,11 @@ public class Input {
             // Currently held/clicked
 
             if (_consumedInputs[index]) {
+                RysyState.MouseDoubleClicks[index] = default;
                 return MouseInputState.Released;
             }
 
             if (prev == ButtonState.Released) {
-                // just clicked this frame
-                _doubleClicks[index] = _timeSinceLastClick[index] < DOUBLE_CLICK_TIME;
                 _clickPositions[index] = new Point(_mouseState.X, _mouseState.Y);
                 _holdTimes[index] = 0f;
                 _timeSinceLastClick[index] = 0f;
@@ -175,12 +177,15 @@ public class Input {
             Middle = GetCorrectState(middleButton, _mousePrevState.MiddleButton, 2, delta);
             X1 = GetCorrectState(x1Button, _mousePrevState.XButton1, 3, delta);
             X2 = GetCorrectState(x2Button, _mousePrevState.XButton2, 4, delta);
+
+            //RysyState.MouseDoubleClicks.AsSpan().Clear();
         }
 
         public void ConsumeLeft() {
             Left = MouseInputState.Released;
             _holdTimes[0] = 0f;
             _consumedInputs[0] = true;
+            _doubleClicks[0] = false;
         }
 
         public void ConsumeRight() {

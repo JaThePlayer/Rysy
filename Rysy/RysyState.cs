@@ -188,7 +188,9 @@ public static class RysyState {
     }
 
     internal static Vector2 TouchpadPan;
-    
+
+    internal static readonly DateTime[] MouseDoubleClicks = new DateTime[8];
+    internal static readonly Vector2[] LastMouseClickPoints = new Vector2[8];
 
     private static void EnableEventListeners() {
 #if !FNA
@@ -213,8 +215,7 @@ public static class RysyState {
                         var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
                         SDL2Ext.SDL_free(droppedFileDir);
-                    
-                        Console.WriteLine(pathString);
+
                         Scene?.OnFileDrop(pathString);
                         break;
                     }
@@ -234,6 +235,41 @@ public static class RysyState {
                         }
                         break;
                     }
+                    case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN: {
+                        var button = sdlEvent->button;
+                        
+                        var rysyButtonId = button.button switch {
+                            1 => 0, // left
+                            3 => 1, // right
+                            _ => int.MaxValue
+                        };
+
+                        if (rysyButtonId == int.MaxValue)
+                            break;
+
+                        if (button.clicks % 2 == 0) {
+                           var last = LastMouseClickPoints[rysyButtonId];
+
+                           if (Vector2.DistanceSquared(last, new(button.x, button.y)) <= 10f) {
+                               MouseDoubleClicks[rysyButtonId] = DateTime.Now;
+                           }
+                        }
+                        
+                        LastMouseClickPoints[rysyButtonId] = new (button.x, button.y);
+                        break;
+                    }
+                        /*
+                    default:
+                        if (sdlEvent->type is SDL.SDL_EventType.SDL_POLLSENTINEL
+                            or SDL.SDL_EventType.SDL_MOUSEMOTION
+                            or SDL.SDL_EventType.SDL_WINDOWEVENT)
+                            break;
+                        Console.WriteLine(sdlEvent->type);
+                        if (sdlEvent->type == SDL.SDL_EventType.SDL_MOUSEBUTTONUP) {
+                            
+                        }
+                        break;
+                        */
                 }
                 
                 return 0; // Value will be ignored

@@ -446,7 +446,7 @@ public class ExistingSpriteTilesetImportWindow : Window {
     private TilesetTemplates.Templates _template = TilesetTemplates.Templates.Vanilla;
     private string _xml = "rysy.tilesetImport.templatePlaceholder".Translate();
     
-    public ExistingSpriteTilesetImportWindow(bool bg) : base("rysy.tilesetImport.fromExistingTexture".Translate(), new(640, 450)) {
+    public ExistingSpriteTilesetImportWindow(bool bg) : base("rysy.tilesetImport.fromExistingSprite".Translate(), new(640, 450)) {
         _bg = bg;
         _pathField = Fields.AtlasPath("", @"^tilesets/(.*)$").AllowEdits(false).WithValidator(x => {
             var path = x?.ToString();
