@@ -494,14 +494,17 @@ public abstract class Tool {
         }
         
         var displayName = name;
-        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), currentMaterial == material, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.AllowOverlap, size)) {
+        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), currentMaterial == material, 
+                ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
-            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left)) {
-                ToggleFavorite(name);
-            }
         }
         if (ImGui.IsItemHovered()) {
+            if (Input.Mouse.LeftDoubleClicked()) {
+                ToggleFavorite(name);
+                Input.Mouse.ConsumeLeft();
+            }
+            
             var prevStyles = ImGuiManager.PopAllStyles();
             if (!showPlacementIcons)
                 previewOrNull = GetMaterialPreview(material);
