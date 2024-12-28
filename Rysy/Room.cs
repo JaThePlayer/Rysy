@@ -791,8 +791,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// <summary>
     /// Returns a list of all selections for objects of the same type as this one, to be used for double clicking in the selection tool.
     /// </summary>
-    public List<Selection>? GetSelectionsForSameType(object obj) {
-        switch (obj) {
+    public List<Selection>? GetSelectionsForSameType(ISelectionHandler objHandler) {
+        switch (objHandler.Parent) {
             case Entity e:
                 var sid = e.EntityData.SID;
                 return e.GetRoomList().Where(x => x.EntityData.SID == sid && x.EditorGroups.Enabled).Select(CreateSelectionFrom).ToList();
@@ -801,6 +801,8 @@ public sealed class Room : IPackable, ILuaWrapper {
                     return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
                 }
                 return null;
+            case Node when objHandler is NodeSelectionHandler nodeSelectionHandler:
+                return MakeSelectionsForAllNodesOfEntity(nodeSelectionHandler.Entity);
             default:
                 return null;
         }
@@ -814,7 +816,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         switch (obj) {
             case Entity e:
                 if (e.Nodes.Count > 0)
-                    return MakeSelectionsForNodedEntity(e);
+                    return MakeSelectionsForAllNodesOfEntity(e);
                 var sid = e.EntityData.SID;
                 return e.GetRoomList().Where(x => x.EntityData.SID == sid && x.EditorGroups.Enabled && e.SimilarTo(x)).Select(CreateSelectionFrom).ToList();
             case Room room:
@@ -823,15 +825,14 @@ public sealed class Room : IPackable, ILuaWrapper {
                 }
                 return null;
             case Node when selectionHandler is NodeSelectionHandler {Entity: {} e}:
-                return MakeSelectionsForNodedEntity(e);
+                return MakeSelectionsForAllNodesOfEntity(e);
             default:
                 return null;
         }
-
-        List<Selection> MakeSelectionsForNodedEntity(Entity e) {
-            return [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
-        }
     }
+    
+    private List<Selection> MakeSelectionsForAllNodesOfEntity(Entity e)
+        => [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
 
     private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
         var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);

@@ -829,9 +829,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 finalSelections = [ toSelect ];
             } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
                 // if you double clicked in place, select all similar entities/decals
+                var handler = selections[0].Handler;
                 finalSelections = Input.Keyboard.Shift() 
-                    ? room.GetSelectionsForSimilar(selections[0].Handler)!
-                    : room.GetSelectionsForSameType(selections[0].Handler.Parent)!;
+                    ? room.GetSelectionsForSimilar(handler)!
+                    : room.GetSelectionsForSameType(handler)!;
                 ClickInPlaceIdx = 0;
             }
 
