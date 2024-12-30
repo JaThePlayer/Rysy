@@ -17,11 +17,15 @@ public class ToolHandler {
 
     public readonly ToolRegistry Registry;
 
-    public List<Tool> Tools;
+    private readonly object _toolLock = new();
+    
+    private List<Tool> _tools;
+    
+    public IReadOnlyList<Tool> Tools => _tools;
 
-    private Tool _currentTool;
+    private Tool? _currentTool;
     public Tool CurrentTool {
-        get => _currentTool ??= Tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
+        get => _currentTool ??= _tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
         set {
             if (_currentTool != value) {
                 CancelInteraction();
@@ -43,7 +47,7 @@ public class ToolHandler {
         return t;
     }
 
-    private static List<string> HardcodedOrder = new() { "brush", "rectangle", "placement", "selection", "script" };
+    private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
     public ToolHandler(HistoryHandler history, Input input, ToolRegistry? registry = null) {
         History = history;
@@ -70,21 +74,30 @@ public class ToolHandler {
     private void CreateTools() {
         UnloadAllTools();
 
-        Tools = new();
+        var newTools = new List<Tool>();
         foreach (var toolType in Registry.Tools) {
-            AddTool(Create(toolType, History, Input));
+            newTools.Add(Create(toolType, History, Input));
         }
-        Tools = Tools.OrderBy(t => HardcodedOrder.IndexOf(t.Name)).ThenBy(t => t.Name).ToList();
+        
+        newTools = newTools
+            .OrderBy(t => HardcodedOrder.AsSpan().IndexOf(t.Name))
+            .ThenBy(t => t.Name)
+            .ToList();
+
+        lock (_toolLock) {
+            _tools = newTools;
+        }
     }
 
     private void UnloadAllTools() {
-        if (Tools is { }) {
-            foreach (var t in Tools) {
-                t.Unload();
+        lock (_toolLock) {
+            if (_tools is { }) {
+                foreach (var t in _tools) {
+                    t.Unload();
+                }
+                _tools.Clear();
             }
-            Tools.Clear();
         }
-
     }
 
     public ToolHandler UsePersistence(bool value) {
@@ -99,16 +112,12 @@ public class ToolHandler {
         CurrentTool?.CancelInteraction();
     }
 
-    private void AddTool(Tool tool) {
-        Tools.Add(tool);
-    }
-
     public T? GetTool<T>() where T : Tool {
-        return (T?)Tools.FirstOrDefault(t => t is T);
+        return (T?)_tools.FirstOrDefault(t => t is T);
     }
 
     public Tool? GetToolByName(string name) {
-        return Tools.FirstOrDefault(t => t.Name == name);
+        return _tools.FirstOrDefault(t => t.Name == name);
     }
 
     public T? SetTool<T>() where T : Tool {
@@ -146,8 +155,8 @@ public class ToolHandler {
     }
 
     private void SwapToNextTool(int idOffset) {
-        var i = Tools.IndexOf(CurrentTool);
-        CurrentTool = Tools[(i + idOffset).MathMod(Tools.Count)];
+        var i = _tools.IndexOf(CurrentTool);
+        CurrentTool = _tools[(i + idOffset).MathMod(_tools.Count)];
     }
 
     private void SwapToNextMode(int idOffset) {
@@ -278,13 +287,15 @@ public class ToolHandler {
 
         var windowSize = ImGui.GetWindowSize();
 
-        if (ImGui.BeginListBox("##ToolToolsBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * Tools.Count + 5))) {
-            foreach (var item in Tools) {
-                if (ImGui.Selectable(item.Name.TranslateOrHumanize("rysy.tools"), CurrentTool == item)) {
-                    CurrentTool = item;
+        lock (_toolLock) {
+            if (ImGui.BeginListBox("##ToolToolsBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * Tools.Count + 5))) {
+                foreach (var item in Tools) {
+                    if (ImGui.Selectable(item.Name.TranslateOrHumanize("rysy.tools"), CurrentTool == item)) {
+                        CurrentTool = item;
+                    }
                 }
+                ImGui.EndListBox();
             }
-            ImGui.EndListBox();
         }
 
         ImGui.End();
