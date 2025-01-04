@@ -64,11 +64,20 @@ internal sealed class CustomSpinner : LonnEntity {
             return cached;
         }
 
+        var animated = false;
+        if (directory.EndsWith('!')) {
+            directory = directory[..^1];
+            animated = true;
+        }
+
         var suffixIdx = directory.IndexOf('>', StringComparison.Ordinal);
         if (suffixIdx >= 0) {
             suffix = directory[(suffixIdx + 1)..];
             directory = directory[..suffixIdx];
         }
+        
+        if (animated)
+            directory += "/00";
 
         var fgs = 
             GFX.Atlas.GetSubtexturesOrPlaceholder($"{directory}/fg{suffix}")
@@ -164,11 +173,13 @@ internal sealed class CustomSpinner : LonnEntity {
         return sprites;
     }
     
+    /*
     public override bool CanTrim(string key, object val) => key switch {
         "destroyColor" => val.ToString() == "639bff", // the C# side has a different default than lonn for this 1 thing...
         "attachGroup" => false,
         _ => IsDefault(key, val),
     };
+    */
 }
 
 [CustomEntity("FrostHelper/RainbowTilesetController", associatedMods: [ "FrostHelper" ])]
