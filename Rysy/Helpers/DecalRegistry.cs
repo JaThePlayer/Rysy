@@ -95,7 +95,26 @@ public sealed class DecalRegistry : IDisposable {
 
             lock (_Entries) {
                 lock (EntriesByRoot) {
-                    EntriesByRoot[fs.Root] = entries;
+                    var prevEntries = EntriesByRoot.GetValueOrDefault(fs.Root);
+
+                    if (prevEntries is { }) {
+                        // Try to re-use objects so that references to pre-hot-reload objects are still valid.
+                        
+                        var newEntries = new List<DecalRegistryEntry>(prevEntries.Count);
+                        foreach (var entry in entries) {
+                            if (prevEntries.Find(e => e.Path == entry.Path) is { } prevEntry) {
+                                prevEntry.LoadFromNode(entry.Serialize());
+                                newEntries.Add(prevEntry);
+                            } else {
+                                newEntries.Add(entry);
+                            }
+                        }
+                    
+                        EntriesByRoot[fs.Root] = newEntries;
+                    } else {
+                        EntriesByRoot[fs.Root] = entries;
+                    }
+
                     _Entries = EntriesByRoot.SelectMany(kv => kv.Value).ToList();
                 }
             }
@@ -176,7 +195,9 @@ public sealed class DecalRegistryEntry {
     }
     
     public bool LoadFromNode(XElement decalNode) {
-        Props.Clear();
+        var oldProps = Props;
+        
+        Props = [];
 
         if (decalNode.Name.LocalName != "decal") {
             return false;
@@ -189,7 +210,14 @@ public sealed class DecalRegistryEntry {
         Path = path;
 
         foreach (var ch in decalNode.Elements()) {
-            Props.Add(DecalRegistryProperty.FromNode(ch));
+            var newProp = DecalRegistryProperty.FromNode(ch);
+            
+            // Try to re-use objects so that references to pre-hot-reload objects are still valid.
+            if (oldProps.Find(x => x.Serialize().ToString() == newProp.Serialize().ToString()) is { } old) {
+                Props.Add(old);
+            } else {
+                Props.Add(newProp);
+            }
         }
 
         return true;
@@ -242,11 +270,17 @@ public abstract class DecalRegistryProperty {
     public static DecalRegistryProperty FromNode(XElement node) {
         var prop = CreateNewUninitialized(node.Name.LocalName);
 
-        foreach (var attr in node.Attributes()) {
-            prop.Data[attr.Name.LocalName] = EntityDataValueFromXmlInnerText(attr.Value);
-        }
+        prop.SetData(node);
 
         return prop;
+    }
+
+    internal void SetData(XElement node) {
+        Data.Clear();
+        
+        foreach (var attr in node.Attributes()) {
+            Data[attr.Name.LocalName] = EntityDataValueFromXmlInnerText(attr.Value);
+        }
     }
 
     public static DecalRegistryProperty CreateFromPlacement(Placement placement) {
