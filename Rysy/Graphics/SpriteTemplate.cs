@@ -19,6 +19,17 @@ public sealed record SpriteTemplate {
         };
     }
 
+    public static SpriteTemplate FromSprite(Sprite sprite) {
+        return new() {
+            Texture = sprite.Texture, 
+            DrawOffset = sprite.DrawOffset,
+            Depth = sprite.Depth ?? 0,
+            Origin = sprite.Origin,
+            Scale = sprite.Scale,
+            Rotation = sprite.Rotation,
+        };
+    }
+
     public SpriteTemplate WithTexture(VirtTexture newTex) => this with {
         Texture = newTex,
         DrawOffset = newTex.DrawOffset
