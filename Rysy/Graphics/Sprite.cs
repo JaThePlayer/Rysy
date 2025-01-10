@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.Selections;
 using System.Collections;
 using System.Runtime.CompilerServices;
@@ -248,6 +249,8 @@ public record struct Sprite : ITextureSprite {
         };
     }
 
+    public RainbowSprite MakeRainbow() => new(this);
+
     /*
     public Rectangle GetSubtextureRect(int x, int y, int w, int h) {
         var clipRectPos = ClipRect?.Location ?? Texture.ClipRectPos;
@@ -275,4 +278,42 @@ public record struct Sprite : ITextureSprite {
     public IEnumerator<ISprite> GetEnumerator() => this.ToSelfEnumerator<ISprite>();
 
     IEnumerator IEnumerable.GetEnumerator() => this.ToSelfEnumerator();
+}
+
+public struct RainbowSprite(Sprite source) : ITextureSprite {
+    private Sprite _sprite = source;
+    
+    public void Render(SpriteRenderCtx ctx) {
+        var pos = Pos;
+        var room = ctx.Room ?? Room.DummyRoom;
+        var color = ctx.Animate
+            ? ColorHelper.GetRainbowColorAnimated(room, pos)
+            : ColorHelper.GetRainbowColor(room, pos);
+        
+        _sprite.RenderWithColor(ctx, color * (_sprite.Color.A / 255f));
+    }
+    
+    public int? Depth {
+        get => _sprite.Depth;
+        set => _sprite.Depth = value;
+    }
+    
+    public Color Color {
+        get => _sprite.Color;
+        set => _sprite.Color = value;
+    }
+    public ISprite WithMultipliedAlpha(float alpha) {
+        return new RainbowSprite(_sprite.WithMultipliedAlpha(alpha));
+    }
+
+    public bool IsLoaded => _sprite.IsLoaded;
+
+    public ISelectionCollider GetCollider()
+        => _sprite.GetCollider();
+
+    public Vector2 Pos {
+        get => _sprite.Pos;
+        set => _sprite.Pos = value;
+    }
+    public Rectangle? GetRenderRect() => _sprite.GetRenderRect();
 }
