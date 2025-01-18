@@ -22,9 +22,9 @@ public static partial class Fields {
     private static Dictionary<string, FieldGenerator>? LonnFieldGenerators;
 
     public static BoolField Bool(bool def) => new() { Default = def };
-    public static FloatField Float(float def) => new() { Default = def };
-    public static IntField Int(int def) => new() { Default = def };
-    public static IntField IntNullable(int? def = null) => new IntField { Default = def }.AllowNull();
+    public static FloatField Float(float def) => new() { Default = def.ToStringInvariant() };
+    public static IntField Int(int def) => new() { Default = def.ToStringInvariant() };
+    public static IntField IntNullable(int? def = null) => new IntField { Default = def.ToStringInvariant() }.AllowNull();
     
     public static CharField Char(char def) => new() { Default = def };
     public static StringField String(string def) => new() { Default = def };
@@ -165,32 +165,32 @@ public static partial class Fields {
     }
     
     public static ColorField RGBA(Color def) => new() { 
-        Default = def,
+        Default = def.ToString(ColorFormat.RGBA),
         Format = ColorFormat.RGBA,
     };
 
     public static ColorField RGBA(string def) => new() {
-        Default = def?.FromRGBA(),
+        Default = def,
         Format = ColorFormat.RGBA,
     };
 
     public static ColorField RGB(Color def) => new() {
-        Default = def,
+        Default = def.ToString(ColorFormat.RGB),
         Format = ColorFormat.RGB,
     };
 
     public static ColorField RGB(string? def) => new() {
-        Default = def?.FromRGB(),
+        Default = def,
         Format = ColorFormat.RGB,
     };
 
     public static ColorField ARGB(Color def) => new() {
-        Default = def,
+        Default = def.ToString(ColorFormat.ARGB),
         Format = ColorFormat.ARGB,
     };
 
     public static ColorField ARGB(string def) => new() {
-        Default = def?.FromARGB(),
+        Default = def,
         Format = ColorFormat.ARGB,
     };
 
@@ -320,7 +320,7 @@ public static partial class Fields {
         field ??= GuessFromValue(val, fromMapData: true);
 
         if (field is {} && fieldInfoEntry.TryGetValue("validator", out var validatorObj) && validatorObj is LuaFunctionRef func) {
-            field.Validator = (x) => {
+            field.WithValidator((x) => {
                 var lua = func.Lua;
                 func.PushToStack();
                 lua.Push(x);
@@ -328,7 +328,7 @@ public static partial class Fields {
                 var isValid = lua.ToBoolean(lua.GetTop());
                 lua.Pop(1);
                 return isValid ? ValidationResult.Ok : ValidationResult.GenericError;
-            };
+            });
         }
 
         return field;

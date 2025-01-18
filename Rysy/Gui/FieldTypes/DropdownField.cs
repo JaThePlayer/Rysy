@@ -80,6 +80,17 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         return (Editable || GetValues().TryGetValue(val, out _)) ? base.IsValid(value) : ValidationResult.InvalidDropdownElement;
     }
 
+    public override bool IsValidType(object? value) {
+        if (typeof(T) == typeof(int) && value is float) {
+            return true;
+        }
+        if (typeof(T) == typeof(float) && value is int) {
+            return true;
+        }
+        
+        return value is T or string or null;
+    }
+
     public override object? RenderGui(string fieldName, object value) {
         var val = ConvertMapDataValue(value);
 

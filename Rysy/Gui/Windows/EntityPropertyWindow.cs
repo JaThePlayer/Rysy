@@ -76,7 +76,13 @@ public class EntityPropertyWindow : FormWindow {
                 continue;
             
             if (fields.TryGetValue(k, out var knownFieldType)) {
-                fields[k].SetDefault(v);
+                if (knownFieldType.IsValidType(v)) {
+                    fields[k].SetDefault(v);
+                } else {
+                    // Mapdata stored an invalid type for this field, replace it with a default.
+                    // This is needed for Frost Helper Spinner's Dash Through, which changed types from bool to string enum.
+                    fields[k] = knownFieldType.GetAlternativeForInvalidFieldDefaultType(v);
+                }
             } else {
                 fields[k] = Fields.GuessFromValue(v, fromMapData: true)!;
                 order.Add(k);
