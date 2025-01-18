@@ -15,7 +15,7 @@ public abstract record class Field {
     /// <summary>
     /// An arbitrary function that checks whether a value is valid. Called by <see cref="IsValid(object)"/>
     /// </summary>
-    public Func<object?, ValidationResult>? Validator { get; set; }
+    public Func<FormContext, object?, ValidationResult>? Validator { get; set; }
 
     /// <summary>
     /// Whether this field is hidden and should not be shown in the entity edit window
@@ -26,6 +26,12 @@ public abstract record class Field {
     /// Gets the default value for this field
     /// </summary>
     public abstract object GetDefault();
+
+    public virtual bool IsValidType(object? value) => true;
+    
+    public virtual Field GetAlternativeForInvalidFieldDefaultType(object? value) {
+        return Fields.GuessFromValue(value, fromMapData: true) ?? Fields.String(value?.ToString() ?? "");
+    }
 
     /// <summary>
     /// Sets the default value for this field
@@ -71,7 +77,7 @@ public abstract record class Field {
         if (Validator is null)
             return ValidationResult.Ok;
         
-        return Validator.Invoke(value);
+        return Validator.Invoke(Context, value);
     }
 
     /// <summary>
@@ -161,6 +167,15 @@ public static class FieldExtensions {
     /// Adds a validator to this field, which disallows saving the property if it returns false
     /// </summary>
     public static T WithValidator<T>(this T field, Func<object?, ValidationResult> validator) where T : Field {
+        field.Validator += (_, val) => validator(val);
+
+        return field;
+    }
+    
+    /// <summary>
+    /// Adds a validator to this field, which disallows saving the property if it returns false
+    /// </summary>
+    public static T WithValidator<T>(this T field, Func<FormContext, object?, ValidationResult> validator) where T : Field {
         field.Validator += validator;
 
         return field;
