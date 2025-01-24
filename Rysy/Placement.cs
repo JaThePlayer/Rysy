@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
+using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Mods;
 using Rysy.Selections;
@@ -91,7 +92,7 @@ public record class Placement {
 
     internal bool FromLonn;
     
-    private IReadOnlyList<string> _AssociatedMods;
+    private List<string> _AssociatedMods;
 
     public Placement WithSID(string sid) {
         SID = sid;
@@ -186,14 +187,14 @@ public record class Placement {
     /// <summary>
     /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
     /// </summary>
-    public IReadOnlyList<string> GetAssociatedMods() {
+    public ReadOnlyList<string> GetAssociatedMods() {
         if (_AssociatedMods is { } cached)
             return cached;
 
         if (!IsEntityOrTrigger()) {
             if (GetDefiningMod()?.Name is { } name)
-                return _AssociatedMods = new List<string>(1) { name };
-            return _AssociatedMods = new List<string>(0);
+                return _AssociatedMods = [name];
+            return _AssociatedMods = [];
         }
         try {
             var handler = PlacementHandler.CreateSelection(this, default, Room.DummyRoom);

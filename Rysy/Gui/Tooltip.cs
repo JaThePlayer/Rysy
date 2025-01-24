@@ -19,7 +19,7 @@ public readonly struct Tooltip : ITooltip {
     public Tooltip(Tooltip inner, ITooltip? tooltip) {
         _text = inner._text;
         
-        if (tooltip != null) {
+        if (tooltip is { IsEmpty: false }) {
             _tooltip = inner._tooltip is {} innerTooltip ? new MergedTooltip(innerTooltip, tooltip) : tooltip;
         } else {
             _tooltip = inner._tooltip;

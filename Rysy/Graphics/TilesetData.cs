@@ -185,7 +185,7 @@ public sealed class TilesetData : IXmlBackedEntityData {
     private XnaWidgetDef? _xnaWidgetDef;
     private char[]? _tileDataSharedBuffer;
     private EntityData? _fakeData;
-    private readonly Dictionary<StringRef, AutotiledSprite[]?> _fastTileDataToTiles = new();
+    private readonly Dictionary<string, AutotiledSprite[]?> _fastTileDataToTiles = new();
     
     public EntityData FakeData => _fakeData ??= this.CreateFakeData();
 
@@ -314,9 +314,9 @@ public sealed class TilesetData : IXmlBackedEntityData {
     
     private bool TryFindFirstMaskMatch(char[] tileData,
         [NotNullWhen(true)] out AutotiledSprite[]? tiles) {
-        var tileDataRef = StringRef.FromSharedBuffer(tileData);
+        var fastTileDataToTiles = _fastTileDataToTiles.GetAlternateLookup<ReadOnlySpan<char>>();
 
-        if (_fastTileDataToTiles.TryGetValue(tileDataRef, out var cached)) {
+        if (fastTileDataToTiles.TryGetValue(tileData, out var cached)) {
             tiles = cached;
             return tiles is { };
         }
@@ -329,12 +329,12 @@ public sealed class TilesetData : IXmlBackedEntityData {
                 continue;
             
             tiles = t.Tiles;
-            _fastTileDataToTiles[tileDataRef.CloneIntoReadOnly()] = tiles;
+            fastTileDataToTiles[tileData] = tiles;
             return true;
         }
         
         tiles = null;
-        _fastTileDataToTiles[tileDataRef.CloneIntoReadOnly()] = tiles;
+        fastTileDataToTiles[tileData] = tiles;
         return false;
     }
     

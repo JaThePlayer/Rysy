@@ -175,12 +175,12 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
             if (!filter.Contains('*'))
                 continue;
             
-            if (!RoomNameMatchRegexCache.TryGetValue(StringRef.FromSpanIntoShared(filter), out var regex)) {
+            if (!RoomNameMatchRegexCache.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filter, out var regex)) {
                 var filterString = filter.ToString();
                 string pattern = "^" + Regex.Escape(filterString).Replace("\\*", ".*", StringComparison.Ordinal) + "$";
 
                 regex = new Regex(pattern, RegexOptions.Compiled);
-                RoomNameMatchRegexCache[StringRef.FromString(filterString)] = regex;
+                RoomNameMatchRegexCache[filterString] = regex;
             }
 
             if (regex.IsMatch(roomName))
@@ -195,7 +195,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         }
     }
 
-    private static readonly Dictionary<StringRef, Regex> RoomNameMatchRegexCache = new();
+    private static readonly Dictionary<string, Regex> RoomNameMatchRegexCache = new();
     private static readonly Dictionary<(string, string), bool> RoomNameMatchCache = new(new StringPairComparer());
     private static readonly Dictionary<(string, string), bool>.AlternateLookup<SpanPair> RoomNameMatchCacheAltLookup = RoomNameMatchCache.GetAlternateLookup<SpanPair>();
 

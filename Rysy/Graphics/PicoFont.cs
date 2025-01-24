@@ -1,4 +1,5 @@
-﻿using Rysy.Platforms;
+﻿using Rysy.Helpers;
+using Rysy.Platforms;
 
 namespace Rysy.Graphics;
 
@@ -106,8 +107,8 @@ public static class PicoFont {
         var boundWidth = bounds.Width;
         var maxPerLine = (int) (boundWidth / rw).AtLeast(1);
 
-        var lines = new List<(List<Range>, int)>(1);
-        var words = new List<Range>(1);
+        using var lines = new PooledList<(PooledList<Range>, int)>(1);
+        var words = new PooledList<Range>(1);
         var remainingText = txt;
         var i = 0;
         var lineLen = 0;
@@ -125,7 +126,7 @@ public static class PicoFont {
             if ((words.Count > 0 && lineLen + wordEnd >= maxPerLine)) {
                 // next line
                 lines.Add((words, lineLen));
-                words = [];
+                words = new();
                 lineLen = 0;
             }
 
@@ -138,7 +139,7 @@ public static class PicoFont {
             if (terminator == '\n') {
                 // next line
                 lines.Add((words, lineLen));
-                words = [];
+                words = new();
                 lineLen = 0;
             }
             
@@ -170,7 +171,7 @@ public static class PicoFont {
         }
         
         pos.Y = bounds.Center.Y - ((H * scale * lines.Count) / 2f) + 0.5f * scale;
-        foreach (var line in lines) {
+        foreach (ref var line in lines.GetRefEnumerable()) {
             var linePixelLen = (line.Item2 + line.Item1.Count - 1) * rw;
             pos.X = bounds.Center.X - ((linePixelLen) / 2f) + 0.5f * scale;
             foreach (var wordRange in line.Item1) {
@@ -181,6 +182,8 @@ public static class PicoFont {
             }
             
             pos.Y += H * scale;
+            
+            line.Item1.Dispose();
         }
         
         /*

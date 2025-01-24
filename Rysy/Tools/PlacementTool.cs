@@ -64,7 +64,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID ?? ""}.placements.name"));
 
             var associated = pl.GetAssociatedMods();
-            if (associated is { Count: > 0}) {
+            if (associated is { Count: > 0 }) {
                 return $"{name} [{string.Join(',', associated.Select(ModMeta.ModNameToDisplayName))}]";
             }
 
@@ -356,7 +356,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override float MaterialListElementHeight()
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
-    private static Dictionary<StringRef, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
+    private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
 
     protected override XnaWidgetDef? GetMaterialPreview(object material) {
         if (material is string)
@@ -365,8 +365,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (material is not Placement placement)
             return base.GetMaterialPreview(material);
 
-        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}"/*_{(long)DateTime.Now.TimeOfDay.TotalSeconds}"*/);
-        if (MaterialPreviewCache.TryGetValue(StringRef.FromSharedBuffer(Interpolator.Shared.Buffer, keySpan.Length), out var value)) {
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}");
+        var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
+        
+        if (cacheLookup.TryGetValue(keySpan, out var value)) {
             return value;
         }
 
@@ -377,7 +379,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
             ? CreateWidgetForDecal(placement, key, PreviewSize)
             : CreateWidget(map, placement, key);
-        MaterialPreviewCache[StringRef.FromString(key)] = def;
+        MaterialPreviewCache[key] = def;
 
         return def;
     }
