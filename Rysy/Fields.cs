@@ -308,11 +308,11 @@ public static partial class Fields {
             try {
                 field = generator(val, new DictionaryUntypedData(fieldInfoEntry));
             } catch (Exception ex) {
-                if (Entity.LogErrors)
+                if (Entity.LogErrors && Settings.Instance?.LogMissingFieldTypes is true)
                     Logger.Write("Fields", LogLevel.Error, $"Failed to turn lua field {fieldType} with field information {fieldInfoEntry.ToJson()} into field: {ex}");
             }
         } else {
-            if (Entity.LogErrors) {
+            if (Entity.LogErrors && Settings.Instance?.LogMissingFieldTypes is true) {
                 Logger.Write("Fields", LogLevel.Warning, $"Unknown field type: {fieldType}");
             }
         }

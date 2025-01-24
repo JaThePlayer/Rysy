@@ -143,6 +143,8 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
     public bool LogMissingTextures { get; set; } = false;
 
     public bool LogPreloadingTextures { get; set; } = false;
+    
+    public bool LogMissingFieldTypes { get; set; }
 
 
     private string _theme = "dark";
