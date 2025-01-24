@@ -24,20 +24,17 @@ public static class LangRegistry {
     }
 
     public static string? TranslateOrNull(string keyOrText)
-        => TranslateOrNull(StringRef.FromString(keyOrText));
-    
-    public static string? TranslateOrNull(ReadOnlySpan<char> keyOrText)
-        => TranslateOrNull(StringRef.FromSpanIntoShared(keyOrText));
-    
-    public static string? TranslateOrNull(Interpolator.Handler interpolated)
-        => TranslateOrNull(StringRef.FromSharedBuffer(interpolated.Data, interpolated.Length));
+        => TranslateOrNull(keyOrText.AsSpan());
 
-    public static string? TranslateOrNull(StringRef keyOrTextRef) {
-        if (CurrentLang.GetOrNull(keyOrTextRef) is { } currLang)
+    public static string? TranslateOrNull(ReadOnlySpan<char> keyOrText) {
+        if (CurrentLang.GetOrNull(keyOrText) is { } currLang)
             return currLang;
         
-        return CurrentLang != FallbackLang ? FallbackLang.GetOrNull(keyOrTextRef) : null;
+        return CurrentLang != FallbackLang ? FallbackLang.GetOrNull(keyOrText) : null;
     }
+    
+    public static string? TranslateOrNull(Interpolator.Handler interpolated)
+        => TranslateOrNull(interpolated.Data);
 
     public static async Task LoadAllAsync(SimpleLoadTask? task) {
         task?.SetMessage("Reading lang files");
@@ -95,23 +92,27 @@ public static class LangRegistry {
             var key = line[..splitIdx];
 
             var value = line[(splitIdx + 1)..].Trim().ToString().Replace(@"\n", "\n", StringComparison.Ordinal) ?? "";
-            lang.Translations[StringRef.FromString(key.ToString())] = value;
+            lang.Translations[key.ToString()] = value;
         }
     }
 }
 
-public class Lang {
+public sealed class Lang {
     public string Name { get; set; }
 
-    public Dictionary<StringRef, string> Translations { get; set; } = new();
+    public ListenableDictionary<string, string> Translations { get; }
+    
+    private readonly Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> _translationsSpanLookup;
 
     public Lang(string name) { 
         Name = name;
+        Translations = new();
+        _translationsSpanLookup = Translations.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
-    public string? GetOrNull(string key) => Translations.GetValueOrDefault(StringRef.FromString(key));
+    public string? GetOrNull(string key)
+        => Translations.GetValueOrDefault(key);
     
-    public string? GetOrNull(ReadOnlySpan<char> key) => Translations.GetValueOrDefault(StringRef.FromSpanIntoShared(key));
-    
-    public string? GetOrNull(StringRef key) => Translations.GetValueOrDefault(key);
+    public string? GetOrNull(ReadOnlySpan<char> key)
+        => _translationsSpanLookup.TryGetValue(key, out var translated) ? translated : null;
 }

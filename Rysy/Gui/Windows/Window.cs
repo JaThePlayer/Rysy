@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.Windows;
 
@@ -81,7 +82,7 @@ public class Window {
 
         if (Closeable ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags)) : ImGui.Begin(WindowID, EditWindowFlags(flags))) {
             if (HasBottomBar) {
-                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)$"{WindowID}.child".GetHashCode());
+                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{WindowID}.child"), StringComparison.Ordinal));
             } else {
                 Render();
             }

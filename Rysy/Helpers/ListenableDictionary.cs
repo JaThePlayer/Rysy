@@ -69,7 +69,7 @@ public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
 
 public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     where TKey : notnull {
-    private readonly Dictionary<TKey, TValue> Inner;
+    private readonly Dictionary<TKey, TValue> _inner;
 
     public Action? OnChanged { get; set; }
 
@@ -79,7 +79,11 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     public long Version { get; private set; }
     
     public ListenableDictionary(IEqualityComparer<TKey> comparer) {
-        Inner = new(comparer);
+        _inner = new(comparer);
+    }
+    
+    public ListenableDictionary() {
+        _inner = new();
     }
 
     public static implicit operator ReadOnlyListenableDictionary<TKey, TValue>(ListenableDictionary<TKey, TValue> d) => new(d);
@@ -96,9 +100,9 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     }
     
     public TValue this[TKey key] {
-        get => Inner[key];
+        get => _inner[key];
         set {
-            Inner[key] = value;
+            _inner[key] = value;
             HandleOnChanged();
         }
     }
@@ -110,65 +114,74 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     public ListenableDictionaryRef<TKey, TValue> GetReference(TKey key)
         => new(this, key);
 
-    public ICollection<TKey> Keys => Inner.Keys;
+    public ICollection<TKey> Keys => _inner.Keys;
 
-    public ICollection<TValue> Values => Inner.Values;
+    public ICollection<TValue> Values => _inner.Values;
 
-    public int Count => Inner.Count;
+    public int Count => _inner.Count;
 
     public bool IsReadOnly => false;
 
     public void Add(TKey key, TValue value) {
-        Inner.Add(key, value);
+        _inner.Add(key, value);
         HandleOnChanged();
     }
 
     public void Add(KeyValuePair<TKey, TValue> item) {
-        ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Add(item);
+        ((ICollection<KeyValuePair<TKey, TValue>>) _inner).Add(item);
         HandleOnChanged();
     }
 
     public void Clear() {
-        Inner.Clear();
+        _inner.Clear();
         HandleOnChanged();
     }
 
     public bool Contains(KeyValuePair<TKey, TValue> item) {
-        return Inner.Contains(item);
+        return _inner.Contains(item);
     }
 
     public bool ContainsKey(TKey key) {
-        return Inner.ContainsKey(key);
+        return _inner.ContainsKey(key);
     }
 
     public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-        ((ICollection<KeyValuePair<TKey, TValue>>) Inner).CopyTo(array, arrayIndex);
+        ((ICollection<KeyValuePair<TKey, TValue>>) _inner).CopyTo(array, arrayIndex);
     }
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-        return Inner.GetEnumerator();
+        return _inner.GetEnumerator();
     }
 
     public bool Remove(TKey key) {
-        var ret = Inner.Remove(key);
+        var ret = _inner.Remove(key);
         if (ret)
             HandleOnChanged();
         return ret;
     }
 
     public bool Remove(KeyValuePair<TKey, TValue> item) {
-        var ret = ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Remove(item);
+        var ret = ((ICollection<KeyValuePair<TKey, TValue>>) _inner).Remove(item);
         if (ret)
             HandleOnChanged();
         return ret;
     }
 
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) {
-        return Inner.TryGetValue(key, out value);
+        return _inner.TryGetValue(key, out value);
     }
 
     IEnumerator IEnumerable.GetEnumerator() {
-        return Inner.GetEnumerator();
+        return _inner.GetEnumerator();
+    }
+
+    public Dictionary<TKey, TValue>.AlternateLookup<T> GetAlternateLookup<T>()
+        where T : notnull, allows ref struct {
+        return _inner.GetAlternateLookup<T>();
+    }
+
+    public TValue? GetValueOrDefault(TKey key) {
+        return _inner.GetValueOrDefault(key);
     }
 }
 
