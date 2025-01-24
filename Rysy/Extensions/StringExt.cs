@@ -344,4 +344,10 @@ public static partial class StringExt {
     }
 
     public static string ToImguiEscapedString(this char c) => c is '%' ? "%%" : c.ToString();
+
+    public static string ToStringInvariant(this object? obj) {
+        if (obj is IFormattable f)
+            return f.ToString(null, CultureInfo.InvariantCulture);
+        return obj?.ToString() ?? "";
+    }
 }
