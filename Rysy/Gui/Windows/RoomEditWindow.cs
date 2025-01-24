@@ -3,25 +3,44 @@ using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace Rysy.Gui.Windows;
 
-public sealed class RoomEditWindow : Window {
+public sealed partial class RoomEditWindow : Window {
     private Action HistoryHook;
     private readonly FormWindow _generalTab;
     private readonly Room _room;
     private readonly RoomAttributes _attrs;
     private bool _newRoom;
+
+    private ValidationResult IntersectingRoomPosValidator(FormContext ctx, object? val) {
+        var x = ctx.Int("x");
+        var y = ctx.Int("y");
+        var width = ctx.Int("width");
+        var height = ctx.Int("height");
+        if (width <= 0 || height <= 0)
+            return ValidationResult.Ok;
+        
+        var bounds = new Rectangle(x, y, width, height);
+        
+        if (_room.Map.Rooms.Any(r => r != _room && r.Bounds.Intersects(bounds))) {
+            return ValidationResult.OverlappingRooms;
+        }
+        
+        return ValidationResult.Ok;
+    }
     
     private FieldList GeneralTabFields(RoomAttributes attrs) {
         var fields = new FieldList(new {
             name = Fields.String(attrs.Name).WithValidator(s => RoomNameValid(this, s)),
             color = new RoomDebugColorField(attrs.C),
             
-            x = Fields.Int(attrs.X).WithDisplayScale(8),
-            y = Fields.Int(attrs.Y).WithDisplayScale(8),
-            width = Fields.Int(attrs.Width).WithMin(8).WithDisplayScale(8),
-            height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8),
+            x = Fields.Int(attrs.X).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),
+            y = Fields.Int(attrs.Y).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),
+            width = Fields.Int(attrs.Width).WithMin(8).WithDisplayScale(8).WithRecommendedMin(8*40),
+            height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8).WithRecommendedMin(8*23),
             
             cameraOffsetX = attrs.CameraOffsetX,
             cameraOffsetY = attrs.CameraOffsetY,
@@ -67,11 +86,80 @@ public sealed class RoomEditWindow : Window {
         
         return ValidationResult.Ok;
     }
+
+    [GeneratedRegex(@"^([\w-]+?)([-_])(\d+)(\w*)$")]
+    private static partial Regex StandardRoomNameRegex();
+    
+    string? GuessNewRoomName(Room room) {
+        var prevName = room.Name;
+        var map = room.Map;
+
+        string? newName;
         
+        // Room name is just a number
+        if (int.TryParse(prevName, CultureInfo.InvariantCulture, out var res)) {
+            // 1. Try incrementing the number
+            if (Try($"{res + 1}", out newName))
+                return newName;
+            // 2. Try appending a letter from a-z
+            for (char i = 'a'; i <= 'z'; i++) {
+                if (Try($"{prevName}{i}", out newName))
+                    return newName;
+            }
+        }
+
+        if (StandardRoomNameRegex().Match(prevName) is { Success: true } m) {
+            // Room name is in the standard checkpoint-numberBranch format, like 'a-00a'
+            var chapterId = m.Groups[1].ValueSpan;
+            var separator = m.Groups[2].ValueSpan;
+            var roomId = int.Parse(m.Groups[3].ValueSpan, CultureInfo.InvariantCulture);
+            var roomBranch = m.Groups[4].ValueSpan;
+
+            if (roomBranch.IsEmpty) {
+                // We're not in a branch, so the name is like 'a-00'
+                
+                // 1. Try incrementing the number
+                if (Try($"{chapterId}{separator}{(roomId + 1).ToStringInvariant().PadLeft(m.Groups[3].ValueSpan.Length, '0')}{roomBranch}", out newName))
+                    return newName;
+                
+                // 2. Try appending a letter from a-z
+                for (char i = 'a'; i <= 'z'; i++) {
+                    if (Try($"{chapterId}{separator}{roomId}{i}", out newName))
+                        return newName;
+                }
+            } else {
+                // We're already in a branch, we need to extend the branch
+                // 1. Try appending a letter from a-z
+                for (char i = 'a'; i <= 'z'; i++) {
+                    if (Try($"{chapterId}{separator}{roomId}{roomBranch}{i}", out newName))
+                        return newName;
+                }
+            }
+        }
+
+        return null;
+
+        bool Try(string name, [NotNullWhen(true)] out string? nameRet) {
+            if (map.TryGetRoomByName(name) is null) {
+                nameRet = name;
+                return true;
+            }
+            
+            nameRet = null;
+            return false;
+        }
+    }
+    
     
     public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
         Room room1 = room;
         var attrs = room.Attributes.Copy();
+
+        if (newRoom) {
+            // Try to guess a new room name
+            attrs.Name = GuessNewRoomName(room) ?? attrs.Name;
+        }
+        
         _room = room;
         _attrs = attrs;
         _newRoom = newRoom;

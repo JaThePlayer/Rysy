@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
@@ -28,10 +29,11 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
         
         return value is string ? base.IsValid(value) : ValidationResult.GenericError;
     }
-
+    
     public override object? RenderGui(string fieldName, object value) {
-        var b = (value ?? "").ToString();
-        if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip)) {
+        var b = (value ?? "").ToString() ?? "";
+        //if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip)) {
+        if (ImGuiManager.ExpandingTextInput(fieldName, ref b, 256, Tooltip)) {
             if (UserInputFinalizer(RealValue(b)) is { } ret)
                 return ret;
 
@@ -61,7 +63,17 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     /// Adds a validator to this field, which disallows saving the property if it returns false
     /// </summary>
     public StringField WithValidator(Func<string?, ValidationResult> validator) {
-        Validator += (v) => validator(v?.ToString());
+        Validator += (ctx, v) => validator(v?.ToString());
+
+        return this;
+    }
+    
+    
+    /// <summary>
+    /// Adds a validator to this field, which disallows saving the property if it returns false
+    /// </summary>
+    public StringField WithValidator(Func<FormContext, string?, ValidationResult> validator) {
+        Validator += (ctx, v) => validator(ctx, v?.ToString());
 
         return this;
     }

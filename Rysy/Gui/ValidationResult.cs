@@ -72,6 +72,9 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult InvalidEnglishDialogName { get; } 
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidEnglishDialogName")));
     
+    public static ValidationResult OverlappingRooms { get; } 
+        = new(ValidationMessage.Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.overlappingRoomWarning")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;
@@ -108,7 +111,7 @@ public sealed class ValidationResult : ITooltip {
     
     public static ValidationResult Combine(ValidationResult? prev, params Span<ValidationMessage?> messages) {
         ValidationResult? result = null;
-        if (!prev?.IsOk ?? false) {
+        if (prev is not null and not { HasErrors: false, HasWarnings: false }) {
             result ??= new();
             foreach (var msg in prev.AllMessages) {
                 result.Add(msg);
