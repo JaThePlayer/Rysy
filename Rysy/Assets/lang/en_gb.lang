@@ -147,6 +147,19 @@ rysy.settings.general.mouseWrap.tooltip=Enables mouse wrapping around the edges 
 rysy.settings.general.touchpadPanSpeed=Touchpad Pan Speed
 rysy.settings.general.touchpadPanSpeed.tooltip=Controls how fast the editor view gets panned by the touchpad two-finger panning gesture.
 
+rysy.settings.debug.missingEntities=Log Missing Entities
+rysy.settings.debug.missingEntities.tooltip=Logs any entities without Rysy plugins to the console.
+rysy.settings.debug.missingTextures=Log Missing Textures
+rysy.settings.debug.missingTextures.tooltip=Logs any missing textures to the console
+rysy.settings.debug.textureLoadTimes=Log Texture Load Times
+rysy.settings.debug.textureLoadTimes.tooltip=Logs time spent loading textures in the background.
+rysy.settings.debug.spriteCacheTimes=Log Sprite Caching Times
+rysy.settings.debug.spriteCacheTimes.tooltip=Logs time spent calling GetSprites on entities during rendering.
+rysy.settings.debug.logPreloadTimes=Log Texture Preloading
+rysy.settings.debug.logPreloadTimes.tooltip=Logs whenever a sprite has to be preloaded due to requesting its size before it finished lazily loading.
+rysy.settings.debug.logMissingFieldTypes=Log Missing Field Types
+rysy.settings.debug.logMissingFieldTypes.tooltip=Logs whenever a lonn plugin uses a field type that doesn't exist.
+
 # Mod Settings window
 rysy.modSettings.windowName=Mod Settings - {0}
 rysy.modSettings.mainTab=Main

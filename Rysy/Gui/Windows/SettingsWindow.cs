@@ -259,32 +259,38 @@ public sealed class SettingsWindow : Window {
     private void DebugBar() {
         if (ImGui.BeginTabItem("Debug")) {
             var m = Settings.Instance.LogMissingEntities;
-            if (ImGui.Checkbox("Log Missing Entities", ref m).WithTooltip("Logs any entities without Rysy plugins to the console.")) {
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.missingEntities", ref m)) {
                 Settings.Instance.LogMissingEntities = m;
                 Settings.Instance.Save();
             }
 
             m = Settings.Instance.LogMissingTextures;
-            if (ImGui.Checkbox("Log Missing Textures", ref m).WithTooltip("Logs any missing textures to the console")) {
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.missingTextures", ref m)) {
                 Settings.Instance.LogMissingTextures = m;
                 Settings.Instance.Save();
             }
 
             m = Settings.Instance.LogTextureLoadTimes;
-            if (ImGui.Checkbox("Log Texture Load Times", ref m).WithTooltip("Logs time spent loading textures in the background.")) {
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.textureLoadTimes", ref m)) {
                 Settings.Instance.LogTextureLoadTimes = m;
                 Settings.Instance.Save();
             }
 
             m = Settings.Instance.LogSpriteCachingTimes;
-            if (ImGui.Checkbox("Log Sprite Caching Times", ref m).WithTooltip("Logs time spent calling GetSprites on entities during rendering.")) {
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.spriteCacheTimes", ref m)) {
                 Settings.Instance.LogSpriteCachingTimes = m;
                 Settings.Instance.Save();
             }
 
             m = Settings.Instance.LogPreloadingTextures;
-            if (ImGui.Checkbox("Log Texture Preloading", ref m).WithTooltip("Logs whenever a sprite has to be preloaded due to requesting its size before it finished lazily loading.")) {
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.logPreloadTimes", ref m)) {
                 Settings.Instance.LogPreloadingTextures = m;
+                Settings.Instance.Save();
+            }
+            
+            m = Settings.Instance.LogMissingFieldTypes;
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.logMissingFieldTypes", ref m)) {
+                Settings.Instance.LogMissingFieldTypes = m;
                 Settings.Instance.Save();
             }
 
