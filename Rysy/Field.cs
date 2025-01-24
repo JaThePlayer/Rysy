@@ -55,7 +55,7 @@ public abstract record class Field {
         
         try {
             Tooltip = Tooltip.WrapWithValidation(validationResult);
-            return RenderGui(NameOverride ??= fieldName, value);
+            return RenderGui(NameOverride ?? fieldName, value);
         } finally {
             ImGuiManager.PopInvalidStyle();
             ImGuiManager.PopWarningStyle();

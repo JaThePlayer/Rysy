@@ -18,7 +18,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public bool NullAllowed { get; set; }
     
-    public int? Default { get; set; }
+    public string? Default { get; set; }
 
     /// <summary>
     /// Divides the number displayed in the gui by this number.
@@ -27,15 +27,10 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public override object GetDefault() => Default!;
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToInt32(newDefault, CultureInfo.InvariantCulture);
+        => Default = newDefault.ToStringInvariant();
 
     private int? ParseInput(object? value) {
-        return value switch {
-            int i => i,
-            float f when float.IsInteger(f) => (int)f,
-            string s when int.TryParse(s, CultureInfo.InvariantCulture, out var f) => f,
-            _ => null,
-        };
+        return value.CoerceToInt();
     }
     
     public override ValidationResult IsValid(object? value) {
@@ -58,17 +53,22 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         
         return ValidationResult.Combine(
             baseValid,
-            ValidationMessage.TooSmallRecommended(v, RecommendedMin),
-            ValidationMessage.TooLargeRecommended(v, RecommendedMax),
-            ValidationMessage.NotRecommendedMultiple(v, RecommendedStep)
+            ValidationMessage.TooSmallRecommended(v / DisplayScale, RecommendedMin / DisplayScale),
+            ValidationMessage.TooLargeRecommended(v / DisplayScale, RecommendedMax / DisplayScale),
+            ValidationMessage.NotRecommendedMultiple(v / DisplayScale, RecommendedStep)
         );
     }
 
     public override object? RenderGui(string fieldName, object value) {
-        var v = ParseInput(value) ?? 0;
-        int b = v / DisplayScale;
-        if (ImGui.InputInt(fieldName, ref b, Step).WithTooltip(Tooltip))
-            return b * DisplayScale;
+        var v = ParseInput(value);
+        var bStr = v is {} ? (v.Value / DisplayScale).ToStringInvariant() : value.ToStringInvariant();
+        
+        if (ImGuiManager.InputInt(fieldName, ref bStr, Tooltip)) {
+            if (int.TryParse(bStr, CultureInfo.InvariantCulture, out var bRet))
+                return bRet * DisplayScale;
+            
+            return null;
+        }
 
         return null;
     }
@@ -128,7 +128,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         if (fieldInfoEntry.TryGetValue("options", out _) 
             && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => {
                 try {
-                    return (true, Convert.ToInt32(x, CultureInfo.InvariantCulture));
+                    return (true, x.CoerceToInt());
                 } catch {
                     return (false, 0);
                 }
@@ -139,14 +139,14 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         var min = fieldInfoEntry.Int("minimumValue", int.MinValue);
         var max = fieldInfoEntry.Int("maximumValue", int.MaxValue);
 
-        var field = Fields.Int(Convert.ToInt32(def, CultureInfo.InvariantCulture))
+        var field = Fields.Int(def.CoerceToInt())
             .WithMin(min)
             .WithMax(max);
 
         return field;
     }
 
-    int IFieldConvertible<int>.ConvertMapDataValue(object value) => Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    int IFieldConvertible<int>.ConvertMapDataValue(object value) => value.CoerceToInt();
 
-    float IFieldConvertible<float>.ConvertMapDataValue(object value) => Convert.ToSingle(value, CultureInfo.InvariantCulture);
+    float IFieldConvertible<float>.ConvertMapDataValue(object value) => value.CoerceToFloat();
 }

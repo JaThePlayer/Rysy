@@ -4,7 +4,9 @@ namespace Rysy.Helpers;
 
 internal ref struct SpanParser(ReadOnlySpan<char> input)
 {
-    private ReadOnlySpan<char> Remaining = input;
+    public ReadOnlySpan<char> Remaining = input;
+    
+    public bool IsEmpty => Remaining.IsEmpty;
 
     private Res<T> ReadSlice<T>(IFormatProvider? format, int len) where T : ISpanParsable<T>
     {
@@ -34,8 +36,19 @@ internal ref struct SpanParser(ReadOnlySpan<char> input)
     public bool TryRead<T>(out T parsed, IFormatProvider? format = null) where T : ISpanParsable<T>
         => Read<T>(format).TryUnpack(out parsed);
     
+    /// <summary>
+    /// Reads the remaining span to completion, returning that span.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<char> ReadStr()
         => ReadSliceStr(Remaining.Length);
+    
+    /// <summary>
+    /// Reads the next 'len' chars, returning that span.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<char> ReadStr(int len)
+        => ReadSliceStr(len);
 
     public Res<T> ReadUntil<T>(char until, IFormatProvider? format = null) where T : ISpanParsable<T>
     {
@@ -93,10 +106,27 @@ internal ref struct SpanParser(ReadOnlySpan<char> input)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool StartsWith(ReadOnlySpan<char> prefix)
         => Remaining.StartsWith(prefix);
+    
+    public bool TryTrimPrefix(ReadOnlySpan<char> prefix)
+    {
+        if (!StartsWith(prefix))
+            return false;
+
+        Skip(prefix.Length);
+        return true;
+    }
 
     public void TrimStart()
     {
         Remaining = Remaining.TrimStart();
+    }
+    
+    public void Skip(int chars) {
+        Remaining = Remaining[chars..];
+    }
+    
+    public void SkipEnd(int chars) {
+        Remaining = Remaining[..^chars];
     }
 }
 

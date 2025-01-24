@@ -160,4 +160,40 @@ public static class NumberExt {
             _ => false,
         };
     }
+
+    /// <summary>
+    /// Safely coerces this object to a float, returning the default if the conversion fails.
+    /// </summary>
+    public static float CoerceToFloat(this object v, float defaultValue = 0f) {
+        if (v is float f)
+            return f;
+
+        if (v is IConvertible convertible) {
+            try {
+                return convertible.ToSingle(CultureInfo.InvariantCulture);
+            } catch {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
+    
+    /// <summary>
+    /// Safely coerces this object to a float, returning the default if the conversion fails.
+    /// </summary>
+    public static int CoerceToInt(this object? v, int defaultValue = 0) {
+        if (v is int f)
+            return f;
+
+        if (v is IConvertible convertible) {
+            try {
+                return convertible.ToInt32(CultureInfo.InvariantCulture);
+            } catch {
+                return defaultValue;
+            }
+        }
+
+        return defaultValue;
+    }
 }

@@ -390,7 +390,7 @@ public static class ImGuiManager {
         
         var valueToString = textInputStringGetter?.Invoke(value) ?? toString(value);
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText($"##text{name}", ref valueToString, 256).WithTooltip(tooltip)) {
+        if (ExpandingTextInput($"##text{name}", ref valueToString, 256, tooltip)) {
             value = stringToValue(valueToString);
             changed = true;
         }
@@ -442,9 +442,17 @@ public static class ImGuiManager {
 
         var valueToString = value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText($"##text{name}", ref valueToString, 128).WithTooltip(tooltip)) {
-            value = stringToValue(valueToString);
-            changed = true;
+
+        if (typeof(T) == typeof(int)) {
+            if (InputInt($"##text{name}", ref valueToString, tooltip)) {
+                value = stringToValue(valueToString);
+                changed = true;
+            }
+        } else {
+            if (ExpandingTextInput($"##text{name}", ref valueToString, 128, tooltip)) {
+                value = stringToValue(valueToString);
+                changed = true;
+            }
         }
 
         cache ??= new();
@@ -567,6 +575,127 @@ public static class ImGuiManager {
         true.WithTooltip(tooltip);
 
         return edited;
+    }
+
+    public static bool InputFloat(string fieldName, ref string stringVal, Tooltip tooltip = default) {
+        if (ImGui.InputText(fieldName, ref stringVal, 64)) {
+            if (stringVal.StartsWith('=')) {
+                // Evaluate expression
+                var valid = MathExpression.TryEvaluate(stringVal.AsSpan()[1..], out var result);
+                if (!valid.IsOk) {
+                    tooltip = tooltip.WrapWithValidation(valid);
+                }
+
+                stringVal = result.ToStringInvariant();
+            }
+
+            true.WithTooltip(tooltip);
+            return true;
+        }
+
+        true.WithTooltip(tooltip);
+        return false;
+        
+    }
+    
+    public static bool InputInt(string fieldName, ref string stringVal, Tooltip tooltip = default) {
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var buttonWidth = ImGui.GetFrameHeight();
+
+        var displayedField = GetDisplayedText(fieldName);
+
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth + xPadding)*2);
+
+        bool ret = false;
+        
+        if (ImGui.InputText(Interpolator.Temp($"##txt{fieldName}"), ref stringVal, 64)) {
+            if (stringVal.StartsWith('=')) {
+                // Evaluate expression
+                var valid = MathExpression.TryEvaluate(stringVal.AsSpan()[1..], out var result);
+                if (!valid.IsOk) {
+                    tooltip = tooltip.WrapWithValidation(valid);
+                }
+
+                stringVal = ((int)result).ToStringInvariant();
+            }
+
+            true.WithTooltip(tooltip);
+            ret = true;
+        } else {
+            true.WithTooltip(tooltip);
+        }
+        
+        ImGui.SameLine(0f, xPadding);
+        var step = Input.Global.Keyboard.Ctrl() ? 100 : Input.Global.Keyboard.Shift() ? 10 : 1;
+        
+        ImGui.PushButtonRepeat(true);
+        if (ImGui.Button(Interpolator.Temp($"-##-{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+            stringVal = (stringVal.CoerceToInt(0) - step).ToStringInvariant();
+            ret = true;
+        }
+        
+        ImGui.SameLine(0f, xPadding);
+        if (ImGui.Button(Interpolator.Temp($"+##+{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+            stringVal = (stringVal.CoerceToInt(0) + step).ToStringInvariant();
+            ret = true;
+        }
+        ImGui.PopButtonRepeat();
+
+        if (displayedField.Length > 0) {
+            ImGui.SameLine(0f, xPadding);
+            ImGui.Text(displayedField);
+            true.WithTooltip(tooltip);
+        }
+        
+        return ret;
+    }
+
+    public static ReadOnlySpan<char> GetDisplayedText(ReadOnlySpan<char> textMaybeWithId) {
+        var displayedText = textMaybeWithId.IndexOf("##", StringComparison.Ordinal) is var splitIdx and >= 0
+            ? textMaybeWithId[..splitIdx]
+            : textMaybeWithId;
+
+        return displayedText;
+    }
+    
+    public static NumVector2 GetDisplayedTextSize(ReadOnlySpan<char> textMaybeWithId) {
+        var displayedText = GetDisplayedText(textMaybeWithId);
+        
+        return ImGui.CalcTextSize(displayedText);
+    }
+
+    public static bool ExpandingTextInput(ReadOnlySpan<char> fieldName, ref string input, uint maxLen, Tooltip tooltip = default) {
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var targetWidth = ImGui.CalcItemWidth();
+        
+        var textWidth = GetDisplayedTextSize(input).X;
+        
+        var fieldNameWidth = GetDisplayedTextSize(fieldName).X;
+        bool ret = false;
+
+        var id = ImGui.GetID(Interpolator.Temp($"##{fieldName}cc_isOpen"));
+        var storage = ImGui.GetStateStorage();
+        var isOpen = storage.GetBool(id, false);
+
+        var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
+        if (ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"), new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding : 0f), 0), ImGuiChildFlags.AutoResizeY)) {
+            if (isOpen || ImGui.IsWindowFocused())
+                ImGui.SetNextItemWidth(optimalWidth);
+            // Delay resizing the field a bit,
+            // so that clicking on a dropdown window that got moved by this input being larger still works.
+            isOpen = ImGui.IsWindowFocused() || (isOpen && Input.Global.Mouse.LeftHoldTime is > 0f and < 0.1f);
+            
+            ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
+            
+            ImGui.EndChild();
+        } else {
+            isOpen = false;
+            ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
+        }
+
+        storage.SetBool(id, isOpen);
+
+        return ret;
     }
 
     public static void WithBottomBar(Action renderMain, Action renderBottomBar, uint? id = null) {
@@ -708,11 +837,28 @@ public static class ImGuiManager {
     }
     
     public static bool TranslatedInputInt(string id, ref int v) {
-        return ImGui.InputInt(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+        var str = v.ToStringInvariant();
+        
+        if (InputInt(id.Translate(), ref str, Tooltip.CreateTranslatedOrNull($"{id}.tooltip"))) {
+            v = int.TryParse(str, CultureInfo.InvariantCulture, out var i) ? i : v;
+            return true;
+        }
+
+        return false;
     }
     
-    public static bool TranslatedInputFloat(string id, ref float v) {
-        return ImGui.InputFloat(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+    public static bool TranslatedInputFloat(string id, ref float v, Tooltip tooltip = default) {
+        var str = v.ToStringInvariant();
+        if (tooltip.IsNull) {
+            tooltip = Tooltip.CreateTranslatedOrNull($"{id}.tooltip");
+        }
+        
+        if (InputFloat(id.Translate(), ref str, tooltip)) {
+            v = float.TryParse(str, CultureInfo.InvariantCulture, out var i) ? i : v;
+            return true;
+        }
+
+        return false;
     }
     
     public static bool TranslatedInputFloat(string id, ref float v, float step) {
@@ -724,7 +870,18 @@ public static class ImGuiManager {
     }
     
     public static bool TranslatedInputFloat2(string id, ref NumVector2 v) {
-        return ImGui.InputFloat2(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
+        var tooltip = Tooltip.CreateTranslatedOrNull($"{id}.tooltip");
+        var ret = false;
+        var fullWidth = ImGui.CalcItemWidth();
+
+        ImGui.SetNextItemWidth(fullWidth / 2f);
+        ret |= TranslatedInputFloat($"##x{id}", ref v.X, tooltip);
+
+        ImGui.SameLine(0, ImGui.GetStyle().FramePadding.X);
+        ImGui.SetNextItemWidth(fullWidth / 2f);
+        ret |= TranslatedInputFloat(id, ref v.Y, tooltip);
+
+        return ret;
     }
 
     public static bool TranslatedDragFloat2(string id, ref NumVector2 v, float v_speed, float v_min, float v_max) {
