@@ -124,9 +124,11 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
         var buttonWidth = ImGui.GetFrameHeight();
         const int ButtonAmt = 1;
 
+        var listItemWidth = ImGui.CalcItemWidth();
+
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * ButtonAmt) - xPadding * ButtonAmt);
         ImGui.BeginDisabled(!AllowEdits);
-        if (ImGui.InputText($"##text{fieldName}", ref str, 1024).WithTooltip(Tooltip)) {
+        if (ImGuiManager.ExpandingTextInput($"##text{fieldName}", ref str, 1024, Tooltip)) {
             ret = str;
         }
         ImGui.EndDisabled();
@@ -145,9 +147,11 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
             
             for (int i = 0; i < split.Length; i++) {
                 var item = split[i];
-                var valid = PrepareBaseField().IsValid(item);
+                var field = PrepareBaseField();
+                var valid = field.IsValid(item);
 
-                if (PrepareBaseField().RenderGuiWithValidation(i.ToString(CultureInfo.InvariantCulture), item, valid) is { } newValue) {
+                ImGui.SetNextItemWidth(listItemWidth);
+                if (field.RenderGuiWithValidation(i.ToStringInvariant(), item, valid) is { } newValue) {
                     var newStr = InnerObjToString(newValue);
                     if (!newStr.Contains(Separator, StringComparison.Ordinal)) {
                         split[i] = InnerObjToString(newValue);

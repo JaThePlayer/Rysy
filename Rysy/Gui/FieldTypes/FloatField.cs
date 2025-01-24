@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.Gui.FieldTypes;
 
 public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldConvertible<float>, ILonnField {
-    public float Default { get; set; }
+    public string? Default { get; set; }
 
     public float Min { get; set; } = float.MinValue;
     public float Max { get; set; } = float.MaxValue;
@@ -12,10 +12,10 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
     public float RecommendedMin { get; set; } = float.MinValue;
     public float RecommendedMax { get; set; } = float.MaxValue;
 
-    public override object GetDefault() => Default;
+    public override object GetDefault() => Default!;
 
     public override void SetDefault(object newDefault)
-        => Default = Convert.ToSingle(newDefault, CultureInfo.InvariantCulture);
+        => Default = newDefault.ToStringInvariant();
 
     public override ValidationResult IsValid(object? value) {
         float v = value switch {
@@ -24,6 +24,7 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
             string s when float.TryParse(s, CultureInfo.InvariantCulture, out var f) => f,
             _ => float.NaN,
         };
+        
         if (float.IsNaN(v)) {
             return ValidationResult.MustBeNumber;
         }
@@ -45,9 +46,12 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
     }
 
     public override object? RenderGui(string fieldName, object value) {
-        float b = Convert.ToSingle(value, CultureInfo.InvariantCulture);
-        if (ImGui.InputFloat(fieldName, ref b).WithTooltip(Tooltip))
-            return b;
+        var str = value.ToStringInvariant();
+        if (ImGuiManager.InputFloat(fieldName, ref str, Tooltip)) {
+            if (float.TryParse(str, CultureInfo.InvariantCulture, out var f))
+                return f;
+            return null;
+        }
 
         return null;
     }
@@ -74,9 +78,9 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
         return this;
     }
 
-    int IFieldConvertible<int>.ConvertMapDataValue(object value) => Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    int IFieldConvertible<int>.ConvertMapDataValue(object value) => value.CoerceToInt();
 
-    float IFieldConvertible<float>.ConvertMapDataValue(object value) => Convert.ToSingle(value, CultureInfo.InvariantCulture);
+    float IFieldConvertible<float>.ConvertMapDataValue(object value) => value.CoerceToFloat();
 
     public static string Name => "number";
 

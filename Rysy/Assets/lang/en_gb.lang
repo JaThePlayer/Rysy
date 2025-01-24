@@ -363,6 +363,8 @@ rysy.validate.invalidCodeName=Code names must consist only of English letters, d
 rysy.validate.modFolderNameUsedAlready=A folder with this name exists in your Mods directory already.
 rysy.validate.invalidEnglishDialogName=Name can't contain newlines and special Dialog characters: = [ ]
 
+rysy.validate.overlappingRoomWarning=Room overlaps a different room, which can cause weird in-game behavior.
+
 # FROM LONN:
 
 # -- Entities --
