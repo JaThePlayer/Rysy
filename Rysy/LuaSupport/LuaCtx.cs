@@ -709,6 +709,24 @@ public class LuaCtx {
             return 1;
         });
 
+        lua.Register("_RYSY_ENTITIES_getAllRegisteredNames", static s => {
+            var lua = Lua.FromIntPtr(s);
+            var entities = EntityRegistry.Registered;
+
+            lua.CreateTable(entities.Count, 0);
+            var tablePos = lua.GetTop();
+            long i = 0;
+            foreach (var (sid, _) in entities) {
+                lua.PushInteger(i);
+                lua.PushString(sid);
+                lua.SetTable(tablePos);
+
+                i++;
+            }
+            
+            return 1;
+        });
+        
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy
             table.shallowcopy = function(tbl, ...)

@@ -35,11 +35,16 @@ local registeredEntitiesMt = {
 		return createRegisteredEntityShim(key, registered)
 	end,
 	__pairs = function (self)
+        -- Get the up-to-date registered name list, which will include entities lua doesn't know about.
+        local registered = _RYSY_ENTITIES_getAllRegisteredNames()
+        local i = 0
+        
 	    return function(self, lastIdx)
-	        local k, v = next(_RYSY_entities, lastIdx)
-
-	        if not k then return nil end
-	        return k, createRegisteredEntityShim(k, v)
+            i = i + 1
+            local sid = registered[i]
+            if not sid then return nil end
+            
+            return sid, createRegisteredEntityShim(sid, _RYSY_entities[sid])
 	    end, self, nil
 	end
 }
