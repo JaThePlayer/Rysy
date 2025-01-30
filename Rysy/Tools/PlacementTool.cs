@@ -372,13 +372,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             return value;
         }
 
-        if (EditorState.Map is not { } map)
-            return null;
-
         var key = keySpan.ToString();
         XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
             ? CreateWidgetForDecal(placement, key, PreviewSize)
-            : CreateWidget(map, placement, key);
+            : CreateWidget(Map.DummyMap, placement, key);
         MaterialPreviewCache[key] = def;
 
         return def;
