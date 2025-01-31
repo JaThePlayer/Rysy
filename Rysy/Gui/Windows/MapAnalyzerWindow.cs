@@ -76,8 +76,7 @@ internal sealed class MapAnalyzerWindow : Window {
             }
         }
 
-        if (!ImGui.BeginChild("List"))
-            return;
+        ImGui.BeginChild("List");
 
         if (!ImGui.BeginTable("Results", 3, ImGuiManager.TableFlags)) {
             ImGui.EndChild();

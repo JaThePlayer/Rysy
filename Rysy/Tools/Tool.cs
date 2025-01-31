@@ -259,20 +259,24 @@ public abstract class Tool {
         return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);
     }
 
-    public void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
+    public unsafe void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
         if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse)) {
             ImGui.EndChild();
             return;
         }
 
-        if (ImGui.BeginListBox(id, GetMaterialListBoxSize(size))) {
-            RenderMaterialList(size, out var searchBar);
+        
+        ImGui.PushStyleColor(ImGuiCol.FrameBg, *ImGui.GetStyleColorVec4(ImGuiCol.WindowBg));
 
-            ImGui.EndListBox();
+        ImGui.BeginChild(id, GetMaterialListBoxSize(size));
+        
+        ImGui.PopStyleColor();
+        RenderMaterialList(size, out var searchBar);
 
-            if (searchBar)
-                RenderSearchBar();
-        }
+        ImGui.EndChild();
+
+        if (searchBar)
+            RenderSearchBar();
 
         ImGui.EndChild();
     }
@@ -328,7 +332,9 @@ public abstract class Tool {
         var skip = (ImGui.GetScrollY() / elementHeight) - 1;
 
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
-        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
+        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), 
+            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), 
+            ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
         // make sure columns stay consistent
         skip -= skip % columns;
         skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
@@ -357,7 +363,7 @@ public abstract class Tool {
                     
                     var lasty = style.FramePadding.Y;
                     style.FramePadding.Y = (MaterialListElementHeight() - ImGui.GetTextLineHeightWithSpacing()) / 2;
-                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - style.ItemSpacing.X * 2 - style.FramePadding.Y * 2);
+                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2);
                     
                     var comboOpened = ImGui.BeginCombo(Interpolator.Temp($"##{rendered}"), "", ImGuiComboFlags.NoPreview);
                     style.FramePadding.Y = lasty;

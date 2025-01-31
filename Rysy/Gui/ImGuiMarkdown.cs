@@ -86,7 +86,7 @@ internal static partial class ImGuiMarkdown {
                         if (fencedCodeBlock.Lines is {})
                             foreach (var line in fencedCodeBlock.Lines.Lines.AsSpan()
                                          .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
-                                ImGui.Text(line.ToString() ?? "");
+                                ImGui.Text(line.Slice.AsSpan());
                             }
                         ImGui.EndDisabled();
                         break;
@@ -96,8 +96,8 @@ internal static partial class ImGuiMarkdown {
 
                         if (codeBlock.Inline is null) {
                             if (codeBlock.Lines is {})
-                                foreach (var line in codeBlock.Lines) {
-                                    ImGui.Text(line.ToString() ?? "");
+                                foreach (var line in codeBlock.Lines.Lines) {
+                                    ImGui.Text(line.Slice.AsSpan());
                                     first = false;
                                 }
                             

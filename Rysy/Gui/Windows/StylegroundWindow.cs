@@ -400,8 +400,7 @@ public class StylegroundWindow : Window {
     }
 
     private void RenderList(bool fg) {
-        if (!ImGui.BeginChild("list"))
-            return;
+        ImGui.BeginChild("list");
 
         var flags = ImGuiManager.TableFlags;
         var textBaseWidth = ImGui.CalcTextSize("A").X;

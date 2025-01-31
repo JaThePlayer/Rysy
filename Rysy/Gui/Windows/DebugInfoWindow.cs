@@ -20,7 +20,7 @@ public class DebugInfoWindow : Window {
 
     private static string HistoryFromText = "";
 
-    protected override void Render() {
+    protected override unsafe void Render() {
         ImGui.Text($"FPS: {RysyState.CurrentFPS}");
 
         if (ImGui.CollapsingHeader("Memory")) {
@@ -183,6 +183,11 @@ public class DebugInfoWindow : Window {
         ImGui.Checkbox("Imgui Demo", ref imguiDemo);
         if (imguiDemo)
             ImGui.ShowDemoWindow();
+
+        if (ImGui.Button("Save style to clipboard")) {
+            ImGuiStylePtr ptr = ImGui.GetStyle();
+            Input.Clipboard.Set((*ptr.NativePtr).ToJson());
+        }
     }
 
     private void Benchmark(Room room, bool aggressive, int times) {

@@ -518,9 +518,8 @@ public sealed class TilesetWindow : Window {
             ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.xmlCantBeEdited.notWriteable");
             return;
         }
-        
-        if (!ImGui.BeginChild("list", new(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y)))
-            return;
+
+        ImGui.BeginChild("list", new(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         
         var entries = _tab switch {
             Tabs.Bg or Tabs.Fg => GetAutotiler(_bg).Tilesets.Values.AsEnumerable<object>(),
