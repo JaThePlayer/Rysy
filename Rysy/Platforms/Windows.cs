@@ -1,15 +1,35 @@
-﻿using Rysy.Extensions;
+﻿using Microsoft.Win32;
+using Rysy.Mods;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Rysy.Platforms;
 
+[SupportedOSPlatform("windows")]
 public partial class Windows : RysyPlatform {
+    private FolderModFilesystem? _systemFontsFs;
+    
     private static string SaveLocation = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Rysy"
     ).Unbackslash();
 
     public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
+
+    public override IModFilesystem GetSystemFontsFilesystem()
+        => _systemFontsFs ??= new FolderModFilesystem("C:/Windows/Fonts");
+
+
+    public override Dictionary<string, string> GetFontFilenameToDisplayName() {
+        var fontNameKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
+        if (fontNameKey is null)
+            return [];
+        
+        var fontNames = fontNameKey.GetValueNames();
+        var fontPathToName = fontNames.ToDictionary(x => fontNameKey.GetValue(x)?.ToString() ?? "", x => x, StringComparer.OrdinalIgnoreCase);
+
+        return fontPathToName;
+    }
 
     public override void Init() {
         base.Init();

@@ -261,14 +261,18 @@ public abstract class Tool {
 
     public void RenderGui(Vector2 size, string id = "##ToolMaterialBox") {
         if (!ImGui.BeginChild($"##c_{id}", size.ToNumerics(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse)) {
+            ImGui.EndChild();
             return;
         }
 
-        BeginMaterialListGUI(id, size);
+        if (ImGui.BeginListBox(id, GetMaterialListBoxSize(size))) {
+            RenderMaterialList(size, out var searchBar);
 
-        RenderMaterialList(size, out var searchBar);
+            ImGui.EndListBox();
 
-        EndMaterialListGUI(searchBar);
+            if (searchBar)
+                RenderSearchBar();
+        }
 
         ImGui.EndChild();
     }
@@ -324,8 +328,7 @@ public abstract class Tool {
         var skip = (ImGui.GetScrollY() / elementHeight) - 1;
 
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
-        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), 
-            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
+        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
         // make sure columns stay consistent
         skip -= skip % columns;
         skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
@@ -403,28 +406,13 @@ public abstract class Tool {
         }
 
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Material", ImGuiManager.WindowFlagsResizable | ImGuiWindowFlags.NoScrollWithMouse)) {
-            return null;
-        }
+        ImGui.Begin("Material", ImGuiManager.WindowFlagsResizable | ImGuiWindowFlags.NoScrollWithMouse);
         ImGuiManager.PopWindowStyle();
 
         return ImGui.GetWindowSize().ToXna();
     }
 
     protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) => new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() - ImGui.GetFrameHeightWithSpacing() * 1.5f);
-
-    protected void BeginMaterialListGUI(string id, Vector2 windowSize) {
-        ImGui.BeginListBox(id, GetMaterialListBoxSize(windowSize));
-    }
-
-    protected void EndMaterialListGUI(bool searchBar) {
-        ImGui.EndListBox();
-
-        if (searchBar)
-            RenderSearchBar();
-
-        //ImGui.End();
-    }
 
     protected void RenderSearchBar() {
         var search = Search;
@@ -542,7 +530,7 @@ public abstract class Tool {
         // center the text
         cursorStart.Y = ImGui.GetCursorPos().Y;
         if (showPlacementIcons)
-            cursorStart.Y += previewOrNull?.H / 4 ?? 0;
+            cursorStart.Y += (previewOrNull?.H / 2 - ImGui.GetFontSize() / 2f) ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
         ImGui.Text(favorites is { } && favorites.Contains(name) ? Interpolator.Temp($"* {displayName}") : displayName);
 

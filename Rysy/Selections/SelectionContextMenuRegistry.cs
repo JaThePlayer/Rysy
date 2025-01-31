@@ -81,7 +81,7 @@ public static class SelectionContextWindowRegistry {
                 continue;
             }
 
-            if (ImGui.BeginPopupContextWindow(popup.PopupID, ImGuiPopupFlags.MouseButtonMask)) {
+            if (ImGui.BeginPopupContextWindow(popup.PopupID, ImGuiPopupFlags.MouseButtonRight)) {
                 DrawFunctions[popup.Layer](popup.Main, popup.Selections, new() {
                     Room = room,
                     SelectionTool = selectionTool,

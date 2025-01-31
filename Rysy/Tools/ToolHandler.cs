@@ -207,8 +207,11 @@ public class ToolHandler {
         RenderLayerList(_firstGui, toolHeight);
         RenderModeList();
 
-        if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size)
+        if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size) {
             CurrentTool.RenderGui(size);
+        }
+        ImGui.End();
+            
         _firstGui = false;
     }
 
@@ -217,9 +220,7 @@ public class ToolHandler {
         var currentMode = tool.Mode;
         
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Mode", ImGuiManager.WindowFlagsResizable)) {
-            return;
-        }
+        ImGui.Begin("Mode", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
         
         var windowSize = ImGui.GetWindowSize();
@@ -249,9 +250,7 @@ public class ToolHandler {
         }
 
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Layer", ImGuiManager.WindowFlagsResizable)) {
-            return;
-        }
+        ImGui.Begin("Layer", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
         var windowSize = ImGui.GetWindowSize();
@@ -280,9 +279,7 @@ public class ToolHandler {
         }
 
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Tool", ImGuiManager.WindowFlagsResizable)) {
-            return;
-        }
+        ImGui.Begin("Tool", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
         var windowSize = ImGui.GetWindowSize();

@@ -87,9 +87,6 @@ public sealed class RysyEngine : Game {
         base.Initialize();
 
         RysyPlatform.Current.Init();
-        //Logger.Init();
-        if (RysyPlatform.Current.SupportImGui)
-            ImGuiManager.Load();
 
         QueueReload();
     }
@@ -167,6 +164,10 @@ public sealed class RysyEngine : Game {
             // persistence will be `new()`'d up. Oh well.
             Persistence.Instance = Persistence.Save(new());
         }
+        
+        // Initialize Imgui now that we have settings
+        if (RysyPlatform.Current.SupportImGui && !RysyState.ImGuiAvailable)
+            ImGuiManager.Load();
 
         var celesteDir = Profile.Instance.CelesteDirectory;
         if (!string.IsNullOrWhiteSpace(celesteDir) && !Path.Exists(celesteDir)) {

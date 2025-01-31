@@ -1,5 +1,5 @@
 ﻿using ImGuiNET;
-using Rysy.Extensions;
+using Rysy.Gui.FieldTypes;
 using Rysy.Mods;
 using Rysy.Platforms;
 
@@ -59,7 +59,8 @@ public sealed class SettingsWindow : Window {
             return;
 
         var fps = Settings.Instance.TargetFps;
-        if (ImGui.InputInt("Target FPS", ref fps, 10, 30, ImGuiInputTextFlags.EnterReturnsTrue).WithTooltip("The maximum FPS that Rysy will attempt to reach. Higher values increase CPU/GPU usage in exchange for smoother visuals.")) {
+        if (ImGui.InputInt("Target FPS", ref fps, 10, 30)
+            .WithTooltip("The maximum FPS that Rysy will attempt to reach. Higher values increase CPU/GPU usage in exchange for smoother visuals.")) {
             Settings.Instance.TargetFps = fps.AtLeast(20);
             Settings.Instance.Save();
         }
@@ -176,6 +177,8 @@ public sealed class SettingsWindow : Window {
         ImGui.EndTabItem();
     }
 
+    private PathField? _fontDropdown;
+
     private void ThemeBar() {
         var windowData = Data;
 
@@ -202,6 +205,25 @@ public sealed class SettingsWindow : Window {
         }
 
         ImGui.Separator();
+        
+        var font = Settings.Instance.Font;
+        if (_fontDropdown is null) {
+            var fs = new LayeredFilesystem();
+            fs.AddMod(ModRegistry.RysyMod);
+            if (RysyPlatform.Current.GetSystemFontsFilesystem() is {} systemFonts)
+                fs.AddMod(new ModMeta() { Filesystem = systemFonts, EverestYaml = [ new() { Name = "System" } ]});
+            
+            var fontPathToName = RysyPlatform.Current.GetFontFilenameToDisplayName();
+            _fontDropdown = Fields.Path(font, "", "ttf", fs, filter: p => fontPathToName.ContainsKey(p.Path));
+            
+            
+            _fontDropdown.DisplayNameGetter = (path, s) => fontPathToName.GetValueOrDefault(path.Path);
+        }
+        
+        if (_fontDropdown.RenderGui("Font", font) is { } newFont) {
+            Settings.Instance.Font = newFont?.ToString() ?? "";
+            Settings.Instance.Save();
+        }
 
         var fontSize = Settings.Instance.FontSize;
         if (ImGui.InputInt("Font Size", ref fontSize)) {
@@ -215,6 +237,12 @@ public sealed class SettingsWindow : Window {
                 Settings.Instance.TriggerFontScale = triggerFontSize;
                 Settings.Instance.Save();
             }
+        }
+
+        var useBold = Settings.Instance.UseBoldFontByDefault;
+        if (ImGui.Checkbox("Use Bold font by default", ref useBold)) {
+            Settings.Instance.UseBoldFontByDefault = useBold;
+            Settings.Instance.Save();
         }
 
         ImGui.EndTabItem();

@@ -5,5 +5,5 @@ public interface IImGuiResourceManager {
 
     public void UnbindTexture(IntPtr texPtr);
 
-    public void BuildFontAtlas();
+    public bool BuildFontAtlas();
 }

@@ -325,7 +325,7 @@ public sealed class DecalRegistryWindow : Window {
             var popupid = $"new_{entry.Path}";
             ImGui.OpenPopupOnItemClick(popupid, ImGuiPopupFlags.MouseButtonLeft);
 
-            if (ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            if (ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
                 var blocked = entry.Props.Where(p => !p.AllowMultiple).Select(p => p.Name).ToHashSet();
                 var placements = EntityRegistry.DecalRegistryPropertyPlacements.Where(p => !blocked.Contains(p.SID ?? ""));
                 
@@ -384,7 +384,7 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     private void RenderEntryEditPopup(ModMeta mod, string popupid, DecalRegistryEntry? toChange = null) {
-        if (!ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (!ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             _pathField = null;
             return;
         }
@@ -441,7 +441,7 @@ public sealed class DecalRegistryWindow : Window {
         var sid = $"d_ctx_{id}";
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
 
-        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             render?.Invoke();
             
             if (remove is {} && ImGui.Button("Remove")) {

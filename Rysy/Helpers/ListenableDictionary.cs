@@ -69,7 +69,7 @@ public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
 
 public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     where TKey : notnull {
-    private readonly Dictionary<TKey, TValue> _inner;
+    internal readonly Dictionary<TKey, TValue> _inner;
 
     public Action? OnChanged { get; set; }
 
@@ -175,13 +175,23 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
         return _inner.GetEnumerator();
     }
 
+    /*
+     Not available due to Rider bug breaking hot reload :/
     public Dictionary<TKey, TValue>.AlternateLookup<T> GetAlternateLookup<T>()
         where T : notnull, allows ref struct {
         return _inner.GetAlternateLookup<T>();
     }
+    */
 
     public TValue? GetValueOrDefault(TKey key) {
         return _inner.GetValueOrDefault(key);
+    }
+}
+
+// Needed because GetAlternateLookup cannot work on a generic due to Rider bug breaking hot reload :/
+internal static class ListenableDictionaryExtensions {
+    public static Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> GetSpanAlternateLookup<TValue>(this ListenableDictionary<string, TValue> dict) {
+        return dict._inner.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 }
 

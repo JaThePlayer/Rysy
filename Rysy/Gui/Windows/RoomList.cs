@@ -37,73 +37,71 @@ public static class RoomList {
         }
 
         ImGuiManager.PushWindowStyle();
-        if (!ImGui.Begin("Rooms", ImGuiManager.WindowFlagsResizable)) {
-            return;
-        }
+        ImGui.Begin("Rooms", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
         var size = ImGui.GetWindowSize();
 
-        ImGui.BeginListBox("##RoomListBox", new(size.X - 10, size.Y - ImGui.GetTextLineHeightWithSpacing() * 5));
+        if (ImGui.BeginListBox("##RoomListBox", new(size.X - 10, size.Y - ImGui.GetTextLineHeightWithSpacing() * 5))) {
+            var rooms = map.Rooms.SearchFilter(r => r.Name, Search);
+            foreach (var room in rooms) {
+                var name = room.Name;
+                if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
+                    if (input.Keyboard.Shift()) {
+                        if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
+                            tool.Layer = EditorLayers.Room;
 
-        var rooms = map.Rooms.SearchFilter(r => r.Name, Search);
-        foreach (var room in rooms) {
-            var name = room.Name;
-            if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
-                if (input.Keyboard.Shift()) {
-                    if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                        tool.Layer = EditorLayers.Room;
-
-                        if (input.Mouse.LeftDoubleClicked()) {
-                            // select all rooms visible in the list
-                            foreach (var r2 in rooms) {
-                                tool.AddSelection(new(r2.GetSelectionHandler()));
+                            if (input.Mouse.LeftDoubleClicked()) {
+                                // select all rooms visible in the list
+                                foreach (var r2 in rooms) {
+                                    tool.AddSelection(new(r2.GetSelectionHandler()));
+                                }
+                            } else {
+                                // add a selection for the clicked room
+                                tool.AddSelection(new(room.GetSelectionHandler()));
                             }
-                        } else {
-                            // add a selection for the clicked room
-                            tool.AddSelection(new(room.GetSelectionHandler()));
                         }
-                    }
-                } else if (input.Keyboard.Ctrl()) {
-                    if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                        tool.Layer = EditorLayers.Room;
+                    } else if (input.Keyboard.Ctrl()) {
+                        if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
+                            tool.Layer = EditorLayers.Room;
 
-                        if (input.Mouse.LeftDoubleClicked()) {
-                            // deselect all rooms visible in the list
-                            foreach (var r2 in rooms) {
-                                tool.Deselect(r2.GetSelectionHandler());
+                            if (input.Mouse.LeftDoubleClicked()) {
+                                // deselect all rooms visible in the list
+                                foreach (var r2 in rooms) {
+                                    tool.Deselect(r2.GetSelectionHandler());
+                                }
+                            } else {
+                                // remove the selection for the clicked room
+                                tool.Deselect(room.GetSelectionHandler());
                             }
-                        } else {
-                            // remove the selection for the clicked room
-                            tool.Deselect(room.GetSelectionHandler());
                         }
+                    } else {
+                        editor.CurrentRoom = room;
+                        editor.CenterCameraOnRoom(room);
                     }
-                } else {
-                    editor.CurrentRoom = room;
-                    editor.CenterCameraOnRoom(room);
                 }
+
+                if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
+                    if (ImGui.MenuItem("Edit")) {
+                        editor.AddWindow(new RoomEditWindow(room, newRoom: false));
+                    }
+                    if (ImGui.MenuItem("Remove")) {
+                        var toRemove = room;
+                        RysyState.OnEndOfThisFrame += () =>
+                            editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(toRemove));
+                    }
+
+                    if (ImGui.MenuItem("To Clipboard as JSON")) {
+                        ImGui.SetClipboardText(room.Pack().ToJson());
+                    }
+                    ImGui.EndPopup();
+                }
+
             }
 
-            if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
-                if (ImGui.MenuItem("Edit")) {
-                    editor.AddWindow(new RoomEditWindow(room, newRoom: false));
-                }
-                if (ImGui.MenuItem("Remove")) {
-                    var toRemove = room;
-                    RysyState.OnEndOfThisFrame += () =>
-                        editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(toRemove));
-                }
-
-                if (ImGui.MenuItem("To Clipboard as JSON")) {
-                    ImGui.SetClipboardText(room.Pack().ToJson());
-                }
-                ImGui.EndPopup();
-            }
-
+            ImGui.EndListBox();
         }
-
-        ImGui.EndListBox();
-
+        
         if (ImGui.Button("New")) {
             editor.AddNewRoom();
         }
@@ -111,5 +109,7 @@ public static class RoomList {
         if (ImGui.InputText("##RoomListSearch", ref Search, 512)) {
 
         }
+        
+        ImGui.End();
     }
 }

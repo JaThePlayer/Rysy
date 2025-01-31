@@ -322,7 +322,7 @@ public sealed class TilesetWindow : Window {
                         RysyState.Scene.AddWindow(new ScriptedWindow("rysy.tilesetWindow.editXml".Translate(), (w) => {
                             var size = ImGui.GetWindowSize();
                             size.Y -= ImGui.GetTextLineHeightWithSpacing();
-                            ImGui.InputTextMultiline("", ref xml, 8192, size);
+                            ImGui.InputTextMultiline("##", ref xml, 8192, size);
                         }, new(700, 700), (w) => {
                             if (ImGuiManager.TranslatedButton("rysy.save")) {
                                 if (GetAutotiler(bg).GetTilesetData(editedTileId) is { Xml: {} } tileset) {
@@ -429,7 +429,7 @@ public sealed class TilesetWindow : Window {
         var bg = _bg;
         var sid = $"d_ctx_{id}";
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
-        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             var autotiler = GetAutotiler(_bg);
             var tileset = autotiler.GetTilesetData(tileid);
             if (tileset is { Xml: not null } && ImGuiManager.TranslatedButton("rysy.tilesetWindow.clone")) {
@@ -479,7 +479,7 @@ public sealed class TilesetWindow : Window {
         var tileid = entry.Name;
         var sid = $"d_ctx_{id}";
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
-        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (ImGuiManager.TranslatedButton("rysy.delete")) {
                 RemoveEntry(entry);
                 ImGui.CloseCurrentPopup();
@@ -552,7 +552,7 @@ public sealed class TilesetWindow : Window {
         var id = $"new_tileset";
         ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonLeft);
 
-        if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (_tab is Tabs.Bg or Tabs.Fg) {
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromAssetDrive")) {
                     RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(_bg));
@@ -590,7 +590,7 @@ public sealed class TilesetWindow : Window {
         var sid = $"d_ctx_{id}";
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
 
-        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             render?.Invoke();
 
             ImGui.EndPopup();

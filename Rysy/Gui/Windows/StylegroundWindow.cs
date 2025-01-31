@@ -303,7 +303,7 @@ public class StylegroundWindow : Window {
         var id = $"new_{hashString}";
         ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonLeft);
 
-        if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             var placements = FG ? EntityRegistry.FgStylegroundPlacements : EntityRegistry.BgStylegroundPlacements;
             ImGuiManager.List(placements, GetPlacementName, PlacementComboCache, (pl) => {
                 var newStyle = Style.FromPlacement(pl);
@@ -492,7 +492,7 @@ public class StylegroundWindow : Window {
         var popupId = Interpolator.Temp($"style_ctx_{id}");
         ImGui.OpenPopupOnItemClick(popupId, ImGuiPopupFlags.MouseButtonRight);
 
-        if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+        if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (ImGui.Button("Remove")) {
                 RysyState.OnEndOfThisFrame += () => History.ApplyNewAction(Delete(style));
                 ImGui.CloseCurrentPopup();

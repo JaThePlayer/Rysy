@@ -34,7 +34,7 @@ public static class LangRegistry {
     }
     
     public static string? TranslateOrNull(Interpolator.Handler interpolated)
-        => TranslateOrNull(interpolated.Data);
+        => TranslateOrNull(interpolated.Result);
 
     public static async Task LoadAllAsync(SimpleLoadTask? task) {
         task?.SetMessage("Reading lang files");
@@ -107,7 +107,7 @@ public sealed class Lang {
     public Lang(string name) { 
         Name = name;
         Translations = new();
-        _translationsSpanLookup = Translations.GetAlternateLookup<ReadOnlySpan<char>>();
+        _translationsSpanLookup = Translations.GetSpanAlternateLookup();
     }
 
     public string? GetOrNull(string key)
