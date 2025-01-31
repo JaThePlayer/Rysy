@@ -156,6 +156,26 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
                 LoadTheme(value);
         }
     }
+    
+    private string _font = "RobotoMono";
+    public string Font {
+        get => _font;
+        set {
+            _font = value;
+            if (RysyState.ImGuiAvailable && UiEnabled)
+                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(FontSize);
+        }
+    }
+    
+    private bool _useBoldFontByDefault = false;
+    public bool UseBoldFontByDefault {
+        get => _useBoldFontByDefault;
+        set {
+            _useBoldFontByDefault = value;
+            if (RysyState.ImGuiAvailable && UiEnabled)
+                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(FontSize);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void LoadTheme(string val) {

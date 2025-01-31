@@ -150,8 +150,9 @@ public static partial class Fields {
     /// <param name="fileExtension"></param>
     /// <param name="filesystem"></param>
     /// <returns></returns>
-    public static PathField Path(string def, string directory, string fileExtension, IModFilesystem? filesystem = null)
-        => new PathField(def, filesystem ?? GetPathFieldFilesystem(), directory, fileExtension, null).AllowEdits();
+    public static PathField Path(string def, string directory, string fileExtension, IModFilesystem? filesystem = null, 
+        Func<FoundPath, bool>? filter = null)
+        => new PathField(def, filesystem ?? GetPathFieldFilesystem(), directory, fileExtension, null, filter).AllowEdits();
 
     private static IModFilesystem GetPathFieldFilesystem() {
         if (EditorState.Map is not { } map)

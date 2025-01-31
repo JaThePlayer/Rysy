@@ -47,7 +47,8 @@ public static class ImGuiManager {
         GuiRenderer = new ImGuiRenderer();
         GuiResourceManager = GuiRenderer;
 
-        ImGuiThemer.SetFontSize(16f);
+        ImGuiThemer.SetFontSize(Settings.Instance.FontSize);
+        ImGuiThemer.LoadTheme(Settings.Instance.Theme);
 
         RysyState.ImGuiAvailable = true;
     }
@@ -628,7 +629,7 @@ public static class ImGuiManager {
         ImGui.SameLine(0f, xPadding);
         var step = Input.Global.Keyboard.Ctrl() ? 100 : Input.Global.Keyboard.Shift() ? 10 : 1;
         
-        ImGui.PushButtonRepeat(true);
+        ImGui.PushItemFlag(ImGuiItemFlags.ButtonRepeat, true);
         if (ImGui.Button(Interpolator.Temp($"-##-{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
             stringVal = (stringVal.CoerceToInt(0) - step).ToStringInvariant();
             ret = true;
@@ -639,7 +640,7 @@ public static class ImGuiManager {
             stringVal = (stringVal.CoerceToInt(0) + step).ToStringInvariant();
             ret = true;
         }
-        ImGui.PopButtonRepeat();
+        ImGui.PopItemFlag();
 
         if (displayedField.Length > 0) {
             ImGui.SameLine(0f, xPadding);
@@ -1018,6 +1019,7 @@ public static class ImGuiManager {
             //ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
             ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
+            ImGui.GetIO().ConfigErrorRecoveryEnableAssert = false;
 
             Textures = new Dictionary<IntPtr, Texture2D>();
 
@@ -1042,10 +1044,14 @@ public static class ImGuiManager {
             io.ConfigDockingTransparentPayload = true;
         }
 
-        public unsafe void BuildFontAtlas() {
+        public unsafe bool BuildFontAtlas() {
             // Get ImGUI font texture
             ImGuiIOPtr io = ImGui.GetIO();
             io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bpp);
+            if (width <= 0 || height <= 0 || width >= 8192 || height >= 8192) {
+                Console.WriteLine((width, height, bpp));
+                return false;
+            }
 
             Texture2D fontTex = new Texture2D(GraphicsDevice, width, height, false, SurfaceFormat.Color);
             #if FNA
@@ -1068,6 +1074,8 @@ public static class ImGuiManager {
 
             io.Fonts.SetTexID(FontTextureID.Value);
             io.Fonts.ClearTexData();
+
+            return true;
         }
 
         public IntPtr BindTexture(Texture2D tex) {
@@ -1081,13 +1089,13 @@ public static class ImGuiManager {
         }
 
         public void BeforeLayout(float elapsedSeconds) {
-            ImGui.GetIO().DeltaTime = elapsedSeconds;
+            ImGui.GetIO().DeltaTime = elapsedSeconds.AtLeast(1f / 60f);
             if (RysyState.Game.IsActive)
                 UpdateInput();
             ImGui.NewFrame();
 
             // allow docking windows to the sides of the window
-            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(ImGui.GetMainViewport(), 
+            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(0, ImGui.GetMainViewport(),
                 ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingOverCentralNode);
         }
 
@@ -1150,8 +1158,8 @@ public static class ImGuiManager {
             
             delegate* <byte*> get = &SDL2Ext.SDL_GetClipboardText;
             delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
-            io.GetClipboardTextFn = (nint)get;
-            io.SetClipboardTextFn = (nint)set;
+            ImGui.GetPlatformIO().Platform_GetClipboardTextFn = (nint) get;
+            ImGui.GetPlatformIO().Platform_SetClipboardTextFn = (nint) set;
 #else
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => OnTextInput(e.Character);
 #endif

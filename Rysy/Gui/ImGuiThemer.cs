@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Rysy.Mods;
 using Rysy.Platforms;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Rysy.Gui;
@@ -44,50 +45,94 @@ public static class ImGuiThemer {
         var io = ImGui.GetIO();
         io.Fonts.Clear();
         
-        BoldFont = AddFont("RobotoMono-Bold.ttf", fontSize);
-        DefaultFont = AddFont("RobotoMono-Regular.ttf", fontSize);
-        ItalicFont = AddFont("RobotoMono-Italic.ttf", fontSize);
-        ItalicBoldFont = AddFont("RobotoMono-BoldItalic.ttf", fontSize);
+        ImVector ranges = new();
+        var builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+        ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(builder, (ushort*)io.Fonts.GetGlyphRangesDefault());
         
-        HeaderFont = AddFont("RobotoMono-Bold.ttf", fontSize * 2f);
-        Header2Font = AddFont("RobotoMono-Bold.ttf", fontSize * 1.5f);
+        ReadOnlySpan<ushort> latinExtendedRanges =
+        [
+            0x0100, 0x024F,
+            0,
+        ];
+        
+        ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(builder, (ushort*)Unsafe.AsPointer(ref Unsafe.AsRef(in latinExtendedRanges[0])));
+        ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, &ranges);
+        
+        var font = Settings.Instance.Font ?? "RobotoMono";// "C:/Windows/Fonts/consola";
+        var defaultFontPath = $"{font}.ttf";
+        var boldFontPath = $"{font}b.ttf";
+        var italicFontPath = $"{font}i.ttf";
+        var boldItalicFontPath = $"{font}z.ttf";
 
-        io.Fonts.Build();
-        ImGuiManager.GuiResourceManager.BuildFontAtlas();
+        if (Settings.Instance.UseBoldFontByDefault) {
+            BoldFont = AddFont(boldFontPath, fontSize, &ranges);
+            DefaultFont = AddFont(defaultFontPath, fontSize, &ranges);
+        } else {
+            DefaultFont = AddFont(defaultFontPath, fontSize, &ranges);
+            BoldFont = AddFont(boldFontPath, fontSize, &ranges);
+        }
+
+        ItalicFont = AddFont(italicFontPath, fontSize, &ranges);
+        ItalicBoldFont = AddFont(boldItalicFontPath, fontSize, &ranges);
         
-        ImFontPtr AddFont(string name, float size) {
+        HeaderFont = AddFont(boldFontPath, fontSize * 2f, &ranges);
+        Header2Font = AddFont(boldFontPath, fontSize * 1.5f, &ranges);
+
+        bool fontBuildSuccess;
+        try {
+            fontBuildSuccess = io.Fonts.Build();
+        } catch (Exception ex) {
+            Logger.Error(ex, "Failed to build ImGui font atlas");
+            fontBuildSuccess = false;
+        }
+        
+        if (!fontBuildSuccess) {
+            Settings.Instance.Font = "RobotoMono";
+            SetFontSize(fontSize);
+            return;
+        }
+        
+        if (!ImGuiManager.GuiResourceManager.BuildFontAtlas()) {
+            Settings.Instance.Font = "RobotoMono";
+            SetFontSize(fontSize);
+            return;
+        }
+        
+        ImFontPtr AddFont(string name, float size, ImVector* ranges) {
             var fs = RysyPlatform.Current.GetRysyFilesystem();
 
-            ImFontConfig cfg = new() {
-                RasterizerDensity = 1f,
-                FontDataOwnedByAtlas = 1,
-                OversampleH = 2,
-                OversampleV = 2,
-                GlyphMaxAdvanceX = float.MaxValue,
-                RasterizerMultiply = 1.0f,
-                EllipsisChar = unchecked((ushort)-1),
-            };
+            ImFontConfigPtr cfg = ImGuiNative.ImFontConfig_ImFontConfig();
+            cfg.RasterizerDensity = 1f;
+            cfg.FontDataOwnedByAtlas = true;
+            cfg.OversampleH = 2;
+            cfg.OversampleV = 2;
+            cfg.GlyphMaxAdvanceX = float.MaxValue;
+            cfg.RasterizerMultiply = 1.0f;
+            cfg.EllipsisChar = unchecked((ushort) -1);
+            cfg.GlyphRanges = ranges->Data;
             
-            if (File.Exists($"{fs.Root}/{name}")) {
-                return io.Fonts.AddFontFromFileTTF($"{fs.Root}/{name}", size, new ImFontConfigPtr(&cfg));
+            if (File.Exists(name)) {
+                return io.Fonts.AddFontFromFileTTF(name, size, cfg);
             }
 
-            Console.WriteLine("using slow fallback for font loading...");
-            // TODO: fix this to load from memory
             if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
-                var temp = Path.GetTempFileName();
-                File.WriteAllBytes(temp, bytes);
-                var ret = io.Fonts.AddFontFromFileTTF(temp, size, new ImFontConfigPtr(&cfg));
-                //io.Fonts.AddFont(new ())
-                File.Delete(temp);
-                return ret;
-
-                //var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-                //fixed (byte* bPtr = &bytes[0])
-                //    return io.Fonts.AddFontFromMemoryTTF((nint)bPtr, bytes.Length, size);
+                // Imgui will take ownership of this memory, we need to native-alloc it.
+                var mem = ImGui.MemAlloc((uint)bytes.Length);
+                bytes.CopyTo(new Span<byte>((void*)mem, bytes.Length));
+                return io.Fonts.AddFontFromMemoryTTF(mem, bytes.Length, size, cfg);
+            }
+            if (RysyPlatform.Current.GetSystemFontsFilesystem()?.TryReadAllBytes(name) is { } bytes2) {
+                // Imgui will take ownership of this memory, we need to native-alloc it.
+                var mem = ImGui.MemAlloc((uint)bytes2.Length);
+                bytes2.CopyTo(new Span<byte>((void*)mem, bytes2.Length));
+                
+                return io.Fonts.AddFontFromMemoryTTF(mem, bytes2.Length, size, cfg);
             }
 
-            Console.WriteLine($"FAILED: {name}");
+            if (name != defaultFontPath) {
+                return AddFont(defaultFontPath, size, ranges);
+            }
+            
             return default;
         }
     }

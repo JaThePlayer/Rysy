@@ -65,7 +65,8 @@ public record class TilegridField : Field {
             Context.SetValue("width", trimmedTiles.GetLength(0) * 8);
             Context.SetValue("height", trimmedTiles.GetLength(1) * 8);
 
-            Window.RemoveSelf();
+            if (Window.ShouldClose)
+                Window.RemoveSelf();
 
             return GridToSavedString(trimmedTiles);
         }
@@ -91,7 +92,7 @@ internal sealed class EditTileDataWindow : Window {
 
     private readonly Autotiler Autotiler;
 
-    private List<ISprite>? Sprites;
+    private AutotiledSpriteList? Sprites;
 
     private readonly Camera Camera;
 
@@ -106,6 +107,8 @@ internal sealed class EditTileDataWindow : Window {
     private readonly Room FakeRoom;
 
     private TileLayer Layer;
+
+    internal bool ShouldClose;
 
     internal Tilegrid Tilegrid => TileEntity.GetTilegrid(FakeRoom, Layer);
     internal char[,] Tiles => TileEntity.GetTilegrid(FakeRoom, Layer).Tiles;
@@ -180,6 +183,9 @@ internal sealed class EditTileDataWindow : Window {
             // we need to lock global hotkeys while hovering over this window, as otherwise ctrl+z would undo changes outside the window as well
             GlobalHotkeyLock = scene.HotkeysIgnoreImGui.LockManager.CreateLock();
         }
+
+        History.OnApply += () => Edited = true;
+        History.OnUndo += () => Edited = true;
     }
 
     public override void RemoveSelf() {
@@ -244,16 +250,14 @@ internal sealed class EditTileDataWindow : Window {
         var imgWidth = ((int) ImGui.GetWindowSize().X - 200).AtLeast(1);
 
         // prevent scrolling the internal part of the window
-        ImGui.BeginChild("", new(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
+        ImGui.BeginChild("##", new(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
         ImGuiManager.XnaWidget(XnaBufferID, imgWidth, (int) imgHeight, () => {
-            Sprites = Autotiler.GetSprites(default, Tiles, Color.White).ToList();
+            Sprites = Tilegrid.GetSprites();// Autotiler.GetSprites(default, Tiles, Color.White).ToList();
 
             ISprite.OutlinedRect(default, Tilegrid.Width * 8, Tilegrid.Height * 8, Color.White * 0.1f, Color.White, outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
 
             var ctx = SpriteRenderCtx.Default();
-            foreach (var item in Sprites) {
-                item.Render(ctx);
-            }
+            Sprites.Render(ctx);
 
             Tools.CurrentTool.Render(Camera, FakeRoom);
         }, Camera);
@@ -275,6 +279,7 @@ internal sealed class EditTileDataWindow : Window {
 
     private void Save() {
         Edited = true;
+        ShouldClose = true;
     }
 }
 

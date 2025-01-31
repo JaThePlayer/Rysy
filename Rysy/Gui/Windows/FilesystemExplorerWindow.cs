@@ -84,6 +84,6 @@ public sealed class FilesystemExplorerWindow : Window {
         }
 
         if (shouldDisplayText)
-            ImGui.InputTextMultiline("", ref FileText, (uint) FileText.Length, new(800 - ImGui.GetStyle().WindowPadding.X, 700), ImGuiInputTextFlags.ReadOnly);
+            ImGui.InputTextMultiline("##", ref FileText, (uint) FileText.Length, new(800 - ImGui.GetStyle().WindowPadding.X, 700), ImGuiInputTextFlags.ReadOnly);
     }
 }

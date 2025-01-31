@@ -236,7 +236,7 @@ public class DebugInfoWindow : Window {
     private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && ImGui.CollapsingHeader("History")) {
             ImGui.Text($"Count: {editor.HistoryHandler.Actions.Count}");
-            if (ImGui.BeginListBox("")) {
+            if (ImGui.BeginListBox("##")) {
                 ImGui.TextWrapped(string.Join('\n', editor.HistoryHandler.Actions.Select(act => act.ToString())));
                 //ImGui.TextWrapped(editor.HistoryHandler.Serialize());
                 ImGui.EndListBox();

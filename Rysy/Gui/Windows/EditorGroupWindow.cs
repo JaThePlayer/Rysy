@@ -44,7 +44,7 @@ public sealed class EditorGroupWindow : Window {
     protected override void Render() {
         base.Render();
 
-        if (!ImGui.BeginListBox("", new(ImGui.GetWindowWidth() - 10, ImGui.GetWindowHeight() - 10)))
+        if (!ImGui.BeginListBox("##", new(ImGui.GetWindowWidth() - 10, ImGui.GetWindowHeight() - 10)))
             return;
         
         if (EditorState.Map is not { } map)
@@ -73,7 +73,7 @@ public sealed class EditorGroupWindow : Window {
             
             ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonRight);
 
-            if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonMask)) {
+            if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGuiManager.TranslatedButton("rysy.edit")) {
                     RysyState.Scene.AddWindow(new GroupEditWindow(this, map, g));
                 }

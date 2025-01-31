@@ -140,7 +140,9 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         );
     }
 
-    public PathField(string @default, IModFilesystem filesystem, string directory, string extension, Func<FoundPath, string>? captureConverter = null) {
+    public PathField(string @default, IModFilesystem filesystem, string directory, string extension, 
+        Func<FoundPath, string>? captureConverter = null,
+        Func<FoundPath, bool>? filter = null) {
         Default = @default;
         _regex = EmptyRegex();
         PreviewSpriteGetter = null;
@@ -148,7 +150,9 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         var token = new CacheToken();
         RawTextureCache cache = new(token, () => {
             return filesystem.FindFilesInDirectoryRecursive(directory, extension)
-                .Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}"), null)).ToList();
+                .Select(p => new FoundPath(p, p.TrimStart(directory).TrimStart('/').TrimEnd($".{extension}", StringComparison.OrdinalIgnoreCase), null))
+                .Where(filter ?? (_ => true))
+                .ToList();
         });
 
         // TODO: unregister!
@@ -159,7 +163,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
         Init(filesystem, directory + extension, captureConverter,
             () => cache,
-            (p) => ModRegistry.Filesystem.FindFirstModContaining(p));
+            (p) => (filesystem is LayeredFilesystem layeredFilesystem) ? layeredFilesystem.FindFirstModContaining(p) : null);
     }
 
     public override Field CreateClone() {

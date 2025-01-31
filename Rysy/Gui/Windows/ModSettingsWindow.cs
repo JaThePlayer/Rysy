@@ -79,7 +79,7 @@ internal sealed class ModSettingsWindow : Window {
         base.Render();
 
         if (OtherForm is { } && MainForm is { }) {
-            if (!ImGui.BeginTabBar(""))
+            if (!ImGui.BeginTabBar("##"))
                 return;
 
             if (ImGui.BeginTabItem("rysy.modSettings.mainTab".Translate())) {

@@ -38,6 +38,10 @@ public abstract class RysyPlatform {
 #endif
     }
 
+    public virtual IModFilesystem? GetSystemFontsFilesystem() => null;
+
+    public virtual Dictionary<string, string> GetFontFilenameToDisplayName() => [];
+
     public virtual IWriteableModFilesystem GetRysyAppDataFilesystem(string? profile) {
         if (CachedRysyAppDataFilesystems.TryGetValue(profile ?? "$none$", out var cached))
             return cached;

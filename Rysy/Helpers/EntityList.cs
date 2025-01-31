@@ -3,7 +3,7 @@
 public sealed class EntityList : TypeTrackedList<Entity> {
     private Dictionary<string, List<Entity>> SIDToEntities = new(StringComparer.Ordinal);
 
-    public EntityList() : base() {
+    public EntityList() {
         OnChanged += () => {
             SIDToEntities.Clear();
         };

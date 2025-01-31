@@ -70,7 +70,9 @@ public sealed class MapSizeoscopeWindow : Window {
             
             if (open) {
                 var lookup = _packer.GetWritingLookupTable();
+                var i = 0;
                 foreach (var (str, _) in lookup.OrderByDescending(p => p.Key.Length)) {
+                    ImGui.PushID(i++);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     const int maxSize = 128;
@@ -91,6 +93,7 @@ public sealed class MapSizeoscopeWindow : Window {
                     ImGui.Text(size);
                     ImGui.TableNextColumn();
                     ImGui.Text(size);
+                    ImGui.PopID();
                 }
                 
                 ImGui.TreePop();
