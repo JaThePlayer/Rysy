@@ -52,12 +52,28 @@
   "TabRounding": 4,
   "TabBorderSize": 0,
   "TabMinWidthForCloseButton": 0,
+  "TabBarBorderSize": 0,
+  "TabBarOverlineSize": 0,
+  "TableAngledHeadersAngle": 0,
+  "TableAngledHeadersTextAlign": {
+    "X": 0,
+    "Y": 0
+  },
   "ColorButtonPosition": 1,
   "ButtonTextAlign": {
     "X": 0.5,
     "Y": 0.5
   },
   "SelectableTextAlign": {
+    "X": 0,
+    "Y": 0
+  },
+  "SeparatorTextBorderSize": 1,
+  "SeparatorTextAlign": {
+    "X": 0.5,
+    "Y": 0.5
+  },
+  "SeparatorTextPadding": {
     "X": 0,
     "Y": 0
   },
@@ -69,6 +85,7 @@
     "X": 3,
     "Y": 3
   },
+  "DockingSeparatorSize": 1,
   "MouseCursorScale": 1,
   "AntiAliasedLines": 1,
   "AntiAliasedLinesUseTex": 1,
@@ -100,10 +117,10 @@
     "W": 0
   },
   "Colors_4": {
-    "X": 1,
-    "Y": 1,
-    "Z": 1,
-    "W": 0.98
+    "X": 0.94,
+    "Y": 0.94,
+    "Z": 0.94,
+    "W": 1
   },
   "Colors_5": {
     "X": 0,
@@ -274,16 +291,16 @@
     "W": 0.95
   },
   "Colors_33": {
-    "X": 0.764,
-    "Y": 0.797,
-    "Z": 0.83599997,
-    "W": 0.931
-  },
-  "Colors_34": {
     "X": 0.26,
     "Y": 0.59,
     "Z": 0.98,
     "W": 0.8
+  },
+  "Colors_34": {
+    "X": 0.764,
+    "Y": 0.797,
+    "Z": 0.83599997,
+    "W": 0.931
   },
   "Colors_35": {
     "X": 0.596,
@@ -292,82 +309,82 @@
     "W": 1
   },
   "Colors_36": {
+    "X": 0.26,
+    "Y": 0.59,
+    "Z": 0.98,
+    "W": 1
+  },
+  "Colors_37": {
     "X": 0.9208,
     "Y": 0.9274,
     "Z": 0.9352,
     "W": 0.9862
   },
-  "Colors_37": {
+  "Colors_38": {
     "X": 0.74160004,
     "Y": 0.8208,
     "Z": 0.9144,
     "W": 1
   },
-  "Colors_38": {
+  "Colors_39": {
+    "X": 0.26,
+    "Y": 0.59,
+    "Z": 1,
+    "W": 0
+  },
+  "Colors_40": {
     "X": 0.26,
     "Y": 0.59,
     "Z": 0.98,
     "W": 0.217
   },
-  "Colors_39": {
+  "Colors_41": {
     "X": 0.2,
     "Y": 0.2,
     "Z": 0.2,
     "W": 1
   },
-  "Colors_40": {
+  "Colors_42": {
     "X": 0.39,
     "Y": 0.39,
     "Z": 0.39,
     "W": 1
   },
-  "Colors_41": {
+  "Colors_43": {
     "X": 1,
     "Y": 0.43,
     "Z": 0.35,
     "W": 1
   },
-  "Colors_42": {
+  "Colors_44": {
     "X": 0.9,
     "Y": 0.7,
     "Z": 0,
     "W": 1
   },
-  "Colors_43": {
+  "Colors_45": {
     "X": 1,
     "Y": 0.45,
     "Z": 0,
     "W": 1
   },
-  "Colors_44": {
+  "Colors_46": {
     "X": 0.78,
     "Y": 0.87,
     "Z": 0.98,
     "W": 1
   },
-  "Colors_45": {
+  "Colors_47": {
     "X": 0.57,
     "Y": 0.57,
     "Z": 0.64,
     "W": 1
   },
-  "Colors_46": {
+  "Colors_48": {
     "X": 0.68,
     "Y": 0.68,
     "Z": 0.74,
     "W": 1
-  },
-  "Colors_47": {
-    "X": 0,
-    "Y": 0,
-    "Z": 0,
-    "W": 0
-  },
-  "Colors_48": {
-    "X": 0.3,
-    "Y": 0.3,
-    "Z": 0.3,
-    "W": 0.09
   },
   "Colors_49": {
     "X": 0,
@@ -385,24 +402,47 @@
     "X": 0.26,
     "Y": 0.59,
     "Z": 0.98,
-    "W": 0.8
+    "W": 1
   },
   "Colors_52": {
+    "X": 0.26,
+    "Y": 0.59,
+    "Z": 0.98,
+    "W": 0.35
+  },
+  "Colors_53": {
+    "X": 0.26,
+    "Y": 0.59,
+    "Z": 0.98,
+    "W": 0.95
+  },
+  "Colors_54": {
+    "X": 0.26,
+    "Y": 0.59,
+    "Z": 0.98,
+    "W": 0.8
+  },
+  "Colors_55": {
     "X": 0.7,
     "Y": 0.7,
     "Z": 0.7,
     "W": 0.7
   },
-  "Colors_53": {
+  "Colors_56": {
     "X": 0.2,
     "Y": 0.2,
     "Z": 0.2,
     "W": 0.2
   },
-  "Colors_54": {
+  "Colors_57": {
     "X": 0.2,
     "Y": 0.2,
     "Z": 0.2,
     "W": 0.35
-  }
+  },
+  "HoverStationaryDelay": 0,
+  "HoverDelayShort": 0,
+  "HoverDelayNormal": 0,
+  "HoverFlagsForTooltipMouse": 0,
+  "HoverFlagsForTooltipNav": 0
 }

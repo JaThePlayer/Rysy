@@ -93,8 +93,8 @@ public static class ImGuiManager {
     
     private static int _warnStyleEnabled;
     public static void PushWarningStyle() {
-        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(255, 255, 0, 255));
-        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(255, 255, 0, 255));
+        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(230 / 255f, 179 / 255f, 0 / 255f, 255));
+        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(230, 179, 0, 255));
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _warnStyleEnabled++;
@@ -215,14 +215,23 @@ public static class ImGuiManager {
         return holder;
     }
 
+    public static NumVector2 GetDropdownWindowSize(NumVector2 size, int sourceCount) {
+        return new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(sourceCount + 1) + ImGui.GetFrameHeight());
+    }
+
     public static void List<T>(IEnumerable<T> source, Func<T, string> itemNameGetter, ComboCache<T>? cache, Action<T> onClick, HashSet<string>? favorites = null) {
         cache ??= new();
         var search = cache.Search;
 
-        if (ImGui.InputText("Search", ref search, 512)) {
+        var size = cache.GetSize(source.Select(v => itemNameGetter(v)));
+        var dropdownSize = GetDropdownWindowSize(size, source.Count());
+        
+        if (RenderSearchBarInDropdown(dropdownSize, ref search)) {
             cache.Search = search;
         }
 
+        ImGui.BeginChild("##list_ref", dropdownSize, ImGuiChildFlags.None);
+        
         var filtered = cache.GetValue(source, itemNameGetter, search, favorites);
 
         foreach (var item in filtered) {
@@ -231,6 +240,8 @@ public static class ImGuiManager {
                 onClick(item);
             }
         }
+        
+        ImGui.EndChild();
     }
 
     /// <summary>
@@ -379,6 +390,14 @@ public static class ImGuiManager {
         return changed;
     }
 
+    private static bool RenderSearchBarInDropdown(NumVector2 dropdownSize, ref string search) {
+        var xPadding = ImGui.GetStyle().FramePadding.X;
+        var searchText = "rysy.search".Translate();
+        ImGui.SetNextItemWidth(dropdownSize.X - ImGui.CalcTextSize(searchText).X - xPadding * 4);
+        search ??= "";
+        return ImGui.InputText(searchText, ref search, 512);
+    }
+
     public static bool EditableCombo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, Func<string, T> stringToValue,
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
         ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null,
@@ -400,12 +419,14 @@ public static class ImGuiManager {
 
         ImGui.SameLine(0f, xPadding);
 
-        var size = cache.Size ??= CalcListSize(values.Select(toString));
-        ImGui.SetNextWindowSize(new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(values.Count + 1) + ImGui.GetFrameHeight()));
+        var size = cache.GetSize(values.Select(toString));
+        var dropdownSize = GetDropdownWindowSize(size, values.Count);
+        ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             var oldStyles = PopAllStyles();
-            
-            ImGui.InputText("Search", ref search, 512);
+
+            search ??= "";
+            RenderSearchBarInDropdown(dropdownSize, ref search);
 
             ImGui.BeginChild($"comboInner{name}");
 
@@ -460,12 +481,13 @@ public static class ImGuiManager {
 
         ImGui.SameLine(0f, xPadding);
 
-        var size = cache.Size ??= CalcListSize(values.Values);
-        ImGui.SetNextWindowSize(new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(values.Count + 1) + ImGui.GetFrameHeight()));
+        var size = cache.GetSize(values.Values);
+        var dropdownSize = GetDropdownWindowSize(size, values.Count);
+        ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             var oldStyles = PopAllStyles();
             
-            ImGui.InputText("Search", ref search, 512);
+            RenderSearchBarInDropdown(dropdownSize, ref search);
 
             ImGui.BeginChild($"comboInner{name}");
 
@@ -679,20 +701,20 @@ public static class ImGuiManager {
         var isOpen = storage.GetBool(id, false);
 
         var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
-        if (ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"), new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding : 0f), 0), ImGuiChildFlags.AutoResizeY)) {
-            if (isOpen || ImGui.IsWindowFocused())
-                ImGui.SetNextItemWidth(optimalWidth);
-            // Delay resizing the field a bit,
-            // so that clicking on a dropdown window that got moved by this input being larger still works.
-            isOpen = ImGui.IsWindowFocused() || (isOpen && Input.Global.Mouse.LeftHoldTime is > 0f and < 0.1f);
+
+        ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"),
+            new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding : 0f), 0),
+            ImGuiChildFlags.AutoResizeY);
+        
+        if (isOpen || ImGui.IsWindowFocused())
+            ImGui.SetNextItemWidth(optimalWidth);
+        // Delay resizing the field a bit,
+        // so that clicking on a dropdown window that got moved by this input being larger still works.
+        isOpen = ImGui.IsWindowFocused() || (isOpen && Input.Global.Mouse.LeftHoldTime is > 0f and < 0.1f);
             
-            ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
+        ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
             
-            ImGui.EndChild();
-        } else {
-            isOpen = false;
-            ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
-        }
+        ImGui.EndChild();
 
         storage.SetBool(id, isOpen);
 
@@ -704,10 +726,12 @@ public static class ImGuiManager {
         var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
 
         id ??= (uint) renderMain.Method.GetHashCode();
+
         ImGui.BeginChild(id.Value, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y); //  + ImGui.GetStyle().FramePadding.Y  
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y);
         renderMain();
         ImGui.EndChild();
+
         ImGui.Separator();
         renderBottomBar();
     }

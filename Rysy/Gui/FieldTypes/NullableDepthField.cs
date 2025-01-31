@@ -39,8 +39,8 @@ public sealed record NullableDepthField : Field {
 
         ImGui.SameLine(0f, xPadding);
         
-        var size = _comboCache.Size ??= ImGuiManager.CalcListSize(Values.Select(v => v.Name));
-        ImGui.SetNextWindowSize(new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(Values.Length + 1) + ImGui.GetFrameHeight()));
+        var size = _comboCache.GetSize(Values.Select(v => v.Name));
+        ImGui.SetNextWindowSize(ImGuiManager.GetDropdownWindowSize(size, Values.Length));
         if (ImGui.BeginCombo($"##combo{fieldName}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
 

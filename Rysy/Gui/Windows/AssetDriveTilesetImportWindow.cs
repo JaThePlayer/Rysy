@@ -84,10 +84,9 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         var readme = _selected.Readme;
         ImGui.SeparatorText("Description");
         if (readme.IsCompletedSuccessfully) {
-            if (ImGui.BeginChild("desc")) {
-                ImGui.TextWrapped(readme.Result);
-                ImGui.EndChild();
-            }
+            ImGui.BeginChild("desc");
+            ImGui.TextWrapped(readme.Result);
+            ImGui.EndChild();
         } else if (previewTask.IsCompleted) {
             ImGui.Text("Failed to load readme!");
         } else {
@@ -255,10 +254,9 @@ internal sealed partial class CreateTilesetWindow : Window {
             
             var fileTree = FileStructureInfo.FromPath($"Graphics/Atlases/Gameplay/tilesets/{_path}.png");
 
-            if (ImGui.BeginChild("tileset-import-tree")) {
-                ImGuiManager.RenderFileStructure(fileTree);
-                ImGui.EndChild();
-            }
+            ImGui.BeginChild("tileset-import-tree");
+            ImGuiManager.RenderFileStructure(fileTree);
+            ImGui.EndChild();
         }
         
         base.Render();

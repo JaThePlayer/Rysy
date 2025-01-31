@@ -19,6 +19,7 @@ rysy.edit=Edit
 rysy.save=Save
 rysy.new=New...
 rysy.create=Create
+rysy.search=Search
 
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers

@@ -349,8 +349,7 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     public void RenderList(ModMeta mod) {
-        if (!ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f)))
-            return;
+        ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f));
 
         var entries = Entries;
 

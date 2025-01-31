@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using ImGuiNET;
+using Rysy.Helpers;
 
 namespace Rysy.Gui;
 
@@ -15,7 +16,18 @@ public class ComboCache<T> {
 
     public readonly CacheToken Token;
 
-    internal NumVector2? Size;
+    private NumVector2? Size;
+    private int CachedSizeTextSize;
+
+    internal NumVector2 GetSize(IEnumerable<string> values) {
+        if (Settings.Instance.FontSize != CachedSizeTextSize) {
+            Size = null;
+        }
+
+        //CachedSizeTextSize = Settings.Instance.FontSize;
+
+        return Size ??= ImGuiManager.CalcListSize(values);
+    }
 
     internal void Clear() {
         CachedValue = null;
