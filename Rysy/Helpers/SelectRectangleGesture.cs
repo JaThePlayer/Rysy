@@ -6,7 +6,7 @@ namespace Rysy.Helpers;
 /// Provides an easy way to implement a gesture for selecting a rectangle, to be used for tools.
 /// </summary>
 public sealed class SelectRectangleGesture {
-    private Point? StartPos = null;
+    public Point? StartPos { get; private set; } = null;
 
     private Rectangle? CurrentRect = null;
     private Rectangle? LastRect = null;
@@ -101,7 +101,7 @@ public sealed class SelectRectangleGesture {
         return ret;
     }
 
-    private Point GetTransformedMousePos() => Transform(Input.Mouse.Pos);
+    public Point GetTransformedMousePos() => Transform(Input.Mouse.Pos);
 
     private static Rectangle SelectionRect(Point start, Point mousePos) {
         return RectangleExt.FromPoints(start, mousePos).AddSize(1, 1);

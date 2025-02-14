@@ -45,8 +45,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         EditorLayers.Triggers,
         EditorLayers.FgDecals,
         EditorLayers.BgDecals,
+        EditorLayers.Room,
         EditorLayers.Prefabs,
     };
+    
     public override List<EditorLayer> ValidLayers => _validLayers;
     
     public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
@@ -116,8 +118,14 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void Update(Camera camera, Room? room) {
-        if (room is null)
-            return;
+        // In a room layer, we should always act like no room is selected, as we should use global coords.
+        // Otherwise, remaining layers are only usable in a room.
+        if (Layer is RoomLayer) {
+            room = null;
+        } else {
+            if (room is null)
+                return;
+        }
         
         if (PickNextFrame) {
             PickNextFrame = false;
@@ -136,7 +144,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
         if (Material is Placement place) {
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
-                History.ApplyNewAction(place.PlacementHandler.Place(placement, room));
+                History.ApplyNewAction(place.PlacementHandler.Place(placement, room!));
                 AnchorPos = null;
                 ResetDragState();
                 if (placement is EntitySelectionHandler entityHandler) {
@@ -149,7 +157,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    private void HandleMove(Camera camera, Room room, ISelectionHandler selection) {
+    private void HandleMove(Camera camera, Room? room, ISelectionHandler selection) {
         if (RectangleGesture.Delta is not { } delta)  {
             ResetDragState();
             return;
@@ -158,10 +166,17 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         var offset = delta.Location.ToVector2();
         var resize = delta.Size();
         
+        // For placements which start with larger width/height, make sure we only start resizing right/down once the mouse cursor extends past the default size.
+        var dragRect = RectangleGesture.CurrentRectangle!.Value;
+        if (resize.X > 0 && RectangleGesture.GetTransformedMousePos().X > RectangleGesture.StartPos!.Value.X && selection.Rect.Width > dragRect.Width)
+            resize.X = 0;
+        if (resize.Y > 0 && RectangleGesture.GetTransformedMousePos().Y > RectangleGesture.StartPos!.Value.Y && selection.Rect.Height > dragRect.Height)
+            resize.Y = 0;
+        
         if (offset == Vector2.Zero && resize == Point.Zero)
             return;
 
-        var map = room.Map;
+        var map = room?.Map ?? EditorState.Map!;
 
         // handle noded entity resizing being different
         // TODO: refactor, maybe into a ICustomMoveHandler
@@ -196,7 +211,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    private void CreatePlacementFromMaterial(Camera camera, Room currentRoom) {
+    private void CreatePlacementFromMaterial(Camera camera, Room? currentRoom) {
         if (Material is string strPlacement) {
             Material = PlacementFromString(strPlacement, Layer);
         }
@@ -209,7 +224,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             }
 
             var handler = place.PlacementHandler;
-            CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom);
+            CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom!);
             _currentPlacementSourceMaterial = Material;
             if (CurrentPlacement is EntitySelectionHandler entityHandler) {
                 entityHandler.Entity.InitializeNodePositions();
@@ -221,9 +236,9 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         PickNextFrame = true;
     }
 
-    internal static Placement? GetPlacementUnderCursor(Point mouse, Room currentRoom, SelectionLayer layer) {
-        var selections = currentRoom.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), layer);
-        if (selections.Count == 0)
+    internal static Placement? GetPlacementUnderCursor(Point mouse, Room? currentRoom, SelectionLayer layer) {
+        var selections = currentRoom?.GetSelectionsInRect(new(mouse.X, mouse.Y, 1, 1), layer);
+        if (selections is null || selections.Count == 0)
             return null;
 
         if (selections[0].Handler.Parent is { } parent && Placement.TryCreateFromObject(parent) is { } placement)
@@ -232,14 +247,18 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return null;
     }
 
-    public override void Render(Camera camera, Room room) {
+    public override void Render(Camera camera, Room? room) {
+        if (Layer is RoomLayer && room is {}) {
+            return;
+        }
+        
         var mouse = GetMousePos(camera, room);
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
             var ctx = SpriteRenderCtx.Default();
             
-            foreach (var item in placement.GetPreviewSprites(selection, pos, room)) {
+            foreach (var item in placement.GetPreviewSprites(selection, pos, room!)) {
                 if (item is Sprite spr) {
                     spr.RenderWithColor(ctx, spr.Color * 0.4f);
                 } else {
@@ -257,10 +276,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    private Point GetMousePos(Camera camera, Room currentRoom, bool? precise = null, Vector2? position = null) {
+    private Point GetMousePos(Camera camera, Room? currentRoom, bool? precise = null, Vector2? position = null) {
         precise ??= Input.Keyboard.Ctrl();
 
-        var pos = currentRoom.WorldToRoomPos(camera, position ?? Input.Mouse.Pos.ToVector2());
+        var pos = position ?? Input.Mouse.Pos.ToVector2();
+        pos = currentRoom?.WorldToRoomPos(camera, pos) ?? camera.ScreenToReal(pos);
 
         if (!precise.Value) {
             pos = pos.Snap(8);
@@ -270,6 +290,12 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void RenderOverlay() {
+        if (Layer is RoomLayer) {
+            var camera = EditorState.Camera;
+            GFX.EndBatch();
+            GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix));
+            Render(camera, null);
+        }
     }
 
     public override void CancelInteraction() {

@@ -15,7 +15,7 @@ public static class EditorLayers {
     public static EditorLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FGDecals);
     public static EditorLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BGDecals);
 
-    public static EditorLayer Room { get; } = new FakeLayer("Rooms", SelectionLayer.Rooms);
+    public static EditorLayer Room { get; } = new RoomLayer();
 
     public static EditorLayer CustomLayer { get; } = new FakeLayer("Custom");
     public static EditorLayer All { get; } = new FakeLayer("All", SelectionLayer.All);
