@@ -1,18 +1,15 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
 using Rysy.Graphics;
-using Rysy.Helpers;
-using Rysy.History;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Stylegrounds;
-using System.Text;
-using System.Xml;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed class Map : IPackable, ILuaWrapper {
+public sealed partial class Map : IPackable, ILuaWrapper {
     private static Map _dummyMap;
     
     /// <summary>
@@ -358,6 +355,99 @@ public sealed class Map : IPackable, ILuaWrapper {
         tiles.Xml.Save(mem);
         mem.Seek(0, SeekOrigin.Begin);
         fs.TryWriteToFile(path, mem);
+    }
+    
+    [GeneratedRegex(@"^([\w-]+?)([-_])(\d+)(\w*)$")]
+    private static partial Regex StandardRoomNameRegex();
+
+    [GeneratedRegex(@"^(\d+)(\w+)$")]
+    private static partial Regex NumberPlusBranchRegex();
+    
+    public string? GuessNewRoomNameFromParent(Room? parentRoom) {
+        if (parentRoom is null)
+            return null;
+        
+        var prevName = parentRoom.Name;
+        var map = parentRoom.Map;
+
+        string? newName;
+        
+        // Room name is just a number
+        if (int.TryParse(prevName, CultureInfo.InvariantCulture, out var res)) {
+            // 1. Try incrementing the number
+            if (Try($"{res + 1}", out newName))
+                return newName;
+            // 2. Try appending a letter from a-z
+            for (char i = 'a'; i <= 'z'; i++) {
+                if (Try($"{prevName}{i}", out newName))
+                    return newName;
+            }
+        }
+
+        // Room name is like `1a`
+        if (NumberPlusBranchRegex().Match(prevName) is { Success: true } numberPlusBranchMatch) {
+            var roomId = int.Parse(numberPlusBranchMatch.Groups[1].ValueSpan, CultureInfo.InvariantCulture);
+            var roomBranch = numberPlusBranchMatch.Groups[2].ValueSpan;
+            
+            // We're already in a branch, we need to extend the branch
+            // 1. Try appending a letter from a-z
+            for (char i = 'a'; i <= 'z'; i++) {
+                if (Try($"{roomId}{roomBranch}{i}", out newName))
+                    return newName;
+            }
+        }
+        
+        if (StandardRoomNameRegex().Match(prevName) is { Success: true } m) {
+            // Room name is in the standard checkpoint-numberBranch format, like 'a-00a'
+            var chapterId = m.Groups[1].ValueSpan;
+            var separator = m.Groups[2].ValueSpan;
+            var roomId = int.Parse(m.Groups[3].ValueSpan, CultureInfo.InvariantCulture);
+            var roomBranch = m.Groups[4].ValueSpan;
+
+            if (roomBranch.IsEmpty) {
+                // We're not in a branch, so the name is like 'a-00'
+                
+                // 1. Try incrementing the number
+                if (Try($"{chapterId}{separator}{(roomId + 1).ToStringInvariant().PadLeft(m.Groups[3].ValueSpan.Length, '0')}{roomBranch}", out newName))
+                    return newName;
+                
+                // 2. Try appending a letter from a-z
+                for (char i = 'a'; i <= 'z'; i++) {
+                    if (Try($"{chapterId}{separator}{roomId}{i}", out newName))
+                        return newName;
+                }
+            } else {
+                // We're already in a branch, we need to extend the branch
+                // 1. Try appending a letter from a-z
+                for (char i = 'a'; i <= 'z'; i++) {
+                    if (Try($"{chapterId}{separator}{roomId}{roomBranch}{i}", out newName))
+                        return newName;
+                }
+            }
+        }
+
+        return null;
+
+        bool Try(string name, [NotNullWhen(true)] out string? nameRet) {
+            if (map.TryGetRoomByName(name) is null) {
+                nameRet = name;
+                return true;
+            }
+            
+            nameRet = null;
+            return false;
+        }
+    }
+
+    public string DeduplicateRoomName(string name) {
+        var i = 1;
+        var newName = name;
+        while (Rooms.Any(r => r.Name == newName)) {
+            i++;
+            newName = $"{newName}-{i}";
+        }
+
+        return newName;
     }
 
     public int LuaIndex(Lua lua, long key) {

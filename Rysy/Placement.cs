@@ -1,5 +1,6 @@
 ﻿using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Mods;
@@ -10,7 +11,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public record class Placement {
+public record class Placement : IUntypedData {
     /// <summary>
     /// Creates a placement with value overrides using an anonymous object of the style of { fieldName = value, field2 = value2, ...}
     /// </summary>
@@ -253,6 +254,10 @@ public record class Placement {
         IConvertibleToPlacement convertible => convertible.ToPlacement(),
         _ => null,
     };
+
+    bool IUntypedData.TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+        return ValueOverrides.TryGetValue(key, out value);
+    }
 }
 
 public class PlacementList : List<Placement> {
@@ -386,6 +391,36 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         var entity = CreateFromPlacement(placement, pos, room);
 
         return entity.CreateSelection().Handler;
+    }
+}
+
+public record class RoomPlacementHandler : IPlacementHandler {
+    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
+        ((RoomSelectionHandler) handler).Room.Pos = pos;
+        return ISprite.OutlinedRect(handler.Rect, Color.Red * 0.3f, Color.Red);
+    }
+
+    public IHistoryAction Place(ISelectionHandler handler, Room? alwaysNull) {
+        var roomHandler = (RoomSelectionHandler) handler;
+        
+        var act = roomHandler.PlaceClone(newRoom => {
+            if (EditorState.Map is { } map) {
+                newRoom.Name = map.GuessNewRoomNameFromParent(EditorState.CurrentRoom) ?? map.DeduplicateRoomName("new_room");
+                EditorState.CurrentRoom = newRoom;
+                RysyState.Scene.AddWindow(new RoomEditWindow(newRoom, false));
+            }
+
+        });
+        handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(EditorState.Map!);
+        
+        return act;
+    }
+
+    public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room? alwaysNull) {
+        var newRoom = new Room(EditorState.Map!, placement.Int("width", 40 * 8), placement.Int("height", 23 * 8));
+        newRoom.Pos = pos;
+
+        return new RoomSelectionHandler(newRoom);
     }
 }
 

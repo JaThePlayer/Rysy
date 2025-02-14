@@ -1058,4 +1058,8 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     public IHistoryAction PlaceClone(Room room) {
         return new AddRoomAction(Room.Clone());
     }
+    
+    public IHistoryAction PlaceClone(Action<Room> onFirstApply) {
+        return new AddRoomAction(Room.Clone()) { OnFirstApply = onFirstApply };
+    }
 }

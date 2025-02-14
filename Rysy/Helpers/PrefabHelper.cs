@@ -182,9 +182,9 @@ public static class PrefabHelper {
                 Selections = selections;
             }
 
-            public object Parent => throw new NotImplementedException();
+            public object Parent => this;
 
-            public SelectionLayer Layer => throw new NotImplementedException();
+            public SelectionLayer Layer => SelectionLayer.All;
 
             public Rectangle Rect => RectangleExt.Merge(Selections.Select(s => s.Handler.Rect));
 
