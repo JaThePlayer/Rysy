@@ -703,7 +703,7 @@ public static class ImGuiManager {
         var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
 
         ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"),
-            new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding : 0f), 0),
+            new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding*2 : 0f), 0),
             ImGuiChildFlags.AutoResizeY);
         
         if (isOpen || ImGui.IsWindowFocused())
@@ -972,6 +972,13 @@ public static class ImGuiManager {
             
             ImGui.TreePop();
         }
+        ImGui.PopID();
+    }
+
+    public static void Icon(ImGuiIcons icon) {
+        var iconChar = (char) icon;
+        ImGui.Text(new ReadOnlySpan<char>(ref iconChar));
+        ImGui.SameLine();
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
@@ -1072,7 +1079,7 @@ public static class ImGuiManager {
             // Get ImGUI font texture
             ImGuiIOPtr io = ImGui.GetIO();
             io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bpp);
-            if (width <= 0 || height <= 0 || width >= 8192 || height >= 8192) {
+            if (width <= 0 || height <= 0 || width > 8192 || height > 8192) {
                 Console.WriteLine((width, height, bpp));
                 return false;
             }
