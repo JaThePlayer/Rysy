@@ -16,4 +16,6 @@ public class RoomLayer : EditorLayer {
             Name = "New Room",
         }];
     }
+
+    public override bool SupportsPreciseMoveMode => false;
 }
