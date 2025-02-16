@@ -59,7 +59,16 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         }
     }
 
-    private Func<string, ModMeta?> ModResolver;
+    private Func<FoundPath, ModMeta?> _modResolver;
+    
+    public Func<FoundPath, ModMeta?> ModResolver {
+        get => _modResolver;
+        set {
+            _modResolver = value;
+            KnownPaths?.Clear();
+            KnownPaths = null;
+        }
+    }
 
     private readonly Regex _regex;
 
@@ -76,6 +85,16 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     
     public Func<FoundPath, ISprite?>? PreviewSpriteGetter { get; set; } = static path => ISprite.FromTexture(path.Path);
 
+    private IEnumerable<FoundPath> _additionalEntries = [];
+    public IEnumerable<FoundPath> AdditionalEntries {
+        get => _additionalEntries;
+        set {
+            _additionalEntries = value;
+            KnownPaths?.Clear();
+            KnownPaths = null;
+        }
+    }
+
     public PathField WithPreviewSprites(Func<FoundPath, ISprite?> getter) {
         PreviewSpriteGetter = getter;
 
@@ -83,7 +102,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     }
 
     private void Init(object cacheObject, string regexStr, Func<FoundPath, string>? captureConverter, Func<RawTextureCache> textureFinder, Func<string, ModMeta?> modResolver) {
-        ModResolver = modResolver;
+        ModResolver = (p) => modResolver(p.Path);
         
 
         if (captureConverter is { })
@@ -103,7 +122,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
     private TextureCacheKey CreateKnownPathsEntry(FoundPath p) {
         var name = CaptureConverter(p);
-        var mod = ModResolver(p.Path);
+        var mod = ModResolver(p);
 
         var displayName = DisplayNameGetter?.Invoke(p, name) ?? name;
 
@@ -113,12 +132,13 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     private TextureCache CreateKnownPathsCache() {
         return RawPaths.Chain(textures => textures
             .Where(Filter)
+            .Concat(AdditionalEntries)
             .Select(CreateKnownPathsEntry)
             .DistinctBy(p => p.saved)
             .ToList());
     }
     
-    private ConcurrentDictionary<string, Regex> _regexCache = new();
+    private static readonly ConcurrentDictionary<string, Regex> _regexCache = new();
 
     public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;

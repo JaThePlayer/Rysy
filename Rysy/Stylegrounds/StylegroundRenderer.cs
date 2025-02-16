@@ -19,13 +19,15 @@ public static class StylegroundRenderer {
         return !style.IsMasked();
     }
 
-    public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null) {
+    public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, 
+        Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null, Colorgrade? colorgrade = null) {
         ArgumentNullException.ThrowIfNull(styles);
         float scale = camera.Scale;
 
         var ctx = new StylegroundRenderCtx(room, camera, Settings.Instance?.AnimateStylegrounds ?? false);
 
-        var st = new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.CreateScale(scale));
+        var st = new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, 
+            DepthStencilState.None, RasterizerState.CullNone, colorgrade?.Set(), Matrix.CreateScale(scale));
 
         if (scissorRectWorldPos is { } worldPosScissor) {
             var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();

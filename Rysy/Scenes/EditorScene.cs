@@ -355,8 +355,8 @@ public sealed class EditorScene : Scene {
     public override void Render() {
         base.Render();
 
+        var windowSize = RysyState.Window.ClientBounds.Size();
         if (Map is not { }) {
-            var windowSize = RysyState.Window.ClientBounds.Size();
             var height = 4 * 6;
             var center = windowSize.Y / 2;
 
@@ -367,7 +367,12 @@ public sealed class EditorScene : Scene {
             GFX.EndBatch();
             return;
         }
-
+        
+        using var buffer = RenderTargetPool.Get(windowSize.X, windowSize.Y);
+        var gd = GFX.Batch.GraphicsDevice;
+        gd.SetRenderTarget(buffer.Target);
+        gd.Clear(Color.Black);
+        
         var renderStylegrounds = Settings.Instance?.StylegroundPreview ?? false;
         if ((Settings.Instance?.OnlyRenderStylesAtRealScale ?? false) && Camera.Scale != 6f) {
             renderStylegrounds = false;
@@ -378,31 +383,36 @@ public sealed class EditorScene : Scene {
             var layers = fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG;
             StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, layers, filter: StylegroundRenderer.NotMasked);
         }
-
-        /*
-        _fullScreenBuffer ??= new(RysyEngine.GDM.GraphicsDevice, 1920, 1080, false, SurfaceFormat.Color,
-            DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-        RysyEngine.GDM.GraphicsDevice.SetRenderTarget(_fullScreenBuffer);
-        RysyEngine.GDM.GraphicsDevice.Clear(Color.Black);*/
         
         foreach (var room in Map.Rooms) {
             if (room != CurrentRoom)
-                room.Render(Camera, selected: false);
+                room.Render(Camera, selected: false, Colorgrade.None);
         }
 
         if (CurrentRoom is { }) {
-            CurrentRoom.Render(Camera, selected: true);
+            CurrentRoom.Render(Camera, selected: true, Colorgrade.None);
 
             if (renderStylegrounds && fgInFront)
                 StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
         }
-        ToolHandler.Render(Camera, CurrentRoom);
+        
+        gd.SetRenderTarget(null);
+        GFX.BeginBatch(new SpriteBatchState(Effect: EditorState.CurrentColograde.Set()));
+        GFX.Batch.Draw(buffer.Target, Vector2.Zero, Color.White);
+        GFX.EndBatch();
+        
+        GFX.BeginBatch(Camera);
+        foreach (var room in Map.Rooms) {
+            // Darken the room if it's not selected
+            if (room != CurrentRoom)
+                ISprite.Rect(room.Bounds, Color.Black * .75f).Render();
 
-        /*
-        RysyEngine.GDM.GraphicsDevice.SetRenderTarget(null);
-        GFX.BeginBatch();
-        GFX.Batch.Draw(_fullScreenBuffer, Vector2.Zero, Color.White);
-        GFX.EndBatch();*/
+            // draw the colored border around the room
+            ISprite.OutlinedRect(room.Bounds, Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(room.Attributes.C, Color.White), outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
+        }
+        GFX.EndBatch();
+        
+        ToolHandler.Render(Camera, CurrentRoom);
 
         var input = Input.Global;
 

@@ -46,9 +46,11 @@ public sealed class EditorGroupWindow : Window {
 
         if (!ImGui.BeginListBox("##", new(ImGui.GetWindowWidth() - 10, ImGui.GetWindowHeight() - 10)))
             return;
-        
-        if (EditorState.Map is not { } map)
+
+        if (EditorState.Map is not { } map) {
+            ImGui.EndListBox();
             return;
+        }
         
         var groups = map.EditorGroups;
         for (int i = 0; i < groups.Count; i++) {
