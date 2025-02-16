@@ -190,7 +190,7 @@ public class ToolHandler {
 
     public void Render(Camera camera, Room? currentRoom) {
         if (currentRoom is { }) {
-            currentRoom.StartBatch(camera);
+            currentRoom.StartBatch(camera, Colorgrade.None);
             CurrentTool.Render(camera, currentRoom);
             GFX.EndBatch();
         }

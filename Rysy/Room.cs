@@ -359,11 +359,11 @@ public sealed class Room : IPackable, ILuaWrapper {
             camera.ScreenToReal((world.Location + world.Size()).ToVector2()) - new Vector2(X, Y)
            );
 
-    internal void StartBatch(Camera camera) {
-        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
+    internal void StartBatch(Camera camera, Colorgrade colorgrade) {
+        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, colorgrade.Set(), camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
     }
 
-    public void Render(Camera camera, bool selected) {
+    public void Render(Camera camera, bool selected, Colorgrade colorgrade) {
         if (!selected && !camera.IsRectVisible(Bounds)) {
             if (CachedSprites is {} || FullRenderCanvas is {})
                 ClearRenderCacheIfWanted();
@@ -391,21 +391,14 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (!interiorVisible)
             ClearRenderCacheIfWanted();
 
-        StartBatch(camera);
+        StartBatch(camera, colorgrade);
 
         if (!Settings.Instance.StylegroundPreview)
             ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
 
         if (interiorVisible)
             DrawRoomInterior(camera, selected, canvasReady);
-
-        // Darken the room if it's not selected
-        if (!selected)
-            ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
-
-        // draw the colored border around the room
-        ISprite.OutlinedRect(new(0, 0, Width, Height), Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White), outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
-
+        
         GFX.EndBatch();
     }
 
@@ -1009,9 +1002,9 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     private IHistoryAction ResizeByAndMoveInsides(Vector2 resize, Vector2 offset) {
         var tileOffset = (resize / 8).ToPoint();
         if (tileOffset.X == 0 && tileOffset.Y == 0) {
-            return new MergedAction(Array.Empty<IHistoryAction>());
+            return new MergedAction();
         }
-        return new RoomResizeAndMoveInsidesAction(Room, tileOffset.X * 8, tileOffset.Y * 8, offset);
+        return new RoomResizeAndMoveInsidesAction(Room, tileOffset.X * 8, tileOffset.Y * 8, offset, Input.Global.Keyboard.Ctrl());
     }
 
     public void OnRightClicked(IEnumerable<Selection> selections) {
@@ -1047,10 +1040,10 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
             NineSliceLocation.TopMiddle => ResizeByAndMoveInsides(new(0, -off.Y), new(0, off.Y)),
             NineSliceLocation.TopRight => ResizeByAndMoveInsides(new(off.X, -off.Y), new(0, off.Y)),
             NineSliceLocation.Left => ResizeByAndMoveInsides(new(-off.X, 0), new(off.X, 0)),
-            NineSliceLocation.Right => TryResize(new(off.X, 0)),
+            NineSliceLocation.Right => ResizeByAndMoveInsides(new(off.X, 0), default),
             NineSliceLocation.BottomLeft => ResizeByAndMoveInsides(new(-off.X, off.Y), new(off.X, 0)),
-            NineSliceLocation.BottomMiddle => TryResize(new(0, off.Y)),
-            NineSliceLocation.BottomRight => TryResize(new(off.X, off.Y)),
+            NineSliceLocation.BottomMiddle => ResizeByAndMoveInsides(new(0, off.Y), default),
+            NineSliceLocation.BottomRight => ResizeByAndMoveInsides(new(off.X, off.Y), default),
             _ => MoveBy(offset),
         };
     }

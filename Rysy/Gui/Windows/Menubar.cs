@@ -1,6 +1,9 @@
 ﻿using ImGuiNET;
 using Rysy.Extensions;
+using Rysy.Graphics;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 
@@ -113,6 +116,8 @@ public static class Menubar {
         }
     }
 
+    private static PathField? ColorgradePreviewField;
+
     private static void ViewMenu() {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
@@ -165,6 +170,31 @@ public static class Menubar {
                 settings.Animate = animate;
                 settings.Save();
             }
+        }
+
+        if (ColorgradePreviewField is null) {
+            ColorgradePreviewField = Fields.Path(Persistence.ColorgradePreviewMapDefaultValue, "Graphics/ColorGrading", "png", ModRegistry.Filesystem);
+            ColorgradePreviewField.Translated("rysy.menubar.view.colorgrade");
+            
+            ColorgradePreviewField.DisplayNameGetter = ((path, s) => path.Captured switch {
+                "none" => "rysy.menubar.view.colorgrade.none".Translate(),
+                Persistence.ColorgradePreviewMapDefaultValue => "rysy.menubar.view.colorgrade.mapDefault".Translate(),
+                _ => s,
+            });
+
+            var defaultResolver = ColorgradePreviewField.ModResolver;
+            ColorgradePreviewField.ModResolver = (path) => path.Captured == "none" ? null : defaultResolver(path);
+            
+            ColorgradePreviewField.AdditionalEntries = [
+                new FoundPath(Persistence.ColorgradePreviewMapDefaultValue,Persistence.ColorgradePreviewMapDefaultValue, null)
+            ];
+        }
+        
+
+
+        if (ColorgradePreviewField.RenderGui("rysy.menubar.view.colorgrade".Translate(),
+                Persistence.Instance.ColorgradePreview) is string newPreview) {
+            Persistence.Instance.ColorgradePreview = newPreview;
         }
     }
 

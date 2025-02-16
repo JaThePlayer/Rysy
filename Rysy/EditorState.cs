@@ -68,4 +68,19 @@ public static class EditorState {
     /// The currently used history handler
     /// </summary>
     public static HistoryHandler? History { get; set; }
+
+    public static Colorgrade CurrentColograde {
+        get {
+            var colorgradeSetting = Persistence.Instance.ColorgradePreview;
+            if (colorgradeSetting == Persistence.ColorgradePreviewMapDefaultValue) {
+                if (Map is { Meta.ColorGrade: { } colorGrade }) {
+                    return Colorgrade.FromPath(colorGrade);
+                }
+            } else {
+                return Colorgrade.FromPath(colorgradeSetting);
+            }
+            
+            return Colorgrade.None;
+        }
+    }
 }

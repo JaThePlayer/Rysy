@@ -14,4 +14,6 @@ public abstract class EditorLayer {
     public abstract SelectionLayer SelectionLayer { get; }
 
     public abstract IEnumerable<Placement> GetMaterials();
+    
+    public virtual bool SupportsPreciseMoveMode => true;
 }

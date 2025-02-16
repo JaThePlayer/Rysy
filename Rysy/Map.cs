@@ -498,7 +498,7 @@ public sealed record class MapMetadata {
 
     public bool? Dreaming { get; set; } = new bool?(false);
 
-    public string ColorGrade { get; set; }
+    public string? ColorGrade { get; set; }
 
     public string Wipe { get; set; }
 

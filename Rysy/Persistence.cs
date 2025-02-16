@@ -166,6 +166,10 @@ public class Persistence : IHasJsonCtx<Persistence> {
     }
 
     public bool HistoryWindowOpen = false;
+
+    public const string ColorgradePreviewMapDefaultValue = "mapDefault";
+
+    public string ColorgradePreview { get; set; } = ColorgradePreviewMapDefaultValue;
     #endregion
 
     public struct RecentMap {
