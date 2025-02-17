@@ -209,6 +209,20 @@ public static partial class LuaExt {
 
         return ret;
     }
+    
+    /// <summary>
+    /// Peeks the function value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+    /// </summary>
+    public static LuaFunctionRef? PeekTableFunctionValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
+        var type = lua.GetFieldRva(tableStackIndex, key);
+        LuaFunctionRef? ret = null;
+        if (type == LuaType.Function) {
+            ret = LuaFunctionRef.MakeFrom(lua, lua.GetTop());
+        }
+        lua.Pop(1);
+
+        return ret;
+    }
 
     public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyASCII, out Span<char> chars) {
         var type = lua.GetFieldRva(tableStackIndex, keyASCII);
@@ -594,6 +608,9 @@ where TArg1 : class, ILuaWrapper {
         var dict = new Dictionary<string, object>();
         var dataStart = index;
 
+        if (lua.IsWrapper(dataStart) && lua.UnboxWrapper(dataStart) is ILuaDictionaryWrapper dictWrapper)
+            return dictWrapper.Dictionary;
+
         lua.PushNil();
         while (lua.Next(dataStart)) {
             var key = lua.FastToString(-2);
@@ -721,12 +738,13 @@ where TArg1 : class, ILuaWrapper {
 
     public static object ToCSharp(this Lua s, int index, int depth = 0, bool makeLuaFuncRefs = false) {
         object val = s.Type(index) switch {
-            LuaType.Nil => null!,
+            LuaType.Nil or LuaType.None => null!,
             LuaType.Boolean => s.ToBoolean(index),
             LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
             LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.FastToString(index, false),
             LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
+            LuaType.UserData when s.IsWrapper(index) => s.UnboxWrapper(index), 
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;
@@ -741,186 +759,156 @@ where TArg1 : class, ILuaWrapper {
         return new Rectangle(x, y, w, h);
     }
 
+    private static nint _nextNeoWrapperId = nint.MinValue;
+    internal static readonly Dictionary<nint, ILuaWrapper> NeoWrappers = new();
 
-    private static int WrapperIDLoc = -1;
-    private static List<LuaFunction> WrapperFuncs = new();
-    private static List<byte[]> WrapperMetatableNames = new();
+    /// <summary>
+    /// Type used as a userdata on the lua side to represent C# wrappers.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    struct NeoWrapper {
+        /// <summary>
+        /// Id used to index into NeoWrappers.
+        /// </summary>
+        public nint Id;
+    }
 
-    private static ReadOnlySpan<byte> WrapperMarkerName => "_RWR"u8;
+    private static unsafe int GCNeoWrapper(nint s) {
+        var lua = Lua.FromIntPtr(s);
+
+        var wrapper = (NeoWrapper*)lua.ToUserData(1);
+        NeoWrappers.Remove(wrapper->Id);
+        // Console.WriteLine($"[{NeoWrappers.Count}] GC: {lua.UnboxWrapper(1)}");
+
+        return 0;
+    }
+    
+    private static int IndexNeoWrapper(nint s) {
+        var lua = Lua.FromIntPtr(s);
+
+        var obj = lua.UnboxWrapper(1);
+        
+        var top = lua.GetTop();
+        var t = lua.Type(top);
+
+        int ret;
+        switch (t) {
+            case LuaType.Number:
+                ret = obj.LuaIndex(lua, lua.ToInteger(top));
+                break;
+            case LuaType.String:
+                //Span<char> buffer = SharedToStringBuffer.AsSpan();
+                //var str = lua.ToStringInto(top, buffer, callMetamethod: false);
+                //ret = obj.LuaIndex(lua, str);
+
+                ret = obj.LuaIndex(lua, lua.ToStringIntoASCII(top, callMetamethod: false));
+                break;
+            case LuaType.Nil:
+                ret = obj.LuaIndexNull(lua);
+                break;
+            default:
+                throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");
+        }
+
+        return ret;
+    }
     
     /// <summary>
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
-    public static void PushWrapper(this Lua state, ILuaWrapper wrapper) {
-        int newIndex = RegisterWrapper(wrapper, out var isNew);
-        var name = WrapperMetatableNames[newIndex];
+    public static unsafe void PushWrapper(this Lua state, ILuaWrapper wrapper) {
+        var userdata = (NeoWrapper*)state.NewUserData(sizeof(NeoWrapper));
+        userdata->Id = _nextNeoWrapperId;
+        NeoWrappers[_nextNeoWrapperId] = wrapper;
+        // Prepare next id
+        while (NeoWrappers.ContainsKey(++_nextNeoWrapperId)) {}
         
-        if (isNew) {
-            if (state.NewMetatable(name)) {
-                // Create a metatable that will call the C# methods:
-                int metatableIndex = state.GetTop();
-
-                SetupWrapperMetatable(state, newIndex, metatableIndex);
-            }
-        } else {
-            state.GetMetatable(name);
-        }
-    }
-
-    private static void SetupWrapperMetatable(Lua state, int wrapperIndex, int metatableStackLoc) {
-        state.PushNumber(wrapperIndex);
-        state.RawSetInteger(metatableStackLoc, WrapperIDLoc);
-
-        state.PushString(WrapperMarkerName);
-        state.PushBoolean(true);
-        state.RawSet(metatableStackLoc);
-
-        state.PushString("__index"u8);
-        if (wrapperIndex == WrapperFuncs.Count) {
-            var f = CreateLuaWrapperForIdx(wrapperIndex);
-            GCHandle.Alloc(f);
-            WrapperFuncs.Add(f);
-        }
-        state.PushCFunction(WrapperFuncs[wrapperIndex]);
-        state.SetTable(metatableStackLoc);
-
-        state.PushString("__newindex"u8);
-        state.PushCFunction(static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var wrapper = lua.UnboxWrapper(1) ?? throw new LuaException(lua, $"Tried to index null wrapper");
-            var value = lua.ToCSharp(3);
-            const int keyPos = 2;
-            //var top = lua.GetTop();
-
-            switch (lua.Type(keyPos)) {
-                case LuaType.Number:
-                    wrapper.LuaNewIndex(lua, lua.ToInteger(keyPos), value);
-                    break;
-                case LuaType.String:
-                    Span<char> buffer = SharedToStringBuffer.AsSpan();
-                    var str = lua.ToStringInto(keyPos, buffer, callMetamethod: false);
-                    wrapper.LuaNewIndex(lua, str, value);
-                    break;
-                default:
-                    throw new NotImplementedException($"Can't newindex LuaWrapper with {lua.FastToString(keyPos)} [type: {lua.Type(keyPos)}].");
-            }
-
-            return 0;
-        });
-        state.SetTable(metatableStackLoc);
-
-        // # operator
-        state.PushString("__len"u8);
-        state.PushCFunction(static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var wrapper = lua.UnboxWrapper(1);
-
-            return wrapper.LuaLen(lua);
-        });
-        state.SetTable(metatableStackLoc);
-
-        // equality operator
-        state.PushString("__eq"u8);
-        state.PushCFunction(static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            if (lua.IsWrapper(2)) {
-                /*
-                // get the wrapper indexes of both the wrappers
-                // doesn't work because of the lack of wrapper deduplication, would be a bit faster though...
-                lua.RawGetInteger(1, WrapperIDLoc);
-                var aIdx = lua.ToInteger(lua.GetTop());
-                lua.RawGetInteger(2, WrapperIDLoc);
-                var bIdx = lua.ToInteger(lua.GetTop());
-                lua.Pop(2);
-                lua.PushBoolean(aIdx == bIdx);*/
-                var a = lua.UnboxWrapper(1);
-                var b = lua.UnboxWrapper(2);
-                lua.PushBoolean(ReferenceEquals(a, b));
-            } else {
-                lua.PushBoolean(false);
-            }
-
-            return 1;
-        });
-        state.SetTable(metatableStackLoc);
-
-        // set the table to be a metatable of itself
-        // this way, pushing a wrapper is very cheap, as it doesn't create any tables
-        state.PushCopy(metatableStackLoc);
-        state.SetMetaTable(metatableStackLoc);
-    }
-
-    private static int RegisterWrapper(ILuaWrapper wrapper, out bool isNew) {
-        var newIndex = LuaWrapperList.Count;
-        LuaWrapperList.Add(wrapper);
-        isNew = false;
+        var handlePos = state.GetTop();
         
-        if (newIndex == WrapperMetatableNames.Count) {
-            WrapperMetatableNames.Add(Encoding.ASCII.GetBytes($"{newIndex}"));
-            isNew = true;
+        if (state.NewMetaTable("C#Wrapper")) {
+            int metatableStackLoc = state.GetTop();
+            
+            state.PushString("__index"u8);
+            state.PushCFunction(IndexNeoWrapper);
+            state.SetTable(metatableStackLoc);
+            
+            state.PushString("__gc"u8);
+            state.PushCFunction(GCNeoWrapper);
+            state.SetTable(metatableStackLoc);
+
+            state.PushString("__newindex"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+
+                var wrapper = lua.UnboxWrapper(1) ?? throw new LuaException(lua, $"Tried to index null wrapper");
+                var value = lua.ToCSharp(3);
+                const int keyPos = 2;
+                //var top = lua.GetTop();
+
+                switch (lua.Type(keyPos)) {
+                    case LuaType.Number:
+                        wrapper.LuaNewIndex(lua, lua.ToInteger(keyPos), value);
+                        break;
+                    case LuaType.String:
+                        Span<char> buffer = SharedToStringBuffer.AsSpan();
+                        var str = lua.ToStringInto(keyPos, buffer, callMetamethod: false);
+                        wrapper.LuaNewIndex(lua, str, value);
+                        break;
+                    default:
+                        throw new NotImplementedException($"Can't newindex LuaWrapper with {lua.FastToString(keyPos)} [type: {lua.Type(keyPos)}].");
+                }
+                return 0;
+            });
+            state.SetTable(metatableStackLoc);
+
+            // # operator
+            state.PushString("__len"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+
+                var wrapper = lua.UnboxWrapper(1);
+
+                return wrapper.LuaLen(lua);
+            });
+            state.SetTable(metatableStackLoc);
+
+            // equality operator
+            state.PushString("__eq"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+
+                if (lua.IsWrapper(2)) {
+                    var a = lua.UnboxWrapper(1);
+                    var b = lua.UnboxWrapper(2);
+                    lua.PushBoolean(ReferenceEquals(a, b));
+                } else {
+                    lua.PushBoolean(false);
+                }
+
+                return 1;
+            });
+            state.SetTable(metatableStackLoc);
         }
-
-        return newIndex;
+        
+        state.SetMetaTable(handlePos);
     }
 
-    private static LuaFunction CreateLuaWrapperForIdx(int wrapperIndex) {
-        return (nint ptr) => {
-            var lua = Lua.FromIntPtr(ptr);
 
-            var wrapper = LuaWrapperList[wrapperIndex];//UnboxWrapper<ILuaWrapper>(lua, 1);
+    public static unsafe bool IsWrapper(this Lua lua, int loc) {
+        var data = (NeoWrapper*)lua.ToUserData(loc);
 
-            var obj = wrapper ?? throw new LuaException(lua, $"Tried to index null wrapper");
-            var top = lua.GetTop();
-            var t = lua.Type(top);
-
-            int ret;
-            switch (t) {
-                case LuaType.Number:
-                    ret = obj.LuaIndex(lua, lua.ToInteger(top));
-                    break;
-                case LuaType.String:
-                    //Span<char> buffer = SharedToStringBuffer.AsSpan();
-                    //var str = lua.ToStringInto(top, buffer, callMetamethod: false);
-                    //ret = obj.LuaIndex(lua, str);
-
-                    ret = obj.LuaIndex(lua, lua.ToStringIntoASCII(top, callMetamethod: false));
-                    break;
-                case LuaType.Nil:
-                    ret = obj.LuaIndexNull(lua);
-                    break;
-                default:
-                    throw new NotImplementedException($"Can't index LuaWrapper with {lua.FastToString(top)} [type: {t}].");
-            }
-
-            return ret;
-        };
+        return data != null && NeoWrappers.ContainsKey(data->Id);
     }
 
-    public static bool IsWrapper(this Lua lua, int loc) {
-        lua.PushString(WrapperMarkerName);
-        var t = lua.RawGet(loc);
-        lua.Pop(1);
-
-        return t != LuaType.Nil;
-    }
-
-    public static ILuaWrapper UnboxWrapper(this Lua lua, int loc){
-        lua.RawGetInteger(loc, WrapperIDLoc);
-        var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
-        lua.Pop(1);
-
-        return wrapper;
+    public static unsafe ILuaWrapper UnboxWrapper(this Lua lua, int loc){
+        var data = (NeoWrapper*)lua.ToUserData(loc);
+        if (data is null)
+            throw new Exception("Can't unbox wrapper, as it isn't one!");
+        return NeoWrappers[data->Id];
     }
 
     public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
-        lua.RawGetInteger(loc, WrapperIDLoc);
-        var wrapper = LuaWrapperList[(int) lua.ToInteger(-1)];
-        lua.Pop(1);
-
-        return (T)wrapper;
+        return (T)UnboxWrapper(lua, loc);
     }
 
     public static Room UnboxRoomWrapper(this Lua lua, int loc) {
@@ -934,15 +922,12 @@ where TArg1 : class, ILuaWrapper {
         return room;
     }
 
-    private static readonly List<ILuaWrapper> LuaWrapperList = new();
     private static readonly List<GCHandle> LuaUsedHandles = new();
     private static readonly List<Action> LuaCleanupActions = new();
     private static readonly object LuaResourceLock = new();
     
     public static void ClearLuaResources() {
         lock (LuaResourceLock) {
-            LuaWrapperList.Clear();
-
             foreach (var handler in LuaUsedHandles) {
                 handler.Free();
             }
