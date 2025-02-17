@@ -69,6 +69,9 @@ public sealed class EditorScene : Scene {
         //HistoryHandler = new();
 
         //EditorState.OnMapChanged += OnMapChanged;
+
+        if (Settings.Instance.NotificationWindowOpen)
+            AddWindowIfNeeded<NotificationsWindow>();
     }
 
     public EditorScene(Map map) : this() {
@@ -241,14 +244,12 @@ public sealed class EditorScene : Scene {
         BackupHandler.Backup(Map);
 
         var analyzerCtx = MapAnalyzerRegistry.Global.Analyze(Map);
-        //analyzerCtx.Results.LogAsJson();
 
         if (analyzerCtx.Results.Any(r => r.Level == LogLevel.Error)) {
-            var w = AddWindowIfNeeded<MapAnalyzerWindow>();
-            w.SaveAnyway = ForceSave;
-        } else {
-            ForceSave();
+           NotificationsWindow.AddNotification(new MapAnalyzerErrorsNotification());
         }
+        
+        ForceSave();
     }
 
     private void ForceSave() {
@@ -257,6 +258,8 @@ public sealed class EditorScene : Scene {
         BinaryPacker.SaveToFile(pack, pack.Filename!);
         ModRegistry.NotifyFileCreatedAtRealPath(pack.Filename);
         Map.Filepath = pack.Filename;
+        
+        NotificationsWindow.AddNotification(new MapSavedNotification());
     }
 
     public void Open() {

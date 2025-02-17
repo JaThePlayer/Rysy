@@ -288,6 +288,10 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
 
     public float TouchpadPanSpeed { get; set; } = 100f;
 
+    public LogLevel MinimumNotificationLevel { get; set; } = LogLevel.Warning;
+
+    public bool NotificationWindowOpen { get; set; } = false;
+
     #endregion
 
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;

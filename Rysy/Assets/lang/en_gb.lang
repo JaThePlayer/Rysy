@@ -21,6 +21,15 @@ rysy.new=New...
 rysy.create=Create
 rysy.search=Search
 
+# Notifications
+rysy.notifications.window.name=Notifications
+rysy.notifications.window.nothingToShow=No notifications to show...
+rysy.notifications.window.minLevel=Minimum Shown Level
+rysy.notifications.window.minLevel.tooltip=Minimum Log Level shown in the below list of notifications.
+rysy.notifications.mapAnalyzerErrors=Map Analyzers found errors!
+rysy.notifications.mapAnalyzerErrors.open=Open Analyzer Window
+rysy.notifications.mapSaved=Map Saved
+
 # Analyzers
 rysy.analyzers.window.name=Map Analyzers
 rysy.analyzers.window.cant_save=Errors detected by map analyzers!\nMap can't be saved until they are resolved!
