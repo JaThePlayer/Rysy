@@ -9,6 +9,13 @@ public class EntityLayer : EditorLayer {
     }
 
     public override string Name => SelectionLayer.FastToString();
+
+    public override string? MaterialLangPrefix => SelectionLayer switch {
+        SelectionLayer.Entities => "entities",
+        SelectionLayer.Triggers => "triggers",
+        _ => null,
+    };
+
     public override SelectionLayer SelectionLayer { get; }
     public override IEnumerable<Placement> GetMaterials() {
         return SelectionLayer switch {

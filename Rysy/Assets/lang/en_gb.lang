@@ -342,6 +342,11 @@ rysy.animTileImport.importFromXml.tip=Paste an xml snippet containing one or mor
 rysy.animTileImport.name=Name
 rysy.animTileImport.name.tooltip=The internal name of the sprite, referenced by tilesets. Hard to change once set.
 
+rysy.roomPlacements.room.placements.name.default=Default Room
+rysy.roomPlacements.room.placements.description.default=Creates a new playable room, with a spawn point already placed.
+rysy.roomPlacements.fillerRoom.placements.name.filler=Empty Room
+rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room without a spawn point, useful for creating fillers to place tiles outside of rooms for nicer screen transitions.
+
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
 rysy.validate.mustBeInt=Value must be an integer.

@@ -60,17 +60,21 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             if (layer == EditorLayers.Prefabs) {
                 return pl.Name;
             }
-            
-            var name = EditorLayers.IsDecalLayer(layer) 
-                ? pl.Name
-                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID ?? ""}.placements.name"));
+
+            var prefix = layer.MaterialLangPrefix;
+            var name = prefix is null 
+                ? pl.Name 
+                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.SID ?? ""}.placements.name"));
 
             var associated = pl.GetAssociatedMods();
             if (associated is { Count: > 0 }) {
                 return $"{name} [{string.Join(',', associated.Select(ModMeta.ModNameToDisplayName))}]";
             }
-
-            return $"{name} [Vanilla]";
+            
+            if (pl.PlacementHandler.ShowVanillaAsDefiningModInPlacementName())
+                return $"{name} [Vanilla]";
+            
+            return name;
         }
 
         return material switch {
@@ -80,10 +84,17 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
-        return material switch {
-            Placement pl => pl.Tooltip ?? pl.Name.TranslateOrNull($@"{(pl.IsTrigger() ? "triggers" : "entities")}.{pl.SID}.placements.description"),
-            _ => null,
-        };
+        if (material is not Placement pl)
+            return null;
+
+        if (pl.Tooltip is { } tooltip)
+            return tooltip;
+        
+        var prefix = layer.MaterialLangPrefix;
+        if (prefix is null)
+            return null;
+        
+        return pl.Name.TranslateOrNull($"{prefix}.{pl.SID}.placements.description");
     }
 
     private static Placement? PlacementFromString(string str, EditorLayer layer) {
@@ -257,6 +268,14 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
             var ctx = SpriteRenderCtx.Default();
+            var offset = placement.PlacementHandler.GetPreviewSpritesOffset(selection, pos, room!);
+            SpriteBatchState prevState = default;
+            if (offset is { }) {
+                prevState = GFX.EndBatch()!.Value;
+                GFX.BeginBatch(prevState with {
+                    TransformMatrix = prevState.TransformMatrix * Matrix.CreateTranslation(offset.Value.X * camera.Scale, offset.Value.Y * camera.Scale, 0f)
+                });
+            }
             
             foreach (var item in placement.GetPreviewSprites(selection, pos, room!)) {
                 if (item is Sprite spr) {
@@ -264,6 +283,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 } else {
                     item.WithMultipliedAlpha(0.4f).Render(ctx);
                 }
+            }
+
+            if (offset is { }) {
+                GFX.EndBatch();
+                GFX.BeginBatch(prevState);
             }
         }
 

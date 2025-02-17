@@ -363,6 +363,15 @@ public sealed class Room : IPackable, ILuaWrapper {
         GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, colorgrade.Set(), camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
     }
 
+    public RectangleSprite GetBorderSprite(float cameraScale) 
+        => ISprite.OutlinedRect(Bounds, Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White), outlineWidth: (int) (1f / cameraScale).AtLeast(1));
+
+    public IEnumerable<ISprite> GetInteriorSprites() {
+        CacheSpritesIfNeeded();
+        
+        return CachedSprites!;
+    }
+    
     public void Render(Camera camera, bool selected, Colorgrade colorgrade) {
         if (!selected && !camera.IsRectVisible(Bounds)) {
             if (CachedSprites is {} || FullRenderCanvas is {})
