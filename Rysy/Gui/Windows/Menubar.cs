@@ -109,10 +109,6 @@ public static class Menubar {
                 editor.AddWindowIfNeeded(() => new TilesetWindow());
             }
             ImGui.EndDisabled();
-            
-            if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindow(new MapSizeoscopeWindow(map, history));
-            }
         }
     }
 
@@ -277,6 +273,12 @@ public static class Menubar {
             RysyEngine.Scene.AddWindowIfNeeded<HistoryWindow>();
         }
 
+        if (EditorState.Map is { } map && EditorState.History is { } history) {
+            if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindow(new MapSizeoscopeWindow(map, history));
+            }
+        }
+        
         if (editor.Map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
             editor.Map.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
         }
