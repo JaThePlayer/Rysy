@@ -702,9 +702,10 @@ public static class ImGuiManager {
 
         var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
 
-        ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"),
-            new((isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding*2 : 0f), 0),
-            ImGuiChildFlags.AutoResizeY);
+        ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"), new NumVector2(
+            x: (isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding * 2 : 0f), 
+            y: ImGui.GetTextLineHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y
+        ));
         
         if (isOpen || ImGui.IsWindowFocused())
             ImGui.SetNextItemWidth(optimalWidth);
@@ -915,6 +916,11 @@ public static class ImGuiManager {
 
     public static void TranslatedText(string id) {
         ImGui.Text(id.Translate());
+        true.WithTranslatedTooltip($"{id}.tooltip");
+    }
+    
+    public static void TranslatedText(string id, NumVector4 color) {
+        ImGui.TextColored(color, id.Translate());
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
 
