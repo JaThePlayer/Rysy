@@ -728,7 +728,7 @@ public static class ImGuiManager {
         id ??= (uint) renderMain.Method.GetHashCode();
 
         ImGui.BeginChild(id.Value, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y);
+        ImGui.Dummy(new(0, ImGui.GetStyle().WindowPadding.Y));
         renderMain();
         ImGui.EndChild();
 
