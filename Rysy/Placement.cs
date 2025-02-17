@@ -171,6 +171,9 @@ public record class Placement : IUntypedData {
     /// Tries to get the mod this placement comes from
     /// </summary>
     public ModMeta? GetDefiningMod() {
+        if (PlacementHandler?.GetDefiningMod() is { } mod)
+            return mod;
+        
         if (IsDecal()) {
             var texture = GFX.Atlas[Decal.GetTexturePathFromPlacement(this)];
             if (texture is ModTexture modTexture)
@@ -279,6 +282,12 @@ public class PlacementList : List<Placement> {
 }
 
 public interface IPlacementHandler {
+    public bool ShowVanillaAsDefiningModInPlacementName() => true;
+    
+    public ModMeta? GetDefiningMod() => null;
+    
+    public Vector2? GetPreviewSpritesOffset(ISelectionHandler handler, Vector2 pos, Room room) => null;
+    
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room);
 
     public virtual IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler handler, Vector2 pos, Room room)
@@ -395,9 +404,25 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
 }
 
 public record class RoomPlacementHandler : IPlacementHandler {
+    public bool ShowVanillaAsDefiningModInPlacementName() => false;
+    
+    public Vector2? GetPreviewSpritesOffset(ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
+        var room = ((RoomSelectionHandler) handler).Room;
+        room.Pos = pos;
+
+        return pos;
+    }
+    
     public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
-        ((RoomSelectionHandler) handler).Room.Pos = pos;
-        return ISprite.OutlinedRect(handler.Rect, Color.Red * 0.3f, Color.Red);
+        var room = ((RoomSelectionHandler) handler).Room;
+        room.Pos = pos;
+        room.ClearEntityRenderCache();
+        
+        return room.GetInteriorSprites()
+            .Concat(room.GetBorderSprite(EditorState.Camera.Scale) with {
+                Depth = int.MinValue,
+                Pos = new(0, 0, room.Width, room.Height)
+            });
     }
 
     public IHistoryAction Place(ISelectionHandler handler, Room? alwaysNull) {
@@ -409,9 +434,11 @@ public record class RoomPlacementHandler : IPlacementHandler {
                 EditorState.CurrentRoom = newRoom;
                 RysyState.Scene.AddWindow(new RoomEditWindow(newRoom, false));
             }
-
         });
         handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(EditorState.Map!);
+        if (roomHandler.Room.Entities["player"].Count > 0) {
+            handler.TryResize(new(40 * 8 - 8, 23 * 8 - 8))?.Apply(EditorState.Map!);
+        }
         
         return act;
     }
@@ -419,6 +446,10 @@ public record class RoomPlacementHandler : IPlacementHandler {
     public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room? alwaysNull) {
         var newRoom = new Room(EditorState.Map!, placement.Int("width", 40 * 8), placement.Int("height", 23 * 8));
         newRoom.Pos = pos;
+
+        if (placement.Bool("hasPlayer")) {
+            newRoom.Entities.Add(EntityRegistry.CreateFromMainPlacement("player", new Vector2(2, 2) * 8f, newRoom, new()));
+        }
 
         return new RoomSelectionHandler(newRoom);
     }

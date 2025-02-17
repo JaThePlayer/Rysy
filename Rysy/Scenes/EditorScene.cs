@@ -408,7 +408,7 @@ public sealed class EditorScene : Scene {
                 ISprite.Rect(room.Bounds, Color.Black * .75f).Render();
 
             // draw the colored border around the room
-            ISprite.OutlinedRect(room.Bounds, Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(room.Attributes.C, Color.White), outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
+            room.GetBorderSprite(Camera.Scale).Render();
         }
         GFX.EndBatch();
         

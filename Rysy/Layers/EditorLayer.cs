@@ -14,6 +14,11 @@ public abstract class EditorLayer {
     public abstract SelectionLayer SelectionLayer { get; }
 
     public abstract IEnumerable<Placement> GetMaterials();
+
+    /// <summary>
+    /// Prefix to use for language entries for materials. Leave null to not use translations.
+    /// </summary>
+    public virtual string? MaterialLangPrefix => null;
     
     public virtual bool SupportsPreciseMoveMode => true;
 }
