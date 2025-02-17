@@ -12,7 +12,8 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
     public float RecommendedMin { get; set; } = float.MinValue;
     public float RecommendedMax { get; set; } = float.MaxValue;
 
-    public override object GetDefault() => Default!;
+    public override object GetDefault() =>
+        float.TryParse(Default, CultureInfo.InvariantCulture, out var f) ? f : Default!;
 
     public override void SetDefault(object newDefault)
         => Default = newDefault.ToStringInvariant();

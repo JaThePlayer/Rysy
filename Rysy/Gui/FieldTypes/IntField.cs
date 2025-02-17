@@ -25,7 +25,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     /// </summary>
     public int DisplayScale { get; set; } = 1;
 
-    public override object GetDefault() => Default!;
+    public override object GetDefault() => (object?)ParseInput(Default) ?? Default!;
     public override void SetDefault(object newDefault)
         => Default = newDefault.ToStringInvariant();
 
