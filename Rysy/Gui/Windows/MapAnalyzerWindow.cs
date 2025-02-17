@@ -10,9 +10,9 @@ internal sealed class MapAnalyzerWindow : Window {
 
     public Action? SaveAnyway;
 
-    public static new string Name => "rysy.analyzers.window.name".Translate() ?? "Map Analyzer";
+    public static new string Name => "rysy.analyzers.window.name".Translate();
 
-    public MapAnalyzerWindow() : base(Name, new(600, 1000)) {
+    public MapAnalyzerWindow() : base(Name, new(600, 500)) {
         NoSaveData = false;
 
         EditorState.History!.OnApply += Update;
@@ -64,16 +64,6 @@ internal sealed class MapAnalyzerWindow : Window {
             SetCtx();
             if (Ctx is null)
                 return;
-        }
-
-        if (Results?.Any(r => r.Level == LogLevel.Error) ?? false) {
-            ImGuiManager.PushInvalidStyle();
-            ImGui.Text("rysy.analyzers.window.cant_save".Translate());
-            ImGuiManager.PopInvalidStyle();
-            if (SaveAnyway is {} && ImGuiManager.TranslatedButton("rysy.analyzers.window.save_anyway")) {
-                SaveAnyway();
-                RemoveSelf();
-            }
         }
 
         ImGui.BeginChild("List");

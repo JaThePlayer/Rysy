@@ -46,6 +46,10 @@ public abstract record class Field {
     /// <returns>If the value got changed by the user, returns that new value. Otherwise, returns null</returns>
     public abstract object? RenderGui(string fieldName, object value);
 
+    public object? RenderGui(object value) {
+        return RenderGui(NameOverride ?? "##", value);
+    }
+
     public object? RenderGuiWithValidation(string fieldName, object value, ValidationResult validationResult) {
         var prevTooltip = Tooltip;
         if (validationResult.HasErrors)

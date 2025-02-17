@@ -255,6 +255,10 @@ public static class Menubar {
         if (ImGui.Button(MapAnalyzerWindow.Name)) {
             RysyEngine.Scene.ToggleWindow<MapAnalyzerWindow>();
         }
+        
+        if (ImGuiManager.TranslatedButton(NotificationsWindow.TitleId)) {
+            RysyEngine.Scene.ToggleWindow<NotificationsWindow>();
+        }
 
         ImGui.EndMenu();
     }
