@@ -138,12 +138,14 @@ public static partial class LonnDrawables {
 
         /*
     ninePatch.hideOverflow = options.hideOverflow or true
-    ninePatch.mode = options.mode or "fill"
-    ninePatch.borderMode = options.borderMode or "repeat"
-    ninePatch.fillMode = options.fillMode or "repeat"
          */
 
-        var sprite = ISprite.NineSliceFromTexture(rect, texture) with { Color = color, };
+        var sprite = ISprite.NineSliceFromTexture(rect, texture) with {
+            Color = color,
+            BorderMode = lua.PeekTableEnumValue(top, "borderMode"u8, NineSliceSprite.LoopingModes.Repeat),
+            FillMode = lua.PeekTableEnumValue(top, "fillMode"u8, NineSliceSprite.LoopingModes.Repeat),
+            RenderMode = lua.PeekTableEnumValue(top, "renderMode"u8, NineSliceSprite.RenderModes.Fill),
+        };
 
         if (lua.PeekTableIntValue(top, "depth"u8) is { } depth)
             sprite.Depth = depth;

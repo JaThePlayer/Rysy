@@ -211,6 +211,18 @@ public static partial class LuaExt {
     }
     
     /// <summary>
+    /// Peeks the enum value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+    /// </summary>
+    public static TEnum PeekTableEnumValue<TEnum>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, TEnum def)
+    where TEnum : struct, Enum {
+        var str = lua.PeekTableStringValue(tableStackIndex, key);
+        if (str is null)
+            return def;
+
+        return Enum.TryParse<TEnum>(str, ignoreCase: true, out var result) ? result : def;
+    }
+    
+    /// <summary>
     /// Peeks the function value at t[key], where t is the table at <paramref name="tableStackIndex"/>
     /// </summary>
     public static LuaFunctionRef? PeekTableFunctionValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
@@ -841,7 +853,7 @@ where TArg1 : class, ILuaWrapper {
                 var lua = Lua.FromIntPtr(s);
 
                 var wrapper = lua.UnboxWrapper(1) ?? throw new LuaException(lua, $"Tried to index null wrapper");
-                var value = lua.ToCSharp(3);
+                var value = lua.ToCSharp(3, makeLuaFuncRefs: true);
                 const int keyPos = 2;
                 //var top = lua.GetTop();
 
