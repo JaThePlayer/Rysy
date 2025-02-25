@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Gui;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 using System.Buffers;
@@ -198,6 +199,9 @@ public sealed class TilesetData : IXmlBackedEntityData {
             ignores = Fields.List("", Fields.TileDropdown('1', bg, addWildcardOption: true)).WithMinElements(0),
             ignoreExceptions = Fields.List("", Fields.TileDropdown('1', bg)).WithMinElements(0),
             debris = Fields.AtlasPath("", @"^debris/(.*?)(?:00)?$"),
+            __sep = new PaddingField(),
+            scanWidth = Fields.IntNullable().WithMin(3),
+            scanHeight = Fields.IntNullable().WithMin(3),
         });
 
         return fields;
