@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
 
-static class DropdownHelper {
+internal static class DropdownHelper {
     public static Dictionary<Type, object> DefaultStringToT = new() {
         [typeof(string)] = (Func<string?, string>) ((string? s) => s ?? ""),
         [typeof(char)] = (Func<string?, char>) ((string? s) => s is [char c] ? c : '\0'),
@@ -198,4 +198,35 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
             return obj.ToString()?.GetHashCode(StringComparison.OrdinalIgnoreCase) ?? 0;
         }
     }
+}
+
+public record class DropdownField : Field {
+    private string Search = "";
+    
+    public IDictionary<object, string> Values { get; set; }
+    
+    public Func<object, string, bool>? MenuItemRenderer;
+    
+    public bool Editable { get; set; }
+    
+    public object Default { get; set; }
+    
+    public Func<string, object> ValueTransformer { get; set; } = x => x;
+    public Func<object?, string> DisplayTransformer { get; set; } = x => x.ToStringInvariant();
+    
+    public override object GetDefault() => Default;
+
+    public override void SetDefault(object newDefault) => Default = newDefault;
+
+    public override object RenderGui(string fieldName, object value) {
+        if (Editable) {
+            return ImGuiManager.EditableCombo(fieldName, ref value, Values, ValueTransformer, ref Search, Tooltip,
+                menuItemRenderer: MenuItemRenderer, tToString: DisplayTransformer) ? value : null;
+        } else {
+            return ImGuiManager.Combo(fieldName, ref value, Values, ref Search, Tooltip, 
+                menuItemRenderer: MenuItemRenderer) ? value : null;
+        }
+    }
+
+    public override Field CreateClone() => this with { };
 }

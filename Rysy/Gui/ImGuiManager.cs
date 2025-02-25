@@ -453,7 +453,7 @@ public static class ImGuiManager {
 
     public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, string, bool>? menuItemRenderer = null)
+        Func<T, string, bool>? menuItemRenderer = null, Func<T?, string>? tToString = null)
         where T : notnull {
 
         bool changed = false;
@@ -462,7 +462,7 @@ public static class ImGuiManager {
 
         menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
 
-        var valueToString = value?.ToString() ?? "";
+        var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
 
         if (typeof(T) == typeof(int)) {
