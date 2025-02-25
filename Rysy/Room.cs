@@ -919,6 +919,9 @@ public sealed class Room : IPackable, ILuaWrapper {
             case "y":
                 lua.PushNumber(Y);
                 return 1;
+            case "name":
+                lua.PushString(Name);
+                return 1;
         }
 
         return 0;
