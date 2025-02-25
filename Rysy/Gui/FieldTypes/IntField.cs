@@ -30,11 +30,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         => Default = newDefault.ToStringInvariant();
 
     private int? ParseInput(object? value) {
-        return value.CoerceToInt();
+        return value is null or "" && NullAllowed ? null : value.CoerceToInt();
     }
     
     public override ValidationResult IsValid(object? value) {
-        if ((NullAllowed && value is null)) {
+        if ((NullAllowed && value is null or "")) {
             return ValidationResult.Ok;
         }
         
