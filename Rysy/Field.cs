@@ -1,5 +1,4 @@
-﻿using Rysy.Extensions;
-using Rysy.Gui;
+﻿using Rysy.Gui;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;

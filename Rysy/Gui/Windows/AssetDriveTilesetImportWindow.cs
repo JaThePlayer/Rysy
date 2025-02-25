@@ -103,8 +103,8 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     public override void RenderBottomBar() {
         var previewTask = _selected is not null ? GFX.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None) : null;
         var valid = _selected is not null && previewTask is { IsCompletedSuccessfully: true };
-        if (!valid)
-            ImGui.BeginDisabled();
+        
+        ImGui.BeginDisabled(!valid);
         
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && valid) {
             RysyState.Scene.AddWindow(new CreateTilesetWindow(new() {
@@ -299,6 +299,16 @@ internal sealed partial class CreateTilesetWindow : Window {
             if (_tileset.Template.Contains('<', StringComparison.Ordinal)) {
                 var template = _tileset.Template;
                 if (RedundantTilesetTagRegex().Match(template) is { Success: true } m) {
+                    var sourceXml = new XmlDocument();
+                    sourceXml.LoadXml(template);
+                    var main = sourceXml.DocumentElement!;
+                    if (main.Attributes?["sound"]?.Value is {} sound)
+                        newEl.SetAttribute("sound", sound);
+                    if (main.Attributes?["scanWidth"]?.Value is {} scanWidth)
+                        newEl.SetAttribute("scanWidth", scanWidth);
+                    if (main.Attributes?["scanHeight"]?.Value is {} scanHeight)
+                        newEl.SetAttribute("scanHeight", scanHeight);
+                    
                     template = m.Groups[1].Value;
                 }
 

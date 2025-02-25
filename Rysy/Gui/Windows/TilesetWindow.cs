@@ -372,7 +372,7 @@ public sealed class TilesetWindow : Window {
             RysyState.Scene.AddWindow(new ScriptedWindow("rysy.tilesetWindow.removeSourceTexture.name".Translate(),
                 (w) => {
                     ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.removeSourceTexture");
-                }, new(400, 120), bottomBarFunc: (w) => {
+                }, new(400, ImGui.GetTextLineHeightWithSpacing() * 4 + ImGui.GetFrameHeightWithSpacing() * 2), bottomBarFunc: (w) => {
                     if (ImGuiManager.TranslatedButton("rysy.ok")) {
                         _history?.ApplyNewAction(new RemoveTilesetAction(entryId, _bg, removeSourceTexture: true));
                         if (formPropId == entryId)
