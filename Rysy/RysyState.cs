@@ -145,34 +145,26 @@ public static class RysyState {
 
         var renderUI = !_hideUi;
         
+        if (ImGuiAvailable) {
+            ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
+            if (renderUI)
+                Scene.RenderImGui();
+            if (DebugInfoWindow.Enabled)
+                DebugInfoWindow.Instance.RenderGui();
+        }
+
         try {
-            if (ImGuiAvailable) {
-                ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
-                if (renderUI)
-                    Scene.RenderImGui();
-                if (DebugInfoWindow.Enabled)
-                    DebugInfoWindow.Instance.RenderGui();
-            }
-
-
             Scene.Render();
-
-            /*
-            if (renderUI) {
-                GFX.BeginBatch();
-                PicoFont.Print(CurrentFPS.ToString("FPS:0", CultureInfo.CurrentCulture), new Vector2(4, 68), Color.Pink, 4);
-                GFX.EndBatch();
-            }*/
 
             if (Scene is not CrashScene)
                 OnRender?.Invoke();
-
-            if (ImGuiAvailable) {
-                ImGuiManager.GuiRenderer.AfterLayout();
-            }
         } catch (Exception e) {
             Logger.Error(e, $"Unhandled exception during render!");
             Scene = new CrashScene(Scene, e);
+        }
+
+        if (ImGuiAvailable) {
+            ImGuiManager.GuiRenderer.AfterLayout();
         }
 
         _smartFramerate.Update(elapsed);
