@@ -144,6 +144,7 @@ public class FormWindow : Window {
             ImGui.Columns(2);
 
         bool valid = true;
+        var i = 0;
 
         foreach (var prop in FieldList) {
             if (prop.Field.IsHidden(FormContext) || dynamicallyHiddenFields.Contains(prop.Name))
@@ -168,10 +169,14 @@ public class FormWindow : Window {
 
                 continue;
             }
+            
+            ImGui.PushID(i++);
 
             if (!HandleProp(prop)) {
                 valid = false;
             }
+            
+            ImGui.PopID();
 
             if (hasColumns)
                 ImGui.NextColumn();

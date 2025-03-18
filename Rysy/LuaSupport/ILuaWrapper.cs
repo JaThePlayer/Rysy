@@ -24,7 +24,8 @@ public interface ILuaWrapper {
     }
 
     public virtual int LuaIndexNull(Lua lua) {
-        return 0;
+        lua.PushNil();
+        return 1;
     }
 
     /// <summary>

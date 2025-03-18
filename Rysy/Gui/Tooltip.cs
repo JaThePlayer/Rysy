@@ -29,6 +29,8 @@ public readonly struct Tooltip : ITooltip {
     public bool IsNull => _text == null && _tooltip is null;
     
     public bool IsEmpty => _text == null && (_tooltip is null || _tooltip.IsEmpty);
+    
+    public string? GetRawText() => _text ?? _tooltip?.GetRawText();
 
     public void RenderImGui() {
         if (_text is {} text)
@@ -54,11 +56,13 @@ public interface ITooltip {
     public void RenderImGui();
     
     public bool IsEmpty { get; }
+
+    public string? GetRawText();
 }
 
 public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITooltip {
     public void RenderImGui() {
-        var text = id.TranslateOrNull() ?? fallbackId?.TranslateOrNull();
+        var text = GetRawText();
 
         if (text is { }) {
             ImGui.Text(text);
@@ -66,11 +70,13 @@ public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITo
     }
 
     public bool IsEmpty => (id.TranslateOrNull() ?? fallbackId?.TranslateOrNull()) is null;
+    
+    public string? GetRawText() => id.TranslateOrNull() ?? fallbackId?.TranslateOrNull();
 }
 
 public sealed class TranslatedFormattedTooltip(string id, object[] args) : ITooltip {
     public void RenderImGui() {
-        var text = id.TranslateFormatted(args);
+        var text = GetRawText();
 
         if (text is { }) {
             ImGui.Text(text);
@@ -78,6 +84,8 @@ public sealed class TranslatedFormattedTooltip(string id, object[] args) : ITool
     }
 
     public bool IsEmpty => id.TranslateOrNull() is null;
+    
+    public string? GetRawText() => id.TranslateFormatted(args);
 }
 
 sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
@@ -87,4 +95,6 @@ sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
     }
 
     public bool IsEmpty => first.IsEmpty && second.IsEmpty;
+
+    public string GetRawText() => $"{first.GetRawText() ?? ""}\n{second.GetRawText() ?? ""}";
 }

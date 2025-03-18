@@ -305,6 +305,18 @@ public static partial class LuaExt {
     }
     
     /// <summary>
+    /// Peeks the value at t[key], where t is the table at <paramref name="tableStackIndex"/>, then converts it into a C# value.
+    /// </summary>
+    public static object? PeekTableCSharpValue(this Lua lua, int tableStackIndex, string key) {
+        lua.PushString(key);
+        var type = lua.GetTable(tableStackIndex);
+        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
+        lua.Pop(1);
+
+        return ret;
+    }
+    
+    /// <summary>
     /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
     /// </summary>
     public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyRva) {
@@ -418,7 +430,7 @@ public static partial class LuaExt {
     public static T? PeekTableWrapper<T>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) where T : class, ILuaWrapper {
         var type = lua.GetFieldRva(tableStackIndex, key);
 
-        if (type != LuaType.Table) {
+        if (type != LuaType.UserData) {
             return null;
         }
 
@@ -479,6 +491,18 @@ public static partial class LuaExt {
                 break;
             case double d:
                 lua.PushNumber(d);
+                break;
+            case LuaRef r:
+                r.PushToStack(lua);
+                break;
+            case LuaFunction del:
+                lua.PushCFunction(del);
+                break;
+            case List<object> objList:
+                lua.PushWrapper(new ListWrapper<object>(objList));
+                break;
+            case Dictionary<string, object> dict:
+                lua.PushWrapper(new DictionaryWrapper(dict));
                 break;
             default:
                 throw new Exception($"Can't push {obj} [{obj.GetType()}] to Lua");
@@ -897,6 +921,17 @@ where TArg1 : class, ILuaWrapper {
                     lua.PushBoolean(false);
                 }
 
+                return 1;
+            });
+            state.SetTable(metatableStackLoc);
+            
+            // tostring
+            state.PushString("__tostring"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+                var wrapper = lua.UnboxWrapper(1);
+                
+                lua.PushString(wrapper.ToString());
                 return 1;
             });
             state.SetTable(metatableStackLoc);

@@ -155,6 +155,7 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
         var values = ctx.Values;
 
         ImGui.Text("From:");
+        ImGui.PushID("_from");
         foreach (var item in values) {
             ImGui.SameLine();
 
@@ -162,8 +163,10 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
                 ImGui.ColorButton(item, color.ToNumVec4(), ImGuiColorEditFlags.NoTooltip);
             }
         }
+        ImGui.PopID();
 
         ImGui.Text("To:");
+        ImGui.PushID("_to");
         foreach (var item in values) {
             ImGui.SameLine();
 
@@ -175,6 +178,7 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
                 ImGui.ColorButton(item, cv, ImGuiColorEditFlags.NoTooltip);
             }
         }
+        ImGui.PopID();
 
         ImGui.DragFloat("H", ref HsvFilterStorage.X, 1f, v_min: -180f, v_max: 180f);
         ImGui.DragFloat("S", ref HsvFilterStorage.Y, 1f, v_min: -100f, v_max: 100f);

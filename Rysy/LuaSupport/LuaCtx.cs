@@ -1,7 +1,7 @@
-﻿using KeraLua;
-using Rysy.Extensions;
+﻿using ImGuiNET;
+using KeraLua;
 using Rysy.Graphics;
-using Rysy.Helpers;
+using Rysy.Gui;
 using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Scenes;
@@ -229,6 +229,41 @@ public class LuaCtx {
 
             return 1;
         });
+        
+        lua.Register("_RYSY_bit_bor", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var x = lua.ToInteger(-2);
+            var n = lua.ToInteger(-1);
+            lua.Pop(2);
+
+            lua.PushInteger(x | n);
+
+            return 1;
+        });
+        
+        lua.Register("_RYSY_bit_band", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var x = lua.ToInteger(-2);
+            var n = lua.ToInteger(-1);
+            lua.Pop(2);
+
+            lua.PushInteger(x & n);
+
+            return 1;
+        });
+        
+        lua.Register("_RYSY_bit_bnot", (nint s) => {
+            var lua = Lua.FromIntPtr(s);
+
+            var x = lua.ToInteger(-1);
+            lua.Pop(1);
+
+            lua.PushInteger(~x);
+
+            return 1;
+        });
 
         // _RYSY_DRAWABLE_getTextureSize(texturePath, atlaspath) -> number, number, number, number, number, number
         // gets the clip rectangle and draw offset for a texture, potentially causing preloading.
@@ -350,6 +385,9 @@ public class LuaCtx {
                     break;
                 case "style":
                     EntityRegistry.LoadLuaEffectPlugin(mod, lib);
+                    break;
+                case "field":
+                    EntityRegistry.LoadLuaFieldTypePlugin(mod, lib);
                     break;
             }
             
@@ -706,6 +744,14 @@ public class LuaCtx {
                 lua.SetTable(output);
             }
 
+            return 1;
+        });
+        
+        lua.Register("_RYSY_lang_get", static s => {
+            var lua = Lua.FromIntPtr(s);
+            var name = lua.FastToString(1);
+
+            lua.PushString(name.Translate());
             return 1;
         });
 

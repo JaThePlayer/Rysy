@@ -103,6 +103,13 @@ public static class UntypedDataExt {
 
         return def;
     }
+    
+    public static T? Obj<T>(this IUntypedData self, string attrName, T? def = null) where T : class {
+        if (self.TryGetValue(attrName, out var obj) && obj is T result)
+            return result;
+
+        return def;
+    }
 
     public static Color RGB(this IUntypedData self, string attrName, Color def)
         => self.GetColor(attrName, def, ColorFormat.RGB);
