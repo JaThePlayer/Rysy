@@ -1,5 +1,4 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
@@ -296,7 +295,7 @@ public static partial class Fields {
         _ => "string",
     };
 
-    public static Field? CreateFromLonn(object? val, string? fieldType, Dictionary<string, object> fieldInfoEntry) {
+    public static Field? CreateFromLonn(object? val, string? fieldType, Dictionary<string, object> fieldInfoEntry, string fieldName) {
         RegisterScannerIfNeeded();
 
         fieldType ??= LonnNameFromValue(val);
@@ -340,6 +339,8 @@ public static partial class Fields {
 
         if (converter(def) is not (true, var parsedDef))
             return null;
+
+        Field? field = null;
         
         if (info.TryGetValue("options", out var options)) {
             IEnumerable<(object, string)>? values = null;
@@ -366,16 +367,56 @@ public static partial class Fields {
             if (values is { }) {
                 var parsedValues = values.Select(x => (converter(x.Item1), x.Item2, x.Item1)).ToList();
                 if (parsedValues.All(p => p.Item1.Item1)) {
-                    return Dropdown(parsedDef, parsedValues.SafeToDictionary(p => (p.Item1.Item2, p.Item2)), editable);
+                    //field = Dropdown(parsedDef, parsedValues.SafeToDictionary(p => (p.Item1.Item2, p.Item2)), editable);
+                    field = new DropdownField() {
+                        Default = parsedDef,
+                        Values = parsedValues.SafeToDictionary(p => ((object)p.Item1.Item2, p.Item2)),
+                        ValueTransformer = x => converter(x).Item2,
+                        Editable = editable
+                    };
+                } else {
+                    // Not all values could be parsed to the target type.
+                    // This happens for tilesets for example, if the plugin is faulty and sets '3' (number) as the default value.
+                    //field = Dropdown<object>(def.ToString() ?? "", parsedValues.SafeToDictionary(p => (p.Item3, p.Item2)), editable);
+                    field = new DropdownField() {
+                        Default = def,
+                        Values = parsedValues.SafeToDictionary(p => (p.Item3, p.Item2)),
+                        Editable = editable
+                    };
                 }
-                
-                // Not all values could be parsed to the target type.
-                // This happens for tilesets for example, if the plugin is faulty and sets '3' (number) as the default value.
-                return Dropdown(def.ToString() ?? "", parsedValues.SafeToDictionary(p => (p.Item3.ToString() ?? "", p.Item2)), editable);
             }
         }
 
-        return null;
+        if (field is DropdownField fieldInfoEntry) {
+            if (info.TryGetValue("valueTransformer", out var transformerObj) &&
+                transformerObj is LuaFunctionRef transformer) {
+                fieldInfoEntry.ValueTransformer = x => {
+                    var lua = transformer.Lua;
+                    transformer.PushToStack();
+                    lua.PushString(x);
+                    lua.Call(1, 1);
+                    var res = lua.ToCSharp(lua.GetTop());
+                    lua.Pop(1);
+                    return res;
+                };
+            }
+        
+            if (info.TryGetValue("displayTransformer", out var displayTransformerObj) &&
+                displayTransformerObj is LuaFunctionRef displayTransformer) {
+                fieldInfoEntry.DisplayTransformer = x => {
+                    var lua = displayTransformer.Lua;
+                    displayTransformer.PushToStack();
+                    lua.Push(x);
+                    lua.Call(1, 1);
+                    var res = lua.FastToString(lua.GetTop());
+                    lua.Pop(1);
+                    
+                    return res;
+                };
+            }
+        }
+        
+        return field;
     }
 
     private static void RegisterScannerIfNeeded() {
