@@ -146,11 +146,17 @@ public static class RysyState {
         var renderUI = !_hideUi;
         
         if (ImGuiAvailable) {
-            ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
-            if (renderUI)
-                Scene.RenderImGui();
-            if (DebugInfoWindow.Enabled)
-                DebugInfoWindow.Instance.RenderGui();
+            try {
+                ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
+                if (renderUI)
+                    Scene.RenderImGui();
+                if (DebugInfoWindow.Enabled)
+                    DebugInfoWindow.Instance.RenderGui();
+            } catch (Exception e) {
+                Logger.Error(e, $"Unhandled exception during ImGui rendering!");
+                Scene = new CrashScene(Scene, e);
+            }
+
         }
 
         try {

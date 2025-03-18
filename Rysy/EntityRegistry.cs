@@ -103,6 +103,8 @@ public static class EntityRegistry {
     public static ListenableDictionary<string, RegisteredEntity> RegisteredStyles { get; } = new(StringComparer.Ordinal);
     
     public static ListenableDictionary<string, RegisteredEntity> RegisteredDecalRegistryProperties { get; } = new(StringComparer.Ordinal);
+    
+    public static ListenableDictionary<string, LonnFieldType> RegisteredLonnFieldTypes { get; } = new(StringComparer.Ordinal);
 
     public static ListenableDictionary<string, RegisteredEntity> GetRegistryFor(RegisteredEntityType type) {
         return type switch {
@@ -113,7 +115,7 @@ public static class EntityRegistry {
     }
     
     private static LuaCtx? _LuaCtx = null;
-    private static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
+    internal static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
 
     public const string FGDecalSID = "fgDecal";
     public const string BGDecalSID = "bgDecal";
@@ -274,27 +276,48 @@ public static class EntityRegistry {
     private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins, SimpleLoadTask? task) {
         if (!loadLuaPlugins)
             return;
-
-        //var tasks = new List<Task>();
         
         foreach (var pluginPath in mod.Filesystem.FindFilesInDirectoryRecursive("Loenn", "lua").ToListIfNotList()) {
             if (pluginPath.StartsWith("Loenn/entities", StringComparison.Ordinal)) {
                 task?.SetMessage(2, pluginPath);
                 LoadLuaPluginFromModFile(mod, pluginPath, trigger: false);
-                //tasks.Add(Task.Run(() => LoadLuaPluginFromModFile(mod, pluginPath, trigger: false)));
             } else if (pluginPath.StartsWith("Loenn/triggers", StringComparison.Ordinal)) {
                 task?.SetMessage(2, pluginPath);
                 LoadLuaPluginFromModFile(mod, pluginPath, trigger: true);
-                //tasks.Add(Task.Run(() => LoadLuaPluginFromModFile(mod, pluginPath, trigger: true)));
             } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
                 task?.SetMessage(2, pluginPath);
                 LoadLuaEffectPlugin(mod, pluginPath);
+            } else if (pluginPath.StartsWith("Loenn/ui/forms/fields", StringComparison.Ordinal)) {
+                task?.SetMessage(2, pluginPath);
+                LoadLuaFieldTypePlugin(mod, pluginPath);
             }
         }
-
-        //Task.WhenAll(tasks).Wait();
     }
 
+    internal static void LoadLuaFieldTypePlugin(ModMeta mod, string pluginPath) {
+        mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
+            var plugin = stream.ReadAllText();
+
+            WithLuaHotReloadInfo(pluginPath, "field", () => {
+                RegisterFieldFromLua(plugin, pluginPath, mod);
+            });
+        });
+    }
+    
+    private static void RegisterFieldFromLua(string lua, string chunkName, ModMeta? mod = null) {
+        try {
+            LuaCtx.Lua.SetCurrentModName(mod);
+            LuaCtx.Lua.PCallStringThrowIfError(lua, chunkName, results: 1);
+
+            var field = new LonnFieldType(LuaCtx);
+            
+            RegisteredLonnFieldTypes[field.Name] = field;
+        } catch (Exception ex) {
+            Logger.Write("EntityRegistry.Lua", LogLevel.Error, $"Failed to register lua field {chunkName} [{mod?.DisplayName}]: {ex}");
+            return;
+        }
+    }
+    
     internal static void LoadLuaEffectPlugin(ModMeta mod, string pluginPath) {
         mod.Filesystem.TryWatchAndOpen(pluginPath, stream => {
             var plugin = stream.ReadAllText();

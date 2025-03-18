@@ -30,6 +30,15 @@ public static class ImGuiExt {
         return val;
     }
 
+    public static bool WithTooltip(this bool val, object? tooltip) {
+        return tooltip switch {
+            string s => val.WithTooltip(s),
+            Tooltip s => val.WithTooltip(s),
+            ITooltip s => val.WithTooltip(new Tooltip(s)),
+            _ => val,
+        };
+    }
+
     /// <summary>
     /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
     /// </summary>
