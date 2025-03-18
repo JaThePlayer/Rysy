@@ -19,10 +19,13 @@ public static class StylegroundRenderer {
         return !style.IsMasked();
     }
 
-    public static void Render(Room room, MapStylegrounds styles, Camera camera, Layers layers, 
+    public static void Render(Room? room, MapStylegrounds styles, Camera camera, Layers layers, 
         Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null, Colorgrade? colorgrade = null) {
         ArgumentNullException.ThrowIfNull(styles);
         float scale = camera.Scale;
+
+        if (room is null)
+            return;
 
         var ctx = new StylegroundRenderCtx(room, camera, Settings.Instance?.AnimateStylegrounds ?? false);
 

@@ -1,9 +1,13 @@
-﻿using Rysy.Gui.Windows;
+﻿using ImGuiNET;
+using Rysy.Gui.Windows;
 
 namespace Rysy;
 
 public abstract class Scene {
     private readonly List<Window> Windows = [];
+    
+    private readonly List<(string Id, Action Render)> Popups = [];
+    private readonly Queue<string> NewPopupQueue = [];
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -50,6 +54,24 @@ public abstract class Scene {
         for (int i = 0; i < Windows.Count; i++) {
             Windows[i].RenderGui();
         }
+
+        while (NewPopupQueue.TryDequeue(out var id)) {
+            ImGui.OpenPopup(id);
+        }
+        
+        for (int i = Popups.Count - 1; i >= 0; i--) {
+            var popup = Popups[i];
+
+            if (ImGui.BeginPopup(popup.Id)) {
+                try {
+                    popup.Render();
+                } finally {
+                    ImGui.EndPopup();
+                }
+            } else {
+                Popups.RemoveAt(i);
+            }
+        }
     }
 
     private readonly Action<Window> RemoveWindow;
@@ -94,6 +116,11 @@ public abstract class Scene {
     public void AddWindowIfNeeded<T>(Func<T> factory) where T : Window {
         if (!Windows.Any(w => w is T))
             AddWindow(factory());
+    }
+
+    public void AddPopup(string id, Action renderImgui) {
+        Popups.Add((id, renderImgui));
+        NewPopupQueue.Enqueue(id);
     }
 
     protected internal virtual void OnFileDrop(string filePath) {

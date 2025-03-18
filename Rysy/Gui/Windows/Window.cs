@@ -80,14 +80,21 @@ public class Window {
         if (NoMove)
             flags |= ImGuiWindowFlags.NoMove;
 
-        if (Closeable ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags)) : ImGui.Begin(WindowID, EditWindowFlags(flags))) {
-            if (HasBottomBar) {
-                ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{WindowID}.child"), StringComparison.Ordinal));
-            } else {
-                Render();
+        var isOpen = Closeable
+            ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags))
+            : ImGui.Begin(WindowID, EditWindowFlags(flags));
+        
+        try {
+            if (isOpen) {
+                if (HasBottomBar) {
+                    ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{WindowID}.child"), StringComparison.Ordinal));
+                } else {
+                    Render();
+                }
             }
+        } finally {
+            ImGui.End();
         }
-        ImGui.End();
 
         if (!open) {
             RemoveSelf();
