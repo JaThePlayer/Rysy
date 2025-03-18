@@ -260,7 +260,7 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
             && valueOptionsObj is Dictionary<string, object> valueOptions) {
             var valueOptionsData = new DictionaryUntypedData(valueOptions);
             // TODO: check what happens in lonn when valueDefault is not present
-            baseField = Fields.CreateFromLonn(valueDefault, valueOptionsData.Attr("fieldType", null!), valueOptions);
+            baseField = Fields.CreateFromLonn(valueDefault, valueOptionsData.Attr("fieldType", null!), valueOptions, "listInnerField");
         }
 
         baseField ??= Fields.GuessFromValue(valueDefault, fromMapData: false) ?? Fields.String(valueDefault?.ToString() ?? "");
