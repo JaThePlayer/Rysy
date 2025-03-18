@@ -287,10 +287,13 @@ public static class EntityRegistry {
             } else if (pluginPath.StartsWith("Loenn/effects", StringComparison.Ordinal)) {
                 task?.SetMessage(2, pluginPath);
                 LoadLuaEffectPlugin(mod, pluginPath);
-            } else if (pluginPath.StartsWith("Loenn/ui/forms/fields", StringComparison.Ordinal)) {
+            }
+            /*
+            else if (pluginPath.StartsWith("Loenn/ui/forms/fields", StringComparison.Ordinal)) {
                 task?.SetMessage(2, pluginPath);
                 LoadLuaFieldTypePlugin(mod, pluginPath);
             }
+            */
         }
     }
 
