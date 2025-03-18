@@ -575,7 +575,7 @@ public sealed class LonnEntityPlugin {
 
             var defVal = mainPlacement.GetValueOrDefault(key);
             
-            if (Fields.CreateFromLonn(defVal, fieldType, infoDict) is { } field) {
+            if (Fields.CreateFromLonn(defVal, fieldType, infoDict, key) is { } field) {
                 fieldList[key] = field;
             }
         }
@@ -789,7 +789,7 @@ public class LonnPlacement {
 
 
         if (lua.GetTable(start, "data"u8) is LuaType.Table)
-            Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist);
+            Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist, makeLuaFuncRefs: true);
         // pop the "data" table
         lua.Pop(1);
         

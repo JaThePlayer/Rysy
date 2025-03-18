@@ -114,21 +114,17 @@ public class DebugInfoWindow : Window {
         }
 
         if (RysyEngine.Scene is EditorScene editor) {
-            if (ImGui.CollapsingHeader("Lonn Entity stats:")) {
-                var lonnEntities = editor.CurrentRoom?.Entities.OfType<LonnEntity>().ToList() ?? new();
-                var cachedAmt = lonnEntities.Count(e => e.CachedSprites is { });
-                var uncachedSids = lonnEntities.Where(e => e.CachedSprites is not { }).Select(e => e.Name).Distinct();
-
-                ImGui.TextUnformatted($"Cached: {cachedAmt}/{lonnEntities.Count} [{cachedAmt / (float)lonnEntities.Count * 100}%]");
-                
-                if (ImGui.BeginListBox("Uncached SID's", new(Size!.Value.X, 300))) {
-                    foreach (var sid in uncachedSids) {
-                        ImGui.TextUnformatted(sid);
+            if (ImGui.CollapsingHeader("Lua Stats:")) {
+                ImGui.Text(Interpolator.Temp($"Wrappers alive: {LuaExt.NeoWrappers.Count}"));
+                if (ImGui.Button("Print wrappers to console")) {
+                    lock (LuaExt.NeoWrappers) {
+                        Console.WriteLine("Lua wrappers alive:");
+                        foreach (var (addr, wrapper) in LuaExt.NeoWrappers) {
+                            Console.WriteLine($"{addr}: {wrapper}");
+                        }
                     }
-
-                    ImGui.EndListBox();
+                    
                 }
-                
             }
 
             if (ImGui.CollapsingHeader("Camera Info:")) {
