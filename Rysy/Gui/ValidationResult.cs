@@ -1,6 +1,7 @@
 ﻿using Rysy.Helpers;
 using Rysy.Mods;
 using System.Numerics;
+using System.Text;
 
 namespace Rysy.Gui;
 
@@ -82,7 +83,19 @@ public sealed class ValidationResult : ITooltip {
     public bool HasWarnings => _warns.Count > 0;
     
     bool ITooltip.IsEmpty => !HasErrors && !HasWarnings;
-    
+
+    public string GetRawText() {
+        var sb = new StringBuilder();
+        foreach (var err in _errors) {
+            sb.AppendLine(err.Tooltip.GetRawText());
+        }
+        foreach (var err in _warns) {
+            sb.AppendLine(err.Tooltip.GetRawText());
+        }
+
+        return sb.ToString();
+    }
+
     private readonly List<ValidationMessage> _errors = [];
     private readonly List<ValidationMessage> _warns = [];
     
@@ -133,6 +146,7 @@ public sealed class ValidationResult : ITooltip {
         if (_errors.Count > 0) {
             ImGuiManager.PushInvalidStyle();
             foreach (var err in _errors) {
+                ImGuiManager.Icon(ImGuiIcons.AlarmExclamation);
                 err.Tooltip.RenderImGui();
             }
             ImGuiManager.PopInvalidStyle();
@@ -141,6 +155,7 @@ public sealed class ValidationResult : ITooltip {
         if (_warns.Count > 0) {
             ImGuiManager.PushWarningStyle();
             foreach (var warn in _warns) {
+                ImGuiManager.Icon(ImGuiIcons.AlarmExclamation);
                 warn.Tooltip.RenderImGui();
             }
             ImGuiManager.PopWarningStyle();

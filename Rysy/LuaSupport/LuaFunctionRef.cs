@@ -7,42 +7,51 @@ namespace Rysy.LuaSupport;
 /// Provides a way to access a lua closure via c#.
 /// Keeps the closure alive on the Lua side until <see cref="LuaExt.ClearLuaResources"/> gets called after this object gets GC'd.
 /// </summary>
-public class LuaFunctionRef {
-    private long _id;
-    
-    [JsonIgnore]
-    public readonly Lua Lua;
-
-    private LuaFunctionRef(Lua lua, long id) {
-        Lua = lua;
-        _id = id;
+public class LuaFunctionRef : LuaRef {
+    protected internal LuaFunctionRef(Lua lua, long id) : base(lua, id)
+    {
     }
 
-    public static LuaFunctionRef MakeFrom(Lua lua, int loc) {
-        lua.GetGlobal("__rysy_make_luaFuncRef"u8);
-        lua.PushCopy(loc);
-        lua.Call(1, 1);
-        var id = lua.ToInteger(lua.GetTop());
+    public new static LuaFunctionRef MakeFrom(Lua lua, int loc) {
+        var r = LuaRef.MakeFrom(lua, loc);
+        
+        return r as LuaFunctionRef ?? throw new Exception("Tried to create LuaFunctionRef from a non-function value.");
+    }
+
+    public static LuaFunctionRef MakeFromString(Lua lua, string code) {
+        lua.PCallStringThrowIfError(code, results: 1);
+        var ret = MakeFrom(lua, lua.GetTop());
         lua.Pop(1);
 
-        return new(lua, id);
+        return ret;
     }
 
-    public void PushToStack(Lua? lua = null) {
+    public void InvokeVoid(params Span<object?> args) => InvokeVoid(lua: null, args);
+    
+    public void InvokeVoid(Lua? lua = null, params Span<object?> args) {
         lua ??= Lua;
-        lua.GetGlobal("__rysy_get_luaFuncRef"u8);
-        lua.PushInteger(_id);
-        lua.Call(1, 1);
+        
+        PushToStack(lua);
+        foreach (var val in args) {
+            lua.Push(val);
+        }
+        lua.PCallThrowIfError(arguments: args.Length, results: 0);
     }
+    
+    public object? Invoke(params Span<object?> args) => Invoke(lua: null, args);
+    
+    public object? Invoke(Lua? lua = null, params Span<object?> args) {
+        lua ??= Lua;
+        
+        PushToStack(lua);
+        foreach (var val in args) {
+            lua.Push(val);
+        }
+        lua.PCallThrowIfError(arguments: args.Length, results: 1);
 
-    ~LuaFunctionRef() {
-        // Clear the reference on the lua side
-        var lua = Lua;
-        var id = _id;
-        LuaExt.RegisterLuaCleanupAction(() => {
-            lua.GetGlobal("__rysy_gc_luaFuncRef"u8);
-            lua.PushInteger(id);
-            lua.Call(1, 0);
-        });
+        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
+        lua.Pop(1);
+
+        return ret;
     }
 }

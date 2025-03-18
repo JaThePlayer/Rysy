@@ -214,6 +214,8 @@ function _RYSY_clear_requireFromPlugin_cache(lib, modName)
                 _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "trigger")
             elseif v.type == "style" then
                 _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "style")
+            elseif v.type == "field" then
+                _RYSY_INTERNAL_hotReloadPlugin(v.lib, v.modName, "field")
             elseif v.type == "lib" then
                 _RYSY_clear_requireFromPlugin_cache(v.lib, v.modName)
             end

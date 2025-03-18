@@ -196,4 +196,17 @@ public static class NumberExt {
 
         return defaultValue;
     }
+    
+    /// <summary>
+    /// Safely coerces this object to a bool - if it's a boxed bool, returns its value. Otherwise, returns false for null, otherwise true.
+    /// </summary>
+    public static bool CoerceToBool(this object? v) {
+        if (v is bool f)
+            return f;
+
+        if (v is null)
+            return false;
+
+        return true;
+    }
 }
