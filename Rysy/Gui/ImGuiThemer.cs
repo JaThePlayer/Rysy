@@ -115,20 +115,7 @@ public static class ImGuiThemer {
                 return io.Fonts.AddFontFromFileTTF(name, size, cfg);
             }
 
-            ImFontPtr fontPtr = default;
-            if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
-                // Imgui will take ownership of this memory, we need to native-alloc it.
-                var mem = ImGui.MemAlloc((uint)bytes.Length);
-                bytes.CopyTo(new Span<byte>((void*)mem, bytes.Length));
-                fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes.Length, size, cfg);
-            }
-            else if (RysyPlatform.Current.GetSystemFontsFilesystem()?.TryReadAllBytes(name) is { } bytes2) {
-                // Imgui will take ownership of this memory, we need to native-alloc it.
-                var mem = ImGui.MemAlloc((uint)bytes2.Length);
-                bytes2.CopyTo(new Span<byte>((void*)mem, bytes2.Length));
-                
-                fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes2.Length, size, cfg);
-            }
+            ImFontPtr fontPtr = AddFontFromVirtPath(name, size, cfg);
 
             if (fontPtr.NativePtr == null && name != defaultFontPath) {
                 return AddFont(defaultFontPath, size, ranges);
@@ -143,10 +130,34 @@ public static class ImGuiThemer {
                 var mem = ImGui.MemAlloc((uint)icon_ranges.Length * sizeof(ushort));
                 icon_ranges.CopyTo(new Span<ushort>((void*)mem, icon_ranges.Length));
                 newCfg.GlyphRanges = mem;
-                fontPtr = io.Fonts.AddFontFromFileTTF("Assets/fa-solid-900.ttf", 13.0f, newCfg);
+                var newFontWithIcons = AddFontFromVirtPath("fa-solid-900.ttf", 13f, newCfg);
+                if (newFontWithIcons.NativePtr != null)
+                    fontPtr = newFontWithIcons;
             }
             
             return fontPtr;
+
+            // Loads a font from a virtual path, either from the mod filesystem or the OS's fonts folder.
+            static ImFontPtr AddFontFromVirtPath(string name, float size, ImFontConfigPtr cfg) {
+                var io = ImGui.GetIO();
+                
+                ImFontPtr fontPtr = default;
+                if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
+                    // Imgui will take ownership of this memory, we need to native-alloc it.
+                    var mem = ImGui.MemAlloc((uint)bytes.Length);
+                    bytes.CopyTo(new Span<byte>((void*)mem, bytes.Length));
+                    fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes.Length, size, cfg);
+                }
+                else if (RysyPlatform.Current.GetSystemFontsFilesystem()?.TryReadAllBytes(name) is { } bytes2) {
+                    // Imgui will take ownership of this memory, we need to native-alloc it.
+                    var mem = ImGui.MemAlloc((uint)bytes2.Length);
+                    bytes2.CopyTo(new Span<byte>((void*)mem, bytes2.Length));
+                
+                    fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes2.Length, size, cfg);
+                }
+
+                return fontPtr;
+            }
         }
     }
 
