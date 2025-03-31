@@ -159,27 +159,29 @@ public class LuaCtx {
         end
 
         math.atan2 = math.atan
+        """, "setup_globals");
+
+        lua.PCallStringThrowIfError("""
+        -- Required to make LuaRef work, allows holding strong references to lua objects from C#.
+        local refs = {}
         
-        local funcs = {}
-        function __rysy_make_luaFuncRef(f)
+        function __rysy_mkr(f)
             local i = 0
-            while funcs[i] do
+            while refs[i] do
                 i = i + 1
             end
             
-            funcs[i] = f
+            refs[i] = f
+            _G["__rysy_ref" .. i] = f
             
             return i
         end
         
-        function __rysy_get_luaFuncRef(id)
-            return funcs[id]
+        function __rysy_gcr(id)
+            refs[id] = nil
+            _G["__rysy_ref" .. id] = nil
         end
-        
-        function __rysy_gc_luaFuncRef(id)
-            funcs[id] = nil
-        end
-        """, "setup_globals");
+        """, "setup_lua_ref_glue");
 
         /*
         lua.Register("_RYSY_strFormat", (nint s) => {

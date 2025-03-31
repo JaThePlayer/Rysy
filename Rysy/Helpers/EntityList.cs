@@ -1,6 +1,9 @@
-﻿namespace Rysy.Helpers;
+﻿using KeraLua;
+using Rysy.LuaSupport;
 
-public sealed class EntityList : TypeTrackedList<Entity> {
+namespace Rysy.Helpers;
+
+public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
     private Dictionary<string, List<Entity>> SIDToEntities = new(StringComparer.Ordinal);
 
     public EntityList() {
@@ -21,5 +24,27 @@ public sealed class EntityList : TypeTrackedList<Entity> {
 
             return cache;
         }
+    }
+
+    public int LuaIndex(Lua lua, long key) {
+        var i = (int) key - 1;
+        var inner = Inner;
+
+        if (i < inner.Count)
+            lua.PushWrapper(inner[i]);
+        else
+            lua.PushNil();
+
+        return 1;
+    }
+
+    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
+        throw new Exception($"Tried to index list with non-number: {key} [{typeof(ReadOnlySpan<char>)}]");
+    }
+
+    public int LuaLen(Lua lua) {
+        lua.PushInteger(Inner.Count);
+
+        return 1;
     }
 }

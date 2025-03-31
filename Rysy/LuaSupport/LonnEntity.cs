@@ -64,8 +64,8 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (CachedNodeSprites.TryGetValue(node, out var cached)) {
             return cached;
         }
-        
-        var roomWrapper = new RoomLuaWrapper(Room);
+
+        var roomWrapper = Room.RentTrackingLuaWrapper();
         
         var sprites = Plugin.PushToStack(pl => {
             var lua = pl.LuaCtx.Lua;
@@ -123,6 +123,8 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (!roomWrapper.Used)
             CachedNodeSprites[Nodes[nodeIndex]] = sprites;
         
+        Room.ReturnTrackingLuaWrapper(roomWrapper);
+        
         return sprites;
     }
 
@@ -153,7 +155,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (CachedSprites is { } cached)
             return cached;
 
-        var roomWrapper = new RoomLuaWrapper(Room);
+        using var roomWrapper = Room.RentTrackingLuaWrapper();
         var sprites = GetSpritesUncached(roomWrapper);
         if (!roomWrapper.Used)
             CachedSprites = sprites;
@@ -161,7 +163,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         return sprites;
     }
 
-    private List<ISprite> GetSpritesUncached(RoomLuaWrapper roomWrapper) {
+    private List<ISprite> GetSpritesUncached(RoomTrackingLuaWrapper roomWrapper) {
         if (Plugin is null)
             return [];
         
@@ -430,7 +432,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         return list;
     }
 
-    private List<ISprite> _GetSprites(RoomLuaWrapper roomWrapper) {
+    private List<ISprite> _GetSprites(RoomTrackingLuaWrapper roomWrapper) {
         if (Plugin is null)
             return [];
         

@@ -29,8 +29,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #region EntityData Wrappers
     public string Name => EntityData.SID;
 
+    private int _id;
+    
     public int Id {
-        get => EntityData.Int("id", -1);
+        get => _id;
         set => EntityData["id"] = value;
     }
 
@@ -590,6 +592,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         _cachedPackedElement = null;
         
         _pos = new(EntityData.X, EntityData.Y);
+        _id = EntityData.Int("id");
         _SelectionHandler?.ClearCollideCache();
         if (changed.NodesChanged && _NodeSelectionHandlers is { } handlers) {
             foreach (var item in handlers) {
@@ -794,6 +797,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
     #region ILuaWrapper
     private byte[]? _NameAsASCII = null;
+    private NodesWrapper? _nodesWrapper;
 
     public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException($"Can't index entity via number key: {key}");
@@ -813,7 +817,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 return 1;
             case "nodes":
                 if (Nodes is { }) {
-                    lua.PushWrapper(new NodesWrapper(this));
+                    lua.PushWrapper(_nodesWrapper ??= new NodesWrapper(this));
                 } else {
                     lua.PushNil();
                 }
@@ -844,7 +848,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 return 1;
             case [(byte) 'n', (byte) 'o', (byte) 'd', (byte) 'e', (byte) 's']:
                 if (Nodes is { }) {
-                    lua.PushWrapper(new NodesWrapper(this));
+                    lua.PushWrapper(_nodesWrapper ??= new NodesWrapper(this));
                 } else {
                     lua.PushNil();
                 }

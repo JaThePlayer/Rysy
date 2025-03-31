@@ -896,10 +896,10 @@ public sealed class Room : IPackable, ILuaWrapper {
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "triggers":
-                lua.PushWrapper(new EntityListWrapper(Triggers));
+                lua.PushWrapper(Triggers);
                 return 1;
             case "entities":
-                lua.PushWrapper(new EntityListWrapper(Entities));
+                lua.PushWrapper(Entities);
                 return 1;
             case "tilesFg":
                 lua.PushWrapper(FG);
@@ -926,10 +926,30 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         return 0;
     }
+
+    private readonly Stack<RoomTrackingLuaWrapper> _trackingWrappers = [];
+    
+    /// <summary>
+    /// Rents a lua wrapper over this room, which can track whether the room was accessed through it.
+    /// Dispose() the returned object to return it to the pool.
+    /// </summary>
+    /// <returns></returns>
+    internal RoomTrackingLuaWrapper RentTrackingLuaWrapper() {
+        return _trackingWrappers.TryPop(out var pooled) ? pooled : new RoomTrackingLuaWrapper(this);
+    }
+
+    internal void ReturnTrackingLuaWrapper(RoomTrackingLuaWrapper wrapper) {
+        wrapper.Clear();
+        _trackingWrappers.Push(wrapper);
+    }
+    
     #endregion
 }
 
-public sealed class RoomLuaWrapper : ILuaWrapper {
+/// <summary>
+/// A lua wrapper over a Room, which keeps track of whether the room was accessed in lua, for optimisation purposes.
+/// </summary>
+public sealed class RoomTrackingLuaWrapper : ILuaWrapper, IDisposable {
     /// <summary>
     /// Whether this wrapper was ever accessed.
     /// </summary>
@@ -946,8 +966,13 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
         return Room;
     }
 
-    public RoomLuaWrapper(Room room) {
+    internal RoomTrackingLuaWrapper(Room room) {
         Room = room;
+    }
+
+    public void Clear() {
+        Reasons.Clear();
+        Used = false;
     }
 
     public int LuaIndex(Lua lua, long key) {
@@ -963,6 +988,10 @@ public sealed class RoomLuaWrapper : ILuaWrapper {
         Reasons.Add(key.ToString());
 
         return Room.LuaIndex(lua, key);
+    }
+
+    public void Dispose() {
+        Room.ReturnTrackingLuaWrapper(this);
     }
 }
 

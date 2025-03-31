@@ -115,12 +115,15 @@ public class DebugInfoWindow : Window {
 
         if (RysyEngine.Scene is EditorScene editor) {
             if (ImGui.CollapsingHeader("Lua Stats:")) {
-                ImGui.Text(Interpolator.Temp($"Wrappers alive: {LuaExt.NeoWrappers.Count}"));
+                ImGui.Text(Interpolator.Temp($"Wrappers alive: {LuaExt.NeoWrapperCount}, slots available: {LuaExt.NeoWrappers.Count}"));
                 if (ImGui.Button("Print wrappers to console")) {
                     lock (LuaExt.NeoWrappers) {
                         Console.WriteLine("Lua wrappers alive:");
-                        foreach (var (addr, wrapper) in LuaExt.NeoWrappers) {
-                            Console.WriteLine($"{addr}: {wrapper}");
+                        foreach (var (addr, wrapper) in LuaExt.NeoWrappers.Index()) {
+                            if (wrapper != null)
+                                Console.WriteLine($"{addr}: {wrapper}");
+                            else
+                                Console.WriteLine($"{addr}: <FREE>");
                         }
                     }
                     

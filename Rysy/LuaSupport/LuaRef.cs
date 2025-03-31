@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Rysy.LuaSupport;
@@ -9,6 +10,8 @@ namespace Rysy.LuaSupport;
 /// </summary>
 public class LuaRef {
     private readonly long Id;
+
+    private readonly byte[] _luaGlobalKey;
     
     [JsonIgnore]
     public readonly Lua Lua;
@@ -16,11 +19,12 @@ public class LuaRef {
     protected internal LuaRef(Lua lua, long id) {
         Lua = lua;
         Id = id;
+        _luaGlobalKey = Encoding.UTF8.GetBytes($"__rysy_ref{Id}");
     }
     
     public static LuaRef MakeFrom(Lua lua, int loc) {
         var type = lua.Type(loc);
-        lua.GetGlobal("__rysy_make_luaFuncRef"u8);
+        lua.GetGlobal("__rysy_mkr"u8);
         lua.PushCopy(loc);
         lua.Call(1, 1);
         var id = lua.ToInteger(lua.GetTop());
@@ -35,9 +39,7 @@ public class LuaRef {
 
     public void PushToStack(Lua? lua = null) {
         lua ??= Lua;
-        lua.GetGlobal("__rysy_get_luaFuncRef"u8);
-        lua.PushInteger(Id);
-        lua.Call(1, 1);
+        lua.GetGlobal(_luaGlobalKey);
     }
     
     ~LuaRef() {
@@ -45,7 +47,7 @@ public class LuaRef {
         var lua = Lua;
         var id = Id;
         LuaExt.RegisterLuaCleanupAction(() => {
-            lua.GetGlobal("__rysy_gc_luaFuncRef"u8);
+            lua.GetGlobal("__rysy_gcr"u8);
             lua.PushInteger(id);
             lua.Call(1, 0);
         });
