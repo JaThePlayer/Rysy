@@ -51,27 +51,3 @@ public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
         return 1;
     }
 }
-
-public record class EntityListWrapper(TypeTrackedList<Entity> Inner) : ILuaWrapper {
-    public int LuaIndex(Lua lua, long key) {
-        var i = (int) key - 1;
-        var inner = Inner;
-
-        if (i < inner.Count)
-            lua.PushWrapper(inner[i]);
-        else
-            lua.PushNil();
-
-        return 1;
-    }
-
-    public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
-        throw new Exception($"Tried to index list with non-number: {key} [{typeof(ReadOnlySpan<char>)}]");
-    }
-
-    public int LuaLen(Lua lua) {
-        lua.PushInteger(Inner.Count);
-
-        return 1;
-    }
-}

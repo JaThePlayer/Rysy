@@ -343,6 +343,10 @@ public class Tilegrid : ILuaWrapper {
 
     #endregion
 
+    #region ILuaWrapper
+
+    private MatrixLuaWrapper? _matrixLuaWrapper;
+    
     public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
@@ -350,13 +354,15 @@ public class Tilegrid : ILuaWrapper {
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "matrix":
-                lua.PushWrapper(new MatrixLuaWrapper(this));
+                lua.PushWrapper(_matrixLuaWrapper ??= new MatrixLuaWrapper(this));
                 return 1;
         }
 
         return 0;
     }
 
+    #endregion
+    
     private sealed record class MatrixLuaWrapper(Tilegrid Grid) : ILuaWrapper {
         private static int Get(nint n) {
             var lua = Lua.FromIntPtr(n);
@@ -367,8 +373,7 @@ public class Tilegrid : ILuaWrapper {
             var def = lua.FastToString(4);
 
             var tile = wrapper.Grid.SafeTileAt(x, y, def[0]);
-
-            lua.PushString(tile.ToString());
+            lua.PushCharAsString(tile);
 
             return 1;
         }
@@ -377,7 +382,7 @@ public class Tilegrid : ILuaWrapper {
             var (y, x) = int.DivRem((int)key, Grid.Width);
             var tile = Grid.SafeTileAt(x - 1, y);
             
-            lua.PushString(tile.ToString());
+            lua.PushCharAsString(tile);
             
             return 1;
         }

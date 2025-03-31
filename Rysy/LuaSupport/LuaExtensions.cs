@@ -1,12 +1,10 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Mods;
-using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Text.Unicode;
 
 namespace Rysy.LuaSupport;
 
@@ -116,6 +114,13 @@ public static partial class LuaExt {
         fixed (byte* ptr = &value[0])
             lua_pushlstring(lua.Handle, ptr, (nuint)value.Length);
     }
+
+    public static void PushCharAsString(this Lua lua, char c) {
+        Span<byte> buffer = [0, 0];
+        Utf8.FromUtf16([c], buffer, out _, out var written);
+            
+        lua.PushString(buffer.Slice(2 - written));
+    }
     
     
     [DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
@@ -124,9 +129,9 @@ public static partial class LuaExt {
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
         string code;
         if (LuaCtx.SeleneLoaded) {
-            lua.GetGlobal("selene");
+            lua.GetGlobal("selene"u8);
             var seleneLoc = lua.GetTop();
-            lua.PushString("parse");
+            lua.PushString("parse"u8);
             lua.GetTable(seleneLoc);
 
             lua.PushString(str);
@@ -795,8 +800,20 @@ where TArg1 : class, ILuaWrapper {
         return new Rectangle(x, y, w, h);
     }
 
-    private static nint _nextNeoWrapperId = nint.MinValue;
-    internal static readonly Dictionary<nint, ILuaWrapper> NeoWrappers = new();
+    //private static nint _nextNeoWrapperId = nint.MinValue;
+    //internal static readonly Dictionary<nint, ILuaWrapper> NeoWrappers = new();
+    //private static int _nextNeoWrapperId = 0;
+    private static readonly Lock _neoWrapperLock = new();
+    private static readonly Stack<int> _reusableNeoWrapperIds = new();
+    
+    internal static int NeoWrapperCount { get; private set; } = 0;
+    internal static readonly List<ILuaWrapper?> NeoWrappers = new();
+
+    record IntBox(int Value);
+    
+    private static readonly ConditionalWeakTable<ILuaWrapper, IntBox> _wrapperObjToId = new();
+
+    private static LuaTableRef? _wrapperCacheRef;
 
     /// <summary>
     /// Type used as a userdata on the lua side to represent C# wrappers.
@@ -806,14 +823,26 @@ where TArg1 : class, ILuaWrapper {
         /// <summary>
         /// Id used to index into NeoWrappers.
         /// </summary>
-        public nint Id;
+        public int Id;
     }
 
     private static unsafe int GCNeoWrapper(nint s) {
         var lua = Lua.FromIntPtr(s);
 
         var wrapper = (NeoWrapper*)lua.ToUserData(1);
-        NeoWrappers.Remove(wrapper->Id);
+        //NeoWrappers.Remove(wrapper->Id);
+        lock (_neoWrapperLock) {
+            _wrapperObjToId.Remove(NeoWrappers[wrapper->Id]!);
+            NeoWrapperCount--;
+            if (NeoWrapperCount == 0) {
+                NeoWrappers.Clear();
+                _reusableNeoWrapperIds.Clear();
+            } else {
+                NeoWrappers[wrapper->Id] = null;
+                _reusableNeoWrapperIds.Push(wrapper->Id);
+            }
+        }
+        
         // Console.WriteLine($"[{NeoWrappers.Count}] GC: {lua.UnboxWrapper(1)}");
 
         return 0;
@@ -824,7 +853,7 @@ where TArg1 : class, ILuaWrapper {
 
         var obj = lua.UnboxWrapper(1);
         
-        var top = lua.GetTop();
+        var top = -1;
         var t = lua.Type(top);
 
         int ret;
@@ -853,15 +882,60 @@ where TArg1 : class, ILuaWrapper {
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
     public static unsafe void PushWrapper(this Lua state, ILuaWrapper wrapper) {
-        var userdata = (NeoWrapper*)state.NewUserData(sizeof(NeoWrapper));
-        userdata->Id = _nextNeoWrapperId;
-        NeoWrappers[_nextNeoWrapperId] = wrapper;
-        // Prepare next id
-        while (NeoWrappers.ContainsKey(++_nextNeoWrapperId)) {}
+        lock (_neoWrapperLock) {
+            if (_wrapperObjToId.TryGetValue(wrapper, out var existingId)) {
+                _wrapperCacheRef!.PushToStack(state);
+                state.PushInteger(existingId.Value);
+                if (state.GetTable(-2) == LuaType.UserData) {
+                    // There's an userdata cached, we can return that. But first, pop the wrapper cache table.
+                    state.Remove(-2);
+                    return;
+                }
+                // The lua side has already evicted our wrapper from its cache but hasn't called the c# GC method yet.
+                _wrapperObjToId.Remove(wrapper);
+                state.Pop(2);
+            }
+            
+            var userdata = (NeoWrapper*)state.NewUserData(sizeof(NeoWrapper));
+            var userdataLoc = state.GetTop();
+            
+            if (_reusableNeoWrapperIds.TryPop(out var id)) {
+                userdata->Id = id;
+                NeoWrappers[id] = wrapper;
+            } else {
+                NeoWrappers.Add(wrapper);
+                userdata->Id = NeoWrappers.Count - 1;
+            }
+            NeoWrapperCount++;
+            _wrapperObjToId.Add(wrapper, new(userdata->Id));
+            if (_wrapperCacheRef is null) {
+                state.NewTable();
+                var wrapperCacheLoc = state.GetTop();
+                _wrapperCacheRef = LuaTableRef.MakeFrom(state, wrapperCacheLoc);
+                state.NewTable();
+                var mt = state.GetTop();
+                state.PushString("v"u8);
+                state.SetField(mt, "__mode");
+                    
+                state.SetMetaTable(wrapperCacheLoc);
+                state.Pop(1);
+            }
+            
+            _wrapperCacheRef.PushToStack(state);
+            var cacheLoc = state.GetTop();
+            state.PushInteger(userdata->Id);
+            state.PushCopy(userdataLoc);
+            state.SetTable(cacheLoc);
+            state.Pop(1);
+        }
+
+        if (NeoWrapperCount % 10000 == 0) {
+            //state.GarbageCollector(LuaGC.Step, 0);
+        }
         
         var handlePos = state.GetTop();
         
-        if (state.NewMetaTable("C#Wrapper")) {
+        if (NewMetatable(state, "CsObj"u8)) {
             int metatableStackLoc = state.GetTop();
             
             state.PushString("__index"u8);
@@ -909,13 +983,13 @@ where TArg1 : class, ILuaWrapper {
             state.SetTable(metatableStackLoc);
 
             // equality operator
+            /*
             state.PushString("__eq"u8);
             state.PushCFunction(static (nint s) => {
                 var lua = Lua.FromIntPtr(s);
 
-                if (lua.IsWrapper(2)) {
+                if (lua.TryUnboxWrapper(2, out var b)) {
                     var a = lua.UnboxWrapper(1);
-                    var b = lua.UnboxWrapper(2);
                     lua.PushBoolean(ReferenceEquals(a, b));
                 } else {
                     lua.PushBoolean(false);
@@ -924,6 +998,7 @@ where TArg1 : class, ILuaWrapper {
                 return 1;
             });
             state.SetTable(metatableStackLoc);
+            */
             
             // tostring
             state.PushString("__tostring"u8);
@@ -943,15 +1018,37 @@ where TArg1 : class, ILuaWrapper {
 
     public static unsafe bool IsWrapper(this Lua lua, int loc) {
         var data = (NeoWrapper*)lua.ToUserData(loc);
+        lock (_neoWrapperLock) {
+            return data != null && (uint)data->Id < NeoWrappers.Count && NeoWrappers[data->Id] != null;
+        }
+    }
+    
+    public static unsafe bool TryUnboxWrapper(this Lua lua, int loc, [NotNullWhen(true)] out ILuaWrapper? wrapper) {
+        wrapper = null;
+        
+        var data = (NeoWrapper*)lua.ToUserData(loc);
+        if (data is null)
+            return false;
+        
+        lock (_neoWrapperLock) {
+            var wrappers = CollectionsMarshal.AsSpan(NeoWrappers);
+            
+            if ((uint) data->Id < wrappers.Length) {
+                wrapper = wrappers[data->Id];
+                return wrapper != null;
+            }
 
-        return data != null && NeoWrappers.ContainsKey(data->Id);
+            return false;
+        }
     }
 
     public static unsafe ILuaWrapper UnboxWrapper(this Lua lua, int loc){
         var data = (NeoWrapper*)lua.ToUserData(loc);
         if (data is null)
             throw new Exception("Can't unbox wrapper, as it isn't one!");
-        return NeoWrappers[data->Id];
+        lock (_neoWrapperLock) {
+            return NeoWrappers[data->Id] ?? throw new Exception("Can't unbox wrapper, as it isn't one!");
+        }
     }
 
     public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
@@ -962,7 +1059,7 @@ where TArg1 : class, ILuaWrapper {
         var roomWrapper = lua.UnboxWrapper(loc);
         var room = roomWrapper switch {
             Room r => r,
-            RoomLuaWrapper wr => wr.GetRoom(),
+            RoomTrackingLuaWrapper wr => wr.GetRoom(),
             _ => throw new Exception($"Can't convert {roomWrapper} to a Room!")
         };
 

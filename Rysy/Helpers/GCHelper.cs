@@ -1,4 +1,6 @@
-﻿namespace Rysy.Helpers;
+﻿using KeraLua;
+
+namespace Rysy.Helpers;
 
 public static class GCHelper {
     /// <summary>
@@ -6,6 +8,8 @@ public static class GCHelper {
     /// </summary>
     public static void VeryAggressiveGC() {
         for (int i = 0; i < 2; i++) {
+            EntityRegistry.LuaCtx.Lua.GarbageCollector(LuaGC.Collect, 2);
+            
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
             GC.WaitForPendingFinalizers();
