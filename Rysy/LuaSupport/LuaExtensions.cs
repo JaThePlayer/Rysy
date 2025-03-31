@@ -148,11 +148,49 @@ public static partial class LuaExt {
             throw new LuaException(lua);
         }
     }
+    
+    
+    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern unsafe LuaStatus luaL_loadbufferx(nint luaState, byte* buff, nuint sz, string? name, string? mode);
+    
+    public static unsafe void LoadStringWithSelene(this Lua lua, ReadOnlySpan<byte> strUtf8, string? chunkName = null) {
+        ReadOnlySpan<byte> code;
+        if (LuaCtx.SeleneLoaded) {
+            lua.GetGlobal("selene"u8);
+            var seleneLoc = lua.GetTop();
+            lua.PushString("parse"u8);
+            lua.GetTable(seleneLoc);
+
+            lua.PushString(strUtf8);
+            lua.Call(1, 1); // call selene.parse(arg)
+
+            code = lua.ToStringIntoASCII(-1);
+            lua.Pop(2);
+        } else {
+            code = strUtf8;
+        }
+
+        fixed (byte* strFirstChar = &code[0]) {
+            var st = luaL_loadbufferx(lua.Handle, strFirstChar, (nuint)strUtf8.Length, chunkName, null);
+            if (st != LuaStatus.OK) {
+                throw new LuaException(lua);
+            }
+        }
+
+    }
 
     /// <summary>
     /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int, int)"/>
     /// </summary>
     public static void PCallStringThrowIfError(this Lua lua, string code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
+        lua.LoadStringWithSelene(code, chunkName);
+        lua.PCallThrowIfError(arguments, results, errorFunctionIndex);
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="PCallStringThrowIfError(KeraLua.Lua,string,string?,int,int,int)"/>
+    /// </summary>
+    public static void PCallStringThrowIfError(this Lua lua, ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
         lua.LoadStringWithSelene(code, chunkName);
         lua.PCallThrowIfError(arguments, results, errorFunctionIndex);
     }
