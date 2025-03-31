@@ -126,14 +126,14 @@ public class LuaCtx {
 
             return ret
         end
-        """, "new_require");
+        """u8, "new_require");
 
         // Load selene
         lua.PCallStringThrowIfError("""
             local selene = require("lua.selene")
             selene.load(nil, true)
             _G.selene = selene
-        """, "selene_loader");
+        """u8, "selene_loader");
 
         SeleneLoaded = true;
 
@@ -159,7 +159,7 @@ public class LuaCtx {
         end
 
         math.atan2 = math.atan
-        """, "setup_globals");
+        """u8, "setup_globals");
 
         lua.PCallStringThrowIfError("""
         -- Required to make LuaRef work, allows holding strong references to lua objects from C#.
@@ -181,34 +181,8 @@ public class LuaCtx {
             refs[id] = nil
             _G["__rysy_ref" .. id] = nil
         end
-        """, "setup_lua_ref_glue");
+        """u8, "setup_lua_ref_glue");
 
-        /*
-        lua.Register("_RYSY_strFormat", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-            var top = lua.GetTop();
-            lua.PushCopy(1);
-            lua.PushCopy(2);
-            for (int i = 3; i <= top; i++) {
-                if (lua.ToNumberX(i) is { } d && d % 1 == 0) {
-                    lua.PushString(d.ToString(CultureInfo.InvariantCulture));
-                } else {
-                    lua.PushCopy(i);
-                }
-            }
-
-            lua.Call(top - 1, 1);
-            return 1;
-        });
-            
-        lua.PCallStringThrowIfError("""
-        -- fix errors like these:
-        -- collectables/summitgems/0.0/gem00
-        local _strFormat = string.format
-        function string.format(format, ...)
-            return _RYSY_strFormat(_strFormat, format, ...)
-        end
-        """, "fixed_string_format");*/
         lua.Register("_RYSY_DRAWABLE_fixPath", (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
@@ -785,7 +759,7 @@ public class LuaCtx {
                 
                 return orig_table_shallowcopy(tbl, ...)
             end
-            """, "fix_shallow_copy");
+            """u8, "fix_shallow_copy");
 
         RegisterAPIFuncs(lua);
 
