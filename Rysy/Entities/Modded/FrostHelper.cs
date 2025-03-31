@@ -148,7 +148,8 @@ internal sealed class CustomSpinner : LonnEntity {
             var otherPos = spinner.Pos;
             var oc = spinner.GetCache();
 
-            if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.ConnectionDistance*float.Pow(ImageScale + spinner.ImageScale, 2f) / 4f)
+            var scaleSum = ImageScale + spinner.ImageScale;
+            if (Spinner.DistanceSquaredLessThan(pos, otherPos, s*oc.ConnectionDistance*scaleSum*scaleSum / 4f)
                 && spinner.AttachToSolid == attachToSolid 
                 && spinner.AttachGroup == attachGroup) {
                 var connectorPos = (pos + otherPos) / 2f;
