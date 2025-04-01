@@ -53,12 +53,28 @@
   "TabRounding": 8,
   "TabBorderSize": 0,
   "TabMinWidthForCloseButton": 0,
+  "TabBarBorderSize": 0,
+  "TabBarOverlineSize": 0,
+  "TableAngledHeadersAngle": 0,
+  "TableAngledHeadersTextAlign": {
+    "X": 0,
+    "Y": 0
+  },
   "ColorButtonPosition": 1,
   "ButtonTextAlign": {
     "X": 0.5,
     "Y": 0.5
   },
   "SelectableTextAlign": {
+    "X": 0,
+    "Y": 0
+  },
+  "SeparatorTextBorderSize": 1,
+  "SeparatorTextAlign": {
+    "X": 0.5,
+    "Y": 0.5
+  },
+  "SeparatorTextPadding": {
     "X": 0,
     "Y": 0
   },
@@ -70,6 +86,7 @@
     "X": 3,
     "Y": 3
   },
+  "DockingSeparatorSize": 1,
   "MouseCursorScale": 1,
   "AntiAliasedLines": 1,
   "AntiAliasedLinesUseTex": 1,
@@ -222,12 +239,12 @@
   },
   "Colors_24": {
     "X": 0.246,
-    "Y": 0.260,
+    "Y": 0.26,
     "Z": 0.274,
     "W": 1
   },
   "Colors_25": {
-    "X": 0.180,
+    "X": 0.18,
     "Y": 0.188,
     "Z": 0.196,
     "W": 1
@@ -275,9 +292,9 @@
     "W": 1
   },
   "Colors_33": {
-    "X": 0.078431375,
-    "Y": 0.08627451,
-    "Z": 0.101960786,
+    "X": 0.1378708,
+    "Y": 0.15459278,
+    "Z": 0.17131472,
     "W": 1
   },
   "Colors_34": {
@@ -287,9 +304,9 @@
     "W": 1
   },
   "Colors_35": {
-    "X": 0.11764706,
-    "Y": 0.13333334,
-    "Z": 0.14901961,
+    "X": 0.16190217,
+    "Y": 0.18254471,
+    "Z": 0.20318723,
     "W": 1
   },
   "Colors_36": {
@@ -405,5 +422,28 @@
     "Y": 0.1764706,
     "Z": 0.54509807,
     "W": 0.5019608
-  }
+  },
+  "Colors_55": {
+    "X": 0,
+    "Y": 0,
+    "Z": 0,
+    "W": 0
+  },
+  "Colors_56": {
+    "X": 0,
+    "Y": 0,
+    "Z": 0,
+    "W": 0
+  },
+  "Colors_57": {
+    "X": 0,
+    "Y": 0,
+    "Z": 0,
+    "W": 0
+  },
+  "HoverStationaryDelay": 0,
+  "HoverDelayShort": 0,
+  "HoverDelayNormal": 0,
+  "HoverFlagsForTooltipMouse": 0,
+  "HoverFlagsForTooltipNav": 0
 }
