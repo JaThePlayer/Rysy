@@ -561,7 +561,16 @@ public sealed record class MapMetadata {
 
             if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) {
                 prop.SetValue(into, Convert.ToSingle(val, CultureInfo.InvariantCulture));
-            } else {
+            }
+            else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?)) {
+                prop.SetValue(into, Convert.ToInt32(val, CultureInfo.InvariantCulture));
+            }
+            else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?)) {
+                prop.SetValue(into, Convert.ToBoolean(val, CultureInfo.InvariantCulture));
+            }
+            else if (prop.PropertyType == typeof(string))
+                prop.SetValue(into, val.ToStringInvariant());
+            else {
                 prop.SetValue(into, val);
             }
         }
@@ -578,21 +587,21 @@ public sealed record class MapMetadata {
     }
 
     public BinaryPacker.Element Pack() {
-        BinaryPacker.Element el = new("meta");
-        el.Attributes = SerializeAttrs(this);
-
-        el.Children = new BinaryPacker.Element[] {
-            new("mode") {
-                Attributes = SerializeAttrs(Mode),
-                Children = new BinaryPacker.Element[] {
-                    new("audiostate") {
-                        Attributes = SerializeAttrs(Mode.AudioState)
-                    }
+        BinaryPacker.Element el = new("meta") { 
+            Attributes = SerializeAttrs(this),
+            Children = [
+                new("mode") {
+                    Attributes = SerializeAttrs(Mode),
+                    Children = [
+                        new("audiostate") {
+                            Attributes = SerializeAttrs(Mode.AudioState)
+                        }
+                    ],
                 },
-            },
-            new("cassettemodifier") {
-                Attributes = SerializeAttrs(CassetteModifier),
-            }
+                new("cassettemodifier") {
+                    Attributes = SerializeAttrs(CassetteModifier),
+                }
+            ]
         };
 
         return el;
