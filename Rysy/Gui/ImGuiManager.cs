@@ -758,7 +758,13 @@ public static class ImGuiManager {
         );
     }
 
-    private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new(StringComparer.Ordinal);
+    struct WidgetData {
+        public RenderTarget2D Target;
+        public nint Id; 
+        public bool CrashLogged;
+    }
+    
+    private static readonly Dictionary<string, WidgetData> Targets = new(StringComparer.Ordinal);
 
     public static void XnaWidget(XnaWidgetDef def)
         => XnaWidget(def.ID, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
@@ -768,28 +774,38 @@ public static class ImGuiManager {
             return;
 
         bool isNew = false;
-        if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
-            if (t.Target != null) {
-                GuiResourceManager.UnbindTexture(t.ID);
-                t.Target.Dispose();
+
+        ref var widgetData = ref CollectionsMarshal.GetValueRefOrAddDefault(Targets, id, out var existed);
+        
+        if (!existed || widgetData.Target.Width != w || widgetData.Target.Height != h) {
+            if (widgetData.Target != null) {
+                GuiResourceManager.UnbindTexture(widgetData.Id);
+                widgetData.Target.Dispose();
             }
 
-            t.Target = new(RysyState.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-            t.ID = GuiResourceManager.BindTexture(t.Target);
-            Targets[id] = t;
+            widgetData.Target = new(RysyState.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            widgetData.Id = GuiResourceManager.BindTexture(widgetData.Target);
             isNew = true;
         }
 
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
-        ImGui.Image(t.ID, new(w, h));
+        ImGui.Image(widgetData.Id, new(w, h));
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
             var g = RysyState.GraphicsDevice;
-            g.SetRenderTarget(t.Target);
+            g.SetRenderTarget(widgetData.Target);
             g.Clear(Color.Transparent);
             GFX.BeginBatch(camera);
-            renderFunc();
+            try {
+                renderFunc();
+            } catch (Exception ex) {
+                if (!widgetData.CrashLogged) {
+                    widgetData.CrashLogged = true;
+                    Logger.Error(ex, "Failed to render XnaWidget");
+                }
+            }
+
             GFX.EndBatch();
             g.SetRenderTarget(null);
         }
@@ -797,7 +813,7 @@ public static class ImGuiManager {
 
     public static void DisposeXnaWidget(string id) {
         if (Targets.TryGetValue(id, out var t)) {
-            GuiResourceManager.UnbindTexture(t.ID);
+            GuiResourceManager.UnbindTexture(t.Id);
             t.Target?.Dispose();
             Targets.Remove(id);
         }
