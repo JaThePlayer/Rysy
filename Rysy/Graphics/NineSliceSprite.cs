@@ -31,9 +31,14 @@ public record struct NineSliceSprite : ISprite {
     }
 
     private static int GetMiddleSubtextureX(LoopingModes mode, Vector2 pos, int xIdx, int textureWidth, int tileWidth) {
-        return mode switch {
-            LoopingModes.Random => pos.SeededRandomInclusive(1, (textureWidth / tileWidth) - 2) * tileWidth,
-            _ => ((xIdx - 1) % (textureWidth / tileWidth - 2) + 1) * tileWidth,
+        var availableTileCount = (textureWidth / tileWidth) - 2;
+        return availableTileCount switch {
+            < 1 => 0, // Oh well
+            1 => tileWidth,
+            _ => mode switch {
+                LoopingModes.Random => pos.SeededRandomInclusive(1, availableTileCount) * tileWidth,
+                _ => ((xIdx - 1) % (availableTileCount) + 1) * tileWidth,
+            }
         };
     }
 
@@ -53,6 +58,9 @@ public record struct NineSliceSprite : ISprite {
         
         var texWidth = Texture.Width;
         var texHeight = Texture.Height;
+
+        if (texWidth <= 0 || texHeight <= 0)
+            return;
         
         Rectangle subtext;
         Vector2 offset;
