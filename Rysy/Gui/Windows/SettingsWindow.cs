@@ -5,11 +5,11 @@ using Rysy.Platforms;
 
 namespace Rysy.Gui.Windows;
 public sealed class SettingsWindow : Window {
-    private const string REQUIRES_RELOAD = "Requires a reload. Changing this value might immediately reload Rysy.";
+    private const string RequiresReload = "Requires a reload. Changing this value might immediately reload Rysy.";
 
-    private SettingWindowData Data = new();
+    private readonly SettingWindowData _data = new();
 
-    private ModMeta? SelectedMod = null;
+    private ModMeta? _selectedMod = null;
 
     private sealed class SettingWindowData {
         public bool ProfileSettingsChanged = false;
@@ -145,13 +145,13 @@ public sealed class SettingsWindow : Window {
             renderMain: () => {
                 foreach (var (name, origHotkey) in Settings.Instance.Hotkeys) {
                     var hotkey = origHotkey;
-                    if (Data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
+                    if (_data.EditedHotkeys is { } h && h.TryGetValue(name, out var changed)) {
                         hotkey = changed;
                         invalid |= ImGuiManager.PushInvalidStyleIf(!HotkeyHandler.IsValid(hotkey).IsOk);
                     }
 
                     if (ImGui.InputText(name.Humanize(), ref hotkey, 64)) {
-                        var edited = Data.EditedHotkeys ??= new();
+                        var edited = _data.EditedHotkeys ??= new();
 
                         edited[name] = hotkey;
                     }
@@ -159,16 +159,16 @@ public sealed class SettingsWindow : Window {
                 }
             },
             renderBottomBar: () => {
-                ImGui.BeginDisabled(invalid || Data.EditedHotkeys is not { });
+                ImGui.BeginDisabled(invalid || _data.EditedHotkeys is not { });
 
-                if (ImGui.Button("Apply Changes") && Data.EditedHotkeys is { } hotkeys) {
+                if (ImGui.Button("Apply Changes") && _data.EditedHotkeys is { } hotkeys) {
                     foreach (var (name, newVal) in hotkeys) {
                         Settings.Instance.Hotkeys[name] = newVal;
                         Settings.Instance.Save();
 
                         RysyEngine.Scene.SetupHotkeys();
                     }
-                    Data.EditedHotkeys = null;
+                    _data.EditedHotkeys = null;
                 }
                 ImGui.EndDisabled();
             }
@@ -180,7 +180,7 @@ public sealed class SettingsWindow : Window {
     private PathField? _fontDropdown;
 
     private void ThemeBar() {
-        var windowData = Data;
+        var windowData = _data;
 
         if (!ImGui.BeginTabItem("Themes")) {
             return;
@@ -211,13 +211,13 @@ public sealed class SettingsWindow : Window {
             var fs = new LayeredFilesystem();
             fs.AddMod(ModRegistry.RysyMod);
             if (RysyPlatform.Current.GetSystemFontsFilesystem() is {} systemFonts)
-                fs.AddMod(new ModMeta() { Filesystem = systemFonts, EverestYaml = [ new() { Name = "System" } ]});
+                fs.AddFilesystem(systemFonts, "System");
             
             var fontPathToName = RysyPlatform.Current.GetFontFilenameToDisplayName();
-            _fontDropdown = Fields.Path(font, "", "ttf", fs, filter: p => fontPathToName.ContainsKey(p.Path));
-            
-            
-            _fontDropdown.DisplayNameGetter = (path, s) => fontPathToName.GetValueOrDefault(path.Path);
+            _fontDropdown = Fields.Path(font, "", "ttf", fs, filter: x => 
+                (ModRegistry.RysyMod.Filesystem.FileExists(x.Path) || RysyPlatform.Current.IsSystemFontValid(x.Path))
+                && x.Path != "fa-solid-900.ttf");
+            _fontDropdown.DisplayNameGetter = (path, s) => path.Path.TranslateOrNull("rysy.fonts.name") ?? fontPathToName.GetValueOrDefault(path.Path)?.TrimPostfix("(TrueType)").Trim();
         }
         
         if (_fontDropdown.RenderGui("Font", font) is { } newFont) {
@@ -264,13 +264,13 @@ public sealed class SettingsWindow : Window {
         ImGui.TextDisabled("Mod Settings");
 
         var modsWithSettings = ModRegistry.Mods.Where(m => m.Value.Settings?.HasAnyData() ?? false).ToDictionary(m => m.Value, m => m.Key);
-        var mod = SelectedMod;
+        var mod = _selectedMod;
         if (mod is null && modsWithSettings.Count > 0) {
             mod = modsWithSettings.First().Key;
         }
 
         if (ImGuiManager.Combo("Selected Mod", ref mod, modsWithSettings, ref ModBarSearch)) {
-            SelectedMod = mod;
+            _selectedMod = mod;
         }
 
         if (mod is { }) {
@@ -332,7 +332,7 @@ public sealed class SettingsWindow : Window {
             return;
         }
 
-        var windowData = Data;
+        var windowData = _data;
         var celesteDir = windowData.ProfileCelesteDir;
         ImGuiManager.WithBottomBar(
             () => {
@@ -345,7 +345,7 @@ public sealed class SettingsWindow : Window {
                     var dirs = windowData.ProfileListDirectories ??= fs.FindDirectories(profileDir).ToArray();
                     foreach (var dir in dirs) {
                         var name = Path.GetRelativePath(profileDir, dir);
-                        if (ImGui.Selectable(name).WithTooltip(REQUIRES_RELOAD)) {
+                        if (ImGui.Selectable(name).WithTooltip(RequiresReload)) {
                             SetProfile(name, isNew: false);
                         }
                     }
@@ -354,7 +354,7 @@ public sealed class SettingsWindow : Window {
                         string text = "";
                         RysyEngine.Scene.AddWindow(new ScriptedWindow("New Profile Name", (w) => {
                             ImGui.InputText("Name", ref text, 64);
-                            if (ImGui.Button("Create").WithTooltip(REQUIRES_RELOAD)) {
+                            if (ImGui.Button("Create").WithTooltip(RequiresReload)) {
                                 SetProfile(text, isNew: true);
                                 w.RemoveSelf();
                             }

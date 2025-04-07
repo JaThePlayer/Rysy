@@ -8,6 +8,8 @@ namespace Rysy.Platforms;
 [SupportedOSPlatform("windows")]
 public partial class Windows : RysyPlatform {
     private FolderModFilesystem? _systemFontsFs;
+    private IReadOnlyDictionary<string, string>? _fontFilenameToDisplayName;
+    
     
     private static string SaveLocation = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -19,17 +21,21 @@ public partial class Windows : RysyPlatform {
     public override IModFilesystem GetSystemFontsFilesystem()
         => _systemFontsFs ??= new FolderModFilesystem("C:/Windows/Fonts");
 
+    public override IReadOnlyDictionary<string, string> GetFontFilenameToDisplayName() {
+        if (_fontFilenameToDisplayName is { })
+            return _fontFilenameToDisplayName;
 
-    public override Dictionary<string, string> GetFontFilenameToDisplayName() {
         var fontNameKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
         if (fontNameKey is null)
-            return [];
+            return _fontFilenameToDisplayName = new Dictionary<string, string>();
         
         var fontNames = fontNameKey.GetValueNames();
         var fontPathToName = fontNames.ToDictionary(x => fontNameKey.GetValue(x)?.ToString() ?? "", x => x, StringComparer.OrdinalIgnoreCase);
 
-        return fontPathToName;
+        return _fontFilenameToDisplayName = fontPathToName;
     }
+
+    public override bool IsSystemFontValid(string fontPath) => GetFontFilenameToDisplayName().ContainsKey(fontPath);
 
     public override void Init() {
         base.Init();

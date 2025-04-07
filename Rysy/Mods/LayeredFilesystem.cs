@@ -11,6 +11,11 @@ public class LayeredFilesystem : IModFilesystem {
         lock (Mods)
             Mods.Add(modFilesystem);
     }
+    
+    public void AddFilesystem(IModFilesystem modFilesystem, string name) {
+        lock (Mods)
+            Mods.Add(new ModMeta { Filesystem = modFilesystem, EverestYaml = [ new() { Name = name } ]});
+    }
 
     public string Root => "";
 
