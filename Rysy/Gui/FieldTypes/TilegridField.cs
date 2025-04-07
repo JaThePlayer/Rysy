@@ -38,8 +38,6 @@ public record class TilegridField : Field {
             val = Default;
         }
 
-        bool edited = false;
-
         var xPadding = ImGui.GetStyle().FramePadding.X;
 
         if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Map is { } map) {

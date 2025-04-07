@@ -353,8 +353,6 @@ public sealed class EditorScene : Scene {
         }
     }
 
-    private static RenderTarget2D _fullScreenBuffer;
-
     public override void Render() {
         base.Render();
 

@@ -403,6 +403,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     }
 }
 
+#pragma warning disable CA1725
 public record class RoomPlacementHandler : IPlacementHandler {
     public bool ShowVanillaAsDefiningModInPlacementName() => false;
     
@@ -454,6 +455,7 @@ public record class RoomPlacementHandler : IPlacementHandler {
         return new RoomSelectionHandler(newRoom);
     }
 }
+#pragma warning restore CA1725
 
 public interface IConvertibleToPlacement {
     public Placement ToPlacement();

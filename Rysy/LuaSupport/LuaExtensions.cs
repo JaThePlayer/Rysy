@@ -847,7 +847,7 @@ where TArg1 : class, ILuaWrapper {
     internal static int NeoWrapperCount { get; private set; } = 0;
     internal static readonly List<ILuaWrapper?> NeoWrappers = new();
 
-    record IntBox(int Value);
+    sealed record IntBox(int Value);
     
     private static readonly ConditionalWeakTable<ILuaWrapper, IntBox> _wrapperObjToId = new();
 

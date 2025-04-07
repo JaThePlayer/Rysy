@@ -10,7 +10,6 @@ namespace Rysy.Gui.Windows;
 public class HistoryWindow : Window {
     private IHistoryAction? _selectedAction;
     private string? _selectedActionJson;
-    private string? _selectedActionHex;
     private string? _selectedActionByteCount;
     
     public HistoryWindow() : base("History", new(480, 480)) {
@@ -38,7 +37,6 @@ public class HistoryWindow : Window {
                     var bytes = memstream.ToArray();
 
                     _selectedActionByteCount = bytes.Length.ToString(CultureInfo.InvariantCulture);
-                    //_selectedActionHex = string.Join("",bytes.Select(b => $"{b:X2}"));
                 }
             }
 
@@ -56,8 +54,6 @@ public class HistoryWindow : Window {
         
         if (_selectedActionByteCount is {})
             ImGui.Text($"Encoded bytes: {_selectedActionByteCount}");
-        //if (_selectedActionHex is {} hex)
-        //    ImGui.TextWrapped(hex);
     }
 
     public override void RemoveSelf() {

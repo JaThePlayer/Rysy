@@ -128,6 +128,7 @@ public static partial class Fields {
     /// <param name="def">The default value to use for this field</param>
     /// <param name="regex">The regex to use to find texture paths</param>
     /// <param name="captureConverter">A function which converts a texture found by the regex into the key to use to save to mapdata. By default, it returns texture.Captured</param>
+    /// <param name="previewAnimation">Animation name to use for creating the preview in the dropdown.</param>
     public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex,
         Func<FoundPath, string>? captureConverter = null, string? previewAnimation = null) {
         var field = new PathField(def, EditorState.Map?.Sprites!, regex, captureConverter).AllowEdits();
@@ -144,11 +145,11 @@ public static partial class Fields {
     /// <summary>
     /// Creates a field with a dropdown that automatically gets populated with all files located at <paramref name="directory"/> in all mods (including vanilla).
     /// </summary>
-    /// <param name="def"></param>
-    /// <param name="directory"></param>
-    /// <param name="fileExtension"></param>
-    /// <param name="filesystem"></param>
-    /// <returns></returns>
+    /// <param name="def">Default value.</param>
+    /// <param name="directory">The directory to search in.</param>
+    /// <param name="fileExtension">File extension to search for, without the dot.</param>
+    /// <param name="filesystem">Filesystem to search in. If null, a filesystem containing all dependencies of the current map are used.</param>
+    /// <param name="filter">Allows blocking certain results from appearing in the dropdown.</param>
     public static PathField Path(string def, string directory, string fileExtension, IModFilesystem? filesystem = null, 
         Func<FoundPath, bool>? filter = null)
         => new PathField(def, filesystem ?? GetPathFieldFilesystem(), directory, fileExtension, null, filter).AllowEdits();

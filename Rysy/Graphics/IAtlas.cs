@@ -92,6 +92,7 @@ public interface IAtlas {
 /// </summary>
 /// <param name="Path">The path of this texture, in full</param>
 /// <param name="Captured">A part of the path captured by the regex passed into <see cref="IAtlasExt.FindTextures"/></param>
+/// <param name="Match">The full match object from the regex.</param>
 public record class FoundPath(string Path, string Captured, Match? Match) {
     public static FoundPath? Create(string path, Regex regex) {
         if (regex.Match(path) is { Success: true, Groups: [_, var secondGroup, ..] } match)

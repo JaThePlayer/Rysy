@@ -18,7 +18,7 @@ public class TilesetChangedAction(char tilesetId, bool bg, Dictionary<string, ob
         foreach (var (k, v) in values) {
             tileset.FakeData[k] = v;
         }
-        Added = tileset.UpdateData(values);
+        Added = tileset.UpdateData(values!);
 
         return true;
     }
