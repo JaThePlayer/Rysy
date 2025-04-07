@@ -597,7 +597,7 @@ public sealed class TilesetWindow : Window {
     }
 }
 
-internal class ExistingSpriteAnimatedTileImportWindow : Window {
+internal sealed class ExistingSpriteAnimatedTileImportWindow : Window {
     private readonly Field _nameField;
     private readonly HistoryHandler _history;
     
@@ -654,8 +654,7 @@ internal class ExistingSpriteAnimatedTileImportWindow : Window {
     }
 }
 
-internal class XmlSnippetAnimatedTileImportWindow : Window {
-    private readonly Field _nameField;
+internal sealed class XmlSnippetAnimatedTileImportWindow : Window {
     private readonly HistoryHandler _history;
     
     private string _xml = "";
@@ -687,7 +686,7 @@ internal class XmlSnippetAnimatedTileImportWindow : Window {
     }
 }
 
-internal class ExistingSpriteTilesetImportWindow : Window {
+internal sealed class ExistingSpriteTilesetImportWindow : Window {
     private Field _pathField;
     private Field _templateField;
     
@@ -762,7 +761,7 @@ internal class ExistingSpriteTilesetImportWindow : Window {
     }
 }
 
-internal class CreateDefaultXmlWindow(TilesetWindow.Tabs tab) 
+internal sealed class CreateDefaultXmlWindow(TilesetWindow.Tabs tab) 
     : CreateNewAssetWindow("rysy.tilesetWindow.xmlCantBeEdited.createNew", GetDefaultPath(tab)) {
     
     protected override string RealPath(string userPath) {

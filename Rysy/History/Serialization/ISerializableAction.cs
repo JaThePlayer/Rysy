@@ -13,6 +13,8 @@ public interface ISerializableAction {
     public Type DataType { get; }
 }*/
 
+#pragma warning disable CA2225
+
 /// <summary>
 /// Stores a reference to an existing entity
 /// </summary>
@@ -185,3 +187,5 @@ public static class HistorySerializer {
         }
     }
 }
+
+#pragma warning restore CA2225

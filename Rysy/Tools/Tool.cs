@@ -253,7 +253,7 @@ public abstract class Tool {
     }
     
     public Point GetMouseRoomPos(Camera camera, Room? room, Point? pos = default) {
-        if (Layer == EditorLayers.Room)
+        if (Layer == EditorLayers.Room || room is null)
             return camera.ScreenToReal(pos ?? Input.Mouse.Pos);
         
         return room.WorldToRoomPos(camera, pos ?? Input.Mouse.Pos);

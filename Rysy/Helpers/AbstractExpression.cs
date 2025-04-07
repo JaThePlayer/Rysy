@@ -348,7 +348,7 @@ internal partial class AbstractExpression {
             ExpressionToken.Kinds.And => null,
             ExpressionToken.Kinds.Or => null,
             ExpressionToken.Kinds.Bracket => null,
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(nameof(only))
         };
     }
 }

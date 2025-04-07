@@ -54,5 +54,7 @@ public readonly struct ReadOnlyList<T>(List<T> from) : IReadOnlyList<T> {
 
     public T this[int index] => from[index];
     
+#pragma warning disable CA2225
     public static implicit operator ReadOnlyList<T>(List<T> from) => new(from);
+#pragma warning restore CA2225
 }

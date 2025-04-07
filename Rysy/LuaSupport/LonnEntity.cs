@@ -16,7 +16,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
 
     internal List<ISprite>? CachedSprites;
     internal Dictionary<Node, List<ISprite>>? CachedNodeSprites;
-    private (ISelectionCollider?, ISelectionCollider?[]?)? _cachedSelections;
+    private (ISelectionCollider?, ISelectionCollider?[])? _cachedSelections;
     private bool? _canMakeFastTemplate;
     
     private void ClearInternalCache() {
@@ -176,7 +176,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         return sprites;
     }
     
-    private (ISelectionCollider? Main, ISelectionCollider?[]? Nodes)? GetSelectionHandlersFromSelectionFunc() {
+    private (ISelectionCollider? Main, ISelectionCollider?[] Nodes)? GetSelectionHandlersFromSelectionFunc() {
         if (Plugin is null || !Plugin.HasSelectionFunction) {
             return default;
         }
