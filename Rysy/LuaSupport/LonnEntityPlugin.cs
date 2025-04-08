@@ -84,9 +84,7 @@ public sealed class LonnEntityPlugin {
     public List<LonnPlacement> Placements { get; set; } = new();
     public Func<object, FieldList>? FieldList { get; set; }
 
-    public LuaStackHolder? StackHolder { get; private set; }
-
-    private object LOCK = new();
+    private readonly Lock _lock = new();
 
     public IEnumerable<ISprite> GetNodePathSprites(Entity entity, Func<Entity, int, Vector2>? defaultOffset = null) {
         var lineType = NodeLineRenderType(entity);
@@ -116,33 +114,42 @@ public sealed class LonnEntityPlugin {
         };
     }
 
-    public record struct LuaStackHolder(LonnEntityPlugin Plugin, int Amt) : IDisposable {
-        public void Dispose() {
-            if (Plugin is null)
-                return;
+    public ref struct StackHolder : IDisposable {
+        private LonnEntityPlugin Plugin { get; }
+        
+        public int Amt { get; }
 
-            var lua = Plugin.LuaCtx.Lua;
-            lua.Pop(lua.GetTop());
-        }
-    }
-
-    public T PushToStack<T>(Func<LonnEntityPlugin, T> cb) {
-        lock (LOCK) {
-            var lua = LuaCtx.Lua;
-            SetModNameInLua(lua);
+#pragma warning disable CA2213 // Scope is not disposed. - What?? it definitely is.
+        private Lock.Scope _scope;
+#pragma warning restore CA2213
+        
+        public StackHolder(LonnEntityPlugin plugin, int amt) {
+            _scope = plugin._lock.EnterScope();
+            
+            Plugin = plugin;
+            Amt = amt;
+            
+            var lua = plugin.LuaCtx.Lua;
+            plugin.SetModNameInLua(lua);
 
             // push the handler
             lua.GetGlobal("_RYSY_entities");
             var entitiesTableLoc = lua.GetTop();
-            lua.PushString(Name);
+            lua.PushString(plugin.Name);
             lua.GetTable(entitiesTableLoc);
 
-            StackLoc = lua.GetTop();
-
-            using var holder = new LuaStackHolder(this, 2);
-
-            return cb(this);
+            plugin.StackLoc = lua.GetTop();
         }
+        
+        public void Dispose() {
+            var lua = Plugin.LuaCtx.Lua;
+            lua.Pop(lua.GetTop());
+            _scope.Dispose();
+        }
+    }
+
+    public StackHolder PushToStack() {
+        return new StackHolder(this, 2);
     }
 
     private void SetModNameInLua(Lua lua) {
@@ -356,58 +363,57 @@ public sealed class LonnEntityPlugin {
                 break;
             case LuaType.Function:
                 plugin.NodeLineRenderOffset = (entity, node, nodeId) => {
-                    return plugin.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
-                        lua.GetTable(pl.StackLoc, "nodeLineRenderOffset"u8);
+                    using (plugin.PushToStack()) {
+                        var lua = plugin.LuaCtx.Lua;
+                        lua.GetTable(plugin.StackLoc, "nodeLineRenderOffset"u8);
                         return lua.PCallFunction(static (lua, pos) => lua.ToVector2(pos), results: 1, entity, node, nodeId);
-                    });
+                    }
                 };
                 break;
         }
 
         if (lua.PeekTableType(top, "flip"u8) is LuaType.Function) {
             plugin.Flip = (room, entity, horizontal, vertical) => {
-                return plugin.PushToStack((pl) => {
-                    var lua = pl.LuaCtx.Lua;
+                using var _ = plugin.PushToStack();
+                
+                var lua = plugin.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "flip"u8);
-                    return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, horizontal, vertical);
-                });
+                lua.GetTable(plugin.StackLoc, "flip"u8);
+                return lua.PCallFunction(static (lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, horizontal, vertical);
             };
         }
 
         if (lua.PeekTableType(top, "rotate"u8) is LuaType.Function) {
             plugin.Rotate = (room, entity, dir) => {
-                return plugin.PushToStack((pl) => {
-                    var lua = pl.LuaCtx.Lua;
+                using var _ = plugin.PushToStack();
+                
+                var lua = plugin.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "rotate"u8);
-                    return lua.PCallFunction((lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, dir);
-                });
+                lua.GetTable(plugin.StackLoc, "rotate"u8);
+                return lua.PCallFunction(static (lua, pos) => lua.ToBoolean(pos), results: 1, room, entity, dir);
             };
         }
 
         if (lua.PeekTableType(top, "move"u8) is LuaType.Function) {
             plugin.Move = (room, entity, nodeIndex, offsetX, offsetY) => {
-                plugin.PushToStack((pl) => {
-                    var lua = pl.LuaCtx.Lua;
+                using var _ = plugin.PushToStack();
+                var lua = plugin.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "move"u8);
+                lua.GetTable(plugin.StackLoc, "move"u8);
                     
-                    return lua.PCallFunction((_, _) => false, results: 1, room, entity, nodeIndex, offsetX, offsetY);
-                });
+                lua.PCallFunction((_, _) => false, results: 1, room, entity, nodeIndex, offsetX, offsetY);
             };
         }
 
         if (lua.PeekTableType(top, "nodeRectangle"u8) is LuaType.Function) {
-            plugin.NodeRectangle = (room, entity, node, nodeIndex) => 
-                plugin.PushToStack((pl) => {
-                    var lua = pl.LuaCtx.Lua;
+            plugin.NodeRectangle = (room, entity, node, nodeIndex) => {
+                using var _ = plugin.PushToStack();
+                var lua = plugin.LuaCtx.Lua;
 
-                    lua.GetTable(pl.StackLoc, "nodeRectangle"u8);
-                    
-                    return lua.PCallFunction(static (lua, top) => lua.ToRectangle(top), results: 1, room, entity, node, nodeIndex);
-                });
+                lua.GetTable(plugin.StackLoc, "nodeRectangle"u8);
+
+                return lua.PCallFunction(static (lua, top) => lua.ToRectangle(top), results: 1, room, entity, node, nodeIndex);
+            };
         }
 
         plugin.HasGetSprite = lua.PeekTableType(top, "sprite"u8) is LuaType.Function;
@@ -450,23 +456,23 @@ public sealed class LonnEntityPlugin {
                 break;
             case LuaType.Function:
                 plugin.FieldList = (e) => {
-                    return plugin.PushToStack((plugin) => {
-                        var type = lua.GetTable(plugin.StackLoc, "fieldInformation"u8);
+                    using var _ = plugin.PushToStack();
+                    
+                    var type = lua.GetTable(plugin.StackLoc, "fieldInformation"u8);
 
-                        if (type != LuaType.Function) {
-                            lua.Pop(1);
-                            return new();
-                        }
+                    if (type != LuaType.Function) {
+                        lua.Pop(1);
+                        return new();
+                    }
 
-                        var fields = lua.PCallFunction((ILuaWrapper)e, (lua, i) => {
-                            var dict = lua.TableToDictionary(i, makeLuaFuncRefs: true);
-                            var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
+                    var fields = lua.PCallFunction((ILuaWrapper)e, (lua, i) => {
+                        var dict = lua.TableToDictionary(i, makeLuaFuncRefs: true);
+                        var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
-                            return LonnFieldIntoToFieldList(dict, mainPlacement);
-                        }) ?? new();
+                        return LonnFieldIntoToFieldList(dict, mainPlacement);
+                    }) ?? new();
 
-                        return fields;
-                    });
+                    return fields;
                 };
                 break;
             default:
@@ -496,19 +502,19 @@ public sealed class LonnEntityPlugin {
                     var fields = origFieldListGetter(e);
 
                     return fields.Ordered((entity) => {
-                        return plugin.PushToStack((plugin) => {
-                            var type = lua.GetTable(plugin.StackLoc, "fieldOrder"u8);
+                        using var _ = plugin.PushToStack();
+                        
+                        var type = lua.GetTable(plugin.StackLoc, "fieldOrder"u8);
 
-                            if (type != LuaType.Function) {
-                                lua.Pop(1);
-                                return new();
-                            }
-
-                            var order = lua.PCallFunction(entity, (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                        if (type != LuaType.Function) {
                             lua.Pop(1);
+                            return new();
+                        }
 
-                            return order;
-                        });
+                        var order = lua.PCallFunction(entity, (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                        lua.Pop(1);
+
+                        return order;
                     });
                 };
             }
@@ -531,20 +537,20 @@ public sealed class LonnEntityPlugin {
                     var fields = origFieldListGetter(e);
 
                     return fields.SetHiddenFields(ctx => {
-                        return plugin.PushToStack(plugin => {
-                            var type = lua.GetTable(plugin.StackLoc, "ignoredFields"u8);
+                        using var _ = plugin.PushToStack();
+                        
+                        var type = lua.GetTable(plugin.StackLoc, "ignoredFields"u8);
 
-                            if (type != LuaType.Function) {
-                                lua.Pop(1);
-                                return [];
-                            }
-
-                            var order = lua.PCallFunction(ctx, 
-                                (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                        if (type != LuaType.Function) {
                             lua.Pop(1);
+                            return [];
+                        }
 
-                            return order;
-                        });
+                        var order = lua.PCallFunction(ctx, 
+                            (lua, i) => lua.ToList(i)?.OfType<string>().ToList()) ?? [];
+                        lua.Pop(1);
+
+                        return order;
                     });
                 };
                 break;
@@ -645,12 +651,12 @@ public sealed class LonnEntityPlugin {
             case LonnRetrievalStrategy.Function:
                 byte[] fieldNameBytes = fieldName.ToArray();
                 return (r, e) => {
-                    return pl.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
+                    using var _ = pl.PushToStack();
+                    
+                    var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldNameBytes);
-                        return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
-                    });
+                    lua.GetTable(pl.StackLoc, fieldNameBytes);
+                    return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                 };
             default:
                 return def is { } ? (r, e) => def : null;
@@ -674,12 +680,12 @@ public sealed class LonnEntityPlugin {
             case LonnRetrievalStrategy.Function:
                 var fieldNameBytes = fieldName.ToArray();
                 return (r, e, n, i) => {
-                    return pl.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
+                    using var _ = pl.PushToStack();
+                    
+                    var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldNameBytes);
-                        return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
-                    });
+                    lua.GetTable(pl.StackLoc, fieldNameBytes);
+                    return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
                 };
             default:
                 return def;
@@ -703,12 +709,12 @@ public sealed class LonnEntityPlugin {
             case LonnRetrievalStrategy.Function:
                 var fieldNameBytes = fieldName.ToArray();
                 return (r, e, n, i) => {
-                    return pl.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
+                    using var _ = pl.PushToStack();
+                    
+                    var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldNameBytes);
-                        return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
-                    });
+                    lua.GetTable(pl.StackLoc, fieldNameBytes);
+                    return lua.PCallFunction(r, e, n, i, funcGetter, results: funcResults)!;
                 };
             default:
                 return def is {} ? (r, e, n, i) => def : null;
@@ -732,12 +738,11 @@ public sealed class LonnEntityPlugin {
             case LonnRetrievalStrategy.Function:
                 var fieldNameBytes = fieldName.ToArray();
                 return (r) => {
-                    return pl.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
+                    using var _ = pl.PushToStack();
+                    var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldNameBytes);
-                        return lua.PCallFunction(r, funcGetter, results: funcResults)!;
-                    });
+                    lua.GetTable(pl.StackLoc, fieldNameBytes);
+                    return lua.PCallFunction(r, funcGetter, results: funcResults)!;
                 };
             default:
                 return def is { } ? (e) => def : null;
@@ -760,12 +765,11 @@ public sealed class LonnEntityPlugin {
             case LonnRetrievalStrategy.Function:
                 var fieldNameBytes = fieldName.ToArray();
                 return (r, e) => {
-                    return pl.PushToStack((pl) => {
-                        var lua = pl.LuaCtx.Lua;
+                    using var _ = pl.PushToStack();
+                    var lua = pl.LuaCtx.Lua;
 
-                        lua.GetTable(pl.StackLoc, fieldNameBytes);
-                        return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
-                    });
+                    lua.GetTable(pl.StackLoc, fieldNameBytes);
+                    return lua.PCallFunction(r, e, funcGetter, results: funcResults)!;
                 };
             default:
                 return def;

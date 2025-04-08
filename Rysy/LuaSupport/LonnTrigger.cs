@@ -40,22 +40,21 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
         if (Plugin is null)
             return [];
 
-        return Plugin.PushToStack((pl) => {
-            var visibility = pl.GetNodeVisibility(this);
+        string visibility;
+        using (Plugin.PushToStack()) {
+            visibility = Plugin.GetNodeVisibility(this);
+        }
 
-            var visible = visibility switch {
-                "always" => true,
-                "selected" => true,
-                var other => false,
-            };
+        var visible = visibility switch {
+            "always" => true,
+            "selected" => true,
+            var other => false,
+        };
 
-            if (!visible) {
-                return [];
-            }
+        if (!visible) {
+            return [];
+        }
 
-            var sprites = base.GetAllNodeSprites();
-
-            return sprites;
-        });
+        return base.GetAllNodeSprites();
     }
 }
