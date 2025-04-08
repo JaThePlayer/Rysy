@@ -65,54 +65,47 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             return cached;
         }
 
-        var roomWrapper = Room.RentTrackingLuaWrapper();
+        using var roomWrapper = Room.RentTrackingLuaWrapper();
+
+        List<ISprite> sprites;
+        var pl = Plugin;
+        var lua = pl.LuaCtx.Lua;
         
-        var sprites = Plugin.PushToStack(pl => {
-            var lua = pl.LuaCtx.Lua;
-
+        using (pl.PushToStack()) {
             if (pl.HasGetNodeSprite) {
-                lua.GetTable(pl.StackLoc, "nodeSprite"u8);
+                lua.GetTable(Plugin.StackLoc, "nodeSprite"u8);
 
-                return lua.PCallFunction(roomWrapper, this, node, i, SpritesFromLonn) ?? [];
-            }
-            
-            if (Plugin.GetNodeTexture?.Invoke(roomWrapper, this, node, i) is { } texturePath) {
-                var offset = Plugin.NodeOffset?.Invoke(roomWrapper, this, node, i);
-                return [
+                sprites = lua.PCallFunction(roomWrapper, this, node, i, SpritesFromLonn) ?? [];
+            } else if (pl.GetNodeTexture?.Invoke(roomWrapper, this, node, i) is { } texturePath) {
+                var offset = pl.NodeOffset?.Invoke(roomWrapper, this, node, i);
+                sprites = [
                     ISprite.FromTexture(node.Pos + (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
-                        Origin = offset is {} ? Vector2.Zero : Plugin.NodeJustification(roomWrapper, this, node, i),
-                        Color = Plugin.NodeColor(roomWrapper, this, node, i),
-                        Scale = Plugin.NodeScale(roomWrapper, this, node, i),
-                        Rotation = Plugin.NodeRotation(roomWrapper, this, node, i),
+                        Origin = offset is { } ? Vector2.Zero : pl.NodeJustification(roomWrapper, this, node, i), 
+                        Color = pl.NodeColor(roomWrapper, this, node, i), 
+                        Scale = pl.NodeScale(roomWrapper, this, node, i), 
+                        Rotation = pl.NodeRotation(roomWrapper, this, node, i),
                     }
                 ];
-            }
-            
-            if (pl.NodeRectangle?.Invoke(roomWrapper, this, node, i) is { } nodeRect) {
+            } else if (pl.NodeRectangle?.Invoke(roomWrapper, this, node, i) is { } nodeRect) {
                 var borderColor = pl.BothNodeColors
                     ? pl.NodeBorderColor(roomWrapper, this, node, i)
                     : pl.NodeColor(roomWrapper, this, node, i);
                 var fillColor = pl.BothNodeColors
                     ? pl.NodeFillColor(roomWrapper, this, node, i)
                     : pl.NodeColor(roomWrapper, this, node, i);
-                
-                return [
-                    ISprite.OutlinedRect(nodeRect, fillColor, borderColor)
-                ];
-            }
 
-            var oldPos = Pos;
-            SilentSetPos(node);
-            List<ISprite>? sprites;
-        
-            try {
-                sprites = GetSpritesUncached(roomWrapper).Select(s => s.WithMultipliedAlpha(NodeSpriteAlpha)).ToList();
-            } finally {
-                SilentSetPos(oldPos);
+                sprites = [ISprite.OutlinedRect(nodeRect, fillColor, borderColor)];
+            } else {
+                var oldPos = Pos;
+                SilentSetPos(node);
+
+                try {
+                    sprites = GetSpritesUncached(roomWrapper).Select(s => s.WithMultipliedAlpha(NodeSpriteAlpha)).ToList();
+                } finally {
+                    SilentSetPos(oldPos);
+                }
             }
-            
-            return sprites;
-        });
+        }
 
         if (Plugin.NodeDepth?.Invoke(roomWrapper, this, node, i) is { } nodeDepth) {
             foreach (var s in sprites) {
@@ -123,8 +116,6 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (!roomWrapper.Used)
             CachedNodeSprites[Nodes[nodeIndex]] = sprites;
         
-        Room.ReturnTrackingLuaWrapper(roomWrapper);
-        
         return sprites;
     }
 
@@ -132,23 +123,21 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (Plugin is null)
             return [];
 
-        return Plugin.PushToStack((pl) => {
-            var visibility = pl.GetNodeVisibility(this);
+        string visibility;
+        using (Plugin.PushToStack())
+            visibility = Plugin.GetNodeVisibility(this);
 
-            var visible = visibility switch {
-                "always" => true,
-                "selected" => true, //pl.HasGetNodeSprite ? Selected : true,
-                var other => false,
-            };
+        var visible = visibility switch {
+            "always" => true,
+            "selected" => true, //pl.HasGetNodeSprite ? Selected : true,
+            var other => false,
+        };
 
-            if (!visible) {
-                return [];
-            }
+        if (!visible) {
+            return [];
+        }
 
-            var sprites = base.GetAllNodeSprites();
-
-            return sprites;
-        });
+        return base.GetAllNodeSprites();
     }
 
     public override IEnumerable<ISprite> GetSprites() {
@@ -166,51 +155,45 @@ public class LonnEntity : Entity, IHasLonnPlugin {
     private List<ISprite> GetSpritesUncached(RoomTrackingLuaWrapper roomWrapper) {
         if (Plugin is null)
             return [];
-        
-        var sprites = Plugin.PushToStack((pl) => {
-            var spr = _GetSprites(roomWrapper);
 
-            return spr;
-        });
-
-        return sprites;
+        using (Plugin.PushToStack())
+            return _GetSprites(roomWrapper);
     }
     
     private (ISelectionCollider? Main, ISelectionCollider?[] Nodes)? GetSelectionHandlersFromSelectionFunc() {
         if (Plugin is null || !Plugin.HasSelectionFunction) {
             return default;
         }
-        var lua = Plugin.LuaCtx.Lua;
 
         if (_cachedSelections is { }) {
             return _cachedSelections;
         }
 
-        _cachedSelections = Plugin.PushToStack((pl) => {
-            var type = lua.GetTable(pl.StackLoc, "selection"u8);
+        using (Plugin.PushToStack()) {
+            var lua = Plugin.LuaCtx.Lua;
+            var type = lua.GetTable(Plugin.StackLoc, "selection"u8);
 
             if (type != LuaType.Function) {
                 lua.Pop(1);
-                return default;
+                _cachedSelections = default;
+            } else {
+                _cachedSelections = lua.PCallFunction(Room, this, (lua, top) => {
+                    var main = lua.ToRectangle(top - 1);
+                    var nodes = new ISelectionCollider?[Nodes.Count];
+                
+                    if (lua.Type(top) == LuaType.Table) {
+                        lua.IPairs((lua, index, valueLocation) => {
+                            var rect = lua.ToRectangle(valueLocation);
+                            nodes[index - 1] = ISelectionCollider.FromRect(rect);
+                        }, top);
+                    }
+
+                    lua.Pop(1);
+                
+                    return (ISelectionCollider.FromRect(main), nodes);
+                }, results: 2);
             }
-
-            var value = lua.PCallFunction(Room, this, (lua, top) => {
-                var main = lua.ToRectangle(top - 1);
-                var nodes = new ISelectionCollider?[Nodes.Count];
-                
-                if (lua.Type(top) == LuaType.Table) {
-                    lua.IPairs((lua, index, valueLocation) => {
-                        var rect = lua.ToRectangle(valueLocation);
-                        nodes[index - 1] = ISelectionCollider.FromRect(rect);
-                    }, top);
-                }
-
-                lua.Pop(1);
-                
-                return (ISelectionCollider.FromRect(main), nodes);
-            }, results: 2);
-            return value;
-        });
+        }
 
         return _cachedSelections;
     }
