@@ -115,6 +115,28 @@ public static class Logger {
 
         WriteImpl(txt);
     }
+    
+    public static void Error(string tag, Exception exception, FancyInterpolatedStringHandler message,
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        if (!ValidLogLevel(LogLevel.Error))
+            return;
+
+
+        var exString = exception switch {
+            _ => exception.ToString()
+        };
+
+        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exString}\n";
+
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+
+        WriteImpl(txt);
+    }
 
     /// <summary>
     /// Writes this object to the log as JSON.
