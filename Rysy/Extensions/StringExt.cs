@@ -3,6 +3,7 @@ using Rysy.Helpers;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -306,7 +307,7 @@ public static partial class StringExt {
     public static float ToSingle(this Span<char> s) => float.Parse(s, CultureInfo.InvariantCulture);
     public static float ToInt(this ReadOnlySpan<char> s) => int.Parse(s, CultureInfo.InvariantCulture);
 
-    public static bool IsNullOrWhitespace(this string? s) => string.IsNullOrWhiteSpace(s);
+    public static bool IsNullOrWhitespace([NotNullWhen(false)] this string? s) => string.IsNullOrWhiteSpace(s);
 
     /// <summary>
     /// Counts how many times the character <paramref name="x"/> appears in the given string.
@@ -344,6 +345,11 @@ public static partial class StringExt {
     }
 
     public static string ToImguiEscapedString(this char c) => c is '%' ? "%%" : c.ToString();
+    
+    /// <summary>
+    /// If the provided string is null or empty, returns "##", which is safe to use in ImGui.
+    /// </summary>
+    public static string ToImguiEscaped(this string? str) => str.IsNullOrWhitespace() ? "##" : str;
 
     public static string ToStringInvariant(this object? obj) {
         if (obj is IFormattable f)

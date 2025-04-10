@@ -236,7 +236,7 @@ public static class ImGuiManager {
 
         foreach (var item in filtered) {
             var name = itemNameGetter(item);
-            if (ImGui.MenuItem(favorites?.Contains(name) ?? false ? $"* {name}" : name)) {
+            if (ImGui.MenuItem(favorites?.Contains(name) ?? false ? $"* {name}" : name.ToImguiEscaped())) {
                 onClick(item);
             }
         }
@@ -250,7 +250,7 @@ public static class ImGuiManager {
     public static void DropdownMenu<T>(string name, IEnumerable<T> source, Func<T, string> itemNameGetter, Action<T> onClick) {
         if (ImGui.BeginMenu(name)) {
             foreach (var item in source) {
-                if (ImGui.MenuItem(itemNameGetter(item) ?? "[null]")) {
+                if (ImGui.MenuItem(itemNameGetter(item).ToImguiEscaped())) {
                     onClick(item);
                 }
             }
@@ -263,7 +263,7 @@ public static class ImGuiManager {
 
         if (ImGui.BeginMenu(name)) {
             foreach (var item in values) {
-                if (ImGui.MenuItem(item.ToString())) {
+                if (ImGui.MenuItem(item.ToString().ToImguiEscaped())) {
                     onClick(item);
                 }
             }
@@ -276,7 +276,7 @@ public static class ImGuiManager {
 
         if (ImGui.BeginCombo(name, value.ToString())) {
             foreach (var item in values) {
-                if (ImGui.MenuItem(item.ToString())) {
+                if (ImGui.MenuItem(item.ToString().ToImguiEscaped())) {
                     value = item;
                 }
             }
@@ -323,7 +323,7 @@ public static class ImGuiManager {
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
         Func<T, string, bool>? menuItemRenderer = null) where T : notnull {
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
         
         if (value is null || !values.TryGetValue(value, out var valueName)) {
             valueName = value?.ToString() ?? "";
@@ -363,7 +363,7 @@ public static class ImGuiManager {
         where T : notnull {
         var valueName = toString(value);
         bool changed = false;
-        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName);
+        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName.ToImguiEscaped());
 
         if (ImGui.BeginCombo(name, valueName, ImGuiComboFlags.None).WithTooltip(tooltip)) {
             var oldStyles = PopAllStyles();
@@ -406,7 +406,7 @@ public static class ImGuiManager {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
         
-        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name);
+        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
         
         var valueToString = textInputStringGetter?.Invoke(value) ?? toString(value);
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
@@ -460,7 +460,7 @@ public static class ImGuiManager {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name);
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
 
         var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
