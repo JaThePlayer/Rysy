@@ -96,7 +96,7 @@ public static class GFX {
         using ScopedStopwatch watch = new("Loading Decal Registry");
         
         foreach (var mod in ModRegistry.Mods.Values) {
-            DecalRegistry.ReadFileFromMod(mod.Filesystem);
+            DecalRegistry.ReadFileFromMod(mod);
         }
     }
 

@@ -71,12 +71,19 @@ public sealed class DecalRegistry : IDisposable {
 
     private static bool Disposed;
 
-    public void ReadFileFromMod(IModFilesystem fs) {
+    public void ReadFileFromMod(ModMeta mod) {
+        var fs = mod.Filesystem;
         fs.TryWatchAndOpen("DecalRegistry.xml", (s) => {
             if (Disposed)
                 return;
 
-            var xml = XDocument.Load(s);
+            XDocument xml;
+            try {
+                xml = XDocument.Load(s);
+            } catch (Exception e) {
+                Logger.Error("DecalRegistry", e, $"Failed to parse DecalRegistry.xml for mod {mod.DisplayName}");
+                return;
+            }
 
             if (xml.Element("decals") is not { } decalsListXml) {
                 return;
@@ -314,13 +321,17 @@ public abstract class DecalRegistryProperty {
     }
     
     private static DecalRegistryProperty CreateNewUninitialized(string propType) {
-        DecalRegistryProperty prop;
+        DecalRegistryProperty? prop = null;
 
-        if (EntityRegistry.RegisteredDecalRegistryProperties.TryGetValue(propType, out var type)) {
-            prop = (DecalRegistryProperty)Activator.CreateInstance(type.CSharpType ?? throw new Exception("DecalRegistryProperty with CSharpType=null"))!;
-        } else {
-            prop = new UnknownDecalRegistryProperty();
+        if (EntityRegistry.RegisteredDecalRegistryProperties.TryGetValue(propType, out var type) && type.CSharpType is {} csharpType) {
+            try {
+                prop = (DecalRegistryProperty) Activator.CreateInstance(csharpType)!;
+            } catch (Exception e) {
+                Logger.Error(e, $"Failed to instantiate Decal Registry property {propType}");
+            }
         }
+        
+        prop ??= new UnknownDecalRegistryProperty();
         prop.Data = new(propType, new Dictionary<string, object>());
 
         return prop;
