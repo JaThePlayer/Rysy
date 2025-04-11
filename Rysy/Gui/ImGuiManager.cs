@@ -1244,11 +1244,14 @@ public static class ImGuiManager {
         }
 
         protected void UpdateInput() {
+            ImGuiIOPtr io = ImGui.GetIO();
+            
+            io.DisplaySize = new NumVector2(GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight);
+            io.DisplayFramebufferScale = new NumVector2(1f, 1f);
+            
             // Make sure the window is focused before responding to input.
             if (!RysyState.Game?.IsActive ?? true)
                 return;
-
-            ImGuiIOPtr io = ImGui.GetIO();
 
             MouseState m = Mouse.GetState();
             KeyboardState kbd = Keyboard.GetState();
@@ -1265,9 +1268,7 @@ public static class ImGuiManager {
                     }
                 }
             }
-
-            io.DisplaySize = new System.Numerics.Vector2(GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight);
-            io.DisplayFramebufferScale = new System.Numerics.Vector2(1f, 1f);
+            
             io.MousePos = new System.Numerics.Vector2(m.X, m.Y);
 
             io.MouseDown[0] = m.LeftButton == ButtonState.Pressed;
