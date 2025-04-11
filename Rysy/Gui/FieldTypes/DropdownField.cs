@@ -1,4 +1,6 @@
-﻿using Rysy.Gui.Windows;
+﻿using ImGuiNET;
+using Rysy.Graphics;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using System.Diagnostics.CodeAnalysis;
 
@@ -125,6 +127,25 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     
     public DropdownField<T> SetValues(Func<FormContext, IDictionary<T, string>> values) {
         Values = values;
+
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds a sprite-based tooltip to menu entries.
+    /// <param name="render">Getter for the sprite to render. (T key, string displayName) -> ISprite</param>
+    /// </summary>
+    public DropdownField<T> AddSpriteTooltips(Func<T, string, ISprite?> render) {
+        MenuItemRenderer = (key, displayName) => {
+            var clicked = ImGui.MenuItem(displayName);
+
+            if (ImGui.IsItemHovered()) {
+                var sprite = render(key, displayName);
+                ImGuiManager.SpriteTooltip("path_field_preview", sprite);
+            }
+        
+            return clicked;
+        };
 
         return this;
     }
