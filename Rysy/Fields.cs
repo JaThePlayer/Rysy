@@ -95,6 +95,14 @@ public static partial class Fields {
         }
         
         return dict;
+    }).AddSpriteTooltips((key, display) => {
+        if (key is not [var id] || EditorState.Map is not { } map) {
+            return null;
+        }
+
+        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+
+        return autotiler.Tilesets.TryGetValue(id, out var tileset) ? tileset.GetPreview(8 * 3) : null;
     });
     
     public static DropdownField<char> TileDropdown(char def, Func<FormContext, bool> bg) => new DropdownField<char>() {
