@@ -39,4 +39,9 @@ public interface ILuaWrapper {
 
     public virtual void LuaNewIndex(Lua lua, ReadOnlySpan<char> key, object value) { }
     public virtual void LuaNewIndex(Lua lua, long key, object value) { }
+
+    public int LuaNext(Lua lua, object? key = null) {
+        lua.PushNil();
+        return 1;
+    }
 }

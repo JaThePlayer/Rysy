@@ -1048,6 +1048,28 @@ where TArg1 : class, ILuaWrapper {
                 return 1;
             });
             state.SetTable(metatableStackLoc);
+            
+            // pairs
+            state.PushString("__pairs"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+                var wrapper = lua.UnboxWrapper(1);
+                
+                lua.PushCFunction(Next);
+                lua.PushWrapper(wrapper);
+                lua.PushNil();
+                
+                return 3;
+
+                static int Next(nint s) {
+                    var lua = Lua.FromIntPtr(s);
+                    var wrapper = lua.UnboxWrapper(1);
+                    var key = lua.ToCSharp(2, makeLuaFuncRefs: true);
+
+                    return wrapper.LuaNext(lua, key);
+                }
+            });
+            state.SetTable(metatableStackLoc);
         }
         
         state.SetMetaTable(handlePos);

@@ -1,10 +1,10 @@
-﻿using ImGuiNET;
-using Rysy.Gui.Windows;
+﻿using Rysy.Gui.Windows;
 using Rysy.Helpers;
+using Rysy.LuaSupport;
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class StringField : Field, IFieldConvertible<string>, ILonnField {
+public record StringField : Field, IFieldConvertible<string>, ILonnField {
     public string Default { get; set; }
 
     public bool NullAllowed { get; set; }
@@ -94,9 +94,15 @@ public record class StringField : Field, IFieldConvertible<string>, ILonnField {
     public static string Name => "string";
 
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
-        if (fieldInfoEntry.TryGetValue("options", out _) 
-            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => (true, x?.ToString() ?? "")) is {} dropdown) {
-            return dropdown;
+        if (fieldInfoEntry.TryGetValue("options", out var options))
+        {
+            // Special-handling for options table created via fakeTilesHelper.getTilesOptions to create a tileset dropdown.
+            // TODO: maybe an interface for this if the need arises?
+            if (options is LuaTilesetsDictionaryWrapper { MutatedByLua: false } tilesetsDictionaryWrapper)
+                return tilesetsDictionaryWrapper.CreateField(def.ToStringInvariant()[0]);
+            
+            if (Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => (true, x.ToStringInvariant())) is {} dropdown)
+                return dropdown;
         }
         
         return new StringField {

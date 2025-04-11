@@ -345,6 +345,9 @@ public static partial class Fields {
         
         if (info.TryGetValue("options", out var options)) {
             IEnumerable<(object, string)>? values = null;
+
+            if (options is ILuaDictionaryWrapper dictWrapper)
+                options = dictWrapper.Dictionary;
             
             switch (options) {
                 case List<object> dropdownOptions:
