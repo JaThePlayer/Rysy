@@ -118,38 +118,45 @@ public sealed class Room : IPackable, ILuaWrapper {
         public AutotiledSpriteList? CachedSprites { get; set; }
 
         public BinaryPacker.Element Pack(TileLayer layer) {
-            return new("FancyTileEntities/FancySolidTiles") {
+            return new("FrostHelper/AltTileLayer") {
                 Attributes = new() {
                     { "x", 0f },
                     { "y", 0f },
                     { "width", Tilegrid.Width * 8 },
                     { "height", Tilegrid.Height * 8 },
-                    { "blendEdges", false },
-                    { "randomSeed", 0 },
                     { "tileData", TilegridField.DefaultGridToSavedString(Tilegrid.Tiles) },
                     { TileLayer.NameEntityDataName, layer.Name },
                     { TileLayer.GuidEntityDataName, layer.Guid.ToString() },
+                    { "depth", Tilegrid.Depth ?? layer.DefaultDepth },
+                    { "color", Tilegrid.Color.ToRGBAString() },
+                    { "layer", layer.Type.FastToString() }
                 }
             };
         }
 
         public static bool IsExtraTilegrid(BinaryPacker.Element el) {
-            return el.Name == "FancyTileEntities/FancySolidTiles" && el.TryGetValue(TileLayer.GuidEntityDataName, out _);
+            return el.Name == "FrostHelper/AltTileLayer" && el.TryGetValue(TileLayer.GuidEntityDataName, out _);
         } 
         
         public static void UnpackAndRegister(Room room, BinaryPacker.Element el) {
             switch (el.Name) {
-                case "FancyTileEntities/FancySolidTiles":
+                case "FrostHelper/AltTileLayer": {
                     var name = el.Attr(TileLayer.NameEntityDataName);
                     if (!Guid.TryParse(el.Attr(TileLayer.GuidEntityDataName), out var guid)) {
                         return;
                     }
                     var grid = TilegridField.DefaultTilegridParser(el.Attr("tileData"), el.Int("width") / 8, el.Int("height") / 8);
-
-                    var layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, TileLayer.BuiltinTypes.Fg);
+                    var type = el.Enum("layer", TileLayer.BuiltinTypes.Fg);
                     
-                    room.RegisterTilegridToLayer(layer, new(grid));
+                    var layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, type);
+                    
+                    var info = room.RegisterTilegridToLayer(layer, new(grid));
+                    info.Tilegrid.Depth = el.Int("depth", layer.DefaultDepth);
+                    info.Tilegrid.Color = el.GetColor("color", Color.White, ColorFormat.RGBA);
+                    
                     return;
+                }
+
             }
 
             throw new UnreachableException();
@@ -192,7 +199,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         var info = new TilegridInfo { Tilegrid = grid };
 
         grid.Autotiler = layer.Type.GetAutotiler(Map) ?? throw new Exception("Map autotilers must not be null!");
-        grid.Depth = layer.Depth;
+        grid.Depth = layer.DefaultDepth;
         grid.RenderCacheToken = new(() => ClearTilegridRenderCache(info));
 
         Tilegrids[layer] = info;

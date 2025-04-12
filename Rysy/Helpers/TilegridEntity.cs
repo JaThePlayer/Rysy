@@ -10,7 +10,7 @@ public abstract class TilegridEntity : Entity {
 
     public override Point MinimumSize => new(8, 8);
 
-    public override int Depth => Layer.Depth - 1;
+    public override int Depth => Layer.DefaultDepth - 1;
 
     public virtual char[,] ParseTilegrid(string gridString, int widthTiles, int heightTiles)
         => Tilegrid.TileArrayFromString(widthTiles * 8, heightTiles * 8, gridString);

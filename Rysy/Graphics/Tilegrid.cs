@@ -38,16 +38,27 @@ public class Tilegrid : ILuaWrapper {
 
     public int? Depth { get; set; }
 
+    
+    private Color _color = Color.White;
+
+    public Color Color {
+        get => _color;
+        set {
+            _color = value;
+            MarkEdited();
+        }
+    }
+
     private Autotiler? _autotiler;
     public Autotiler? Autotiler {
         get => _autotiler;
         set {
+            if (_autotiler is {} prevAutotiler)
+                prevAutotiler.TilesetDataCacheToken.OnInvalidate -= MarkEdited;
             _autotiler = value;
 
             // Make sure to clear the render cache whenever the autotiler data changes
-            _autotiler!.TilesetDataCacheToken.OnInvalidate += () => {
-                MarkEdited();
-            };
+            _autotiler!.TilesetDataCacheToken.OnInvalidate += MarkEdited;
 
             MarkEdited();
         }
@@ -223,7 +234,7 @@ public class Tilegrid : ILuaWrapper {
         if (CachedSprites is { } c)
             return c;
 
-        var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White) 
+        var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color) 
                       ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
 
         sprites.Depth = Depth;

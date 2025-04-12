@@ -4,30 +4,23 @@ using System.Diagnostics;
 
 namespace Rysy.Helpers;
 
-public sealed class TileLayer : IEquatable<TileLayer> {
+public sealed class TileLayer(string name, Guid guid, TileLayer.BuiltinTypes type) : IEquatable<TileLayer> {
     public const string GuidEntityDataName = "__extraTileLayerGuid";
     public const string NameEntityDataName = "__extraTileLayerName";
-    
-    public TileLayer(string name, Guid guid, BuiltinTypes type) {
-        Name = name;
-        Guid = guid;
-        Type = type;
-        Depth = type switch {
-            BuiltinTypes.Bg => Depths.BGTerrain,
-            _ => Depths.FGTerrain
-        };
-    }
 
-    public string Name { get; init; }
-    
-    public Guid Guid { get; init; }
+    public string Name { get; init; } = name;
 
-    public BuiltinTypes Type { get; init; }
+    public Guid Guid { get; init; } = guid;
+
+    public BuiltinTypes Type { get; init; } = type;
 
     private TileEditorLayer? _editorLayer;
     public TileEditorLayer EditorLayer => _editorLayer ??= new(this);
 
-    public int Depth { get; set; }
+    public int DefaultDepth => Type switch {
+        BuiltinTypes.Bg => Depths.BGTerrain,
+        _ => Depths.FGTerrain
+    };
     
     public bool IsBuiltin => Name is "BG" or "FG";
 
@@ -66,5 +59,11 @@ public static class TileLayerExt {
         TileLayer.BuiltinTypes.Bg => map.BGAutotiler,
         TileLayer.BuiltinTypes.Fg => map.FGAutotiler,
         _ => throw new UnreachableException()
+    };
+
+    public static string FastToString(this TileLayer.BuiltinTypes type) => type switch {
+        TileLayer.BuiltinTypes.Bg => "Bg",
+        TileLayer.BuiltinTypes.Fg => "Fg",
+        _ => type.ToString()
     };
 }
