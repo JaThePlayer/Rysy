@@ -28,13 +28,24 @@ public class TileTool : Tool {
         ];
     }
 
-    private static readonly EditorLayer Fg2Layer = new TileEditorLayer(new TileLayer("FG 2", Guid.CreateVersion7(DateTimeOffset.UnixEpoch), TileLayer.BuiltinTypes.Fg));
+    //private static readonly EditorLayer Fg2Layer = new TileLayer("FG 2", Guid.CreateVersion7(DateTimeOffset.UnixEpoch), TileLayer.BuiltinTypes.Fg).EditorLayer;
     
-    private static List<EditorLayer> _ValidLayers { get; } =[
-        EditorLayers.Fg, EditorLayers.Bg, Fg2Layer, EditorLayers.BothTilegrids
+    private static List<EditorLayer> _ValidLayers { get; } = [
+        EditorLayers.Fg, EditorLayers.Bg
     ];
 
-    public override List<EditorLayer> ValidLayers => _ValidLayers;
+    public override List<EditorLayer> ValidLayers {
+        get {
+            if (EditorState.Map is { } map) {
+                var additionalLayers = map.GetUsedTileLayers();
+                
+                if (additionalLayers.Count > 2)
+                    return additionalLayers.Select(x=> x.EditorLayer).Cast<EditorLayer>().ToList();
+            }
+            
+            return _ValidLayers;
+        }
+    }
 
     public override List<ToolMode> ValidModes => _tileModes;
 

@@ -10,7 +10,7 @@ public abstract class EditorLayer {
     
     public string Name { get; }
 
-    public virtual string LocalizedName => Name;
+    public virtual string LocalizedName => Name.TranslateOrHumanize("rysy.editorLayers.name");
     
     public abstract SelectionLayer SelectionLayer { get; }
 

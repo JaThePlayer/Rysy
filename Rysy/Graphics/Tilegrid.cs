@@ -239,13 +239,11 @@ public class Tilegrid : ILuaWrapper {
         MarkEdited();
     }
 
-    public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {
+    public TileSelectionHandler? GetSelectionForArea(Rectangle area, SelectionLayer layer) {
         var handler = new TileSelectionHandler(this, area, layer);
 
         if (handler.AnyTileWithin())
-            return new Selection() {
-                Handler = handler,
-            };
+            return handler;
 
         return null;
     }

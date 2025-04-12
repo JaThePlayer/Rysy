@@ -6,8 +6,8 @@ namespace Rysy.Layers;
 public static class EditorLayers {
     internal static Dictionary<string, EditorLayer> KnownLayers { get; } = new();
     
-    public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.FG);
-    public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.BG);
+    public static TileEditorLayer Fg { get; } = TileLayer.FG.EditorLayer;
+    public static TileEditorLayer Bg { get; } = TileLayer.BG.EditorLayer;
     public static EditorLayer BothTilegrids { get; } = new FakeLayer("Both");
     
     public static EditorLayer Entities { get; } = new EntityLayer(SelectionLayer.Entities);

@@ -208,6 +208,16 @@ rysy.linkOpenConfirmWindow.desc=Do you want to open the following link in your b
 
 rysy.tools.placement.noPrefabs=You currently don't have any prefabs.\nPress {0} while a selection is active to create one!
 
+rysy.tools.selection.customMask=Layers To Select
+rysy.tools.selection.tileLayers.fg=Foreground Tile Layers
+rysy.tools.selection.tileLayers.bg=Background Tile Layers
+rysy.tools.selection.selections=Selections
+
+rysy.editorLayers.name.BG=Bg Tiles
+rysy.editorLayers.name.FG=Fg Tiles
+rysy.editorLayers.name.BGDecals=Bg Decals
+rysy.editorLayers.name.FGDecals=Fg Decals
+
 # Decal Registry Window
 rysy.decalRegistryWindow.create=Create
 rysy.decalRegistryWindow.newEntryPath=Path

@@ -40,6 +40,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     
     private Point? RotationGestureStart;
     private float? RotationGestureLastAngle;
+    
+    private HashSet<TileLayer>? _selectedTilegrids;
+    
+    internal HashSet<TileLayer> SelectedTilegrids => _selectedTilegrids ??= [ EditorLayers.Fg.TileLayer, EditorLayers.Bg.TileLayer ];
 
     public SelectionTool() {
     }
@@ -91,8 +95,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private void SelectAll() {
         if (EditorState.CurrentRoom is { } room) {
             Deselect();
-            CurrentSelections = room.GetSelectionsInRect(null, 
-                EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+            CurrentSelections = room.GetSelectionsInRect(null, EditorLayers.ToolLayerToEnum(Layer, CustomLayer), SelectedTilegrids);
         }
     }
     
@@ -449,7 +452,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         var selectionsUnderCursor = 
             room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), 
-                EditorLayers.ToolLayerToEnum(Layer, CustomLayer)) ?? [];
+                EditorLayers.ToolLayerToEnum(Layer, CustomLayer), SelectedTilegrids) ?? [];
 
         selectionsUnderCursor = GetSortedSelections(selectionsUnderCursor.Where(s => s.Handler is not TileSelectionHandler));
 
@@ -815,7 +818,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .ToList();
 
     private void SelectWithin(Room room, Rectangle rect) {
-        var selections = room.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+        var selections = room.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer), SelectedTilegrids);
         selections = GetSortedSelections(selections);
         
         List<Selection>? finalSelections = null;
@@ -915,10 +918,37 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
+    private void RenderAltTilegridList(SelectionLayer selectionLayer) {
+        if (EditorState.Map is not { } map)
+            return;
+        
+        var selectedTilegrids = SelectedTilegrids;
+        
+        ImGui.SeparatorText((selectionLayer == SelectionLayer.BGTiles ? "rysy.tools.selection.tileLayers.bg" : "rysy.tools.selection.tileLayers.fg").Translate());
+        
+        foreach (var layer in map.GetUsedTileLayers()) {
+            if (layer.EditorLayer.SelectionLayer != selectionLayer)
+                continue;
+                
+            var enabled = selectedTilegrids.Contains(layer);
+            if (ImGui.Checkbox(Interpolator.Temp($"{layer.Name}##{layer.Guid}"), ref enabled)) {
+                if (enabled)
+                    selectedTilegrids.Add(layer);
+                else
+                    selectedTilegrids.Remove(layer);
+            }
+        }
+    }
+
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = false;
 
+        if (Layer is TileEditorLayer tileEditorLayer) {
+            RenderAltTilegridList(tileEditorLayer.SelectionLayer);
+        }
+
         if (Layer == EditorLayers.CustomLayer) {
+            ImGui.SeparatorText("rysy.tools.selection.customMask".Translate());
             var c = (int) CustomLayer;
             ImGui.CheckboxFlags(EditorLayers.Entities.LocalizedName, ref c, (int) SelectionLayer.Entities);
             ImGui.CheckboxFlags(EditorLayers.Triggers.LocalizedName, ref c, (int) SelectionLayer.Triggers);
@@ -926,13 +956,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ImGui.CheckboxFlags(EditorLayers.BgDecals.LocalizedName, ref c, (int) SelectionLayer.BGDecals);
             ImGui.CheckboxFlags(EditorLayers.Bg.LocalizedName, ref c, (int) SelectionLayer.BGTiles);
             ImGui.CheckboxFlags(EditorLayers.Fg.LocalizedName, ref c, (int) SelectionLayer.FGTiles);
-
             CustomLayer = (SelectionLayer) c;
-
-            ImGui.Separator();
+            
+            ImGui.BeginDisabled((CustomLayer & SelectionLayer.BGTiles) == 0);
+            RenderAltTilegridList(SelectionLayer.BGTiles);
+            ImGui.EndDisabled();
+            ImGui.BeginDisabled((CustomLayer & SelectionLayer.FGTiles) == 0);
+            RenderAltTilegridList(SelectionLayer.FGTiles);
+            ImGui.EndDisabled();
         }
 
-        ImGui.Text("Selections");
+        ImGui.SeparatorText("rysy.tools.selection.selections".Translate());
         if (CurrentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
             CreatePrefab();
         }
@@ -964,7 +998,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         ImGui.Text(room.Room.Name);
                         break;
                     case TileSelectionHandler tiles:
-                        ImGui.Text(tiles.Layer.FastToString());
+                        ImGui.Text(tiles.TileLayer.Name);
                         break;
                 }
                 HighlightIfHovered(SelectionsToHighlight, selection);

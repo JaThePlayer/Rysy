@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
@@ -356,6 +357,20 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         mem.Seek(0, SeekOrigin.Begin);
         fs.TryWriteToFile(path, mem);
     }
+
+    public HashSet<TileLayer> GetUsedTileLayers() {
+        var set = new HashSet<TileLayer>();
+        
+        foreach (var r in Rooms) {
+            foreach (var (layer, _) in r.Tilegrids) {
+                set.Add(layer);
+            }
+        }
+
+        return set;
+    }
+    
+    #region RoomNames
     
     [GeneratedRegex(@"^([\w-]+?)([-_])(\d+)(\w*)$")]
     private static partial Regex StandardRoomNameRegex();
@@ -449,7 +464,10 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
         return newName;
     }
+    
+    #endregion
 
+    #region LuaWrapper
     public int LuaIndex(Lua lua, long key) {
         throw new NotImplementedException();
     }
@@ -477,6 +495,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         lua.PushNil();
         return 1;
     }
+    #endregion
 }
 
 public sealed record class MapMetadata {

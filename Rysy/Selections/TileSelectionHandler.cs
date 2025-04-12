@@ -1,5 +1,6 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.History;
 
 namespace Rysy.Selections;
@@ -17,6 +18,8 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public bool ResizableX => false;
 
     public bool ResizableY => false;
+    
+    public TileLayer? TileLayer { get; set; }
 
     public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, SelectionLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
@@ -72,7 +75,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         var tileOffset = (offset / 8).ToPoint();
 
         if (tileOffset.X == 0 && tileOffset.Y == 0)
-            return new MergedAction(Array.Empty<IHistoryAction>());
+            return new MergedAction();
 
         ConsumeTilesIfNeeded();
 
@@ -193,14 +196,20 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public BinaryPacker.Element? PackParent() {
         var toMove = ToMove ?? CreateToMove();
 
+        var attrs = new Dictionary<string, object>() {
+            ["text"] = Tilegrid.GetSaveString(toMove),
+            ["w"] = toMove.GetLength(0),
+            ["h"] = toMove.GetLength(1),
+            ["x"] = Rect.X,
+            ["y"] = Rect.Y,
+        };
+        if (TileLayer is { IsBuiltin: false }) {
+            attrs[TileLayer.GuidEntityDataName] = TileLayer.Guid.ToString();
+            attrs[TileLayer.NameEntityDataName] = TileLayer.Name;
+        }
+
         return new("tiles") {
-            Attributes = new() {
-                ["text"] = Tilegrid.GetSaveString(toMove),
-                ["w"] = toMove.GetLength(0),
-                ["h"] = toMove.GetLength(1),
-                ["x"] = Rect.X,
-                ["y"] = Rect.Y,
-            }
+            Attributes = attrs
         };
     }
 

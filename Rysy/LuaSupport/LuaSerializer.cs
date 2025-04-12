@@ -84,8 +84,15 @@ public static partial class LuaSerializer {
                             width = {{ToLuaString(item.Data.Int("w", 0))}},
                             x = {{ToLuaString(item.Data.Int("x", 0) / 8)}},
                             y = {{ToLuaString(item.Data.Int("y", 0) / 8)}},
-                        },
                     """);
+                    var layerGuid = item.Data.Attr(TileLayer.GuidEntityDataName);
+                    if (!layerGuid.IsNullOrWhitespace()) {
+                        builder.AppendLine(CultureInfo.InvariantCulture, $"""
+                                {TileLayer.GuidEntityDataName} = {ToLuaString(layerGuid)},
+                                {TileLayer.NameEntityDataName} = {ToLuaString(item.Data.Attr(TileLayer.NameEntityDataName))},
+                        """);
+                    }
+                    builder.AppendLine("    },");
                     break;
                 case SelectionLayer.Rooms:
                     return null;
@@ -214,6 +221,8 @@ public static partial class LuaSerializer {
                             ["y"] = Convert.ToInt32(selection["y"], CultureInfo.InvariantCulture) * 8 - 8,
                             ["w"] = selection["width"],
                             ["h"] = selection["height"],
+                            [TileLayer.NameEntityDataName] = selection.GetValueOrDefault(TileLayer.NameEntityDataName, ""),
+                            [TileLayer.GuidEntityDataName] = selection.GetValueOrDefault(TileLayer.GuidEntityDataName, ""),
                         },
                         _ => selection.Where(kv => kv.Key is not "_type" and not "_name" and not "nodes" and not "_id" and not "_fromLayer").ToDictionary(kv => kv.Key, kv => kv.Value)
                     },

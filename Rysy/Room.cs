@@ -127,21 +127,21 @@ public sealed class Room : IPackable, ILuaWrapper {
                     { "blendEdges", false },
                     { "randomSeed", 0 },
                     { "tileData", TilegridField.DefaultGridToSavedString(Tilegrid.Tiles) },
-                    { "__extraTileLayerName", layer.Name },
-                    { "__extraTileLayerGuid", layer.Guid.ToString() },
+                    { TileLayer.NameEntityDataName, layer.Name },
+                    { TileLayer.GuidEntityDataName, layer.Guid.ToString() },
                 }
             };
         }
 
         public static bool IsExtraTilegrid(BinaryPacker.Element el) {
-            return el.Name == "FancyTileEntities/FancySolidTiles" && el.TryGetValue("__extraTileLayerGuid", out _);
+            return el.Name == "FancyTileEntities/FancySolidTiles" && el.TryGetValue(TileLayer.GuidEntityDataName, out _);
         } 
         
         public static void UnpackAndRegister(Room room, BinaryPacker.Element el) {
             switch (el.Name) {
                 case "FancyTileEntities/FancySolidTiles":
-                    var name = el.Attr("__extraTileLayerName");
-                    if (!Guid.TryParse(el.Attr("__extraTileLayerGuid"), out var guid)) {
+                    var name = el.Attr(TileLayer.NameEntityDataName);
+                    if (!Guid.TryParse(el.Attr(TileLayer.GuidEntityDataName), out var guid)) {
                         return;
                     }
                     var grid = TilegridField.DefaultTilegridParser(el.Attr("tileData"), el.Int("width") / 8, el.Int("height") / 8);
@@ -158,14 +158,19 @@ public sealed class Room : IPackable, ILuaWrapper {
     
     public ListenableDictionary<TileLayer, TilegridInfo> Tilegrids { get; } = [];
 
+
+    public TilegridInfo? GetGrid(TileLayer layer) {
+        return Tilegrids.TryGetValue(layer, out var grid) ? grid : null;
+    }
+    
     public TilegridInfo GetOrCreateGrid(TileLayer layer) {
-        if (Tilegrids.TryGetValue(layer, out var grid))
+        if (GetGrid(layer) is {} grid)
             return grid;
         
         return RegisterTilegridToLayer(layer, new Tilegrid(Width, Height));
     }
 
-    private TileLayer? GetMapWideTileLayerByGuid(Guid guid) {
+    internal TileLayer? GetMapWideTileLayerByGuid(Guid guid) {
         if (GetRoomWideTileLayerByGuid(guid) is {} thisRoomsLayer)
             return thisRoomsLayer;
         foreach (var otherRoom in Map.Rooms) {
@@ -818,7 +823,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// Returns a list of all selections within the provided rectangle, using <paramref name="layer"/> as a mask for which layers to use.
     /// Respects editor layers.
     /// </summary>
-    public List<Selection> GetSelectionsInRect(Rectangle? rect, SelectionLayer layer) {
+    public List<Selection> GetSelectionsInRect(Rectangle? rect, SelectionLayer layer, IEnumerable<TileLayer>? tileLayers = null) {
         var list = new List<Selection>();
 
         if ((layer & SelectionLayer.Rooms) != 0) {
@@ -852,11 +857,17 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         if ((layer & SelectionLayer.FGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, FG, list, SelectionLayer.FGTiles);
+            foreach (var tileLayer in tileLayers ?? [ TileLayer.FG ]) {
+                if (tileLayer.Type == TileLayer.BuiltinTypes.Fg && GetGrid(tileLayer) is { } grid)
+                    GetSelectionsInRectForGrid(rect, grid.Tilegrid, list, SelectionLayer.FGTiles, tileLayer);
+            }
         }
 
         if ((layer & SelectionLayer.BGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, BG, list, SelectionLayer.BGTiles);
+            foreach (var tileLayer in tileLayers ?? [ TileLayer.BG ]) {
+                if (tileLayer.Type == TileLayer.BuiltinTypes.Bg && GetGrid(tileLayer) is { } grid)
+                    GetSelectionsInRectForGrid(rect, grid.Tilegrid, list, SelectionLayer.BGTiles, tileLayer);
+            }
         }
 
         return list;
@@ -908,14 +919,16 @@ public sealed class Room : IPackable, ILuaWrapper {
     private List<Selection> MakeSelectionsForAllNodesOfEntity(Entity e)
         => [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
 
-    private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
+    private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, SelectionLayer layer, TileLayer tileLayer) {
         var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
         
         var pos = rect.Location.ToVector2().GridPosFloor(8);
         var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
 
-        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer) is { } s)
-            into.Add(s);
+        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer) is { } s) {
+            s.TileLayer = tileLayer;
+            into.Add(new Selection(s));
+        }
     }
 
     private void GetSelectionsInRectForEntities(Rectangle? rect, TypeTrackedList<Entity> entities, List<Selection> into) {

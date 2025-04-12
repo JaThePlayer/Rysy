@@ -1,24 +1,38 @@
 ﻿using Rysy.Graphics;
+using Rysy.Layers;
 using System.Diagnostics;
 
 namespace Rysy.Helpers;
 
-public sealed class TileLayer(string name, Guid guid, TileLayer.BuiltinTypes type) : IEquatable<TileLayer> {
-    public string Name { get; init; } = name;
+public sealed class TileLayer : IEquatable<TileLayer> {
+    public const string GuidEntityDataName = "__extraTileLayerGuid";
+    public const string NameEntityDataName = "__extraTileLayerName";
     
-    public Guid Guid { get; init; } = guid;
+    public TileLayer(string name, Guid guid, BuiltinTypes type) {
+        Name = name;
+        Guid = guid;
+        Type = type;
+        Depth = type switch {
+            BuiltinTypes.Bg => Depths.BGTerrain,
+            _ => Depths.FGTerrain
+        };
+    }
 
-    public BuiltinTypes Type { get; init; } = type;
+    public string Name { get; init; }
+    
+    public Guid Guid { get; init; }
 
+    public BuiltinTypes Type { get; init; }
+
+    private TileEditorLayer? _editorLayer;
+    public TileEditorLayer EditorLayer => _editorLayer ??= new(this);
+
+    public int Depth { get; set; }
+    
     public bool IsBuiltin => Name is "BG" or "FG";
 
-    public int Depth { get; set; } = type switch {
-        BuiltinTypes.Bg => Depths.BGTerrain,
-        _ => Depths.FGTerrain
-    };
-
-    public static TileLayer BG { get; } = new TileLayer("BG", Guid.Parse("00000000-0000-0000-0000-000000000000"), BuiltinTypes.Bg);
-    public static TileLayer FG { get; } = new TileLayer("FG", Guid.Parse("00000000-0000-0000-0000-000000000001"), BuiltinTypes.Fg);
+    public static TileLayer BG { get; } = new("BG", Guid.Parse("00000000-0000-0000-0000-000000000000"), BuiltinTypes.Bg);
+    public static TileLayer FG { get; } = new("FG", Guid.Parse("00000000-0000-0000-0000-000000000001"), BuiltinTypes.Fg);
 
     public override string ToString() {
         return Name;

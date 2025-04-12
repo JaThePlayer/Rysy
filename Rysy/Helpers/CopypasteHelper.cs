@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Linq;
@@ -197,16 +198,30 @@ static string Compress(byte[] input) {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
 
-            var dest = s.Layer switch {
-                SelectionLayer.FGTiles => room.FG,
-                _ => room.BG,
+            var guidStr = s.Data.Attr(TileLayer.GuidEntityDataName);
+            TileLayer? layer = null;
+            if (!string.IsNullOrWhiteSpace(guidStr) && Guid.TryParse(guidStr, out Guid guid)) {
+                var name = s.Data.Attr(TileLayer.NameEntityDataName);
+                layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, s.Layer switch {
+                    SelectionLayer.FGTiles => TileLayer.BuiltinTypes.Fg,
+                    _ => TileLayer.BuiltinTypes.Bg,
+                });
+            }
+            
+            layer ??= s.Layer switch {
+                SelectionLayer.FGTiles => EditorLayers.Fg.TileLayer,
+                _ => EditorLayers.Bg.TileLayer,
             };
+
+            var dest = room.GetOrCreateGrid(layer).Tilegrid;
             var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
             var rPos = new Vector2(x, y).GridPosFloor(8);
 
             rPos += (offset / 8).ToPoint();
 
-            var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
+            var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer) {
+                TileLayer = layer
+            };
 
             return new Selection(handler);
         }).ToList();
