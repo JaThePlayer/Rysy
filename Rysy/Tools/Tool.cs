@@ -165,6 +165,14 @@ public abstract class Tool {
         }
     }
 
+    public int GridSize {
+        get {
+            if (Settings.Instance is { } settings)
+                return settings.GridSize;
+            return 8;
+        }
+    }
+
     /// <summary>
     /// Adds a new favorite for this group and layer. Use this instead of mutating <see cref="Favorites"/>.
     /// </summary>

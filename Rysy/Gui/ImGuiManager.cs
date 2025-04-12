@@ -730,8 +730,11 @@ public static class ImGuiManager {
 
         ImGui.BeginChild(id.Value, new(0, posy), ImGuiChildFlags.None, ImGuiWindowFlags.NoResize);
         ImGui.Dummy(new(0, ImGui.GetStyle().WindowPadding.Y));
-        renderMain();
-        ImGui.EndChild();
+        try {
+            renderMain();
+        } finally {
+            ImGui.EndChild();
+        }
 
         ImGui.Separator();
         renderBottomBar();
