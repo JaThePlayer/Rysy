@@ -2,13 +2,16 @@
 using Rysy.Entities;
 using Rysy.Entities.Modded;
 using Rysy.Graphics;
+using Rysy.Gui.FieldTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
+using TileLayer = Rysy.Helpers.TileLayer;
 
 namespace Rysy;
 
@@ -24,8 +27,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         TriggerRenderCacheToken = new(ClearTriggerRenderCache);
         FgDecalsRenderCacheToken = new(ClearFgDecalsRenderCache);
         BgDecalsRenderCacheToken = new(ClearBgDecalsRenderCache);
-        FgTilesRenderCacheToken = new(ClearFgTilesRenderCache);
-        BgTilesRenderCacheToken = new(ClearBgTilesRenderCache);
 
         Entities.OnChanged += ClearEntityRenderCache;
         Triggers.OnChanged += ClearTriggerRenderCache;
@@ -40,11 +41,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         Width = width;
         Height = height;
 
-        FG = new(width, height);
-        BG = new(width, height);
-
-        SetupFGTilegrid();
-        SetupBGTilegrid();
+        GetOrCreateGrid(TileLayer.FG);
+        GetOrCreateGrid(TileLayer.BG);
     }
 
     public CacheToken RenderCacheToken;
@@ -52,8 +50,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     public CacheToken TriggerRenderCacheToken;
     public CacheToken FgDecalsRenderCacheToken;
     public CacheToken BgDecalsRenderCacheToken;
-    public CacheToken FgTilesRenderCacheToken;
-    public CacheToken BgTilesRenderCacheToken;
 
     private RenderTarget2D? FullRenderCanvas;
 
@@ -113,8 +109,96 @@ public sealed class Room : IPackable, ILuaWrapper {
     public ListenableList<Entity> BgDecals { get; private set; }
     public ListenableList<Entity> FgDecals { get; private set; }
 
-    public Tilegrid FG = null!;
-    public Tilegrid BG = null!;
+    public Tilegrid FG => GetOrCreateGrid(TileLayer.FG).Tilegrid;
+    public Tilegrid BG => GetOrCreateGrid(TileLayer.BG).Tilegrid;
+
+    public class TilegridInfo {
+        public Tilegrid Tilegrid { get; init; }
+        
+        public AutotiledSpriteList? CachedSprites { get; set; }
+
+        public BinaryPacker.Element Pack(TileLayer layer) {
+            return new("FancyTileEntities/FancySolidTiles") {
+                Attributes = new() {
+                    { "x", 0f },
+                    { "y", 0f },
+                    { "width", Tilegrid.Width * 8 },
+                    { "height", Tilegrid.Height * 8 },
+                    { "blendEdges", false },
+                    { "randomSeed", 0 },
+                    { "tileData", TilegridField.DefaultGridToSavedString(Tilegrid.Tiles) },
+                    { "__extraTileLayerName", layer.Name },
+                    { "__extraTileLayerGuid", layer.Guid.ToString() },
+                }
+            };
+        }
+
+        public static bool IsExtraTilegrid(BinaryPacker.Element el) {
+            return el.Name == "FancyTileEntities/FancySolidTiles" && el.TryGetValue("__extraTileLayerGuid", out _);
+        } 
+        
+        public static void UnpackAndRegister(Room room, BinaryPacker.Element el) {
+            switch (el.Name) {
+                case "FancyTileEntities/FancySolidTiles":
+                    var name = el.Attr("__extraTileLayerName");
+                    if (!Guid.TryParse(el.Attr("__extraTileLayerGuid"), out var guid)) {
+                        return;
+                    }
+                    var grid = TilegridField.DefaultTilegridParser(el.Attr("tileData"), el.Int("width") / 8, el.Int("height") / 8);
+
+                    var layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, TileLayer.BuiltinTypes.Fg);
+                    
+                    room.RegisterTilegridToLayer(layer, new(grid));
+                    return;
+            }
+
+            throw new UnreachableException();
+        }
+    }
+    
+    public ListenableDictionary<TileLayer, TilegridInfo> Tilegrids { get; } = [];
+
+    public TilegridInfo GetOrCreateGrid(TileLayer layer) {
+        if (Tilegrids.TryGetValue(layer, out var grid))
+            return grid;
+        
+        return RegisterTilegridToLayer(layer, new Tilegrid(Width, Height));
+    }
+
+    private TileLayer? GetMapWideTileLayerByGuid(Guid guid) {
+        if (GetRoomWideTileLayerByGuid(guid) is {} thisRoomsLayer)
+            return thisRoomsLayer;
+        foreach (var otherRoom in Map.Rooms) {
+            if (otherRoom.GetRoomWideTileLayerByGuid(guid) is {} otherRoomsLayer)
+                return otherRoomsLayer;
+        }
+
+        return null;
+    }
+    
+    private TileLayer? GetRoomWideTileLayerByGuid(Guid guid) {
+        if (Tilegrids.FirstOrDefault(x => x.Key.Guid == guid) is { Key: not null } layer)
+            return layer.Key;
+
+        return null;
+    }
+
+    private TilegridInfo RegisterTilegridToLayer(TileLayer layer, Tilegrid grid) {
+        var info = new TilegridInfo { Tilegrid = grid };
+
+        grid.Autotiler = layer.Type.GetAutotiler(Map) ?? throw new Exception("Map autotilers must not be null!");
+        grid.Depth = layer.Depth;
+        grid.RenderCacheToken = new(() => ClearTilegridRenderCache(info));
+
+        Tilegrids[layer] = info;
+
+        return info;
+    }
+
+    private void ClearTilegridRenderCache(TilegridInfo grid) {
+        grid.CachedSprites = null;
+        ClearFullRenderCache();
+    }
 
     /// <summary>
     /// Currently unparsed
@@ -149,8 +233,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     private List<ISprite>? CachedTriggerSprites;
     private List<ISprite>? CachedBgDecalSprites;
     private List<ISprite>? CachedFgDecalSprites;
-    private List<ISprite>? CachedBgTileSprites;
-    private List<ISprite>? CachedFgTileSprites;
 
     /// <summary>
     /// Gets an entity ID that's not yet used in this room.
@@ -222,6 +304,10 @@ public sealed class Room : IPackable, ILuaWrapper {
                 case "entities":
                     Entities.Clear();
                     foreach (var entity in child.Children) {
+                        if (TilegridInfo.IsExtraTilegrid(entity)) {
+                            TilegridInfo.UnpackAndRegister(this, entity);
+                            continue;
+                        }
                         Entities.Add(EntityRegistry.Create(entity, this, trigger: false));
                     }
 
@@ -236,12 +322,12 @@ public sealed class Room : IPackable, ILuaWrapper {
                     ObjTiles = child;
                     break;
                 case "solids":
-                    FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    SetupFGTilegrid();
+                    var fg = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                    RegisterTilegridToLayer(TileLayer.FG, fg);
                     break;
                 case "bg":
-                    BG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    SetupBGTilegrid();
+                    var bg = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                    RegisterTilegridToLayer(TileLayer.BG, bg);
                     break;
             }
         }
@@ -251,18 +337,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         // It should be noted that there are two additional child elements - bgtiles and fgtiles.
         // These appear to follow the same format as the objtiles element and likely have a similar function.
         // However, they aren't parsed here simply because they are so rarely needed and object tiles work fine.
-    }
-
-    private void SetupBGTilegrid() {
-        BG.Depth = Depths.BGTerrain;
-        BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
-        BG.RenderCacheToken = BgTilesRenderCacheToken;
-    }
-
-    private void SetupFGTilegrid() {
-        FG.Depth = Depths.FGTerrain;
-        FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
-        FG.RenderCacheToken = FgTilesRenderCacheToken;
     }
 
     public BinaryPacker.Element Pack() {
@@ -295,6 +369,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         };
 
         var trimEntities = Settings.Instance.TrimEntities;
+
+        var additionalTileGrids = Tilegrids
+            .Where(x => !x.Key.IsBuiltin)
+            .Select(x => x.Value.Pack(x.Key))
+            .ToList();
         
         var children = new List<BinaryPacker.Element> {
             FG.Pack("solids"),
@@ -312,7 +391,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             },
 
             new("entities") {
-                Children = Entities.Select(e => e.Pack(trimEntities)).ToArray(),
+                Children = Entities.Select(e => e.Pack(trimEntities)).Concat(additionalTileGrids).ToArray(),
             },
 
             new("triggers") {
@@ -493,29 +572,16 @@ public sealed class Room : IPackable, ILuaWrapper {
                 sprites = sprites.Concat(CachedTriggerSprites);
             }
 
-            if (p.FGTilesVisible) {
-                if (CachedFgTileSprites is null) {
-                    var fgsprites = FG.GetSprites();
-                    //fgsprites.UseRenderTarget(true);
-                    
-                    CachedFgTileSprites ??= fgsprites.ToList();
-                }
-                FgTilesRenderCacheToken.Reset();
+            foreach (var (layer, grid) in Tilegrids) {
+                if (layer.Type == TileLayer.BuiltinTypes.Bg && !p.BGTilesVisible)
+                    continue;
+                if (layer.Type == TileLayer.BuiltinTypes.Fg && !p.FGTilesVisible)
+                    continue;
 
-                sprites = sprites.Concat(CachedFgTileSprites);
-            }
-
-            if (p.BGTilesVisible) {
-                if (CachedBgTileSprites is null) {
-                    var bgsprites = BG.GetSprites();
-                    //bgsprites.UseRenderTarget(true);
-                    
-                    CachedBgTileSprites ??= bgsprites.ToList();
-                }
-                //CachedBgTileSprites ??= BG.GetSprites().ToList();
-                BgTilesRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(CachedBgTileSprites);
+                var tilegridSprites = grid.CachedSprites ??= grid.Tilegrid.GetSprites();
+                grid.Tilegrid.RenderCacheToken?.Reset();
+                
+                sprites = sprites.Concat(tilegridSprites);
             }
 
             if (p.FGDecalsVisible) {
@@ -659,12 +725,18 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void ClearFgTilesRenderCache() {
-        CachedFgTileSprites = null;
-        ClearFullRenderCache();
+        foreach (var (l, g) in Tilegrids) {
+            if (l.Type == TileLayer.BuiltinTypes.Fg) {
+                ClearTilegridRenderCache(g);
+            }
+        }
     }
     public void ClearBgTilesRenderCache() {
-        CachedBgTileSprites = null;
-        ClearFullRenderCache();
+        foreach (var (l, g) in Tilegrids) {
+            if (l.Type == TileLayer.BuiltinTypes.Bg) {
+                ClearTilegridRenderCache(g);
+            }
+        }
     }
 
     /// <summary>

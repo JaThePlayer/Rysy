@@ -2,8 +2,7 @@
 
 namespace Rysy.Layers;
 
-public class RoomLayer : EditorLayer {
-    public override string Name => "Rooms";
+public class RoomLayer() : EditorLayer("Rooms") {
     public override SelectionLayer SelectionLayer => SelectionLayer.Rooms;
 
     public override string MaterialLangPrefix => "rysy.roomPlacements";

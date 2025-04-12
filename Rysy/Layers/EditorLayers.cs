@@ -4,7 +4,7 @@ using Rysy.Selections;
 namespace Rysy.Layers;
 
 public static class EditorLayers {
-    internal static List<EditorLayer> KnownLayers { get; } = new();
+    internal static Dictionary<string, EditorLayer> KnownLayers { get; } = new();
     
     public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.FG);
     public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.BG);
@@ -31,21 +31,19 @@ public static class EditorLayers {
 
     internal static EditorLayer? LayerFromSelectionLayer(SelectionLayer selectionLayer) {
         foreach (var layer in KnownLayers) {
-            if (layer.SelectionLayer == selectionLayer)
-                return layer;
+            if (layer.Value.SelectionLayer == selectionLayer)
+                return layer.Value;
         }
 
         return null;
     }
 
     public static EditorLayer EditorLayerFromName(string name) {
-        foreach (var known in KnownLayers) {
-            if (known.Name == name)
-                return known;
-        }
+        if (KnownLayers.TryGetValue(name, out var known))
+            return known;
 
         var fake = new FakeLayer(name);
-        KnownLayers.Add(fake);
+        KnownLayers[name] = fake;
         Logger.Write(nameof(EditorLayers), LogLevel.Warning, $"Creating fake layer {name}!");
         return fake;
     }

@@ -19,6 +19,9 @@ public class Tilegrid : ILuaWrapper {
         Tiles.Fill('0');
     }
 
+    /// <summary>
+    /// Size in tiles
+    /// </summary>
     public int Width, Height;
 
     private char[,] _tiles = null!;

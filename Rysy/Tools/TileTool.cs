@@ -27,9 +27,11 @@ public class TileTool : Tool {
             new TileEllipseMode(this, hollow: true)
         ];
     }
+
+    private static readonly EditorLayer Fg2Layer = new TileEditorLayer(new TileLayer("FG 2", Guid.CreateVersion7(DateTimeOffset.UnixEpoch), TileLayer.BuiltinTypes.Fg));
     
     private static List<EditorLayer> _ValidLayers { get; } =[
-        EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
+        EditorLayers.Fg, EditorLayers.Bg, Fg2Layer, EditorLayers.BothTilegrids
     ];
 
     public override List<EditorLayer> ValidLayers => _ValidLayers;
@@ -96,24 +98,10 @@ public class TileTool : Tool {
     /// <returns></returns>
     public char TileOrAlt(bool? shiftHeld = null) => (shiftHeld ?? Input.Keyboard.Shift()) ? '0' : Tile;
 
-    protected TileLayer EditorLayerToTileLayer(EditorLayer? layer) {
-        layer ??= Layer;
-        
-        if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
-            return tileLayer;
-        }
-
-        return TileLayer.FG;
-    }
-
     public Autotiler? GetAutotiler(EditorLayer layer) {
         if (RysyEngine.Scene is EditorScene { Map: { } map }) {
-            if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
-                return tileLayer switch {
-                    TileLayer.FG => map.FGAutotiler,
-                    TileLayer.BG => map.BGAutotiler,
-                    _ => null,
-                };
+            if (layer is TileEditorLayer tileLayer) {
+                return tileLayer.GetAutotiler(map);
             }
         }
         return null;

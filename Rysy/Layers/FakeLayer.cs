@@ -3,12 +3,9 @@
 namespace Rysy.Layers; 
 
 public class FakeLayer : EditorLayer {
-    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) {
-        Name = name;
+    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) : base(name) {
         SelectionLayer = layer;
     }
-
-    public override string Name { get; }
 
     public override SelectionLayer SelectionLayer { get; }
 

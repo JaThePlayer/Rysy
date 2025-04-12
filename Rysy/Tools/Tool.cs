@@ -66,7 +66,7 @@ public abstract class Tool {
         }
     }
     
-    private EditorLayer? _layer;
+    private string? _layer;
     private string? _layerPersistenceKey;
     
     /// <summary>
@@ -82,16 +82,20 @@ public abstract class Tool {
                     Persistence.Instance.Set(_layerPersistenceKey, name);
                 }
 
-                return _layer = EditorLayers.EditorLayerFromName(name);
+                _layer = name;
+
+                return EditorLayers.EditorLayerFromName(name);
             }
 
-            return _layer ??= ValidLayers.FirstOrDefault() 
-                              ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+            _layer ??= ValidLayers.FirstOrDefault()?.Name ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+            
+            return EditorLayers.EditorLayerFromName(_layer);
         }
         set {
-            if (_layer == value)
+            if (_layer != null && EditorLayers.EditorLayerFromName(_layer) == value)
                 return;
-            _layer = value;
+            
+            _layer = value.Name;
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.Layer", value.Name);
             }

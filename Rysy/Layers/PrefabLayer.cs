@@ -3,9 +3,7 @@ using Rysy.Selections;
 
 namespace Rysy.Layers;
 
-public class PrefabLayer : EditorLayer {
-    public override string Name => "Prefabs";
-
+public class PrefabLayer() : EditorLayer("Prefabs") {
     public override SelectionLayer SelectionLayer => SelectionLayer.All;
 
     public override IEnumerable<Placement> GetMaterials() =>

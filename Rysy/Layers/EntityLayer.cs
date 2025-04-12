@@ -4,11 +4,9 @@ using Rysy.Selections;
 namespace Rysy.Layers; 
 
 public class EntityLayer : EditorLayer {
-    public EntityLayer(SelectionLayer layer) {
+    public EntityLayer(SelectionLayer layer) : base(layer.FastToString()) {
         SelectionLayer = layer;
     }
-
-    public override string Name => SelectionLayer.FastToString();
 
     public override string? MaterialLangPrefix => SelectionLayer switch {
         SelectionLayer.Entities => "entities",

@@ -12,8 +12,8 @@ namespace Rysy.Gui.FieldTypes;
 
 public record class TilegridField : Field {
     private TileLayer Layer;
-
-    public TilegridField(TileLayer layer = TileLayer.FG) {
+    
+    public TilegridField(TileLayer layer) {
         Default = "";
         Layer = layer;
 
@@ -42,7 +42,7 @@ public record class TilegridField : Field {
 
         if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Map is { } map) {
             if (Window is not { }) {
-                Window = new(val, TileEntity.GetAutotiler(map, Layer) ?? new(), Context, Layer, this);
+                Window = new(val, Layer.Type.GetAutotiler(map), Context, Layer, this);
                 Window.SetRemoveAction((w) => Window = null);
                 RysyEngine.Scene.AddWindow(Window);
             }

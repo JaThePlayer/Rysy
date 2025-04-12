@@ -3,11 +3,12 @@
 namespace Rysy.Layers; 
 
 public abstract class EditorLayer {
-    protected EditorLayer() {
-        EditorLayers.KnownLayers.Add(this);
+    protected EditorLayer(string name) {
+        Name = name;
+        EditorLayers.KnownLayers[name] = this;
     }
     
-    public abstract string Name { get; }
+    public string Name { get; }
 
     public virtual string LocalizedName => Name;
     

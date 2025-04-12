@@ -17,20 +17,7 @@ public abstract class TileEntity : Entity {
     public static Tilegrid GetTilegrid(Room room, TileLayer layer) {
         ArgumentNullException.ThrowIfNull(room);
 
-        return layer switch {
-            TileLayer.BG => room.BG,
-            TileLayer.FG => room.FG,
-            _ => throw new Exception($"Unknown TileLayer: {layer}")
-        };
-    }
-
-    public static Autotiler GetAutotiler(Map map, TileLayer layer) {
-        ArgumentNullException.ThrowIfNull(map);
-        return layer switch {
-            TileLayer.BG => map.BGAutotiler,
-            TileLayer.FG => map.FGAutotiler,
-            _ => throw new Exception($"Unknown TileLayer: {layer}")
-        };
+        return room.GetOrCreateGrid(layer).Tilegrid;
     }
 
     public override bool ResizableX => true;

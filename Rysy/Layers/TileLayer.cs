@@ -4,26 +4,23 @@ using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public sealed class TileEditorLayer : EditorLayer {
-    public TileLayer TileLayer { get; init; }
-    
-    public TileEditorLayer(TileLayer layer) {
-        TileLayer = layer;
-    }
+public sealed class TileEditorLayer(TileLayer layer) : EditorLayer(layer.Name) {
+    public TileLayer TileLayer { get; init; } = layer;
 
-    public override string Name => TileLayer.FastToString();
-
-    public override SelectionLayer SelectionLayer => TileLayer switch {
-        TileLayer.BG => SelectionLayer.BGTiles,
-        TileLayer.FG => SelectionLayer.FGTiles,
+    public override SelectionLayer SelectionLayer => TileLayer.Type switch {
+        TileLayer.BuiltinTypes.Bg => SelectionLayer.BGTiles,
+        TileLayer.BuiltinTypes.Fg => SelectionLayer.FGTiles,
         _ => throw new ArgumentOutOfRangeException()
     };
 
     public override IEnumerable<Placement> GetMaterials()
         => Array.Empty<Placement>();
 
-    public Tilegrid GetGrid(Room room) => TileLayer switch {
-        TileLayer.BG => room.BG,
-        _ => room.FG
-    };
+    public Tilegrid GetGrid(Room room) {
+        return room.GetOrCreateGrid(TileLayer).Tilegrid;
+    }
+
+    public Autotiler GetAutotiler(Map map) {
+        return TileLayer.Type.GetAutotiler(map);
+    }
 }
