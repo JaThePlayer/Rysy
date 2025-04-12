@@ -69,6 +69,8 @@ rysy.menubar.view.colorgrade=Colorgrade
 rysy.menubar.view.colorgrade.tooltip=Previews the room and stylegrounds with the given colorgrade.
 rysy.menubar.view.colorgrade.none=* None
 rysy.menubar.view.colorgrade.mapDefault=* From Map Metadata
+rysy.menubar.view.gridSize=Grid Size
+rysy.menubar.view.gridSize.tooltip=The size of the grid entities will be snapped to by default.\nDefaults to 8.\nHold 'ctrl' to bypass the grid.
 
 rysy.menubar.tab.debug=Debug
 

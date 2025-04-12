@@ -307,7 +307,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         pos = currentRoom?.WorldToRoomPos(camera, pos) ?? camera.ScreenToReal(pos);
 
         if (!precise.Value) {
-            pos = pos.Snap(8);
+            pos = pos.Snap(GridSize);
         }
 
         return pos.ToPoint();

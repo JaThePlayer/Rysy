@@ -144,6 +144,7 @@ public static class RysyState {
         GraphicsDevice.Clear(Color.Black);
 
         var renderUI = !_hideUi;
+        var uiRenderingSuccessful = false;
         
         if (ImGuiAvailable) {
             try {
@@ -152,6 +153,8 @@ public static class RysyState {
                     Scene.RenderImGui();
                 if (DebugInfoWindow.Enabled)
                     DebugInfoWindow.Instance.RenderGui();
+
+                uiRenderingSuccessful = true;
             } catch (Exception e) {
                 Logger.Error(e, $"Unhandled exception during ImGui rendering!");
                 Scene = new CrashScene(Scene, e);
@@ -169,7 +172,7 @@ public static class RysyState {
             Scene = new CrashScene(Scene, e);
         }
 
-        if (ImGuiAvailable) {
+        if (uiRenderingSuccessful) {
             ImGuiManager.GuiRenderer.AfterLayout();
         }
 

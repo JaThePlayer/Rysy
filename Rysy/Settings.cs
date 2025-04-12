@@ -167,7 +167,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
         }
     }
     
-    private bool _useBoldFontByDefault = false;
+    private bool _useBoldFontByDefault = true;
     public bool UseBoldFontByDefault {
         get => _useBoldFontByDefault;
         set {
@@ -291,6 +291,8 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
     public LogLevel MinimumNotificationLevel { get; set; } = LogLevel.Warning;
 
     public bool NotificationWindowOpen { get; set; } = false;
+
+    public int GridSize { get; set; } = 8;
 
     #endregion
 

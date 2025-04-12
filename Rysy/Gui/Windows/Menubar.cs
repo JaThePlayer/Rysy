@@ -186,11 +186,17 @@ public static class Menubar {
             ];
         }
         
-
-
         if (ColorgradePreviewField.RenderGui("rysy.menubar.view.colorgrade".Translate(),
                 Persistence.Instance.ColorgradePreview) is string newPreview) {
             Persistence.Instance.ColorgradePreview = newPreview;
+        }
+        
+        if (settings is { }) {
+            var gridSize = settings.GridSize;
+            if (ImGuiManager.TranslatedInputInt("rysy.menubar.view.gridSize", ref gridSize)) {
+                settings.GridSize = gridSize;
+                settings.Save();
+            }
         }
     }
 

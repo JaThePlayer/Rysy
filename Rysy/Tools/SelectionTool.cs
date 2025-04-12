@@ -53,24 +53,24 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     public override void InitHotkeys(HotkeyHandler handler) {
         base.InitHotkeys(handler);
 
-        handler.AddHotkeyFromSettings("selection.moveLeft", "left", CreateMoveHandler(new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveRight", "right", CreateMoveHandler(new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveUp", "up", CreateMoveHandler(new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveDown", "down", CreateMoveHandler(new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveLeftPixel", "ctrl+left", CreateMoveHandler(new(-1, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveRightPixel", "ctrl+right", CreateMoveHandler(new(1, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveUpPixel", "ctrl+up", CreateMoveHandler(new(0, -1)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.moveDownPixel", "ctrl+down", CreateMoveHandler(new(0, 1)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveLeft", "left", CreateMoveHandler(new(-1, 0), precise: false), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveRight", "right", CreateMoveHandler(new(1, 0), precise: false), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveUp", "up", CreateMoveHandler(new(0, -1), precise: false), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveDown", "down", CreateMoveHandler(new(0, 1), precise: false), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveLeftPixel", "ctrl+left", CreateMoveHandler(new(-1, 0), precise: true), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveRightPixel", "ctrl+right", CreateMoveHandler(new(1, 0), precise: true), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveUpPixel", "ctrl+up", CreateMoveHandler(new(0, -1), precise: true), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.moveDownPixel", "ctrl+down", CreateMoveHandler(new(0, 1), precise: true), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeTop", "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 8), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(1, 0), new(-1, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(1, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeTop", "w", CreateUpsizeHandler(new(0, 1), new(0, -1)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 1), new()), HotkeyModes.OnHoldSmoothInterval);
 
-        handler.AddHotkeyFromSettings("selection.downsizeLeft", "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.downsizeRight", "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.downsizeTop", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeLeft", "shift+d", CreateUpsizeHandler(new(-1, 0), new(1, 0)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeRight", "shift+a", CreateUpsizeHandler(new(-1, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeTop", "shift+s", CreateUpsizeHandler(new(0, -1), new(0, 1)), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("selection.downsizeBottom", "shift+w", CreateUpsizeHandler(new(0, -1), new()), HotkeyModes.OnHoldSmoothInterval);
         
         handler.AddHotkeyFromSettings("selection.selectAll", "ctrl+a", SelectAll);
         handler.AddHotkeyFromSettings("selection.selectAllSimilar", "ctrl+shift+a", SelectAllSimilar);
@@ -170,13 +170,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         if (CurrentSelections is { } selections) {
-            ResizeSelectionsBy(resize, move, selections);
+            ResizeSelectionsBy(resize.Mult(GridSize), move * GridSize, selections);
         }
     };
 
-    private Action CreateMoveHandler(Vector2 offset) => () => {
+    private Action CreateMoveHandler(Vector2 offset, bool precise) => () => {
         if (CurrentSelections is { } selections) {
-            MoveSelectionsBy(offset, selections, NineSliceLocation.Middle);
+            MoveSelectionsBy(precise ? offset : offset * GridSize, selections, NineSliceLocation.Middle);
         }
     };
 
@@ -795,7 +795,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private Vector2 SnapToGridIfNeeded(Vector2 pos) {
         if (!Input.Keyboard.Ctrl() || !Layer.SupportsPreciseMoveMode) {
-            pos = pos.GridPosRound(8).ToVector2() * 8f;
+            var gridSize = GridSize;
+            pos = pos.GridPosRound(gridSize).ToVector2() * gridSize;
         }
 
         return pos;
