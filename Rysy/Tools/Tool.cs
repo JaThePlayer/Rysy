@@ -68,6 +68,9 @@ public abstract class Tool {
     
     private string? _layer;
     private string? _layerPersistenceKey;
+
+    protected virtual string GetLayerPersistenceValue(EditorLayer layer) => layer.Name;
+    protected virtual EditorLayer GetLayerFromPersistenceValue(string persistenceValue) => EditorLayers.EditorLayerFromName(persistenceValue);
     
     /// <summary>
     /// Gets or sets the currently used layer.
@@ -76,28 +79,27 @@ public abstract class Tool {
         get {
             if (UsePersistence) {
                 _layerPersistenceKey ??= $"{PersistenceGroup}.Layer";
-                var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null);
-                if (string.IsNullOrWhiteSpace(name)) {
-                    name = ValidLayers.FirstOrDefault()?.Name ?? "";
-                    Persistence.Instance.Set(_layerPersistenceKey, name);
+                var value = Persistence.Instance.Get(_layerPersistenceKey, (string?)null);
+                if (string.IsNullOrWhiteSpace(value)) {
+                    var layer = ValidLayers.FirstOrDefault() ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+                    value = GetLayerPersistenceValue(layer);
+                    Persistence.Instance.Set(_layerPersistenceKey, value);
                 }
 
-                _layer = name;
-
-                return EditorLayers.EditorLayerFromName(name);
+                return GetLayerFromPersistenceValue(value);
             }
 
-            _layer ??= ValidLayers.FirstOrDefault()?.Name ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+            _layer ??= GetLayerPersistenceValue(ValidLayers.FirstOrDefault() ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}"));
             
-            return EditorLayers.EditorLayerFromName(_layer);
+            return GetLayerFromPersistenceValue(_layer);
         }
         set {
-            if (_layer != null && EditorLayers.EditorLayerFromName(_layer) == value)
+            if (_layer != null && GetLayerFromPersistenceValue(_layer) == value)
                 return;
             
-            _layer = value.Name;
+            _layer = GetLayerPersistenceValue(value);
             if (UsePersistence) {
-                Persistence.Instance.Set($"{PersistenceGroup}.Layer", value.Name);
+                Persistence.Instance.Set($"{PersistenceGroup}.Layer", _layer);
             }
             
             CancelInteraction();

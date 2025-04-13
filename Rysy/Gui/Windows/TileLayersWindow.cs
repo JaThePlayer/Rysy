@@ -61,7 +61,7 @@ internal sealed class TileLayersWindow : Window {
         var fields = GetFields(layer);
 
         var form = new FormWindow(fields, layer.Name);
-        form.Exists = (key) => true;// style.Data.Has;
+        form.Exists = layer.EntityData.Has;
         
         form.OnChanged = (edited) => {
             var action = new ChangeTileLayerAction(layer, edited);
@@ -145,9 +145,12 @@ internal sealed class TileLayersWindow : Window {
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableHeadersRow();
 
+                var layerCount = 0;
                 foreach (var entry in layers) {
-                    if (entry.Type == type)
+                    if (entry.Type == type) {
+                        layerCount++;
                         RenderEntry(entry);
+                    }
                 }
 
                 ImGui.TableNextRow();
@@ -156,6 +159,10 @@ internal sealed class TileLayersWindow : Window {
                 ImGuiManager.PushNullStyle();
                 ImGui.TreeNodeEx("rysy.new".Translate(), ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth);
                 ImGuiManager.PopNullStyle();
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+                    var newLayer = new TileLayer($"{type.FastToString()} ({layerCount + 1})", Guid.CreateVersion7(), type);
+                    _map.NewTileLayers.Add(newLayer);
+                }
             } finally {
                 ImGui.EndTable();
                 ImGui.EndChild();

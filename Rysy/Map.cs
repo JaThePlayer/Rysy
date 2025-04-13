@@ -358,8 +358,10 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         fs.TryWriteToFile(path, mem);
     }
 
-    public HashSet<TileLayer> GetUsedTileLayers() {
-        var set = new HashSet<TileLayer>();
+    public HashSet<TileLayer> NewTileLayers { get; } = [];
+    
+    public IEnumerable<TileLayer> GetUsedTileLayers() {
+        var set = new HashSet<TileLayer>(NewTileLayers);
         
         foreach (var r in Rooms) {
             foreach (var (layer, _) in r.Tilegrids) {
@@ -367,7 +369,23 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             }
         }
 
-        return set;
+        return set.OrderBy(x => x.DefaultDepth);
+    }
+
+    public TileLayer? GetTileLayerByGuid(Guid guid) {
+        foreach (var layer in NewTileLayers) {
+            if (layer.Guid == guid)
+                return layer;
+        }
+        
+        foreach (var r in Rooms) {
+            foreach (var (layer, _) in r.Tilegrids) {
+                if (layer.Guid == guid)
+                    return layer;
+            }
+        }
+
+        return null;
     }
     
     #region RoomNames

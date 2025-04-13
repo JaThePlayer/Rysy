@@ -187,9 +187,9 @@ public sealed class Room : IPackable, ILuaWrapper {
     internal TileLayer? GetMapWideTileLayerByGuid(Guid guid) {
         if (GetRoomWideTileLayerByGuid(guid) is {} thisRoomsLayer)
             return thisRoomsLayer;
-        foreach (var otherRoom in Map.Rooms) {
-            if (otherRoom.GetRoomWideTileLayerByGuid(guid) is {} otherRoomsLayer)
-                return otherRoomsLayer;
+        foreach (var layer in Map.GetUsedTileLayers()) {
+            if (layer.Guid == guid)
+                return layer;
         }
 
         return null;

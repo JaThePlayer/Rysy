@@ -37,10 +37,10 @@ public class TileTool : Tool {
     public override List<EditorLayer> ValidLayers {
         get {
             if (EditorState.Map is { } map) {
-                var additionalLayers = map.GetUsedTileLayers();
+                var additionalLayers = map.GetUsedTileLayers().Select(x=> x.EditorLayer).Cast<EditorLayer>().ToList();
                 
                 if (additionalLayers.Count > 2)
-                    return additionalLayers.Select(x=> x.EditorLayer).Cast<EditorLayer>().ToList();
+                    return additionalLayers;
             }
             
             return _ValidLayers;
@@ -52,6 +52,17 @@ public class TileTool : Tool {
     public override string Name => "tile";
     
     public override string PersistenceGroup => "TileTool";
+
+    protected override string GetLayerPersistenceValue(EditorLayer layer) => layer switch {
+        TileEditorLayer tileLayer => tileLayer.TileLayer.Guid.ToString(),
+        _ => base.GetLayerPersistenceValue(layer)
+    };
+
+    protected override EditorLayer GetLayerFromPersistenceValue(string persistenceValue) {
+        if (Guid.TryParse(persistenceValue, out var guid) && EditorState.Map is { } map && map.GetTileLayerByGuid(guid) is { } layer)
+            return layer.EditorLayer;
+        return base.GetLayerFromPersistenceValue(persistenceValue);
+    }
 
     public override void Init() {
         base.Init();
