@@ -10,6 +10,10 @@ public sealed class TileLayer(string name, Guid guid, TileLayer.BuiltinTypes typ
 
     public string Name { get; init; } = name;
 
+    public string DisplayName => Name.TranslateOrNull("rysy.tileLayers.name") ?? Name;
+    
+    public string? Tooltip => Name.TranslateOrNull("rysy.tileLayers.tooltip");
+
     public Guid Guid { get; init; } = guid;
 
     public BuiltinTypes Type { get; init; } = type;

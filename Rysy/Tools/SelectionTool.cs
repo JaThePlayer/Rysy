@@ -931,7 +931,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 continue;
                 
             var enabled = selectedTilegrids.Contains(layer);
-            if (ImGui.Checkbox(Interpolator.Temp($"{layer.Name}##{layer.Guid}"), ref enabled)) {
+            if (ImGui.Checkbox(Interpolator.Temp($"{layer.DisplayName}##{layer.Guid}"), ref enabled).WithTooltip(layer.Tooltip)) {
                 if (enabled)
                     selectedTilegrids.Add(layer);
                 else

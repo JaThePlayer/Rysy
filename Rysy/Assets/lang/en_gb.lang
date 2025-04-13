@@ -218,6 +218,11 @@ rysy.editorLayers.name.FG=Fg Tiles
 rysy.editorLayers.name.BGDecals=Bg Decals
 rysy.editorLayers.name.FGDecals=Fg Decals
 
+rysy.tileLayers.name.BG=Bg (Default)
+rysy.tileLayers.tooltip.BG=The main Background tilegrid that exists in vanilla.
+rysy.tileLayers.name.FG=Fg (Default)
+rysy.tileLayers.tooltip.FG=The main Foreground tilegrid that exists in vanilla.
+
 # Decal Registry Window
 rysy.decalRegistryWindow.create=Create
 rysy.decalRegistryWindow.newEntryPath=Path
