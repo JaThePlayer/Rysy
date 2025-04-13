@@ -64,12 +64,12 @@ internal sealed class TileLayersWindow : Window {
         form.Exists = layer.EntityData.Has;
         
         form.OnChanged = (edited) => {
-            var action = new ChangeTileLayerAction(layer, edited);
+            var action = new ChangeTileLayerAction(layer, new(edited));
 
             EditorState.History?.ApplyNewAction(action);
         };
         form.OnLiveUpdate = (edited) => {
-            layer.SetOverlay(edited, _map);
+            layer.SetOverlay(new(edited), _map);
         };
 
         FormLayer = layer;

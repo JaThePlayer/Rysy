@@ -8,8 +8,8 @@ internal class ChangeTileLayerAction(TileLayer layer, Dictionary<string, object>
     public bool Apply(Map map) {
         var updated = false;
 
-        _prevValues = layer.Pack().Attributes;
         layer.SetOverlay(null, map);
+        _prevValues = layer.Pack().Attributes;
         updated |= layer.Update(edited, map);
 
         return updated;
