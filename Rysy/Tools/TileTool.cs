@@ -190,17 +190,21 @@ public class TileTool : Tool {
     }
 
     protected void HandleMiddleClick(Room currentRoom, int tx, int ty) {
-        if (Input.Mouse.Middle.Clicked()) {
-            Input.Mouse.ConsumeMiddle();
-            var fg = currentRoom.FG.SafeTileAt(tx, ty);
-            var bg = currentRoom.BG.SafeTileAt(tx, ty);
+        if (!Input.Mouse.Middle.Clicked()) return;
+        Input.Mouse.ConsumeMiddle();
 
-            (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.
-                ('0', not '0') => (EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
-                (not '0', _) => (EditorLayers.Fg, fg), // fg tile exists, swap to that.
-            };
+        // Find the front-most tile from any layer, and switch to that layer and tile
+        foreach (var (layer, grid) in currentRoom.Tilegrids.OrderBy(x => x.Key.DefaultDepth)) {
+            var c = grid.Tilegrid.SafeTileAt(tx, ty);
+            if (c != '0') {
+                Layer = layer.EditorLayer;
+                Tile = c;
+                return;
+            }
         }
+            
+        // No tile, just switch to air in this layer.
+        Tile = '0';
     }
 
     const int PreviewSize = 32;
