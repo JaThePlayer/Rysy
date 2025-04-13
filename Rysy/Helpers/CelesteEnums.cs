@@ -475,7 +475,7 @@ public static class Depths {
 
     public const int FormationSequences = -2000000;
     
-    public static readonly Dictionary<int, string> AllDepths = new() {
+    public static Dictionary<int, string> AllDepths { get; } = new() {
         [BGTerrain] = "BGTerrain",
         [BGMirrors] = "BGMirrors",
         [BGDecals] = "BGDecals",

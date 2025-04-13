@@ -239,6 +239,10 @@ public static partial class Fields {
             
         return ValidationResult.Ok;
     });
+    
+    public static DropdownField<int> Depth(int defaultDepth) {
+        return Dropdown(defaultDepth, Depths.AllDepths, editable: true);
+    }
 
     internal static StringField NewPath(string def, Func<string, string> userInputToRealPath) => String(def).WithValidator(x => {
         if (string.IsNullOrWhiteSpace(x))

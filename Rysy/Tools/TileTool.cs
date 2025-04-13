@@ -27,8 +27,6 @@ public class TileTool : Tool {
             new TileEllipseMode(this, hollow: true)
         ];
     }
-
-    //private static readonly EditorLayer Fg2Layer = new TileLayer("FG 2", Guid.CreateVersion7(DateTimeOffset.UnixEpoch), TileLayer.BuiltinTypes.Fg).EditorLayer;
     
     private static List<EditorLayer> _ValidLayers { get; } = [
         EditorLayers.Fg, EditorLayers.Bg

@@ -91,6 +91,13 @@ internal sealed class TileLayersWindow : Window {
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows) && !ImGui.GetIO().WantCaptureKeyboard) {
         //    HotkeyHandler.Update();
         }
+        
+        ImGuiManager.TranslatedTextWrapped("rysy.tilegrids.info");
+        ImGuiManager.PushWarningStyle();
+        ImGuiManager.TranslatedTextWrapped("rysy.tilegrids.needsFrostHelper");
+        ImGuiManager.TranslatedTextWrapped("rysy.tilegrids.lagWarn");
+        ImGuiManager.PopWarningStyle();
+        ImGui.Separator();
 
         var size = ImGui.GetWindowSize();
 
@@ -190,7 +197,7 @@ internal sealed class TileLayersWindow : Window {
             var sid = $"d_ctx_{id}";
             ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
             if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
-                if (ImGuiManager.TranslatedButton("rysy.delete")) {
+                if (ImGuiManager.TranslatedButton("rysy.tilegrids.delete")) {
                     RemoveEntry(layer);
                     ImGui.CloseCurrentPopup();
                 }

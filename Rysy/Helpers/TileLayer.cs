@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Layers;
 using System.Diagnostics;
 
@@ -103,10 +104,30 @@ public sealed class TileLayer : IEquatable<TileLayer> {
         grid.Color = DefaultColor;
         grid.Depth = DefaultDepth;
     }
+
+    private static readonly ValidationResult DepthNotUniqueResult 
+        = new(ValidationMessage.Error(Gui.Tooltip.CreateTranslatedOrNull("rysy.validate.tileLayers.depthNotUnique")));
     
     public FieldList GetFields() => new(new {
-        name = Name,
-        depth = DefaultDepth,
+        name = Fields.String(Name).WithValidator(x => {
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            return ValidationResult.Ok;
+        }),
+        depth = Fields.Depth(DefaultDepth).WithValidator(x => {
+            if (x is not int depth)
+                return ValidationResult.MustBeInt;
+
+            if (EditorState.Map is { } map) {
+                foreach (var layer in map.GetUsedTileLayers()) {
+                    if (!ReferenceEquals(layer, this) && layer.DefaultDepth == depth) {
+                        return DepthNotUniqueResult;
+                    }
+                }
+            }
+            
+            return ValidationResult.Ok;
+        }),
         color = Fields.RGBA(DefaultColor),
     });
     

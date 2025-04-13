@@ -381,6 +381,16 @@ rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room 
 
 rysy.tilegrids.windowName=Tile Layer Manager
 rysy.tilegrids.new.fg=New Fg Tile Layer
+rysy.tilegrids.info=Alternative Tile Layers allow creating additional layers for tiles, which can be used to place multiple tiles in the same location for better tileset blending.
+rysy.tilegrids.needsFrostHelper=Using Alternative Tile Layers requires a dependency on Frost Helper.
+rysy.tilegrids.lagWarn=Using too many Layers might cause performance issues, try using Ignores on tilesets to reduce how many layers are needed.
+
+rysy.tilegrids.delete=Delete
+rysy.tilegrids.delete.tooltip=Deletes this Layer.\nWARNING: Tiles placed on this layer will be removed from each room!
+
+rysy.tilegrids.fields.description.color=Color used to tint the tiles of this Layer.
+rysy.tilegrids.fields.description.depth=The depth of this tilegrid.\nLower depth means the Layer renders on top of layers with higher depth.\nTo ensure consistent behavior, make sure each Tile Layer has a unique depth value.
+rysy.tilegrids.fields.description.name=In-editor name of this Layer.
 
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
@@ -422,6 +432,8 @@ rysy.validate.modFolderNameUsedAlready=A folder with this name exists in your Mo
 rysy.validate.invalidEnglishDialogName=Name can't contain newlines and special Dialog characters: = [ ]
 
 rysy.validate.overlappingRoomWarning=Room overlaps a different room, which can cause weird in-game behavior.
+
+rysy.validate.tileLayers.depthNotUnique=This depth value is already used by a different Tile Layer.
 
 # FROM LONN:
 
