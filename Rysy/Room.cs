@@ -169,8 +169,19 @@ public sealed class Room : IPackable, ILuaWrapper {
             throw new UnreachableException();
         }
     }
-    
-    public ListenableDictionary<TileLayer, TilegridInfo> Tilegrids { get; } = [];
+
+    private ListenableDictionary<TileLayer, TilegridInfo>? _tilegrids;
+
+    public ListenableDictionary<TileLayer, TilegridInfo> Tilegrids {
+        get {
+            if (_tilegrids is { })
+                return _tilegrids;
+            
+            _tilegrids = new();
+            _tilegrids.OnChanged += ClearFullRenderCache;
+            return _tilegrids;
+        }
+    }
 
 
     public TilegridInfo? GetGrid(TileLayer layer) {

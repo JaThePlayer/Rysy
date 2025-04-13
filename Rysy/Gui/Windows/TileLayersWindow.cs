@@ -77,7 +77,8 @@ internal sealed class TileLayersWindow : Window {
     }
 
     private void RemoveEntry(TileLayer? layer) {
-        
+        if (layer is {})
+            EditorState.History?.ApplyNewAction(new RemoveTileLayerAction(layer));
     }
     
     public override void RemoveSelf() {
@@ -161,7 +162,7 @@ internal sealed class TileLayersWindow : Window {
                 ImGuiManager.PopNullStyle();
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
                     var newLayer = new TileLayer($"{type.FastToString()} ({layerCount + 1})", Guid.CreateVersion7(), type);
-                    _map.NewTileLayers.Add(newLayer);
+                    EditorState.History?.ApplyNewAction(new AddTileLayerAction(newLayer));
                 }
             } finally {
                 ImGui.EndTable();
