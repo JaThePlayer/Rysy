@@ -7,6 +7,10 @@ namespace Rysy.Layers;
 public sealed class TileEditorLayer(TileLayer layer) : EditorLayer(layer.Name) {
     public TileLayer TileLayer { get; init; } = layer;
 
+    public override string Name => TileLayer.Name;
+
+    public override string LocalizedName => TileLayer.IsBuiltin ? base.LocalizedName : $"{Name}##{TileLayer.Guid}";
+
     public override SelectionLayer SelectionLayer => TileLayer.Type switch {
         TileLayer.BuiltinTypes.Bg => SelectionLayer.BGTiles,
         TileLayer.BuiltinTypes.Fg => SelectionLayer.FGTiles,

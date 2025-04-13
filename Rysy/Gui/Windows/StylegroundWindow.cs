@@ -31,12 +31,7 @@ public class StylegroundWindow : Window {
         History = history;
 
         Map = EditorState.Map!;
-        EditorState.OnMapChanged += () => {
-            //Map = EditorState.Map!;
-            //if (Map is null) {
-                RemoveSelf();
-            //}
-        };
+        EditorState.OnMapChanged += RemoveSelf;
 
         var historyHook = () => {
             Form?.ReevaluateChanged(FormStyle!.Data.Inner);
@@ -48,6 +43,7 @@ public class StylegroundWindow : Window {
             History.OnApply -= historyHook;
             History.OnUndo -= historyHook;
             Map.Style.ClearFakePreviewData();
+            EditorState.OnMapChanged -= RemoveSelf;
         });
 
         NoSaveData = false;

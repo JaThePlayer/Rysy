@@ -900,7 +900,7 @@ public readonly struct EntityDataChangeCtx {
     public bool IsChanged(string fieldName) => AllChanged || fieldName.Equals(ChangedFieldName, StringComparison.Ordinal);
 }
 
-public class EntityData : IDictionary<string, object>, IUntypedData {
+public class EntityData : IDictionary<string, object>, IReadOnlyDictionary<string, object>, IUntypedData {
     public string SID { get; init; }
 
     public ListenableList<Node> Nodes { get; private set; }
@@ -1021,6 +1021,10 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
             }
         }
     }
+
+    IEnumerable<string> IReadOnlyDictionary<string, object>.Keys => Keys;
+
+    IEnumerable<object> IReadOnlyDictionary<string, object>.Values => Values;
 
     #region IDictionary
     public ICollection<string> Keys => FakeOverlay is { } ov ? Inner.CreateMerged(ov).Keys : Inner.Keys;

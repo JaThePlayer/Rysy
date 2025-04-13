@@ -18,6 +18,12 @@ public readonly struct DictionaryUntypedData(Dictionary<string, object> dict) : 
     public Dictionary<string, object> BackingDictionary => dict;
 }
 
+public readonly struct IDictionaryUntypedData(IReadOnlyDictionary<string, object> dict) : IUntypedData {
+    public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) => dict.TryGetValue(key, out value);
+
+    public IReadOnlyDictionary<string, object> BackingDictionary => dict;
+}
+
 public readonly struct XElementUntypedData(XElement element) : IUntypedData {
     public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
         if (element.Attribute(key) is { } attr) {
@@ -47,6 +53,10 @@ public readonly struct XmlNodeUntypedData(XmlNode node) : IUntypedData {
 
 
 public static class UntypedDataExt {
+    public static bool Has(this IUntypedData self, string attrName) {
+        return self.TryGetValue(attrName, out _);
+    }
+    
     public static string Attr(this IUntypedData self, string attrName, string def = "") {
         if (self.TryGetValue(attrName, out var obj) && obj is { }) {
             return obj.ToString()!;

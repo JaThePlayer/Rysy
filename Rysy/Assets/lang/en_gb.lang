@@ -49,6 +49,7 @@ rysy.menubar.tab.map.metadata=Metadata
 rysy.menubar.tab.map.sizeoscope=Sizeoscope
 rysy.menubar.tab.map.sizeoscope_window=Sizeoscope - {0}
 rysy.menubar.tab.map.importTilesets=Import Tilesets
+rysy.menubar.tab.map.tilegrids=Tile Layers
 
 rysy.menubar.tab.view=View
 rysy.menubar.view.stylegrounds.showPreview=Render Preview
@@ -377,6 +378,9 @@ rysy.roomPlacements.room.placements.name.default=Default Room
 rysy.roomPlacements.room.placements.description.default=Creates a new playable room, with a spawn point already placed.
 rysy.roomPlacements.fillerRoom.placements.name.filler=Empty Room
 rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room without a spawn point, useful for creating fillers to place tiles outside of rooms for nicer screen transitions.
+
+rysy.tilegrids.windowName=Tile Layer Manager
+rysy.tilegrids.new.fg=New Fg Tile Layer
 
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.

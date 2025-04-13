@@ -108,6 +108,11 @@ public static class Menubar {
             if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
                 editor.AddWindowIfNeeded(() => new TilesetWindow());
             }
+            
+            if (ImGui.MenuItem("tilegrids".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                editor.AddWindowIfNeeded(() => new TileLayersWindow());
+            }
+            
             ImGui.EndDisabled();
         }
     }

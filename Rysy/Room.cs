@@ -116,8 +116,12 @@ public sealed class Room : IPackable, ILuaWrapper {
         public Tilegrid Tilegrid { get; init; }
         
         public AutotiledSpriteList? CachedSprites { get; set; }
+        
+        public TileLayer Layer { get; set; }
 
-        public BinaryPacker.Element Pack(TileLayer layer) {
+        public BinaryPacker.Element Pack() {
+            var layer = Layer;
+            
             return new("FrostHelper/AltTileLayer") {
                 Attributes = new() {
                     { "x", 0f },
@@ -147,12 +151,15 @@ public sealed class Room : IPackable, ILuaWrapper {
                     }
                     var grid = TilegridField.DefaultTilegridParser(el.Attr("tileData"), el.Int("width") / 8, el.Int("height") / 8);
                     var type = el.Enum("layer", TileLayer.BuiltinTypes.Fg);
+
+                    var layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, type) {
+                        DefaultDepth = el.Int("depth"),
+                        DefaultColor = el.GetColor("color", Color.White, ColorFormat.RGBA),
+                    };
                     
-                    var layer = room.GetMapWideTileLayerByGuid(guid) ?? new TileLayer(name, guid, type);
-                    
-                    var info = room.RegisterTilegridToLayer(layer, new(grid));
-                    info.Tilegrid.Depth = el.Int("depth", layer.DefaultDepth);
-                    info.Tilegrid.Color = el.GetColor("color", Color.White, ColorFormat.RGBA);
+                    var tilegrid = new Tilegrid(grid);
+
+                    room.RegisterTilegridToLayer(layer, tilegrid);
                     
                     return;
                 }
@@ -196,10 +203,10 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     private TilegridInfo RegisterTilegridToLayer(TileLayer layer, Tilegrid grid) {
-        var info = new TilegridInfo { Tilegrid = grid };
+        var info = new TilegridInfo { Tilegrid = grid, Layer = layer };
 
         grid.Autotiler = layer.Type.GetAutotiler(Map) ?? throw new Exception("Map autotilers must not be null!");
-        grid.Depth = layer.DefaultDepth;
+        layer.ApplyTo(grid);
         grid.RenderCacheToken = new(() => ClearTilegridRenderCache(info));
 
         Tilegrids[layer] = info;
@@ -384,7 +391,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
         var additionalTileGrids = Tilegrids
             .Where(x => !x.Key.IsBuiltin)
-            .Select(x => x.Value.Pack(x.Key))
+            .Select(x => x.Value.Pack())
             .ToList();
         
         var children = new List<BinaryPacker.Element> {

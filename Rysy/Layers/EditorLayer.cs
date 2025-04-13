@@ -8,7 +8,7 @@ public abstract class EditorLayer {
         EditorLayers.KnownLayers[name] = this;
     }
     
-    public string Name { get; }
+    public virtual string Name { get; }
 
     public virtual string LocalizedName => Name.TranslateOrHumanize("rysy.editorLayers.name");
     
