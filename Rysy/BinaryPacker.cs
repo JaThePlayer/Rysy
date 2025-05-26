@@ -404,7 +404,44 @@ public sealed class BinaryPacker {
         public Element[] Children = null!;
         
         public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
+            if (Attributes is null) {
+                value = null;
+                return false;
+            }
+            
             return Attributes.TryGetValue(key, out value);
+        }
+
+        public Element CreateWithComparer(IEqualityComparer<string> comparer) {
+            var element = new Element(Name) {
+                Attributes = new(Attributes ?? [], comparer), 
+                Children = Children.Select(c => c.CreateWithComparer(comparer)).ToArray()
+            };
+
+            return element;
+        }
+
+        public Element AddChild(Element element) {
+            Array.Resize(ref Children, Children.Length + 1);
+            Children[^1] = element;
+
+            return element;
+        }
+
+        public void SetNullableObj(string key, object? o) {
+            if (o is null) {
+                Attributes.Remove(key);
+            } else {
+                Attributes[key] = o;
+            }
+        }
+        
+        public void SetNullableStruct<T>(string key, T? o) where T : struct {
+            if (o is null) {
+                Attributes.Remove(key);
+            } else {
+                Attributes[key] = o.Value;
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
@@ -67,6 +68,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     /// Filler rooms. Currently unparsed :(
     /// </summary>
     public BinaryPacker.Element Filler;
+
+    public Dictionary<string, BinaryPacker.Element> UnknownTopLevelElements = [];
 
     private ModMeta? _mod;
     private bool _modChecked;
@@ -144,13 +147,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
         var levels = new BinaryPacker.Element("levels");
         levels.Children = Rooms.Select(r => r.Pack()).ToArray();
-
-        el.Children = new BinaryPacker.Element[5];
-        el.Children[0] = levels;
-        el.Children[1] = Meta.Pack();
-        el.Children[2] = Style.Pack();
-        el.Children[3] = Filler;
-        el.Children[4] = EditorGroups.Pack();
+        
+        el.Children = [ levels, Meta.Pack(), Style.Pack(), Filler, EditorGroups.Pack(), .. UnknownTopLevelElements.Select(x => x.Value) ];
 
         return el;
     }
@@ -170,13 +168,13 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         if (oldMeta?.AnimatedTiles != meta.AnimatedTiles || meta.AnimatedTiles.IsNullOrWhitespace() || AnimatedTiles.Empty()) {
             var readVanilla = true;
             
-            if (meta.AnimatedTiles is { } moddedAnimatedTiles) {
+            if (!meta.AnimatedTiles.IsNullOrWhitespace()) {
                 readVanilla = false;
-                if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedAnimatedTiles.Unbackslash(), stream => {
+                if (!ModRegistry.Filesystem.TryWatchAndOpen(meta.AnimatedTiles.Unbackslash(), stream => {
                         AnimatedTiles.ReadFromXml(stream);
                         Rooms.ForEach(r => r.ClearRenderCacheAggressively());
                     })) {
-                    Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find animated tile xml {moddedAnimatedTiles}");
+                    Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find animated tile xml {meta.AnimatedTiles}");
                     readVanilla = true;
                 }
             }
@@ -254,6 +252,9 @@ public sealed partial class Map : IPackable, ILuaWrapper {
                 case EditorGroupRegistry.BinaryPackerName:
                     EditorGroups = new();
                     EditorGroups.Unpack(child);
+                    break;
+                default:
+                    UnknownTopLevelElements.TryAdd(child.Name ?? "", child);
                     break;
             }
         }
@@ -335,7 +336,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         var autotiler = bg ? BGAutotiler : FGAutotiler;
         var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
         
-        if (GetModContainingTilesetXml(bg) is not { Filesystem: IWriteableModFilesystem fs })
+        if (path is null || GetModContainingTilesetXml(bg) is not { Filesystem: IWriteableModFilesystem fs })
             return;
         
         using var mem = new MemoryStream();
@@ -348,7 +349,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         var path = Meta.AnimatedTiles;
         var tiles = AnimatedTiles;
         
-        if (ModRegistry.Filesystem.FindFirstModContaining(path) is not { Filesystem: IWriteableModFilesystem fs })
+        if (path is null || ModRegistry.Filesystem.FindFirstModContaining(path) is not { Filesystem: IWriteableModFilesystem fs })
             return;
         
         using var mem = new MemoryStream();
@@ -479,56 +480,145 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     }
 }
 
-public sealed record class MapMetadata {
-    public string Parent { get; set; }
+public sealed record MapMetadata {
+    public BinaryPacker.Element Data = new("meta");
 
-    public string Icon { get; set; }
+    public string Parent {
+        get => Data.Attr("parent");
+        set => Data.Attributes["parent"] = value;
+    }
 
-    public bool? Interlude { get; set; }
+    public string Icon {
+        get => Data.Attr("icon");
+        set => Data.Attributes["icon"] = value;
+    }
 
-    public int? CassetteCheckpointIndex { get; set; }
+    public bool? Interlude {
+        get => Data.Has("interlude") ? Data.Bool("interlude") : null;
+        set {
+            if (value is null) {
+                Data.Attributes.Remove("interlude");
+            } else {
+                Data.Attributes["interlude"] = value.Value;
+            }
+        }
+    }
 
-    public string TitleBaseColor { get; set; }
+    public int? CassetteCheckpointIndex {        
+        get => Data.Has("cassetteCheckpointIndex") ? Data.Int("cassetteCheckpointIndex") : null;
+        set {
+            if (value is null) {
+                Data.Attributes.Remove("cassetteCheckpointIndex");
+            } else {
+                Data.Attributes["cassetteCheckpointIndex"] = value.Value;
+            }
+        }
+    }
 
-    public string TitleAccentColor { get; set; }
+    public string TitleBaseColor {
+        get => Data.Attr("titleBaseColor", "6c7c81"); 
+        set => Data.Attributes["titleBaseColor"] = value;
+    }
 
-    public string TitleTextColor { get; set; }
+    public string TitleAccentColor {
+        get => Data.Attr("titleAccentColor", "2f344b"); 
+        set => Data.Attributes["titleAccentColor"] = value;
+    }
 
-    public string IntroType { get; set; }
+    public string TitleTextColor {
+        get => Data.Attr("titleTextColor", "ffffff"); 
+        set => Data.Attributes["titleTextColor"] = value;
+    }
 
-    public bool? Dreaming { get; set; } = new bool?(false);
+    public string? IntroType {
+        get => Data.Attr("introType", null!);
+        set => Data.SetNullableObj("introType", value);
+    }
 
-    public string? ColorGrade { get; set; }
+    public bool Dreaming {
+        get => Data.Bool("dreaming");
+        set => Data.Attributes["dreaming"] = value;
+    }
 
-    public string Wipe { get; set; }
+    public string? ColorGrade {
+        get => Data.Attr("colorGrade", null!);
+        set => Data.SetNullableObj("colorGrade", value);
+    }
 
-    public float? DarknessAlpha { get; set; }
+    public string? Wipe {
+        get => Data.Attr("wipe", null!);
+        set => Data.SetNullableObj("wipe", value);
+    }
 
-    public float? BloomBase { get; set; }
+    public float DarknessAlpha {
+        get => Data.Float("darknessAlpha", 0.05f);
+        set => Data.Attributes["darknessAlpha"] = value;
+    }
 
-    public float? BloomStrength { get; set; }
+    public float BloomBase {
+        get => Data.Float("bloomBase", 0f);
+        set => Data.Attributes["bloomBase"] = value;
+    }
 
-    public string Jumpthru { get; set; }
+    public float BloomStrength {
+        get => Data.Float("bloomStrength", 1f);
+        set => Data.Attributes["bloomStrength"] = value;
+    }
 
-    public string CoreMode { get; set; }
+    public string? Jumpthru {
+        get => Data.Attr("jumpthru", null!);
+        set => Data.SetNullableObj("jumpthru", value);
+    }
 
-    public string CassetteNoteColor { get; set; }
+    public string? CoreMode {
+        get => Data.Attr("coreMode", null!);
+        set => Data.SetNullableObj("coreMode", value);
+    }
 
-    public string CassetteSong { get; set; }
+    public string? CassetteNoteColor {
+        get => Data.Attr("cassetteNoteColor", null!);
+        set => Data.SetNullableObj("cassetteNoteColor", value);
+    }
 
-    public string PostcardSoundID { get; set; }
+    public string? CassetteSong {
+        get => Data.Attr("cassetteSong", null!);
+        set => Data.SetNullableObj("cassetteSong", value);
+    }
 
-    public string ForegroundTiles { get; set; }
+    public string? PostcardSoundID {
+        get => Data.Attr("postcardSoundID", null!);
+        set => Data.SetNullableObj("postcardSoundID", value);
+    }
 
-    public string BackgroundTiles { get; set; }
+    public string? ForegroundTiles {
+        get => Data.Attr("foregroundTiles", null!);
+        set => Data.SetNullableObj("foregroundTiles", value);
+    }
 
-    public string AnimatedTiles { get; set; }
+    public string? BackgroundTiles {
+        get => Data.Attr("backgroundTiles", null!);
+        set => Data.SetNullableObj("backgroundTiles", value);
+    }
 
-    public string Sprites { get; set; }
+    public string? AnimatedTiles {
+        get => Data.Attr("animatedTiles", null!);
+        set => Data.SetNullableObj("animatedTiles", value);
+    }
 
-    public string Portraits { get; set; }
+    public string Sprites {
+        get => Data.Attr("sprites");
+        set => Data.SetNullableObj("sprites", value);
+    }
 
-    public bool? OverrideASideMeta { get; set; }
+    public string Portraits {
+        get => Data.Attr("portraits");
+        set => Data.SetNullableObj("portraits", value);
+    }
+
+    public bool OverrideASideMeta {
+        get => Data.Bool("overrideASideMeta");
+        set => Data.Attributes["overrideASideMeta"] = value;
+    }
 
     public MetaMode Mode { get; set; } = new();
 
@@ -577,76 +667,135 @@ public sealed record class MapMetadata {
     }
 
     public MapMetadata Unpack(BinaryPacker.Element el) {
-        Deserialize(el, this);
-        Deserialize(el.Children.FirstOrDefault(e => e.Name == "cassettemodifier"), CassetteModifier);
-        var modes = el.Children.FirstOrDefault(e => e.Name == "mode");
-        Deserialize(modes, Mode);
-        Deserialize(modes?.Children.FirstOrDefault(e => e.Name == "audiostate"), Mode.AudioState);
+        Data = el.CreateWithComparer(StringComparer.OrdinalIgnoreCase);
+        if (Data.Children.FirstOrDefault(e => e.Name == "mode") is not { } mode) {
+            mode = Data.AddChild(new("mode"));
+        }
+        Mode.Data = mode;
+        if (Data.Children.FirstOrDefault(e => e.Name == "cassettemodifier") is not { } modifier) {
+            modifier = Data.AddChild(new("cassettemodifier"));
+        }
+        CassetteModifier.Data = modifier;
 
         return this;
     }
 
     public BinaryPacker.Element Pack() {
-        BinaryPacker.Element el = new("meta") { 
-            Attributes = SerializeAttrs(this),
-            Children = [
-                new("mode") {
-                    Attributes = SerializeAttrs(Mode),
-                    Children = [
-                        new("audiostate") {
-                            Attributes = SerializeAttrs(Mode.AudioState)
-                        }
-                    ],
-                },
-                new("cassettemodifier") {
-                    Attributes = SerializeAttrs(CassetteModifier),
-                }
-            ]
-        };
-
-        return el;
+        return Data;
     }
 }
 
 public sealed class MetaMode {
-    public bool? IgnoreLevelAudioLayerData { get; set; }
+    private BinaryPacker.Element _data = new("mode");
 
-    public string Inventory { get; set; }
+    public BinaryPacker.Element Data {
+        get => _data;
+        set {
+            _data = value;
+            if (_data.Children.FirstOrDefault(e => e.Name == "audiostate") is not { } audioState) {
+                audioState = _data.AddChild(new("audiostate"));
+            }
+            AudioState.Data = audioState;
+        }
+    }
+    
+    public bool? IgnoreLevelAudioLayerData {
+        get => Data.NullableBool("ignoreLevelAudioLayerData");
+        set => Data.SetNullableStruct("ignoreLevelAudioLayerData", value);
+    }
 
-    public string Path { get; set; }
+    public string Inventory {
+        get => Data.Attr("inventory");
+        set => Data.SetNullableObj("inventory", value);
+    }
 
-    public string PoemID { get; set; }
+    public string Path {
+        get => Data.Attr("path");
+        set => Data.SetNullableObj("path", value);
+    }
 
-    public string StartLevel { get; set; }
+    public string PoemID {
+        get => Data.Attr("poemId");
+        set => Data.SetNullableObj("poemId", value);
+    }
 
-    public bool? HeartIsEnd { get; set; }
+    public string StartLevel {
+        get => Data.Attr("startLevel");
+        set => Data.SetNullableObj("startLevel", value);
+    }
 
-    public bool? SeekerSlowdown { get; set; }
+    public bool? HeartIsEnd {
+        get => Data.NullableBool("heartIsEnd");
+        set => Data.SetNullableStruct("heartIsEnd", value);
+    }
 
-    public bool? TheoInBubble { get; set; }
+    public bool? SeekerSlowdown {
+        get => Data.NullableBool("seekerSlowdown");
+        set => Data.SetNullableStruct("seekerSlowdown", value);
+    }
+
+    public bool? TheoInBubble {
+        get => Data.NullableBool("theoInBubble");
+        set => Data.SetNullableStruct("theoInBubble", value);
+    }
 
     public AudioState AudioState { get; set; } = new();
 }
 
 public class AudioState {
-    public string Ambience { get; set; }
-    public string Music { get; set; }
+    public BinaryPacker.Element Data { get; set; } = new("audiostate");
+
+    public string Ambience {
+        get => Data.Attr("ambience");
+        set => Data.SetNullableObj("ambience", value);
+    }
+    
+    public string Music {
+        get => Data.Attr("music");
+        set => Data.SetNullableObj("music", value);
+    }
 }
 
 public class MapMetaCassetteModifier {
-    public float TempoMult { get; set; } = 1f;
+    public BinaryPacker.Element Data { get; set; } = new("cassettemodifier");
+    
+    public float TempoMult {
+        get => Data.Float("tempoMult", 1f); 
+        set => Data.Attributes["tempoMult"] = value;
+    }
 
-    public int LeadBeats { get; set; } = 16;
+    public int LeadBeats {
+        get => Data.Int("leadBeats", 16); 
+        set => Data.Attributes["leadBeats"] = value;
+    }
 
-    public int BeatsPerTick { get; set; } = 4;
+    public int BeatsPerTick {
+        get => Data.Int("beatsPerTick", 4); 
+        set => Data.Attributes["beatsPerTick"] = value;
+    }
 
-    public int TicksPerSwap { get; set; } = 2;
+    public int TicksPerSwap {
+        get => Data.Int("ticksPerSwap", 2); 
+        set => Data.Attributes["ticksPerSwap"] = value;
+    }
 
-    public int Blocks { get; set; } = 2;
+    public int Blocks {
+        get => Data.Int("blocks", 2); 
+        set => Data.Attributes["blocks"] = value;
+    }
 
-    public int BeatsMax { get; set; } = 256;
+    public int BeatsMax {
+        get => Data.Int("beatsMax", 256); 
+        set => Data.Attributes["beatsMax"] = value;
+    }
 
-    public int BeatIndexOffset { get; set; }
+    public int BeatIndexOffset {
+        get => Data.Int("beatIndexOffset", 0); 
+        set => Data.Attributes["beatIndexOffset"] = value;
+    }
 
-    public bool OldBehavior { get; set; }
+    public bool OldBehavior {
+        get => Data.Bool("oldBehavior");
+        set => Data.Attributes["oldBehavior"] = value;
+    }
 }
