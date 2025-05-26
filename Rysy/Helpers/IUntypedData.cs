@@ -89,6 +89,13 @@ public static class UntypedDataExt {
 
         return def;
     }
+    
+    public static bool? NullableBool(this IUntypedData self, string attrName) {
+        if (self.TryGetValue(attrName, out var obj))
+            return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
+
+        return null;
+    }
 
     public static char Char(this IUntypedData self, string attrName, char def) {
         if (self.TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
@@ -146,4 +153,6 @@ public static class UntypedDataExt {
 
         return Color.White;
     }
+
+    public static bool Has(this IUntypedData self, string attrName) => self.TryGetValue(attrName, out _);
 }

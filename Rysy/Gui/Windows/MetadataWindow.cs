@@ -17,25 +17,25 @@ public sealed class MetadataWindow : Window {
         var allDependenciesFs = map.Mod?.GetAllDependenciesFilesystem();
 
         return AddTooltips(new(new {
-            AnimatedTiles = Fields.Path(meta.AnimatedTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
-            BackgroundTiles = Fields.Path(meta.BackgroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
-            ForegroundTiles = Fields.Path(meta.ForegroundTiles, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
+            AnimatedTiles = Fields.Path(meta.AnimatedTiles!, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
+            BackgroundTiles = Fields.Path(meta.BackgroundTiles!, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
+            ForegroundTiles = Fields.Path(meta.ForegroundTiles!, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             Sprites = Fields.Path(meta.Sprites, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
-            BloomBase = Fields.Float(meta.BloomBase ?? 0f),
-            BloomStrength = Fields.Float(meta.BloomStrength ?? 1f),
-            ColorGrade = Fields.Path(meta.ColorGrade, "Graphics/ColorGrading", "png", allDependenciesFs).AllowNull(),
+            BloomBase = Fields.Float(meta.BloomBase),
+            BloomStrength = Fields.Float(meta.BloomStrength),
+            ColorGrade = Fields.Path(meta.ColorGrade!, "Graphics/ColorGrading", "png", allDependenciesFs).AllowNull(),
             CoreMode = Fields.EnumNamesDropdown(CelesteEnums.CoreModes.None).AllowNull(),
-            DarknessAlpha = Fields.Float(meta.DarknessAlpha ?? 0.05f),
-            Dreaming = Fields.Bool(meta.Dreaming ?? false),
-            IntroType = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(meta.IntroType).AllowNull(),
+            DarknessAlpha = Fields.Float(meta.DarknessAlpha),
+            Dreaming = Fields.Bool(meta.Dreaming),
+            IntroType = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(meta.IntroType!).AllowNull(),
             Portraits = Fields.Path(meta.Portraits, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
-            PostcardSoundID = Fields.String(meta.PostcardSoundID).AllowNull(),
-            Wipe = Fields.String(meta.Wipe).AllowNull(), // todo: dropdown
+            PostcardSoundID = Fields.String(meta.PostcardSoundID!).AllowNull(),
+            Wipe = Fields.String(meta.Wipe!).AllowNull(), // todo: dropdown
         }));
     }
 
     public static FieldList GetModeFieldInfo(MapMetadata meta) => AddTooltips(new(new {
-        OverrideASideMeta = Fields.Bool(meta.OverrideASideMeta ?? false),
+        OverrideASideMeta = Fields.Bool(meta.OverrideASideMeta),
         mode_HeartIsEnd = Fields.Bool(meta.Mode.HeartIsEnd ?? false),
         mode_Inventory = Fields.EnumNamesDropdown<CelesteEnums.Inventories>(meta.Mode.Inventory).AllowNull(),
         //["mode_PoemID"] = Fields.String(map.Mode.PoemID).AllowNull(),
@@ -45,7 +45,7 @@ public sealed class MetadataWindow : Window {
     }));
 
     public static FieldList GetCassetteFieldInfo(MapMetadata meta) => AddTooltips(new(new {
-        CassetteSong = Fields.Dropdown(meta.CassetteSong, CelesteEnums.CassetteMusic).AllowNull().AllowEdits(), 
+        CassetteSong = Fields.Dropdown(meta.CassetteSong!, CelesteEnums.CassetteMusic).AllowNull().AllowEdits(), 
         cassettemodifier_BeatIndexOffset = Fields.Int(meta.CassetteModifier.BeatIndexOffset),
         cassettemodifier_BeatsPerTick = Fields.Int(meta.CassetteModifier.BeatsPerTick),
         cassettemodifier_BeatsMax = Fields.Int(meta.CassetteModifier.BeatsMax),
@@ -69,9 +69,9 @@ public sealed class MetadataWindow : Window {
         return AddTooltips(new(new {
             Icon = Fields.Path(meta.Icon, "Graphics/Atlases/Gui", "png", fs).AllowNull(), //Fields.String(meta.Icon).AllowNull(),
             Interlude = Fields.Bool(meta.Interlude ?? false),
-            TitleAccentColor = Fields.RGB((meta.TitleAccentColor ?? "2f344b").FromRGB()),
-            TitleBaseColor = Fields.RGB((meta.TitleBaseColor ?? "6c7c81").FromRGB()),
-            TitleTextColor = Fields.RGB((meta.TitleTextColor ?? "ffffff").FromRGB()),
+            TitleAccentColor = Fields.RGB(meta.TitleAccentColor.FromRGB()),
+            TitleBaseColor = Fields.RGB(meta.TitleBaseColor.FromRGB()),
+            TitleTextColor = Fields.RGB(meta.TitleTextColor.FromRGB()),
             preview = new TitleCardPreviewField(),
         }));
     }
