@@ -199,6 +199,7 @@ public sealed class TilesetData : IXmlBackedEntityData {
             ignores = Fields.List("", Fields.TileDropdown('1', bg, addWildcardOption: true)).WithMinElements(0),
             ignoreExceptions = Fields.List("", Fields.TileDropdown('1', bg)).WithMinElements(0),
             debris = Fields.AtlasPath("", @"^debris/(.*?)(?:00)?$"),
+            debrisImpactSfx = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
             __sep = new PaddingField(),
             scanWidth = Fields.IntNullable().WithMin(3),
             scanHeight = Fields.IntNullable().WithMin(3),

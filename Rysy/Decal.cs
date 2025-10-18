@@ -73,6 +73,14 @@ public sealed partial class Decal : Entity, IPlaceable {
             ClearRoomRenderCache();
         }
     }
+    
+    public float Parallax {
+        get => EntityData.Float("parallax", 0f);
+        set {
+            EntityData["parallax"] = value;
+            ClearRoomRenderCache();
+        }
+    }
 
     public override int Depth => Int("depth", FG ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
 
@@ -198,6 +206,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         ["scaleY"] = Fields.Float(1f),
         ["rotation"] = Fields.Float(0f),
         ["depth"] = new NullableDepthField(),
+        ["parallax"] = Fields.Float(0f),
     };
 
     protected override BinaryPacker.Element DoPack(bool trim) {
@@ -218,9 +227,12 @@ public sealed partial class Decal : Entity, IPlaceable {
         if (rotation != 0f)
             attr["rotation"] = rotation;
 
-        if (EntityData.TryGetValue("depth", out var d)) {
+        if (EntityData.TryGetValue("depth", out var d))
             attr["depth"] = d;
-        }
+
+        var parallax = Parallax;
+        if (parallax != 0f)
+            attr["parallax"] = parallax;
 
         el.Attributes = attr;
 
@@ -245,14 +257,14 @@ public sealed partial class Decal : Entity, IPlaceable {
             _texture = null;
     }
 
-    private static Cache<List<string>> _ValidDecalPaths;
+    private static Cache<List<string>> _validDecalPaths;
     
     /// <summary>
     /// Stores all paths that can be used by decals.
     /// </summary>
     public static Cache<List<string>> ValidDecalPaths {
         get {
-            if (_ValidDecalPaths is { } v)
+            if (_validDecalPaths is { } v)
                 return v;
 
             var cacheToken = new CacheToken();
@@ -270,9 +282,9 @@ public sealed partial class Decal : Entity, IPlaceable {
                     
                     return p.virtPath["decals/".Length..];
                 }).ToList());
-            _ValidDecalPaths = cache;
+            _validDecalPaths = cache;
 
-            GFX.Atlas.OnTextureLoad += (path) => {
+            GFX.Atlas.OnTextureLoad += path => {
                 if (path.StartsWith("decals/", StringComparison.Ordinal)) {
                     cacheToken.Invalidate();
                 }

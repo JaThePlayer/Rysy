@@ -269,6 +269,10 @@ public class PlacementList : List<Placement> {
     public PlacementList(string defaultPlacementName) {
         Add(new(defaultPlacementName));
     }
+    
+    public PlacementList(string defaultPlacementName, object overridesLonnDecl) {
+        Add(new(defaultPlacementName, overridesLonnDecl));
+    }
 
     public PlacementList(IEnumerable<Placement> placements) : base(placements) {
 

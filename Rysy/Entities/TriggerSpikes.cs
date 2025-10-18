@@ -48,7 +48,8 @@ public sealed class TriggerSpikes : Entity, IMultiSIDPlaceable {
         => SpikeHelper.GetSelection(this, Direction(Name));
 
     public static FieldList GetFields(string sid) => new(new {
-        type = SpikeHelper.GetTypeField()
+        type = SpikeHelper.GetTypeField(),
+        legacyBehavior = true,
     });
 
     public static PlacementList GetPlacements(string sid) {
@@ -59,6 +60,9 @@ public sealed class TriggerSpikes : Entity, IMultiSIDPlaceable {
             _ => "right",
         };
 
-        return SpikeHelper.CreatePlacements((t) => $"{prefix}_{t}");
+        var placements = SpikeHelper.CreatePlacements(t => $"{prefix}_{t}");
+        placements.ForEach(x => x["legacyBehavior"] = false);
+        return placements;
+
     }
 }
