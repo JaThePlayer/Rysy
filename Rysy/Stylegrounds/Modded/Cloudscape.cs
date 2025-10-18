@@ -287,9 +287,9 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
     }
     
     private Mesh<CloudscapeVertex>? _mesh;
-    private WarpedCloud[] _clouds;
-    private Ring[] _rings;
-    private Color[] _colors;
+    private WarpedCloud[] _clouds = [];
+    private Ring[] _rings = [];
+    private Color[] _colors = [];
     
     private void CreateMesh() {
         _mesh = new();
