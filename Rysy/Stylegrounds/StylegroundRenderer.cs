@@ -58,27 +58,34 @@ public static class StylegroundRenderer {
     }
 
     private static void Render(Style s, StylegroundRenderCtx ctx) {
-        if (!s.Visible(ctx))
-            return;
+        try {
+            if (!s.Visible(ctx))
+                return;
 
-        var state = s.GetSpriteBatchState();
-        var sprites = s.GetSprites(ctx);
-        var renderCtx = SpriteRenderCtx.Default(ctx.Animate);
+            var state = s.GetSpriteBatchState();
+            var sprites = s.GetSprites(ctx);
+            var renderCtx = SpriteRenderCtx.Default(ctx.Animate);
 
-        if (state is null) {
-            foreach (var sprite in sprites) {
-                sprite.Render(renderCtx);
+            if (state is null) {
+                foreach (var sprite in sprites) {
+                    sprite.Render(renderCtx);
+                }
+                return;
             }
-            return;
-        }
 
-        var lastState = GFX.EndBatch();
-        GFX.BeginBatch(state);
-        foreach (var sprite in sprites) {
-            sprite.Render(renderCtx);
+            var lastState = GFX.EndBatch();
+            GFX.BeginBatch(state);
+            try {
+                foreach (var sprite in sprites) {
+                    sprite.Render(renderCtx);
+                }
+            } finally {
+                GFX.EndBatch();
+                GFX.BeginBatch(lastState);
+            }
+        } catch (Exception ex) {
+            Logger.Error(ex, $"Failed to render styleground: {s}");
         }
-        GFX.EndBatch();
-        GFX.BeginBatch(lastState);
     }
 }
 
