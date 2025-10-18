@@ -202,12 +202,9 @@ static string Compress(byte[] input) {
                 _ => room.BG,
             };
             var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
-            var rPos = new Vector2(x, y).GridPosFloor(8);
-
-            rPos += (offset / 8).ToPoint();
+            var rPos = (new Vector2(x, y) + offset).GridPosFloor(8);
 
             var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
-
             return new Selection(handler);
         }).ToList();
 
