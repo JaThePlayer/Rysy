@@ -49,7 +49,7 @@ public class LuaFunctionRef : LuaRef {
         }
         lua.PCallThrowIfError(arguments: args.Length, results: 1);
 
-        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
+        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true, makeLuaTableRefs: true);
         lua.Pop(1);
 
         return ret;

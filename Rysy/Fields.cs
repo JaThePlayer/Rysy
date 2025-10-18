@@ -326,6 +326,30 @@ public static partial class Fields {
             }
         }
 
+        if (EntityRegistry.RegisteredLonnFieldTypes.TryGetValue(fieldType, out var lonnFieldType)) {
+            Console.WriteLine($"trying lonn field: {fieldType}");
+            try {
+                var fieldNameDelayed = new LuaDelayedString(fieldName);
+                var tooltipDelayed = new LuaTooltip();
+                
+                var options = new Dictionary<string, object>(fieldInfoEntry);
+                options["tooltipText"] = tooltipDelayed;
+                
+                if (lonnFieldType.GetElement.Invoke(fieldNameDelayed, val, options) is LuaTableRef tbl) {
+                    Console.WriteLine($"LONN FIELD: {fieldType} -> {tbl}");
+                    
+                    field = new LuaField(tbl, val ?? "", fieldNameDelayed, tooltipDelayed, fieldType, fieldInfoEntry);
+                    //__type
+                    //var lua = tbl.Lua;
+                    //lua.Push(tbl["elements"]);
+                    //tbl.Lua.ToCSharp(lua.GetTop(), depth: 8).LogAsJson();
+                    //lua.Pop(1);
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex, $"Failed to create Loenn field: {fieldType}");
+            }
+        }
+
         field ??= GuessFromValue(val, fromMapData: true);
 
         if (field is {} && fieldInfoEntry.TryGetValue("validator", out var validatorObj) && validatorObj is LuaFunctionRef func) {

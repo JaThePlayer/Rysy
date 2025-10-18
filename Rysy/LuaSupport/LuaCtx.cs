@@ -19,7 +19,9 @@ public class LuaCtx {
 
     private static readonly string[] RequireSearchPaths = new string[] {
         "?.lua",
-        "lonnShims/?.lua"
+        "lonnShims/?.lua",
+        "lonnShims/olympUI/?.lua",
+        "lonnShims/olympUI/?/init.lua"
     };
 
     public static LuaCtx CreateNew() {
@@ -744,10 +746,19 @@ public class LuaCtx {
             """u8, "fix_shallow_copy");
 
         RegisterAPIFuncs(lua);
+        RegisterOlympui(lua);
 
         var orig = lua.AtPanic(AtLuaPanic);
 
         return luaCtx;
+    }
+
+    private static void RegisterOlympui(Lua lua) {
+        Love2dShims.Init(lua);
+        
+        lua.PCallStringThrowIfError("""
+            require("ui.init")
+            """u8, "init_olympui");
     }
 
     private static void RegisterAPIFuncs(Lua lua) {

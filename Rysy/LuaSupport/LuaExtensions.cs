@@ -353,7 +353,16 @@ public static partial class LuaExt {
     public static object? PeekTableCSharpValue(this Lua lua, int tableStackIndex, string key) {
         lua.PushString(key);
         var type = lua.GetTable(tableStackIndex);
-        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
+        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true, makeLuaTableRefs: true);
+        lua.Pop(1);
+
+        return ret;
+    }
+    
+    public static object? PeekTableCSharpValue(this Lua lua, int tableStackIndex, long key) {
+        lua.PushNumber(key);
+        var type = lua.GetTable(tableStackIndex);
+        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true, makeLuaTableRefs: true);
         lua.Pop(1);
 
         return ret;
@@ -793,21 +802,21 @@ where TArg1 : class, ILuaWrapper {
         return lua.TableToDictionary(index, depth: depth + 1, makeLuaFuncRefs: makeLuaFuncRefs);
     }
 
-    public static List<object>? ToList(this Lua lua, int index, int depth = 0) {
+    public static List<object>? ToList(this Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false, bool makeLuaTableRefs = false) {
         List<object> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharp(lua, loc, depth + 1));
+            list.Add(ToCSharp(lua, loc, depth + 1, makeLuaFuncRefs, makeLuaTableRefs));
         });
 
         return list;
     }
 
-    public static List<T>? ToList<T>(this Lua lua, int index, int depth = 0) {
+    public static List<T>? ToList<T>(this Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false, bool makeLuaTableRefs = false) {
         List<T> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            var obj = ToCSharp(lua, loc, depth + 1);
+            var obj = ToCSharp(lua, loc, depth + 1, makeLuaFuncRefs, makeLuaTableRefs);
             if (obj is T t)
                 list.Add(t);
         });
@@ -815,14 +824,14 @@ where TArg1 : class, ILuaWrapper {
         return list;
     }
 
-    public static object ToCSharp(this Lua s, int index, int depth = 0, bool makeLuaFuncRefs = false) {
+    public static object ToCSharp(this Lua s, int index, int depth = 0, bool makeLuaFuncRefs = false, bool makeLuaTableRefs = false) {
         object val = s.Type(index) switch {
             LuaType.Nil or LuaType.None => null!,
             LuaType.Boolean => s.ToBoolean(index),
             LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
             LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.FastToString(index, false),
-            LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
+            LuaType.Table => makeLuaTableRefs ? LuaTableRef.MakeFrom(s, index) :  depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
             LuaType.UserData when s.IsWrapper(index) => s.UnboxWrapper(index), 
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
