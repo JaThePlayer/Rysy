@@ -71,8 +71,8 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public IHistoryAction MoveBy(Vector2 offset) {
         var tileOffset = (offset / 8).ToPoint();
 
-        if (tileOffset.X == 0 && tileOffset.Y == 0)
-            return new MergedAction(Array.Empty<IHistoryAction>());
+        if (tileOffset is { X: 0, Y: 0 })
+            return new MergedAction();
 
         ConsumeTilesIfNeeded();
 
