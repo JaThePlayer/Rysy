@@ -306,7 +306,8 @@ rysy.tilesetWindow.description.id=Unique id for this tileset.
 rysy.tilesetWindow.description.copy=Tileset to copy defaults from.
 rysy.tilesetWindow.description.ignores=List of tileset id's that this tileset will ignore when looking for connections.\n'*' Makes it ignore ALL tilesets, except those defined in Ignore Exceptions
 rysy.tilesetWindow.description.ignoreExceptions=When Ignores is set to '*', these tilesets will NOT be ignored by this tileset.
-rysy.tilesetWindow.description.debris=Path to debris to use when this tileset gets destroyed, relative to the debris/ folder.
+rysy.tilesetWindow.description.debris=Path to debris to use when this tileset gets destroyed, relative to the `debris/` folder.
+rysy.tilesetWindow.description.debrisImpactSfx=Sfx to play when debris of this tileset hit the ground.
 
 rysy.tilesetWindow.anim.description.name=The name of this animated tile, used in tileset xml files.
 rysy.tilesetWindow.anim.description.path=Path to this animated tile's sprites.
@@ -487,6 +488,7 @@ entities.player.attributes.description.isDefaultSpawn=Whether this should be the
 entities.wire.placements.name.wire=Wire
 entities.wire.attributes.description.above=Determines whether the wire is placed in the foreground or background.
 entities.wire.attributes.description.color=Determines the colour of the wire.
+entities.wire.attributes.description.fixWindBehavior=Whether the interaction with wind should be fixed.\nDisable for old behaviour.
 
 # Cliff Side Flagline
 entities.cliffflag.placements.name.cliffflag=Cliffside Flagline
@@ -908,6 +910,7 @@ entities.triggerSpikesOriginalUp.placements.name.up_outline=Trigger Spikes (Up, 
 entities.triggerSpikesOriginalUp.placements.name.up_cliffside=Trigger Spikes (Up, Cliffside)
 entities.triggerSpikesOriginalUp.placements.name.up_reflection=Trigger Spikes (Up, Reflection)
 entities.triggerSpikesOriginalUp.attributes.description.type=Determines the visual appearance of the spike.
+entities.triggerSpikesOriginalUp.attributes.description.legacyBehavior=If enabled, disables the fix from Everest PR 921.\nhttps://github.com/EverestAPI/Everest/pull/921
 
 # Trigger Spikes Right
 entities.triggerSpikesOriginalRight.placements.name.right_default=Trigger Spikes (Right, Default)
@@ -915,6 +918,7 @@ entities.triggerSpikesOriginalRight.placements.name.right_outline=Trigger Spikes
 entities.triggerSpikesOriginalRight.placements.name.right_cliffside=Trigger Spikes (Right, Cliffside)
 entities.triggerSpikesOriginalRight.placements.name.right_reflection=Trigger Spikes (Right, Reflection)
 entities.triggerSpikesOriginalRight.attributes.description.type=Determines the visual appearance of the spike.
+entities.triggerSpikesOriginalRight.attributes.description.legacyBehavior=If enabled, disables the fix from Everest PR 921.\nhttps://github.com/EverestAPI/Everest/pull/921
 
 # Trigger Spikes Down
 entities.triggerSpikesOriginalDown.placements.name.down_default=Trigger Spikes (Down, Default)
@@ -922,6 +926,7 @@ entities.triggerSpikesOriginalDown.placements.name.down_outline=Trigger Spikes (
 entities.triggerSpikesOriginalDown.placements.name.down_cliffside=Trigger Spikes (Down, Cliffside)
 entities.triggerSpikesOriginalDown.placements.name.down_reflection=Trigger Spikes (Down, Reflection)
 entities.triggerSpikesOriginalDown.attributes.description.type=Determines the visual appearance of the spike.
+entities.triggerSpikesOriginalDown.attributes.description.legacyBehavior=If enabled, disables the fix from Everest PR 921.\nhttps://github.com/EverestAPI/Everest/pull/921
 
 # Trigger Spikes Left
 entities.triggerSpikesOriginalLeft.placements.name.left_default=Trigger Spikes (Left, Default)
@@ -929,6 +934,7 @@ entities.triggerSpikesOriginalLeft.placements.name.left_outline=Trigger Spikes (
 entities.triggerSpikesOriginalLeft.placements.name.left_cliffside=Trigger Spikes (Left, Cliffside)
 entities.triggerSpikesOriginalLeft.placements.name.left_reflection=Trigger Spikes (Left, Reflection)
 entities.triggerSpikesOriginalLeft.attributes.description.type=Determines the visual appearance of the spike.
+entities.triggerSpikesOriginalLeft.attributes.description.legacyBehavior=If enabled, disables the fix from Everest PR 921.\nhttps://github.com/EverestAPI/Everest/pull/921
 
 # Trigger Spikes Dust
 entities.triggerSpikesUp.placements.name.up=Trigger Spikes (Up, Dust)

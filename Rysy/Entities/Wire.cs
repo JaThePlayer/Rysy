@@ -26,8 +26,11 @@ public class Wire : Entity, IPlaceable {
 
     public static FieldList GetFields() => new(new {
         above = false,
-        color = Fields.RGB("595866")
+        color = Fields.RGB("595866"),
+        fixWindBehavior = Fields.Bool(false)
     });
 
-    public static PlacementList GetPlacements() => new("wire");
+    public static PlacementList GetPlacements() => new("wire", new {
+        fixWindBehavior = true,
+    });
 }
