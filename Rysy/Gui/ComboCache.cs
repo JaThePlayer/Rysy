@@ -9,7 +9,7 @@ public class ComboCache<T> {
         Token.OnInvalidate += () => CachedValueDict = null;
     }
 
-    private List<KeyValuePair<T, string>>? CachedValueDict;
+    private List<KeyValuePair<T, Searchable>>? CachedValueDict;
     private List<T>? CachedValue;
     private string? CachedSearch;
     private HashSet<string>? CachedFavorites;
@@ -28,6 +28,16 @@ public class ComboCache<T> {
 
         return Size ??= ImGuiManager.CalcListSize(values);
     }
+    
+    internal NumVector2 GetSize(IEnumerable<Searchable> values) {
+        if (Settings.Instance.FontSize != CachedSizeTextSize) {
+            Size = null;
+        }
+
+        //CachedSizeTextSize = Settings.Instance.FontSize;
+
+        return Size ??= ImGuiManager.CalcListSize(values.Select(x => x.TextWithMods));
+    }
 
     internal void Clear() {
         CachedValue = null;
@@ -36,7 +46,12 @@ public class ComboCache<T> {
         Size = null;
     }
 
-    internal List<KeyValuePair<T, string>> GetValue(IDictionary<T, string> values, string search) {
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
+    internal List<KeyValuePair<T, Searchable>> GetValue(IDictionary<T, string> values, string search)
+        => GetValue(values.ToDictionary(x => x.Key, x => new Searchable(x.Value)), search);
+#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
+
+    internal List<KeyValuePair<T, Searchable>> GetValue(IDictionary<T, Searchable> values, string search) {
         if (search != CachedSearch) {
             CachedValueDict = null;
         }
@@ -49,7 +64,7 @@ public class ComboCache<T> {
         return CachedValueDict;
     }
 
-    internal List<T> GetValue(IEnumerable<T> values, Func<T, string> toString, string search, HashSet<string>? favorites = null) {
+    internal List<T> GetValue(IEnumerable<T> values, Func<T, Searchable> toString, string search, HashSet<string>? favorites = null) {
         if (search != CachedSearch || (favorites is null != CachedFavorites is null) || (CachedFavorites?.SetEquals(favorites!) ?? false)) {
             CachedValue = null;
         }

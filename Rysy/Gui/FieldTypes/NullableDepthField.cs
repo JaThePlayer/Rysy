@@ -44,9 +44,9 @@ public sealed record NullableDepthField : Field {
         if (ImGui.BeginCombo($"##combo{fieldName}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
 
-            ImGui.InputText("Search", ref _search, 512);
+            ImGuiManager.SearchInput(ref _search);
 
-            var filtered = _comboCache.GetValue(Values, x => x.Name, _search);
+            var filtered = _comboCache.GetValue(Values, x => new Searchable(x.Name), _search);
             
             ImGui.BeginChild($"comboInner{fieldName}");
 

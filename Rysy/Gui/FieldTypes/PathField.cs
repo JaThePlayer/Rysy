@@ -11,8 +11,8 @@ using System.Text.RegularExpressions;
 
 namespace Rysy.Gui.FieldTypes;
 
-using TextureCacheKey = (string saved, string display, FoundPath path);
-using TextureCache = Cache<List<(string saved, string display, FoundPath path)>>;
+using TextureCacheKey = (string saved, Searchable searchable, FoundPath path);
+using TextureCache = Cache<List<(string saved, Searchable searchable, FoundPath path)>>;
 using RawTextureCache = Cache<List<FoundPath>>;
 
 public partial record class PathField : Field, IFieldConvertible<string> {
@@ -125,8 +125,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         var mod = ModResolver(p);
 
         var displayName = DisplayNameGetter?.Invoke(p, name) ?? name;
-
-        return (name, mod is { } ? $"{displayName} [{mod.DisplayName}]" : displayName, p);
+        return (name, new Searchable(displayName, mod), p);
     }
     
     private TextureCache CreateKnownPathsCache() {
@@ -227,19 +226,19 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         else
             chosen = paths.Find(p => p.saved == strValue);
         
-        if (chosen == default)
+        if (chosen.saved == default!)
             chosen = CreateKnownPathsEntry(FoundPath.Create(strValue, _regex) ?? new FoundPath(strValue, strValue, null));
 
         _lastChosen = chosen;
         
         if (Editable) {
-            if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.display, 
+            if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.searchable, 
                     str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(str, _regex)), tooltip: Tooltip,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
                 return chosen.saved;
             }
         } else {
-            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.display, tooltip: Tooltip,
+            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.searchable.TextWithMods, tooltip: Tooltip,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
                 return chosen.saved;
             }

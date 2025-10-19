@@ -88,6 +88,12 @@ public static class LinqExt {
             return list;
         return self.ToList();
     }
+    
+    public static IReadOnlySet<T> ToIReadOnlySetIfNotAlready<T>(this IEnumerable<T> self, IEqualityComparer<T> comparer) {
+        if (self is HashSet<T> list && list.Comparer == comparer)
+            return list;
+        return self.ToHashSet(comparer);
+    }
 
     public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb)
         where TTo : struct {
