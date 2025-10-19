@@ -241,6 +241,23 @@ public abstract class Tool {
 
     public abstract string GetMaterialDisplayName(EditorLayer layer, object material);
 
+    public virtual IReadOnlyList<string> GetMaterialMods(EditorLayer layer, object material) => material switch {
+        Placement pl => pl.GetAssociatedMods(),
+        _ => [],
+    };
+    
+    public virtual IReadOnlySet<string> GetMaterialTags(EditorLayer layer, object material) => material switch {
+        _ => SearchHelper.EmptySet,
+    };
+
+    public virtual Searchable GetMaterialSearchable(EditorLayer layer, object material) {
+        return new Searchable(
+            GetMaterialDisplayName(layer, material),
+            GetMaterialMods(layer, material),
+            GetMaterialTags(layer, material)
+        );
+    }
+
     public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
 
     public (Color outline, Color fill) GetSelectionColor(Rectangle rect) 
@@ -299,12 +316,13 @@ public abstract class Tool {
 
     private Dictionary<object, string> GroupKeyToMainPlacementName = new();
     
-    private (object material, string displayName) GetMainPlacementForGroupKey(object key, List<(object material, string displayName)> group) {
+    private (object material, Searchable searchable) GetMainPlacementForGroupKey(object key, 
+        List<(object material, Searchable searchable)> group) {
         if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
             return group[0];
 
         foreach (var pair in group) {
-            if (pair.displayName == targetName && pair.material is { }) {
+            if (pair.searchable.Text == targetName && pair.material is { }) {
                 return pair;
             }
         }
@@ -324,7 +342,7 @@ public abstract class Tool {
 
         var cachedSearch = CachedSearch ??= currentLayer is null ? [] :
             (GetMaterials(currentLayer) ?? [])
-            .Select(mat => (mat, GetMaterialDisplayName(currentLayer, mat)))
+            .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search, Favorites)
             .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
             .Select(gr => gr.ToList())
@@ -361,7 +379,7 @@ public abstract class Tool {
                 var groupKey = GetGroupKeyForMaterial(group[0].material);
                 var first = GetMainPlacementForGroupKey(groupKey, group);
                 
-                RenderMaterialListElement(first.material, first.displayName);
+                RenderMaterialListElement(first.material, first.searchable.TextWithMods);
                 
                 // draw dropdown for alternate placements
                 if (group.Count > 1) {
@@ -377,9 +395,9 @@ public abstract class Tool {
                     style.FramePadding.Y = lasty;
                     
                     if (comboOpened) {
-                        foreach (var (mat, displayName) in group) {
-                            if (RenderMaterialListElement(mat, displayName)) {
-                                GroupKeyToMainPlacementName[groupKey] = displayName;
+                        foreach (var (mat, searchable) in group) {
+                            if (RenderMaterialListElement(mat, searchable.TextWithMods)) {
+                                GroupKeyToMainPlacementName[groupKey] = searchable.Text;
                             }
                         }
                         
@@ -401,7 +419,7 @@ public abstract class Tool {
     public virtual bool AllowSwappingRooms => true;
 
     private EditorLayer? CachedLayer;
-    private List<List<(object material, string displayName)>>? CachedSearch;
+    private List<List<(object material, Searchable displayName)>>? CachedSearch;
 
     public virtual void ClearMaterialListCache() {
         CachedSearch = null;
@@ -432,7 +450,7 @@ public abstract class Tool {
         var search = Search;
         // pass the persistence key as the ID to imgui, because otherwise if you had the search bar selected while switching layers/tools,
         // your search would persist to the different layer/tool
-        if (ImGui.InputText(Interpolator.Temp($"Search##{SearchPersistenceKey}"), ref search, 512)) {
+        if (ImGuiManager.SearchInput(ref search, SearchPersistenceKey)) {
             Search = search;
             CachedSearch = null;
         }

@@ -66,6 +66,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 ? pl.Name 
                 : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.SID ?? ""}.placements.name"));
 
+            /*
             var associated = pl.GetAssociatedMods();
             if (associated is { Count: > 0 }) {
                 return $"{name} [{string.Join(',', associated.Select(ModMeta.ModNameToDisplayName))}]";
@@ -73,6 +74,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             
             if (pl.PlacementHandler.ShowVanillaAsDefiningModInPlacementName())
                 return $"{name} [Vanilla]";
+            */
             
             return name;
         }

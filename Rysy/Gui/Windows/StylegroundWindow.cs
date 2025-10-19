@@ -271,17 +271,13 @@ public class StylegroundWindow : Window {
         RemoveForm();
     }
 
-    private string GetPlacementName(Placement placement) {
+    private Searchable GetPlacementName(Placement placement) {
         var prefix = $"style.effects.{placement.SID}.name";
         var name = placement.Name.TranslateOrNull(prefix)
             ?? LangRegistry.TranslateOrNull(prefix)
             ?? placement.SID!.Split('/')[^1].Humanize();
 
-        if (placement.GetDefiningMod() is { } mod) {
-            return $"{name} [{mod.DisplayName}]";
-        }
-
-        return name;
+        return new Searchable(name, placement.GetDefiningMod());
     }
 
     private void SetOrAddSelection(Style style) {

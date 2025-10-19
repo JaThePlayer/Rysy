@@ -45,6 +45,12 @@ public readonly struct ReadOnlyArray<T>(T[] from) : IReadOnlyList<T> {
 /// A read-only wrapper over a list, used to avoid enumerator allocations from IReadOnlyList
 /// </summary>
 public readonly struct ReadOnlyList<T>(List<T> from) : IReadOnlyList<T> {
+    private static readonly List<T> EmptyList = [];
+    
+    public ReadOnlyList() : this(EmptyList) {
+        
+    }
+    
     public List<T>.Enumerator GetEnumerator() => from.GetEnumerator();
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
