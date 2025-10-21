@@ -1,5 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Gui;
 using Rysy.Mods;
 using System.Diagnostics;
 
@@ -85,45 +84,91 @@ public static class SearchHelper {
     private static string ToStringUnderscoresAreSpaces(ReadOnlySpan<char> txt) {
         return txt.ToString().Replace('_', ' ').Trim();
     }
+
+    private static ReadOnlySpan<char> TrimLeft(ReadOnlySpan<char> txt, out string trimmed) {
+        var ret = txt.TrimStart();
+        if (txt.Length == ret.Length) {
+            trimmed = string.Empty;
+            return ret;
+        }
+        
+        trimmed = txt[..^ret.Length].ToString();
+        
+        return ret;
+    }
     
-    internal static ISearchTerm ParseSearch(ReadOnlySpan<char> txt) {
-        txt = txt.Trim();
+    private static ReadOnlySpan<char> TrimRight(ReadOnlySpan<char> txt, out string trimmed) {
+        var ret = txt.TrimEnd();
+        if (txt.Length == ret.Length) {
+            trimmed = string.Empty;
+            return ret;
+        }
+        
+        trimmed = txt.Slice(txt.Length - (txt.Length - ret.Length)).ToString();
+        return ret;
+    }
+    
+    internal static SearchTerm ParseSearch(ReadOnlySpan<char> txt) {
+        txt = TrimLeft(txt, out var leftTrivia);
+        txt = TrimRight(txt, out var rightTrivia);
         if (txt.IsWhiteSpace())
-            return EmptySearchTerm.Instance;
+            return new EmptySearchTerm(leftTrivia, rightTrivia);
+
+        SearchTerm term;
         
         var termEnd = txt.IndexOfAny(" |");
         if (termEnd == -1) {
-            return txt switch {
-                ['@', .. var modName] => new ModSearchTerm(ToStringUnderscoresAreSpaces(modName)),
-                ['#', .. var tagName] => new TagSearchTerm(ToStringUnderscoresAreSpaces(tagName)),
-                _ => new TextSearchTerm(ToStringUnderscoresAreSpaces(txt))
+            term = txt switch {
+                ['@', .. var modName] => new ModSearchTerm(modName),
+                ['#', .. var tagName] => new TagSearchTerm(tagName),
+                _ => new TextSearchTerm(txt)
+            };
+        } else {
+            var leftSpan = txt[..termEnd];
+            var rightSpan = txt[(termEnd + 1)..];
+            var left = ParseSearch(leftSpan);
+            var right = ParseSearch(rightSpan);
+
+            term = txt[termEnd] switch {
+                ' ' => new AndSearchTerm(left, right),
+                '|' => new OrSearchTerm(left, right),
+                _ => throw new UnreachableException()
             };
         }
-        var leftSpan = txt[..termEnd];
-        var rightSpan = txt[(termEnd + 1)..];
-        var left = ParseSearch(leftSpan);
-        var right = ParseSearch(rightSpan);
-
-        switch (txt[termEnd]) {
-            case ' ':
-                return new AndSearchTerm(left, right);
-            case '|':
-                return new OrSearchTerm(left, right);
-            default:
-                throw new UnreachableException();
-        }
+        
+        term.LeftTrivia = leftTrivia;
+        term.RightTrivia = rightTrivia;
+            
+        return term;
     }
     
-    internal interface ISearchTerm {
-        public void RenderImGui();
+    internal abstract class SearchTerm {
+        public string LeftTrivia { get; set; }
+        public string RightTrivia { get; set; }
         
-        public bool Matches(Searchable search);
+        protected abstract void RenderImGuiInner();
+
+        public void RenderImGui() {
+            if (LeftTrivia is not "") {
+                ImGui.Text(LeftTrivia);
+                ImGui.SameLine(0f, 0f);
+            }
+
+            RenderImGuiInner();
+            
+            if (RightTrivia is not "") {
+                ImGui.SameLine(0f, 0f);
+                ImGui.Text(RightTrivia);
+            }
+        }
         
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining);
+        public abstract bool Matches(Searchable search);
+        
+        public abstract bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining);
     }
 
-    private class AndSearchTerm(ISearchTerm left, ISearchTerm right) : ISearchTerm {
-        public void RenderImGui() {
+    private sealed class AndSearchTerm(SearchTerm left, SearchTerm right) : SearchTerm {
+        protected override void RenderImGuiInner() {
             left.RenderImGui();
             ImGui.SameLine(0f, 0f);
             ImGui.Text(" ");
@@ -131,9 +176,9 @@ public static class SearchHelper {
             right.RenderImGui();
         }
 
-        public bool Matches(Searchable search) => left.Matches(search) && right.Matches(search);
+        public override bool Matches(Searchable search) => left.Matches(search) && right.Matches(search);
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             if (!left.StartsWith(search, curr, out remaining))
                 return false;
 
@@ -141,80 +186,92 @@ public static class SearchHelper {
         }
     }
     
-    private class OrSearchTerm(ISearchTerm left, ISearchTerm right) : ISearchTerm {
-        public void RenderImGui() {
+    private sealed class OrSearchTerm(SearchTerm left, SearchTerm right) : SearchTerm {
+        protected override void RenderImGuiInner() {
             left.RenderImGui();
             ImGui.SameLine(0f, 0f);
             ImGui.Text("|");
-            ImGui.SameLine();
+            ImGui.SameLine(0f, 0f);
             right.RenderImGui();
         }
         
-        public bool Matches(Searchable search) => left.Matches(search) || right.Matches(search);
+        public override bool Matches(Searchable search) => left.Matches(search) || right.Matches(search);
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             return left.StartsWith(search, curr, out remaining) 
                 || right.StartsWith(search, curr, out remaining);
         }
     }
 
-    private class TextSearchTerm(string text) : ISearchTerm {
-        public void RenderImGui() {
-            ImGui.Text(text);
+    private sealed class TextSearchTerm(ReadOnlySpan<char> txt) : SearchTerm {
+        private readonly string _term = ToStringUnderscoresAreSpaces(txt);
+        private readonly byte[] _termU8 = Interpolator.TempU8(txt).ToArray();
+        
+        protected override void RenderImGuiInner() {
+            ImGui.Text(_termU8);
         }
 
-        public bool Matches(Searchable search) => search.Text.Contains(text, StringComparison.OrdinalIgnoreCase);
+        public override bool Matches(Searchable search) => search.Text.Contains(_term, StringComparison.OrdinalIgnoreCase);
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
-            if (curr.StartsWith(text, StringComparison.OrdinalIgnoreCase)) {
-                remaining = curr[text.Length..];
+            if (curr.StartsWith(_term, StringComparison.OrdinalIgnoreCase)) {
+                remaining = curr[_term.Length..];
                 return true;
             }
             return false;
         }
     }
     
-    private class ModSearchTerm(string modName) : ISearchTerm {
-        public void RenderImGui() {
-            ImGui.TextColored(Color.LightSkyBlue.ToNumVec4(), Interpolator.TempU8($"@{modName}"));
+    private sealed class ModSearchTerm(ReadOnlySpan<char> txt) : SearchTerm {
+        private readonly string _modName = ToStringUnderscoresAreSpaces(txt);
+        private readonly byte[] _txtU8 = Interpolator.TempU8($"@{txt}").ToArray();
+        
+        protected override void RenderImGuiInner() {
+            ImGui.TextColored(Color.LightSkyBlue.ToNumVec4(), _txtU8);
         }
 
-        public bool Matches(Searchable search) => search.Mods.Any(x => 
-            x.Contains(modName, StringComparison.OrdinalIgnoreCase)
-            || (ModRegistry.GetModByName(x) is {} mod && mod.DisplayName.Contains(modName, StringComparison.OrdinalIgnoreCase)));
+        public override bool Matches(Searchable search) => search.Mods.Any(x => 
+            x.Contains(_modName, StringComparison.OrdinalIgnoreCase)
+            || (ModRegistry.GetModByName(x) is {} mod && mod.DisplayName.Contains(_modName, StringComparison.OrdinalIgnoreCase)));
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
             return search.Mods.Any(x => 
-                x.StartsWith(modName, StringComparison.OrdinalIgnoreCase)
-                || (ModRegistry.GetModByName(x) is {} mod && mod.DisplayName.StartsWith(modName, StringComparison.OrdinalIgnoreCase)));;
+                x.StartsWith(_modName, StringComparison.OrdinalIgnoreCase)
+                || (ModRegistry.GetModByName(x) is {} mod && mod.DisplayName.StartsWith(_modName, StringComparison.OrdinalIgnoreCase)));;
         }
     }
     
-    private class TagSearchTerm(string tagName) : ISearchTerm {
-        public void RenderImGui() {
-            ImGui.TextColored(Color.Gold.ToNumVec4(), Interpolator.TempU8($"#{tagName}"));
+    private sealed class TagSearchTerm(ReadOnlySpan<char> txt) : SearchTerm {
+        private readonly string _tagName = ToStringUnderscoresAreSpaces(txt);
+        private readonly byte[] _txtU8 = Interpolator.TempU8(txt).ToArray();
+        
+        protected override void RenderImGuiInner() {
+            ImGui.TextColored(Color.Gold.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
         }
         
-        public bool Matches(Searchable search) => search.Tags.Contains(tagName);
+        public override bool Matches(Searchable search) => search.Tags.Contains(_tagName);
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
             return true;
         }
     }
     
-    private class EmptySearchTerm : ISearchTerm {
-        public static readonly EmptySearchTerm Instance = new();
-
-        public void RenderImGui() {
+    private sealed class EmptySearchTerm : SearchTerm {
+        public EmptySearchTerm(string leftTrivia, string rightTrivia) {
+            LeftTrivia = leftTrivia;
+            RightTrivia = rightTrivia;
+        }
+        
+        protected override void RenderImGuiInner() {
             
         }
 
-        public bool Matches(Searchable search) => true;
+        public override bool Matches(Searchable search) => true;
 
-        public bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
+        public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
             return true;
         }

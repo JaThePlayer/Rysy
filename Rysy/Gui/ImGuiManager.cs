@@ -370,18 +370,19 @@ public static class ImGuiManager {
         var searchText = "rysy.search".Translate();
         search ??= "";
         var pos = ImGui.GetCursorPos();
-        
-        /*
         ImGui.PushStyleColor(ImGuiCol.Text, default(int));
-        var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : Interpolator.Temp($"{searchText}##{persistenceKey}"), ref search, 512);
+        
+        var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() 
+            ? Interpolator.TempU8($"{searchText}") 
+            : Interpolator.TempU8($"{searchText}##{persistenceKey}"), ref search, 512);
         ImGui.PopStyleColor(1);
         ImGui.SetCursorPos(pos + ImGui.GetStyle().FramePadding);
         var parsed = SearchHelper.ParseSearch(search);
         parsed.RenderImGui();
         
         return ret;
-        */
-        return ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : $"{searchText}##{persistenceKey}", ref search, 512);
+        
+        //return ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : $"{searchText}##{persistenceKey}", ref search, 512);
     }
 
     private static bool RenderSearchBarInDropdown(NumVector2 dropdownSize, ref string search) {
