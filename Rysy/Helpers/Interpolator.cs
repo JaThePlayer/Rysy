@@ -52,6 +52,12 @@ public sealed class Interpolator {
         => Shared.InterpolateU8(h);
     
     /// <summary>
+    /// Interpolates into a temporary buffer that will be overwritten the next time this method is called.
+    /// </summary>
+    public static ReadOnlySpan<byte> TempU8(ReadOnlySpan<char> h)
+        => Shared.InterpolateU8($"{h}");
+    
+    /// <summary>
     /// Interpolates into a buffer that will only be overwritten the next time <see cref="ClearPreserved"/> is called.
     /// </summary>
     public static ReadOnlySpan<char> Preserved(Handler h)
