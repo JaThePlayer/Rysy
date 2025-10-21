@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Gui;
 using Rysy.Mods;
 using System.Diagnostics;
@@ -177,7 +177,7 @@ public static class SearchHelper {
     
     private class ModSearchTerm(string modName) : ISearchTerm {
         public void RenderImGui() {
-            ImGui.TextColored(Color.LightSkyBlue.ToNumVec4(), Interpolator.Temp($"@{modName}"));
+            ImGui.TextColored(Color.LightSkyBlue.ToNumVec4(), Interpolator.TempU8($"@{modName}"));
         }
 
         public bool Matches(Searchable search) => search.Mods.Any(x => 
@@ -194,7 +194,7 @@ public static class SearchHelper {
     
     private class TagSearchTerm(string tagName) : ISearchTerm {
         public void RenderImGui() {
-            ImGui.TextColored(Color.Gold.ToNumVec4(), Interpolator.Temp($"#{tagName}"));
+            ImGui.TextColored(Color.Gold.ToNumVec4(), Interpolator.TempU8($"#{tagName}"));
         }
         
         public bool Matches(Searchable search) => search.Tags.Contains(tagName);

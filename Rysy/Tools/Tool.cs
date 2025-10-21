@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using JetBrains.Annotations;
 using Rysy.Extensions;
 using Rysy.Graphics;
@@ -358,14 +358,14 @@ public abstract class Tool {
         var skip = (ImGui.GetScrollY() / elementHeight) - 1;
 
         var totalCount = cachedSearch.Count + (cachedSearch.Count % columns > 0 ? columns + 1 : 0) + 1;
-        ImGui.BeginChild(Interpolator.Temp($"##{GetType().Name}_{Layer.Name}"), 
+        ImGui.BeginChild(Interpolator.TempU8($"##{GetType().Name}_{Layer.Name}"), 
             new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), 
             ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
         // make sure columns stay consistent
         skip -= skip % columns;
         skip = Math.Min(skip, cachedSearch.Count - elementsVisible);
         if (skip > 0) {
-            ImGui.BeginChild((uint) 12347, new(0, skip * elementHeight));
+            ImGui.BeginChild("mat-list", new NumVector2(0, skip * elementHeight));
             ImGui.EndChild();
         }
 
@@ -379,19 +379,22 @@ public abstract class Tool {
                 var groupKey = GetGroupKeyForMaterial(group[0].material);
                 var first = GetMainPlacementForGroupKey(groupKey, group);
                 
-                RenderMaterialListElement(first.material, first.searchable.TextWithMods);
-                
                 // draw dropdown for alternate placements
                 if (group.Count > 1) {
-                    ImGui.SameLine();
                     var style = ImGui.GetStyle();
                     var columnWidth = columns > 1 ? ImGui.GetColumnWidth() : ImGui.GetWindowWidth();
-                    
                     var lasty = style.FramePadding.Y;
-                    style.FramePadding.Y = (MaterialListElementHeight() - ImGui.GetTextLineHeightWithSpacing()) / 2;
-                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2);
+
+                    var elHeight = MaterialListElementHeight();
+
+                    //ImGui.BeginChild($"##{first.searchable.TextWithMods}", new NumVector2(columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2, elHeight));
+                    RenderMaterialListElement(first.material, first.searchable.TextWithMods);
+                    //ImGui.EndChild();
                     
-                    var comboOpened = ImGui.BeginCombo(Interpolator.Temp($"##{rendered}"), "", ImGuiComboFlags.NoPreview);
+                    style.FramePadding.Y = (elHeight - ImGui.GetTextLineHeightWithSpacing()) / 2;
+                    ImGui.SameLine();
+                    ImGui.SetCursorPosX(ImGui.GetColumnOffset() + columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2);
+                    var comboOpened = ImGui.BeginCombo(Interpolator.TempU8($"##combo-{first.searchable.TextWithMods}"), "", ImGuiComboFlags.NoPreview);
                     style.FramePadding.Y = lasty;
                     
                     if (comboOpened) {
@@ -403,6 +406,8 @@ public abstract class Tool {
                         
                         ImGui.EndCombo();
                     }
+                } else {
+                    RenderMaterialListElement(first.material, first.searchable.TextWithMods);
                 }
                 
                 if (columns > 1)
@@ -514,13 +519,13 @@ public abstract class Tool {
         }
         
         var displayName = name;
-        if (ImGui.Selectable(Interpolator.Temp($"##{displayName}"), currentMaterial == material, 
+        if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), currentMaterial == material, 
                 ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
             ret = true;
         }
         if (ImGui.IsItemHovered()) {
-            if (Input.Mouse.LeftDoubleClicked()) {
+            if (ImGui.IsItemActive() && Input.Mouse.LeftDoubleClicked()) {
                 ToggleFavorite(name);
                 Input.Mouse.ConsumeLeft();
             }
@@ -564,7 +569,7 @@ public abstract class Tool {
         if (showPlacementIcons)
             cursorStart.Y += (previewOrNull?.H / 2 - ImGui.GetFontSize() / 2f) ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
-        ImGui.Text(favorites is { } && favorites.Contains(name) ? Interpolator.Temp($"* {displayName}") : displayName);
+        ImGui.Text(favorites is { } && favorites.Contains(name) ? $"* {displayName}" : displayName);
 
         return ret;
     }

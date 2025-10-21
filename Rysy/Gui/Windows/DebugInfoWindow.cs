@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Markdig.Syntax;
 using Rysy.Helpers;
 using Rysy.History;
@@ -6,6 +6,7 @@ using Rysy.LuaSupport;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Rysy.Gui.Windows;
 
@@ -115,7 +116,7 @@ public class DebugInfoWindow : Window {
 
         if (RysyEngine.Scene is EditorScene editor) {
             if (ImGui.CollapsingHeader("Lua Stats:")) {
-                ImGui.Text(Interpolator.Temp($"Wrappers alive: {LuaExt.NeoWrapperCount}, slots available: {LuaExt.NeoWrappers.Count}"));
+                ImGui.Text(Interpolator.TempU8($"Wrappers alive: {LuaExt.NeoWrapperCount}, slots available: {LuaExt.NeoWrappers.Count}"));
                 if (ImGui.Button("Print wrappers to console")) {
                     lock (LuaExt.NeoWrappers) {
                         Console.WriteLine("Lua wrappers alive:");
@@ -185,7 +186,7 @@ public class DebugInfoWindow : Window {
 
         if (ImGui.Button("Save style to clipboard")) {
             ImGuiStylePtr ptr = ImGui.GetStyle();
-            Input.Clipboard.Set((*ptr.NativePtr).ToJson());
+            Input.Clipboard.Set(Unsafe.BitCast<ImGuiStyle, ImGuiThemer.ImGuiStyleSerializable>(*ptr.Handle).ToJson());
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.Windows;

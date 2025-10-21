@@ -1,5 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace Rysy.Helpers;
 
@@ -72,13 +74,18 @@ public sealed class Interpolator {
     
     public ReadOnlySpan<byte> InterpolateU8([InterpolatedStringHandlerArgument("")] HandlerU8 h)
     {
+        // Make sure the buffer ends with a null terminator, as some imgui functions expect it.
+        if (h.Result is not [.., (byte)'\0'])
+            h.AppendLiteral("\0"u8);
+        
         _bufferU8 = h.Data;
         if (ManualClear) {
             // Move the start index further so that later interpolation steps don't overwrite existing ones
             _startIndex += h.Result.Length;
         }
         
-        return h.Result;
+        // Chop off the null terminator from the returned span though.
+        return h.Result[..^1];
     }
     
     public Span<char> Clone(ReadOnlySpan<char> str) {
@@ -147,6 +154,14 @@ public sealed class Interpolator {
             _len += data.Length;
         }
         
+        public void AppendLiteral(ReadOnlySpan<char> data) {
+            int written;
+            while (Utf8.FromUtf16(data, RemainingSpan(), out _, out written) is OperationStatus.DestinationTooSmall) {
+                Expand(Data.Length * 2);
+            }
+            _len += written;
+        }
+        
         public void AppendFormatted(ReadOnlySpan<byte> str)
         {
             AppendLiteral(str);
@@ -154,7 +169,7 @@ public sealed class Interpolator {
         
         public void AppendFormatted(ReadOnlySpan<char> str)
         {
-            AppendLiteral(Encoding.UTF8.GetBytes(str.ToArray()));
+            AppendLiteral(str);
         }
         
         public void AppendFormatted<T2>(T2 v) where T2 : IUtf8SpanFormattable

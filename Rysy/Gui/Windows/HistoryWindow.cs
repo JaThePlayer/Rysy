@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.History;
@@ -26,7 +26,7 @@ public class HistoryWindow : Window {
         if (ImGui.BeginListBox("Actions")) {
             int i = 0;
             foreach (var action in history.Actions) {
-                if (ImGui.Selectable(Interpolator.Shared.Interpolate($"{action.GetType().Name}##{i++}"), _selectedAction == action)) {
+                if (ImGui.Selectable(Interpolator.Shared.InterpolateU8($"{action.GetType().Name}##{i++}"), _selectedAction == action)) {
                     _selectedAction = action;
                     var packed = HistorySerializer.SerializeAnyToElement(action);
                     _selectedActionJson = packed.ToJson();

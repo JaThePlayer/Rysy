@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
@@ -423,7 +423,7 @@ public sealed class TilesetWindow : Window {
             flags |= ImGuiTreeNodeFlags.Selected;
         }
 
-        var open = ImGui.TreeNodeEx(Interpolator.Temp($"##{id}"), flags);
+        var open = ImGui.TreeNodeEx(Interpolator.TempU8($"##{id}"), flags);
         var clicked = ImGui.IsItemClicked();
         var tileid = entry.Id;
         var bg = _bg;
@@ -474,7 +474,7 @@ public sealed class TilesetWindow : Window {
             flags |= ImGuiTreeNodeFlags.Selected;
         }
 
-        var open = ImGui.TreeNodeEx(Interpolator.Temp($"##{id}"), flags);
+        var open = ImGui.TreeNodeEx(Interpolator.TempU8($"##{id}"), flags);
         var clicked = ImGui.IsItemClicked();
         var tileid = entry.Name;
         var sid = $"d_ctx_{id}";
@@ -519,7 +519,7 @@ public sealed class TilesetWindow : Window {
             return;
         }
 
-        ImGui.BeginChild("list", new(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
+        ImGui.BeginChild("list", new NumVector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         
         var entries = _tab switch {
             Tabs.Bg or Tabs.Fg => GetAutotiler(_bg).Tilesets.Values.AsEnumerable<object>(),

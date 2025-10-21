@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Rysy.Extensions;
@@ -76,7 +76,7 @@ public record struct TextEmphasis {
     }
     
     public TextEmphasisPushCtx PushToImgui() {
-        ImGui.PushFont(Font());
+        ImGui.PushFont(Font(), 0f);
         var start = ImGui.GetCursorScreenPos();
         var colorPushed = false;
 

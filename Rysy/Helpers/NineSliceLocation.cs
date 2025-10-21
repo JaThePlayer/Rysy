@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 
 namespace Rysy.Helpers;
 
@@ -20,15 +20,15 @@ public enum NineSliceLocation {
 
 public static class NineSliceLocationExt {
     public static ImGuiMouseCursor ToMouseCursor(this NineSliceLocation loc) => loc switch {
-        NineSliceLocation.TopLeft => ImGuiMouseCursor.ResizeNWSE,
-        NineSliceLocation.TopMiddle => ImGuiMouseCursor.ResizeNS,
-        NineSliceLocation.TopRight => ImGuiMouseCursor.ResizeNESW,
-        NineSliceLocation.Left => ImGuiMouseCursor.ResizeEW,
+        NineSliceLocation.TopLeft => ImGuiMouseCursor.ResizeNwse,
+        NineSliceLocation.TopMiddle => ImGuiMouseCursor.ResizeNs,
+        NineSliceLocation.TopRight => ImGuiMouseCursor.ResizeNesw,
+        NineSliceLocation.Left => ImGuiMouseCursor.ResizeEw,
         NineSliceLocation.Middle => ImGuiMouseCursor.None,
-        NineSliceLocation.Right => ImGuiMouseCursor.ResizeEW,
-        NineSliceLocation.BottomLeft => ImGuiMouseCursor.ResizeNESW,
-        NineSliceLocation.BottomMiddle => ImGuiMouseCursor.ResizeNS,
-        NineSliceLocation.BottomRight => ImGuiMouseCursor.ResizeNWSE,
+        NineSliceLocation.Right => ImGuiMouseCursor.ResizeEw,
+        NineSliceLocation.BottomLeft => ImGuiMouseCursor.ResizeNesw,
+        NineSliceLocation.BottomMiddle => ImGuiMouseCursor.ResizeNs,
+        NineSliceLocation.BottomRight => ImGuiMouseCursor.ResizeNwse,
         _ => ImGuiMouseCursor.None,
     };
 }

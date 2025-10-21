@@ -2,7 +2,7 @@
 using Rysy.Gui.Windows;
 using Rysy.History;
 using Rysy.Scripting;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Layers;
 

@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
@@ -958,7 +958,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         ImGui.Text(entity.Entity.Name);
                         break;
                     case NodeSelectionHandler node:
-                        ImGui.Text(Interpolator.Temp($"{node.Entity.Name}[{node.NodeIdx}]"));
+                        ImGui.Text(Interpolator.TempU8($"{node.Entity.Name}[{node.NodeIdx}]"));
                         break;
                     case RoomSelectionHandler room:
                         ImGui.Text(room.Room.Name);
@@ -971,13 +971,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.Temp($"Deselect##{selection.GetHashCode()}"))) {
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.TempU8($"Deselect##{selection.GetHashCode()}"))) {
                     DeselectOnEndOfFrame(selection);
                 }
                 HighlightIfHovered(SelectionsToHighlight, selection);
                 ImGui.TableNextColumn();
 
-                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.Temp($"Edit##{selection.GetHashCode()}"))) {
+                if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.TempU8($"Edit##{selection.GetHashCode()}"))) {
                     RightClickOnEndOfFrame(selection);
                 }
                 HighlightIfHovered(SelectionsToHighlight, selection);
