@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
@@ -349,7 +349,7 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     public void RenderList(ModMeta mod) {
-        ImGui.BeginChild("list", new(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f));
+        ImGui.BeginChild("list", new NumVector2(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f));
 
         var entries = Entries;
 

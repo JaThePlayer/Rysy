@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS0649
 
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.FieldTypes;

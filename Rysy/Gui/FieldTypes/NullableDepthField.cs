@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Helpers;
 
 using DepthValue = (int Value, string Name);

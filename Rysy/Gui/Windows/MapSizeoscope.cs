@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.History;
@@ -46,7 +46,8 @@ public sealed class MapSizeoscopeWindow : Window {
         base.Render();
 
         ImGui.Checkbox("Group same entities", ref _group);
-        ImGui.Text(Interpolator.Temp($"{_package.Name} - {_fullSize.ToFilesize()}"));
+        
+        ImGui.Text(Interpolator.TempU8($"{_package.Name} - {_fullSize.ToFilesize().ToString()}"));
 
         ImGui.BeginChild("scrollbar"); // Allow for a scrollbar
         
@@ -76,19 +77,21 @@ public sealed class MapSizeoscopeWindow : Window {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     const int maxSize = 128;
-                    var trimmedName = str.AsSpan().Trim();
+                    var trimmedName = str.Trim();
                     var nameSpan = trimmedName;
                     if (trimmedName.Length > maxSize) {
-                        nameSpan = Interpolator.Temp($"{nameSpan[..maxSize]} (...)");
+                        if (ImGui.TreeNodeEx(Interpolator.TempU8($"{nameSpan.AsSpan()[..maxSize]} (...)"), ImGuiTreeNodeFlags.Bullet)) 
+                            ImGui.TreePop();
+                    } else {
+                        if (ImGui.TreeNodeEx(nameSpan, ImGuiTreeNodeFlags.Bullet)) 
+                            ImGui.TreePop();
                     }
-                    
-                    if (ImGui.TreeNodeEx(nameSpan, ImGuiTreeNodeFlags.Bullet)) 
-                        ImGui.TreePop();
+
                     if (trimmedName.Length > maxSize && ImGui.IsItemHovered()) {
                         ImGui.SetTooltip(trimmedName);
                     }
                     
-                    var size = Info(str).Size.ToFilesize().ToSpanShared();
+                    var size = Info(str).Size.ToFilesize().ToSpanSharedU8();
                     ImGui.TableNextColumn();
                     ImGui.Text(size);
                     ImGui.TableNextColumn();
@@ -146,13 +149,13 @@ public sealed class MapSizeoscopeWindow : Window {
         ImGui.TableNextColumn();
 
         var opened = ImGui.TreeNodeEx(
-            Interpolator.Temp($"{name}##{hashCode}"),
+            Interpolator.TempU8($"{name}##{hashCode}"),
             children is { Length: > 0 } ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.Bullet);
         
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.TotalSize.ToFilesize().ToSpanShared());
+        ImGui.Text(detailed.TotalSize.ToFilesize().ToSpanSharedU8());
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.SelfSize.ToFilesize().ToSpanShared());
+        ImGui.Text(detailed.SelfSize.ToFilesize().ToSpanSharedU8());
         
         if (opened) {
             if (attributes is { }) {
@@ -160,7 +163,7 @@ public sealed class MapSizeoscopeWindow : Window {
                 foreach (var (k, v) in attributes) {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.Text(Interpolator.Temp($"{k} = {v?.ToString() ?? "null"}"));
+                    ImGui.Text(Interpolator.TempU8($"{k} = {v?.ToString() ?? "null"}"));
                 }
                 
                 

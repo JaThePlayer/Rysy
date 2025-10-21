@@ -4,6 +4,4 @@ public interface IImGuiResourceManager {
     public IntPtr BindTexture(Texture2D tex);
 
     public void UnbindTexture(IntPtr texPtr);
-
-    public bool BuildFontAtlas();
 }

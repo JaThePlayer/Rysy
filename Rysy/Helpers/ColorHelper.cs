@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 
 namespace Rysy.Helpers;
@@ -335,9 +335,10 @@ public static class ColorHelperExtensions {
     /// <returns></returns>
     public static Color AddHSV(this Color c, float h, float s, float v) {
         var cv = c.ToNumVec4();
+        float oh = 0f, os = 0f, ov = 0f;
 
-        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, out var oh, out var os, out var ov);
-        ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), out cv.X, out cv.Y, out cv.Z);
+        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, ref oh, ref os, ref ov);
+        ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), ref cv.X, ref cv.Y, ref cv.Z);
 
         return new(cv.ToXna());
     }

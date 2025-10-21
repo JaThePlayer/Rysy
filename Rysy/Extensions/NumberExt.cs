@@ -146,6 +146,12 @@ public static class NumberExt {
         /// </summary>
         /// <returns></returns>
         public ReadOnlySpan<char> ToSpanShared() => Interpolator.Temp($"{Value}{UnitAbbreviation}");
+        
+        /// <summary>
+        /// Formats the filesize to a span using <see cref="Interpolator.TempU8"/>
+        /// </summary>
+        /// <returns></returns>
+        public ReadOnlySpan<byte> ToSpanSharedU8() => Interpolator.TempU8($"{Value}{UnitAbbreviation}");
     }
 
     /// <summary>

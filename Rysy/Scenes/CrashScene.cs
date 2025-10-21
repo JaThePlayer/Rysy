@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Platforms;

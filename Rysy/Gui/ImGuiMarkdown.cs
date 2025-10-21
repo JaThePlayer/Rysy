@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Syntax;
@@ -21,7 +21,7 @@ internal static partial class ImGuiMarkdown {
         .Build();
 
     public static void RenderMarkdown(MarkdownObject doc) {
-        ImGui.PushFont(ImGuiThemer.DefaultFont);
+        ImGui.PushFont(ImGuiThemer.DefaultFont, 0f);
         var startX = ImGui.GetCursorPosX();
         
         if (doc is ContainerBlock container) {
@@ -86,7 +86,7 @@ internal static partial class ImGuiMarkdown {
                         if (fencedCodeBlock.Lines is {})
                             foreach (var line in fencedCodeBlock.Lines.Lines.AsSpan()
                                          .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
-                                ImGui.Text(line.Slice.AsSpan());
+                                ImGui.Text(line.Slice.AsSpan().ToString());
                             }
                         ImGui.EndDisabled();
                         break;
@@ -97,7 +97,7 @@ internal static partial class ImGuiMarkdown {
                         if (codeBlock.Inline is null) {
                             if (codeBlock.Lines is {})
                                 foreach (var line in codeBlock.Lines.Lines) {
-                                    ImGui.Text(line.Slice.AsSpan());
+                                    ImGui.Text(line.Slice.AsSpan().ToString());
                                     first = false;
                                 }
                             
@@ -211,14 +211,14 @@ internal static partial class ImGuiMarkdown {
         
         fixed (byte* utf8Ptr = &utf8[0]) {
             var textEnd = &utf8Ptr[utf8.Length];
-            var endPrevLine = CalcWordWrapPosition(pFont.NativePtr, scale, utf8Ptr, textEnd, widthLeft);
+            var endPrevLine = CalcWordWrapPosition(pFont.Handle, scale, utf8Ptr, textEnd, widthLeft);
 
             if (endPrevLine == textEnd) {
                 //ImGuiNative.igText(utf8ptr);
-                ImGui.Text(textUtf16);
+                ImGui.Text(textUtf16.ToString());
                 return;
             }
-            ImGuiNative.igTextUnformatted(utf8Ptr, endPrevLine);
+            ImGui.TextUnformatted(utf8Ptr, endPrevLine);
             
             while (endPrevLine < textEnd)
             {
@@ -226,7 +226,7 @@ internal static partial class ImGuiMarkdown {
                 
                 var text = endPrevLine;
                 if( *text == ' ' ) { ++text; } // skip a space at start of line
-                endPrevLine = CalcWordWrapPosition(pFont.NativePtr, scale, text, textEnd, widthLeft );
+                endPrevLine = CalcWordWrapPosition(pFont.Handle, scale, text, textEnd, widthLeft );
                 
                 var popped = ImGuiManager.PopEmphasis();
                 if (popped is { }) {
@@ -236,7 +236,7 @@ internal static partial class ImGuiMarkdown {
                 }
                 
                 ImGui.SetCursorPosX(wrapStart);
-                ImGuiNative.igTextUnformatted(text, endPrevLine );
+                ImGui.TextUnformatted(text, endPrevLine);
             }
             ImGuiManager.PopEmphasis();
         }

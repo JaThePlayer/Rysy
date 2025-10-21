@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
@@ -71,7 +71,7 @@ public sealed class EditorGroupWindow : Window {
             if (g == EditorGroup.Default)
                 continue;
             
-            var id = Interpolator.Temp($"group_{g.Name}");
+            var id = Interpolator.TempU8($"group_{g.Name}");
             
             ImGui.OpenPopupOnItemClick(id, ImGuiPopupFlags.MouseButtonRight);
 

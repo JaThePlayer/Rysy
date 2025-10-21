@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Input;
 using Rysy.Graphics;
 using Rysy.Helpers;
@@ -264,7 +264,7 @@ public static class ImGuiManager {
         var values = Enum.GetValues<T>();
         var ret = false;
         
-        if (ImGui.BeginCombo(prefix.TranslateOrNull() ?? prefix, value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
+        if (ImGui.BeginCombo((prefix.TranslateOrNull() ?? prefix).ToString(), value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
             foreach (var item in values) {
                 var itemStr = item.ToString();
                 if (TranslatedMenuItem(itemStr, prefix)) {
@@ -281,7 +281,7 @@ public static class ImGuiManager {
     public static bool EnumComboTranslated<T>(ReadOnlySpan<T> values, ReadOnlySpan<char> prefix, ref T value) where T : struct, Enum {
         var ret = false;
         
-        if (ImGui.BeginCombo(prefix.TranslateOrNull() ?? prefix, value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
+        if (ImGui.BeginCombo((prefix.TranslateOrNull() ?? prefix).ToString(), value.ToString().TranslateOrHumanize(prefix)).WithTranslatedTooltip($"{prefix}.tooltip")) {
             foreach (var item in values) {
                 var itemStr = item.ToString();
                 if (TranslatedMenuItem(itemStr, prefix)) {
@@ -381,7 +381,7 @@ public static class ImGuiManager {
         
         return ret;
         */
-        return ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : Interpolator.Temp($"{searchText}##{persistenceKey}"), ref search, 512);
+        return ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : $"{searchText}##{persistenceKey}", ref search, 512);
     }
 
     private static bool RenderSearchBarInDropdown(NumVector2 dropdownSize, ref string search) {
@@ -516,7 +516,7 @@ public static class ImGuiManager {
         var buttonWidth = ImGui.GetFrameHeight();
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText(Interpolator.Temp($"##text{label}"), ref colorHex, 24).WithTooltip(tooltip)) {
+        if (ImGui.InputText(Interpolator.TempU8($"##text{label}"), ref colorHex, 24).WithTooltip(tooltip)) {
             if (ColorHelper.TryGet(colorHex, format, out var newColor)) {
                 color = newColor;
             }
@@ -528,7 +528,7 @@ public static class ImGuiManager {
         switch (format) {
             case ColorFormat.RGB:
                 var colorN3 = color.ToNumVec3();
-                if (ImGui.ColorEdit3(Interpolator.Temp($"##combo{label}"), ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN3.ToXna());
                     edited = true;
                 }
@@ -536,7 +536,7 @@ public static class ImGuiManager {
             case ColorFormat.RGBA:
             case ColorFormat.ARGB:
                 var colorN4 = color.ToNumVec4();
-                if (ImGui.ColorEdit4(Interpolator.Temp($"##combo{label}"), ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN4.ToXna());
                     edited = true;
                 }
@@ -560,7 +560,7 @@ public static class ImGuiManager {
         var buttonWidth = ImGui.GetFrameHeight();
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
-        if (ImGui.InputText(Interpolator.Temp($"##text{label}"), ref colorStr, 24).WithTooltip(tooltip)) {
+        if (ImGui.InputText(Interpolator.TempU8($"##text{label}"), ref colorStr, 24).WithTooltip(tooltip)) {
             edited = true;
         }
 
@@ -571,7 +571,7 @@ public static class ImGuiManager {
         switch (format) {
             case ColorFormat.RGB:
                 var colorN3 = color.ToNumVec3();
-                if (ImGui.ColorEdit3(Interpolator.Temp($"##combo{label}"), ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     colorStr = new Color(colorN3.ToXna()).ToString(format);
                     edited = true;
                 }
@@ -579,7 +579,7 @@ public static class ImGuiManager {
             case ColorFormat.RGBA:
             case ColorFormat.ARGB:
                 var colorN4 = color.ToNumVec4();
-                if (ImGui.ColorEdit4(Interpolator.Temp($"##combo{label}"), ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
+                if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     colorStr = new Color(colorN4.ToXna()).ToString(format);
                     edited = true;
                 }
@@ -621,13 +621,13 @@ public static class ImGuiManager {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
-        var displayedField = GetDisplayedText(fieldName);
+        var displayedField = GetDisplayedText(fieldName).ToString();
 
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth + xPadding)*2);
 
         bool ret = false;
         
-        if (ImGui.InputText(Interpolator.Temp($"##txt{fieldName}"), ref stringVal, 64)) {
+        if (ImGui.InputText(Interpolator.TempU8($"##txt{fieldName}"), ref stringVal, 64)) {
             if (stringVal.StartsWith('=')) {
                 // Evaluate expression
                 var valid = MathExpression.TryEvaluate(stringVal.AsSpan()[1..], out var result);
@@ -648,13 +648,13 @@ public static class ImGuiManager {
         var step = Input.Global.Keyboard.Ctrl() ? 100 : Input.Global.Keyboard.Shift() ? 10 : 1;
         
         ImGui.PushItemFlag(ImGuiItemFlags.ButtonRepeat, true);
-        if (ImGui.Button(Interpolator.Temp($"-##-{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+        if (ImGui.Button(Interpolator.TempU8($"-##-{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
             stringVal = (stringVal.CoerceToInt(0) - step).ToStringInvariant();
             ret = true;
         }
         
         ImGui.SameLine(0f, xPadding);
-        if (ImGui.Button(Interpolator.Temp($"+##+{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+        if (ImGui.Button(Interpolator.TempU8($"+##+{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
             stringVal = (stringVal.CoerceToInt(0) + step).ToStringInvariant();
             ret = true;
         }
@@ -677,13 +677,13 @@ public static class ImGuiManager {
         return displayedText;
     }
     
-    public static NumVector2 GetDisplayedTextSize(ReadOnlySpan<char> textMaybeWithId) {
+    public static NumVector2 GetDisplayedTextSize(string textMaybeWithId) {
         var displayedText = GetDisplayedText(textMaybeWithId);
         
-        return ImGui.CalcTextSize(displayedText);
+        return ImGui.CalcTextSize(Interpolator.TempU8($"{displayedText}"));
     }
 
-    public static bool ExpandingTextInput(ReadOnlySpan<char> fieldName, ref string input, uint maxLen, Tooltip tooltip = default) {
+    public static bool ExpandingTextInput(string fieldName, ref string input, uint maxLen, Tooltip tooltip = default) {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var targetWidth = ImGui.CalcItemWidth();
         
@@ -692,13 +692,13 @@ public static class ImGuiManager {
         var fieldNameWidth = GetDisplayedTextSize(fieldName).X;
         bool ret = false;
 
-        var id = ImGui.GetID(Interpolator.Temp($"##{fieldName}cc_isOpen"));
+        var id = ImGui.GetID(Interpolator.TempU8($"##{fieldName}cc_isOpen"));
         var storage = ImGui.GetStateStorage();
         var isOpen = storage.GetBool(id, false);
 
         var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
 
-        ImGui.BeginChild(Interpolator.Temp($"##{fieldName}cc"), new NumVector2(
+        ImGui.BeginChild(Interpolator.TempU8($"##{fieldName}cc"), new NumVector2(
             x: (isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding * 2 : 0f), 
             y: ImGui.GetTextLineHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y
         ));
@@ -768,7 +768,7 @@ public static class ImGuiManager {
     public static void XnaWidget(XnaWidgetDef def)
         => XnaWidget(def.ID, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
 
-    public static void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null, bool rerender = true) {
+    public static unsafe void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null, bool rerender = true) {
         if (w <= 0 || h <= 0)
             return;
 
@@ -788,7 +788,7 @@ public static class ImGuiManager {
         }
 
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
-        ImGui.Image(widgetData.Id, new(w, h));
+        ImGui.Image(*ImGui.ImTextureRef(new(widgetData.Id)).Handle, new(w, h));
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
@@ -906,7 +906,7 @@ public static class ImGuiManager {
         return ImGui.InputFloat(id.Translate(), ref v, step).WithTranslatedTooltip($"{id}.tooltip");
     }
     
-    public static bool TranslatedInputFloat(string id, ref float v, float step, ReadOnlySpan<char> format) {
+    public static bool TranslatedInputFloat(string id, ref float v, float step, string format) {
         return ImGui.InputFloat(id.Translate(), ref v, step, step, format).WithTranslatedTooltip($"{id}.tooltip");
     }
     
@@ -945,21 +945,21 @@ public static class ImGuiManager {
     }
 
     public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix) {
-        return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
+        return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
 
     public static unsafe int? IndexDragDrop(string payloadName, ref int index) {
         int? dropped = null;
         fixed(int* indexPtr = &index)
             if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.SourceNoDisableHover | ImGuiDragDropFlags.SourceNoPreviewTooltip)) {
-                ImGui.SetDragDropPayload(payloadName, (IntPtr)indexPtr, sizeof(int));
+                ImGui.SetDragDropPayload(payloadName, indexPtr, sizeof(int));
                 ImGui.EndDragDropSource();
             }
 
         if (ImGui.BeginDragDropTarget())
         {
             var payload = ImGui.AcceptDragDropPayload(payloadName, ImGuiDragDropFlags.AcceptBeforeDelivery);
-            if (payload.NativePtr != null) {
+            if (payload.Handle != null) {
                 dropped = *(int*) payload.Data;
             }
             ImGui.EndDragDropTarget();
@@ -998,7 +998,7 @@ public static class ImGuiManager {
 
     public static void Icon(ImGuiIcons icon) {
         var iconChar = (char) icon;
-        ImGui.Text(new ReadOnlySpan<char>(ref iconChar));
+        ImGui.Text(Interpolator.TempU8($"{iconChar}"));
         ImGui.SameLine();
     }
 
@@ -1017,7 +1017,7 @@ public static class ImGuiManager {
         private int IndexBufferSize;
 
         private Dictionary<IntPtr, Texture2D> Textures;
-        private int TextureID;
+        private int TextureID = 1;
         private IntPtr? FontTextureID;
 
         private int ScrollWheelValue;
@@ -1063,7 +1063,7 @@ public static class ImGuiManager {
                 });
             }
 
-            IntPtr ctx = ImGui.CreateContext();
+            var ctx = ImGui.CreateContext();
             ImGui.SetCurrentContext(ctx);
 
             EnableDocking();
@@ -1071,6 +1071,7 @@ public static class ImGuiManager {
             //ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
             ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
+            ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
             ImGui.GetIO().ConfigErrorRecoveryEnableAssert = false;
 
             Textures = new Dictionary<IntPtr, Texture2D>();
@@ -1094,40 +1095,6 @@ public static class ImGuiManager {
             
             io.ConfigDockingAlwaysTabBar = true;
             io.ConfigDockingTransparentPayload = true;
-        }
-
-        public unsafe bool BuildFontAtlas() {
-            // Get ImGUI font texture
-            ImGuiIOPtr io = ImGui.GetIO();
-            io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bpp);
-            if (width <= 0 || height <= 0 || width > 8192 || height > 8192) {
-                Console.WriteLine((width, height, bpp));
-                return false;
-            }
-
-            Texture2D fontTex = new Texture2D(GraphicsDevice, width, height, false, SurfaceFormat.Color);
-            #if FNA
-            fontTex.SetDataPointerEXT(0, null, new IntPtr(pixelData), width * height * bpp);
-            #else
-            // Copy data to managed array
-            byte[] pixels = new byte[width * height * bpp];
-            unsafe {
-                Marshal.Copy(new IntPtr(pixelData), pixels, 0, pixels.Length);
-            }
-            fontTex.SetData(pixels);
-            #endif
-
-            // Deallocate and unbind any previously built font texture
-            if (FontTextureID.HasValue)
-                UnbindTexture(FontTextureID.Value);
-
-            // Bind font texture to ImGUI
-            FontTextureID = BindTexture(fontTex);
-
-            io.Fonts.SetTexID(FontTextureID.Value);
-            io.Fonts.ClearTexData();
-
-            return true;
         }
 
         public IntPtr BindTexture(Texture2D tex) {
@@ -1171,16 +1138,16 @@ public static class ImGuiManager {
                 case ImGuiMouseCursor.ResizeAll:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeAll);
                     break;
-                case ImGuiMouseCursor.ResizeNS:
+                case ImGuiMouseCursor.ResizeNs:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNS);
                     break;
-                case ImGuiMouseCursor.ResizeEW:
+                case ImGuiMouseCursor.ResizeEw:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeWE);
                     break;
-                case ImGuiMouseCursor.ResizeNESW:
+                case ImGuiMouseCursor.ResizeNesw:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNESW);
                     break;
-                case ImGuiMouseCursor.ResizeNWSE:
+                case ImGuiMouseCursor.ResizeNwse:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNWSE);
                     break;
                 case ImGuiMouseCursor.Hand:
@@ -1189,7 +1156,7 @@ public static class ImGuiManager {
                 case ImGuiMouseCursor.NotAllowed:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.No);
                     break;
-                case ImGuiMouseCursor.COUNT:
+                case ImGuiMouseCursor.Count:
                     break;
             }
             #endif
@@ -1210,8 +1177,9 @@ public static class ImGuiManager {
             
             delegate* <byte*> get = &SDL2Ext.SDL_GetClipboardText;
             delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
-            ImGui.GetPlatformIO().Platform_GetClipboardTextFn = (nint) get;
-            ImGui.GetPlatformIO().Platform_SetClipboardTextFn = (nint) set;
+            var platformIo = ImGui.GetPlatformIO();
+            platformIo.PlatformGetClipboardTextFn = get;
+            platformIo.PlatformSetClipboardTextFn = set;
 #else
             RysyEngine.Instance.Window.TextInput += (object? sender, TextInputEventArgs e) => OnTextInput(e.Character);
 #endif
@@ -1338,6 +1306,71 @@ public static class ImGuiManager {
             IndexBuffer.SetData(IndexData, 0, ptr.TotalIdxCount * sizeof(ushort));
         }
 
+        private unsafe void UpdateTexture(ImTextureDataPtr tex) {
+            // https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md#rendering-adding-support-for-imguibackendflags_rendererhastextures-192
+            var gd = GraphicsDevice;
+            
+            if (tex.Status == ImTextureStatus.WantCreate)
+            {
+                // Create texture based on tex->Width, tex->Height.
+                // - Most backends only support tex->Format == ImTextureFormat_RGBA32.
+                // - Backends for particularly memory constrainted platforms may support tex->Format == ImTextureFormat_Alpha8.
+
+                // Upload all texture pixels
+                // - Read from our CPU-side copy of the texture and copy to your graphics API.
+                // - Use tex->Width, tex->Height, tex->GetPixels(), tex->GetPixelsAt(), tex->GetPitch() as needed.
+
+                // Store your data, and acknowledge creation.
+                var tex2d = new Texture2D(gd, tex.Width, tex.Height, false, tex.Format switch {
+                    ImTextureFormat.Rgba32 => SurfaceFormat.Color,
+                    ImTextureFormat.Alpha8 => SurfaceFormat.Alpha8,
+                    _ => throw new ArgumentOutOfRangeException(tex.Format.ToString())
+                });
+                tex2d.SetDataPointerEXT(0, null, (nint)tex.GetPixels(), tex.BytesPerPixel * tex.Width * tex.Height);
+                
+                var newId = BindTexture(tex2d);
+                tex.SetTexID(new ImTextureID(newId)); // Specify backend-specific ImTextureID identifier which will be stored in ImDrawCmd.
+                tex.SetStatus(ImTextureStatus.Ok);
+                //tex.BackendUserData = xxxx; // Store more backend data if needed (most backend allocate a small texture to store data in there)
+            }
+            if (tex.Status == ImTextureStatus.WantUpdates)
+            {
+                // Upload a rectangle of pixels to the existing texture
+                // - We only ever write to textures regions which have never been used before!
+                // - Use tex->TexID or tex->BackendUserData to retrieve your stored data.
+                // - Use tex->UpdateRect.x/y, tex->UpdateRect.w/h to obtain the block position and size.
+                //   - Use tex->Updates[] to obtain individual sub-regions within tex->UpdateRect. Not recommended.
+                // - Read from our CPU-side copy of the texture and copy to your graphics API.
+                // - Use tex->Width, tex->Height, tex->GetPixels(), tex->GetPixelsAt(), tex->GetPitch() as needed.
+                if (!Textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
+                    throw new Exception($"Texture {tex.GetTexID()} not found");
+                }
+
+                var rect = tex.UpdateRect;
+                texture.SetDataPointerEXT(0, null, (nint)tex.GetPixels(), tex.BytesPerPixel * rect.W * rect.H);
+                // Acknowledge update
+                tex.SetStatus(ImTextureStatus.Ok);
+            }
+            if (tex.Status == ImTextureStatus.WantDestroy && tex.UnusedFrames > 0)
+            {
+                // If you use staged rendering and have in-flight renders, changed tex->UnusedFrames > 0 check to higher count as needed e.g. > 2
+
+                // Destroy texture
+                // - Use tex->TexID or tex->BackendUserData to retrieve your stored data.
+                // - Destroy texture in your graphics API.
+
+                if (!Textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
+                    throw new Exception($"Texture {tex.GetTexID()} not found");
+                }
+                UnbindTexture(tex.GetTexID());
+                texture.Dispose();
+                
+                // Acknowledge destruction
+                tex.SetTexID(ImTextureID.Null);
+                tex.SetStatus(ImTextureStatus.Destroyed);
+            }
+        }
+
         private unsafe void RenderCommandLists(ImDrawDataPtr ptr) {
             int vtxOffset = 0;
             int idxOffset = 0;
@@ -1349,13 +1382,20 @@ public static class ImGuiManager {
             GraphicsDevice.RasterizerState = RasterizerState;
             GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
             
+            if (ptr.Textures.Data != null)
+                for (int i = 0; i < ptr.Textures.Size; i++) {
+                    var tex = ptr.Textures[i];                    
+                    if (tex.Status != ImTextureStatus.Ok)
+                        UpdateTexture(tex);
+                }
+            
             for (int i = 0; i < ptr.CmdListsCount; i++) {
                 ImDrawListPtr cmdList = ptr.CmdLists[i];
 
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
-                    ImDrawCmdPtr cmd = cmdList.CmdBuffer[cmdi];
-                    if (!Textures.TryGetValue(cmd.TextureId, out Texture2D? texture)) {
-                        throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.TextureId}");
+                    var cmd = cmdList.CmdBuffer[cmdi];
+                    if (!Textures.TryGetValue(cmd.GetTexID(), out Texture2D? texture)) {
+                        throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.GetTexID()}");
                     }
                     
                     GraphicsDevice.ScissorRectangle = new Rectangle(

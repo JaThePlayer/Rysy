@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
@@ -484,7 +484,7 @@ public class StylegroundWindow : Window {
     }
 
     private void AddStyleContextWindow(Style style, int id) {
-        var popupId = Interpolator.Temp($"style_ctx_{id}");
+        var popupId = Interpolator.TempU8($"style_ctx_{id}");
         ImGui.OpenPopupOnItemClick(popupId, ImGuiPopupFlags.MouseButtonRight);
 
         if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
