@@ -198,9 +198,9 @@ internal static partial class ImGuiMarkdown {
             ImGui.NewLine();
             return;
         }
-        const float scale = 1.0f;
         
         var pFont = ImGui.GetFont();
+        float scale = ImGui.GetStyle().FontSizeBase;
         float widthLeft = ImGui.GetColumnWidth();
         
         var utf8ByteCount = Encoding.UTF8.GetByteCount(textUtf16);
@@ -211,7 +211,7 @@ internal static partial class ImGuiMarkdown {
         
         fixed (byte* utf8Ptr = &utf8[0]) {
             var textEnd = &utf8Ptr[utf8.Length];
-            var endPrevLine = CalcWordWrapPosition(pFont.Handle, scale, utf8Ptr, textEnd, widthLeft);
+            var endPrevLine = pFont.CalcWordWrapPosition(scale, utf8Ptr, textEnd, widthLeft);
 
             if (endPrevLine == textEnd) {
                 //ImGuiNative.igText(utf8ptr);
@@ -226,7 +226,7 @@ internal static partial class ImGuiMarkdown {
                 
                 var text = endPrevLine;
                 if( *text == ' ' ) { ++text; } // skip a space at start of line
-                endPrevLine = CalcWordWrapPosition(pFont.Handle, scale, text, textEnd, widthLeft );
+                endPrevLine = pFont.CalcWordWrapPosition(scale, text, textEnd, widthLeft);
                 
                 var popped = ImGuiManager.PopEmphasis();
                 if (popped is { }) {
@@ -241,8 +241,4 @@ internal static partial class ImGuiMarkdown {
             ImGuiManager.PopEmphasis();
         }
     }
-
-    [LibraryImport("cimgui", EntryPoint = "ImFont_CalcWordWrapPositionA")]
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-    public static unsafe partial byte* CalcWordWrapPosition(ImFont* font, float scale, byte* text, byte* textEnd, float wrapWidth);
 }
