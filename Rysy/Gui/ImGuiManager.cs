@@ -366,23 +366,28 @@ public static class ImGuiManager {
         return changed;
     }
 
+    private static readonly Tooltip SearchInputTooltip = Tooltip.CreateTranslatedMarkdown("rysy.search.tooltip");
+
     public static bool SearchInput(ref string search, string persistenceKey = "") {
         var searchText = "rysy.search".Translate();
         search ??= "";
         var pos = ImGui.GetCursorPos();
-        ImGui.PushStyleColor(ImGuiCol.Text, default(int));
         
+        ImGui.PushStyleColor(ImGuiCol.Text, default(int));
         var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() 
-            ? Interpolator.TempU8($"{searchText}") 
-            : Interpolator.TempU8($"{searchText}##{persistenceKey}"), ref search, 512);
+            ? Interpolator.TempU8($"##{searchText}") 
+            : Interpolator.TempU8($"##{searchText}##{persistenceKey}"), ref search, 512);
         ImGui.PopStyleColor(1);
+        SearchInputTooltip.RenderIfHovered();
+        ImGui.SameLine();
+        ImGui.Text(searchText);
+        SearchInputTooltip.RenderIfHovered();
+        
         ImGui.SetCursorPos(pos + ImGui.GetStyle().FramePadding);
         var parsed = SearchHelper.ParseSearch(search);
         parsed.RenderImGui();
         
         return ret;
-        
-        //return ImGui.InputText(persistenceKey.IsNullOrWhitespace() ? searchText : $"{searchText}##{persistenceKey}", ref search, 512);
     }
 
     private static bool RenderSearchBarInDropdown(NumVector2 dropdownSize, ref string search) {

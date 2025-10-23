@@ -1,4 +1,7 @@
 ﻿using Hexa.NET.ImGui;
+using Markdig;
+using Markdig.Syntax;
+using Rysy.Helpers;
 
 namespace Rysy.Gui;
 
@@ -43,6 +46,10 @@ public readonly struct Tooltip : ITooltip {
         return new Tooltip(this, result);
     }
     
+    public void RenderIfHovered() {
+        true.WithTooltip(new Tooltip(this));
+    }
+    
     public static implicit operator Tooltip(string? text) => new(text);
 
     public static Tooltip CreateTranslatedOrNull(string id, string? fallbackId = null)
@@ -50,6 +57,28 @@ public readonly struct Tooltip : ITooltip {
     
     public static Tooltip CreateTranslatedFormatted(string id, params object[] args)
         => new Tooltip(new TranslatedFormattedTooltip(id, args));
+
+    public static Tooltip CreateTranslatedMarkdown(string id) {
+        string? prevContents = null;
+        MarkdownDocument? md = null;
+        GuiSize guiSize = default;
+        return new Tooltip(new MarkdownTooltip(() => {
+            var txt = LangRegistry.TranslateOrNull(id);
+            txt ??= "";
+            if (txt != prevContents || md is null) {
+                prevContents = txt;
+                md = Markdown.Parse(txt, ImGuiMarkdown.MarkdownPipeline);
+
+                var lines = txt.Split('\n');
+                guiSize = new GuiSize(
+                    widthInChars: lines.Max(x => x.Length),
+                    heightInLines: lines.Length
+                );
+            }
+
+            return (md, guiSize);
+        }));
+    }
 }
 
 public interface ITooltip {
@@ -58,6 +87,10 @@ public interface ITooltip {
     public bool IsEmpty { get; }
 
     public string? GetRawText();
+
+    public void RenderIfHovered() {
+        true.WithTooltip(new Tooltip(this));
+    }
 }
 
 public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITooltip {
@@ -97,4 +130,18 @@ sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
     public bool IsEmpty => first.IsEmpty && second.IsEmpty;
 
     public string GetRawText() => $"{first.GetRawText() ?? ""}\n{second.GetRawText() ?? ""}";
+}
+
+sealed class MarkdownTooltip(Func<(MarkdownDocument doc, GuiSize size)> dataGetter) : ITooltip {
+    public void RenderImGui() {
+        var data = dataGetter();
+        ImGui.SetNextWindowSize(data.size.Calculate());
+        ImGui.BeginChild(Interpolator.TempU8($"##md-tooltip-{data.doc.GetHashCode()}"));
+        ImGuiMarkdown.RenderMarkdown(data.doc);
+        ImGui.EndChild();
+    }
+
+    public bool IsEmpty => dataGetter().doc.Count == 0;
+
+    public string? GetRawText() => null;
 }
