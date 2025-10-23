@@ -65,16 +65,6 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             var name = prefix is null 
                 ? pl.Name 
                 : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.SID ?? ""}.placements.name"));
-
-            /*
-            var associated = pl.GetAssociatedMods();
-            if (associated is { Count: > 0 }) {
-                return $"{name} [{string.Join(',', associated.Select(ModMeta.ModNameToDisplayName))}]";
-            }
-            
-            if (pl.PlacementHandler.ShowVanillaAsDefiningModInPlacementName())
-                return $"{name} [Vanilla]";
-            */
             
             return name;
         }
@@ -553,32 +543,46 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     protected override void RenderMaterialTooltipExtraInfo(object material) {
         base.RenderMaterialTooltipExtraInfo(material);
 
-        if (material is Placement placement && placement.GetAssociatedMods() is { Count: > 0} associated) {
-            ImGui.BeginTooltip();
-
-            var currentMod = EditorState.Map?.Mod;
-            ImGui.Text("Associated:");
-            if (associated.Count == 1)
-                ImGui.SameLine();
-            foreach (var mod in associated) {
-                var displayName = ModMeta.ModNameToDisplayName(mod);
-                if (currentMod is { } && !currentMod.DependencyMet(mod)) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, Color.Red.ToNumVec4());
-                    ImGui.TextWrapped(displayName);
-                    ImGui.PopStyleColor(1);
-                } else {
-                    ImGui.TextWrapped(displayName);
+        if (material is Placement placement) {
+            if (placement.GetAssociatedMods() is { Count: > 0 } associated && ImGui.BeginTooltip()) {
+                var currentMod = EditorState.Map?.Mod;
+                ImGui.Text("Associated:");
+                if (associated.Count == 1)
+                    ImGui.SameLine();
+                foreach (var mod in associated) {
+                    var displayName = ModMeta.ModNameToDisplayName(mod);
+                    if (currentMod is { } && !currentMod.DependencyMet(mod)) {
+                        ImGui.PushStyleColor(ImGuiCol.Text, Color.Red.ToNumVec4());
+                        ImGui.TextWrapped(displayName);
+                        ImGui.PopStyleColor(1);
+                    } else {
+                        ImGui.TextWrapped(displayName);
+                    }
                 }
+
+                if (placement.GetDefiningMod() is { } defining && (associated.Count != 1 || associated[0] != defining.Name)) {
+                    ImGui.BeginDisabled();
+                    ImGui.Text("Defined by:");
+                    ImGui.SameLine();
+                    ImGui.TextWrapped(defining.DisplayName);
+                    ImGui.EndDisabled();
+                }
+                ImGui.EndTooltip();
             }
 
-            if (placement.GetDefiningMod() is { } defining && (associated.Count != 1 || associated[0] != defining.Name)) {
-                ImGui.BeginDisabled();
-                ImGui.Text("Defined by:");
-                ImGui.SameLine();
-                ImGui.TextWrapped(defining.DisplayName);
-                ImGui.EndDisabled();
+            if (placement.GetTags() is { Count: > 0 } tags && ImGui.BeginTooltip()) {
+                ImGui.Text("Tags:");
+                if (tags.Count == 1)
+                    ImGui.SameLine();
+                foreach (var tag in tags) {
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.TagColor.ToNumVec4());
+                    ImGui.TextWrapped(Interpolator.TempU8($"#{tag}"));
+                    ImGui.PopStyleColor(1);
+                }
+                
+                ImGui.EndTooltip();
             }
-            ImGui.EndTooltip();
+
         }
     }
 

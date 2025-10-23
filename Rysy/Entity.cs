@@ -357,6 +357,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     [JsonIgnore]
     public virtual List<string>? AssociatedMods => null;
     
+    [JsonIgnore]
+    public virtual IReadOnlyList<string>? Tags => null;
+    
     /// <summary>
     /// Checks whether this is similar to the given entity, used for the select-similar hotkey.
     /// </summary>

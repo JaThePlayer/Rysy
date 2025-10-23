@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("everest/smoothCameraOffsetTrigger")]
 public sealed class SmoothCameraOffset : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Camera;
+
     public static FieldList GetFields() => new(new {
         offsetXFrom = 0.0,
         offsetXTo = 0.0,

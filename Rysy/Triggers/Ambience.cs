@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("everest/ambienceTrigger")]
 public sealed class Ambience : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Audio;
+    
     public static FieldList GetFields() => new(new {
         track = Fields.Dropdown("", CelesteEnums.Ambience, editable: true),
         resetOnLeave = true

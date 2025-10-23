@@ -26,7 +26,7 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
 
     public override string Text => Plugin?.TriggerText?.Invoke(Room, this) ?? base.Text;
 
-    public string Category => Plugin?.TriggerCategory?.Invoke(Room, this) ?? "default";
+    public override string Category => Plugin?.TriggerCategory?.Invoke(Room, this) ?? TriggerCategories.Default;
     
     public override IEnumerable<ISprite> GetNodePathSprites() {
         var pl = Plugin;
