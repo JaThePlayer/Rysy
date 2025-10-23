@@ -1,6 +1,7 @@
 ﻿using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Selections;
+using System.Collections.Concurrent;
 
 namespace Rysy;
 
@@ -27,6 +28,17 @@ public class Trigger : Entity {
     }
 
     public Color FillColor => Color * 0.15f;
+    
+    /// <summary>
+    /// In-editor category of this trigger.
+    /// Refer to the <see cref="TriggerCategories"/> class for a list of pre-defined category names,
+    /// though custom ones are allowed as well.
+    /// </summary>
+    public virtual string Category => TriggerCategories.Default;
+
+    private static readonly ConcurrentDictionary<string, IReadOnlyList<string>> DefaultTagCache = [];
+
+    public override IReadOnlyList<string> Tags => DefaultTagCache.GetOrAdd(Category, x => [ x ]);
 
     public static string GetDefaultTextForSid(string sid) => TriggerHelpers.Humanize(sid);
     
@@ -83,4 +95,17 @@ public class Trigger : Entity {
             Depth = Depth - 1
         };
     }
+}
+
+/// <summary>
+/// Contains names of predefined trigger categories.
+/// </summary>
+public static class TriggerCategories {
+    public static string Camera => "camera";
+    
+    public static string Audio => "audio";
+    
+    public static string Visual => "visual";
+    
+    public static string Default => "default";
 }

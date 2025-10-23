@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("cameraAdvanceTargetTrigger")]
 public sealed class CameraAdvanceTarget : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Camera;
+    
     public override Range NodeLimits => 1..1;
 
     public static FieldList GetFields() => new(new {

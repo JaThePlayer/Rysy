@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("blackholeStrength")]
 public sealed class BlackHoleStrength : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Visual;
+    
     public static FieldList GetFields() => new(new {
         strength = CelesteEnums.BlackHoleStrengths.Mild
     });

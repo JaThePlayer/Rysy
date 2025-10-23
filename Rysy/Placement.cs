@@ -93,7 +93,8 @@ public record class Placement : IUntypedData {
 
     internal bool FromLonn;
     
-    private List<string> _AssociatedMods;
+    private List<string>? _associatedMods;
+    private IReadOnlyList<string>? _associatedTags;
 
     public Placement WithSID(string sid) {
         SID = sid;
@@ -120,7 +121,7 @@ public record class Placement : IUntypedData {
     }
 
     public Placement WithAssociatedMods(IEnumerable<string> mods) {
-        _AssociatedMods = mods.ToList();
+        _associatedMods = mods.ToList();
 
         return this;
     }
@@ -188,32 +189,57 @@ public record class Placement : IUntypedData {
         return null;
     }
 
+    private Entity? CreateFakeEntity() {
+        if (!IsEntityOrTrigger())
+            return null;
+        
+        var handler = PlacementHandler.CreateSelection(this, default, Room.DummyRoom);
+        if (handler is EntitySelectionHandler entityHandler) {
+            return entityHandler.Entity;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
     /// </summary>
     public ReadOnlyList<string> GetAssociatedMods() {
-        if (_AssociatedMods is { } cached)
+        if (_associatedMods is { } cached)
             return cached;
 
         if (!IsEntityOrTrigger()) {
             if (GetDefiningMod()?.Name is { } name)
-                return _AssociatedMods = [name];
-            return _AssociatedMods = [];
+                return _associatedMods = [name];
+            return _associatedMods = [];
         }
+        
         try {
-            var handler = PlacementHandler.CreateSelection(this, default, Room.DummyRoom);
-            if (handler is EntitySelectionHandler entityHandler) {
-                var entity = entityHandler.Entity;
-
-                return _AssociatedMods = EntityRegistry.GetAssociatedMods(entity);
-            }
+            if (CreateFakeEntity() is {} fakeEntity)
+                _associatedMods = EntityRegistry.GetAssociatedMods(fakeEntity);
         } catch
         {
 
         }
-        
 
-        return _AssociatedMods = new List<string>(0);
+        return _associatedMods ??= [];
+    }
+    
+    /// <summary>
+    /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
+    /// </summary>
+    public IReadOnlyList<string> GetTags() {
+        if (_associatedTags is { } cached)
+            return cached;
+
+        try {
+            _associatedTags = CreateFakeEntity()?.Tags;
+        } catch
+        {
+
+        }
+
+        return _associatedTags ??= [];
     }
 
     public bool AreAssociatedModsADependencyOfCurrentMap() {

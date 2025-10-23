@@ -2,6 +2,8 @@
 
 [CustomEntity("musicFadeTrigger")]
 public sealed class MusicFade : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Audio;
+
     public static FieldList GetFields() => new(new {
         direction = Fields.Dropdown("leftToRight", new List<string>() { "leftToRight", "topToBottom" }),
         fadeA = 0.0,

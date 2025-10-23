@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("moonGlitchBackgroundTrigger")]
 public sealed class MoonGlitchBackground : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Visual;
+
     public static FieldList GetFields() => new(new {
         duration = CelesteEnums.MoonGlitchBackgroundDurations.Short,
         stay = false,

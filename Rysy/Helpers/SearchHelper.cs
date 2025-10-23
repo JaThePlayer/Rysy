@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Gui;
 using Rysy.Mods;
 using System.Diagnostics;
 
@@ -11,20 +12,20 @@ public struct Searchable {
         
     public IReadOnlyList<string> Mods { get; }
         
-    public IReadOnlySet<string> Tags { get; }
+    public IReadOnlyList<string> Tags { get; }
 
-    public Searchable(string text) : this(text, [], SearchHelper.EmptySet) {
+    public Searchable(string text) : this(text, [], []) {
         
     }
     
-    public Searchable(string text, ModMeta? mod) : this(text, mod is {} ? [mod.Name] : [], SearchHelper.EmptySet) {
+    public Searchable(string text, ModMeta? mod) : this(text, mod is {} ? [mod.Name] : [], []) {
         
     }
     
-    public Searchable(string text, IReadOnlyList<string> mods, IReadOnlySet<string> tags) {
+    public Searchable(string text, IReadOnlyList<string> mods, IReadOnlyList<string>? tags) {
         Text = text;
         Mods = mods is [] ? [ ModRegistry.VanillaMod.Name ] : mods;
-        Tags = tags;
+        Tags = tags ?? [];
             
         if (Mods is { Count: > 0 } and not [ "Celeste" ]) {
             TextWithMods = $"{Text} [{string.Join(',', Mods.Select(ModMeta.ModNameToDisplayName))}]";
@@ -41,11 +42,9 @@ public struct Searchable {
 }
 
 public static class SearchHelper {
-    public static readonly IReadOnlySet<string> EmptySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
     public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, string> textSelector,
         string search, HashSet<string>? favorites = null)
-        => source.SearchFilter(x => new Searchable(textSelector(x), [], EmptySet), search, favorites);
+        => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search, favorites);
     
     /// <summary>
     /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
@@ -228,7 +227,7 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8($"@{txt}").ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(Color.LightSkyBlue.ToNumVec4(), _txtU8);
+            ImGui.TextColored(ImGuiThemer.ModNameColor.ToNumVec4(), _txtU8);
         }
 
         public override bool Matches(Searchable search) => search.Mods.Any(x => 
@@ -248,14 +247,14 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8(txt).ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(Color.Gold.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
+            ImGui.TextColored(ImGuiThemer.TagColor.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
         }
         
-        public override bool Matches(Searchable search) => search.Tags.Contains(_tagName);
+        public override bool Matches(Searchable search) => search.Tags.Any(x => x.Contains(_tagName, StringComparison.OrdinalIgnoreCase));
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
-            return true;
+            return search.Tags.Any(x => x.StartsWith(_tagName, StringComparison.OrdinalIgnoreCase));
         }
     }
     

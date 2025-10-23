@@ -161,6 +161,9 @@ public static class ImGuiThemer {
     public static ImFontPtr ItalicBoldFont { get; private set; }
     public static ImFontPtr HeaderFont { get; private set; }
     public static ImFontPtr Header2Font { get; private set; }
+
+    public static Color ModNameColor => Color.LightSkyBlue;
+    public static Color TagColor => Color.Gold;
     
     public struct ImGuiStyleSerializable
     {

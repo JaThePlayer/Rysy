@@ -4,6 +4,8 @@ namespace Rysy.Triggers;
 
 [CustomEntity("bloomFadeTrigger")]
 public sealed class BloomFade : Trigger, IPlaceable {
+    public override string Category => TriggerCategories.Visual;
+    
     public static FieldList GetFields() => new(new {
         bloomAddFrom = 0.0,
         bloomAddTo = 0.0,

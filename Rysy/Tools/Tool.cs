@@ -246,8 +246,9 @@ public abstract class Tool {
         _ => [],
     };
     
-    public virtual IReadOnlySet<string> GetMaterialTags(EditorLayer layer, object material) => material switch {
-        _ => SearchHelper.EmptySet,
+    public virtual IReadOnlyList<string> GetMaterialTags(EditorLayer layer, object material) => material switch {
+        Placement pl => pl.GetTags(),
+        _ => [],
     };
 
     public virtual Searchable GetMaterialSearchable(EditorLayer layer, object material) {
