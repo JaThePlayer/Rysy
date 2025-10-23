@@ -1,8 +1,7 @@
-﻿using Rysy.Extensions;
-using Rysy.Loading;
+﻿using Rysy.Loading;
 using Rysy.Mods;
-using Rysy.Scenes;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace Rysy.Helpers;
 
@@ -82,7 +81,9 @@ public static class LangRegistry {
             Languages[name] = lang;
         }
 
-        foreach (var line in langFileContents.AsSpan().EnumerateSplits('\n')) {
+        var enumerator = langFileContents.AsSpan().EnumerateSplits('\n');
+        while (enumerator.MoveNext()) {
+            var line = enumerator.Current;
             if (line.StartsWith('#'))
                 continue;
 
@@ -90,8 +91,16 @@ public static class LangRegistry {
             if (splitIdx < 0)
                 continue;
             var key = line[..splitIdx];
-
             var value = line[(splitIdx + 1)..].Trim().ToString().Replace(@"\n", "\n", StringComparison.Ordinal) ?? "";
+            if (value is "\"\"\"") {
+                // RYSY EXTENSION: """ for multiline lang entries
+                StringBuilder builder = new();
+                while (enumerator.MoveNext() && (line = enumerator.Current.TrimEnd()) is not "\"\"\"") {
+                    builder.Append(CultureInfo.InvariantCulture, $"{line}\n");
+                }
+
+                value = builder.ToString().Trim();
+            }
             lang.Translations[key.ToString()] = value;
         }
     }
