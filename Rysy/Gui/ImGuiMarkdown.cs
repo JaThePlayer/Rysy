@@ -1,6 +1,8 @@
 ﻿using Hexa.NET.ImGui;
 using Markdig;
 using Markdig.Extensions.Tables;
+using Markdig.Parsers;
+using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Rysy.Graphics;
@@ -82,13 +84,16 @@ internal static partial class ImGuiMarkdown {
                         ImGui.EndTable();
                         break;
                     case FencedCodeBlock fencedCodeBlock: {
-                        ImGui.BeginDisabled();
-                        if (fencedCodeBlock.Lines is {})
-                            foreach (var line in fencedCodeBlock.Lines.Lines.AsSpan()
-                                         .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
-                                ImGui.Text(line.Slice.AsSpan().ToString());
-                            }
-                        ImGui.EndDisabled();
+                        var language = fencedCodeBlock.Info;
+
+                        switch (language) {
+                            case "search":
+                                RenderSearchCodeBlock(fencedCodeBlock);
+                                break;
+                            default:
+                                RenderUnknownCodeBlock(fencedCodeBlock);
+                                break;
+                        }
                         break;
                     }
                     case LeafBlock codeBlock: {
@@ -123,18 +128,52 @@ internal static partial class ImGuiMarkdown {
         ImGui.PopFont();
     }
 
+    private static void RenderUnknownCodeBlock(FencedCodeBlock block) {
+        ImGui.BeginDisabled();
+        if (block.Lines is {})
+            foreach (var line in block.Lines.Lines.AsSpan()
+                         .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
+                ImGui.Text(line.Slice.AsSpan().ToString());
+            }
+        ImGui.EndDisabled();
+    }
+
+    private static void RenderSearchLine(ReadOnlySpan<char> text) {
+        if (!text.IsWhiteSpace()) {
+            var parsed = SearchHelper.ParseSearch(text);
+            parsed.RenderImGui();
+        }
+    }
+
+    private static void RenderSearchCodeBlock(FencedCodeBlock block) {
+        ImGui.BeginDisabled();
+        foreach (var line in block.Lines.Lines) {
+            var text = line.Slice.AsSpan();
+            RenderSearchLine(text);
+        }
+        ImGui.EndDisabled();
+    }
+
     private static void RenderInline(Inline inline, int headerLevel, bool firstInThisLine, float startX) {
         switch (inline) {
             case EmphasisInline emphasisInline:
 
                 break;
-            case CodeInline codeInline:
-                ImGui.BeginDisabled();
-                RenderTextWrapped(codeInline.Content, startX);
-                ImGui.EndDisabled();
+            case CodeInline codeInline: {
+                var content = codeInline.Content.AsSpan();
+                
+                if (content is ['^', 's', 'e', 'a', 'r', 'c', 'h', ' ', .. var searchText]) {
+                    RenderSearchLine(searchText);
+                } else {
+                    ImGui.BeginDisabled();
+                    RenderTextWrapped(content, startX);
+                    ImGui.EndDisabled();
+                }
+
                 ImGui.SameLine(0f, 0f);
                 break;
-            case LiteralInline literalInline:
+            }
+            case LiteralInline literalInline: {
                 var emphasis = new TextEmphasis(literalInline, headerLevel);
                 var renderText = true;
 
@@ -159,7 +198,7 @@ internal static partial class ImGuiMarkdown {
                     
                 ImGuiManager.PopEmphasis();
                 break;
-
+                
                 void DrawTexture(VirtTexture texture, ReadOnlySpan<char> linkTooltip) {
                     ImGuiManager.XnaWidget($"md.img.{link}", texture.Width, texture.Height, () => {
                         ISprite.FromTexture(texture).Render(SpriteRenderCtx.Default(true));
@@ -171,6 +210,7 @@ internal static partial class ImGuiMarkdown {
                     }
                     renderText = false;
                 }
+            }
             case LineBreakInline:
                 ImGui.NewLine();
                 break;
