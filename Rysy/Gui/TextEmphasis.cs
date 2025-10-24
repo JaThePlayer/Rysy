@@ -1,10 +1,5 @@
 ﻿using Hexa.NET.ImGui;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
-using Rysy.Extensions;
-using Rysy.Graphics;
 using Rysy.Helpers;
-using System.Diagnostics;
 
 namespace Rysy.Gui;
 
@@ -21,47 +16,15 @@ public record struct TextEmphasis {
 
     public string? Link { get; set; }
 
-    public bool Autolink { get; private set; }
+    public bool Autolink { get; set; }
 
     public bool LinkIsImage { get; set; }
-
-    public TextEmphasis(Inline obj, int headerLevel = 0) {
-        HeaderLevel = headerLevel;
-        
-        var parent = obj.Parent;
-        while (parent is { }) {
-            switch (parent) {
-                case EmphasisInline emphasis:
-                    switch (emphasis.DelimiterChar) {
-                        case '*':
-                            Bold |= emphasis.DelimiterCount is 2 or 3;
-                            Italic |= emphasis.DelimiterCount is 1 or 3;
-                            break;
-                        case '~':
-                            Strikethrough = true;
-                            break;
-                    }
-                    break;
-                case LinkInline link:
-                    Link = link.Url;
-                    Autolink = link.IsAutoLink;
-                    LinkIsImage = link.IsImage;
-                    Underline = !LinkIsImage;
-                    break;
-                default:
-                    if (parent.GetType() != typeof(ContainerInline))
-                        Logger.Write("ImGuiMarkdown.Emphasis", LogLevel.Info, $"Unknown inline parent: {parent.GetType()}");
-                    break;
-            }
-            parent = parent.Parent;
-        }
-    }
 
     public readonly ImFontPtr Font() {
         var headerFont = HeaderLevel switch {
             1 => ImGuiThemer.HeaderFont,
             >= 2 => ImGuiThemer.Header2Font,
-            // if the cast is removed, null will be converted to ImFontPtr due to a implicit conversion from ImFont*...
+            // if the cast is removed, null will be converted to ImFontPtr due to an implicit conversion from ImFont*...
             _ => (ImFontPtr?)null,
         };
         if (headerFont is { } font)

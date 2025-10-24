@@ -22,7 +22,7 @@ public static class LangRegistry {
             ?? keyOrText;
     }
 
-    public static string? TranslateOrNull(string keyOrText)
+    public static string? TranslateOrNull(string? keyOrText)
         => TranslateOrNull(keyOrText.AsSpan());
 
     public static string? TranslateOrNull(ReadOnlySpan<char> keyOrText) {

@@ -58,12 +58,12 @@ public readonly struct Tooltip : ITooltip {
     public static Tooltip CreateTranslatedFormatted(string id, params object[] args)
         => new Tooltip(new TranslatedFormattedTooltip(id, args));
 
-    public static Tooltip CreateTranslatedMarkdown(string id) {
+    public static Tooltip CreateTranslatedMarkdown(string id, string? fallbackId = null) {
         string? prevContents = null;
         MarkdownDocument? md = null;
         GuiSize guiSize = default;
         return new Tooltip(new MarkdownTooltip(() => {
-            var txt = LangRegistry.TranslateOrNull(id);
+            var txt = LangRegistry.TranslateOrNull(id) ?? LangRegistry.TranslateOrNull(fallbackId);
             txt ??= "";
             if (txt != prevContents || md is null) {
                 prevContents = txt;
@@ -76,7 +76,7 @@ public readonly struct Tooltip : ITooltip {
                 );
             }
 
-            return (md, guiSize);
+            return (txt, md, guiSize);
         }));
     }
 }
@@ -132,16 +132,18 @@ sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
     public string GetRawText() => $"{first.GetRawText() ?? ""}\n{second.GetRawText() ?? ""}";
 }
 
-sealed class MarkdownTooltip(Func<(MarkdownDocument doc, GuiSize size)> dataGetter) : ITooltip {
+sealed class MarkdownTooltip(Func<(string raw, MarkdownDocument doc, GuiSize size)> dataGetter) : ITooltip {
     public void RenderImGui() {
         var data = dataGetter();
-        ImGui.SetNextWindowSize(data.size.Calculate());
-        ImGui.BeginChild(Interpolator.TempU8($"##md-tooltip-{data.doc.GetHashCode()}"));
-        ImGuiMarkdown.RenderMarkdown(data.doc);
-        ImGui.EndChild();
+        if (data.doc.Count > 0) {
+            ImGui.SetNextWindowSize(data.size.Calculate());
+            ImGui.BeginChild(Interpolator.TempU8($"##md-tooltip-{data.doc.GetHashCode()}"));
+            ImGuiMarkdown.RenderMarkdown(data.doc);
+            ImGui.EndChild();
+        }
     }
 
     public bool IsEmpty => dataGetter().doc.Count == 0;
 
-    public string? GetRawText() => null;
+    public string? GetRawText() => dataGetter().raw;
 }

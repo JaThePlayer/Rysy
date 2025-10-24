@@ -100,7 +100,7 @@ internal static partial class ImGuiMarkdown {
                         var first = true;
 
                         if (codeBlock.Inline is null) {
-                            if (codeBlock.Lines is {})
+                            if (codeBlock.Lines is { Lines: {} })
                                 foreach (var line in codeBlock.Lines.Lines) {
                                     ImGui.Text(line.Slice.AsSpan().ToString());
                                     first = false;
@@ -174,7 +174,7 @@ internal static partial class ImGuiMarkdown {
                 break;
             }
             case LiteralInline literalInline: {
-                var emphasis = new TextEmphasis(literalInline, headerLevel);
+                var emphasis = CreateEmphasis(literalInline, headerLevel);
                 var renderText = true;
 
                 var content = literalInline.Content.AsSpan();
@@ -226,6 +226,41 @@ internal static partial class ImGuiMarkdown {
                 RenderInline(inner, headerLevel, false, startX);
             }
         }
+    }
+    
+    private static TextEmphasis CreateEmphasis(Inline obj, int headerLevel = 0) {
+        var emph = new TextEmphasis();
+        emph.HeaderLevel = headerLevel;
+        
+        var parent = obj.Parent;
+        while (parent is { }) {
+            switch (parent) {
+                case EmphasisInline emphasis:
+                    switch (emphasis.DelimiterChar) {
+                        case '*':
+                            emph.Bold |= emphasis.DelimiterCount is 2 or 3;
+                            emph.Italic |= emphasis.DelimiterCount is 1 or 3;
+                            break;
+                        case '~':
+                            emph.Strikethrough = true;
+                            break;
+                    }
+                    break;
+                case LinkInline link:
+                    emph.Link = link.Url;
+                    emph.Autolink = link.IsAutoLink;
+                    emph.LinkIsImage = link.IsImage;
+                    emph.Underline = !emph.LinkIsImage;
+                    break;
+                default:
+                    if (parent.GetType() != typeof(ContainerInline))
+                        Logger.Write("ImGuiMarkdown.CreateEmphasis", LogLevel.Info, $"Unknown inline parent: {parent.GetType()}");
+                    break;
+            }
+            parent = parent.Parent;
+        }
+
+        return emph;
     }
 
 

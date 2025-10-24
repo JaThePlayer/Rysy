@@ -1,4 +1,5 @@
-﻿
+﻿//#define NO_CATCH_RENDER_EXCEPTIONS
+
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
@@ -147,7 +148,9 @@ public static class RysyState {
         var uiRenderingSuccessful = false;
         
         if (ImGuiAvailable) {
+#if !NO_CATCH_RENDER_EXCEPTIONS
             try {
+#endif
                 ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
                 if (renderUI)
                     Scene.RenderImGui();
@@ -155,11 +158,12 @@ public static class RysyState {
                     DebugInfoWindow.Instance.RenderGui();
 
                 uiRenderingSuccessful = true;
+#if !NO_CATCH_RENDER_EXCEPTIONS
             } catch (Exception e) {
                 Logger.Error(e, $"Unhandled exception during ImGui rendering!");
                 Scene = new CrashScene(Scene, e);
             }
-
+#endif
         }
 
         try {
@@ -171,10 +175,9 @@ public static class RysyState {
             Logger.Error(e, $"Unhandled exception during render!");
             Scene = new CrashScene(Scene, e);
         }
-
-        if (uiRenderingSuccessful) {
+        
+        if (ImGuiAvailable)
             ImGuiManager.GuiRenderer.AfterLayout();
-        }
 
         _smartFramerate.Update(elapsed);
 
