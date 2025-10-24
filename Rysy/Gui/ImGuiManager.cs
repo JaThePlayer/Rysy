@@ -386,6 +386,7 @@ public static class ImGuiManager {
         ImGui.SetCursorPos(pos + ImGui.GetStyle().FramePadding);
         var parsed = SearchHelper.ParseSearch(search);
         parsed.RenderImGui();
+        ImGui.NewLine();
         
         return ret;
     }
