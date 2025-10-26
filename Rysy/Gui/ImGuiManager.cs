@@ -378,9 +378,11 @@ public static class ImGuiManager {
             ? Interpolator.TempU8($"##{searchText}") 
             : Interpolator.TempU8($"##{searchText}##{persistenceKey}"), ref search, 512);
         ImGui.PopStyleColor(1);
-        SearchInputTooltip.RenderIfHovered();
         ImGui.SameLine();
         ImGui.Text(searchText);
+        ImGui.SameLine();
+        //ImGui.Button("?");
+        ImGui.TextDisabled("(?)"u8);
         SearchInputTooltip.RenderIfHovered();
         
         ImGui.SetCursorPos(pos + ImGui.GetStyle().FramePadding);
@@ -1007,6 +1009,10 @@ public static class ImGuiManager {
         var iconChar = (char) icon;
         ImGui.Text(Interpolator.TempU8($"{iconChar}"));
         ImGui.SameLine();
+    }
+
+    public static void ReadOnlyInputTextMultiline(string label, string text, NumVector2 size, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
+        ImGui.InputTextMultiline(label, ref text, (uint)text.Length + 1, size, flags | ImGuiInputTextFlags.ReadOnly);
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs

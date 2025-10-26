@@ -31,7 +31,7 @@ public class CrashWindow : Window {
 
         ImGui.TextColored(Color.Red.ToNumVec4(), Message);
 
-        ImGui.InputTextMultiline("Exception", ref ExceptionString, (uint)ExceptionString.Length, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()), ImGuiInputTextFlags.ReadOnly);
+        ImGuiManager.ReadOnlyInputTextMultiline("Exception", ExceptionString, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()));
 
         ImGui.NewLine();
 
