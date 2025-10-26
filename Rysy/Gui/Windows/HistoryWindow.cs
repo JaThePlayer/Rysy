@@ -50,7 +50,7 @@ public class HistoryWindow : Window {
         }
         
         if (_selectedActionJson is {} json)
-            ImGui.InputTextMultiline("##", ref json, (uint)json.Length, new NumVector2(), ImGuiInputTextFlags.ReadOnly);
+            ImGuiManager.ReadOnlyInputTextMultiline("##", json, new NumVector2());
         
         if (_selectedActionByteCount is {})
             ImGui.Text($"Encoded bytes: {_selectedActionByteCount}");
