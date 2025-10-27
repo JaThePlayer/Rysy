@@ -58,6 +58,13 @@ public class ToolHandler {
         Registry.Tools.OnChanged += CreateTools;
         EditorState.OnCurrentRoomChanged += CancelInteraction;
         History.OnUndo += CancelInteraction;
+        Themes.ThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged(Theme theme) {
+        foreach (var tool in Tools) {
+            tool.OnThemeChanged(theme);
+        }
     }
 
     public void Unload() {
@@ -65,6 +72,7 @@ public class ToolHandler {
         Registry.Tools.OnChanged -= CreateTools;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
         History.OnUndo -= CancelInteraction;
+        Themes.ThemeChanged -= OnThemeChanged;
     }
 
     ~ToolHandler() {

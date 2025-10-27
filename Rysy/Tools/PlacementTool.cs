@@ -104,12 +104,22 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     protected override void OnLayerChanged() {
         base.OnLayerChanged();
+        
+        ClearPreviewCache();
+    }
 
+    protected internal override void OnThemeChanged(Theme theme) {
+        base.OnThemeChanged(theme);
+        
+        ClearPreviewCache();
+    }
+
+    private void ClearPreviewCache() {
         var cache = MaterialPreviewCache;
         MaterialPreviewCache.Clear();
         RysyState.OnEndOfThisFrame += () => {
             foreach (var (k, v) in cache) {
-                ImGuiManager.DisposeXnaWidget(k.ToString());
+                ImGuiManager.DisposeXnaWidget(k);
             }
             cache.Clear();
         };
@@ -552,7 +562,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 foreach (var mod in associated) {
                     var displayName = ModMeta.ModNameToDisplayName(mod);
                     if (currentMod is { } && !currentMod.DependencyMet(mod)) {
-                        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.Current.ImGuiStyle.FormInvalidColor.ToNumVec4());
+                        ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.FormInvalidColor.ToNumVec4());
                         ImGui.TextWrapped(displayName);
                         ImGui.PopStyleColor(1);
                     } else {
@@ -575,7 +585,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 if (tags.Count == 1)
                     ImGui.SameLine();
                 foreach (var tag in tags) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.Current.ImGuiStyle.TagColor.ToNumVec4());
+                    ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.TagColor.ToNumVec4());
                     ImGui.TextWrapped(Interpolator.TempU8($"#{tag}"));
                     ImGui.PopStyleColor(1);
                 }

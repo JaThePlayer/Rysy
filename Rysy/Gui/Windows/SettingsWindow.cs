@@ -197,7 +197,7 @@ public sealed class SettingsWindow : Window {
                     Settings.Instance.Theme = themeName;
                     Settings.Instance.Save();
 
-                    ImGuiThemer.LoadThemeFromFile(themeName);
+                    Themes.LoadThemeFromFile(themeName);
                 }
             }
 

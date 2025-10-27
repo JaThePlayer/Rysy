@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Selections;
 using System.Collections.Concurrent;
@@ -87,11 +88,11 @@ public class Trigger : Entity {
         }
     }
 
-    public IEnumerable<ISprite> GetPreviewSprites() {
+    public override IEnumerable<ISprite> GetPreviewSprites() {
         yield return ISprite.OutlinedRect(new Rectangle(X, Y, Width, Height), FillColor, Color) with {
             Depth = Depth
         };
-        yield return GetTextSprite(Color.White, default, 1f) with {
+        yield return GetTextSprite(Themes.Current.ImGuiStyle.TextColor, default, 1f) with {
             Depth = Depth - 1
         };
     }

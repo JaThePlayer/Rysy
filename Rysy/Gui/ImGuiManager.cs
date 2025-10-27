@@ -47,8 +47,8 @@ public static class ImGuiManager {
         GuiRenderer = new ImGuiRenderer();
         GuiResourceManager = GuiRenderer;
 
-        ImGuiThemer.SetFontSize(Settings.Instance.FontSize);
-        ImGuiThemer.LoadThemeFromFile(Settings.Instance.Theme);
+        Themes.SetFontSize(Settings.Instance.FontSize);
+        Themes.LoadThemeFromFile(Settings.Instance.Theme);
 
         RysyState.ImGuiAvailable = true;
     }
@@ -76,7 +76,7 @@ public static class ImGuiManager {
 
     private static int _invalidStyleEnabled;
     public static void PushInvalidStyle() {
-        var color = ImGuiThemer.Current.ImGuiStyle.FormInvalidColor.ToNumVec4();
+        var color = Themes.Current.ImGuiStyle.FormInvalidColor.ToNumVec4();
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
@@ -94,7 +94,7 @@ public static class ImGuiManager {
     
     private static int _warnStyleEnabled;
     public static void PushWarningStyle() {
-        var color = ImGuiThemer.Current.ImGuiStyle.FormWarningColor.ToNumVec4();
+        var color = Themes.Current.ImGuiStyle.FormWarningColor.ToNumVec4();
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
@@ -112,7 +112,7 @@ public static class ImGuiManager {
 
     private static int _editedStylePushed;
     public static void PushEditedStyle() {
-        var color = ImGuiThemer.Current.ImGuiStyle.FormEditedColor.ToNumVec4();
+        var color = Themes.Current.ImGuiStyle.FormEditedColor.ToNumVec4();
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
@@ -130,7 +130,7 @@ public static class ImGuiManager {
 
     private static int _nullStylePushed;
     public static void PushNullStyle() {
-        var color = ImGuiThemer.Current.ImGuiStyle.FormNullColor.ToNumVec4();
+        var color = Themes.Current.ImGuiStyle.FormNullColor.ToNumVec4();
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
         _nullStylePushed++;

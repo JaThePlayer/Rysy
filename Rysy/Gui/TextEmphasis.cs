@@ -22,8 +22,8 @@ public record struct TextEmphasis {
 
     public readonly ImFontPtr Font() {
         var headerFont = HeaderLevel switch {
-            1 => ImGuiThemer.HeaderFont,
-            >= 2 => ImGuiThemer.Header2Font,
+            1 => Themes.HeaderFont,
+            >= 2 => Themes.Header2Font,
             // if the cast is removed, null will be converted to ImFontPtr due to an implicit conversion from ImFont*...
             _ => (ImFontPtr?)null,
         };
@@ -31,10 +31,10 @@ public record struct TextEmphasis {
             return font;
         
         return (Bold, Italic) switch {
-            (true, true) => ImGuiThemer.ItalicBoldFont,
-            (true, false) => ImGuiThemer.BoldFont,
-            (false, true) => ImGuiThemer.ItalicFont,
-            (false, false) => ImGuiThemer.DefaultFont,
+            (true, true) => Themes.ItalicBoldFont,
+            (true, false) => Themes.BoldFont,
+            (false, true) => Themes.ItalicFont,
+            (false, false) => Themes.DefaultFont,
         };
     }
     
