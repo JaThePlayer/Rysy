@@ -159,5 +159,11 @@
     },
     "DockingNodeHasCloseButton": true,
     "DockingSeparatorSize": 1
+  },
+  "TriggerCategoryColors": {
+    "default": "87cefa",
+    "camera": "cd5c5c",
+    "audio": "32cd32",
+    "visual": "9370db"
   }
 }

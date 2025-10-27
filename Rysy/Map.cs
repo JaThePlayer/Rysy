@@ -305,6 +305,12 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             r.ClearRenderCache();
         }
     }
+    
+    public void ClearRenderCacheAggressively() {
+        foreach (var r in Rooms) {
+            r.ClearRenderCacheAggressively();
+        }
+    }
 
     public void GroupsChanged() {
         // tell entities about the change

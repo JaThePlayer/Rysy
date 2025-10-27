@@ -390,7 +390,15 @@ public static class Themes {
 }
 
 public sealed class Theme {
-    [JsonPropertyName("ImGui")] public ImGuiStyleData ImGuiStyle { get; set; } = new();
+    [JsonPropertyName("ImGui")]
+    public ImGuiStyleData ImGuiStyle { get; set; } = new();
+
+    public Dictionary<string, Color> TriggerCategoryColors { get; set; } = new() {
+        [TriggerCategories.Default] = Color.LightSkyBlue,
+        [TriggerCategories.Camera] = Color.IndianRed,
+        [TriggerCategories.Audio] = Color.LimeGreen,
+        [TriggerCategories.Visual] = Color.MediumPurple
+    };
 
     public void Apply() {
         ImGuiStyle.Apply();
@@ -399,7 +407,10 @@ public sealed class Theme {
     public string ToJson() => this.ToJson(Themes.JsonOptions);
 
     public static Theme CreateFromCurrent() {
-        var theme = new Theme { ImGuiStyle = ImGuiStyleData.CreateFromCurrent() };
+        var theme = new Theme {
+            ImGuiStyle = ImGuiStyleData.CreateFromCurrent(),
+            TriggerCategoryColors = Themes.Current.TriggerCategoryColors.ToDictionary()
+        };
 
         return theme;
     }
@@ -409,20 +420,26 @@ public sealed class Theme {
 
         #region Custom Colors
 
-        [JsonIgnore] public Color ModNameColor => Colors.GetOrSetDefault("Search:ModName", Color.LightSkyBlue);
+        [JsonIgnore]
+        public Color ModNameColor => Colors.GetOrSetDefault("Search:ModName", Color.LightSkyBlue);
 
-        [JsonIgnore] public Color TagColor => Colors.GetOrSetDefault("Search:Tag", Color.Gold);
+        [JsonIgnore]
+        public Color TagColor => Colors.GetOrSetDefault("Search:Tag", Color.Gold);
 
-        [JsonIgnore] public Color FormEditedColor => Colors.GetOrSetDefault("Form:Edited", Color.LimeGreen);
+        [JsonIgnore]
+        public Color FormEditedColor => Colors.GetOrSetDefault("Form:Edited", Color.LimeGreen);
 
         [JsonIgnore]
         public Color FormWarningColor => Colors.GetOrSetDefault("Form:Warning", new Color(230, 179, 0, 255));
 
-        [JsonIgnore] public Color FormInvalidColor => Colors.GetOrSetDefault("Form:Invalid", Color.Red);
+        [JsonIgnore]
+        public Color FormInvalidColor => Colors.GetOrSetDefault("Form:Invalid", Color.Red);
 
-        [JsonIgnore] public Color FormNullColor => Colors.GetOrSetDefault("TextDisabled", Color.Gray);
+        [JsonIgnore]
+        public Color FormNullColor => Colors.GetOrSetDefault("TextDisabled", Color.Gray);
 
-        [JsonIgnore] public Color TextColor => Colors.GetOrSetDefault("Text", Color.White);
+        [JsonIgnore]
+        public Color TextColor => Colors.GetOrSetDefault("Text", Color.White);
 
         #endregion
 
@@ -650,6 +667,7 @@ public sealed class Theme {
             data.DockingNodeHasCloseButton = style.DockingNodeHasCloseButton;
             data.DockingSeparatorSize = style.DockingSeparatorSize;
 
+            data.Colors = Themes.Current.ImGuiStyle.Colors.ToDictionary();
             for (ImGuiCol i = 0; i < ImGuiCol.Count; i++) {
                 var name = ImGui.GetStyleColorNameS(i);
                 var color = new Color((*ImGui.GetStyleColorVec4(i)).ToXna());
