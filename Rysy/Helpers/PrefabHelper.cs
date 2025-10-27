@@ -29,7 +29,8 @@ public static class PrefabHelper {
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
         if (fs.OpenFile(path, stream => { 
-            if (JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText()) is not { } prefab)
+            // ReSharper disable once VariableHidesOuterVariable
+            if (!JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText(), out var prefab))
                 return null;
 
             prefab.Filename = path;
@@ -63,7 +64,7 @@ public static class PrefabHelper {
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
         prefab.Filename = path;
         
-        fs.TryWriteToFile(path, prefab.ToJsonUTF8());
+        fs.TryWriteToFile(path, prefab.ToJsonUtf8());
     }
 
     public static void Remove(string name) {

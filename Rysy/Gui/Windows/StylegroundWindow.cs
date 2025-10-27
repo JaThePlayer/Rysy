@@ -88,7 +88,7 @@ public class StylegroundWindow : Window {
     }
 
     private void PasteSelections() {
-        if (Input.Clipboard.TryGetFromJson<BinaryPacker.Element[]>() is not { } data) {
+        if (!Input.Clipboard.TryGetFromJson<BinaryPacker.Element[]>(out var data)) {
             return;
         }
 

@@ -7,6 +7,7 @@ using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace Rysy.Gui.Windows;
 
@@ -185,8 +186,11 @@ public class DebugInfoWindow : Window {
             ImGui.ShowDemoWindow();
 
         if (ImGui.Button("Save style to clipboard")) {
-            ImGuiStylePtr ptr = ImGui.GetStyle();
-            Input.Clipboard.Set(Unsafe.BitCast<ImGuiStyle, ImGuiThemer.ImGuiStyleSerializable>(*ptr.Handle).ToJson());
+            Input.Clipboard.Set(ImGuiThemer.Theme.CreateFromCurrent().ToJson());
+        }
+        
+        if (ImGui.Button("Apply v2 style from clipboard")) {
+            ImGuiThemer.LoadThemeFromJson(Input.Clipboard.Get());
         }
     }
 

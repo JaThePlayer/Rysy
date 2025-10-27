@@ -1,6 +1,8 @@
 ﻿using Rysy.Gui;
 using Rysy.Helpers;
 using Microsoft.Xna.Framework.Input;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace Rysy;
 
@@ -340,13 +342,14 @@ public class Input {
             SDL2.SDL.SDL_SetClipboardText(text);
         }
 
-        public static void SetAsJson<T>(T obj) {
-            Set(obj.ToJson(Settings.Instance.MinifyClipboard));
+        public static void SetAsJson<T>(T obj, JsonSerializerOptions? options = null) {
+            Set(obj.ToJson(options, Settings.Instance.MinifyClipboard));
         }
 
         public static string Get() => SDL2Ext.GetClipboardFixed();
 
-        public static T? TryGetFromJson<T>() => JsonExtensions.TryDeserialize<T>(Get());
+        public static bool TryGetFromJson<T>([NotNullWhen(true)] out T? res, JsonSerializerOptions? options = null)
+            => JsonExtensions.TryDeserialize(Get(), out res, options);
     }
 }
 
