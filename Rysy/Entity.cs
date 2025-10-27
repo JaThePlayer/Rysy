@@ -290,6 +290,12 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     /// <summary>
+    /// Gets sprites to be rendered as a preview in the GUI.
+    /// </summary>
+    public virtual IEnumerable<ISprite> GetPreviewSprites()
+        => GetSpritesWithNodes();
+
+    /// <summary>
     /// Whether rendering errors should be logged to the console.
     /// </summary>
     public static bool LogErrors { get; set; } = true;

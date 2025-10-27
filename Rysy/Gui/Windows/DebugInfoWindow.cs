@@ -186,11 +186,11 @@ public class DebugInfoWindow : Window {
             ImGui.ShowDemoWindow();
 
         if (ImGui.Button("Save style to clipboard")) {
-            Input.Clipboard.Set(ImGuiThemer.Theme.CreateFromCurrent().ToJson());
+            Input.Clipboard.Set(Theme.CreateFromCurrent().ToJson());
         }
         
         if (ImGui.Button("Apply v2 style from clipboard")) {
-            ImGuiThemer.LoadThemeFromJson(Input.Clipboard.Get());
+            Themes.LoadThemeFromJson(Input.Clipboard.Get());
         }
     }
 

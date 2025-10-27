@@ -163,7 +163,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
         set {
             _font = value;
             if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(FontSize);
+                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(FontSize);
         }
     }
     
@@ -173,13 +173,13 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
         set {
             _useBoldFontByDefault = value;
             if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(FontSize);
+                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(FontSize);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void LoadTheme(string val) {
-        ImGuiThemer.LoadThemeFromFile(val);
+        Themes.LoadThemeFromFile(val);
     }
 
     private int _fontSize = 16;
@@ -188,7 +188,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
         set {
             _fontSize = value;
             if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => ImGuiThemer.SetFontSize(value);
+                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(value);
         }
     }
     

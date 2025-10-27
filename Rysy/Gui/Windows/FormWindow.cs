@@ -149,6 +149,8 @@ public class FormWindow : Window {
         foreach (var prop in FieldList) {
             if (prop.Field.IsHidden(FormContext) || dynamicallyHiddenFields.Contains(prop.Name))
                 continue;
+
+            ImGui.PushID(i++);
             
             if (prop.Field is PaddingField pad) {
                 if (pad.Text is { } text) {
@@ -166,11 +168,10 @@ public class FormWindow : Window {
                     if (pad.DrawSeparator)
                         ImGui.Separator();
                 }
-
+                ImGui.PopID();
                 continue;
             }
             
-            ImGui.PushID(i++);
 
             if (!HandleProp(prop)) {
                 valid = false;

@@ -574,4 +574,8 @@ public abstract class Tool {
 
         return ret;
     }
+
+    protected internal virtual void OnThemeChanged(Theme theme) {
+        
+    }
 }

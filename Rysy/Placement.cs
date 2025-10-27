@@ -405,11 +405,10 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
                 entity.InitializeNodePositions();
             }
 
-            // todo: hacky!!!
             entity.Selected = true;
-            var sprites = (entity is Trigger trigger
-                ? trigger.GetPreviewSprites()
-                : entity.GetSpritesWithNodes()).OrderByDescending(x => x.Depth).ToList();
+            var sprites = entity.GetPreviewSprites()
+                .OrderByDescending(x => x.Depth)
+                .ToList();
             entity.Selected = false;
 
             return sprites;

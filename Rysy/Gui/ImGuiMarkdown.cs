@@ -23,7 +23,7 @@ internal static partial class ImGuiMarkdown {
         .Build();
 
     public static void RenderMarkdown(MarkdownObject doc) {
-        ImGui.PushFont(ImGuiThemer.DefaultFont, 0f);
+        ImGui.PushFont(Themes.DefaultFont, 0f);
         var startX = ImGui.GetCursorPosX();
         
         if (doc is ContainerBlock container) {
