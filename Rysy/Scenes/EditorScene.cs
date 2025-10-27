@@ -46,6 +46,10 @@ public sealed class EditorScene : Scene {
         RysyState.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
     }
 
+    private void OnThemeChanged(Theme theme) {
+        Map?.ClearRenderCacheAggressively();
+    }
+
     private void SwapMapPreserveState(Map? map) {
         EditorState.Map = map;
 
@@ -464,11 +468,13 @@ public sealed class EditorScene : Scene {
         ToolHandler?.Unload();
         //ToolHandler = null!;
         EditorState.OnMapChanged -= OnMapChanged;
+        Themes.ThemeChanged -= OnThemeChanged;
     }
 
     public override void OnBegin() {
         ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
         EditorState.OnMapChanged += OnMapChanged;
+        Themes.ThemeChanged += OnThemeChanged;
 
         OnMapChanged();
 

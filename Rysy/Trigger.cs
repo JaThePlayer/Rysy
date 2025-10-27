@@ -7,24 +7,20 @@ using System.Collections.Concurrent;
 namespace Rysy;
 
 public class Trigger : Entity {
-    private static readonly string LightSkyBlueHex = Color.LightSkyBlue.ToRGBAString();
-    
-    public string EditorColor {
-        get => EntityData.Attr("_editorColor", LightSkyBlueHex);
+    public Color Color {
+        get {
+            var stored = EntityData.Attr("_editorColor");
+            if (!string.IsNullOrWhiteSpace(stored) && ColorHelper.TryGet(stored, ColorFormat.RGBA, out var storedColor))
+                return storedColor;
+            
+            if (Themes.Current.TriggerCategoryColors.TryGetValue(Category, out var categoryColor))
+                return categoryColor;
+            
+            return Color.LightSkyBlue;
+        }
         set {
             EntityData["_editorColor"] = value;
             ClearRoomRenderCache();
-        }
-    }
-
-    public Color Color {
-        get {
-            var color = EditorColor;
-            if (color.IsNullOrWhitespace()) {
-                return Color.LightSkyBlue;
-            }
-
-            return color.FromRGBA();
         }
     }
 
