@@ -38,13 +38,13 @@ public record struct TextEmphasis {
         };
     }
     
-    public TextEmphasisPushCtx PushToImgui() {
+    public unsafe TextEmphasisPushCtx PushToImgui() {
         ImGui.PushFont(Font(), 0f);
         var start = ImGui.GetCursorScreenPos();
         var colorPushed = false;
 
         if (Link is { }) {
-            ImGui.PushStyleColor(ImGuiCol.Text, Color.LightSkyBlue.ToNumVec4());
+            ImGui.PushStyleColor(ImGuiCol.Text, *ImGui.GetStyleColorVec4(ImGuiCol.TextLink));
             colorPushed = true;
         }
         

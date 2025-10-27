@@ -552,7 +552,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 foreach (var mod in associated) {
                     var displayName = ModMeta.ModNameToDisplayName(mod);
                     if (currentMod is { } && !currentMod.DependencyMet(mod)) {
-                        ImGui.PushStyleColor(ImGuiCol.Text, Color.Red.ToNumVec4());
+                        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.Current.ImGuiStyle.FormInvalidColor.ToNumVec4());
                         ImGui.TextWrapped(displayName);
                         ImGui.PopStyleColor(1);
                     } else {
@@ -575,14 +575,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 if (tags.Count == 1)
                     ImGui.SameLine();
                 foreach (var tag in tags) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.TagColor.ToNumVec4());
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiThemer.Current.ImGuiStyle.TagColor.ToNumVec4());
                     ImGui.TextWrapped(Interpolator.TempU8($"#{tag}"));
                     ImGui.PopStyleColor(1);
                 }
                 
                 ImGui.EndTooltip();
             }
-
         }
     }
 

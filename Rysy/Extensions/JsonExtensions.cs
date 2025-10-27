@@ -15,6 +15,13 @@ public static class JsonExtensions {
     /// <summary>
     /// Returns the JSON representation of this object.
     /// </summary>
+    public static string ToJson<T>(this T? obj, JsonSerializerOptions? options, bool minified = false) {
+        return obj is { } ? JsonSerializer.Serialize(obj, options ?? Options(minified)) : "";
+    }
+    
+    /// <summary>
+    /// Returns the JSON representation of this object.
+    /// </summary>
     public static string ToJsonNongeneric(this object obj, bool minified = false) {
         return obj is { } ? JsonSerializer.Serialize(obj, Options(minified)) : "";
     }
@@ -22,24 +29,24 @@ public static class JsonExtensions {
     /// <summary>
     /// Returns the JSON representation of this object as UTF-8 bytes
     /// </summary>
-    public static byte[] ToJsonUTF8<T>(this T? obj, bool minified = true) {
+    public static byte[] ToJsonUtf8<T>(this T? obj, bool minified = true) {
         return obj is { } ? JsonSerializer.SerializeToUtf8Bytes(obj, Options(minified)) : Array.Empty<byte>();
     }
 
     /// <summary>
     /// Returns the JSON representation of this object as UTF-8 bytes
     /// </summary>
-    public static byte[] ToJsonUTF8(this object obj, Type serializeAs, bool minified = true) {
+    public static byte[] ToJsonUtf8(this object obj, Type serializeAs, bool minified = true) {
         return obj is { } ? JsonSerializer.SerializeToUtf8Bytes(obj, serializeAs, Options(minified)) : Array.Empty<byte>();
     }
 
-    public static T? TryDeserialize<T>(string str) {
+    public static bool TryDeserialize<T>(string str, [NotNullWhen(true)] out T? result, JsonSerializerOptions? options = null) {
         try {
-            return JsonSerializer.Deserialize<T>(str, Options(true));
+            result = JsonSerializer.Deserialize<T>(str, options ?? Options(true));
+            return result is not null;
         } catch {
-            //Console.WriteLine(str);
-            //Console.WriteLine(e);
-            return default;
+            result = default;
+            return false;
         }
     }
 

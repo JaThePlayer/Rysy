@@ -48,7 +48,7 @@ public static class ImGuiManager {
         GuiResourceManager = GuiRenderer;
 
         ImGuiThemer.SetFontSize(Settings.Instance.FontSize);
-        ImGuiThemer.LoadTheme(Settings.Instance.Theme);
+        ImGuiThemer.LoadThemeFromFile(Settings.Instance.Theme);
 
         RysyState.ImGuiAvailable = true;
     }
@@ -76,8 +76,9 @@ public static class ImGuiManager {
 
     private static int _invalidStyleEnabled;
     public static void PushInvalidStyle() {
-        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(255, 0, 0, 255));
-        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(255, 0, 0, 255));
+        var color = ImGuiThemer.Current.ImGuiStyle.FormInvalidColor.ToNumVec4();
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _invalidStyleEnabled++;
@@ -93,8 +94,9 @@ public static class ImGuiManager {
     
     private static int _warnStyleEnabled;
     public static void PushWarningStyle() {
-        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(230 / 255f, 179 / 255f, 0 / 255f, 255));
-        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(230, 179, 0, 255));
+        var color = ImGuiThemer.Current.ImGuiStyle.FormWarningColor.ToNumVec4();
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _warnStyleEnabled++;
@@ -110,8 +112,9 @@ public static class ImGuiManager {
 
     private static int _editedStylePushed;
     public static void PushEditedStyle() {
-        ImGui.PushStyleColor(ImGuiCol.Text, new NumVector4(0, 255, 0, 255));
-        ImGui.PushStyleColor(ImGuiCol.Border, new NumVector4(0, 255, 0, 255));
+        var color = ImGuiThemer.Current.ImGuiStyle.FormEditedColor.ToNumVec4();
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.PushStyleColor(ImGuiCol.Border, color);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
         ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _editedStylePushed++;
@@ -126,13 +129,10 @@ public static class ImGuiManager {
     }
 
     private static int _nullStylePushed;
-    public static unsafe void PushNullStyle() {
-        var color = *ImGui.GetStyleColorVec4(ImGuiCol.TextDisabled);//(Color.LightGray * 0.8f).ToNumVec4();
-
+    public static void PushNullStyle() {
+        var color = ImGuiThemer.Current.ImGuiStyle.FormNullColor.ToNumVec4();
         ImGui.PushStyleColor(ImGuiCol.Text, color);
         ImGui.PushStyleColor(ImGuiCol.Border, color);
-        //ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
-        //ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize, 1);
         _nullStylePushed++;
     }
 

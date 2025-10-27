@@ -227,7 +227,7 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8($"@{txt}").ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(ImGuiThemer.ModNameColor.ToNumVec4(), _txtU8);
+            ImGui.TextColored(ImGuiThemer.Current.ImGuiStyle.ModNameColor.ToNumVec4(), _txtU8);
         }
 
         public override bool Matches(Searchable search) => search.Mods.Any(x => 
@@ -247,7 +247,7 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8(txt).ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(ImGuiThemer.TagColor.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
+            ImGui.TextColored(ImGuiThemer.Current.ImGuiStyle.TagColor.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
         }
         
         public override bool Matches(Searchable search) => search.Tags.Any(x => x.Contains(_tagName, StringComparison.OrdinalIgnoreCase));

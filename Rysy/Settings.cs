@@ -179,7 +179,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void LoadTheme(string val) {
-        ImGuiThemer.LoadTheme(val);
+        ImGuiThemer.LoadThemeFromFile(val);
     }
 
     private int _fontSize = 16;

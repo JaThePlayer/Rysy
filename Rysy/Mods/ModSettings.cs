@@ -18,7 +18,7 @@ public class ModSettings {
 
     public void Save() {
         var fs = SettingsHelper.GetFilesystem(perProfile: false);
-        fs.TryWriteToFile(Meta.SettingsFileLocation, this.ToJsonUTF8(GetType(), minified: false));
+        fs.TryWriteToFile(Meta.SettingsFileLocation, this.ToJsonUtf8(GetType(), minified: false));
     }
 
     public bool HasAnyData() => GetType() != typeof(ModSettings) || OtherValues.Count > 0;

@@ -43,7 +43,7 @@ public class HistoryWindow : Window {
             ImGui.EndListBox();
         }
 
-        if (ImGui.Button("From Clipboard") && Input.Clipboard.TryGetFromJson<BinaryPacker.Element>() is {} el) {
+        if (ImGui.Button("From Clipboard") && Input.Clipboard.TryGetFromJson<BinaryPacker.Element>(out var el)) {
             if (HistorySerializer.TryDeserialize<IHistoryAction>(el, Room.DummyRoom, out var action)) {
                 history.ApplyNewAction(action);
             }
