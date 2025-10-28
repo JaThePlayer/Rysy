@@ -270,7 +270,7 @@ public class LuaCtx {
             var lua = Lua.FromIntPtr(s);
             var top = lua.GetTop();
 
-            var sprite = LonnDrawables.LuaToSprite(lua, top, Vector2.Zero);
+            var sprite = LonnDrawables.LuaToSprite(lua, top);
             var rect = sprite.GetRenderRect() ?? new Rectangle(0,0,0,0);
 
             lua.PushNumber(rect.X);
@@ -659,12 +659,11 @@ public class LuaCtx {
         lua.Register("_RYSY_DRAWABLE_makeFromEntity", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
             var data = lua.GetTop() - 1;
-            var texture = lua.FastToString(lua.GetTop());
 
             if (!lua.IsWrapper(data) || lua.UnboxWrapper(data) is not LonnEntity entity || !entity.CanMakeLonnDrawableTemplate())
                 return 0;
             
-            lua.CreateTable(0, 8);
+            lua.CreateTable(0, 10);
             var output = lua.GetTop();
             
             lua.PushString("_type"u8);
@@ -690,6 +689,13 @@ public class LuaCtx {
             lua.SetTable(output);
             lua.PushString("scaleY"u8);
             lua.PushNumber(1);
+            lua.SetTable(output);
+            
+            lua.PushString("renderOffsetX"u8);
+            lua.PushNumber(0);
+            lua.SetTable(output);
+            lua.PushString("renderOffsetY"u8);
+            lua.PushNumber(0);
             lua.SetTable(output);
             
             lua.PushString("rotation"u8);
