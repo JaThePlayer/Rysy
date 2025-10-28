@@ -51,6 +51,7 @@ function drawableSpriteMt.__index:setScale(scaleX, scaleY)
     return self
 end
 
+-- Set the absolute offset of the sprite, overriding image padding and justification
 function drawableSpriteMt.__index:setOffset(offsetX, offsetY)
     if type(offsetX) == "table" then
         offsetX, offsetY = offsetX[1], offsetX[2]
@@ -58,6 +59,18 @@ function drawableSpriteMt.__index:setOffset(offsetX, offsetY)
 
     self.offsetX = offsetX
     self.offsetY = offsetY
+
+    return self
+end
+
+-- Additional offset after justification and image padding
+function drawableSpriteMt.__index:setAdditionalOffset(offsetX, offsetY)
+    if type(offsetX) == "table" then
+        offsetX, offsetY = offsetX[1], offsetX[2]
+    end
+
+    self.renderOffsetX = offsetX
+    self.renderOffsetY = offsetY
 
     return self
 end
@@ -84,12 +97,12 @@ function drawableSpriteMt.__index:setAlpha(alpha)
 end
 
 function drawableSpriteMt.__index:getRectangleRaw()
-    local x,y,w,h = _RYSY_DRAWABLE_getRectangle(self)
+    local x, y, w, h = _RYSY_DRAWABLE_getRectangle(self)
 	return x, y, w, h
 end
 
 function drawableSpriteMt.__index:getRectangle()
-    local x,y,w,h = _RYSY_DRAWABLE_getRectangle(self)
+    local x, y, w, h = _RYSY_DRAWABLE_getRectangle(self)
 	return utils.rectangle(x, y, w, h)
 end
 
@@ -132,6 +145,8 @@ function RYSY_UNPACKSPR(drawableSprite)
 		   rawget(drawableSprite, "scaleX"), rawget(drawableSprite, "scaleY"),
 		   rawget(drawableSprite, "rotation"), rawget(drawableSprite, "depth"),
 		   rawget(drawableSprite, "color"), rawget(drawableSprite, "_RYSY_INTERNAL_texture"),
+		   rawget(drawableSprite, "offsetX"), rawget(drawableSprite, "offsetY"),
+		   rawget(drawableSprite, "renderOffsetX"), rawget(drawableSprite, "renderOffsetY"),
 		   rawget(drawableSprite, "_RYSYqX")
 end
 
@@ -155,6 +170,8 @@ local function __create(meta, data, texture)
             scaleX = data.scaleX or data.sx or 1,
             scaleY = data.scaleY or data.sy or 1,
             rotation = data.rotation or data.r or 0,
+            renderOffsetX = data.renderOffsetX or 0,
+            renderOffsetY = data.renderOffsetY or 0,
             depth = data.depth,
         }
     end

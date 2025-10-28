@@ -70,10 +70,11 @@ public static partial class LonnDrawables {
         return sprite;
     }
 
-    public static Sprite LuaToSprite(Lua lua, int top, Vector2 defaultPos) {
+    public static Sprite LuaToSprite(Lua lua, int top) {
         lua.GetGlobal("RYSY_UNPACKSPR"u8);
         lua.PushCopy(top);
-        lua.Call(1, 11);
+        const int resultCount = 15;
+        lua.Call(1, resultCount);
 
         var x = lua.ToFloat(top + 1);
         var y = lua.ToFloat(top + 2);
@@ -85,16 +86,28 @@ public static partial class LonnDrawables {
         int? depth = lua.ToIntegerX(top + 8) is { } l ? (int) l : null;
         var color = lua.ToColor(top + 9, Color.White);
         var texture = lua.FastToString(top + 10, callMetamethod: false);
-        var quadX = lua.ToIntegerX(top + 11);
+        var offsetX = lua.ToFloat(top + 11);
+        var offsetY = lua.ToFloat(top + 12);
+        var renderOffsetX = lua.ToFloat(top + 13);
+        var renderOffsetY = lua.ToFloat(top + 14);
+        var quadX = lua.ToIntegerX(top + 15);
 
-        lua.Pop(11);
+        lua.Pop(resultCount);
 
-        var sprite = ISprite.FromTexture(new Vector2(x, y), texture) with {
+        // Lonn ignores origin when an offset is provided
+        if (offsetX != 0f) {
+            originX = 0f;
+        }
+        if (offsetY != 0f) {
+            originY = 0f;
+        }
+
+        var sprite = ISprite.FromTexture(new Vector2(x, y), texture).AddDrawOffset(renderOffsetX, renderOffsetY) with {
             Scale = new(scaleX, scaleY),
             Origin = new(originX, originY),
             Color = color,
             Rotation = rotation,
-            Depth = depth
+            Depth = depth,
         };
 
         if (quadX is { } qx) {
@@ -242,7 +255,7 @@ public static partial class LonnDrawables {
 
         switch (type) {
             case "drawableSprite":
-                addTo.Add(LuaToSprite(lua, top, entity.Pos));
+                addTo.Add(LuaToSprite(lua, top));
                 break;
             case "drawableLine":
                 addTo.Add(LuaToLine(lua, top));

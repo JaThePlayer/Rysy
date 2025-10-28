@@ -54,6 +54,11 @@ public record struct Sprite : ITextureSprite {
         DrawOffset = text.DrawOffset;
     }
 
+    internal Sprite AddDrawOffset(float x, float y) {
+        DrawOffset += new Vector2(x, y);
+        return this;
+    }
+
     public Sprite WithTexture(VirtTexture text) => this with { Texture = text, DrawOffset = text.DrawOffset };
 
     /// <summary>

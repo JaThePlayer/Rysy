@@ -437,8 +437,8 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (Plugin.GetTexture is { } getTexture && getTexture(roomWrapper, this) is { } texturePath) {
             var offset = Plugin.GetOffset?.Invoke(roomWrapper, this);
             return [
-                ISprite.FromTexture(Pos + (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
-                    Origin = offset is {} ? Vector2.Zero : Plugin.GetJustification(roomWrapper, this),
+                ISprite.FromTexture(Pos - (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
+                    Origin = Plugin.GetJustification(roomWrapper, this),
                     Color = Plugin.GetColor(roomWrapper, this),
                     Scale = Plugin.GetScale(roomWrapper, this),
                     Rotation = Plugin.GetRotation(roomWrapper, this),
