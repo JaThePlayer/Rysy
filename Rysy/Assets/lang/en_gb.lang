@@ -21,10 +21,11 @@ rysy.new=New...
 rysy.create=Create
 rysy.search=Search
 rysy.search.tooltip="""
-Special search syntax:
+Search syntax:
 `^search @modName` - Search for things added by or associated with the given mod.
 `^search #tagName` - Search for the given tag (eg. Trigger Category)
 `^search a | b` - Search for either `a` or `b`
+`^search two_words` - Search for exactly the text "two words", instead of splitting the search term on a space.
 """
 
 # Notifications
