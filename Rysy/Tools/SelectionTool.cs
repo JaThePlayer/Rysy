@@ -356,7 +356,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         var room = EditorState.CurrentRoom;
         if (Layer == EditorLayers.Room)
-            room ??= EditorState.Map?.Rooms.FirstOrDefault() ?? Room.DummyRoom;
+            room ??= EditorState.Map?.Rooms.FirstOrDefault();
         
         DoRender(EditorState.Camera, room);
     }
@@ -570,16 +570,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         History.UndoSimulations();
 
         if (State == States.MoveOrResizeGesture) {
-            FinalizeMove(EditorState.Camera, EditorState.CurrentRoom!);
+            FinalizeMove(EditorState.Camera, EditorState.CurrentRoom);
         }
     }
 
     public override void Update(Camera camera, Room? room) {
         if (Layer == EditorLayers.Room)
-            room ??= EditorState.Map?.Rooms.FirstOrDefault() ?? Room.DummyRoom;
-
-        if (room is null)
-            return;
+            room ??= EditorState.Map?.Rooms.FirstOrDefault();
         
         if (CurrentSelections is { } selections) {
             var mouseRoomPos = GetMouseRoomPos(camera, room);
@@ -667,7 +664,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         RotationGestureStart = null;
     }
 
-    private void UpdateRotationGesture(Camera camera, Room room) {
+    private void UpdateRotationGesture(Camera camera, Room? room) {
+        if (room is null)
+            return;
+        
         if (CurrentSelections is null) {
             State = States.Idle;
             EndRotationGesture(camera, room, 0f);
@@ -712,7 +712,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    private void FinalizeMove(Camera camera, Room room) {
+    private void FinalizeMove(Camera camera, Room? room) {
         if (CurrentSelections is { } selections && MoveGestureStart is { } start) {
             Point mousePos = GetMouseRoomPos(camera, room);
             Vector2 delta = MoveGestureFinalDelta;
@@ -746,7 +746,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         MoveGestureGrabbedLocation = NineSliceLocation.Middle;
     }
 
-    private void UpdateMoveGesture(Camera camera, Room room) {
+    private void UpdateMoveGesture(Camera camera, Room? room) {
         var left = Input.Mouse.Left;
 
         if (Input.Keyboard.Shift()) {
@@ -802,7 +802,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         return pos;
     }
 
-    private void UpdateDragGesture(Camera camera, Room room) {
+    private void UpdateDragGesture(Camera camera, Room? room) {
         if (SelectionGestureHandler.Update((p) => GetMouseRoomPos(camera, room, p)) is { } rect) {
             SelectWithin(room, rect);
         }
@@ -814,8 +814,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .OrderBy(s => s.Handler.Rect.Area())
             .ToList();
 
-    private void SelectWithin(Room room, Rectangle rect) {
-        var selections = room.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+    private void SelectWithin(Room? room, Rectangle rect) {
+        var selections = room?.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer)) ?? [];
         selections = GetSortedSelections(selections);
         
         List<Selection>? finalSelections = null;
@@ -832,8 +832,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 // if you double clicked in place, select all similar entities/decals
                 var handler = selections[0].Handler;
                 finalSelections = Input.Keyboard.Shift() 
-                    ? room.GetSelectionsForSimilar(handler)!
-                    : room.GetSelectionsForSameType(handler)!;
+                    ? room!.GetSelectionsForSimilar(handler)!
+                    : room!.GetSelectionsForSameType(handler)!;
                 ClickInPlaceIdx = 0;
             }
 
