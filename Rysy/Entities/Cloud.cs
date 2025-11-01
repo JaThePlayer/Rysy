@@ -11,7 +11,7 @@ public class Cloud : SpriteEntity, IPlaceable {
         (false, true) => "objects/clouds/cloudRemix00",
     };
 
-    public override Vector2 Origin => new(.5f, 0f);
+    public override Vector2 Origin => new(.5f, .5f);
 
     public override int Depth => 0;
 
