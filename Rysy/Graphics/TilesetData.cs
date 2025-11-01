@@ -179,6 +179,15 @@ public sealed class TilesetData : IXmlBackedEntityData {
     string IXmlBackedEntityData.EntityDataName => Filename;
 
     void IXmlBackedEntityData.OnXmlChanged() {
+        // The 'copy' dropdown treats "Don't Copy" as '\0', but we need to set it to null (get rid of the xml attribute) instead.
+        if (CopyFrom is '\0') {
+            this.UpdateData(new Dictionary<string, object?>
+            {
+                ["copy"] = null
+            });
+            return;
+        }
+        
         Autotiler.ReadTilesetNode(Xml!, into: this);
     }
 
