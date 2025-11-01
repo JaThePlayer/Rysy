@@ -76,6 +76,7 @@ public class DependencyAnalyzer : MapAnalyzer {
             ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableHeadersRow();
 
+            var i = 0;
             foreach (Entity obj in objs) {
                 ImGui.TableNextRow();
 
@@ -84,7 +85,7 @@ public class DependencyAnalyzer : MapAnalyzer {
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Select...##{obj.Id}")) {
+                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Select...##{i++}")) {
                     editor.CurrentRoom = obj.Room;
                     editor.Camera.CenterOnRealPos(obj.Center + obj.Room.Pos);
 
