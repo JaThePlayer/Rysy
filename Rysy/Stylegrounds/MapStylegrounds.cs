@@ -1,4 +1,6 @@
-﻿namespace Rysy.Stylegrounds;
+﻿using Rysy.Helpers;
+
+namespace Rysy.Stylegrounds;
 
 public class MapStylegrounds : IPackable {
     public MapStylegrounds() { }
@@ -39,18 +41,21 @@ public class MapStylegrounds : IPackable {
             style.Data.SetOverlay(null);
     }
 
-    private static IEnumerable<Style> AllStylesIn(List<Style> styles) {
-        // Every additional local increases heap allocations, recursively...
-        for (var i = 0; i < styles.Count; i++) {
-            yield return styles[i];
+    private static PooledList<Style> AllStylesIn(List<Style> styles) {
+        PooledList<Style> ret = new();
+        foreach (var style in styles)
+        {
+            ret.Add(style);
             
-            if (styles[i] is StyleFolder) {
-                using var innerStyles = AllStylesIn(((StyleFolder) styles[i]).Styles).GetEnumerator();
+            if (style is StyleFolder folder) {
+                using var innerStyles = AllStylesIn(folder.Styles).GetEnumerator();
                 while (innerStyles.MoveNext()) {
-                    yield return innerStyles.Current;
+                    ret.Add(folder);
                 }
             }
         }
+
+        return ret;
     }
 
     public BinaryPacker.Element Pack() {

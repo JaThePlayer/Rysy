@@ -722,9 +722,10 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
                         is string t ? Enum.Parse<TilesetTemplates.Templates>(t) : _template;
         
         var windowSize = ImGui.GetContentRegionAvail();
+        
         ImGui.BeginDisabled(_template != TilesetTemplates.Templates.Custom);
         var prevXml = _xml;
-        ImGui.InputTextMultiline("", ref _xml, 8192, windowSize);
+        ImGui.InputTextMultiline("##Template", ref _xml, (nuint)_xml.Length + 3, windowSize);
         var placeholderText = "rysy.tilesetImport.templatePlaceholder".Translate();
         if (_xml != prevXml && _xml.StartsWith(placeholderText, StringComparison.Ordinal) && _xml.Length > placeholderText.Length) {
             _xml = _xml[(placeholderText.Length)..];

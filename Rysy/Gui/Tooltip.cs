@@ -93,6 +93,16 @@ public interface ITooltip {
     }
 }
 
+public sealed class CustomTooltip(Action render) : ITooltip {
+    public void RenderImGui() {
+        render();
+    }
+
+    public bool IsEmpty => false;
+
+    public string? GetRawText() => null;
+}
+
 public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITooltip {
     public void RenderImGui() {
         var text = GetRawText();

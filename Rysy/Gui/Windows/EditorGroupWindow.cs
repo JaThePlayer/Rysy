@@ -63,9 +63,12 @@ public sealed class EditorGroupWindow : Window {
             if (ImGuiManager.IndexDragDrop("group", ref i) is { } droppedIndex) {
                 var droppedGroup = groups[droppedIndex];
 
-                RysyState.OnEndOfThisFrame += () => {
-                    groups.Swap(droppedGroup, g);
-                };
+                RysyState.OnEndOfThisFrame += SwapGroupOnEndOfThisFrame(groups, droppedGroup, g);
+                
+                // Avoid a capturing lambda here, as roslyn will store all the locals used within it into a capture group,
+                // even if the `if` is never entered.
+                static Action SwapGroupOnEndOfThisFrame(EditorGroupRegistry groups, EditorGroup droppedGroup, EditorGroup g) 
+                    => () => groups.Swap(droppedGroup, g);
             }
 
             if (g == EditorGroup.Default)

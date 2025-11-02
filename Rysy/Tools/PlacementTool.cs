@@ -550,66 +550,21 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return def;
     }
 
-    protected override void RenderMaterialTooltipExtraInfo(object material) {
-        base.RenderMaterialTooltipExtraInfo(material);
-
-        if (material is Placement placement) {
-            if (placement.GetAssociatedMods() is { Count: > 0 } associated && ImGui.BeginTooltip()) {
-                var currentMod = EditorState.Map?.Mod;
-                ImGui.Text("Associated:");
-                if (associated.Count == 1)
-                    ImGui.SameLine();
-                foreach (var mod in associated) {
-                    var displayName = ModMeta.ModNameToDisplayName(mod);
-                    if (currentMod is { } && !currentMod.DependencyMet(mod)) {
-                        ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.FormInvalidColor.ToNumVec4());
-                        ImGui.TextWrapped(displayName);
-                        ImGui.PopStyleColor(1);
-                    } else {
-                        ImGui.TextWrapped(displayName);
-                    }
-                }
-
-                if (placement.GetDefiningMod() is { } defining && (associated.Count != 1 || associated[0] != defining.Name)) {
-                    ImGui.BeginDisabled();
-                    ImGui.Text("Defined by:");
-                    ImGui.SameLine();
-                    ImGui.TextWrapped(defining.DisplayName);
-                    ImGui.EndDisabled();
-                }
-                ImGui.EndTooltip();
-            }
-
-            if (placement.GetTags() is { Count: > 0 } tags && ImGui.BeginTooltip()) {
-                ImGui.Text("Tags:");
-                if (tags.Count == 1)
-                    ImGui.SameLine();
-                foreach (var tag in tags) {
-                    ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.TagColor.ToNumVec4());
-                    ImGui.TextWrapped(Interpolator.TempU8($"#{tag}"));
-                    ImGui.PopStyleColor(1);
-                }
-                
-                ImGui.EndTooltip();
-            }
-        }
-    }
-
     public override object GetGroupKeyForMaterial(object material)
         => material is Placement { SID: not null } pl && pl.SID != EntityRegistry.FGDecalSID && pl.SID != EntityRegistry.BGDecalSID ? pl.SID : material;
 
-    protected override bool RenderMaterialListElement(object material, string name) {
+    protected override bool RenderMaterialListElement(object material, Searchable searchable) {
         if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap()) {
             ImGuiManager.PushNullStyle();
         }
 
-        var ret = base.RenderMaterialListElement(material, name);
+        var ret = base.RenderMaterialListElement(material, searchable);
         ImGuiManager.PopNullStyle();
 
         if (Layer == EditorLayers.Prefabs) {
-            if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
+            if (ImGui.BeginPopupContextItem(searchable.TextWithMods, ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGui.MenuItem("Remove")) {
-                    PrefabHelper.Remove(name);
+                    PrefabHelper.Remove(searchable.Text);
                 }
 
                 ImGui.EndPopup();

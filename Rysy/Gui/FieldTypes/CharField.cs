@@ -2,12 +2,28 @@
 
 namespace Rysy.Gui.FieldTypes;
 
-public record class CharField : Field, IFieldConvertible<char> {
-
+public record CharField : Field, IFieldConvertible<char> {
+    public bool NullCharAllowed { get; set; }
+    
     public char Default { get; set; }
 
-    public override ValidationResult IsValid(object? value)
-        => value is char ? base.IsValid(value) : ValidationResult.MustBeChar;
+    public CharField AllowEmptyAsNullChar() {
+        NullCharAllowed = true;
+
+        return this;
+    }
+
+    public override ValidationResult IsValid(object? value) {
+        if (value is not char c) {
+            return ValidationResult.MustBeChar;
+        }
+
+        if (!NullCharAllowed && c == '\0') {
+            return ValidationResult.MustBeChar;
+        }
+
+        return base.IsValid(value);
+    }
 
     public override object GetDefault() => Default;
 
@@ -17,8 +33,8 @@ public record class CharField : Field, IFieldConvertible<char> {
 
     public override object? RenderGui(string fieldName, object value) {
         var b = Convert.ToChar(value, CultureInfo.InvariantCulture).ToString();
-        if (ImGui.InputText(fieldName, ref b, 1).WithTooltip(Tooltip))
-            return b.Length > 0 ? b[0] : null;
+        if (ImGui.InputText(fieldName, ref b, 2).WithTooltip(Tooltip))
+            return b.Length > 0 ? b[0] : '\0';
 
         return null;
     }

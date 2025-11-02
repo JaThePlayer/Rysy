@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Helpers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
@@ -14,7 +15,7 @@ public record BirdTutorialInputField : ComplexTypeField<BirdTutorialInput> {
         var kind = data.GetKind();
         var changed = false;
 
-        if (ImGuiManager.Combo("Type", ref kind, BirdTutorialInput.KindsAsList, x => x.ToString(), tooltip: null)) {
+        if (ImGuiManager.Combo("Type", ref kind, BirdTutorialInput.KindsAsList, x => new Searchable(x.ToString()), tooltip: null)) {
             changed = true;
             data.SetToDefaultForKind(kind);
         }
@@ -23,10 +24,10 @@ public record BirdTutorialInputField : ComplexTypeField<BirdTutorialInput> {
 
         switch (kind) {
             case BirdTutorialInput.Kind.Input:
-                changed |= ImGuiManager.Combo("Input", ref data.Literal, BirdTutorialInput.ValidInputs, x => x, tooltip: null);
+                changed |= ImGuiManager.Combo("Input", ref data.Literal, BirdTutorialInput.ValidInputs, x => new Searchable(x), tooltip: null);
                 break;
             case BirdTutorialInput.Kind.Direction:
-                changed |= ImGuiManager.Combo("Direction", ref data.Literal, BirdTutorialInput.ValidDirections, x => x, tooltip: null);
+                changed |= ImGuiManager.Combo("Direction", ref data.Literal, BirdTutorialInput.ValidDirections, x => new Searchable(x), tooltip: null);
                 break;
             case BirdTutorialInput.Kind.DialogKey: {
                 var dialogKey = data.ExtractDialogKey().ToString();

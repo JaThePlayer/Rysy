@@ -44,6 +44,14 @@ public static class RysyState {
     public static event Action? OnEndOfThisFrame = null;
 
     /// <summary>
+    /// Register an action that will be called on the UI thread once this frame ends.
+    /// Used to avoid capturing loop locals into capture groups if the event registration is conditional.
+    /// </summary>
+    public static void RegisterOnEndOfThisFrame<TState>(TState state, Action<TState> action) {
+        OnEndOfThisFrame += () => action?.Invoke(state);
+    }
+
+    /// <summary>
     /// Called when the window loses focus.
     /// </summary>
     public static event Action? OnLoseFocus = null;

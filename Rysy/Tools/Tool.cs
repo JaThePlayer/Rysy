@@ -246,6 +246,11 @@ public abstract class Tool {
         _ => [],
     };
     
+    public virtual string? GetMaterialDefiningMod(EditorLayer layer, object material) => material switch {
+        Placement pl => pl.GetDefiningMod()?.Name,
+        _ => null,
+    };
+    
     public virtual IReadOnlyList<string> GetMaterialTags(EditorLayer layer, object material) => material switch {
         Placement pl => pl.GetTags(),
         _ => [],
@@ -255,7 +260,8 @@ public abstract class Tool {
         return new Searchable(
             GetMaterialDisplayName(layer, material),
             GetMaterialMods(layer, material),
-            GetMaterialTags(layer, material)
+            GetMaterialTags(layer, material),
+            GetMaterialDefiningMod(layer, material)
         );
     }
 
@@ -389,7 +395,7 @@ public abstract class Tool {
                     var elHeight = MaterialListElementHeight();
 
                     //ImGui.BeginChild($"##{first.searchable.TextWithMods}", new NumVector2(columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2, elHeight));
-                    RenderMaterialListElement(first.material, first.searchable.TextWithMods);
+                    RenderMaterialListElement(first.material, first.searchable);
                     //ImGui.EndChild();
                     
                     style.FramePadding.Y = (elHeight - ImGui.GetTextLineHeightWithSpacing()) / 2;
@@ -400,7 +406,7 @@ public abstract class Tool {
                     
                     if (comboOpened) {
                         foreach (var (mat, searchable) in group) {
-                            if (RenderMaterialListElement(mat, searchable.TextWithMods)) {
+                            if (RenderMaterialListElement(mat, searchable)) {
                                 GroupKeyToMainPlacementName[groupKey] = searchable.Text;
                             }
                         }
@@ -408,7 +414,7 @@ public abstract class Tool {
                         ImGui.EndCombo();
                     }
                 } else {
-                    RenderMaterialListElement(first.material, first.searchable.TextWithMods);
+                    RenderMaterialListElement(first.material, first.searchable);
                 }
                 
                 if (columns > 1)
@@ -490,15 +496,15 @@ public abstract class Tool {
     /// <summary>
     /// Renders additional ImGui elements below the tooltip for the given material
     /// </summary>
-    protected virtual void RenderMaterialTooltipExtraInfo(object material) {
-
+    protected virtual void RenderMaterialTooltipExtraInfo(object material, Searchable searchable) {
+        searchable.RenderImGuiInfo();
     }
 
     /// <summary>
     /// Renders the gui for a given material inside the material list.
     /// Returns whether the element got clicked this frame.
     /// </summary>
-    protected virtual bool RenderMaterialListElement(object material, string name) {
+    protected virtual bool RenderMaterialListElement(object material, Searchable searchable) {
         bool ret = false;
         var favorites = Favorites;
         var currentLayer = Layer;
@@ -518,8 +524,9 @@ public abstract class Tool {
         if (previewOrNull is { } preview) {
             size.Y = preview.H;
         }
-        
-        var displayName = name;
+
+        var name = searchable.TextWithMods;
+        var displayName = searchable.TextWithMods;
         if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), currentMaterial == material, 
                 ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
@@ -552,7 +559,7 @@ public abstract class Tool {
                 ImGuiManager.XnaWidget(tooltipPreview.Value);
             }
 
-            RenderMaterialTooltipExtraInfo(material);
+            RenderMaterialTooltipExtraInfo(material, searchable);
 
             ImGui.EndTooltip();
             ImGuiManager.PushAllStyles(prevStyles);

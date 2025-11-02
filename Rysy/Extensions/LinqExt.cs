@@ -213,6 +213,21 @@ public static class LinqExt {
         return from[..(i+1)];
     }
 
+    public static IEnumerable<(T Value, bool IsLast)> CheckedIfLast<T>(this IEnumerable<T> self) {
+        using var enumerator = self.GetEnumerator();
+        
+        if (!enumerator.MoveNext())
+            yield break;
+        
+        var next = enumerator.Current;
+        while (enumerator.MoveNext()) {
+            yield return (next, false);
+            next = enumerator.Current;
+        }
+        
+        yield return (next, true);
+    }
+
     public static ListTakeEnumerable<T, T> FastTake<T>(this List<T> list, int amt)
         => new(list, amt);
     

@@ -48,6 +48,18 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         RenderTab();
     }
 
+    private void RenderPreview(string id, AssetDriveTileset tileset) {
+        var previewTask = GFX.GetTextureFromWebAsync(tileset.ImageUri, CancellationToken.None);
+        if (previewTask.IsCompletedSuccessfully) {
+            ImGuiManager.XnaWidgetSprite(id,
+                ISprite.FromTexture(default, previewTask.Result) with { Scale = new(2f, 2f) });
+        } else if (previewTask.IsCompleted) {
+            ImGui.Text("Failed to load preview!");
+        } else {
+            ImGui.Text("Loading preview...");
+        }
+    }
+
     private void RenderTab() {
         var tilesetsTask = _isBg ? _bg : _fg;
         if (!tilesetsTask.IsCompleted) {
@@ -61,25 +73,27 @@ public sealed class AssetDriveTilesetImportWindow : Window {
             return;
         }
         
-        ImGuiManager.Combo("Tileset", ref _selected, tilesets, x => x.Name ?? "", ref _searchText, tooltip: null, _comboCache);
+        ImGuiManager.Combo("Tileset", ref _selected, tilesets, 
+            x => new Searchable(x.Name ?? "", mods: [], tags: x.Tags), ref _searchText, tooltip: default, _comboCache,
+            renderMenuItem: (tileset, s) => {
+                var ret = ImGui.MenuItem(s.TextWithMods.ToImguiEscaped());
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip) && ImGui.BeginTooltip()) {
+                    RenderPreview("tileset-import-preview-tooltip", tileset);
+                    s.RenderImGuiInfo();
+                    ImGui.EndTooltip();
+                }
+                
+                return ret;
+            });
 
         ImGui.Columns(2);
-        ImGui.SetColumnWidth(0, 230);
-        var previewTask = GFX.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None);
-        if (previewTask.IsCompletedSuccessfully) {
-            ImGuiManager.XnaWidgetSprite("tileset-import-preview",
-                ISprite.FromTexture(default, previewTask.Result) with { Scale = new(2f, 2f) });
-        } else if (previewTask.IsCompleted) {
-            ImGui.Text("Failed to load preview!");
-        } else {
-            ImGui.Text("Loading preview...");
-        }
+        RenderPreview("tileset-import-preview", _selected);
         ImGui.NextColumn();
         
         ImGui.SeparatorText(_selected.Name);
         ImGui.Text($"Author: {_selected.Author}");
         ImGui.Text($"Template: {_selected.TemplateName}");
-        ImGui.Text($"Tags: {string.Join(',', _selected.Tags)}");
+        Searchable.RenderTagList(_selected.Tags);
 
         var readme = _selected.Readme;
         ImGui.SeparatorText("Description");
@@ -87,7 +101,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
             ImGui.BeginChild("desc");
             ImGui.TextWrapped(readme.Result);
             ImGui.EndChild();
-        } else if (previewTask.IsCompleted) {
+        } else if (readme.IsCompleted) {
             ImGui.Text("Failed to load readme!");
         } else {
             ImGui.Text("Loading readme...");
@@ -264,7 +278,7 @@ internal sealed partial class CreateTilesetWindow : Window {
 
     private Autotiler GetAutotiler(Map map) => _isBg ? map.BGAutotiler : map.FGAutotiler;
 
-    private string GetXmlPath(Map map) => _isBg ? map.Meta.BackgroundTiles : map.Meta.ForegroundTiles;
+    private string? GetXmlPath(Map map) => _isBg ? map.Meta.BackgroundTiles : map.Meta.ForegroundTiles;
 
     public override bool HasBottomBar => true;
 
@@ -357,7 +371,7 @@ internal sealed record ImportedTileset {
 
 internal sealed record AssetDriveTileset {
     [JsonPropertyName("template")]
-    public string Template { get; set; }
+    public string Template { get; set; } = "";
 
     [JsonIgnore]
     public string TemplateName =>

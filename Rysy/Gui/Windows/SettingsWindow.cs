@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Gui.FieldTypes;
+using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
 
@@ -263,13 +264,16 @@ public sealed class SettingsWindow : Window {
         ImGui.Separator();
         ImGui.TextDisabled("Mod Settings");
 
-        var modsWithSettings = ModRegistry.Mods.Where(m => m.Value.Settings?.HasAnyData() ?? false).ToDictionary(m => m.Value, m => m.Key);
+        var modsWithSettings = ModRegistry.Mods.Values
+            .Where(m => m.Settings?.HasAnyData() ?? false)
+            .ToList();
+
         var mod = _selectedMod;
         if (mod is null && modsWithSettings.Count > 0) {
-            mod = modsWithSettings.First().Key;
+            mod = modsWithSettings.First();
         }
 
-        if (ImGuiManager.Combo("Selected Mod", ref mod, modsWithSettings, ref ModBarSearch)) {
+        if (ImGuiManager.Combo("Selected Mod", ref mod!, modsWithSettings, m => new Searchable(m?.DisplayName ?? ""), ref ModBarSearch)) {
             _selectedMod = mod;
         }
 
