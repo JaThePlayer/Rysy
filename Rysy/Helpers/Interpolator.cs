@@ -43,31 +43,31 @@ public sealed class Interpolator {
     /// Interpolates into a temporary buffer that will be overwritten the next time this method is called.
     /// </summary>
     public static ReadOnlySpan<char> Temp(Handler h)
-        => Shared.Interpolate(h);
+        => Shared.Utf16(h);
     
     /// <summary>
     /// Interpolates into a temporary buffer that will be overwritten the next time this method is called.
     /// </summary>
     public static ReadOnlySpan<byte> TempU8(HandlerU8 h)
-        => Shared.InterpolateU8(h);
+        => Shared.Utf8(h);
     
     /// <summary>
     /// Interpolates into a temporary buffer that will be overwritten the next time this method is called.
     /// </summary>
     public static ReadOnlySpan<byte> TempU8(ReadOnlySpan<char> h)
-        => Shared.InterpolateU8($"{h}");
+        => Shared.Utf8($"{h}");
     
     /// <summary>
     /// Interpolates into a buffer that will only be overwritten the next time <see cref="ClearPreserved"/> is called.
     /// </summary>
     public static ReadOnlySpan<char> Preserved(Handler h)
-        => SharedManualClear.Interpolate(h);
+        => SharedManualClear.Utf16(h);
 
     public static void ClearPreserved() {
         SharedManualClear.Clear();
     }
 
-    public ReadOnlySpan<char> Interpolate([InterpolatedStringHandlerArgument("")] Handler h)
+    public ReadOnlySpan<char> Utf16([InterpolatedStringHandlerArgument("")] Handler h)
     {
         _buffer = h.Data;
         if (ManualClear) {
@@ -78,7 +78,7 @@ public sealed class Interpolator {
         return h.Result;
     }
     
-    public ReadOnlySpan<byte> InterpolateU8([InterpolatedStringHandlerArgument("")] HandlerU8 h)
+    public ReadOnlySpan<byte> Utf8([InterpolatedStringHandlerArgument("")] HandlerU8 h)
     {
         // Make sure the buffer ends with a null terminator, as some imgui functions expect it.
         if (h.Result is not [.., (byte)'\0'])
@@ -144,7 +144,7 @@ public sealed class Interpolator {
             Array.Resize(ref Data, newSize);
         }
         
-        public ReadOnlySpan<byte> Result => Data.AsSpan(0, _len);
+        public ReadOnlySpan<byte> Result => Data.AsSpan(_startIndex, _len);
 
         public int Length => _len;
         
@@ -162,7 +162,7 @@ public sealed class Interpolator {
         
         public void AppendLiteral(ReadOnlySpan<char> data) {
             int written;
-            while (Utf8.FromUtf16(data, RemainingSpan(), out _, out written) is OperationStatus.DestinationTooSmall) {
+            while (System.Text.Unicode.Utf8.FromUtf16(data, RemainingSpan(), out _, out written) is OperationStatus.DestinationTooSmall) {
                 Expand(Data.Length * 2);
             }
             _len += written;
@@ -212,7 +212,7 @@ public sealed class Interpolator {
             Array.Resize(ref Data, newSize);
         }
         
-        public ReadOnlySpan<char> Result => Data.AsSpan(0, _len);
+        public ReadOnlySpan<char> Result => Data.AsSpan(_startIndex, _len);
 
         public int Length => _len;
         

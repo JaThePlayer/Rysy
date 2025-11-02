@@ -6,10 +6,12 @@ using System.Diagnostics;
 namespace Rysy.Helpers;
 
 public class Searchable {
+    public bool IsFavourite { get; set; }
+
     public string TextWithMods { get; private init; }
-        
+
     public string Text { get; }
-        
+
     public IReadOnlyList<string> Mods { get; }
     
     public string? DefiningMod { get; }
@@ -99,19 +101,19 @@ public class Searchable {
 
 public static class SearchHelper {
     public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, string> textSelector,
-        string search, HashSet<string>? favorites = null)
-        => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search, favorites);
+        string search)
+        => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search);
 
     /// <summary>
     /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
     /// </summary>
-    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search, HashSet<string>? favorites = null)
-        => source.SearchFilterWithSearchable(textSelector, search, favorites).Select(e => e.Item1);
+    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search)
+        => source.SearchFilterWithSearchable(textSelector, search).Select(e => e.Item1);
     
     /// <summary>
     /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
     /// </summary>
-    public static IEnumerable<(T, Searchable)> SearchFilterWithSearchable<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search, HashSet<string>? favorites = null) {
+    public static IEnumerable<(T, Searchable)> SearchFilterWithSearchable<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search) {
         var hasSearch = !string.IsNullOrWhiteSpace(search);
 
         var filter = source.Select(e => (e, Data: textSelector(e)));
@@ -132,9 +134,7 @@ public static class SearchHelper {
                 .OrderOrThenByDescending(e => parsed.StartsWith(e.Data, e.Data.Text, out _));
         }
 
-        if (favorites is { }) {
-            filter = filter.OrderOrThenByDescending(e => favorites.Contains(e.Data.Text)); // put favorites in front of other options
-        }
+        filter = filter.OrderOrThenByDescending(e => e.Data.IsFavourite); // put favorites in front of other options
 
         // order alphabetically, but don't include mod name in the ordering.
         filter = filter.OrderOrThenBy(e => e.Data.Text, new TrimModNameStringComparer());

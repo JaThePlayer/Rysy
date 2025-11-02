@@ -176,14 +176,14 @@ public abstract class Tool {
     /// <summary>
     /// Adds a new favorite for this group and layer. Use this instead of mutating <see cref="Favorites"/>.
     /// </summary>
-    public void ToggleFavorite(string name) {
+    public void ToggleFavorite(Searchable name) {
         var favorites = Favorites;
         if (favorites is null) {
             Favorites = favorites = new();
         }
 
-        if (!favorites.Add(name)) {
-            favorites.Remove(name);
+        if (!favorites.Add(name.Text)) {
+            favorites.Remove(name.Text);
         }
 
         if (UsePersistence) {
@@ -257,12 +257,15 @@ public abstract class Tool {
     };
 
     public virtual Searchable GetMaterialSearchable(EditorLayer layer, object material) {
+        var name = GetMaterialDisplayName(layer, material);
         return new Searchable(
-            GetMaterialDisplayName(layer, material),
+            name,
             GetMaterialMods(layer, material),
             GetMaterialTags(layer, material),
             GetMaterialDefiningMod(layer, material)
-        );
+        ) {
+            IsFavourite = Favorites?.Contains(name) ?? false
+        };
     }
 
     public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
@@ -350,7 +353,7 @@ public abstract class Tool {
         var cachedSearch = CachedSearch ??= currentLayer is null ? [] :
             (GetMaterials(currentLayer) ?? [])
             .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
-            .SearchFilter(kv => kv.Item2, Search, Favorites)
+            .SearchFilter(kv => kv.Item2, Search)
             .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
             .Select(gr => gr.ToList())
             .ToList();
@@ -506,7 +509,6 @@ public abstract class Tool {
     /// </summary>
     protected virtual bool RenderMaterialListElement(object material, Searchable searchable) {
         bool ret = false;
-        var favorites = Favorites;
         var currentLayer = Layer;
         var currentMaterial = Material;
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
@@ -525,7 +527,6 @@ public abstract class Tool {
             size.Y = preview.H;
         }
 
-        var name = searchable.TextWithMods;
         var displayName = searchable.TextWithMods;
         if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), currentMaterial == material, 
                 ImGuiSelectableFlags.AllowOverlap, size)) {
@@ -534,7 +535,7 @@ public abstract class Tool {
         }
         if (ImGui.IsItemHovered()) {
             if (ImGui.IsItemActive() && Input.Mouse.LeftDoubleClicked()) {
-                ToggleFavorite(name);
+                ToggleFavorite(searchable);
                 Input.Mouse.ConsumeLeft();
             }
             
@@ -577,7 +578,11 @@ public abstract class Tool {
         if (showPlacementIcons)
             cursorStart.Y += (previewOrNull?.H / 2 - ImGui.GetFontSize() / 2f) ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
-        ImGui.Text(favorites is { } && favorites.Contains(name) ? $"* {displayName}" : displayName);
+        if (searchable.IsFavourite) {
+            ImGui.Text(ImGuiManager.PerFrameInterpolator.Utf8($"* {displayName}"));
+        } else {
+            ImGui.Text(displayName);
+        }
 
         return ret;
     }

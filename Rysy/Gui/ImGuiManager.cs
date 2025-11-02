@@ -7,7 +7,6 @@ using Rysy.Platforms;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Rysy.Gui;
 
@@ -53,6 +52,8 @@ public static class ImGuiManager {
 
         RysyState.ImGuiAvailable = true;
     }
+    
+    #region Styles
 
     public static void PushWindowStyle() {
         //ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
@@ -215,12 +216,15 @@ public static class ImGuiManager {
 
         return holder;
     }
+    
+    #endregion
 
+    #region Lists And Combos
     public static NumVector2 GetDropdownWindowSize(NumVector2 size, int sourceCount) {
         return new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(sourceCount + 1) + ImGui.GetFrameHeight());
     }
 
-    public static void List<T>(IEnumerable<T> source, Func<T, Searchable> itemNameGetter, ComboCache<T>? cache, Action<T> onClick, HashSet<string>? favorites = null) {
+    public static void List<T>(IEnumerable<T> source, Func<T, Searchable> itemNameGetter, ComboCache<T>? cache, Action<T> onClick) {
         cache ??= new();
 
         var sourceList = source.ToListIfNotList();
@@ -235,10 +239,10 @@ public static class ImGuiManager {
 
         ImGui.BeginChild("##list_ref", dropdownSize, ImGuiChildFlags.None);
         
-        var filtered = cache.GetValue(sourceList, itemNameGetter, search, favorites);
+        var filtered = cache.GetValue(sourceList, itemNameGetter, search);
 
         foreach (var (item, name) in filtered) {
-            if (ImGui.MenuItem(favorites?.Contains(name.Text) ?? false ? $"* {name.TextWithMods}" : name.TextWithMods.ToImguiEscaped())) {
+            if (ImGui.MenuItem(name.IsFavourite ? $"* {name.TextWithMods}" : name.TextWithMods.ToImguiEscaped())) {
                 onClick(item);
             }
         }
@@ -355,7 +359,7 @@ public static class ImGuiManager {
         ImGui.PushStyleColor(ImGuiCol.Text, default(int));
         var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() 
             ? Interpolator.TempU8($"##{searchText}") 
-            : Interpolator.TempU8($"##{searchText}##{persistenceKey}"), ref search, 512);
+            : Interpolator.TempU8($"##{searchText}_{persistenceKey}"), ref search, 512);
         ImGui.PopStyleColor(1);
         ImGui.SameLine();
         ImGui.Text(searchText);
@@ -509,6 +513,8 @@ public static class ImGuiManager {
 
         return changed;
     }
+    
+    #endregion
 
     public static bool ColorEdit(string label, ref Color color, ColorFormat format, Tooltip tooltip = default, string? hexCodeOverride = null) {
         var colorHex = hexCodeOverride ?? ColorHelper.ToString(color, format);
@@ -867,6 +873,7 @@ public static class ImGuiManager {
         }
     }
 
+    #region Translated
     public static bool TranslatedButton(string id) {
         return ImGui.Button(id.Translate()).WithTranslatedTooltip($"{id}.tooltip");
     }
@@ -949,6 +956,8 @@ public static class ImGuiManager {
     public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix) {
         return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
+
+    #endregion
 
     public static unsafe int? IndexDragDrop(string payloadName, ref int index) {
         int? dropped = null;
@@ -1063,6 +1072,13 @@ public static class ImGuiManager {
         }
     }
 
+    /// <summary>
+    /// String interpolator that gets reset before each imgui frame.
+    /// </summary>
+    public static Interpolator PerFrameInterpolator { get; } = new() {
+        ManualClear = true,
+    };
+    
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public unsafe class ImGuiRenderer : IImGuiResourceManager {
         private RasterizerState RasterizerState;
@@ -1169,6 +1185,8 @@ public static class ImGuiManager {
         }
 
         public void BeforeLayout(float elapsedSeconds) {
+            PerFrameInterpolator.Clear();
+            
             ImGui.GetIO().DeltaTime = elapsedSeconds.AtLeast(1f / 60f);
             if (RysyState.Game.IsActive)
                 UpdateInput();

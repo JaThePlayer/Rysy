@@ -271,13 +271,15 @@ public class StylegroundWindow : Window {
         RemoveForm();
     }
 
-    private Searchable GetPlacementName(Placement placement) {
+    private Searchable GetPlacementSearchable(Placement placement) {
         var prefix = $"style.effects.{placement.SID}.name";
         var name = placement.Name.TranslateOrNull(prefix)
             ?? LangRegistry.TranslateOrNull(prefix)
             ?? placement.SID!.Split('/')[^1].Humanize();
 
-        return new Searchable(name, placement.GetDefiningMod());
+        return new Searchable(name, placement.GetDefiningMod()) {
+            IsFavourite = placement.Name == "parallax",
+        };
     }
 
     private void SetOrAddSelection(Style style) {
@@ -301,14 +303,14 @@ public class StylegroundWindow : Window {
 
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             var placements = FG ? EntityRegistry.FgStylegroundPlacements : EntityRegistry.BgStylegroundPlacements;
-            ImGuiManager.List(placements, GetPlacementName, PlacementComboCache, (pl) => {
+            ImGuiManager.List(placements, GetPlacementSearchable, PlacementComboCache, pl => {
                 var newStyle = Style.FromPlacement(pl);
                 var styles = folder?.Styles ?? GetStyleListContaining();
 
                 Add(newStyle, styles, folder);
 
                 ImGui.CloseCurrentPopup();
-            }, favorites: ["Parallax"]);
+            });
 
             ImGui.EndPopup();
         }

@@ -416,6 +416,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
         if (material is not Placement placement)
             return base.GetMaterialPreview(material);
+        
+       // MaterialPreviewCache.Clear();
 
         var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}");
         var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -516,7 +518,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 
                 if (!didResize) {
                     if (sprites is [Sprite onlySprite]) {
-                        onlySprite.Origin = new(0.5f, 0.5f);
+                        //onlySprite.Origin = new(0.5f, 0.5f);
+                        onlySprite.DrawOffset = onlySprite.Texture.DrawOffset;
                         sprites[0] = onlySprite;
                     }
                 }
