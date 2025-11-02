@@ -8,5 +8,9 @@ public sealed class ActivateDreamBlocks : Trigger, IPlaceable {
         fastAnimation = false
     });
 
-    public static PlacementList GetPlacements() => new("activate_dream_blocks");
+    public static PlacementList GetPlacements() => [
+        new Placement("activate_dream_blocks") {
+            AlternativeNames = [ "activate_space_jam" ]
+        }
+    ];
 }

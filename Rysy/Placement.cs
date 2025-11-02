@@ -38,6 +38,8 @@ public record class Placement : IUntypedData {
 
     public string Name { get; set; }
 
+    public IReadOnlyList<string> AlternativeNames { get; init; } = [];
+
     public string? SID { get; set; }
 
     public string? Tooltip { get; set; }
