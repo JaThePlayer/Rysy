@@ -145,6 +145,8 @@ public sealed class ModMeta {
     public bool DependencyMet(string otherName) {
         if (Name == otherName)
             return true;
+        if (otherName == "Celeste")
+            return true;
         
         foreach (var meta in EverestYaml) {
             foreach (var dep in meta.Dependencies) {

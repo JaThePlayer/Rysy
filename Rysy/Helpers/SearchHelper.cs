@@ -40,13 +40,64 @@ public class Searchable {
             TextWithMods = Text;
         }
     }
+    
+    public bool AreAssociatedModsADependencyOfMod(ModMeta? mod = null) {
+        mod ??= EditorState.Map?.Mod;
+        if (mod is null) {
+            return true;
+        }
+
+        foreach (var associated in Mods) {
+            if (!mod.DependencyMet(associated)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
 
     public override string ToString() => TextWithMods;
 
-    public void RenderImGuiInfo() {
+    private void BeforeName(bool depsMet) {
+        if (!depsMet)
+            ImGuiManager.PushNullStyle();
+    }
+    
+    private void AfterName(bool depsMet) {
+        if (!depsMet)
+            ImGuiManager.PopNullStyle();
+    }
+    
+    public void RenderImGuiText(ModMeta? currentMod = null) {
+        var depsMet = AreAssociatedModsADependencyOfMod(currentMod);
+        BeforeName(depsMet);
+        
+        if (IsFavourite) {
+            ImGui.Text(ImGuiManager.PerFrameInterpolator.Utf8($"* {TextWithMods}"));
+        } else {
+            ImGui.Text(TextWithMods);
+        }
+
+        AfterName(depsMet);
+    }
+    
+    public bool RenderImGuiMenuItem(ModMeta? currentMod = null) {
+        var depsMet = AreAssociatedModsADependencyOfMod(currentMod);
+        BeforeName(depsMet);
+        
+        bool ret = IsFavourite
+            ? ImGui.MenuItem(ImGuiManager.PerFrameInterpolator.Utf8($"{TextWithMods.ToImguiEscaped()}"))
+            : ImGui.MenuItem(TextWithMods.ToImguiEscaped());
+
+        AfterName(depsMet);
+        
+        return ret;
+    }
+    
+    public void RenderImGuiInfo(ModMeta? currentMod = null) {
         if (HasNonVanillaMods) {
             var associated = Mods;
-            var currentMod = EditorState.Map?.Mod;
+            currentMod ??= EditorState.Map?.Mod;
             
             ImGuiManager.TranslatedText("rysy.search.associatedMods");
 
@@ -54,7 +105,7 @@ public class Searchable {
             var wrapX = ImGui.GetCursorPosX();
             foreach (var (mod, isLast) in associated.CheckedIfLast()) {
                 var displayName = ModMeta.ModNameToDisplayName(mod);
-                if (currentMod is not null && !currentMod.DependencyMet(mod)) {
+                if (!currentMod?.DependencyMet(mod) ?? false) {
                     ImGuiManager.PushInvalidStyle();
                     ImGuiManager.RenderTextWrapped(displayName, wrapX);
                     ImGuiManager.PopInvalidStyle();

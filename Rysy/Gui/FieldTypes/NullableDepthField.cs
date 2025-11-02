@@ -51,7 +51,7 @@ public sealed record NullableDepthField : Field {
             ImGui.BeginChild($"comboInner{fieldName}");
 
             foreach (var (depth, searchable) in filtered.OrderBy(x => x.Item1.Value)) {
-                if (ImGui.MenuItem(searchable.TextWithMods)) {
+                if (searchable.RenderImGuiMenuItem()) {
                     returnValue = depth;
                     changed = true;
                 }
