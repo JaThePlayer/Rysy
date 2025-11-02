@@ -18,6 +18,8 @@ public class Searchable {
         
     public IReadOnlyList<string> Tags { get; }
 
+    public IReadOnlyList<string> AlternativeNames { get; init; } = [];
+
     private bool HasNonVanillaMods => Mods is { Count: > 0 } and not ["Celeste"];
 
     public Searchable(string text) : this(text, [], []) {
@@ -95,6 +97,12 @@ public class Searchable {
     }
     
     public void RenderImGuiInfo(ModMeta? currentMod = null) {
+        RenderModList(currentMod);
+        RenderTagList(Tags);
+        RenderAlternativeNamesList();
+    }
+
+    private void RenderModList(ModMeta? currentMod) {
         if (HasNonVanillaMods) {
             var associated = Mods;
             currentMod ??= EditorState.Map?.Mod;
@@ -128,8 +136,24 @@ public class Searchable {
                 ImGui.EndDisabled();
             }
         }
-
-        RenderTagList(Tags);
+    }
+    
+    private void RenderAlternativeNamesList() {
+        if (AlternativeNames.Count <= 0)
+            return;
+        
+        ImGui.BeginDisabled();
+        ImGuiManager.TranslatedText("rysy.search.alternativeNames");
+        ImGui.SameLine();
+        var wrapX = ImGui.GetCursorPosX();
+        foreach (var (altName, isLast) in AlternativeNames.CheckedIfLast()) {
+            ImGui.SameLine();
+            ImGuiManager.RenderTextWrapped(
+                isLast ? Interpolator.TempU8(altName) : Interpolator.TempU8($"{altName},"),
+                wrapX
+            );
+        }
+        ImGui.EndDisabled();
     }
 
     public static void RenderTagList(IReadOnlyList<string> tags) {
@@ -182,6 +206,7 @@ public static class SearchHelper {
             var parsed = ParseSearch(search);
             filter = filter
                 .Where(e => parsed.Matches(e.Data))
+                .OrderOrThenBy(e => e.Data.AlternativeNames.Any(x => parsed.StartsWith(e.Data, x, out _)))
                 .OrderOrThenByDescending(e => parsed.StartsWith(e.Data, e.Data.Text, out _));
         }
 
@@ -323,7 +348,17 @@ public static class SearchHelper {
             ImGui.Text(_termU8);
         }
 
-        public override bool Matches(Searchable search) => search.Text.Contains(_term, StringComparison.OrdinalIgnoreCase);
+        public override bool Matches(Searchable search) {
+            if (search.Text.Contains(_term, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (var altName in search.AlternativeNames) {
+                if (altName.Contains(_term, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;

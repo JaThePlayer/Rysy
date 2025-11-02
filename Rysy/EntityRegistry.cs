@@ -471,6 +471,7 @@ public static class EntityRegistry {
                     SID = into.Sid,
                     PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
                     RegisteredEntityType = trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity,
+                    AlternativeNames = lonnPlacement.AlternativeNames,
                     FromLonn = true,
                 };
 

@@ -255,6 +255,10 @@ public abstract class Tool {
         Placement pl => pl.GetTags(),
         _ => [],
     };
+    
+    public virtual IReadOnlyList<string> GetMaterialAlternativeNames(EditorLayer layer, object material) => material switch {
+        _ => [],
+    };
 
     public virtual Searchable GetMaterialSearchable(EditorLayer layer, object material) {
         var name = GetMaterialDisplayName(layer, material);
@@ -264,7 +268,8 @@ public abstract class Tool {
             GetMaterialTags(layer, material),
             GetMaterialDefiningMod(layer, material)
         ) {
-            IsFavourite = Favorites?.Contains(name) ?? false
+            IsFavourite = Favorites?.Contains(name) ?? false,
+            AlternativeNames = GetMaterialAlternativeNames(layer, material)
         };
     }
 

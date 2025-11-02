@@ -778,9 +778,10 @@ public sealed class LonnEntityPlugin {
 
 }
 public class LonnPlacement {
-    public string Name;
-    public Dictionary<string, object> Data = new();
-    public List<string>? AssociatedMods;
+    public string Name { get; }
+    public Dictionary<string, object> Data { get; } = new();
+    public List<string>? AssociatedMods { get; }
+    public IReadOnlyList<string> AlternativeNames { get; } = [];
 
     internal LonnPlacement() {
         Name = "";
@@ -802,8 +803,19 @@ public class LonnPlacement {
         }
         // pop the "associatedMods" table
         lua.Pop(1);
+        
+        switch (lua.GetTable(start, "alternativeName"u8)) {
+            case LuaType.Table:
+                AlternativeNames = lua.ToList<string>(lua.GetTop()) ?? [];
+                break;
+            case LuaType.String:
+                AlternativeNames = [ lua.FastToString(lua.GetTop()) ];
+                break;
+        }
+        // pop the "alternativeName" value
+        lua.Pop(1);
     }
 
 #warning Remove, once placements support nodes and TableToDictionary supports tables in tables...
-    private static readonly HashSet<string> DataKeyBlacklist = new() { "nodes" };
+    private static readonly HashSet<string> DataKeyBlacklist = ["nodes"];
 }

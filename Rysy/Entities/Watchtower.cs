@@ -17,5 +17,12 @@ public class Watchtower : SpriteEntity, IPlaceable {
         onlyY = false
     });
 
-    public static PlacementList GetPlacements() => new("watchtower");
+    public static PlacementList GetPlacements() => [
+        new Placement("watchtower") {
+            AlternativeNames = [
+                "lookout",
+                "binoculars",
+            ]
+        }
+    ];
 }

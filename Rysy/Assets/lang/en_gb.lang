@@ -33,6 +33,7 @@ Search syntax:
 rysy.search.tags=Tags:
 rysy.search.associatedMods=Associated:
 rysy.search.definedBy=Defined by:
+rysy.search.alternativeNames=Alt Names:
 
 # Notifications
 rysy.notifications.window.name=Notifications
@@ -592,6 +593,7 @@ entities.resortRoofEnding.placements.name.resort_roof_ending=Resort Roof Ending
 
 # Dream Block
 entities.dreamBlock.placements.name.dream_block=Dream Block
+entities.dreamBlock.placements.name.space_jam=Space Jam
 entities.dreamBlock.attributes.description.fastMoving=Changes the dream block between two speeds.
 entities.dreamBlock.attributes.description.oneUse=Determines whether the dream block should disappear after one use.
 entities.dreamBlock.attributes.description.below=Determines whether the dream block should render in the background or foreground.
@@ -717,6 +719,8 @@ entities.trackSpinner.attributes.description.star=Turns the visual appearance of
 
 # Watchtower
 entities.towerviewer.placements.name.watchtower=Watchtower
+entities.towerviewer.placements.name.lookout=Lookout
+entities.towerviewer.placements.name.binocular=Binoculars
 entities.towerviewer.attributes.description.summit=Whether the watch tower should zoom on the final node or not. Requires nodes to function, otherwise game will crash.
 entities.towerviewer.attributes.description.onlyY=Whether the watch tower can only move vertically. If the watch tower has nodes it will still follow them.
 
@@ -1365,6 +1369,7 @@ triggers.eventTrigger.attributes.description.onSpawn=If the event should automat
 
 # Activate Dream Blocks (Everest)
 triggers.everest/activateDreamBlocksTrigger.placements.name.activate_dream_blocks=Activate Dream Blocks
+triggers.everest/activateDreamBlocksTrigger.placements.name.activate_space_jam=Activate Space Jam
 triggers.everest/activateDreamBlocksTrigger.attributes.description.fullRoutine=Whether the Dream Blocks should play the whole animation, rather than just instantly looking ready.
 triggers.everest/activateDreamBlocksTrigger.attributes.description.activate=Whether the Dream Blocks should become usable or not.
 triggers.everest/activateDreamBlocksTrigger.attributes.description.fastAnimation=Whether a faster animation should be used.
@@ -1444,7 +1449,9 @@ triggers.lightFadeTrigger.attributes.description.lightAddFrom=Determines how the
 triggers.lightFadeTrigger.attributes.description.positionMode=Determines which direction the light fades towards.
 
 # Watchtower Blocker
-triggers.lookoutBlocker.placements.name.lookout_blocker=Watchtower Blocker
+triggers.lookoutBlocker.placements.name.lookout_blocker=Lookout Blocker
+triggers.lookoutBlocker.placements.name.binocular_blocker=Binocular Blocker
+triggers.lookoutBlocker.placements.name.watchtower_blocker=Watchtower Blocker
 
 # Mini Textbox
 triggers.minitextboxTrigger.placements.name.mini_text_box=Mini Textbox

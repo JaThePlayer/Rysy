@@ -75,6 +75,14 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         };
     }
 
+    public override IReadOnlyList<string> GetMaterialAlternativeNames(EditorLayer layer, object material) {
+        if (material is not Placement pl)
+            return [];
+        
+        var prefix = layer.MaterialLangPrefix;
+        return new TranslatedList<string>(pl.AlternativeNames, x => x, $"{prefix}.{pl.SID ?? ""}.placements.name");
+    }
+
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         if (material is not Placement pl)
             return null;

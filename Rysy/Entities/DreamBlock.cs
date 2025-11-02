@@ -18,7 +18,11 @@ public class DreamBlock : RectangleEntity, ISolid, IPlaceable {
         oneUse = false,
     });
 
-    public static PlacementList GetPlacements() => new("dream_block");
+    public static PlacementList GetPlacements() => [
+        new Placement("dream_block") {
+            AlternativeNames = [ "space_jam" ]
+        }
+    ];
 
     public override bool ResizableX => true;
     public override bool ResizableY => true;
