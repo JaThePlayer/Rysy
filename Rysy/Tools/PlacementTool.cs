@@ -558,11 +558,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     protected override bool RenderMaterialListElement(object material, Searchable searchable) {
         if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap()) {
-            ImGuiManager.PushNullStyle();
+        //    ImGuiManager.PushNullStyle();
         }
 
         var ret = base.RenderMaterialListElement(material, searchable);
-        ImGuiManager.PopNullStyle();
+       // ImGuiManager.PopNullStyle();
 
         if (Layer == EditorLayers.Prefabs) {
             if (ImGui.BeginPopupContextItem(searchable.TextWithMods, ImGuiPopupFlags.MouseButtonRight)) {

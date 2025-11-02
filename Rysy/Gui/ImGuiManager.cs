@@ -242,7 +242,7 @@ public static class ImGuiManager {
         var filtered = cache.GetValue(sourceList, itemNameGetter, search);
 
         foreach (var (item, name) in filtered) {
-            if (ImGui.MenuItem(name.IsFavourite ? $"* {name.TextWithMods}" : name.TextWithMods.ToImguiEscaped())) {
+            if (name.RenderImGuiMenuItem()) {
                 onClick(item);
             }
         }
@@ -303,7 +303,7 @@ public static class ImGuiManager {
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
         Func<T, Searchable, bool>? menuItemRenderer = null) where T : notnull {
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
+        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
         
         if (value is null || !values.TryGetValue(value, out var valueName)) {
             valueName = value?.ToString() ?? "";
@@ -334,7 +334,7 @@ public static class ImGuiManager {
         where T : notnull {
         var valueName = toString(value);
         bool changed = false;
-        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName.TextWithMods.ToImguiEscaped());
+        renderMenuItem ??= static (t, valueName) => valueName.RenderImGuiMenuItem();
 
         cache ??= new();
         search ??= "";
@@ -422,8 +422,8 @@ public static class ImGuiManager {
         bool changed = false;
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
-        
-        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
+
+        renderMenuItem ??= static (_, name) => name.RenderImGuiMenuItem();
         
         var valueToString = textInputStringGetter is {} ? new Searchable(textInputStringGetter(value)) : toString(value);
         
@@ -462,7 +462,7 @@ public static class ImGuiManager {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
+        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
 
         var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);

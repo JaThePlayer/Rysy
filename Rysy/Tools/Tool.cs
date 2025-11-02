@@ -578,11 +578,7 @@ public abstract class Tool {
         if (showPlacementIcons)
             cursorStart.Y += (previewOrNull?.H / 2 - ImGui.GetFontSize() / 2f) ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
-        if (searchable.IsFavourite) {
-            ImGui.Text(ImGuiManager.PerFrameInterpolator.Utf8($"* {displayName}"));
-        } else {
-            ImGui.Text(displayName);
-        }
+        searchable.RenderImGuiText();
 
         return ret;
     }

@@ -137,7 +137,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     /// </summary>
     public DropdownField<T> AddSpriteTooltips(Func<T, Searchable, ISprite?> render) {
         MenuItemRenderer = (key, searchable) => {
-            var clicked = ImGui.MenuItem(searchable.TextWithMods);
+            var clicked = searchable.RenderImGuiMenuItem();
 
             if (ImGui.IsItemHovered()) {
                 var sprite = render(key, searchable);

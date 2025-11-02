@@ -194,7 +194,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
 
     private bool RenderMenuItem(TextureCacheKey key, Searchable displayPath) {
-        var clicked = ImGui.MenuItem(displayPath.TextWithMods);
+        var clicked = displayPath.RenderImGuiMenuItem();
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip)) {
             if (PreviewSpriteGetter is not null) {
