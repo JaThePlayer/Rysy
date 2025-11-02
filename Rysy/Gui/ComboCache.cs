@@ -12,7 +12,6 @@ public class ComboCache<T> {
     private List<KeyValuePair<T, Searchable>>? _cachedValueDict;
     private List<(T, Searchable)>? _cachedValue;
     private string? _cachedSearch;
-    private HashSet<string>? _cachedFavorites;
 
     public readonly CacheToken Token;
 
@@ -64,14 +63,13 @@ public class ComboCache<T> {
         return _cachedValueDict;
     }
     
-    internal List<(T, Searchable)> GetValue(IEnumerable<T> values, Func<T, Searchable> toString, string search, HashSet<string>? favorites = null) {
-        if (search != _cachedSearch || (favorites is null != _cachedFavorites is null) || (_cachedFavorites?.SetEquals(favorites!) ?? false)) {
+    internal List<(T, Searchable)> GetValue(IEnumerable<T> values, Func<T, Searchable> toString, string search) {
+        if (search != _cachedSearch) {
             _cachedValue = null;
         }
 
-        _cachedValue ??= values.SearchFilterWithSearchable(toString, search, favorites).ToList();
+        _cachedValue ??= values.SearchFilterWithSearchable(toString, search).ToList();
         _cachedSearch = search;
-        _cachedFavorites = favorites;
 
         Token.Reset();
 

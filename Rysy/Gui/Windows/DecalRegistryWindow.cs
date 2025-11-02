@@ -334,7 +334,7 @@ public sealed class DecalRegistryWindow : Window {
                     AddProp(entry, prop);
                     
                     ImGui.CloseCurrentPopup();
-                }, favorites: []);
+                });
                 _newPropertyComboCache.Clear();
 
                 ImGui.EndPopup();

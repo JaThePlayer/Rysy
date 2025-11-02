@@ -412,7 +412,7 @@ public sealed class TilesetWindow : Window {
     }
     
     private void RenderEntry(TilesetData entry) {
-        var id = $"[{entry.Id.ToImguiEscapedString()}] {entry.GetDisplayName()}";
+        var id = ImGuiManager.PerFrameInterpolator.Utf8($"[{entry.Id.ToImguiEscapedString()}] {entry.GetDisplayName()}");
 
         ImGui.TableNextRow();
 
@@ -427,7 +427,7 @@ public sealed class TilesetWindow : Window {
         var clicked = ImGui.IsItemClicked();
         var tileid = entry.Id;
         var bg = _bg;
-        var sid = $"d_ctx_{id}";
+        var sid = ImGuiManager.PerFrameInterpolator.Utf8($"d_ctx_{id}");
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
         if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             var autotiler = GetAutotiler(_bg);
