@@ -193,15 +193,19 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     public override void SetDefault(object newDefault) => Default = newDefault.ToString()!;
 
 
-    private bool RenderMenuItem(TextureCacheKey key, string displayPath) {
-        if (PreviewSpriteGetter is null)
-            return ImGui.MenuItem(displayPath);
-        
-        var clicked = ImGui.MenuItem(displayPath);
+    private bool RenderMenuItem(TextureCacheKey key, Searchable displayPath) {
+        var clicked = ImGui.MenuItem(displayPath.TextWithMods);
 
-        if (ImGui.IsItemHovered()) {
-            var sprite = PreviewSpriteGetter(key.path);
-            ImGuiManager.SpriteTooltip("path_field_preview", sprite);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip)) {
+            if (PreviewSpriteGetter is not null) {
+                var sprite = PreviewSpriteGetter(key.path);
+                ImGuiManager.SpriteTooltip("path_field_preview", sprite);
+            }
+
+            if (ImGui.BeginTooltip()) {
+                displayPath.RenderImGuiInfo();
+                ImGui.EndTooltip();
+            }
         }
         
         return clicked;
@@ -216,7 +220,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         KnownPaths ??= CreateKnownPathsCache();
 
         var paths = KnownPaths.Value;
-        Func<TextureCacheKey, string, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
+        Func<TextureCacheKey, Searchable, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
             ? RenderMenuItem
             : null;
 
@@ -238,7 +242,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
                 return chosen.saved;
             }
         } else {
-            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.searchable.TextWithMods, tooltip: Tooltip,
+            if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.searchable, tooltip: Tooltip,
                     search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
                 return chosen.saved;
             }

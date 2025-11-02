@@ -5,14 +5,18 @@ using System.Diagnostics;
 
 namespace Rysy.Helpers;
 
-public struct Searchable {
+public class Searchable {
     public string TextWithMods { get; private init; }
         
     public string Text { get; }
         
     public IReadOnlyList<string> Mods { get; }
+    
+    public string? DefiningMod { get; }
         
     public IReadOnlyList<string> Tags { get; }
+
+    private bool HasNonVanillaMods => Mods is { Count: > 0 } and not ["Celeste"];
 
     public Searchable(string text) : this(text, [], []) {
         
@@ -21,35 +25,93 @@ public struct Searchable {
     public Searchable(string text, ModMeta? mod) : this(text, mod is {} ? [mod.Name] : [], []) {
         
     }
-    
-    public Searchable(string text, IReadOnlyList<string> mods, IReadOnlyList<string>? tags) {
+
+    public Searchable(string text, IReadOnlyList<string> mods, IReadOnlyList<string>? tags, string? definingMod = null) {
         Text = text;
+        DefiningMod = definingMod;
         Mods = mods is [] ? [ ModRegistry.VanillaMod.Name ] : mods;
         Tags = tags ?? [];
             
-        if (Mods is { Count: > 0 } and not [ "Celeste" ]) {
+        if (HasNonVanillaMods) {
             TextWithMods = $"{Text} [{string.Join(',', Mods.Select(ModMeta.ModNameToDisplayName))}]";
         } else {
             TextWithMods = Text;
         }
     }
-    
-    public static implicit operator Searchable(string text) => new(text);
-    
-    public static Searchable FromString(string text) => new(text);
 
     public override string ToString() => TextWithMods;
+
+    public void RenderImGuiInfo() {
+        if (HasNonVanillaMods) {
+            var associated = Mods;
+            var currentMod = EditorState.Map?.Mod;
+            
+            ImGuiManager.TranslatedText("rysy.search.associatedMods");
+
+            ImGui.SameLine();
+            var wrapX = ImGui.GetCursorPosX();
+            foreach (var (mod, isLast) in associated.CheckedIfLast()) {
+                var displayName = ModMeta.ModNameToDisplayName(mod);
+                if (currentMod is not null && !currentMod.DependencyMet(mod)) {
+                    ImGuiManager.PushInvalidStyle();
+                    ImGuiManager.RenderTextWrapped(displayName, wrapX);
+                    ImGuiManager.PopInvalidStyle();
+                } else {
+                    ImGuiManager.RenderTextWrapped(displayName, wrapX);
+                }
+
+                if (!isLast) {
+                    ImGui.SameLine(0f, 0f);
+                    ImGui.Text(",");
+                    ImGui.SameLine();
+                }
+            }
+
+            if (DefiningMod is { } defining && (associated.Count != 1 || associated[0] != defining)) {
+                ImGui.BeginDisabled();
+                ImGuiManager.TranslatedText("rysy.search.definedBy");
+                ImGui.SameLine();
+                ImGui.TextWrapped(ModMeta.ModNameToDisplayName(defining));
+                ImGui.EndDisabled();
+            }
+        }
+
+        RenderTagList(Tags);
+    }
+
+    public static void RenderTagList(IReadOnlyList<string> tags) {
+        if (tags.Count > 0) {
+            ImGuiManager.TranslatedText("rysy.search.tags");
+            ImGui.SameLine(); 
+            var wrapX = ImGui.GetCursorPosX();
+            foreach (var (tag, isLast) in tags.CheckedIfLast()) {
+                ImGui.SameLine();
+                ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.TagColor.ToNumVec4());
+                ImGuiManager.RenderTextWrapped(
+                    isLast ? Interpolator.TempU8($"#{tag}") : Interpolator.TempU8($"#{tag},"),
+                    wrapX
+                );
+                ImGui.PopStyleColor(1);
+            }
+        }
+    }
 }
 
 public static class SearchHelper {
     public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, string> textSelector,
         string search, HashSet<string>? favorites = null)
         => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search, favorites);
+
+    /// <summary>
+    /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
+    /// </summary>
+    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search, HashSet<string>? favorites = null)
+        => source.SearchFilterWithSearchable(textSelector, search, favorites).Select(e => e.Item1);
     
     /// <summary>
     /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
     /// </summary>
-    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search, HashSet<string>? favorites = null) {
+    public static IEnumerable<(T, Searchable)> SearchFilterWithSearchable<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search, HashSet<string>? favorites = null) {
         var hasSearch = !string.IsNullOrWhiteSpace(search);
 
         var filter = source.Select(e => (e, Data: textSelector(e)));
@@ -77,7 +139,7 @@ public static class SearchHelper {
         // order alphabetically, but don't include mod name in the ordering.
         filter = filter.OrderOrThenBy(e => e.Data.Text, new TrimModNameStringComparer());
 
-        return filter.Select(e => e.e);
+        return filter;
     }
 
     private static string ToStringUnderscoresAreSpaces(ReadOnlySpan<char> txt) {
@@ -103,7 +165,7 @@ public static class SearchHelper {
             return ret;
         }
         
-        trimmed = txt.Slice(txt.Length - (txt.Length - ret.Length)).ToString();
+        trimmed = txt[^(txt.Length - ret.Length)..].ToString();
         return ret;
     }
     

@@ -6,44 +6,44 @@ namespace Rysy.Gui;
 public class ComboCache<T> {
     public ComboCache() {
         Token = new();
-        Token.OnInvalidate += () => CachedValueDict = null;
+        Token.OnInvalidate += () => _cachedValueDict = null;
     }
 
-    private List<KeyValuePair<T, Searchable>>? CachedValueDict;
-    private List<T>? CachedValue;
-    private string? CachedSearch;
-    private HashSet<string>? CachedFavorites;
+    private List<KeyValuePair<T, Searchable>>? _cachedValueDict;
+    private List<(T, Searchable)>? _cachedValue;
+    private string? _cachedSearch;
+    private HashSet<string>? _cachedFavorites;
 
     public readonly CacheToken Token;
 
-    private NumVector2? Size;
-    private int CachedSizeTextSize;
+    private NumVector2? _size;
+    private int _cachedSizeTextSize;
 
     internal NumVector2 GetSize(IEnumerable<string> values) {
-        if (Settings.Instance.FontSize != CachedSizeTextSize) {
-            Size = null;
+        if (Settings.Instance.FontSize != _cachedSizeTextSize) {
+            _size = null;
         }
 
-        //CachedSizeTextSize = Settings.Instance.FontSize;
+        _cachedSizeTextSize = Settings.Instance.FontSize;
 
-        return Size ??= ImGuiManager.CalcListSize(values);
+        return _size ??= ImGuiManager.CalcListSize(values);
     }
     
     internal NumVector2 GetSize(IEnumerable<Searchable> values) {
-        if (Settings.Instance.FontSize != CachedSizeTextSize) {
-            Size = null;
+        if (Settings.Instance.FontSize != _cachedSizeTextSize) {
+            _size = null;
         }
 
         //CachedSizeTextSize = Settings.Instance.FontSize;
 
-        return Size ??= ImGuiManager.CalcListSize(values.Select(x => x.TextWithMods));
+        return _size ??= ImGuiManager.CalcListSize(values.Select(x => x.TextWithMods));
     }
 
     internal void Clear() {
-        CachedValue = null;
-        CachedValueDict = null;
-        CachedSearch = null;
-        Size = null;
+        _cachedValue = null;
+        _cachedValueDict = null;
+        _cachedSearch = null;
+        _size = null;
     }
 
 #pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
@@ -52,38 +52,38 @@ public class ComboCache<T> {
 #pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 
     internal List<KeyValuePair<T, Searchable>> GetValue(IDictionary<T, Searchable> values, string search) {
-        if (search != CachedSearch) {
-            CachedValueDict = null;
+        if (search != _cachedSearch) {
+            _cachedValueDict = null;
         }
 
-        CachedValueDict ??= values.SearchFilter(i => i.Value, search).ToList();
-        CachedSearch = search;
+        _cachedValueDict ??= values.SearchFilter(i => i.Value, search).ToList();
+        _cachedSearch = search;
 
         Token.Reset();
 
-        return CachedValueDict;
+        return _cachedValueDict;
     }
-
-    internal List<T> GetValue(IEnumerable<T> values, Func<T, Searchable> toString, string search, HashSet<string>? favorites = null) {
-        if (search != CachedSearch || (favorites is null != CachedFavorites is null) || (CachedFavorites?.SetEquals(favorites!) ?? false)) {
-            CachedValue = null;
+    
+    internal List<(T, Searchable)> GetValue(IEnumerable<T> values, Func<T, Searchable> toString, string search, HashSet<string>? favorites = null) {
+        if (search != _cachedSearch || (favorites is null != _cachedFavorites is null) || (_cachedFavorites?.SetEquals(favorites!) ?? false)) {
+            _cachedValue = null;
         }
 
-        CachedValue ??= values.SearchFilter(i => toString(i), search, favorites).ToList();
-        CachedSearch = search;
-        CachedFavorites = favorites;
+        _cachedValue ??= values.SearchFilterWithSearchable(toString, search, favorites).ToList();
+        _cachedSearch = search;
+        _cachedFavorites = favorites;
 
         Token.Reset();
 
-        return CachedValue;
+        return _cachedValue;
     }
 
-    private string _Search = "";
+    private string _search = "";
     internal string Search {
-        get => _Search ?? "";
+        get => _search ?? "";
         set {
             Clear();
-            _Search = value;
+            _search = value;
         }
     }
 }

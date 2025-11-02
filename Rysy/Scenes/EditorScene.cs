@@ -33,8 +33,6 @@ public sealed class EditorScene : Scene {
 
         SwapMapPreserveState(map);
 
-        Camera ??= new();
-
         if (map?.Rooms.Count > 0) {
             CurrentRoom = map.Rooms.First();
             CenterCameraOnRoom(CurrentRoom);

@@ -13,8 +13,8 @@ public static class EditorState {
     /// The current camera.
     /// </summary>
     public static Camera Camera {
-        get => _camera ??= new();
-        set => _camera = value;
+        get => _camera ??= new Camera().ListenToViewportChanges();
+        set => _camera = value.ListenToViewportChanges();
     }
 
     private static Room? _currentRoom = null;

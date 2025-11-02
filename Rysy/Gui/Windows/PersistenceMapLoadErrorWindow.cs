@@ -2,6 +2,7 @@
 using Rysy.Extensions;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
+using Rysy.Helpers;
 
 namespace Rysy.Scenes;
 
@@ -31,7 +32,7 @@ public class PersistenceMapLoadErrorWindow : Window {
                     ImGui.Text("rysy.mapLoadError.selectBackup".Translate());
 
                     ImGuiManager.Combo("", ref backup, backups,
-                        toString: (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]");
+                        toString: b => new Searchable($"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]"));
 
                     if (ImGui.Button("rysy.load".Translate())) {
                         w.RemoveSelf();

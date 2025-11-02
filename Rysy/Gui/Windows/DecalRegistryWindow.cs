@@ -329,7 +329,7 @@ public sealed class DecalRegistryWindow : Window {
                 var blocked = entry.Props.Where(p => !p.AllowMultiple).Select(p => p.Name).ToHashSet();
                 var placements = EntityRegistry.DecalRegistryPropertyPlacements.Where(p => !blocked.Contains(p.SID ?? ""));
                 
-                ImGuiManager.List(placements, p => p.SID ?? p.Name, _newPropertyComboCache, (pl) => {
+                ImGuiManager.List(placements, p => new Searchable(p.SID ?? p.Name), _newPropertyComboCache, (pl) => {
                     var prop = DecalRegistryProperty.CreateFromPlacement(pl);
                     AddProp(entry, prop);
                     

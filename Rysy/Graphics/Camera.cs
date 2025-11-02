@@ -26,14 +26,21 @@ public class Camera {
     }
 
     public Camera() {
-        if (Settings.UiEnabled) {
-            RysyState.OnViewportChanged += (v) => {
+        RecalculateMatrix();
+    }
+
+    private bool _listeningToViewportChanges;
+
+    public Camera ListenToViewportChanges() {
+        if (!_listeningToViewportChanges && Settings.UiEnabled) {
+            _listeningToViewportChanges = true;
+            RysyState.OnViewportChanged += v => {
                 _Viewport = v;
                 RecalculateMatrix();
             };
         }
 
-        RecalculateMatrix();
+        return this;
     }
 
     public Camera(Viewport viewport) {

@@ -423,7 +423,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             CacheSpritesIfNeeded();
 
             if (!selected && CachedSprites!.TrueForAll(s => s.IsLoaded)) {
-                RysyState.OnEndOfThisFrame += () => CacheIntoCanvas(camera);
+                RysyState.RegisterOnEndOfThisFrame(camera, CacheIntoCanvas);
             }
 
             if (selected) {

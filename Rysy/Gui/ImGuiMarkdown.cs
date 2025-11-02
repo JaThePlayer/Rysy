@@ -166,7 +166,7 @@ internal static partial class ImGuiMarkdown {
                     RenderSearchLine(searchText);
                 } else {
                     ImGui.BeginDisabled();
-                    RenderTextWrapped(content, startX);
+                    ImGuiManager.RenderTextWrapped(content, startX);
                     ImGui.EndDisabled();
                 }
 
@@ -193,7 +193,7 @@ internal static partial class ImGuiMarkdown {
                 }
 
                 if (renderText) {
-                    RenderTextWrapped(contentTrimmed, startX);
+                    ImGuiManager.RenderTextWrapped(contentTrimmed, startX);
                 }
                     
                 ImGuiManager.PopEmphasis();
@@ -261,59 +261,5 @@ internal static partial class ImGuiMarkdown {
         }
 
         return emph;
-    }
-
-
-    // ImGui::TextWrapped will wrap at the starting position
-    // so to work around this we render using our own wrapping for the first line
-    // furthermore, we need to pop/push the Emphasis to render underline/strikethrough text correctly
-    // based on https://gist.github.com/dougbinks/65d125e0c11fba81c5e78c546dcfe7af
-    private static unsafe void RenderTextWrapped(ReadOnlySpan<char> textUtf16, float wrapStart) {
-        if (textUtf16 is "") {
-            ImGui.NewLine();
-            return;
-        }
-        
-        var pFont = ImGui.GetFont();
-        float scale = ImGui.GetStyle().FontSizeBase;
-        float widthLeft = ImGui.GetColumnWidth();
-        
-        var utf8ByteCount = Encoding.UTF8.GetByteCount(textUtf16);
-        Span<byte> utf8 = utf8ByteCount <= 2048 ? stackalloc byte[utf8ByteCount + 1] : new byte[utf8ByteCount + 1];
-        var utf8Written = Encoding.UTF8.GetBytes(textUtf16, utf8);
-        utf8[utf8Written] = 0;
-        utf8 = utf8[..utf8Written];
-        
-        fixed (byte* utf8Ptr = &utf8[0]) {
-            var textEnd = &utf8Ptr[utf8.Length];
-            var endPrevLine = pFont.CalcWordWrapPosition(scale, utf8Ptr, textEnd, widthLeft);
-
-            if (endPrevLine == textEnd) {
-                //ImGuiNative.igText(utf8ptr);
-                ImGui.Text(textUtf16.ToString());
-                return;
-            }
-            ImGui.TextUnformatted(utf8Ptr, endPrevLine);
-            
-            while (endPrevLine < textEnd)
-            {
-                widthLeft = ImGui.GetContentRegionAvail().X;
-                
-                var text = endPrevLine;
-                if( *text == ' ' ) { ++text; } // skip a space at start of line
-                endPrevLine = pFont.CalcWordWrapPosition(scale, text, textEnd, widthLeft);
-                
-                var popped = ImGuiManager.PopEmphasis();
-                if (popped is { }) {
-                    ImGui.NewLine();
-                    ImGui.SetCursorPosX(wrapStart);
-                    ImGuiManager.PushEmphasis(popped.Value);
-                }
-                
-                ImGui.SetCursorPosX(wrapStart);
-                ImGui.TextUnformatted(text, endPrevLine);
-            }
-            ImGuiManager.PopEmphasis();
-        }
     }
 }

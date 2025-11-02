@@ -7,8 +7,7 @@ namespace Rysy.Helpers;
 /// <summary>
 /// Similar to List, but uses the Array Pool to store its items.
 /// </summary>
-public struct PooledList<T> : IList<T>, IDisposable
-    where T : IEquatable<T> {
+public struct PooledList<T> : IList<T>, IDisposable {
     private T[]? _array;
     private int _count;
     
@@ -31,14 +30,14 @@ public struct PooledList<T> : IList<T>, IDisposable
         if (_array.Length < newCapacity) {
             var pool = Pool;
             
-            var newArr = pool.Rent(newCapacity);
+            var newArr = pool.Rent(int.Max(newCapacity, _array.Length * 2));
             var oldArr = _array;
             oldArr.AsSpan().CopyTo(newArr);
             
             _array = newArr;
 
             if (oldArr.Length > 0) {
-                pool.Return(oldArr);
+                pool.Return(oldArr, true);
             }
         }
     }
@@ -95,7 +94,7 @@ public struct PooledList<T> : IList<T>, IDisposable
     bool ICollection<T>.IsReadOnly => false;
 
     public int IndexOf(T item) {
-        return _array.AsSpan().IndexOf(item);
+        return _array is {} ? Array.IndexOf(_array, item) : -1;
     }
 
     public void Insert(int index, T item) {

@@ -7,6 +7,7 @@ using Rysy.Platforms;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Rysy.Gui;
 
@@ -228,7 +229,7 @@ public static class ImGuiManager {
         var size = cache.GetSize(sourceList.Select(itemNameGetter));
         var dropdownSize = GetDropdownWindowSize(size, sourceList.Count);
         
-        if (RenderSearchBarInDropdown(dropdownSize, ref search)) {
+        if (RenderSearchBarInDropdown(ref search)) {
             cache.Search = search;
         }
 
@@ -236,8 +237,7 @@ public static class ImGuiManager {
         
         var filtered = cache.GetValue(sourceList, itemNameGetter, search, favorites);
 
-        foreach (var item in filtered) {
-            var name = itemNameGetter(item);
+        foreach (var (item, name) in filtered) {
             if (ImGui.MenuItem(favorites?.Contains(name.Text) ?? false ? $"* {name.TextWithMods}" : name.TextWithMods.ToImguiEscaped())) {
                 onClick(item);
             }
@@ -297,32 +297,23 @@ public static class ImGuiManager {
 
     public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, string, bool>? menuItemRenderer = null) where T : notnull {
+        Func<T, Searchable, bool>? menuItemRenderer = null) where T : notnull {
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
         
         if (value is null || !values.TryGetValue(value, out var valueName)) {
             valueName = value?.ToString() ?? "";
         }
-
+        
+        cache ??= new();
         bool changed = false;
-
+        var size = cache.GetSize(values.Select(x => x.Value));
+        var dropdownSize = GetDropdownWindowSize(size, values.Count);
+        ImGui.SetNextWindowSize(dropdownSize);
+        
         if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
-            var oldStyles = PopAllStyles();
-            SearchInput(ref search);
-
-            cache ??= new();
-            var filtered = cache.GetValue(values, search);
-
-            foreach (var item in filtered) {
-                if (menuItemRenderer(item.Key, item.Value.TextWithMods)) {
-                    value = item.Key;
-                    changed = true;
-                }
-            }
-
+            RenderListContents(name, ref value, ref search, ref changed, cache, values.Select(x => x.Key), t => new Searchable(values[t]), menuItemRenderer);
             ImGui.EndCombo();
-            PushAllStyles(oldStyles);
         }
 
         return changed;
@@ -335,32 +326,20 @@ public static class ImGuiManager {
 
     public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, Searchable> toString, 
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null) 
+        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null) 
         where T : notnull {
         var valueName = toString(value);
         bool changed = false;
-        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName.ToImguiEscaped());
+        renderMenuItem ??= static (t, valueName) => ImGui.MenuItem(valueName.TextWithMods.ToImguiEscaped());
 
+        cache ??= new();
+        search ??= "";
+        var size = cache.GetSize(values.Select(x => toString(x).TextWithMods));
+        var dropdownSize = GetDropdownWindowSize(size, values.Count);
+        ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo(name, valueName.TextWithMods, ImGuiComboFlags.None).WithTooltip(tooltip)) {
-            var oldStyles = PopAllStyles();
-
-            if (search is { }) {
-                SearchInput(ref search);
-
-                cache ??= new();
-                values = cache.GetValue(values, toString, search);
-            }
-            
-            foreach (var item in values) {
-                if (renderMenuItem(item, toString(item).TextWithMods)) {
-                    if (!changed)
-                        value = item;
-                    changed = true;
-                }
-            }
-            
+            RenderListContents(name, ref value, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
-            PushAllStyles(oldStyles);
         }
 
         return changed;
@@ -388,30 +367,61 @@ public static class ImGuiManager {
         ImGui.SetCursorPos(pos + ImGui.GetStyle().FramePadding);
         var parsed = SearchHelper.ParseSearch(search);
         parsed.RenderImGui();
-        ImGui.NewLine();
+        if (string.IsNullOrEmpty(search)) {
+            ImGui.NewLine();
+        }
         
         return ret;
     }
 
-    private static bool RenderSearchBarInDropdown(NumVector2 dropdownSize, ref string search) {
+    private static bool RenderSearchBarInDropdown(ref string search) {
         var xPadding = ImGui.GetStyle().FramePadding.X;
-        var searchText = "rysy.search".Translate();
-        ImGui.SetNextItemWidth(dropdownSize.X - ImGui.CalcTextSize(searchText).X - xPadding * 4);
+        var searchText = "rysy.search.withQuestionMark".Translate();
+        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - ImGui.CalcTextSize(searchText).X - xPadding * 8);
         search ??= "";
-        return SearchInput(ref search);
+        var ret = SearchInput(ref search);
+        ImGui.Separator();
+        return ret;
     }
+    
+    private static bool RenderListContents<T>(string name, ref T? value, ref string search, ref bool changed,
+        ComboCache<T> cache, IEnumerable<T> values, 
+        Func<T, Searchable> toString, Func<T, Searchable, bool> renderMenuItem) {
+        var oldStyles = PopAllStyles();
+        
+        search ??= "";
+        RenderSearchBarInDropdown(ref search);
+
+        ImGui.BeginChild($"comboInner{name}");
+
+        var filtered = cache.GetValue(values, toString, search);
+
+        foreach (var (item, searchable) in filtered) {
+            if (renderMenuItem(item, searchable)) {
+                value = item;
+                changed = true;
+            }
+        }
+
+        ImGui.EndChild();
+            
+        PushAllStyles(oldStyles);
+
+        return changed;
+    }
+    
 
     public static bool EditableCombo<T>(string name, ref T value, IList<T> values, Func<T, Searchable> toString, Func<string, T> stringToValue,
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, Func<T, string, bool>? renderMenuItem = null,
+        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null,
         Func<T, string>? textInputStringGetter = null) {
         bool changed = false;
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
         
-        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
+        renderMenuItem ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
         
-        var valueToString = textInputStringGetter is {} ? new Searchable(textInputStringGetter.Invoke(value)) : toString(value);
+        var valueToString = textInputStringGetter is {} ? new Searchable(textInputStringGetter(value)) : toString(value);
         
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         var valueToStringText = valueToString.Text;
@@ -428,26 +438,9 @@ public static class ImGuiManager {
         var dropdownSize = GetDropdownWindowSize(size, values.Count);
         ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo($"##combo{name}", valueToString.TextWithMods, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
-            var oldStyles = PopAllStyles();
-
             search ??= "";
-            RenderSearchBarInDropdown(dropdownSize, ref search);
-
-            ImGui.BeginChild($"comboInner{name}");
-
-            var filtered = cache.GetValue(values, toString, search);
-
-            foreach (var item in filtered) {
-                if (renderMenuItem(item, toString(item).TextWithMods)) {
-                    value = item;
-                    changed = true;
-                }
-            }
-
-            ImGui.EndChild();
+            RenderListContents(name, ref value, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
-            
-            PushAllStyles(oldStyles);
         }
         ImGui.SameLine(0f, xPadding);
         ImGui.Text(name);
@@ -458,14 +451,14 @@ public static class ImGuiManager {
 
     public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, string, bool>? menuItemRenderer = null, Func<T?, string>? tToString = null)
+        Func<T, Searchable, bool>? menuItemRenderer = null, Func<T?, string>? tToString = null)
         where T : notnull {
 
         bool changed = false;
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
 
-        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.ToImguiEscaped());
+        menuItemRenderer ??= static (_, name) => ImGui.MenuItem(name.TextWithMods.ToImguiEscaped());
 
         var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
         ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
@@ -492,14 +485,14 @@ public static class ImGuiManager {
         if (ImGui.BeginCombo($"##combo{name}", valueToString, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             var oldStyles = PopAllStyles();
             
-            RenderSearchBarInDropdown(dropdownSize, ref search);
+            RenderSearchBarInDropdown(ref search);
 
             ImGui.BeginChild($"comboInner{name}");
 
             var filtered = cache.GetValue(values, search);
 
             foreach (var item in filtered) {
-                if (menuItemRenderer(item.Key, item.Value.TextWithMods)) {
+                if (menuItemRenderer(item.Key, item.Value)) {
                     value = item.Key;
                     changed = true;
                 }
@@ -797,7 +790,7 @@ public static class ImGuiManager {
         }
 
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
-        ImGui.Image(*ImGui.ImTextureRef(new(widgetData.Id)).Handle, new(w, h));
+        ImGui.Image(new ImTextureRef(null, widgetData.Id), new(w, h));
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible()) {
@@ -1013,6 +1006,61 @@ public static class ImGuiManager {
 
     public static void ReadOnlyInputTextMultiline(string label, string text, NumVector2 size, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
         ImGui.InputTextMultiline(label, ref text, (uint)text.Length + 1, size, flags | ImGuiInputTextFlags.ReadOnly);
+    }
+    
+    // ImGui::TextWrapped will wrap at the starting position
+    // so to work around this we render using our own wrapping for the first line
+    // furthermore, we need to pop/push the Emphasis to render underline/strikethrough text correctly
+    // based on https://gist.github.com/dougbinks/65d125e0c11fba81c5e78c546dcfe7af
+    public static void RenderTextWrapped(ReadOnlySpan<char> text, float wrapStart) {
+        if (text is "") {
+            ImGui.NewLine();
+            return;
+        }
+
+        RenderTextWrapped(Interpolator.TempU8(text), wrapStart);
+    }
+    
+    public static unsafe void RenderTextWrapped(ReadOnlySpan<byte> utf8, float wrapStart) {
+        if (utf8.IsEmpty) {
+            ImGui.NewLine();
+            return;
+        }
+        
+        var pFont = ImGui.GetFont();
+        float scale = ImGui.GetStyle().FontSizeBase;
+        float widthLeft = ImGui.GetColumnWidth();
+        
+        fixed (byte* utf8Ptr = &utf8[0]) {
+            var textEnd = &utf8Ptr[utf8.Length];
+            var endPrevLine = pFont.CalcWordWrapPosition(scale, utf8Ptr, textEnd, widthLeft);
+
+            if (endPrevLine == textEnd) {
+                ImGui.Text(utf8);
+                return;
+            }
+            ImGui.TextUnformatted(utf8Ptr, endPrevLine);
+            
+            while (endPrevLine < textEnd)
+            {
+                widthLeft = ImGui.GetContentRegionAvail().X;
+                
+                var text = endPrevLine;
+                if( *text == ' ' ) { ++text; } // skip a space at start of line
+                endPrevLine = pFont.CalcWordWrapPosition(scale, text, textEnd, widthLeft);
+                
+                var popped = PopEmphasis();
+                if (popped is { }) {
+                    ImGui.NewLine();
+                    ImGui.SetCursorPosX(wrapStart);
+                    PushEmphasis(popped.Value);
+                }
+                
+                ImGui.SetCursorPosX(wrapStart);
+                ImGui.TextUnformatted(text, endPrevLine);
+            }
+            PopEmphasis();
+        }
     }
 
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
@@ -1408,7 +1456,7 @@ public static class ImGuiManager {
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
                     var cmd = cmdList.CmdBuffer[cmdi];
                     if (!Textures.TryGetValue(cmd.GetTexID(), out Texture2D? texture)) {
-                        throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.GetTexID()}");
+                        throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.GetTexID().Handle}");
                     }
                     
                     GraphicsDevice.ScissorRectangle = new Rectangle(
