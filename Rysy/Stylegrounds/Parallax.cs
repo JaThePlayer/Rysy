@@ -3,11 +3,12 @@
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using System.Text.RegularExpressions;
 
 namespace Rysy.Stylegrounds;
 
 [CustomEntity("parallax")]
-public sealed class Parallax : Style, IPlaceable {
+public sealed partial class Parallax : Style, IPlaceable {
     public override string DisplayName => Texture;
 
     [Bind("texture")]
@@ -57,8 +58,20 @@ public sealed class Parallax : Style, IPlaceable {
     [Bind("loopy")]
     public bool LoopY;
 
+    [GeneratedRegex(@"^bgs/.*[^0-9]([^0-9]|0+)$")]
+    private static partial Regex AnimationFrameIsZeroRegex();
+    
     public static FieldList GetFields() => new(new {
-        texture = Fields.AtlasPath("bgs/07/07/bg00", "^(bgs/.*[^0-9](?:[^0-9]|0+))$"),
+        texture = Fields.AtlasPath("bgs/07/07/bg00", "^(bgs/.*)$")
+            .WithFilter(x => {
+                // Only show the first frame of animated parallax.
+                if (x.Path.StartsWith("bgs/MaxHelpingHand/animatedParallax", StringComparison.Ordinal)
+                    && !AnimationFrameIsZeroRegex().IsMatch(x.Path)) {
+                    return false;
+                }
+
+                return true;
+            }),
         blendmode = Fields.Dropdown("alphablend", BlendModes.Select(kv => kv.Key).ToList(), editable: true),
         alpha = 1f,
         color = Fields.RGB(Color.White).AllowNull(),
