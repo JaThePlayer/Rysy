@@ -8,26 +8,28 @@ namespace Rysy.Helpers;
 /// Simple version of BitArray that wraps an existing array, allowing for pooling.
 /// </summary>
 public readonly struct WrappedBitArray {
-    public readonly int[] Array;
+    private const int ArrayAccessBitShift = 5;
+    
+    private readonly int[] _array;
     public readonly int Length;
 
-    public WrappedBitArray(int[] backingArray) {
-        Array = backingArray;
-        Length = Array.Length * 32;
+    private WrappedBitArray(int[] backingArray) {
+        _array = backingArray;
+        Length = _array.Length * 32;
     }
     
     public static WrappedBitArray Rent(int minLength) {
-        var arr = ArrayPool<int>.Shared.Rent(minLength / 32);
-        System.Array.Clear(arr);
+        var arr = ArrayPool<int>.Shared.Rent(minLength / 32 + (minLength % 32 > 0 ? 1 : 0));
+        Array.Clear(arr);
         return new WrappedBitArray(arr);
     }
     
     public void ReturnToPool() {
-        ArrayPool<int>.Shared.Return(Array);
+        ArrayPool<int>.Shared.Return(_array);
     }
 
     public BitArray ToBitArray() {
-        return new(Array);
+        return new(_array);
     }
     
     public bool this[int index]
@@ -42,7 +44,7 @@ public readonly struct WrappedBitArray {
         if ((uint)index >= (uint)Length)
             ThrowArgumentOutOfRangeException(index);
 
-        return (Array[index >> 5] & (1 << index)) != 0;
+        return (_array[index >> ArrayAccessBitShift] & (1 << index)) != 0;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,7 +54,7 @@ public readonly struct WrappedBitArray {
             ThrowArgumentOutOfRangeException(index);
 
         int bitMask = 1 << index;
-        ref int segment = ref Array[index >> 5];
+        ref int segment = ref _array[index >> ArrayAccessBitShift];
 
         if (value)
         {
@@ -62,6 +64,20 @@ public readonly struct WrappedBitArray {
         {
             segment &= ~bitMask;
         }
+    }
+
+    /// <summary>
+    /// Sets the given bit to `true`, returning whether there was any change.
+    /// </summary>
+    public bool ToggleOn(int index) {
+        if ((uint)index >= (uint)Length)
+            ThrowArgumentOutOfRangeException(index);
+        
+        ref int segment = ref _array[index >> ArrayAccessBitShift];
+        var prevSegment = segment;
+        segment |= 1 << index;
+        
+        return prevSegment != segment;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

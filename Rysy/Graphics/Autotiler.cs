@@ -364,11 +364,9 @@ public sealed class Autotiler {
                 for (int y = (changedY - offsetY).AtLeast(0); y <= endY; y++) {
                     var changeMaskLoc = changeMask.Get1dLoc(x, y, tileGrid.GetLength(0));
                     
-                    if (changeMask.Get(changeMaskLoc)) {
+                    if (!changeMask.ToggleOn(changeMaskLoc)) {
                         continue;
                     }
-
-                    changeMask.Set(changeMaskLoc, true);
                     
                     var sprite = GetSprite(checker, x, y, ref toUpdate.UnknownTilesetsUsed);
                     sprites[x, y] = sprite;
