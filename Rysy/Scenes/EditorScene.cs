@@ -406,10 +406,6 @@ public sealed class EditorScene : Scene {
         
         GFX.BeginBatch(Camera);
         foreach (var room in Map.Rooms) {
-            // Darken the room if it's not selected
-            if (room != CurrentRoom)
-                ISprite.Rect(room.Bounds, Color.Black * .75f).Render();
-
             // draw the colored border around the room
             room.GetBorderSprite(Camera.Scale).Render();
         }

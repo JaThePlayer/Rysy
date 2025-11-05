@@ -408,6 +408,9 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (interiorVisible)
             DrawRoomInterior(camera, selected, canvasReady);
         
+        if (!selected)
+            ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
+        
         GFX.EndBatch();
     }
 
