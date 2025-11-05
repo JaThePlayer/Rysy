@@ -48,7 +48,12 @@ public static class RysyState {
     /// Used to avoid capturing loop locals into capture groups if the event registration is conditional.
     /// </summary>
     public static void RegisterOnEndOfThisFrame<TState>(TState state, Action<TState> action) {
-        OnEndOfThisFrame += () => action?.Invoke(state);
+        OnEndOfThisFrame += () => action.Invoke(state);
+    }
+    
+    /// <inheritdoc cref="RegisterOnEndOfThisFrame{TState}(TState,System.Action{TState})"/>
+    public static void RegisterOnEndOfThisFrame<TState1, TState2>(TState1 state1, TState2 state2, Action<TState1, TState2> action) {
+        OnEndOfThisFrame += () => action.Invoke(state1, state2);
     }
 
     /// <summary>

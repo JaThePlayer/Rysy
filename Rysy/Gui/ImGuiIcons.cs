@@ -7,6 +7,7 @@ public enum ImGuiIcons : ushort {
     EyeSlash = 0xf070,
     ListUl = 0xf0ca,
     Tags = 0xf02c,
+    Star = 0xf005,
 }
 
 #pragma warning restore CA1028

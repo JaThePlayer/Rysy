@@ -37,6 +37,10 @@ public record class Placement : IUntypedData {
     }
 
     public string Name { get; set; }
+    
+    public Dictionary<string, object> ValueOverrides { get; set; } = new();
+
+    public Vector2[]? Nodes { get; set; }
 
     public IReadOnlyList<string> AlternativeNames { get; init; } = [];
 
@@ -47,6 +51,7 @@ public record class Placement : IUntypedData {
     [JsonIgnore]
     public Action<Entity>? Finalizer;
 
+    [JsonIgnore]
     // set in entity registry
     private IPlacementHandler? _PlacementHandler;
 
@@ -88,10 +93,6 @@ public record class Placement : IUntypedData {
 
         return null;
     }
-
-    public Dictionary<string, object> ValueOverrides { get; set; } = new();
-
-    public Vector2[]? Nodes { get; set; }
 
     internal bool FromLonn;
     
@@ -288,6 +289,21 @@ public record class Placement : IUntypedData {
 
     bool IUntypedData.TryGetValue(string key, [NotNullWhen(true)] out object? value) {
         return ValueOverrides.TryGetValue(key, out value);
+    }
+
+    public virtual bool Equals(Placement? other) {
+        if (other is null)
+            return false;
+        
+        return RegisteredEntityType == other.RegisteredEntityType
+            && Name == other.Name
+            && SID == other.SID
+            && ValueOverrides.SequenceEqual(other.ValueOverrides);
+    }
+
+    public override int GetHashCode()
+    {
+        throw new InvalidOperationException("Placements are not immutable and should not be used in hash-based collections.");
     }
 }
 

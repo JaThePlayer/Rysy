@@ -334,6 +334,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     public override IEnumerable<object>? GetMaterials(EditorLayer layer) => Array.Empty<object>();
 
+    public override string? SerializeMaterial(EditorLayer layer, object? material) {
+        return null;
+    }
+
+    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+        return null;
+    }
+
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         throw new NotImplementedException();
     }

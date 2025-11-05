@@ -51,7 +51,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     
     public override List<EditorLayer> ValidLayers => _validLayers;
     
-    public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
+    public override IEnumerable<object> GetMaterials(EditorLayer layer) {
         return layer.GetMaterials();
     }
 
@@ -81,6 +81,22 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         
         var prefix = layer.MaterialLangPrefix;
         return new TranslatedList<string>(pl.AlternativeNames, x => x, $"{prefix}.{pl.SID ?? ""}.placements.name");
+    }
+
+    public override string? SerializeMaterial(EditorLayer layer, object? material) {
+        return material switch {
+            Placement pl => pl.ToJson(),
+            _ => null
+        };
+    }
+
+    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+        if (JsonExtensions.TryDeserialize(serializableMaterial, out Placement? res)) {
+            var mats = GetMaterials(layer);
+            return mats.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
+        }
+
+        return null;
     }
 
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
@@ -152,6 +168,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             PickNextFrame = false;
             if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, EditorLayers.ToolLayerToEnum(Layer)) is { } underCursor) {
                 Material = underCursor;
+                ToolHandler.PushRecentMaterial(Material);
             }
             CurrentPlacement = null;
             _currentPlacementSourceMaterial = null;
@@ -411,19 +428,17 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     #region Imgui
-    private const int PreviewSize = 32;
-
     public override float MaterialListElementHeight()
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
     private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
 
-    protected override XnaWidgetDef? GetMaterialPreview(object material) {
+    internal override XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
         if (material is string)
             return null;
 
         if (material is not Placement placement)
-            return base.GetMaterialPreview(material);
+            return base.GetMaterialPreview(layer, material);
         
        // MaterialPreviewCache.Clear();
 
@@ -561,16 +576,19 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return def;
     }
 
-    public override object GetGroupKeyForMaterial(object material)
-        => material is Placement { SID: not null } pl && pl.SID != EntityRegistry.FGDecalSID && pl.SID != EntityRegistry.BGDecalSID ? pl.SID : material;
+    public override object GetGroupKeyForMaterial(object material) {
+        if (material is Placement pl) {
+            if (pl.SID is { } sid && sid != EntityRegistry.FGDecalSID && sid != EntityRegistry.BGDecalSID)
+                return sid;
 
-    protected override bool RenderMaterialListElement(object material, Searchable searchable) {
-        if (material is Placement placement && !placement.AreAssociatedModsADependencyOfCurrentMap()) {
-        //    ImGuiManager.PushNullStyle();
+            return pl.Name;
         }
 
-        var ret = base.RenderMaterialListElement(material, searchable);
-       // ImGuiManager.PopNullStyle();
+        return material;
+    }
+
+    protected override bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {
+        var ret = base.RenderMaterialListElement(layer, material, searchable);
 
         if (Layer == EditorLayers.Prefabs) {
             if (ImGui.BeginPopupContextItem(searchable.TextWithMods, ImGuiPopupFlags.MouseButtonRight)) {

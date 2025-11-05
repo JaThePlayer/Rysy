@@ -12,16 +12,7 @@ public class QuickActionHandler {
 
     private void AddHotkey(QuickActionInfo action) {
         Hotkeys.AddHotkey(action.Hotkey, () => {
-            if (ToolHandler.SetToolByName(action.ToolName) is { } tool) {
-                tool.Layer = EditorLayers.EditorLayerFromName(action.Layer);
-
-                if (action.Material is { } material) {
-                    var t = Type.GetType(action.MaterialTypeName!)!;
-                    tool.Material = material.Deserialize(t, JsonSerializerHelper.DefaultOptions);
-                } else {
-                    tool.Material = null;
-                }
-            }
+            action.Apply(ToolHandler);
         });
     }
 
@@ -36,19 +27,7 @@ public class QuickActionHandler {
         hotkeyHandler.AddHotkeyFromSettings("add_quick_action", "alt+q", () => {
             var tool = toolHandler.CurrentTool;
 
-            var info = new QuickActionInfo() {
-                ToolName = tool.Name,
-                Layer = tool.Layer.Name,
-            };
-
-            switch (tool.Material) {
-                case not null:
-                    info.MaterialTypeName = tool.Material.GetType()!.FullName!;
-                    info.Material = JsonSerializer.SerializeToElement(tool.Material, JsonSerializerHelper.DefaultOptions);
-                    break;
-                default:
-                    break;
-            }
+            var info = QuickActionInfo.CreateFrom(tool);
 
             var fields = new FieldList(new {
                 hotkey = Fields.String("").WithValidator(HotkeyHandler.IsValid)
@@ -92,10 +71,46 @@ public class QuickActionHandler {
 }
 
 public class QuickActionInfo {
-    public string Hotkey;
-    public string ToolName;
-    public string Layer;
+    public string Hotkey { get; set; }
+    public string ToolName { get; private init; }
+    public string Layer { get; private init; }
 
-    public string? MaterialTypeName;
-    public JsonElement? Material;
+    public string? MaterialString { get; private set; }
+    
+    public bool IsFavourite { get; set; }
+    
+    private object? SourceMaterial { get; set; }
+
+    public object? GetMaterial(ToolHandler handler) {
+        if (SourceMaterial is { } src) {
+            return src;
+        }
+        
+        if (handler.SetToolByName(ToolName) is { } tool && MaterialString is not null) {
+            return SourceMaterial = tool.DeserializeMaterial(
+                EditorLayers.EditorLayerFromName(Layer), 
+                MaterialString
+            );
+        }
+
+        return null;
+    }
+
+    public static QuickActionInfo CreateFrom(Tool tool) {
+        var info = new QuickActionInfo {
+            ToolName = tool.Name,
+            Layer = tool.Layer.Name,
+            SourceMaterial = tool.Material,
+            MaterialString = tool.SerializeMaterial(tool.Layer, tool.Material),
+        };
+
+        return info;
+    }
+
+    public void Apply(ToolHandler handler) {
+        if (handler.SetToolByName(ToolName) is { } tool) {
+            tool.Layer = EditorLayers.EditorLayerFromName(Layer);
+            tool.Material = GetMaterial(handler);
+        }
+    }
 }

@@ -1012,6 +1012,14 @@ public static class ImGuiManager {
         ImGui.Text(Interpolator.TempU8($"{iconChar}"));
         ImGui.SameLine();
     }
+    
+    public static void Icon(ImGuiIcons icon, Color color) {
+        var iconChar = (char) icon;
+        ImGui.TextColored(color.ToNumVec4(), Interpolator.TempU8($"{iconChar}"));
+        ImGui.SameLine();
+    }
+
+    public static void FavoriteIcon() => Icon(ImGuiIcons.Star, Color.Gold);
 
     public static void ReadOnlyInputTextMultiline(string label, string text, NumVector2 size, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
         ImGui.InputTextMultiline(label, ref text, (uint)text.Length + 1, size, flags | ImGuiInputTextFlags.ReadOnly);

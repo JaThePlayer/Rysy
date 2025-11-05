@@ -35,6 +35,8 @@ rysy.search.associatedMods=Associated:
 rysy.search.definedBy=Defined by:
 rysy.search.alternativeNames=Alt Names:
 
+rysy.recent_list=Recent
+
 # Notifications
 rysy.notifications.window.name=Notifications
 rysy.notifications.window.nothingToShow=No notifications to show...

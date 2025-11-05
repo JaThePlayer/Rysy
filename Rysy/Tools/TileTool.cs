@@ -75,6 +75,14 @@ public class TileTool : Tool {
         return GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? c.ToString();
     }
 
+    public override string SerializeMaterial(EditorLayer layer, object? material) {
+        return material?.ToString() ?? "";
+    }
+
+    public override object DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+        return serializableMaterial[0];
+    }
+
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         if (material is not char c)
             return null;
@@ -201,26 +209,23 @@ public class TileTool : Tool {
                 ('0', not '0') => (EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
                 (not '0', _) => (EditorLayers.Fg, fg), // fg tile exists, swap to that.
             };
+            
+            ToolHandler.PushRecentMaterial(Tile);
         }
     }
-
-    const int PreviewSize = 32;
 
     public override float MaterialListElementHeight() 
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
-    protected override XnaWidgetDef? GetMaterialPreview(object material) {
-        var autotiler = GetAutotiler(Layer);
+    internal override XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
+        var autotiler = GetAutotiler(layer);
         if (autotiler is { } && material is char c) {
-            var tileset = autotiler.GetTilesetData(c);
-            if (tileset is null) {
-                return autotiler.MissingTileset.GetPreviewWidget(PreviewSize);
-            }
+            var tileset = autotiler.GetTilesetData(c) ?? autotiler.MissingTileset;
             
-            return tileset?.GetPreviewWidget(PreviewSize);
+            return tileset.GetPreviewWidget(PreviewSize);
         }
 
-        return base.GetMaterialPreview(material);
+        return base.GetMaterialPreview(layer, material);
     }
 
     protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
