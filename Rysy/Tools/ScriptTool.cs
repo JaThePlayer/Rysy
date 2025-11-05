@@ -42,8 +42,18 @@ public class ScriptTool : Tool {
         return null;
     }
 
-    public override IEnumerable<object>? GetMaterials(EditorLayer layer) 
+    public override IEnumerable<object> GetMaterials(EditorLayer layer) 
         => ScriptRegistry.Scripts;
+
+    public override string? SerializeMaterial(EditorLayer layer, object? material) => material switch {
+        Script scr => scr.Name,
+        string str => str,
+        _ => null,
+    };
+
+    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+        return ScriptRegistry.Scripts.FirstOrDefault(s => s.Name == serializableMaterial);
+    }
 
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
         if (material is Script s) {

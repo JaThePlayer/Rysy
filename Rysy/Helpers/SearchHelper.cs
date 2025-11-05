@@ -75,7 +75,11 @@ public class Searchable {
         BeforeName(depsMet);
         
         if (IsFavourite) {
-            ImGui.Text(ImGuiManager.PerFrameInterpolator.Utf8($"* {TextWithMods}"));
+            var y = ImGui.GetCursorPosY();
+            ImGuiManager.FavoriteIcon();
+            ImGui.SameLine();
+            ImGui.SetCursorPosY(y);
+            ImGui.Text(TextWithMods);
         } else {
             ImGui.Text(TextWithMods);
         }

@@ -13,6 +13,8 @@ namespace Rysy.Tools;
 [UsedImplicitly(ImplicitUseTargetFlags.WithInheritors)]
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public abstract class Tool {
+    public const int PreviewSize = 32;
+    
     public bool UsePersistence { get; set; }
 
     public HistoryHandler History { get; internal set; }
@@ -20,6 +22,8 @@ public abstract class Tool {
     public HotkeyHandler HotkeyHandler { get; internal set; }
 
     public Input Input { get; internal set; }
+    
+    public ToolHandler ToolHandler { get; internal set; }
 
     public abstract string Name { get; }
 
@@ -273,6 +277,10 @@ public abstract class Tool {
         };
     }
 
+    public abstract string? SerializeMaterial(EditorLayer layer, object? material);
+
+    public abstract object? DeserializeMaterial(EditorLayer layer, string serializableMaterial);
+
     public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
 
     public (Color outline, Color fill) GetSelectionColor(Rectangle rect) 
@@ -355,7 +363,7 @@ public abstract class Tool {
             CachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??= currentLayer is null ? [] :
+        var cachedSearch = CachedSearch ??=
             (GetMaterials(currentLayer) ?? [])
             .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search)
@@ -403,7 +411,7 @@ public abstract class Tool {
                     var elHeight = MaterialListElementHeight();
 
                     //ImGui.BeginChild($"##{first.searchable.TextWithMods}", new NumVector2(columnWidth - Settings.Instance.FontSize - style.FramePadding.Y * 2, elHeight));
-                    RenderMaterialListElement(first.material, first.searchable);
+                    RenderMaterialListElement(currentLayer, first.material, first.searchable);
                     //ImGui.EndChild();
                     
                     style.FramePadding.Y = (elHeight - ImGui.GetTextLineHeightWithSpacing()) / 2;
@@ -414,7 +422,7 @@ public abstract class Tool {
                     
                     if (comboOpened) {
                         foreach (var (mat, searchable) in group) {
-                            if (RenderMaterialListElement(mat, searchable)) {
+                            if (RenderMaterialListElement(currentLayer, mat, searchable)) {
                                 GroupKeyToMainPlacementName[groupKey] = searchable.Text;
                             }
                         }
@@ -422,7 +430,7 @@ public abstract class Tool {
                         ImGui.EndCombo();
                     }
                 } else {
-                    RenderMaterialListElement(first.material, first.searchable);
+                    RenderMaterialListElement(currentLayer, first.material, first.searchable);
                 }
                 
                 if (columns > 1)
@@ -479,7 +487,7 @@ public abstract class Tool {
     /// <summary>
     /// Creates a widget that renders a preview for the given material
     /// </summary>
-    protected virtual XnaWidgetDef? GetMaterialPreview(object material) {
+    internal virtual XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
         return null;
     }
 
@@ -504,17 +512,43 @@ public abstract class Tool {
     /// <summary>
     /// Renders additional ImGui elements below the tooltip for the given material
     /// </summary>
-    protected virtual void RenderMaterialTooltipExtraInfo(object material, Searchable searchable) {
+    protected virtual void RenderMaterialTooltipExtraInfo(EditorLayer layer, object material, Searchable searchable) {
         searchable.RenderImGuiInfo();
+    }
+
+    internal void RenderMaterialTooltip(EditorLayer layer, object material, Searchable searchable) {
+        var displayName = searchable.TextWithMods;
+        var prevStyles = ImGuiManager.PopAllStyles();
+
+        XnaWidgetDef? tooltipPreview = GetMaterialPreview(layer, material) is {} p2 ? CreateTooltipPreview(p2, material) : null;
+        tooltipPreview = tooltipPreview is { } p3 ? p3 with { ID = "upsized_preview" } : null;
+
+        var w = (tooltipPreview?.W ?? 256) + ImGui.GetStyle().FramePadding.X * 4;
+        ImGui.SetNextWindowSize(new(w.AtLeast(256), 0));
+        ImGui.BeginTooltip();
+
+        ImGui.TextWrapped(displayName);
+        ImGui.Separator();
+
+        if (GetMaterialTooltip(layer, material) is { } tooltip)
+            ImGui.TextWrapped(tooltip);
+
+        if (tooltipPreview is { }) {
+            ImGuiManager.XnaWidget(tooltipPreview.Value);
+        }
+
+        RenderMaterialTooltipExtraInfo(layer, material, searchable);
+
+        ImGui.EndTooltip();
+        ImGuiManager.PushAllStyles(prevStyles);
     }
 
     /// <summary>
     /// Renders the gui for a given material inside the material list.
     /// Returns whether the element got clicked this frame.
     /// </summary>
-    protected virtual bool RenderMaterialListElement(object material, Searchable searchable) {
+    protected virtual bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {
         bool ret = false;
-        var currentLayer = Layer;
         var currentMaterial = Material;
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
 
@@ -526,16 +560,17 @@ public abstract class Tool {
             //ImGui.SetCursorPos(cursorStart);
         }
 
-        var previewOrNull = showPlacementIcons ? GetMaterialPreview(material) : null;
+        var previewOrNull = showPlacementIcons ? GetMaterialPreview(Layer, material) : null;
 
         if (previewOrNull is { } preview) {
             size.Y = preview.H;
         }
 
         var displayName = searchable.TextWithMods;
-        if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), currentMaterial == material, 
+        if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), material.Equals(currentMaterial), 
                 ImGuiSelectableFlags.AllowOverlap, size)) {
             Material = material;
+            ToolHandler.PushRecentMaterial(material);
             ret = true;
         }
         if (ImGui.IsItemHovered()) {
@@ -544,31 +579,7 @@ public abstract class Tool {
                 Input.Mouse.ConsumeLeft();
             }
             
-            var prevStyles = ImGuiManager.PopAllStyles();
-            if (!showPlacementIcons)
-                previewOrNull = GetMaterialPreview(material);
-
-            XnaWidgetDef? tooltipPreview = previewOrNull is { } p2 ? CreateTooltipPreview(p2, material) : null;
-            tooltipPreview = tooltipPreview is { } p3 ? p3 with { ID = "upsized_preview" } : null;
-
-            var w = (tooltipPreview?.W ?? 256) + ImGui.GetStyle().FramePadding.X * 4;
-            ImGui.SetNextWindowSize(new(w.AtLeast(256), 0));
-            ImGui.BeginTooltip();
-
-            ImGui.TextWrapped(displayName);
-            ImGui.Separator();
-
-            if (GetMaterialTooltip(currentLayer, material) is { } tooltip)
-                ImGui.TextWrapped(tooltip);
-
-            if (tooltipPreview is { }) {
-                ImGuiManager.XnaWidget(tooltipPreview.Value);
-            }
-
-            RenderMaterialTooltipExtraInfo(material, searchable);
-
-            ImGui.EndTooltip();
-            ImGuiManager.PushAllStyles(prevStyles);
+            RenderMaterialTooltip(layer, material, searchable);
         }
 
         ImGui.SetCursorPos(cursorStart);

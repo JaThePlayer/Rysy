@@ -3,7 +3,9 @@ using Microsoft.Win32;
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using System.Diagnostics;
 
 namespace Rysy.Tools;
@@ -34,7 +36,12 @@ public class ToolHandler {
         }
     }
 
-    private static Tool Create(Type type, HistoryHandler history, Input input) {
+    private readonly List<QuickActionInfo> _quickActions = [];
+    private int _maxQuickActions = 3;
+
+    public IReadOnlyList<QuickActionInfo> QuickActions => _quickActions;
+
+    private Tool Create(Type type, HistoryHandler history, Input input) {
         var t = (Tool) Activator.CreateInstance(type)!;
 
         t.History = history;
@@ -43,6 +50,8 @@ public class ToolHandler {
 
         t.HotkeyHandler = new(input, HotkeyHandler.ImGuiModes.Never);
         t.InitHotkeys(t.HotkeyHandler);
+
+        t.ToolHandler = this;
 
         return t;
     }
@@ -94,6 +103,10 @@ public class ToolHandler {
 
         lock (_toolLock) {
             _tools = newTools;
+        }
+
+        if (CurrentTool is { Name: {} prevName }) {
+            SetToolByName(prevName);
         }
     }
 
@@ -191,6 +204,33 @@ public class ToolHandler {
         tool.Layer = layers[(i + idOffset).MathMod(layers.Count)];
     }
 
+    private void CleanupQuickActions() {
+        _quickActions.Sort((a, b) => b.IsFavourite.CompareTo(a.IsFavourite));
+        while (_quickActions.Count >= _maxQuickActions) {
+            _quickActions.RemoveAt(_quickActions.Count - 1);
+        }
+    }
+    
+    internal void PushRecentMaterial(object material) {
+        QuickActionInfo quickAction;
+
+        // TODO: ignore x,y,width,height fields for placements.
+        var duplicateIdx = _quickActions.FindIndex(x => material.Equals(x.GetMaterial(this)));
+        if (duplicateIdx >= 0) {
+            quickAction = _quickActions[duplicateIdx];
+            // Don't move favourites around.
+            if (quickAction.IsFavourite)
+                return;
+            _quickActions.RemoveAt(duplicateIdx);
+        } else {
+            quickAction = QuickActionInfo.CreateFrom(CurrentTool);
+        }
+
+        _quickActions.Insert(0, quickAction);
+        
+        CleanupQuickActions();
+    }
+
     public void Update(Camera camera, Room? currentRoom) {
         CurrentTool.HotkeyHandler.Update();
         CurrentTool.Update(camera, currentRoom);
@@ -214,6 +254,7 @@ public class ToolHandler {
         RenderToolList(_firstGui, out float toolHeight);
         RenderLayerList(_firstGui, toolHeight);
         RenderModeList();
+        RenderRecentList();
 
         if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size) {
             CurrentTool.RenderGui(size);
@@ -301,6 +342,65 @@ public class ToolHandler {
                 }
                 ImGui.EndListBox();
             }
+        }
+
+        ImGui.End();
+    }
+
+    private void RenderRecentList() {
+        ImGuiManager.PushWindowStyle();
+        ImGui.Begin("rysy.recent_list".Translate(), ImGuiManager.WindowFlagsResizable);
+        ImGuiManager.PopWindowStyle();
+
+        var windowSize = ImGui.GetWindowSize();
+        var actionWidth = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.X;
+        var visibleActions = (int)(((windowSize.X) - 0) / actionWidth);
+        _maxQuickActions = visibleActions;
+        
+        var actions = _quickActions;
+        var i = 0;
+        foreach (var action in actions.Take(_maxQuickActions)) {
+            var tool = GetToolByName(action.ToolName);
+            if (tool is null)
+                continue;
+            var layer = EditorLayers.EditorLayerFromName(action.Layer);
+
+            ImGui.PushID($"quick-action-{i++}-{action.MaterialString}");
+            
+            var size = new NumVector2(0, 0);
+            
+            if (action.GetMaterial(this) is { } material && tool.GetMaterialPreview(layer, material) is {} preview) {
+                var cursorStart = ImGui.GetCursorPos();
+                size.X = preview.W;
+                size.Y = preview.H;
+                
+                if (ImGui.Selectable("##selectable"u8, CurrentTool == tool && material.Equals(tool.Material), ImGuiSelectableFlags.AllowOverlap, size)) {
+                    action.Apply(this);
+                }
+
+                if (ImGui.IsItemHovered()) {
+                    if (ImGui.IsItemActive() && Input.Mouse.LeftDoubleClicked()) {
+                        Input.Mouse.ConsumeLeft();
+                        action.IsFavourite = !action.IsFavourite;
+                        CleanupQuickActions();
+                    }
+                    
+                    tool.RenderMaterialTooltip(layer, material, tool.GetMaterialSearchable(layer, material));
+                }
+
+                ImGui.SetCursorPos(cursorStart);
+                ImGuiManager.XnaWidget(preview);
+                ImGui.SameLine();
+                var endPos = ImGui.GetCursorPos();
+                
+                if (action.IsFavourite) {
+                    ImGui.SetCursorPos(cursorStart);
+                    ImGuiManager.FavoriteIcon();
+                    ImGui.SetCursorPos(endPos);
+                }
+            }
+            
+            ImGui.PopID();
         }
 
         ImGui.End();
