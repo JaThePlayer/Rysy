@@ -22,6 +22,8 @@ public class Searchable {
 
     private bool HasNonVanillaMods => Mods is { Count: > 0 } and not ["Celeste"];
 
+    private static IReadOnlyList<string>? _onlyVanillaModList;
+
     public Searchable(string text) : this(text, [], []) {
         
     }
@@ -33,7 +35,7 @@ public class Searchable {
     public Searchable(string text, IReadOnlyList<string> mods, IReadOnlyList<string>? tags, string? definingMod = null) {
         Text = text;
         DefiningMod = definingMod;
-        Mods = mods is [] ? [ ModRegistry.VanillaMod.Name ] : mods;
+        Mods = mods is [] ? _onlyVanillaModList ??= [ ModRegistry.VanillaMod.Name ] : mods;
         Tags = tags ?? [];
             
         if (HasNonVanillaMods) {
