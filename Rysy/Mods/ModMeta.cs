@@ -130,6 +130,8 @@ public sealed class ModMeta {
         if (Name == other.Name && Version <= other.Version) {
             return true;
         }
+        if (ModRegistry.IsVanillaModName(other.Name))
+            return true;
         
         foreach (var meta in EverestYaml) {
             foreach (var dep in meta.Dependencies) {
@@ -145,7 +147,7 @@ public sealed class ModMeta {
     public bool DependencyMet(string otherName) {
         if (Name == otherName)
             return true;
-        if (otherName == "Celeste")
+        if (ModRegistry.IsVanillaModName(otherName))
             return true;
         
         foreach (var meta in EverestYaml) {

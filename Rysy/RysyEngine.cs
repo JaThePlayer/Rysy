@@ -113,7 +113,9 @@ public sealed class RysyEngine : Game {
     }
 
     private async ValueTask ReloadAsync() {
+#pragma warning disable CA2000
         var reloadTimer = new ScopedStopwatch("Loading");
+#pragma warning restore CA2000
         
         var loadTasks = new LoadTaskManager([
             new SimpleLoadTask("Load Settings", LoadSettingsTask),
@@ -122,10 +124,11 @@ public sealed class RysyEngine : Game {
                 new SimpleLoadTask("Load GFX", DefaultLoadTasks.LoadGfx),
                 new SimpleLoadTask("Load Entities", t => DefaultLoadTasks.LoadEntities(t)),
                 new SimpleLoadTask("Load Lang Files", DefaultLoadTasks.LoadLangFiles),
+                new SimpleLoadTask("Load Theme", DefaultLoadTasks.LoadTheme),
             ]),
             new SimpleLoadTask("Load Decal Registry", DefaultLoadTasks.LoadDecalRegistry),
             new SimpleLoadTask("Call OnNextReload", DefaultLoadTasks.CallOnNextReload),
-            new SimpleLoadTask("Initiale SelectionContextWindowRegistry", DefaultLoadTasks.InitializeSelectionContextWindowRegistry),
+            new SimpleLoadTask("Initialize SelectionContextWindowRegistry", DefaultLoadTasks.InitializeSelectionContextWindowRegistry),
             new SimpleLoadTask("Load Map from Persistence", t => {
                 reloadTimer.Dispose();
                 return DefaultLoadTasks.LoadMapFromPersistence(t);

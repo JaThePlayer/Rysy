@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -355,5 +356,19 @@ public static partial class StringExt {
         if (obj is IFormattable f)
             return f.ToString(null, CultureInfo.InvariantCulture);
         return obj?.ToString() ?? "";
+    }
+
+    [Pure]
+    public static string AddPrefixIfNeeded(this string str, string prefix, StringComparison comparisonType = StringComparison.Ordinal) {
+        if (str.StartsWith(prefix, comparisonType))
+            return str;
+        return prefix + str;
+    }
+    
+    [Pure]
+    public static string AddPostfixIfNeeded(this string str, string postfix, StringComparison comparisonType = StringComparison.Ordinal) {
+        if (str.EndsWith(postfix, comparisonType))
+            return str;
+        return str + postfix;
     }
 }

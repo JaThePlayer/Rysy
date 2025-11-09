@@ -17,7 +17,9 @@ public sealed class SettingsWindow : Window {
         public string[]? ProfileListDirectories = null;
         public string? ProfileCelesteDir;
 
-        public string[]? ThemeList = null;
+        public IReadOnlyList<Themes.FoundTheme>? ThemeList = null;
+        public string ThemeListSearch = "";
+        public ComboCache<Themes.FoundTheme> ThemeListCache = new();
 
         public Dictionary<string, string>? EditedHotkeys = null;
     }
@@ -187,11 +189,22 @@ public sealed class SettingsWindow : Window {
             return;
         }
 
-        var theme = Settings.Instance.Theme;
+        var themeName = Settings.Instance.Theme;
 
-        windowData.ThemeList ??= ModRegistry.RysyMod.Filesystem.FindFilesInDirectoryRecursive("themes", "json")
-            .Select(f => Path.GetRelativePath("themes", f).TrimEnd(".json")).ToArray();
+        windowData.ThemeList ??= Themes.FindThemes();
 
+        Themes.FoundTheme theme
+            = windowData.ThemeList.FirstOrDefault(x => x.Filename == themeName) ?? new Themes.FoundTheme(themeName, new Searchable(themeName, null));
+
+        if (ImGuiManager.Combo("Theme", ref theme, windowData.ThemeList, x => x.Searchable,
+                ref windowData.ThemeListSearch, default, windowData.ThemeListCache)) {
+            Settings.Instance.Theme = theme.Filename;
+            Settings.Instance.Save();
+
+            Themes.LoadThemeFromFile(theme.Filename);
+        }
+
+        /*
         if (ImGui.BeginCombo("Theme", theme)) {
             foreach (var themeName in windowData.ThemeList) {
                 if (ImGui.Selectable(themeName)) {
@@ -204,6 +217,7 @@ public sealed class SettingsWindow : Window {
 
             ImGui.EndCombo();
         }
+        */
 
         ImGui.Separator();
         
