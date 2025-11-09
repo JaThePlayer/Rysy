@@ -312,7 +312,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         var selection = CurrentSelections.Find(s => s.Handler == handler);
         if (selection is { }) {
             CurrentSelections.Remove(selection);
-            selection.Handler.OnDeselected();
+            handler.OnDeselected();
 
             OnSelectionsChanged();
         }

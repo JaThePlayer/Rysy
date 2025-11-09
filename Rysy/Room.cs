@@ -104,6 +104,8 @@ public sealed class Room : IPackable, ILuaWrapper {
             ClearRenderCache();
         }
     }
+    
+    public Color Color => CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White);
 
     public Rectangle Bounds => new(X, Y, Width, Height);
 
@@ -375,16 +377,22 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public RectangleSprite GetBorderSprite(float cameraScale) 
-        => ISprite.OutlinedRect(Bounds, Color.Transparent, CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White), outlineWidth: (int) (1f / cameraScale).AtLeast(1));
+        => ISprite.OutlinedRect(Bounds, Color.Transparent, Color, outlineWidth: (int) (1f / cameraScale).AtLeast(1));
 
     public IEnumerable<ISprite> GetInteriorSprites() {
         CacheSpritesIfNeeded();
         
         return CachedSprites!;
     }
+
+    public enum RenderConfig {
+        Selected,
+        Unselected,
+        Preview
+    }
     
-    public void Render(Camera camera, bool selected, Colorgrade colorgrade) {
-        if (!selected && !camera.IsRectVisible(Bounds)) {
+    public void Render(Camera camera, RenderConfig cfg, Colorgrade colorgrade) {
+        if (cfg == RenderConfig.Unselected && !camera.IsRectVisible(Bounds)) {
             if (CachedSprites is {} || FullRenderCanvas is {})
                 ClearRenderCacheIfWanted();
             
@@ -394,18 +402,18 @@ public sealed class Room : IPackable, ILuaWrapper {
         var canvasReady = FullRenderCanvas is { IsDisposed: false };
 
         // canvases are not used in selected rooms, free the canvas
-        if (canvasReady && selected)
+        if (canvasReady && cfg == RenderConfig.Selected)
             ClearFullRenderCache();
 
         // if the room takes up extremely tiny amounts of space due to huge zoom out, there's no point in rendering the interior
-        var interiorVisible = selected || (
+        var interiorVisible = cfg == RenderConfig.Selected || (
             Width * camera.Scale >= 8
             && Height * camera.Scale >= 8
         );
         
         // If we can't cache into a canvas and the room is not selected,
         // there's no point in trying to render the interior
-        if (!CanUseCanvas && !selected)
+        if (!CanUseCanvas && cfg == RenderConfig.Unselected)
             interiorVisible = false;
 
         if (!interiorVisible)
@@ -417,9 +425,9 @@ public sealed class Room : IPackable, ILuaWrapper {
             ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
 
         if (interiorVisible)
-            DrawRoomInterior(camera, selected, canvasReady);
+            DrawRoomInterior(camera, cfg != RenderConfig.Unselected, canvasReady);
         
-        if (!selected)
+        if (cfg == RenderConfig.Unselected)
             ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
         
         GFX.EndBatch();

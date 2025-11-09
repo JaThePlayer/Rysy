@@ -389,11 +389,11 @@ public sealed class EditorScene : Scene {
         
         foreach (var room in Map.Rooms) {
             if (room != CurrentRoom)
-                room.Render(Camera, selected: false, Colorgrade.None);
+                room.Render(Camera, Room.RenderConfig.Unselected, Colorgrade.None);
         }
 
         if (CurrentRoom is { }) {
-            CurrentRoom.Render(Camera, selected: true, Colorgrade.None);
+            CurrentRoom.Render(Camera, Room.RenderConfig.Selected, Colorgrade.None);
 
             if (renderStylegrounds && fgInFront)
                 StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
