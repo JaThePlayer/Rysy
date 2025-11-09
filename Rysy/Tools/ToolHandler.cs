@@ -205,8 +205,10 @@ public class ToolHandler {
     }
 
     private void CleanupQuickActions() {
-        _quickActions.Sort((a, b) => b.IsFavourite.CompareTo(a.IsFavourite));
-        while (_quickActions.Count >= _maxQuickActions) {
+        _quickActions.Sort((a, b) => a.IsFavourite == b.IsFavourite 
+            ? b.CreatedAt.CompareTo(a.CreatedAt) 
+            : b.IsFavourite.CompareTo(a.IsFavourite));
+        while (_quickActions.Count > _maxQuickActions) {
             _quickActions.RemoveAt(_quickActions.Count - 1);
         }
     }
@@ -219,13 +221,16 @@ public class ToolHandler {
         if (duplicateIdx >= 0) {
             quickAction = _quickActions[duplicateIdx];
             // Don't move favourites around.
-            if (quickAction.IsFavourite)
+            if (quickAction.IsFavourite) {
+                quickAction.CreatedAt = DateTimeOffset.Now;
                 return;
+            }
             _quickActions.RemoveAt(duplicateIdx);
         } else {
             quickAction = QuickActionInfo.CreateFrom(CurrentTool);
         }
 
+        quickAction.CreatedAt = DateTimeOffset.Now;
         _quickActions.Insert(0, quickAction);
         
         CleanupQuickActions();
@@ -380,8 +385,10 @@ public class ToolHandler {
 
         var windowSize = ImGui.GetContentRegionAvail();
         var actionWidth = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.X;
-        var visibleActions = (int)(windowSize.X / actionWidth);
-        _maxQuickActions = visibleActions;
+        var actionHeight = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.Y;
+        var visibleActionsPerRow = (int)(ImGui.GetWindowWidth() / actionWidth);
+        var visibleRows = (int)(windowSize.Y / actionHeight);
+        _maxQuickActions = visibleActionsPerRow * visibleRows;
         
         var actions = _quickActions;
         var i = 0;
@@ -391,6 +398,9 @@ public class ToolHandler {
                 continue;
             var layer = EditorLayers.EditorLayerFromName(action.Layer);
 
+            if (i % visibleActionsPerRow == 0 && i > 0) {
+                ImGui.NewLine();   
+            }
             ImGui.PushID($"quick-action-{i++}-{action.MaterialString}");
             
             var size = new NumVector2(0, 0);
