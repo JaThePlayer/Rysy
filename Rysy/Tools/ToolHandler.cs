@@ -250,6 +250,9 @@ public class ToolHandler {
 
     private bool _firstGui = true;
 
+    internal string MaterialListWindowName => "Material";
+    internal string RecentWindowName => "rysy.recent_list".Translate();
+    
     public void RenderGui() {
         RenderToolList(_firstGui, out float toolHeight);
         RenderLayerList(_firstGui, toolHeight);
@@ -349,7 +352,7 @@ public class ToolHandler {
 
     private void RenderRecentList() {
         ImGuiManager.PushWindowStyle();
-        ImGui.Begin("rysy.recent_list".Translate(), ImGuiManager.WindowFlagsResizable);
+        ImGui.Begin(RecentWindowName, ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
         var windowSize = ImGui.GetWindowSize();
@@ -396,7 +399,11 @@ public class ToolHandler {
                 if (action.IsFavourite) {
                     ImGui.SetCursorPos(cursorStart);
                     ImGuiManager.FavoriteIcon();
-                    ImGui.SetCursorPos(endPos);
+                    ImGui.SameLine();
+                    // Avoid imgui assertions for using SetCursorPos to move forward
+                    ImGui.SetCursorPos(cursorStart);
+                    ImGui.Dummy(size);
+                    ImGui.SameLine();
                 }
             }
             
