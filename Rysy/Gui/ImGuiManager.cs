@@ -323,12 +323,12 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, Searchable> toString, Tooltip tooltip = default) where T : notnull {
+    public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, Tooltip tooltip = default) where T : notnull {
         string? search = null;
         return Combo(name, ref value, values, toString, ref search, tooltip);
     }
 
-    public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, Searchable> toString, 
+    public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, 
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
         ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null) 
         where T : notnull {

@@ -20,6 +20,8 @@ public static class ModRegistry {
     public static IReadOnlyDictionary<string, ModMeta> Mods => _Mods.AsReadOnly();
 
     public static LayeredFilesystem Filesystem { get; private set; } = new();
+    
+    public static bool IsLoaded { get; private set; }
 
     /// <summary>
     /// Tries to get a <see cref="ModMeta"/> for a mod using its everest.yaml name.
@@ -131,6 +133,8 @@ public static class ModRegistry {
         foreach (var meta in all) {
             RegisterMod(meta);
         }
+
+        IsLoaded = true;
     }
 
     private static void RegisterMod(ModMeta meta)
@@ -187,6 +191,8 @@ public static class ModRegistry {
     };
 
     private static void UnloadAllMods() {
+        IsLoaded = false;
+
         foreach (var (_, mod) in _Mods) {
             mod.Module?.Unload();
             mod.PluginAssembly = null;
@@ -355,5 +361,9 @@ public static class ModRegistry {
         }
 
         return null;
+    }
+
+    public static bool IsVanillaModName(string s) {
+        return s is "Celeste" or "Rysy" or "Everest";
     }
 }

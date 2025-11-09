@@ -1,4 +1,5 @@
 ﻿using Rysy.Graphics;
+using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Scenes;
@@ -35,6 +36,14 @@ public static class DefaultLoadTasks {
         await LangRegistry.LoadAllAsync(task);
         
         return LoadTaskResult.Success();
+    }
+    
+    public static Task<LoadTaskResult> LoadTheme(SimpleLoadTask task) {
+        if (RysyState.ImGuiAvailable && Settings.Instance is { } settings) {
+            Themes.LoadThemeFromFile(settings.Theme);
+        }
+        
+        return Task.FromResult(LoadTaskResult.Success());
     }
     
     public static Task<LoadTaskResult> CallOnNextReload(SimpleLoadTask task) {

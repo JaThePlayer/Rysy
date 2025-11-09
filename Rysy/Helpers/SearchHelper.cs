@@ -20,7 +20,7 @@ public class Searchable {
 
     public IReadOnlyList<string> AlternativeNames { get; init; } = [];
 
-    private bool HasNonVanillaMods => Mods is { Count: > 0 } and not ["Celeste"];
+    private bool HasNonVanillaMods => Mods is { Count: > 0 } && Mods.Any(x => !ModRegistry.IsVanillaModName(x));
 
     private static IReadOnlyList<string>? _onlyVanillaModList;
 
@@ -39,7 +39,7 @@ public class Searchable {
         Tags = tags ?? [];
             
         if (HasNonVanillaMods) {
-            TextWithMods = $"{Text} [{string.Join(',', Mods.Select(ModMeta.ModNameToDisplayName))}]";
+            TextWithMods = $"{Text} [{string.Join(',', Mods.Where(x => !ModRegistry.IsVanillaModName(x)).Select(ModMeta.ModNameToDisplayName))}]";
         } else {
             TextWithMods = Text;
         }
