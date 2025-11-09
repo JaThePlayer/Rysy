@@ -1,11 +1,11 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
+using Rysy.Entities;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
 using Rysy.Scenes;
-using Rysy.Selections;
+using Rysy.Stylegrounds;
 using Rysy.Tools;
 
 namespace Rysy.Gui.Windows;
@@ -42,65 +42,110 @@ public static class RoomList {
 
         var size = ImGui.GetContentRegionAvail();
 
-        if (ImGui.BeginListBox("##RoomListBox", new(size.X, size.Y - ImGui.GetTextLineHeightWithSpacing() * 3))) {
-            var rooms = map.Rooms.SearchFilter(r => r.Searchable, Search);
-            foreach (var room in rooms) {
-                var name = room.Name;
-                if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
-                    if (input.Keyboard.Shift()) {
-                        if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                            tool.Layer = EditorLayers.Room;
+        ImGui.BeginChild("##RoomListBox", new(size.X, size.Y - ImGui.GetTextLineHeightWithSpacing() * 3), ImGuiChildFlags.None);
+        
+        var rooms = map.Rooms.SearchFilter(r => r.Searchable, Search);
+        foreach (var room in rooms) {
+            var name = room.Name;
 
-                            if (input.Mouse.LeftDoubleClicked()) {
-                                // select all rooms visible in the list
-                                foreach (var r2 in rooms) {
-                                    tool.AddSelection(new(r2.GetSelectionHandler()));
-                                }
-                            } else {
-                                // add a selection for the clicked room
-                                tool.AddSelection(new(room.GetSelectionHandler()));
-                            }
-                        }
-                    } else if (input.Keyboard.Ctrl()) {
-                        if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
-                            tool.Layer = EditorLayers.Room;
+            // Draw the room color marker:
+            var drawList = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            drawList.AddRectFilled(p, new(p.X + ImGui.GetStyle().FramePadding.X, p.Y + ImGui.GetTextLineHeightWithSpacing()), room.Color.PackedValue, ImGui.GetStyle().FrameRounding, ImDrawFlags.RoundCornersAll);
+            ImGui.Dummy(default);
+            ImGui.SameLine(ImGui.GetStyle().FramePadding.X * 2f);
+            // Center the selectable vertically
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetStyle().ItemSpacing.Y / 2f);
+            if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
+                if (input.Keyboard.Shift()) {
+                    if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
+                        tool.Layer = EditorLayers.Room;
 
-                            if (input.Mouse.LeftDoubleClicked()) {
-                                // deselect all rooms visible in the list
-                                foreach (var r2 in rooms) {
-                                    tool.Deselect(r2.GetSelectionHandler());
-                                }
-                            } else {
-                                // remove the selection for the clicked room
-                                tool.Deselect(room.GetSelectionHandler());
+                        if (input.Mouse.LeftDoubleClicked()) {
+                            // select all rooms visible in the list
+                            foreach (var r2 in rooms) {
+                                tool.AddSelection(new(r2.GetSelectionHandler()));
                             }
+                        } else {
+                            // add a selection for the clicked room
+                            tool.AddSelection(new(room.GetSelectionHandler()));
                         }
+                    }
+                } else if (input.Keyboard.Ctrl()) {
+                    if (editor.ToolHandler.SetTool<SelectionTool>() is { } tool) {
+                        tool.Layer = EditorLayers.Room;
+
+                        if (input.Mouse.LeftDoubleClicked()) {
+                            // deselect all rooms visible in the list
+                            foreach (var r2 in rooms) {
+                                tool.Deselect(r2.GetSelectionHandler());
+                            }
+                        } else {
+                            // remove the selection for the clicked room
+                            tool.Deselect(room.GetSelectionHandler());
+                        }
+                    }
+                } else {
+                    editor.CurrentRoom = room;
+                    editor.CenterCameraOnRoom(room);
+                }
+            }
+            
+            if (ImGui.IsItemHovered() && ImGui.BeginTooltip()) {
+                const int w = 320;
+                const int h = 180;
+                
+                ImGuiManager.XnaWidget("room-preview-tooltip", w, h, () => {
+                    var cam = new Camera();
+                    // find first spawn point and center the camera on it (while taking into account room boundaries)
+                    Vector2 spawn;
+                    if (room.Entities[typeof(Player)].FirstOrDefault() is { } firstSpawn) {
+                        spawn = firstSpawn.Pos.Add(room.X, room.Y).Add(-w / 2f, -h / 2f);
+                        spawn = new(
+                            spawn.X.Clamp(room.Bounds.Left, room.Bounds.Right - w), 
+                            spawn.Y.Clamp(room.Bounds.Top, room.Bounds.Bottom - h));
                     } else {
-                        editor.CurrentRoom = room;
-                        editor.CenterCameraOnRoom(room);
-                    }
-                }
-
-                if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
-                    if (ImGui.MenuItem("Edit")) {
-                        editor.AddWindow(new RoomEditWindow(room, newRoom: false));
-                    }
-                    if (ImGui.MenuItem("Remove")) {
-                        var toRemove = room;
-                        RysyState.OnEndOfThisFrame += () =>
-                            editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(toRemove));
+                        spawn = room.Pos;
                     }
 
-                    if (ImGui.MenuItem("To Clipboard as JSON")) {
-                        ImGui.SetClipboardText(room.Pack().ToJson());
-                    }
-                    ImGui.EndPopup();
-                }
-
+                    cam.Move(spawn);
+                    var prev = GFX.EndBatch();
+                    
+                    var renderStylegrounds = Settings.Instance?.StylegroundPreview ?? false;
+                    var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
+                    
+                    if (renderStylegrounds)
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.BG, filter: StylegroundRenderer.NotMasked);
+                    
+                    room.Render(cam, Room.RenderConfig.Preview, Colorgrade.None);
+                    
+                    if (renderStylegrounds && fgInFront)
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
+                    
+                    GFX.BeginBatch(prev);
+                });
+                ImGui.EndTooltip();
             }
 
-            ImGui.EndListBox();
+            if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
+                if (ImGui.MenuItem("Edit")) {
+                    editor.AddWindow(new RoomEditWindow(room, newRoom: false));
+                }
+                if (ImGui.MenuItem("Remove")) {
+                    var toRemove = room;
+                    RysyState.OnEndOfThisFrame += () =>
+                        editor.HistoryHandler.ApplyNewAction(new RoomDeleteAction(toRemove));
+                }
+
+                if (ImGui.MenuItem("To Clipboard as JSON")) {
+                    ImGui.SetClipboardText(room.Pack().ToJson());
+                }
+                ImGui.EndPopup();
+            }
+
         }
+
+        ImGui.EndChild();
         
         if (ImGui.Button("New")) {
             editor.AddNewRoom();
