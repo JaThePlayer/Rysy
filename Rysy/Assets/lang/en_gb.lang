@@ -40,7 +40,7 @@ rysy.recent_list=Recent
 # Notifications
 rysy.notifications.window.name=Notifications
 rysy.notifications.window.nothingToShow=No notifications to show...
-rysy.notifications.window.minLevel=Minimum Shown Level
+rysy.notifications.window.minLevel=Level
 rysy.notifications.window.minLevel.tooltip=Minimum Log Level shown in the below list of notifications.
 rysy.notifications.mapAnalyzerErrors=Map Analyzers found errors!
 rysy.notifications.mapAnalyzerErrors.open=Open Analyzer Window

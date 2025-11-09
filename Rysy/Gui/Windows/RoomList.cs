@@ -151,7 +151,7 @@ public static class RoomList {
             editor.AddNewRoom();
         }
 
-        ImGuiManager.SearchInput(ref Search, "RoomListSearch");
+        ImGuiManager.RenderSearchBarInDropdown(ref Search, "RoomListSearch");
         
         ImGui.End();
     }
