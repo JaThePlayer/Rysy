@@ -43,7 +43,7 @@ public static class RoomList {
         var size = ImGui.GetWindowSize();
 
         if (ImGui.BeginListBox("##RoomListBox", new(size.X - 10, size.Y - ImGui.GetTextLineHeightWithSpacing() * 5))) {
-            var rooms = map.Rooms.SearchFilter(r => r.Name, Search);
+            var rooms = map.Rooms.SearchFilter(r => r.Searchable, Search);
             foreach (var room in rooms) {
                 var name = room.Name;
                 if (ImGui.Selectable(name, editor.CurrentRoom == room || room.Selected)) {
