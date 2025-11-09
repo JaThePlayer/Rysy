@@ -378,12 +378,12 @@ public static class ImGuiManager {
         return ret;
     }
 
-    private static bool RenderSearchBarInDropdown(ref string search) {
+    public static bool RenderSearchBarInDropdown(ref string search, string persistenceKey = "") {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var searchText = "rysy.search.withQuestionMark".Translate();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(searchText).X - xPadding * 2);
         search ??= "";
-        var ret = SearchInput(ref search);
+        var ret = SearchInput(ref search, persistenceKey);
         ImGui.Separator();
         return ret;
     }
