@@ -74,7 +74,7 @@ public static class Menubar {
         if (!ImGui.BeginMainMenuBar())
             return;
         ImGuiManager.PopWindowStyle();
-        ImGuiManager.MenubarHeight = ImGui.GetWindowHeight();
+        ImGuiManager.MenubarHeight = ImGui.GetContentRegionAvail().Y;
 
         foreach (var tab in Tabs) {
             if (ImGui.BeginMenu(tab.Name)) {

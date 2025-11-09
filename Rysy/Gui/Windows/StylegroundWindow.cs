@@ -335,7 +335,7 @@ public class StylegroundWindow : Window {
             HotkeyHandler.Update();
         }
 
-        var size = ImGui.GetWindowSize();
+        var size = ImGui.GetContentRegionAvail();
 
         ImGui.Columns(2);
 
@@ -368,7 +368,7 @@ public class StylegroundWindow : Window {
 
         ImGui.NextColumn();
 
-        var previewW = Math.Min((int) ImGui.GetColumnWidth(), 320); 
+        var previewW = Math.Min((int) ImGui.GetContentRegionAvail().X, 320); 
         
         ImGuiManager.XnaWidget("styleground_preview", previewW, 180, () => {
             if (Selections is [var selected]) {

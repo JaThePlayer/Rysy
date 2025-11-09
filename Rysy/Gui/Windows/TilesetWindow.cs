@@ -247,7 +247,7 @@ public sealed class TilesetWindow : Window {
             _hotkeyHandler.Update();
         }
 
-        var size = ImGui.GetWindowSize();
+        var size = ImGui.GetContentRegionAvail();
 
         ImGui.Columns(2);
 
@@ -277,7 +277,7 @@ public sealed class TilesetWindow : Window {
 
         ImGui.NextColumn();
 
-        var previewW = (int) ImGui.GetColumnWidth();
+        var previewW = (int) ImGui.GetContentRegionAvail().X;
         var cam = new Camera(RysyState.GraphicsDevice.Viewport);
         cam.Scale = _tab is Tabs.AnimatedTiles ? 4f : 2f;
         cam.Move(-new Vector2(previewW / 2f / cam.Scale, 300 / 2f / cam.Scale));
@@ -320,7 +320,7 @@ public sealed class TilesetWindow : Window {
                         var editedTileId = formPropId;
                         
                         RysyState.Scene.AddWindow(new ScriptedWindow("rysy.tilesetWindow.editXml".Translate(), (w) => {
-                            var size = ImGui.GetWindowSize();
+                            var size = ImGui.GetContentRegionAvail();
                             size.Y -= ImGui.GetTextLineHeightWithSpacing();
                             ImGui.InputTextMultiline("##", ref xml, 8192, size);
                         }, new(700, 700), (w) => {

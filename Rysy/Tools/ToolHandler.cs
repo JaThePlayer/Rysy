@@ -287,6 +287,14 @@ public class ToolHandler {
         _firstGui = false;
     }
 
+    private NumVector2 GetToolListBoxSize(int elementCount) {
+        var windowSize = ImGui.GetContentRegionAvail();
+
+        return windowSize with {
+            Y = (ImGui.GetTextLineHeightWithSpacing() * elementCount + ImGui.GetStyle().FramePadding.Y).AtMost(windowSize.Y)
+        };
+    }
+
     private void RenderModeList() {
         var tool = CurrentTool;
         var currentMode = tool.Mode;
@@ -294,9 +302,8 @@ public class ToolHandler {
         ImGuiManager.PushWindowStyle();
         ImGui.Begin("Mode", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
-        
-        var windowSize = ImGui.GetWindowSize();
-        if (ImGui.BeginListBox("##ToolModeBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * tool.ValidModes.Count + 2))) {
+
+        if (ImGui.BeginListBox("##ToolModeBox", GetToolListBoxSize(tool.ValidModes.Count))) {
             foreach (var item in tool.ValidModes) {
                 if (ImGui.Selectable(item.LocalizedName, currentMode == item)) {
                     tool.Mode = item;
@@ -325,9 +332,7 @@ public class ToolHandler {
         ImGui.Begin("Layer", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
-        var windowSize = ImGui.GetWindowSize();
-
-        if (ImGui.BeginListBox("##ToolLayerBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * tool.ValidLayers.Count + 5))) {
+        if (ImGui.BeginListBox("##ToolLayerBox", GetToolListBoxSize(tool.ValidLayers.Count))) {
             foreach (var item in tool.ValidLayers) {
                 if (ImGui.Selectable(item.LocalizedName, currentLayer.Name == item.Name)) {
                     tool.Layer = item;
@@ -354,10 +359,8 @@ public class ToolHandler {
         ImGui.Begin("Tool", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
-        var windowSize = ImGui.GetWindowSize();
-
         lock (_toolLock) {
-            if (ImGui.BeginListBox("##ToolToolsBox", new(windowSize.X - 10, ImGui.GetTextLineHeightWithSpacing() * Tools.Count + 5))) {
+            if (ImGui.BeginListBox("##ToolToolsBox", GetToolListBoxSize(Tools.Count))) {
                 foreach (var item in Tools) {
                     if (ImGui.Selectable(item.Name.TranslateOrHumanize("rysy.tools"), CurrentTool == item)) {
                         CurrentTool = item;
@@ -375,9 +378,9 @@ public class ToolHandler {
         ImGui.Begin(RecentWindowName, ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
-        var windowSize = ImGui.GetWindowSize();
+        var windowSize = ImGui.GetContentRegionAvail();
         var actionWidth = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.X;
-        var visibleActions = (int)(((windowSize.X) - 0) / actionWidth);
+        var visibleActions = (int)(windowSize.X / actionWidth);
         _maxQuickActions = visibleActions;
         
         var actions = _quickActions;
@@ -414,7 +417,6 @@ public class ToolHandler {
                 ImGui.SetCursorPos(cursorStart);
                 ImGuiManager.XnaWidget(preview);
                 ImGui.SameLine();
-                var endPos = ImGui.GetCursorPos();
                 
                 if (action.IsFavourite) {
                     ImGui.SetCursorPos(cursorStart);

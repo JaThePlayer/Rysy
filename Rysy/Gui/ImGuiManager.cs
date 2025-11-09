@@ -381,7 +381,7 @@ public static class ImGuiManager {
     private static bool RenderSearchBarInDropdown(ref string search) {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var searchText = "rysy.search.withQuestionMark".Translate();
-        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - ImGui.CalcTextSize(searchText).X - xPadding * 8);
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(searchText).X - xPadding * 2);
         search ??= "";
         var ret = SearchInput(ref search);
         ImGui.Separator();
@@ -704,7 +704,7 @@ public static class ImGuiManager {
         var storage = ImGui.GetStateStorage();
         var isOpen = storage.GetBool(id, false);
 
-        var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetColumnWidth());
+        var optimalWidth = float.Min(float.Max(textWidth + xPadding * 12, targetWidth), ImGui.GetContentRegionAvail().X);
 
         ImGui.BeginChild(Interpolator.TempU8($"##{fieldName}cc"), new NumVector2(
             x: (isOpen ? optimalWidth : targetWidth) + fieldNameWidth + (fieldNameWidth > 0 ? xPadding * 2 : 0f), 
@@ -727,8 +727,8 @@ public static class ImGuiManager {
     }
 
     public static void WithBottomBar(Action renderMain, Action renderBottomBar, uint? id = null) {
-        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 4f;
-        var posy = ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - height;
+        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 2f;
+        var posy = ImGui.GetContentRegionAvail().Y - height;
 
         id ??= (uint) renderMain.Method.GetHashCode();
 
@@ -1046,7 +1046,7 @@ public static class ImGuiManager {
         
         var pFont = ImGui.GetFont();
         float scale = ImGui.GetStyle().FontSizeBase;
-        float widthLeft = ImGui.GetColumnWidth();
+        float widthLeft = ImGui.GetContentRegionAvail().X;
         
         fixed (byte* utf8Ptr = &utf8[0]) {
             var textEnd = &utf8Ptr[utf8.Length];

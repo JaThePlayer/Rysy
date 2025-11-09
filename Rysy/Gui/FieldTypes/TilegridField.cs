@@ -224,7 +224,6 @@ internal sealed class EditTileDataWindow : Window {
     protected override void Render() {
         base.Render();
 
-        var size = ImGui.GetWindowSize();
         var pos = ImGui.GetWindowPos() + ImGui.GetCursorPos();
         Input.Mouse.Offset = new((int) -pos.X, (int) -pos.Y);
         Input.Update(Time.Delta);
@@ -244,8 +243,8 @@ internal sealed class EditTileDataWindow : Window {
             GlobalHotkeyLock?.SetActive(false);
         }
 
-        var imgHeight = ImGui.GetWindowSize().Y.AtLeast(1);
-        var imgWidth = ((int) ImGui.GetWindowSize().X - 200).AtLeast(1);
+        var imgHeight = ImGui.GetContentRegionAvail().Y.AtLeast(1);
+        var imgWidth = ((int) ImGui.GetContentRegionAvail().X - 200).AtLeast(1);
 
         // prevent scrolling the internal part of the window
         ImGui.BeginChild("##", new(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
@@ -260,7 +259,7 @@ internal sealed class EditTileDataWindow : Window {
             Tools.CurrentTool.Render(Camera, FakeRoom);
         }, Camera);
         ImGui.SameLine();
-        Tools.CurrentTool.RenderGui(new(ImGui.GetWindowSize().X, imgHeight + ImGui.GetFrameHeightWithSpacing()), id: "##fancyTileToolList");
+        Tools.CurrentTool.RenderGui(new(ImGui.GetContentRegionAvail().X, imgHeight + ImGui.GetFrameHeightWithSpacing()), id: "##fancyTileToolList");
         ImGui.EndChild();
 
     }

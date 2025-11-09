@@ -40,9 +40,9 @@ public static class RoomList {
         ImGui.Begin("Rooms", ImGuiManager.WindowFlagsResizable);
         ImGuiManager.PopWindowStyle();
 
-        var size = ImGui.GetWindowSize();
+        var size = ImGui.GetContentRegionAvail();
 
-        if (ImGui.BeginListBox("##RoomListBox", new(size.X - 10, size.Y - ImGui.GetTextLineHeightWithSpacing() * 5))) {
+        if (ImGui.BeginListBox("##RoomListBox", new(size.X, size.Y - ImGui.GetTextLineHeightWithSpacing() * 3))) {
             var rooms = map.Rooms.SearchFilter(r => r.Searchable, Search);
             foreach (var room in rooms) {
                 var name = room.Name;
@@ -106,9 +106,7 @@ public static class RoomList {
             editor.AddNewRoom();
         }
 
-        if (ImGui.InputText("##RoomListSearch", ref Search, 512)) {
-
-        }
+        ImGuiManager.SearchInput(ref Search, "RoomListSearch");
         
         ImGui.End();
     }
