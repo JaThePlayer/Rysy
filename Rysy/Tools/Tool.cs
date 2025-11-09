@@ -405,7 +405,7 @@ public abstract class Tool {
                 // draw dropdown for alternate placements
                 if (group.Count > 1) {
                     var style = ImGui.GetStyle();
-                    var columnWidth = columns > 1 ? ImGui.GetColumnWidth() : ImGui.GetWindowWidth();
+                    var columnWidth = ImGui.GetContentRegionAvail().X;
                     var lasty = style.FramePadding.Y;
 
                     var elHeight = MaterialListElementHeight();
@@ -469,10 +469,11 @@ public abstract class Tool {
         ImGui.Begin("Material", ImGuiManager.WindowFlagsResizable | ImGuiWindowFlags.NoScrollWithMouse);
         ImGuiManager.PopWindowStyle();
 
-        return ImGui.GetWindowSize().ToXna();
+        return ImGui.GetContentRegionAvail().ToXna();
     }
 
-    protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) => new(windowSize.X - 10, windowSize.Y - ImGui.GetTextLineHeightWithSpacing() - ImGui.GetFrameHeightWithSpacing() * 1.5f);
+    protected NumVector2 GetMaterialListBoxSize(Vector2 windowSize) 
+        => new(windowSize.X, windowSize.Y -  ImGui.GetFrameHeightWithSpacing());
 
     protected void RenderSearchBar() {
         var search = Search;

@@ -182,7 +182,7 @@ public sealed class DecalRegistryWindow : Window {
             return;
         }
 
-        var size = ImGui.GetWindowSize();
+        var size = ImGui.GetContentRegionAvail();
 
         ImGui.Columns(2);
 
@@ -193,7 +193,7 @@ public sealed class DecalRegistryWindow : Window {
 
         ImGui.NextColumn();
 
-        var previewW = (int) ImGui.GetColumnWidth();
+        var previewW = (int) ImGui.GetContentRegionAvail().X;
         var cam = new Camera(RysyState.GraphicsDevice.Viewport);
         cam.Scale = 6f;
         cam.Move(-new Vector2(previewW / 2f / cam.Scale, 300 / 2f / cam.Scale));
@@ -349,7 +349,7 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     public void RenderList(ModMeta mod) {
-        ImGui.BeginChild("list", new NumVector2(ImGui.GetColumnWidth() - ImGui.GetStyle().FramePadding.X * 2, ImGui.GetWindowHeight() - 100f));
+        ImGui.BeginChild("list", ImGui.GetContentRegionAvail());
 
         var entries = Entries;
 

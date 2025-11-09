@@ -138,7 +138,7 @@ public class FormWindow : Window {
     private bool AllFieldsValid;
 
     protected override void Render() {
-        var hasColumns = FieldList.Count > 1 && ImGui.GetWindowSize().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
+        var hasColumns = FieldList.Count > 1 && ImGui.GetContentRegionAvail().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
 
         if (hasColumns)
             ImGui.Columns(2);

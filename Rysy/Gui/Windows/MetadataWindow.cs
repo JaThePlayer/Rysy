@@ -151,8 +151,9 @@ internal sealed record TitleCardPreviewField : Field {
         
         ImGui.SeparatorText("rysy.metadata.titleCardPreview".Translate());
 
-        var height = (int)(ImGui.GetWindowHeight() - ImGui.GetCursorPosY());
-        var width = (int) ImGui.GetWindowWidth();
+        var avail = ImGui.GetContentRegionAvail();
+        var width = (int)avail.X;
+        var height = (int)avail.Y;
         
         ImGuiManager.XnaWidget("tile_card_preview", width, height, () => {
             var renderCtx = SpriteRenderCtx.Default();

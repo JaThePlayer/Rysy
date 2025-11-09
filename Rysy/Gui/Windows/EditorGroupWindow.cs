@@ -44,7 +44,8 @@ public sealed class EditorGroupWindow : Window {
     protected override void Render() {
         base.Render();
 
-        if (!ImGui.BeginListBox("##", new(ImGui.GetWindowWidth() - 10, ImGui.GetWindowHeight() - 10)))
+        var size = ImGui.GetContentRegionAvail();
+        if (!ImGui.BeginListBox("##", size))
             return;
 
         if (EditorState.Map is not { } map) {
