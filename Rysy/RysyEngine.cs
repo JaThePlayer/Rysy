@@ -120,12 +120,12 @@ public sealed class RysyEngine : Game {
         var loadTasks = new LoadTaskManager([
             new SimpleLoadTask("Load Settings", LoadSettingsTask),
             new SimpleLoadTask("Load Mods", t => DefaultLoadTasks.LoadMods(t)),
+            new SimpleLoadTask("Load Theme", DefaultLoadTasks.LoadTheme),
             new ParallelLoadTask("Load Assets", [
                 new SimpleLoadTask("Load GFX", DefaultLoadTasks.LoadGfx),
                 new SimpleLoadTask("Load Entities", t => DefaultLoadTasks.LoadEntities(t)),
                 new SimpleLoadTask("Load Lang Files", DefaultLoadTasks.LoadLangFiles),
             ]),
-            new SimpleLoadTask("Load Theme", DefaultLoadTasks.LoadTheme),
             new SimpleLoadTask("Load Decal Registry", DefaultLoadTasks.LoadDecalRegistry),
             new SimpleLoadTask("Call OnNextReload", DefaultLoadTasks.CallOnNextReload),
             new SimpleLoadTask("Initialize SelectionContextWindowRegistry", DefaultLoadTasks.InitializeSelectionContextWindowRegistry),

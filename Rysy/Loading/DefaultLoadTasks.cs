@@ -39,10 +39,11 @@ public static class DefaultLoadTasks {
     }
     
     public static Task<LoadTaskResult> LoadTheme(SimpleLoadTask task) {
-        if (RysyState.ImGuiAvailable && Settings.Instance is { } settings) {
-            Themes.LoadThemeFromFile(settings.Theme);
-            Themes.SetFontSize(settings.FontSize);
-        }
+        RysyState.OnEndOfThisFrame += () => {
+            Themes.LoadThemeFromFile(Settings.Instance.Theme);
+            Themes.SetFontSize(Settings.Instance.FontSize);
+        };
+
         
         return Task.FromResult(LoadTaskResult.Success());
     }
