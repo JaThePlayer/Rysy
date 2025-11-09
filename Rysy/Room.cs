@@ -139,6 +139,17 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
+
+    private Searchable? _searchable;
+    public Searchable Searchable {
+        get {
+            if (_searchable is { Text: var text } && text != Name)
+                _searchable = null;
+
+            return _searchable ??= new Searchable(Name);
+        }
+    }
+
     /// <summary>
     /// Called with (oldName, newName) whenever this room's <see cref="Name"/> gets changed.
     /// </summary>
