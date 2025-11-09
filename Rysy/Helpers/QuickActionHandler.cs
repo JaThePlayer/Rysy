@@ -80,6 +80,8 @@ public class QuickActionInfo {
     public bool IsFavourite { get; set; }
     
     private object? SourceMaterial { get; set; }
+    
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
 
     public object? GetMaterial(ToolHandler handler) {
         if (SourceMaterial is { } src) {
