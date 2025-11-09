@@ -117,8 +117,6 @@ public static class Themes {
         ImGui.GetStyle().FontSizeBase = fontSize;
 
         ImFontPtr AddFont(string name, float size, ImVector<uint>* ranges) {
-            var fs = RysyPlatform.Current.GetRysyFilesystem();
-
             ImFontConfigPtr cfg = ImGui.ImFontConfig();
             //cfg.RasterizerDensity = 1f;
             //cfg.FontDataOwnedByAtlas = true;
@@ -128,10 +126,6 @@ public static class Themes {
             cfg.RasterizerMultiply = 1.0f;
             cfg.EllipsisChar = unchecked((ushort) -1);
             //cfg.GlyphRanges = ranges->Data;
-
-            if (File.Exists(name)) {
-                return io.Fonts.AddFontFromFileTTF(name, size, cfg);
-            }
 
             ImFontPtr fontPtr = AddFontFromVirtPath(name, size, cfg);
 
@@ -147,7 +141,7 @@ public static class Themes {
                 const int ICON_MAX_FA = 0xf8ff;
                 ReadOnlySpan<ushort> icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
                 var mem = ImGui.MemAlloc((uint) icon_ranges.Length * sizeof(ushort));
-                icon_ranges.CopyTo(new Span<ushort>((void*) mem, icon_ranges.Length));
+                icon_ranges.CopyTo(new Span<ushort>(mem, icon_ranges.Length));
                 newCfg.GlyphRanges = (uint*) mem;
                 var newFontWithIcons = AddFontFromVirtPath("fa-solid-900.ttf", 13f, newCfg);
                 if (newFontWithIcons.Handle != null)
@@ -162,15 +156,15 @@ public static class Themes {
                 var io = ImGui.GetIO();
 
                 ImFontPtr fontPtr = default;
-                if (RysyPlatform.Current.GetRysyFilesystem().TryReadAllBytes(name) is { } bytes) {
+                if (ModRegistry.Filesystem.TryReadAllBytes(name.AddPrefixIfNeeded("Rysy/fonts/")) is { } bytes) {
                     // Imgui will take ownership of this memory, we need to native-alloc it.
                     var mem = ImGui.MemAlloc((uint) bytes.Length);
-                    bytes.CopyTo(new Span<byte>((void*) mem, bytes.Length));
+                    bytes.CopyTo(new Span<byte>(mem, bytes.Length));
                     fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes.Length, size, cfg);
                 } else if (RysyPlatform.Current.GetSystemFontsFilesystem()?.TryReadAllBytes(name) is { } bytes2) {
                     // Imgui will take ownership of this memory, we need to native-alloc it.
                     var mem = ImGui.MemAlloc((uint) bytes2.Length);
-                    bytes2.CopyTo(new Span<byte>((void*) mem, bytes2.Length));
+                    bytes2.CopyTo(new Span<byte>(mem, bytes2.Length));
 
                     fontPtr = io.Fonts.AddFontFromMemoryTTF(mem, bytes2.Length, size, cfg);
                 }

@@ -7,7 +7,7 @@ namespace Rysy.Platforms;
 
 [SupportedOSPlatform("windows")]
 public partial class Windows : RysyPlatform {
-    private FolderModFilesystem? _systemFontsFs;
+    private ReadonlyModFilesystem? _systemFontsFs;
     private IReadOnlyDictionary<string, string>? _fontFilenameToDisplayName;
     
     
@@ -19,7 +19,7 @@ public partial class Windows : RysyPlatform {
     public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
 
     public override IModFilesystem GetSystemFontsFilesystem()
-        => _systemFontsFs ??= new FolderModFilesystem("C:/Windows/Fonts");
+        => _systemFontsFs ??= new ReadonlyModFilesystem(new FolderModFilesystem("C:/Windows/Fonts"));
 
     public override IReadOnlyDictionary<string, string> GetFontFilenameToDisplayName() {
         if (_fontFilenameToDisplayName is { })

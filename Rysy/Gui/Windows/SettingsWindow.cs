@@ -204,39 +204,24 @@ public sealed class SettingsWindow : Window {
             Themes.LoadThemeFromFile(theme.Filename);
         }
 
-        /*
-        if (ImGui.BeginCombo("Theme", theme)) {
-            foreach (var themeName in windowData.ThemeList) {
-                if (ImGui.Selectable(themeName)) {
-                    Settings.Instance.Theme = themeName;
-                    Settings.Instance.Save();
-
-                    Themes.LoadThemeFromFile(themeName);
-                }
-            }
-
-            ImGui.EndCombo();
-        }
-        */
-
         ImGui.Separator();
         
         var font = Settings.Instance.Font;
         if (_fontDropdown is null) {
-            var fs = new LayeredFilesystem();
-            fs.AddMod(ModRegistry.RysyMod);
+            const string fontDir = "Rysy/fonts/";
+            var fs = new LayeredFilesystem(ModRegistry.Filesystem);
             if (RysyPlatform.Current.GetSystemFontsFilesystem() is {} systemFonts)
-                fs.AddFilesystem(systemFonts, "System");
+                fs.AddFilesystem(new PrefixedModFilesystem(fontDir, systemFonts), "System");
             
             var fontPathToName = RysyPlatform.Current.GetFontFilenameToDisplayName();
-            _fontDropdown = Fields.Path(font, "", "ttf", fs, filter: x => 
-                (ModRegistry.RysyMod.Filesystem.FileExists(x.Path) || RysyPlatform.Current.IsSystemFontValid(x.Path))
-                && x.Path != "fa-solid-900.ttf");
-            _fontDropdown.DisplayNameGetter = (path, s) => path.Path.TranslateOrNull("rysy.fonts.name") ?? fontPathToName.GetValueOrDefault(path.Path)?.TrimPostfix("(TrueType)").Trim();
+            _fontDropdown = Fields.Path(font, "Rysy/fonts/", "ttf", fs, filter: x => 
+                fs.FileExists(x.Path) && x.Captured != "fa-solid-900");
+            _fontDropdown.DisplayNameGetter = (path, s) 
+                => path.Path.TranslateOrNull("rysy.fonts.name") ?? fontPathToName.GetValueOrDefault(path.Path)?.TrimPostfix("(TrueType)").Trim();
         }
         
         if (_fontDropdown.RenderGui("Font", font) is { } newFont) {
-            Settings.Instance.Font = newFont?.ToString() ?? "";
+            Settings.Instance.Font = newFont.ToStringInvariant();
             Settings.Instance.Save();
         }
 
