@@ -85,14 +85,15 @@ public static class Themes {
         var builder = ImGui.ImFontGlyphRangesBuilder();
         builder.AddRanges(io.Fonts.GetGlyphRangesDefault());
 
-        ReadOnlySpan<ushort> latinExtendedRanges = [
-            0x0100, 0x024F,
-            0,
-        ];
-
-        builder.AddRanges((uint*) Unsafe.AsPointer(ref Unsafe.AsRef(in latinExtendedRanges[0])));
-        builder.BuildRanges(&ranges);
-
+        {
+            var latinExtendedRanges = (ushort*)ImGui.MemAlloc(3 * sizeof(ushort));
+            latinExtendedRanges[0] = 0x0100;
+            latinExtendedRanges[1] = 0x024F;
+            latinExtendedRanges[2] = 0x0000;
+            builder.AddRanges((uint*)latinExtendedRanges);
+            builder.BuildRanges(&ranges);
+            ImGui.MemFree(latinExtendedRanges);
+        }
 
         var font = Settings.Instance.Font ?? "RobotoMono"; // "C:/Windows/Fonts/consola";
         var defaultFontPath = $"{font}.ttf";
@@ -137,11 +138,11 @@ public static class Themes {
             if (fontPtr.Handle != null) {
                 var newCfgData = *cfg.Handle;
                 var newCfg = new ImFontConfigPtr(&newCfgData) { MergeMode = true };
-                const int ICON_MIN_FA = 0xe000;
-                const int ICON_MAX_FA = 0xf8ff;
-                ReadOnlySpan<ushort> icon_ranges = [ICON_MIN_FA, ICON_MAX_FA, 0];
-                var mem = ImGui.MemAlloc((uint) icon_ranges.Length * sizeof(ushort));
-                icon_ranges.CopyTo(new Span<ushort>(mem, icon_ranges.Length));
+                
+                var mem = (ushort*)ImGui.MemAlloc(3 * sizeof(ushort));
+                mem[0] = 0xe000;
+                mem[1] = 0xf8ff;
+                mem[2] = 0;
                 newCfg.GlyphRanges = (uint*) mem;
                 var newFontWithIcons = AddFontFromVirtPath("fa-solid-900.ttf", 13f, newCfg);
                 if (newFontWithIcons.Handle != null)
