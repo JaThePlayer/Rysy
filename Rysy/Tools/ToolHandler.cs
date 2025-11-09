@@ -254,6 +254,26 @@ public class ToolHandler {
     internal string RecentWindowName => "rysy.recent_list".Translate();
     
     public void RenderGui() {
+        /*
+        var dockspaceId = ImGui.GetID("##dockspace");
+        
+        bool shouldSetDockspaces = false;
+
+        if (ImGuiP.DockBuilderGetNode(dockspaceId).IsNull) {
+            shouldSetDockspaces = true;
+            ImGuiP.DockBuilderRemoveNode(dockspaceId);
+            ImGuiP.DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags.None);
+
+            uint materialId, recentId;
+            materialId = ImGuiP.DockBuilderSplitNode(dockspaceId, ImGuiDir.Right, 0.5f, null, &recentId);
+            
+            //ImGuiP.DockBuilderDockWindow(MaterialListWindowName, materialId);
+            ImGuiP.DockBuilderDockWindow(RecentWindowName, recentId);
+            ImGuiP.DockBuilderFinish(dockspaceId);
+        }
+       // ImGui.DockSpaceOverViewport(dockspaceId, ImGui.GetMainViewport(), ImGuiDockNodeFlags.None);
+        */
+        
         RenderToolList(_firstGui, out float toolHeight);
         RenderLayerList(_firstGui, toolHeight);
         RenderModeList();

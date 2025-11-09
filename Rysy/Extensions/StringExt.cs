@@ -33,6 +33,7 @@ public static partial class StringExt {
     /// <summary>
     /// Trims a piece of text from the end of the string
     /// </summary>
+    [Pure]
     public static string TrimEnd(this string from, string elem, StringComparison comp = StringComparison.InvariantCulture) {
         if (from.EndsWith(elem, comp))
             return from[..^elem.Length];
@@ -42,6 +43,7 @@ public static partial class StringExt {
     /// <summary>
     /// Trims a piece of text from the start of the string
     /// </summary>
+    [Pure]
     public static string TrimStart(this string from, string elem) {
         if (from.StartsWith(elem, StringComparison.Ordinal))
             return from[elem.Length..];
@@ -51,6 +53,7 @@ public static partial class StringExt {
     /// <summary>
     /// Replaces backslashes with slashes in the given string
     /// </summary>
+    [Pure]
     public static string Unbackslash(this string from)
         => from.Replace('\\', '/');
 

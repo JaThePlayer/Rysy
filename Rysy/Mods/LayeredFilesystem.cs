@@ -7,6 +7,16 @@ namespace Rysy.Mods;
 public class LayeredFilesystem : IModFilesystem {
     private List<ModMeta> Mods = new();
 
+    public LayeredFilesystem() {
+        
+    }
+
+    public LayeredFilesystem(LayeredFilesystem toClone) {
+        foreach (var mod in toClone.Mods) {
+            AddMod(mod);
+        }
+    }
+
     public void AddMod(ModMeta modFilesystem) {
         lock (Mods)
             Mods.Add(modFilesystem);
