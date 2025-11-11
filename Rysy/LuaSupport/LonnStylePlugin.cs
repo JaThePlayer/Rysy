@@ -15,7 +15,7 @@ public sealed class LonnStylePlugin {
 
     public LuaStackHolder? StackHolder { get; private set; }
 
-    private readonly object LOCK = new();
+    private readonly object _lock = new();
 
     public PlacementList Placements { get; set; } = [];
     public Func<Style, FieldList>? FieldList { get; set; }
@@ -56,7 +56,7 @@ public sealed class LonnStylePlugin {
     }
 
     public T PushToStack<T>(Func<LonnStylePlugin, T> cb) {
-        lock (LOCK) {
+        lock (_lock) {
             var lua = LuaCtx.Lua;
             SetModNameInLua(lua);
 

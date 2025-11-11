@@ -3,43 +3,43 @@
 namespace Rysy.History;
 
 public class RoomAttributeChangeAction : IHistoryAction {
-    private RoomAttributes Orig;
-    private RoomResizeAction? Resize;
-    private Entity? RemovedCheckpoint;
-    private Entity? AddedCheckpoint;
-    private bool NewRoom;
+    private RoomAttributes _orig;
+    private RoomResizeAction? _resize;
+    private Entity? _removedCheckpoint;
+    private Entity? _addedCheckpoint;
+    private bool _newRoom;
 
-    private readonly Room Room;
-    private readonly RoomAttributes Changed;
+    private readonly Room _room;
+    private readonly RoomAttributes _changed;
 
     public RoomAttributeChangeAction(Room room, RoomAttributes changed) {
-        Room = room;
-        Changed = changed.Copy();
+        _room = room;
+        _changed = changed.Copy();
     }
 
     public bool Apply(Map map) {
-        NewRoom = !Room.Map.Rooms.Contains(Room);
+        _newRoom = !_room.Map.Rooms.Contains(_room);
 
-        Orig = Room.Attributes.Copy();
-        if (Orig != Changed) {
-            if (Room.Width != Changed.Width || Room.Height != Changed.Height) {
-                Resize = new RoomResizeAction(Room, Changed.Width, Changed.Height);
-                Resize.Apply(map);
+        _orig = _room.Attributes.Copy();
+        if (_orig != _changed) {
+            if (_room.Width != _changed.Width || _room.Height != _changed.Height) {
+                _resize = new RoomResizeAction(_room, _changed.Width, _changed.Height);
+                _resize.Apply(map);
             }
 
-            Room.Attributes = Changed.Copy();
+            _room.Attributes = _changed.Copy();
 
-            switch ((Orig.Checkpoint, Changed.Checkpoint)) {
+            switch ((_orig.Checkpoint, _changed.Checkpoint)) {
                 case (true, false):
                     // Remove checkpoint
-                    RemovedCheckpoint = Room.Entities[typeof(Checkpoint)].First();
-                    Room.Entities.Remove(RemovedCheckpoint);
+                    _removedCheckpoint = _room.Entities[typeof(Checkpoint)].First();
+                    _room.Entities.Remove(_removedCheckpoint);
                     break;
                 case (false, true):
                     // Add checkpoint
-                    var firstSpawnPoint = Room.Entities[typeof(Player)].FirstOrDefault()?.Pos ?? new Vector2();
+                    var firstSpawnPoint = _room.Entities[typeof(Player)].FirstOrDefault()?.Pos ?? new Vector2();
 
-                    AddedCheckpoint = EntityRegistry.Create(new("checkpoint") {
+                    _addedCheckpoint = EntityRegistry.Create(new("checkpoint") {
                         Attributes = new() {
                             ["bg"] = "",
                             ["checkpointID"] = -1,
@@ -47,16 +47,16 @@ public class RoomAttributeChangeAction : IHistoryAction {
                             ["x"] = firstSpawnPoint.X,
                             ["y"] = firstSpawnPoint.Y,
                         }
-                    }, Room, false);
+                    }, _room, false);
 
-                    Room.Entities.Add(AddedCheckpoint);
+                    _room.Entities.Add(_addedCheckpoint);
                     break;
                 default:
                     break;
             }
 
-            if (NewRoom) {
-                Room.Map.Rooms.Add(Room);
+            if (_newRoom) {
+                _room.Map.Rooms.Add(_room);
                 map.SortRooms();
             }
 
@@ -67,17 +67,17 @@ public class RoomAttributeChangeAction : IHistoryAction {
     }
 
     public void Undo(Map map) {
-        Room.Attributes = Orig;
-        Resize?.Undo(map);
+        _room.Attributes = _orig;
+        _resize?.Undo(map);
 
-        if (RemovedCheckpoint is { } removedCp) {
-            Room.Entities.Add(removedCp);
+        if (_removedCheckpoint is { } removedCp) {
+            _room.Entities.Add(removedCp);
         }
-        if (AddedCheckpoint is { } addedCp) {
-            Room.Entities.Remove(Room.Entities[typeof(Checkpoint)].First());
+        if (_addedCheckpoint is { } addedCp) {
+            _room.Entities.Remove(_room.Entities[typeof(Checkpoint)].First());
         }
-        if (NewRoom) {
-            Room.Map.Rooms.Remove(Room);
+        if (_newRoom) {
+            _room.Map.Rooms.Remove(_room);
             map.SortRooms();
         }
     }

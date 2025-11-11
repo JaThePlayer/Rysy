@@ -40,7 +40,7 @@ public class TileBucketMode : TileMode {
             // we overshoot inside the while loop, let's cancel that out
             i--;
             
-            GFX.Batch.Draw(GFX.Pixel, new Rectangle(x * 8, y * 8, w, 8), null, color);
+            Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(x * 8, y * 8, w, 8), null, color);
         }
 
         if (tiles.Length == 0) {

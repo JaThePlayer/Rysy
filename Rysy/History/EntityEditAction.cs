@@ -1,31 +1,31 @@
 ﻿namespace Rysy.History;
 
 internal sealed class EntityEditAction : IHistoryAction {
-    List<Entity> Entities;
-    Dictionary<string, object> Changed;
+    List<Entity> _entities;
+    Dictionary<string, object> _changed;
     
-    List<List<(string, object?)>> OldValues;
+    List<List<(string, object?)>> _oldValues;
 
     public EntityEditAction(List<Entity> entities, Dictionary<string, object> changed) {
-        Changed = new(changed);
-        Entities = new(entities);
+        _changed = new(changed);
+        _entities = new(entities);
     }
 
 
     public bool Apply(Map map) {
-        OldValues = new(Entities.Count);
+        _oldValues = new(_entities.Count);
 
-        foreach (var entity in Entities) {
+        foreach (var entity in _entities) {
             entity.EntityData.SetOverlay(null);
-            var oldVals = new List<(string, object?)>(Changed.Count);
-            foreach (var (key, val) in Changed) {
+            var oldVals = new List<(string, object?)>(_changed.Count);
+            foreach (var (key, val) in _changed) {
                 entity.EntityData.TryGetValue(key, out var prevVal);
                 oldVals.Add((key, prevVal));
 
                 entity.EntityData[key] = val;
             }
 
-            OldValues.Add(oldVals);
+            _oldValues.Add(oldVals);
             entity.ClearRoomRenderCache();
         }
 
@@ -33,9 +33,9 @@ internal sealed class EntityEditAction : IHistoryAction {
     }
 
     public void Undo(Map map) {
-        for (int i = 0; i < Entities.Count; i++) {
-            var entity = Entities[i];
-            var changed = OldValues[i];
+        for (int i = 0; i < _entities.Count; i++) {
+            var entity = _entities[i];
+            var changed = _oldValues[i];
 
             foreach (var (key, val) in changed) {
                 if (val is null) {

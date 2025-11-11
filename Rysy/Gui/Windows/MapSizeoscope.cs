@@ -117,7 +117,7 @@ public sealed class MapSizeoscopeWindow : Window {
     static string ElName(BinaryPacker.Element el) {
         string? name = null;
         if (el.Attributes is { } attrs) {
-            if (el.Name is EntityRegistry.BGDecalSID or EntityRegistry.FGDecalSID) {
+            if (el.Name is EntityRegistry.BgDecalSid or EntityRegistry.FgDecalSid) {
                 if (attrs.TryGetValue("texture", out var textureAttr))
                     name = textureAttr.ToString();
             } else {

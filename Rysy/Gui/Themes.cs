@@ -26,11 +26,11 @@ public static class Themes {
         public override Color Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
             var str = reader.GetString() ?? "ffffff";
 
-            return ColorHelper.TryGet(str, ColorFormat.RGBA, out Color c) ? c : default;
+            return ColorHelper.TryGet(str, ColorFormat.Rgba, out Color c) ? c : default;
         }
 
         public override void Write(Utf8JsonWriter writer, Color value, JsonSerializerOptions options) {
-            writer.WriteStringValue(ColorHelper.ToRGBAString(value));
+            writer.WriteStringValue(ColorHelper.ToRgbaString(value));
         }
     }
 

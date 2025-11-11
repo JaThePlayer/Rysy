@@ -12,7 +12,7 @@ public class Cobweb : Entity, IPlaceable {
 
     public override IEnumerable<ISprite> GetSprites() {
         var nodes = Nodes!;
-        var colors = Attr("color", "696a6a").Split(',').Select(x => x.FromRGB()).ToArray();
+        var colors = Attr("color", "696a6a").Split(',').Select(x => x.FromRgb()).ToArray();
 
         return GetCobwebSprites(Pos, nodes[0], 12, true);
 
@@ -42,7 +42,7 @@ public class Cobweb : Entity, IPlaceable {
     public override ISelectionCollider GetNodeSelection(int nodeIndex)
         => ISelectionCollider.FromRect(Nodes[nodeIndex].Pos.Add(-2, -2), 4, 4);
     public static FieldList GetFields() => new(new {
-        color = Fields.RGB("696A6A")
+        color = Fields.Rgb("696A6A")
     });
 
     public static PlacementList GetPlacements() => new("cobweb");

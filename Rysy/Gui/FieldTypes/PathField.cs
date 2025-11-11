@@ -16,12 +16,13 @@ using TextureCache = Cache<List<(string saved, Searchable searchable, FoundPath 
 using RawTextureCache = Cache<List<FoundPath>>;
 
 public partial record class PathField : Field, IFieldConvertible<string> {
-    private static ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
+    private static readonly ConditionalWeakTable<object, Dictionary<string, RawTextureCache>> Caches = new();
 
-    private RawTextureCache RawPaths;
-    private TextureCache? KnownPaths;
+    private RawTextureCache _rawPaths;
+    private TextureCache? _knownPaths;
 
-    private ComboCache<string> ComboCache = new();
+    private readonly ComboCache<TextureCacheKey> _comboCache = new();
+    private TextureCacheKey _lastChosen;
 
     public bool NullAllowed = false;
 
@@ -29,15 +30,15 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
     public bool Editable { get; set; }
 
-    private string Search = "";
+    private string _search = "";
 
-    private Func<FoundPath, string> _CaptureConverter = (s) => s.Captured;
+    private Func<FoundPath, string> _captureConverter = (s) => s.Captured;
     public Func<FoundPath, string> CaptureConverter {
-        get => _CaptureConverter;
+        get => _captureConverter;
         set {
-            _CaptureConverter = value;
-            KnownPaths?.Clear();
-            KnownPaths = null;
+            _captureConverter = value;
+            _knownPaths?.Clear();
+            _knownPaths = null;
         }
     }
 
@@ -49,13 +50,13 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     }
 
 
-    private Func<FoundPath, bool> _Filter = (t) => true;
+    private Func<FoundPath, bool> _filter = (t) => true;
     public Func<FoundPath, bool> Filter {
-        get => _Filter;
+        get => _filter;
         set {
-            _Filter = value;
-            KnownPaths?.Clear();
-            KnownPaths = null;
+            _filter = value;
+            _knownPaths?.Clear();
+            _knownPaths = null;
         }
     }
 
@@ -65,21 +66,21 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         get => _modResolver;
         set {
             _modResolver = value;
-            KnownPaths?.Clear();
-            KnownPaths = null;
+            _knownPaths?.Clear();
+            _knownPaths = null;
         }
     }
 
     private readonly Regex _regex;
 
-    private Func<FoundPath, string, string?>? _DisplayNameGetter;
+    private Func<FoundPath, string, string?>? _displayNameGetter;
 
     public Func<FoundPath, string, string?>? DisplayNameGetter {
-        get => _DisplayNameGetter;
+        get => _displayNameGetter;
         set {
-            _DisplayNameGetter = value;
-            KnownPaths?.Clear();
-            KnownPaths = null;
+            _displayNameGetter = value;
+            _knownPaths?.Clear();
+            _knownPaths = null;
         }
     }
     
@@ -90,8 +91,8 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         get => _additionalEntries;
         set {
             _additionalEntries = value;
-            KnownPaths?.Clear();
-            KnownPaths = null;
+            _knownPaths?.Clear();
+            _knownPaths = null;
         }
     }
 
@@ -106,7 +107,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         
 
         if (captureConverter is { })
-            _CaptureConverter = captureConverter;
+            _captureConverter = captureConverter;
 
         if (!Caches.TryGetValue(cacheObject, out var cache)) {
             cache = new();
@@ -117,7 +118,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
             textureCache = textureFinder();
             cache[regexStr] = textureCache;
         }
-        RawPaths = textureCache;
+        _rawPaths = textureCache;
     }
 
     private TextureCacheKey CreateKnownPathsEntry(FoundPath p) {
@@ -129,7 +130,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     }
     
     private TextureCache CreateKnownPathsCache() {
-        return RawPaths.Chain(textures => textures
+        return _rawPaths.Chain(textures => textures
             .Where(Filter)
             .Concat(AdditionalEntries)
             .Select(CreateKnownPathsEntry)
@@ -137,11 +138,11 @@ public partial record class PathField : Field, IFieldConvertible<string> {
             .ToList());
     }
     
-    private static readonly ConcurrentDictionary<string, Regex> _regexCache = new();
+    private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
 
     public PathField(string @default, IAtlas atlas, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
-        _regex = _regexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
+        _regex = RegexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
 
         Init(atlas, regexStr, captureConverter,
             textureFinder: () => atlas.FindTextures(_regex),
@@ -151,7 +152,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
     public PathField(string @default, SpriteBank bank, [StringSyntax(StringSyntaxAttribute.Regex)] string regexStr, Func<FoundPath, string>? captureConverter = null) {
         Default = @default;
-        _regex = _regexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
+        _regex = RegexCache.GetOrAdd(regexStr, static regexStr => new Regex(regexStr, RegexOptions.Compiled));
         
         Init(bank, regexStr, captureConverter,
             () => bank.FindTextures(_regex),
@@ -210,16 +211,13 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         
         return clicked;
     }
-
-    private ComboCache<TextureCacheKey> _comboCache = new();
-    private TextureCacheKey _lastChosen;
     
     public override object? RenderGui(string fieldName, object value) {
         var strValue = value?.ToString() ?? "";
 
-        KnownPaths ??= CreateKnownPathsCache();
+        _knownPaths ??= CreateKnownPathsCache();
 
-        var paths = KnownPaths.Value;
+        var paths = _knownPaths.Value;
         Func<TextureCacheKey, Searchable, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
             ? RenderMenuItem
             : null;
@@ -238,12 +236,12 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         if (Editable) {
             if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.searchable, 
                     str => CreateKnownPathsEntry(FoundPath.CreateMaybeInvalid(str, _regex)), tooltip: Tooltip,
-                    search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
+                    search: ref _search, cache: _comboCache, renderMenuItem: menuItemRenderer, textInputStringGetter: x => x.saved)) {
                 return chosen.saved;
             }
         } else {
             if (ImGuiManager.Combo(fieldName, ref chosen, paths, x => x.searchable, tooltip: Tooltip,
-                    search: ref Search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
+                    search: ref _search, cache: _comboCache, renderMenuItem: menuItemRenderer)) {
                 return chosen.saved;
             }
         }
@@ -255,10 +253,10 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     /// Clears all the caches inside of this path field.
     /// </summary>
     public void ClearCache() {
-        KnownPaths?.Clear();
-        KnownPaths = null;
-        RawPaths.Clear();
-        ComboCache.Clear();
+        _knownPaths?.Clear();
+        _knownPaths = null;
+        _rawPaths.Clear();
+        _comboCache.Clear();
     }
 
     /// <summary>

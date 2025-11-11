@@ -17,7 +17,7 @@ public static class ImGuiManager {
 
     public static float MenubarHeight { get; set; }
 
-    public static uint CentralDockingSpaceID { get; private set; }
+    public static uint CentralDockingSpaceId { get; private set; }
 
     public static ImGuiWindowFlags WindowFlagsResizable =>
         //ImGuiWindowFlags.NoDecoration |
@@ -534,15 +534,15 @@ public static class ImGuiManager {
         ImGui.SameLine(0f, xPadding);
 
         switch (format) {
-            case ColorFormat.RGB:
+            case ColorFormat.Rgb:
                 var colorN3 = color.ToNumVec3();
                 if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN3.ToXna());
                     edited = true;
                 }
                 break;
-            case ColorFormat.RGBA:
-            case ColorFormat.ARGB:
+            case ColorFormat.Rgba:
+            case ColorFormat.Argb:
                 var colorN4 = color.ToNumVec4();
                 if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     color = new Color(colorN4.ToXna());
@@ -577,15 +577,15 @@ public static class ImGuiManager {
         ColorHelper.TryGet(colorStr, format, out var color);
 
         switch (format) {
-            case ColorFormat.RGB:
+            case ColorFormat.Rgb:
                 var colorN3 = color.ToNumVec3();
                 if (ImGui.ColorEdit3($"##combo{label}", ref colorN3, ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     colorStr = new Color(colorN3.ToXna()).ToString(format);
                     edited = true;
                 }
                 break;
-            case ColorFormat.RGBA:
-            case ColorFormat.ARGB:
+            case ColorFormat.Rgba:
+            case ColorFormat.Argb:
                 var colorN4 = color.ToNumVec4();
                 if (ImGui.ColorEdit4($"##combo{label}", ref colorN4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs).WithTooltip(tooltip)) {
                     colorStr = new Color(colorN4.ToXna()).ToString(format);
@@ -774,7 +774,7 @@ public static class ImGuiManager {
     private static readonly Dictionary<string, WidgetData> Targets = new(StringComparer.Ordinal);
 
     public static void XnaWidget(XnaWidgetDef def)
-        => XnaWidget(def.ID, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
+        => XnaWidget(def.Id, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
 
     public static unsafe void XnaWidget(string id, int w, int h, Action renderFunc, Camera? camera = null, bool rerender = true) {
         if (w <= 0 || h <= 0)
@@ -803,7 +803,7 @@ public static class ImGuiManager {
             var g = RysyState.GraphicsDevice;
             g.SetRenderTarget(widgetData.Target);
             g.Clear(Color.Transparent);
-            GFX.BeginBatch(camera);
+            Gfx.BeginBatch(camera);
             try {
                 renderFunc();
             } catch (Exception ex) {
@@ -813,7 +813,7 @@ public static class ImGuiManager {
                 }
             }
 
-            GFX.EndBatch();
+            Gfx.EndBatch();
             g.SetRenderTarget(null);
         }
     }
@@ -934,8 +934,8 @@ public static class ImGuiManager {
         return ret;
     }
 
-    public static bool TranslatedDragFloat2(string id, ref NumVector2 v, float v_speed, float v_min, float v_max) {
-        return ImGui.DragFloat2(id.Translate(), ref v, v_speed, v_min, v_max).WithTranslatedTooltip($"{id}.tooltip");
+    public static bool TranslatedDragFloat2(string id, ref NumVector2 v, float vSpeed, float vMin, float vMax) {
+        return ImGui.DragFloat2(id.Translate(), ref v, vSpeed, vMin, vMax).WithTranslatedTooltip($"{id}.tooltip");
     }
 
     public static void TranslatedText(string id) {
@@ -1089,23 +1089,23 @@ public static class ImGuiManager {
     
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public unsafe class ImGuiRenderer : IImGuiResourceManager {
-        private RasterizerState RasterizerState;
+        private RasterizerState _rasterizerState;
         private GraphicsDevice GraphicsDevice => RysyState.GraphicsDevice;
-        private BasicEffect Effect;
+        private BasicEffect _effect;
 
-        private byte[] VertexData;
-        private VertexBuffer VertexBuffer;
-        private int VertexBufferSize;
+        private byte[] _vertexData;
+        private VertexBuffer _vertexBuffer;
+        private int _vertexBufferSize;
 
-        private byte[] IndexData;
-        private IndexBuffer IndexBuffer;
-        private int IndexBufferSize;
+        private byte[] _indexData;
+        private IndexBuffer _indexBuffer;
+        private int _indexBufferSize;
 
-        private Dictionary<IntPtr, Texture2D> Textures;
-        private int TextureID = 1;
-        private IntPtr? FontTextureID;
+        private Dictionary<IntPtr, Texture2D> _textures;
+        private int _textureId = 1;
+        private IntPtr? _fontTextureId;
 
-        private int ScrollWheelValue;
+        private int _scrollWheelValue;
         
         sealed record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
         
@@ -1159,9 +1159,9 @@ public static class ImGuiManager {
             ImGui.GetIO().BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
             ImGui.GetIO().ConfigErrorRecoveryEnableAssert = false;
 
-            Textures = new Dictionary<IntPtr, Texture2D>();
+            _textures = new Dictionary<IntPtr, Texture2D>();
 
-            RasterizerState = new RasterizerState() {
+            _rasterizerState = new RasterizerState() {
                 CullMode = CullMode.None,
                 DepthBias = 0,
                 FillMode = FillMode.Solid,
@@ -1183,13 +1183,13 @@ public static class ImGuiManager {
         }
 
         public IntPtr BindTexture(Texture2D tex) {
-            IntPtr id = new IntPtr(TextureID++);
-            Textures.Add(id, tex);
+            IntPtr id = new IntPtr(_textureId++);
+            _textures.Add(id, tex);
             return id;
         }
 
         public void UnbindTexture(IntPtr texPtr) {
-            Textures.Remove(texPtr);
+            _textures.Remove(texPtr);
         }
 
         public void BeforeLayout(float elapsedSeconds) {
@@ -1201,7 +1201,7 @@ public static class ImGuiManager {
             ImGui.NewFrame();
 
             // allow docking windows to the sides of the window
-            CentralDockingSpaceID = ImGui.DockSpaceOverViewport(0, ImGui.GetMainViewport(),
+            CentralDockingSpaceId = ImGui.DockSpaceOverViewport(0, ImGui.GetMainViewport(),
                 ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingOverCentralNode);
         }
 
@@ -1226,16 +1226,16 @@ public static class ImGuiManager {
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeAll);
                     break;
                 case ImGuiMouseCursor.ResizeNs:
-                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNS);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNs);
                     break;
                 case ImGuiMouseCursor.ResizeEw:
-                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeWE);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeWe);
                     break;
                 case ImGuiMouseCursor.ResizeNesw:
-                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNESW);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNesw);
                     break;
                 case ImGuiMouseCursor.ResizeNwse:
-                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNWSE);
+                    FnaMonogameCompat.SetMouseCursor(MouseCursor.SizeNwse);
                     break;
                 case ImGuiMouseCursor.Hand:
                     FnaMonogameCompat.SetMouseCursor(MouseCursor.Hand);
@@ -1259,10 +1259,10 @@ public static class ImGuiManager {
             // Not needed for windows, but is needed for other OSes
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void SetClipboard(nint userdata, byte* txt) {
-                _ = SDL2Ext.SDL_SetClipboardText(txt);
+                _ = Sdl2Ext.SDL_SetClipboardText(txt);
             }
             
-            delegate* <byte*> get = &SDL2Ext.SDL_GetClipboardText;
+            delegate* <byte*> get = &Sdl2Ext.SDL_GetClipboardText;
             delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
             var platformIo = ImGui.GetPlatformIO();
             platformIo.PlatformGetClipboardTextFn = get;
@@ -1284,17 +1284,17 @@ public static class ImGuiManager {
         }
 
         protected Effect UpdateEffect(Texture2D texture) {
-            Effect ??= new BasicEffect(GraphicsDevice);
+            _effect ??= new BasicEffect(GraphicsDevice);
             ImGuiIOPtr io = ImGui.GetIO();
 
-            Effect.World = Matrix.Identity;
-            Effect.View = Matrix.Identity;
-            Effect.Projection = Matrix.CreateOrthographicOffCenter(0f, io.DisplaySize.X, io.DisplaySize.Y, 0f, -1f, 1f);
-            Effect.TextureEnabled = true;
-            Effect.Texture = texture;
-            Effect.VertexColorEnabled = true;
+            _effect.World = Matrix.Identity;
+            _effect.View = Matrix.Identity;
+            _effect.Projection = Matrix.CreateOrthographicOffCenter(0f, io.DisplaySize.X, io.DisplaySize.Y, 0f, -1f, 1f);
+            _effect.TextureEnabled = true;
+            _effect.Texture = texture;
+            _effect.VertexColorEnabled = true;
 
-            return Effect;
+            return _effect;
         }
 
         protected void UpdateInput() {
@@ -1329,9 +1329,9 @@ public static class ImGuiManager {
             io.MouseDown[1] = m.RightButton == ButtonState.Pressed;
             io.MouseDown[2] = m.MiddleButton == ButtonState.Pressed;
 
-            int scrollDelta = m.ScrollWheelValue - ScrollWheelValue;
+            int scrollDelta = m.ScrollWheelValue - _scrollWheelValue;
             io.MouseWheel = scrollDelta > 0 ? 1 : scrollDelta < 0 ? -1 : 0;
-            ScrollWheelValue = m.ScrollWheelValue;
+            _scrollWheelValue = m.ScrollWheelValue;
         }
 
         private void RenderDrawData(ImDrawDataPtr ptr) {
@@ -1353,22 +1353,22 @@ public static class ImGuiManager {
                 return;
 
             // Make vertex/index buffers larger if needed
-            if (ptr.TotalVtxCount > VertexBufferSize) {
-                if (VertexBuffer != null)
-                    VertexBuffer.Dispose();
+            if (ptr.TotalVtxCount > _vertexBufferSize) {
+                if (_vertexBuffer != null)
+                    _vertexBuffer.Dispose();
 
-                VertexBufferSize = (int) (ptr.TotalVtxCount * 1.5f);
-                VertexBuffer = new VertexBuffer(GraphicsDevice, DrawVertDeclaration.Declaration, VertexBufferSize, BufferUsage.None);
-                VertexData = new byte[VertexBufferSize * DrawVertDeclaration.Size];
+                _vertexBufferSize = (int) (ptr.TotalVtxCount * 1.5f);
+                _vertexBuffer = new VertexBuffer(GraphicsDevice, DrawVertDeclaration.Declaration, _vertexBufferSize, BufferUsage.None);
+                _vertexData = new byte[_vertexBufferSize * DrawVertDeclaration.Size];
             }
 
-            if (ptr.TotalIdxCount > IndexBufferSize) {
-                if (IndexBuffer != null)
-                    IndexBuffer.Dispose();
+            if (ptr.TotalIdxCount > _indexBufferSize) {
+                if (_indexBuffer != null)
+                    _indexBuffer.Dispose();
 
-                IndexBufferSize = (int) (ptr.TotalIdxCount * 1.5f);
-                IndexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.SixteenBits, IndexBufferSize, BufferUsage.None);
-                IndexData = new byte[IndexBufferSize * sizeof(ushort)];
+                _indexBufferSize = (int) (ptr.TotalIdxCount * 1.5f);
+                _indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.SixteenBits, _indexBufferSize, BufferUsage.None);
+                _indexData = new byte[_indexBufferSize * sizeof(ushort)];
             }
 
             // Copy draw data to managed byte arrays
@@ -1377,10 +1377,10 @@ public static class ImGuiManager {
 
             for (int i = 0; i < ptr.CmdListsCount; i++) {
                 ImDrawListPtr cmdList = ptr.CmdLists[i];
-                fixed (void* vtxDstPtr = &VertexData[vtxOffset * DrawVertDeclaration.Size]) {
-                    fixed (void* idxDstPtr = &IndexData[idxOffset * sizeof(ushort)]) {
-                        Buffer.MemoryCopy((void*) cmdList.VtxBuffer.Data, vtxDstPtr, VertexData.Length, cmdList.VtxBuffer.Size * DrawVertDeclaration.Size);
-                        Buffer.MemoryCopy((void*) cmdList.IdxBuffer.Data, idxDstPtr, IndexData.Length, cmdList.IdxBuffer.Size * sizeof(ushort));
+                fixed (void* vtxDstPtr = &_vertexData[vtxOffset * DrawVertDeclaration.Size]) {
+                    fixed (void* idxDstPtr = &_indexData[idxOffset * sizeof(ushort)]) {
+                        Buffer.MemoryCopy((void*) cmdList.VtxBuffer.Data, vtxDstPtr, _vertexData.Length, cmdList.VtxBuffer.Size * DrawVertDeclaration.Size);
+                        Buffer.MemoryCopy((void*) cmdList.IdxBuffer.Data, idxDstPtr, _indexData.Length, cmdList.IdxBuffer.Size * sizeof(ushort));
                     }
                 }
 
@@ -1389,8 +1389,8 @@ public static class ImGuiManager {
             }
 
             // Copy byte arrays to GPU
-            VertexBuffer.SetData(VertexData, 0, ptr.TotalVtxCount * DrawVertDeclaration.Size);
-            IndexBuffer.SetData(IndexData, 0, ptr.TotalIdxCount * sizeof(ushort));
+            _vertexBuffer.SetData(_vertexData, 0, ptr.TotalVtxCount * DrawVertDeclaration.Size);
+            _indexBuffer.SetData(_indexData, 0, ptr.TotalIdxCount * sizeof(ushort));
         }
 
         private unsafe void UpdateTexture(ImTextureDataPtr tex) {
@@ -1429,7 +1429,7 @@ public static class ImGuiManager {
                 //   - Use tex->Updates[] to obtain individual sub-regions within tex->UpdateRect. Not recommended.
                 // - Read from our CPU-side copy of the texture and copy to your graphics API.
                 // - Use tex->Width, tex->Height, tex->GetPixels(), tex->GetPixelsAt(), tex->GetPitch() as needed.
-                if (!Textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
+                if (!_textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
                     throw new Exception($"Texture {tex.GetTexID()} not found");
                 }
 
@@ -1446,7 +1446,7 @@ public static class ImGuiManager {
                 // - Use tex->TexID or tex->BackendUserData to retrieve your stored data.
                 // - Destroy texture in your graphics API.
 
-                if (!Textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
+                if (!_textures.TryGetValue(tex.GetTexID(), out Texture2D? texture)) {
                     throw new Exception($"Texture {tex.GetTexID()} not found");
                 }
                 UnbindTexture(tex.GetTexID());
@@ -1462,11 +1462,11 @@ public static class ImGuiManager {
             int vtxOffset = 0;
             int idxOffset = 0;
             
-            GraphicsDevice.SetVertexBuffer(VertexBuffer);
-            GraphicsDevice.Indices = IndexBuffer;
+            GraphicsDevice.SetVertexBuffer(_vertexBuffer);
+            GraphicsDevice.Indices = _indexBuffer;
             GraphicsDevice.BlendFactor = Color.White;
             GraphicsDevice.BlendState = BlendState.NonPremultiplied;
-            GraphicsDevice.RasterizerState = RasterizerState;
+            GraphicsDevice.RasterizerState = _rasterizerState;
             GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
             
             if (ptr.Textures.Data != null)
@@ -1481,7 +1481,7 @@ public static class ImGuiManager {
 
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
                     var cmd = cmdList.CmdBuffer[cmdi];
-                    if (!Textures.TryGetValue(cmd.GetTexID(), out Texture2D? texture)) {
+                    if (!_textures.TryGetValue(cmd.GetTexID(), out Texture2D? texture)) {
                         throw new InvalidOperationException($"Could not find ImGUI texture with ID {cmd.GetTexID().Handle}");
                     }
                     

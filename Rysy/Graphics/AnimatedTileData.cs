@@ -17,7 +17,7 @@ public sealed class AnimatedTileBank {
     public static AnimatedTileData MissingTile => _missingTile ??= new() {
         Name = "Missing",
         Delay = 1f,
-        Frames = [ GFX.Atlas["Rysy:tilesets/missingAnimatedTile"] ],
+        Frames = [ Gfx.Atlas["Rysy:tilesets/missingAnimatedTile"] ],
         Offset = new Vector2(-4f, -12f),
         Origin = new Vector2(0.0f),
     };
@@ -161,7 +161,7 @@ public sealed class AnimatedTileData : IXmlBackedEntityData {
         var path = data.Attr("path");
         if (path.IsNullOrWhitespace())
             return false;
-        into.Frames = GFX.Atlas.GetSubtextures(path);
+        into.Frames = Gfx.Atlas.GetSubtextures(path);
 
         into.Delay = data.Float("delay");
         into.Offset = new(

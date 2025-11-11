@@ -4,11 +4,11 @@ using Rysy.LuaSupport;
 namespace Rysy.Helpers;
 
 public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
-    private Dictionary<string, List<Entity>> SIDToEntities = new(StringComparer.Ordinal);
+    private Dictionary<string, List<Entity>> _sidToEntities = new(StringComparer.Ordinal);
 
     public EntityList() {
         OnChanged += () => {
-            SIDToEntities.Clear();
+            _sidToEntities.Clear();
         };
     }
 
@@ -16,11 +16,11 @@ public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
     public List<Entity> this[string sid] {
 #pragma warning restore CA1002
         get {
-            if (SIDToEntities.TryGetValue(sid, out var cached))
+            if (_sidToEntities.TryGetValue(sid, out var cached))
                 return cached;
 
             var cache = Inner.Where(e => e.Name == sid).ToList();
-            SIDToEntities[sid] = cache;
+            _sidToEntities[sid] = cache;
 
             return cache;
         }

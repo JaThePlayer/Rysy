@@ -14,13 +14,13 @@ public sealed class ModSubtexture : VirtTexture {
     public ModSubtexture(ModTexture modTexture, Rectangle rect) {
         _modTexture = modTexture;
         _rect = rect;
-        _clipRect = rect;
+        LoadedClipRect = rect;
     }
 
     protected override Task? QueueLoad() {
         return Task.Run(async () => {
-            _texture = await _modTexture.ForceGetTexture();
-            _state = State.Loaded;
+            LoadedTexture = await _modTexture.ForceGetTexture();
+            State = States.Loaded;
         });
     }
 

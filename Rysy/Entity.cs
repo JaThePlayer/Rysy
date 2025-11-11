@@ -27,7 +27,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public Room Room { get; set; } = null!;
 
     #region EntityData Wrappers
-    public string Name => EntityData.SID;
+    public string Name => EntityData.Sid;
 
     private int _id;
     
@@ -420,13 +420,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public char Char(string attrName, char def = '0') => EntityData.Char(attrName, def);
 #pragma warning restore CA1720 // Identifier contains type name
 
-    public Color RGB(string attrName, Color def) => EntityData.RGB(attrName, def);
-    public Color RGB(string attrName, string def = "ffffff") => EntityData.RGB(attrName, def);
-    public Color RGBA(string attrName, Color def) => EntityData.RGBA(attrName, def);
-    public Color RGBA(string attrName, string def = "ffffff") => EntityData.RGBA(attrName, def);
+    public Color Rgb(string attrName, Color def) => EntityData.Rgb(attrName, def);
+    public Color Rgb(string attrName, string def = "ffffff") => EntityData.Rgb(attrName, def);
+    public Color Rgba(string attrName, Color def) => EntityData.Rgba(attrName, def);
+    public Color Rgba(string attrName, string def = "ffffff") => EntityData.Rgba(attrName, def);
 
-    public Color ARGB(string attrName, Color def) => EntityData.ARGB(attrName, def);
-    public Color ARGB(string attrName, string def = "ffffff") => EntityData.ARGB(attrName, def);
+    public Color Argb(string attrName, Color def) => EntityData.Argb(attrName, def);
+    public Color Argb(string attrName, string def = "ffffff") => EntityData.Argb(attrName, def);
 
     public T Enum<T>(string attrName, T def) where T : struct, Enum => EntityData.Enum(attrName, def);
 
@@ -448,13 +448,13 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Should be called sparingly.
     /// </summary>
     public virtual void ClearInnerCaches() {
-        _NameAsASCII = null;
+        _nameAsAscii = null;
         EntityData.ClearCaches();
         _cachedPackedElement = null;
     }
 
     public IList<Entity> GetRoomList() => this switch {
-        Decal d => d.FG ? Room.FgDecals : Room.BgDecals,
+        Decal d => d.Fg ? Room.FgDecals : Room.BgDecals,
         Trigger => Room.Triggers,
         _ => Room.Entities,
     };
@@ -602,17 +602,17 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         
         _pos = new(EntityData.X, EntityData.Y);
         _id = EntityData.Int("id");
-        _SelectionHandler?.ClearCollideCache();
-        if (changed.NodesChanged && _NodeSelectionHandlers is { } handlers) {
+        SelectionHandler?.ClearCollideCache();
+        if (changed.NodesChanged && NodeSelectionHandlers is { } handlers) {
             foreach (var item in handlers) {
                 item?.ClearCollideCache();
                 item?.RecalculateId();
             }
 
             if (changed.NodeCountChanged) {
-                _NodeSelectionHandlers = new NodeSelectionHandler?[handlers.Length];
-                for (int i = 0; i < _NodeSelectionHandlers.Length; i++) {
-                    _NodeSelectionHandlers[i] = handlers.FirstOrDefault(h => h is {} && h.NodeIdx == i);
+                NodeSelectionHandlers = new NodeSelectionHandler?[handlers.Length];
+                for (int i = 0; i < NodeSelectionHandlers.Length; i++) {
+                    NodeSelectionHandlers[i] = handlers.FirstOrDefault(h => h is {} && h.NodeIdx == i);
                 }
             }
         }
@@ -678,7 +678,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
     
     protected virtual BinaryPacker.Element DoPack(bool trim) {
-        var el = new BinaryPacker.Element(EntityData.SID);
+        var el = new BinaryPacker.Element(EntityData.Sid);
 
         var outAttrs = el.Attributes = new(EntityData.Inner.Count);
         foreach (var (k, v) in EntityData.Inner) {
@@ -710,8 +710,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public Placement ToPlacement() {
         var overrides = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
 
-        return new Placement(EntityData.SID) {
-            SID = EntityData.SID,
+        return new Placement(EntityData.Sid) {
+            Sid = EntityData.Sid,
             PlacementHandler = this is Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
             RegisteredEntityType = RegistryType,
             ValueOverrides = overrides,
@@ -727,52 +727,52 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
     public SelectionLayer GetSelectionLayer() => this switch {
         Trigger => SelectionLayer.Triggers,
-        Decal d => d.FG ? SelectionLayer.FGDecals : SelectionLayer.BGDecals,
+        Decal d => d.Fg ? SelectionLayer.FgDecals : SelectionLayer.BgDecals,
         _ => SelectionLayer.Entities,
     };
 
-    internal EntitySelectionHandler? _SelectionHandler;
+    internal EntitySelectionHandler? SelectionHandler;
     public Selection CreateSelection() => new() {
-        Handler = _SelectionHandler ??= new EntitySelectionHandler(this)
+        Handler = SelectionHandler ??= new EntitySelectionHandler(this)
     };
 
     // todo: refactor node selections
-    internal NodeSelectionHandler?[]? _NodeSelectionHandlers;
+    internal NodeSelectionHandler?[]? NodeSelectionHandlers;
     public Selection CreateNodeSelection(int node) {
         if (node >= Nodes.Count)
             throw new Exception($"Tried to get selection for node at index {node}, but entity has {Nodes.Count} nodes.");
         
-        _NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
+        NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
 
-        if (node >= _NodeSelectionHandlers.Length)
-            Array.Resize(ref _NodeSelectionHandlers, node + 1);
+        if (node >= NodeSelectionHandlers.Length)
+            Array.Resize(ref NodeSelectionHandlers, node + 1);
 
-        return new(_NodeSelectionHandlers[node] ??= new((EntitySelectionHandler) CreateSelection().Handler, Nodes[node]));
+        return new(NodeSelectionHandlers[node] ??= new((EntitySelectionHandler) CreateSelection().Handler, Nodes[node]));
     }
     
     internal Selection CreateNodeSelection(int node, NodeSelectionHandler handler) {
-        _NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
+        NodeSelectionHandlers ??= new NodeSelectionHandler[Nodes.Count];
 
-        if (node >= _NodeSelectionHandlers.Length)
-            Array.Resize(ref _NodeSelectionHandlers, node + 1);
+        if (node >= NodeSelectionHandlers.Length)
+            Array.Resize(ref NodeSelectionHandlers, node + 1);
 
-        return new(_NodeSelectionHandlers[node] = handler);
+        return new(NodeSelectionHandlers[node] = handler);
     }
 
     /// <summary>
     /// Transfers the selection handler from this entity to <paramref name="newEntity"/>, used by <see cref="SwapEntityAction"/>
     /// </summary>
     internal void TransferHandlersTo(Entity newEntity) {
-        if (_SelectionHandler is { } handler) {
-            newEntity._SelectionHandler = handler;
-            _SelectionHandler = null;
+        if (SelectionHandler is { } handler) {
+            newEntity.SelectionHandler = handler;
+            SelectionHandler = null;
 
             handler.Entity = newEntity;
         }
 
-        if (_NodeSelectionHandlers is { } nodeHandlers) {
-            newEntity._NodeSelectionHandlers = nodeHandlers;
-            _NodeSelectionHandlers = null;
+        if (NodeSelectionHandlers is { } nodeHandlers) {
+            newEntity.NodeSelectionHandlers = nodeHandlers;
+            NodeSelectionHandlers = null;
         }
     }
 
@@ -805,7 +805,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #endregion
 
     #region ILuaWrapper
-    private byte[]? _NameAsASCII = null;
+    private byte[]? _nameAsAscii = null;
     private NodesWrapper? _nodesWrapper;
 
     public int LuaIndex(Lua lua, long key) {
@@ -832,7 +832,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
                 return 1;
             case "_name":
-                lua.PushUtf8String(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_nameAsAscii ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             default:
                 EntityData.TryGetValue(key.ToString(), out var value);
@@ -853,7 +853,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 lua.PushNumber(Id);
                 return 1;
             case [(byte) '_', (byte) 'n', (byte) 'a', (byte) 'm', (byte) 'e']:
-                lua.PushUtf8String(_NameAsASCII ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_nameAsAscii ??= Encoding.ASCII.GetBytes(Name));
                 return 1;
             case [(byte) 'n', (byte) 'o', (byte) 'd', (byte) 'e', (byte) 's']:
                 if (Nodes is { }) {
@@ -910,7 +910,7 @@ public readonly struct EntityDataChangeCtx {
 }
 
 public class EntityData : IDictionary<string, object>, IUntypedData {
-    public string SID { get; init; }
+    public string Sid { get; init; }
 
     public ListenableList<Node> Nodes { get; private set; }
 
@@ -943,15 +943,15 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     /// <summary>
     /// Used by lua to efficiently retrieve items from entity data using an ascii span, stores strings as ASCII
     /// </summary>
-    private Dictionary<nint, object>? LuaValues;
+    private Dictionary<nint, object>? _luaValues;
 
-    private int? _X;
-    private int? _Y;
-    public int X => _X ??= this.Int("x");
-    public int Y => _Y ??= this.Int("y");
+    private int? _x;
+    private int? _y;
+    public int X => _x ??= this.Int("x");
+    public int Y => _y ??= this.Int("y");
 
     public EntityData(string sid, BinaryPacker.Element e) {
-        SID = sid;
+        Sid = sid;
         Inner = new(e.Attributes, StringComparer.Ordinal);
 
         if (e.Children is { Length: > 0 }) {
@@ -968,7 +968,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     }
 
     public EntityData(string sid, Dictionary<string, object> attributes, Vector2[]? nodes = null) {
-        SID = sid;
+        Sid = sid;
 
         Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
         Nodes.OnChanged = () => OnChanged?.Invoke(new EntityDataChangeCtx {
@@ -1001,12 +1001,12 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     }
 
     internal void ClearCaches(string? key = null) {
-        LuaValues?.Clear();
+        _luaValues?.Clear();
 
         FakeOverlay = null;
 
-        _X = null;
-        _Y = null;
+        _x = null;
+        _y = null;
     }
 
     public object this[string key] {
@@ -1062,7 +1062,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
 
     public void Clear() {
         Inner.Clear();
-        LuaValues?.Clear();
+        _luaValues?.Clear();
         ClearCaches();
         OnChanged?.Invoke(new() {
             AllChanged = true,
@@ -1115,14 +1115,14 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     /// Retries a value from this entity data using a span. All strings returned by this are converted to ASCII byte[]
     /// </summary>
     internal unsafe bool TryGetLuaValue(ReadOnlySpan<byte> key, out object? value) {
-        LuaValues ??= new();
+        _luaValues ??= new();
 
         // as lua strings are interned, we can somewhat trust that a pointer is enough to uniquely identify the string,
         // saving the need to iterate the string to hash it.
         // var hash = new HashCode();
         // hash.AddBytes(key);
         fixed (byte* bp = key) {
-            ref var valueInDict = ref CollectionsMarshal.GetValueRefOrAddDefault(LuaValues, (nint) bp, out var exists);
+            ref var valueInDict = ref CollectionsMarshal.GetValueRefOrAddDefault(_luaValues, (nint) bp, out var exists);
             if (exists) {
                 value = valueInDict;
                 return true;

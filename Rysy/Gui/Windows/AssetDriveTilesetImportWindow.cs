@@ -49,7 +49,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     }
 
     private void RenderPreview(string id, AssetDriveTileset tileset) {
-        var previewTask = GFX.GetTextureFromWebAsync(tileset.ImageUri, CancellationToken.None);
+        var previewTask = Gfx.GetTextureFromWebAsync(tileset.ImageUri, CancellationToken.None);
         if (previewTask.IsCompletedSuccessfully) {
             ImGuiManager.XnaWidgetSprite(id,
                 ISprite.FromTexture(default, previewTask.Result) with { Scale = new(2f, 2f) });
@@ -115,7 +115,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     public override bool HasBottomBar => true;
 
     public override void RenderBottomBar() {
-        var previewTask = _selected is not null ? GFX.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None) : null;
+        var previewTask = _selected is not null ? Gfx.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None) : null;
         var valid = _selected is not null && previewTask is { IsCompletedSuccessfully: true };
         
         ImGui.BeginDisabled(!valid);
@@ -276,7 +276,7 @@ internal sealed partial class CreateTilesetWindow : Window {
         base.Render();
     }
 
-    private Autotiler GetAutotiler(Map map) => _isBg ? map.BGAutotiler : map.FGAutotiler;
+    private Autotiler GetAutotiler(Map map) => _isBg ? map.BgAutotiler : map.FgAutotiler;
 
     private string? GetXmlPath(Map map) => _isBg ? map.Meta.BackgroundTiles : map.Meta.ForegroundTiles;
 

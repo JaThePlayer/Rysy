@@ -23,7 +23,7 @@ public class DebugInfoWindow : Window {
     private static string HistoryFromText = "";
 
     protected override unsafe void Render() {
-        ImGui.Text($"FPS: {RysyState.CurrentFPS}");
+        ImGui.Text($"FPS: {RysyState.CurrentFps}");
 
         if (ImGui.CollapsingHeader("Memory")) {
             ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
@@ -95,15 +95,15 @@ public class DebugInfoWindow : Window {
                 end
                 ```
                 """;
-            if (Doc is null || DocStr != str) {
+            if (_doc is null || _docStr != str) {
                 var doc = Markdig.Markdown.Parse(str, ImGuiMarkdown.MarkdownPipeline);
                 //foreach (var item in doc) {
                 //    Print(item, "");
                 //}
-                Doc = doc;
-                DocStr = str;
+                _doc = doc;
+                _docStr = str;
             }
-            ImGuiMarkdown.RenderMarkdown(Doc);
+            ImGuiMarkdown.RenderMarkdown(_doc);
 
             void Print(MarkdownObject item, string indent) {
                 Console.WriteLine((indent, item.GetType(), item.ToString()));
@@ -181,8 +181,8 @@ public class DebugInfoWindow : Window {
             }
         }
         
-        ImGui.Checkbox("Imgui Demo", ref imguiDemo);
-        if (imguiDemo)
+        ImGui.Checkbox("Imgui Demo", ref _imguiDemo);
+        if (_imguiDemo)
             ImGui.ShowDemoWindow();
 
         if (ImGui.Button("Save style to clipboard")) {
@@ -237,10 +237,10 @@ public class DebugInfoWindow : Window {
         Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}:\n{summary}");
     }
 
-    private bool imguiDemo;
+    private bool _imguiDemo;
 
-    string DocStr;
-    Markdig.Syntax.MarkdownDocument Doc;
+    string _docStr;
+    Markdig.Syntax.MarkdownDocument _doc;
 
     private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && ImGui.CollapsingHeader("History")) {

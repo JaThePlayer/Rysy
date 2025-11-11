@@ -10,7 +10,7 @@ public class TouchSwitch : SpriteEntity, IPlaceable {
 
     public override int Depth => 2000;
 
-    public override Color Color => "5fcde4".FromRGB();
+    public override Color Color => "5fcde4".FromRgb();
 
     public override IEnumerable<ISprite> GetSprites() {
         var container = GetSprite("objects/touchswitch/container");

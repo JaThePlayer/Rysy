@@ -1,6 +1,6 @@
 ﻿namespace Rysy.Platforms;
 
-public class MacOS : RysyPlatform {
+public class MacOs : RysyPlatform {
     private static string SaveLocation = UncachedGetSaveLocation();
 
     public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;

@@ -8,8 +8,8 @@ namespace Rysy.Helpers;
 public sealed class SelectRectangleGesture {
     public Point? StartPos { get; private set; } = null;
 
-    private Rectangle? CurrentRect = null;
-    private Rectangle? LastRect = null;
+    private Rectangle? _currentRect = null;
+    private Rectangle? _lastRect = null;
 
     public Input Input { get; private set; }
 
@@ -48,7 +48,7 @@ public sealed class SelectRectangleGesture {
             if (StartPos is null)
                 return null;
 
-            if (LastRect is not { } last || CurrentRectangle is not { } current)
+            if (_lastRect is not { } last || CurrentRectangle is not { } current)
                 return null;
 
             return new Rectangle(
@@ -95,8 +95,8 @@ public sealed class SelectRectangleGesture {
                 break;
         }
 
-        LastRect = CurrentRect;
-        CurrentRect = CurrentRectangle;
+        _lastRect = _currentRect;
+        _currentRect = CurrentRectangle;
 
         return ret;
     }

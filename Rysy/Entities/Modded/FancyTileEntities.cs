@@ -10,7 +10,7 @@ internal sealed class FancyTileEntity : TilegridEntity, IPlaceable {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         randomSeed = 0,
         blendEdges = true,
     });
@@ -24,7 +24,7 @@ internal sealed class FancyFloatySpaceBlock : TilegridEntity, IPlaceable {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         connectsTo = Fields.TileDropdown('3', bg: false),
         randomSeed = 0,
         disableSpawnOffset = false
@@ -39,7 +39,7 @@ internal sealed class FancyCoverupWall : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         blendIn = true,
     });
 
@@ -52,7 +52,7 @@ internal sealed class FancyCrumbleWallOnRumble : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         blendin = true,
         persistent = false,
     });
@@ -66,7 +66,7 @@ internal sealed class FancyDashBlock : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         blendin = true,
         canDash = true,
         permanent = true
@@ -81,7 +81,7 @@ internal sealed class FancyExitBlock : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         playTransitionReveal = false
     });
 
@@ -94,7 +94,7 @@ internal sealed class FancyFakeWall : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         playTransitionReveal = false
     });
 
@@ -107,7 +107,7 @@ internal sealed class FancyFallingBlock : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         climbFall = true,
         behind = false,
         tileDataHighlight = "",
@@ -125,7 +125,7 @@ internal sealed class FancyIntroCrusher : TilegridEntity {
     public override Range NodeLimits => 0..1;
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         manualTrigger = false,
         delay = 1.2,
         speed = 2.0,
@@ -143,8 +143,8 @@ internal sealed class FancyFinalBossMovingBlock : TilegridEntity {
     public override Range NodeLimits => 1..1;
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
-        tileDataHighlight = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileDataHighlight = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         nodeIndex = 0,
     });
 
@@ -159,7 +159,7 @@ internal sealed class FancyRidgeGate : TilegridEntity {
     public override Range NodeLimits => 1..1;
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         flag = ""
     });
 
@@ -172,7 +172,7 @@ internal sealed class FancyConditionBlock : TilegridEntity {
         => TileMapHelper.GenerateTileMap(gridString, widthTiles, heightTiles);
 
     public static FieldList GetFields() => new(new {
-        tileData = Fields.Tilegrid(TileLayer.FG).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
+        tileData = Fields.Tilegrid(TileLayer.Fg).WithTilegridParser(TileMapHelper.GenerateTileMap, TilegridField.DefaultGridToSavedString),
         condition = CelesteEnums.ConditionBlockModes.Key,
         conditionID = "1:1"
     });

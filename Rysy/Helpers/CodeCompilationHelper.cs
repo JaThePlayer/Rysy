@@ -45,7 +45,7 @@ public static class CodeCompilationHelper {
         """;
 
     private static List<MetadataReference> GetReferences() {
-        if (_CachedReferences is { } cached)
+        if (CachedReferences is { } cached)
             return cached;
 
         var references = new List<MetadataReference> {
@@ -63,12 +63,12 @@ public static class CodeCompilationHelper {
             //Console.WriteLine(asm.FullName);
         }
 
-        _CachedReferences = references;
+        CachedReferences = references;
         
         return references;
     }
 
-    private static List<MetadataReference>? _CachedReferences;
+    private static List<MetadataReference>? CachedReferences;
 
     private static byte[]? RysyAssemblyHash;
 
@@ -89,28 +89,28 @@ public static class CodeCompilationHelper {
         if (files.Count == 0)
             return false;
 
-        string? cachedDLLPath = null, cachedPdbPath = null, cachedSrcPath = null, currentSource = null;
+        string? cachedDllPath = null, cachedPdbPath = null, cachedSrcPath = null, currentSource = null;
         var cacheFs = SettingsHelper.GetFilesystem(perProfile: true);
 
         if (cachePath is { }) {
-            cachedDLLPath = $"{cachePath}/c.dll";
+            cachedDllPath = $"{cachePath}/c.dll";
             cachedPdbPath = $"{cachePath}/c.pdb";
             cachedSrcPath = $"{cachePath}/src.txt";
             currentSource = (files, RysyAssemblyHash ??= GetAsmHash(typeof(CodeCompilationHelper).Assembly)).ToJson(minified: true);
             
-            if (cacheFs.FileExists(cachedDLLPath) && cacheFs.FileExists(cachedSrcPath)) {
+            if (cacheFs.FileExists(cachedDllPath) && cacheFs.FileExists(cachedSrcPath)) {
                 var cachedSource = cacheFs.TryReadAllText(cachedSrcPath);
                 
                 if (currentSource == cachedSource) {
                     var pdb = cacheFs.TryReadAllBytes(cachedPdbPath);
-                    var rawAsm = cacheFs.TryReadAllBytes(cachedDLLPath)!;
+                    var rawAsm = cacheFs.TryReadAllBytes(cachedDllPath)!;
 
                     asm = Assembly.Load(rawAsm, pdb);
 
                     return true;
                 }
                 
-                cacheFs.TryDeleteFile(cachedDLLPath);
+                cacheFs.TryDeleteFile(cachedDllPath);
                 cacheFs.TryDeleteFile(cachedSrcPath);
             }
         }
@@ -145,7 +145,7 @@ public static class CodeCompilationHelper {
 
             if (cachePath is { }) {
                 cacheFs.TryWriteToFile(cachedSrcPath!, currentSource ?? "");
-                cacheFs.TryWriteToFile(cachedDLLPath!, asmBytes);
+                cacheFs.TryWriteToFile(cachedDllPath!, asmBytes);
                 cacheFs.TryWriteToFile(cachedPdbPath!, pdbBytes);
             }
 

@@ -7,7 +7,7 @@ using Rysy.Scenes;
 
 namespace Rysy.Graphics;
 
-public static class GFX {
+public static class Gfx {
     public static IAtlas Atlas { get; set; } = new Atlas();
 
     public static SpriteBatch Batch { get; private set; } = null!;

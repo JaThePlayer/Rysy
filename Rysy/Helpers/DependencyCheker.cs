@@ -59,11 +59,11 @@ public static class DependencyCheker {
         if (!string.IsNullOrWhiteSpace(meta.Icon))
             HandleMetaItem($"Graphics/Atlases/Gui/{meta.Icon}", "Icon");
 
-        foreach (var (_, data) in map.FGAutotiler.Tilesets) {
-            HandleTexture(new TilesetDependency(TileLayer.FG, data.Filename), data.Texture);
+        foreach (var (_, data) in map.FgAutotiler.Tilesets) {
+            HandleTexture(new TilesetDependency(TileLayer.Fg, data.Filename), data.Texture);
         }
-        foreach (var (_, data) in map.BGAutotiler.Tilesets) {
-            HandleTexture(new TilesetDependency(TileLayer.BG, data.Filename), data.Texture);
+        foreach (var (_, data) in map.BgAutotiler.Tilesets) {
+            HandleTexture(new TilesetDependency(TileLayer.Bg, data.Filename), data.Texture);
         }
 
         foreach (var room in map.Rooms) {
@@ -97,7 +97,7 @@ public static class DependencyCheker {
                 HandleItem(item, [ modTexture.Mod.Name ]);
             }
 
-            if (texture == GFX.UnknownTexture) {
+            if (texture == Gfx.UnknownTexture) {
                 HandleItem(item, [ UnknownModName ]);
             }
         }
@@ -118,7 +118,7 @@ public static class DependencyCheker {
             }
         }
 
-        void HandleMetaItem(string val, string valName) {
+        void HandleMetaItem(string? val, string valName) {
             if (string.IsNullOrEmpty(val)) {
                 return;
             }

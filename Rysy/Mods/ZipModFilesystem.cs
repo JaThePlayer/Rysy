@@ -16,14 +16,14 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     public string Root { get; init; }
 
-    private readonly List<ZipArchiveWrapper> Zips = [];
+    private readonly List<ZipArchiveWrapper> _zips = [];
 
-    private readonly ConcurrentBag<Stream> OpenedFiles = [];
+    private readonly ConcurrentBag<Stream> _openedFiles = [];
 
-    private BackgroundTaskInfo CleanupTask;
+    private BackgroundTaskInfo _cleanupTask;
 
-    private ConcurrentDictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
-    private FileSystemWatcher Watcher;
+    private ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
+    private FileSystemWatcher _watcher;
     
     // These keep track of known filenames, so that checking if a file exists in a mod incurs no IO cost.
     private volatile string[] _allEntryFullNames;
@@ -35,15 +35,15 @@ public sealed class ZipModFilesystem : IModFilesystem {
         Root = zipFilePath;
 
         // setup a timer to close the zip archive if no more files from it are needed
-        CleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
+        _cleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
         ScanForAllEntryNames();
         
         if (!RysyPlatform.Current.SupportFileWatchers) {
             return;
         }
         
-        Watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
-        Watcher.Changed += (s, e) => {
+        _watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
+        _watcher.Changed += (s, e) => {
             if (e.FullPath != Root.CorrectSlashes())
                 return;
 
@@ -52,7 +52,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
             ScanForAllEntryNames();
 
-            foreach (var file in WatchedAssets) {
+            foreach (var file in _watchedAssets) {
                 foreach (var asset in file.Value) {
                     try {
                         asset.OnChanged?.Invoke(file.Key);
@@ -63,7 +63,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
             }
         };
 
-        Watcher.EnableRaisingEvents = true;
+        _watcher.EnableRaisingEvents = true;
     }
 
     private void ScanForAllEntryNames() {
@@ -76,25 +76,25 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     private void CleanupResources() {
-        if (Zips is null)
+        if (_zips is null)
             return;
 
-        lock (Zips) {
-            lock (OpenedFiles) {
-                if (!OpenedFiles.IsEmpty && OpenedFiles.All(x => !x.CanRead)) {
-                    OpenedFiles.Clear();
+        lock (_zips) {
+            lock (_openedFiles) {
+                if (!_openedFiles.IsEmpty && _openedFiles.All(x => !x.CanRead)) {
+                    _openedFiles.Clear();
                 }
                 //if (Zips.Count > 0)
                 //    Console.WriteLine($"has some zips {Root}");
-                if (!OpenedFiles.IsEmpty)
+                if (!_openedFiles.IsEmpty)
                     return;
-                var zips = Zips;
+                var zips = _zips;
                 for (int i = zips.Count - 1; i >= 0; i--) {
                     var zip = zips[i];
                     if (!zip.Used) {
                         //Console.WriteLine($"cleared zipArchive {Root}[{i}]");
                         zip.Archive.Dispose();
-                        Zips.RemoveAt(i);
+                        _zips.RemoveAt(i);
                     } else {
                         //Console.WriteLine($"not cleared: {Root}[{i}]");
                     }
@@ -104,9 +104,9 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     }
     private ZipArchiveWrapper? OpenZipIfNeeded() {
-        lock (Zips) {
-            for (int i = 0; i < Zips.Count; i++) {
-                var w = Zips[i];
+        lock (_zips) {
+            for (int i = 0; i < _zips.Count; i++) {
+                var w = _zips[i];
 
                 if (!w.Used) {
                     w.Used = true;
@@ -134,7 +134,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
                     Used = true
                 };
 
-                Zips.Add(w);
+                _zips.Add(w);
 
                 return w;
             }
@@ -150,7 +150,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
         var entry = zip.GetEntry(path);
         var stream = entry?.Open();
         if (stream is { }) {
-            OpenedFiles.Add(stream);
+            _openedFiles.Add(stream);
         }
 
         return stream;
@@ -224,8 +224,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
-        lock (WatchedAssets) {
-            var assets = WatchedAssets.GetOrAdd(path, static _ => new(1));
+        lock (_watchedAssets) {
+            var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
             assets.Add(asset);
         }
     }

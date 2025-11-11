@@ -14,7 +14,7 @@ internal sealed class ForegroundDebris : Entity, IPlaceable {
             _ => "scenery/fgdebris/rock_b"
         };
 
-        foreach (var texture in GFX.Atlas.GetSubtextures(path)) {
+        foreach (var texture in Gfx.Atlas.GetSubtextures(path)) {
             yield return ISprite.FromTexture(Pos, texture).Centered();
         }
     }

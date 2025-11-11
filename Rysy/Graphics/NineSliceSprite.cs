@@ -46,7 +46,7 @@ public record struct NineSliceSprite : ISprite {
         if (Texture.Texture is not { } texture)
             return;
 
-        var b = GFX.Batch;
+        var b = Gfx.Batch;
 
         var rect = Pos;
         var w = rect.Width;

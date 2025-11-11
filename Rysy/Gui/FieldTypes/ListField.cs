@@ -122,11 +122,11 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
-        const int ButtonAmt = 1;
+        const int buttonAmt = 1;
 
         var listItemWidth = ImGui.CalcItemWidth();
 
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * ButtonAmt) - xPadding * ButtonAmt);
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * buttonAmt) - xPadding * buttonAmt);
         ImGui.BeginDisabled(!AllowEdits);
         if (ImGuiManager.ExpandingTextInput($"##text{fieldName}", ref str, 1024, Tooltip)) {
             ret = str;

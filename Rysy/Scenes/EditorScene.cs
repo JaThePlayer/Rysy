@@ -41,7 +41,7 @@ public sealed class EditorScene : Scene {
         if (map is { })
             Persistence.Instance.PushRecentMap(map);
 
-        RysyState.OnEndOfThisFrame += GCHelper.VeryAggressiveGC;
+        RysyState.OnEndOfThisFrame += GcHelper.VeryAggressiveGc;
     }
 
     private void OnThemeChanged(Theme theme) {
@@ -363,16 +363,16 @@ public sealed class EditorScene : Scene {
             var height = 4 * 6;
             var center = windowSize.Y / 2;
 
-            GFX.BeginBatch();
+            Gfx.BeginBatch();
             PicoFont.Print("No map loaded.", new Rectangle(0, center - 32, windowSize.X, height), Color.LightSkyBlue, scale: 4f);
             PicoFont.Print("Please drop a .bin", new Rectangle(0, center, windowSize.X, height), Color.White, scale: 4f);
             PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, scale: 4f);
-            GFX.EndBatch();
+            Gfx.EndBatch();
             return;
         }
         
         using var buffer = RenderTargetPool.Get(windowSize.X, windowSize.Y);
-        var gd = GFX.Batch.GraphicsDevice;
+        var gd = Gfx.Batch.GraphicsDevice;
         gd.SetRenderTarget(buffer.Target);
         gd.Clear(Color.Black);
         
@@ -383,7 +383,7 @@ public sealed class EditorScene : Scene {
         var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
 
         if (renderStylegrounds && CurrentRoom is { }) {
-            var layers = fgInFront ? StylegroundRenderer.Layers.BG : StylegroundRenderer.Layers.BGAndFG;
+            var layers = fgInFront ? StylegroundRenderer.Layers.Bg : StylegroundRenderer.Layers.BgAndFg;
             StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, layers, filter: StylegroundRenderer.NotMasked);
         }
         
@@ -396,20 +396,20 @@ public sealed class EditorScene : Scene {
             CurrentRoom.Render(Camera, Room.RenderConfig.Selected, Colorgrade.None);
 
             if (renderStylegrounds && fgInFront)
-                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
+                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.Fg, filter: StylegroundRenderer.NotMasked);
         }
         
         gd.SetRenderTarget(null);
-        GFX.BeginBatch(new SpriteBatchState(Effect: EditorState.CurrentColograde.Set()));
-        GFX.Batch.Draw(buffer.Target, Vector2.Zero, Color.White);
-        GFX.EndBatch();
+        Gfx.BeginBatch(new SpriteBatchState(Effect: EditorState.CurrentColograde.Set()));
+        Gfx.Batch.Draw(buffer.Target, Vector2.Zero, Color.White);
+        Gfx.EndBatch();
         
-        GFX.BeginBatch(Camera);
+        Gfx.BeginBatch(Camera);
         foreach (var room in Map.Rooms) {
             // draw the colored border around the room
             room.GetBorderSprite(Camera.Scale).Render();
         }
-        GFX.EndBatch();
+        Gfx.EndBatch();
         
         ToolHandler.Render(Camera, CurrentRoom);
 
@@ -429,7 +429,7 @@ public sealed class EditorScene : Scene {
 
             // Reload textures
             if (input.Keyboard.IsKeyClicked(Keys.F5)) {
-                GFX.Atlas.DisposeTextures();
+                Gfx.Atlas.DisposeTextures();
                 foreach (var room in Map.Rooms)
                     room.ClearRenderCache();
                 GC.Collect(3);

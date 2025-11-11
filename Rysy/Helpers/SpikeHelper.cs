@@ -14,9 +14,9 @@ public static class SpikeHelper {
     }
 
     public static Color[] DefaultDustColors { get; } = new[] {
-        Color.Lerp("f25a10".FromRGB(), Color.DarkSlateBlue, 0.4f),
-        Color.Lerp("ff0000".FromRGB(), Color.DarkSlateBlue, 0.4f),
-        Color.Lerp("f21067".FromRGB(), Color.DarkSlateBlue, 0.4f),
+        Color.Lerp("f25a10".FromRgb(), Color.DarkSlateBlue, 0.4f),
+        Color.Lerp("ff0000".FromRgb(), Color.DarkSlateBlue, 0.4f),
+        Color.Lerp("f21067".FromRgb(), Color.DarkSlateBlue, 0.4f),
     };
 
     public static IEnumerable<ISprite> GetDustSprites(Entity e, Direction dir, IReadOnlyList<Color>? colors = null) {
@@ -45,7 +45,7 @@ public static class SpikeHelper {
 
         offset += e.Pos;
 
-        var textures = GFX.Atlas.GetSubtextures(dir is Direction.Up or Direction.Down ? "danger/triggertentacle/wiggle_v" : "danger/triggertentacle/wiggle_v");
+        var textures = Gfx.Atlas.GetSubtextures(dir is Direction.Up or Direction.Down ? "danger/triggertentacle/wiggle_v" : "danger/triggertentacle/wiggle_v");
 
         var rot = dir switch {
             Direction.Up => 0f,

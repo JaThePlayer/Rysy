@@ -6,17 +6,17 @@ using System.Text.Json.Serialization;
 namespace Rysy;
 
 public sealed class BinaryPacker {
-    string[] StringLookup = null!;
-    string PackageName = null!;
+    string[] _stringLookup = null!;
+    string _packageName = null!;
 
-    BinaryReader Reader = null!;
-    BinaryWriter Writer = null!;
-    BinaryWriter HeaderWriter = null!;
+    BinaryReader _reader = null!;
+    BinaryWriter _writer = null!;
+    BinaryWriter _headerWriter = null!;
 
-    short nextLookupId = 0;
-    Dictionary<string, short> WritingLookup = new();
-    private Dictionary<Element, DetailedWriteInfo>? DetailedWriteInfos;
-    private Dictionary<string, DetailedLookupWriteInfo>? DetailedWriteLookupInfos;
+    short _nextLookupId = 0;
+    Dictionary<string, short> _writingLookup = new();
+    private Dictionary<Element, DetailedWriteInfo>? _detailedWriteInfos;
+    private Dictionary<string, DetailedLookupWriteInfo>? _detailedWriteLookupInfos;
 
     public struct DetailedWriteInfo {
         public long SelfSize;
@@ -27,10 +27,10 @@ public sealed class BinaryPacker {
         public long Size;
     }
 
-    public IReadOnlyDictionary<Element, DetailedWriteInfo>? GetDetailedWriteInfo() => DetailedWriteInfos;
-    public IReadOnlyDictionary<string, DetailedLookupWriteInfo>? GetDetailedWriteLookupInfo() => DetailedWriteLookupInfos;
+    public IReadOnlyDictionary<Element, DetailedWriteInfo>? GetDetailedWriteInfo() => _detailedWriteInfos;
+    public IReadOnlyDictionary<string, DetailedLookupWriteInfo>? GetDetailedWriteLookupInfo() => _detailedWriteLookupInfos;
 
-    public IReadOnlyDictionary<string, short> GetWritingLookupTable() => WritingLookup;
+    public IReadOnlyDictionary<string, short> GetWritingLookupTable() => _writingLookup;
 
     internal BinaryPacker() { }
 
@@ -63,14 +63,14 @@ public sealed class BinaryPacker {
             stringLookup[i] = reader.ReadString();
         }
 
-        packer.StringLookup = stringLookup;
-        packer.PackageName = package;
-        packer.Reader = reader;
+        packer._stringLookup = stringLookup;
+        packer._packageName = package;
+        packer._reader = reader;
 
         var element = packer.ReadElement();
 
         return new() {
-            Name = packer.PackageName,
+            Name = packer._packageName,
             Data = element,
             Filename = filename,
         };
@@ -93,12 +93,12 @@ public sealed class BinaryPacker {
 
         var packer = new BinaryPacker();
         // Write the map to a different writer, as we now need the lookup table.
-        packer.Writer = contentWriter;
-        packer.HeaderWriter = headerWriter;
+        packer._writer = contentWriter;
+        packer._headerWriter = headerWriter;
         
         if (saveDetailedInformation) {
-            packer.DetailedWriteInfos = [];
-            packer.DetailedWriteLookupInfos = [];
+            packer._detailedWriteInfos = [];
+            packer._detailedWriteLookupInfos = [];
         }
         
         // reserve space for string lookup length, we'll write it later
@@ -110,7 +110,7 @@ public sealed class BinaryPacker {
 
         // write lookup table length now
         headerWriter.Seek((int)lookupLenPos, SeekOrigin.Begin);
-        headerWriter.Write((short) packer.WritingLookup.Count);
+        headerWriter.Write((short) packer._writingLookup.Count);
 
         headerStream.Seek(0, SeekOrigin.Begin);
         headerStream.CopyTo(output);
@@ -138,10 +138,10 @@ public sealed class BinaryPacker {
         memStream.CopyTo(fileStream);
     }
     
-    internal string ReadLookup() => StringLookup[Reader.ReadInt16()];
+    internal string ReadLookup() => _stringLookup[_reader.ReadInt16()];
 
     internal void WriteElement(Element el) {
-        var writer = Writer;
+        var writer = _writer;
         var start = writer.BaseStream.Position;
 
         WriteLookup(el.Name ?? "");
@@ -173,7 +173,7 @@ public sealed class BinaryPacker {
             WriteElement(item);
         }
         
-        if (DetailedWriteInfos is { } detailed) {
+        if (_detailedWriteInfos is { } detailed) {
             var totalSize = writer.BaseStream.Position - start;
             detailed[el] = new() {
                 SelfSize = selfSize,
@@ -183,13 +183,13 @@ public sealed class BinaryPacker {
     }
 
     internal void WriteLookup(string str) {
-        if (!WritingLookup.TryGetValue(str, out short id)) {
-            id = nextLookupId;
-            WritingLookup[str] = nextLookupId++;
+        if (!_writingLookup.TryGetValue(str, out short id)) {
+            id = _nextLookupId;
+            _writingLookup[str] = _nextLookupId++;
 
             // Write the string to the lookup table in the map header
-            var headerWriter = HeaderWriter;
-            if (DetailedWriteLookupInfos is { } detailed) {
+            var headerWriter = _headerWriter;
+            if (_detailedWriteLookupInfos is { } detailed) {
                 var start = headerWriter.BaseStream.Position;
                 headerWriter.Write(str);
                 detailed[str] = new() { Size = headerWriter.BaseStream.Position - start };
@@ -197,7 +197,7 @@ public sealed class BinaryPacker {
                 headerWriter.Write(str);
             }
         }
-        Writer.Write(id);
+        _writer.Write(id);
     }
 
     private const byte ExtElementType = 255; 
@@ -205,12 +205,12 @@ public sealed class BinaryPacker {
     internal void WriteValue(object val) {
         switch (val) {
             case bool b:
-                Writer.Write((byte) 0);
-                Writer.Write(b);
+                _writer.Write((byte) 0);
+                _writer.Write(b);
                 break;
             case byte b:
-                Writer.Write((byte) 1);
-                Writer.Write(b);
+                _writer.Write((byte) 1);
+                _writer.Write(b);
                 break;
             case short b:
                 WriteNumber(b);
@@ -222,16 +222,16 @@ public sealed class BinaryPacker {
                 if (float.IsInteger(b)) {
                     WriteNumber((int)b);
                 } else {
-                    Writer.Write((byte) 4);
-                    Writer.Write(b);
+                    _writer.Write((byte) 4);
+                    _writer.Write(b);
                 }
                 break;
             case double b:
                 if (double.IsInteger(b)) {
                     WriteNumber((int)b);
                 } else {
-                    Writer.Write((byte) 4);
-                    Writer.Write((float) b);
+                    _writer.Write((byte) 4);
+                    _writer.Write((float) b);
                 }
                 break;
             case Enum e:
@@ -247,7 +247,7 @@ public sealed class BinaryPacker {
              EXTENDED - not supported in game!
              */
             case Element el:
-                Writer.Write(ExtElementType);
+                _writer.Write(ExtElementType);
                 WriteElement(el);
                 break;
             default:
@@ -258,47 +258,47 @@ public sealed class BinaryPacker {
     private void WriteNumber(int num) {
         switch (num) {
             case >= byte.MinValue and <= byte.MaxValue:
-                Writer.Write((byte) 1);
-                Writer.Write((byte) num);
+                _writer.Write((byte) 1);
+                _writer.Write((byte) num);
                 break;
             case >= short.MinValue and <= short.MaxValue:
-                Writer.Write((byte) 2);
-                Writer.Write((short) num);
+                _writer.Write((byte) 2);
+                _writer.Write((short) num);
                 break;   
             default:
-                Writer.Write((byte) 3);
-                Writer.Write(num);
+                _writer.Write((byte) 3);
+                _writer.Write(num);
                 break;
         }
     }
     
     private void EncodeString(string b) {
-        if (TryEncodeRLE(b, out var rleEncode) && rleEncode.Length <= b.Length) {
-            Writer.Write((byte) 7);
-            Writer.Write((short) rleEncode.Length);
-            Writer.Write(rleEncode);
+        if (TryEncodeRle(b, out var rleEncode) && rleEncode.Length <= b.Length) {
+            _writer.Write((byte) 7);
+            _writer.Write((short) rleEncode.Length);
+            _writer.Write(rleEncode);
         } else if (b.Length > 512) {
             // Strings that are this big are really unlikely to repeat themselves
             // They're most likely tilegrids we couldn't RLE
-            Writer.Write((byte) 6);
-            Writer.Write(b);
+            _writer.Write((byte) 6);
+            _writer.Write(b);
         } else {
-            Writer.Write((byte) 5);
+            _writer.Write((byte) 5);
             WriteLookup(b);
         }
     }
 
     internal Element ReadElement() {
-        var reader = Reader;
+        var reader = _reader;
 
         var element = new Element(ReadLookup());
 
-        var attrCount = Reader.ReadByte();
+        var attrCount = _reader.ReadByte();
         var attrs = element.Attributes = new(attrCount, StringComparer.Ordinal);
         for (int i = 0; i < attrCount; i++) {
             string attrName = ReadLookup();
 
-            attrs[attrName] = Reader.ReadByte() switch {
+            attrs[attrName] = _reader.ReadByte() switch {
                 0 => reader.ReadBoolean(),
                 1 => Convert.ToInt32(reader.ReadByte()),
                 2 => Convert.ToInt32(reader.ReadInt16()),
@@ -306,12 +306,12 @@ public sealed class BinaryPacker {
                 4 => reader.ReadSingle(),
                 5 => ReadLookup(),
                 6 => reader.ReadString(),
-                7 => DecodeRLE(),
+                7 => DecodeRle(),
                 var unkType => throw new InvalidDataException($"Unknown attribute type: {unkType}")
             };
         }
 
-        var childCount = Reader.ReadInt16();
+        var childCount = _reader.ReadInt16();
         var children = element.Children = new Element[childCount];
         for (int i = 0; i < childCount; i++) {
             children[i] = ReadElement();
@@ -320,10 +320,10 @@ public sealed class BinaryPacker {
         return element;
     }
 
-    internal string DecodeRLE() {
-        var dataLen = Reader.ReadInt16();
+    internal string DecodeRle() {
+        var dataLen = _reader.ReadInt16();
         Span<byte> rle = dataLen < 1024 ? stackalloc byte[dataLen] : new byte[dataLen];
-        Reader.BaseStream.ReadExactly(rle);
+        _reader.BaseStream.ReadExactly(rle);
 
         StringBuilder builder = new();
         for (int i = 0; i < rle.Length; i += 2) {
@@ -333,16 +333,16 @@ public sealed class BinaryPacker {
         return builder.ToString();
     }
 
-    private static readonly byte[] _rleEncodeBuffer = new byte[short.MaxValue];
+    private static readonly byte[] RleEncodeBuffer = new byte[short.MaxValue];
     
-    internal static bool TryEncodeRLE(string str, out ReadOnlySpan<byte> encoded) {
+    internal static bool TryEncodeRle(string str, out ReadOnlySpan<byte> encoded) {
         if (str.Length < 16) {
             //Console.WriteLine($"Can't encode RLE: {str} - too short!");
             encoded = default;
             return false;
         }
 
-        Span<byte> rle = _rleEncodeBuffer;
+        Span<byte> rle = RleEncodeBuffer;
         int bufferIdx = 0;
 
         for (int i = 0; i < str.Length; i++) {

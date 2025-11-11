@@ -15,12 +15,12 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     public SelectRectangleGesture RectangleGesture;
 
-    private bool PickNextFrame;
+    private bool _pickNextFrame;
 
     /// <summary>
     /// Position at which the GetPreviewSprites method will be called, regardless of the RectangleGesture's location. 
     /// </summary>
-    private Vector2? AnchorPos;
+    private Vector2? _anchorPos;
 
     /// <summary>
     /// When dragging a placement, specifies which node should be moved.
@@ -64,7 +64,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             var prefix = layer.MaterialLangPrefix;
             var name = prefix is null 
                 ? pl.Name 
-                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.SID ?? ""}.placements.name"));
+                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.Sid ?? ""}.placements.name"));
             
             return name;
         }
@@ -80,7 +80,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             return [];
         
         var prefix = layer.MaterialLangPrefix;
-        return new TranslatedList<string>(pl.AlternativeNames, x => x, $"{prefix}.{pl.SID ?? ""}.placements.name");
+        return new TranslatedList<string>(pl.AlternativeNames, x => x, $"{prefix}.{pl.Sid ?? ""}.placements.name");
     }
 
     public override string? SerializeMaterial(EditorLayer layer, object? material) {
@@ -110,7 +110,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (prefix is null)
             return null;
         
-        return pl.Name.TranslateOrNull($"{prefix}.{pl.SID}.placements.description");
+        return pl.Name.TranslateOrNull($"{prefix}.{pl.Sid}.placements.description");
     }
 
     private static Placement? PlacementFromString(string str, EditorLayer layer) {
@@ -164,8 +164,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 return;
         }
         
-        if (PickNextFrame) {
-            PickNextFrame = false;
+        if (_pickNextFrame) {
+            _pickNextFrame = false;
             if (GetPlacementUnderCursor(GetMousePos(camera, room, precise: true), room, EditorLayers.ToolLayerToEnum(Layer)) is { } underCursor) {
                 Material = underCursor;
                 ToolHandler.PushRecentMaterial(Material);
@@ -183,7 +183,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (Material is Placement place) {
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
                 History.ApplyNewAction(place.PlacementHandler.Place(placement, room!));
-                AnchorPos = null;
+                _anchorPos = null;
                 ResetDragState();
                 if (placement is EntitySelectionHandler entityHandler) {
                     entityHandler.Entity.EntityData.ReplaceNodes(place.Nodes ?? Enumerable.Range(0, entityHandler.Entity.NodeLimits.Start.Value).Select(_ => new Vector2()));
@@ -224,7 +224,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             if ((_shouldDragNodesOfResizableEntity || !(e.ResizableX || e.ResizableY)) && e.Nodes.Count > _draggedNodeIndex) {
                 var node = e.Nodes[_draggedNodeIndex];
                 new MoveNodeAction(node, e, GetMousePos(camera, room).ToVector2() - node).Apply(map);
-                AnchorPos ??= e.Pos;
+                _anchorPos ??= e.Pos;
                 return;
             }
 
@@ -271,7 +271,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public void OnMiddleClick() {
-        PickNextFrame = true;
+        _pickNextFrame = true;
     }
 
     internal static Placement? GetPlacementUnderCursor(Point mouse, Room? currentRoom, SelectionLayer layer) {
@@ -293,13 +293,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         var mouse = GetMousePos(camera, room);
 
         if (Material is Placement placement && CurrentPlacement is { } selection) {
-            var pos = AnchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
+            var pos = _anchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
             var ctx = SpriteRenderCtx.Default();
             var offset = placement.PlacementHandler.GetPreviewSpritesOffset(selection, pos, room!);
             SpriteBatchState prevState = default;
             if (offset is { }) {
-                prevState = GFX.EndBatch()!.Value;
-                GFX.BeginBatch(prevState with {
+                prevState = Gfx.EndBatch()!.Value;
+                Gfx.BeginBatch(prevState with {
                     TransformMatrix = prevState.TransformMatrix * Matrix.CreateTranslation(offset.Value.X * camera.Scale, offset.Value.Y * camera.Scale, 0f)
                 });
             }
@@ -313,8 +313,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             }
 
             if (offset is { }) {
-                GFX.EndBatch();
-                GFX.BeginBatch(prevState);
+                Gfx.EndBatch();
+                Gfx.BeginBatch(prevState);
             }
         }
 
@@ -343,8 +343,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override void RenderOverlay() {
         if (Layer is RoomLayer) {
             var camera = EditorState.Camera;
-            GFX.EndBatch();
-            GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix));
+            Gfx.EndBatch();
+            Gfx.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix));
             Render(camera, null);
         }
     }
@@ -357,8 +357,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             CurrentPlacement = null;
             _currentPlacementSourceMaterial = null;
         }
-        PickNextFrame = false;
-        AnchorPos = null;
+        _pickNextFrame = false;
+        _anchorPos = null;
         ResetDragState();
     }
 
@@ -442,7 +442,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         
        // MaterialPreviewCache.Clear();
 
-        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.SID ?? ""}");
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}");
         var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
         
         if (cacheLookup.TryGetValue(keySpan, out var value)) {
@@ -450,7 +450,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         }
 
         var key = keySpan.ToString();
-        XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals }
+        XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BgDecals or SelectionLayer.FgDecals }
             ? CreateWidgetForDecal(placement, key, PreviewSize)
             : CreateWidget(Map.DummyMap, placement, key);
         MaterialPreviewCache[key] = def;
@@ -460,7 +460,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
         if (material is Placement placement && placement.IsDecal()) {
-            var texture = GFX.Atlas[Decal.GetTexturePathFromPlacement(placement)];
+            var texture = Gfx.Atlas[Decal.GetTexturePathFromPlacement(placement)];
             var maxSize = Math.Max(texture.Width, texture.Height);
 
             return CreateWidgetForDecal(placement, "", maxSize);
@@ -578,7 +578,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     public override object GetGroupKeyForMaterial(object material) {
         if (material is Placement pl) {
-            if (pl.SID is { } sid && sid != EntityRegistry.FGDecalSID && sid != EntityRegistry.BGDecalSID)
+            if (pl.Sid is { } sid && sid != EntityRegistry.FgDecalSid && sid != EntityRegistry.BgDecalSid)
                 return sid;
 
             return pl.Name;

@@ -18,13 +18,13 @@ public sealed class ReplaceEntities : Script {
         var origSid = args.Get<string>("from");
         var newSid = args.Get<string>("to");
 
-        var mainPlacement = EntityRegistry.EntityPlacements.FirstOrDefault(pl => pl.SID == newSid);
+        var mainPlacement = EntityRegistry.EntityPlacements.FirstOrDefault(pl => pl.Sid == newSid);
         if (mainPlacement is null)
         {
             throw new Exception($"Can't run the script, as there are no placements for {newSid}");
         }
 
-        var tempEntity = EntityRegistry.Create(mainPlacement, new(), room: args.Rooms[0], assignID: false, isTrigger: false);
+        var tempEntity = EntityRegistry.Create(mainPlacement, new(), room: args.Rooms[0], assignId: false, isTrigger: false);
         var (fields, existChecker) = EntityPropertyWindow.GetFields(tempEntity);
 
         var formWindow = new FormWindow(fields, $"Configuring Replace Script: {origSid} -> {newSid}");
@@ -37,7 +37,7 @@ public sealed class ReplaceEntities : Script {
 
             IHistoryAction? action = args.Rooms
                 .SelectMany(r => r.Entities[origSid])
-                .Select(e => new SwapEntityAction(e, EntityRegistry.Create(placement, e.Pos, e.Room, assignID: false, isTrigger: e is Trigger)))
+                .Select(e => new SwapEntityAction(e, EntityRegistry.Create(placement, e.Pos, e.Room, assignId: false, isTrigger: e is Trigger)))
                 .MergeActions();
 
             // generally, your scripts should return a history action in Prerun instead of adding actions manually,

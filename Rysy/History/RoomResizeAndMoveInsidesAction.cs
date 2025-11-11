@@ -3,7 +3,7 @@ using Rysy.Extensions;
 
 namespace Rysy.History;
 
-public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int ResizeY, Vector2 Move, bool pushConnectedRooms) : IHistoryAction {
+public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int ResizeY, Vector2 Move, bool PushConnectedRooms) : IHistoryAction {
     private RoomResizeAction? _resizeAction;
     private RoomMoveAction? _moveAction;
 
@@ -16,11 +16,11 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
         
         var shouldMove = Move != Vector2.Zero;
 
-        var fgTiles = shouldMove ? (char[,]) room.FG.Tiles.Clone() : null;
-        var bgTiles = shouldMove ? (char[,]) room.BG.Tiles.Clone() : null;
+        var fgTiles = shouldMove ? (char[,]) room.Fg.Tiles.Clone() : null;
+        var bgTiles = shouldMove ? (char[,]) room.Bg.Tiles.Clone() : null;
 
         _roomMoves.Clear();
-        if (pushConnectedRooms) {
+        if (PushConnectedRooms) {
             var origRect = room.Bounds;
             HashSet<Room> movedRooms = [ room ];
             // TODO: Check tiles, not just overlapping coords. Extract to not have so much copy-paste
@@ -89,8 +89,8 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
             MoveAll(room, -Move);
 
             var tileOffset = (-Move / 8).ToPoint();
-            _moveActions.Add(new TilegridMoveActionAfterResize(room.FG, fgTiles!, tileOffset.X, tileOffset.Y));
-            _moveActions.Add(new TilegridMoveActionAfterResize(room.BG, bgTiles!, tileOffset.X, tileOffset.Y));
+            _moveActions.Add(new TilegridMoveActionAfterResize(room.Fg, fgTiles!, tileOffset.X, tileOffset.Y));
+            _moveActions.Add(new TilegridMoveActionAfterResize(room.Bg, bgTiles!, tileOffset.X, tileOffset.Y));
         }
 
         _moveActions = _moveActions?.Where(a => a.Apply(map)).ToList();

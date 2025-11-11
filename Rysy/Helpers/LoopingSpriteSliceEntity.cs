@@ -47,7 +47,7 @@ public abstract class LoopingSpriteSliceEntity : SpriteEntity {
     private int GetSubtextStartPos(ref Sprite baseSprite, LoopingMode mode, int i, int tileSize, int count, bool vertical)
         => mode switch {
             LoopingMode.RepeatFirstTile => 0,
-            LoopingMode.UseEdgeTiles_RepeatMiddle => i switch {
+            LoopingMode.UseEdgeTilesRepeatMiddle => i switch {
                 0 => 0,
                 _ when i == count - 1 => tileSize * 2,
                 _ => tileSize
@@ -58,7 +58,7 @@ public abstract class LoopingSpriteSliceEntity : SpriteEntity {
 
     public enum LoopingMode {
         RepeatFirstTile,
-        UseEdgeTiles_RepeatMiddle,
+        UseEdgeTilesRepeatMiddle,
         PickRandom,
     }
 }

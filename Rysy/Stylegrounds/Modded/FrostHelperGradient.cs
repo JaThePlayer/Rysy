@@ -54,7 +54,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
     }
 
     public override SpriteBatchState? GetSpriteBatchState() 
-        => GFX.GetCurrentBatchState() with {
+        => Gfx.GetCurrentBatchState() with {
             BlendState = ParseBlendMode(this.Attr("blendMode", "alphablend")),
         };
 
@@ -139,8 +139,8 @@ sealed record GradientEntryField : ComplexTypeField<LinearGradient.Entry> {
     public override bool RenderDetailedWindow(ref LinearGradient.Entry data) {
         bool anyChanged = false;
 
-        anyChanged |= ImGuiManager.ColorEdit("From", ref data.ColorFrom, ColorFormat.RGBA, "The color at the start of this segment");
-        anyChanged |= ImGuiManager.ColorEdit("To", ref data.ColorTo, ColorFormat.RGBA, "The color at the end of this segment");
+        anyChanged |= ImGuiManager.ColorEdit("From", ref data.ColorFrom, ColorFormat.Rgba, "The color at the start of this segment");
+        anyChanged |= ImGuiManager.ColorEdit("To", ref data.ColorTo, ColorFormat.Rgba, "The color at the end of this segment");
         anyChanged |= ImGui.InputFloat("Percent", ref data.Percent).WithTooltip("How much of the screen this entry takes up");
 
         return anyChanged;

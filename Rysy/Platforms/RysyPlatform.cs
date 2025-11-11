@@ -9,7 +9,7 @@ public abstract class RysyPlatform {
     public static RysyPlatform Current => _current ??=
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new Windows() :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new Linux() :
-        RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new MacOS() :
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new MacOs() :
         throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.RuntimeIdentifier}");
 
     public virtual bool SupportFileWatchers => true;

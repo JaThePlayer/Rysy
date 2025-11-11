@@ -8,7 +8,7 @@ public class FallingBlock : TileEntity, ISolid, IPlaceable {
 
     public override char Tiletype => Char("tiletype", '3');
 
-    public override TileLayer Layer => TileLayer.FG;
+    public override TileLayer Layer => TileLayer.Fg;
 
     public override Color Color => Color.White;
 

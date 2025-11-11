@@ -27,7 +27,7 @@ public class Input {
     }
 
     public class MouseInput : IMouseInput {
-        public const float DOUBLE_CLICK_TIME = .3f;
+        public const float DoubleClickTime = .3f;
 
         public int ScrollDelta { get; private set; }
         public MouseInputState Left { get; private set; }
@@ -80,7 +80,7 @@ public class Input {
         private readonly Point[] _clickPositions = new Point[5];
 
         private MouseInputState GetCorrectState(ButtonState current, ButtonState prev, int index, float timeDeltaSeconds) {
-            _doubleClicks[index] = !_consumedInputs[index] && (DateTime.Now - RysyState.MouseDoubleClicks[index]).TotalSeconds <= DOUBLE_CLICK_TIME;
+            _doubleClicks[index] = !_consumedInputs[index] && (DateTime.Now - RysyState.MouseDoubleClicks[index]).TotalSeconds <= DoubleClickTime;
             if (_doubleClicks[index]) {
               //  RysyState.MouseDoubleClicks[index] = default;
             }
@@ -346,7 +346,7 @@ public class Input {
             Set(obj.ToJson(options, Settings.Instance.MinifyClipboard));
         }
 
-        public static string Get() => SDL2Ext.GetClipboardFixed();
+        public static string Get() => Sdl2Ext.GetClipboardFixed();
 
         public static bool TryGetFromJson<T>([NotNullWhen(true)] out T? res, JsonSerializerOptions? options = null)
             => JsonExtensions.TryDeserialize(Get(), out res, options);

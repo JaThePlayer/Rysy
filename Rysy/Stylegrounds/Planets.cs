@@ -7,7 +7,7 @@ public sealed class Planets : Style, IPlaceable {
     public static FieldList GetFields() => new(new {
         count = 32,
         size = PlanetStyleSizes.Small,
-        color = Fields.RGB(null!).AllowNull(),
+        color = Fields.Rgb(null!).AllowNull(),
         scrollx = 1.0,
         scrolly = 1.0
     });

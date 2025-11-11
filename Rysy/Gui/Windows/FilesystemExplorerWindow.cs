@@ -11,12 +11,12 @@ public sealed class FilesystemExplorerWindow : Window {
     }
 
     private ComboCache<FileRef> _cache = new();
-    private FileRef? OpenedFile;
-    private string FileText = "";
-    private string Search = "";
+    private FileRef? _openedFile;
+    private string _fileText = "";
+    private string _search = "";
 
-    private List<FileRef>? FoundFiles;
-    private Dictionary<FileRef, string>? FoundFilesDict;
+    private List<FileRef>? _foundFiles;
+    private Dictionary<FileRef, string>? _foundFilesDict;
 
     public FilesystemExplorerWindow() : base("Filesystem Explorer", new(800, 800)) {
         Resizable = true;
@@ -26,26 +26,26 @@ public sealed class FilesystemExplorerWindow : Window {
     protected override void Render() {
         base.Render();
         
-        FoundFiles ??= ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod("", "")
+        _foundFiles ??= ModRegistry.Filesystem.FindFilesInDirectoryRecursiveWithMod("", "")
             .Where(p => !p.Item1.StartsWith('.') && !p.Item1.StartsWith("__MACOSX", StringComparison.Ordinal))
             .Select(p => new FileRef(p.Item1, p.Item2))
             .ToList();
 
-        if (FoundFiles is { }) {
-            OpenedFile ??= new("", ModRegistry.VanillaMod);
+        if (_foundFiles is { }) {
+            _openedFile ??= new("", ModRegistry.VanillaMod);
             
-            FoundFilesDict ??= FoundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.DisplayName}]");
+            _foundFilesDict ??= _foundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.DisplayName}]");
 
-            if (ImGuiManager.Combo("Files", ref OpenedFile, FoundFilesDict, ref Search, null, _cache)) {
-                if (OpenedFile!.Mod.Filesystem.TryReadAllText(OpenedFile.Path) is { } text) {
-                    FileText = text;
+            if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, null, _cache)) {
+                if (_openedFile!.Mod.Filesystem.TryReadAllText(_openedFile.Path) is { } text) {
+                    _fileText = text;
                 }
             }
         }
 
         var shouldDisplayText = true;
         
-        if (OpenedFile is { } opened) {
+        if (_openedFile is { } opened) {
             var ext = opened.Path.FileExtension();
             
             if (ext == ".bin" && ImGui.Button("Open Map")) {
@@ -62,7 +62,7 @@ public sealed class FilesystemExplorerWindow : Window {
                 // TODO: zoom in/out???
                 ImGuiManager.XnaWidget("fsExplorerPreview", w, h,
                     () => {
-                        if (GFX.Atlas.TryGet(opened.Path.TrimPrefix("Graphics/Atlases/Gameplay/")
+                        if (Gfx.Atlas.TryGet(opened.Path.TrimPrefix("Graphics/Atlases/Gameplay/")
                                     .TrimPostfix(".png"),
                                 out var t)) {
                             var spr = ISprite.FromTexture(t).Centered();
@@ -84,6 +84,6 @@ public sealed class FilesystemExplorerWindow : Window {
         }
 
         if (shouldDisplayText)
-            ImGuiManager.ReadOnlyInputTextMultiline("##", FileText, new(800 - ImGui.GetStyle().WindowPadding.X, 700));
+            ImGuiManager.ReadOnlyInputTextMultiline("##", _fileText, new(800 - ImGui.GetStyle().WindowPadding.X, 700));
     }
 }

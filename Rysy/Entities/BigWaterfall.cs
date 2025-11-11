@@ -25,17 +25,17 @@ public class BigWaterfall : RectangleEntity, IPlaceable {
     public override Color OutlineColor => Color.LightSkyBlue * 0.8f;
     public override Color FillColor => Color.LightSkyBlue * 0.3f;
 
-    public Layers Layer => Enum("layer", Layers.BG);
+    public Layers Layer => Enum("layer", Layers.Bg);
 
     public override int Depth => GetDepth(Layer);
 
     public static FieldList GetFields() => new(new {
-        layer = Fields.EnumNamesDropdown(Layers.FG)
+        layer = Fields.EnumNamesDropdown(Layers.Fg)
     });
 
     public static PlacementList GetPlacements() => [
         new("foreground"),
-        new("background", new { layer = Layers.BG })
+        new("background", new { layer = Layers.Bg })
     ];
 
     public override IEnumerable<ISprite> GetSprites() {
@@ -43,13 +43,13 @@ public class BigWaterfall : RectangleEntity, IPlaceable {
     }
     
     public static int GetDepth(Layers layer) => layer switch {
-        Layers.FG => -49900,
+        Layers.Fg => -49900,
         _ => 10010,
     };
 
     public static IEnumerable<ISprite> GetSprites(Vector2 pos, int width, int h, Color fillColor, Color outlineColor, Layers layer) {
         var sprites = layer switch {
-            Layers.FG => FgSprites,
+            Layers.Fg => FgSprites,
             _ => BgSprites,
         };
         
@@ -83,7 +83,7 @@ public class BigWaterfall : RectangleEntity, IPlaceable {
     }
 
     public enum Layers {
-        FG,
-        BG
+        Fg,
+        Bg
     }
 }

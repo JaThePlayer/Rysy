@@ -17,7 +17,7 @@ public sealed class BloomDecalRegistryProperty : DecalRegistryProperty, IPlaceab
     public static PlacementList GetPlacements() => new("default");
 
     public override IEnumerable<ISprite> GetSprites(VirtTexture texture, SpriteRenderCtx ctx) {
-        var gradientSprite = GFX.Atlas["util/bloomgradient"];
+        var gradientSprite = Gfx.Atlas["util/bloomgradient"];
         var scale = Data.Float("radius", 1f) * 2f * (1f / gradientSprite.Width);
         var alpha = Data.Float("alpha", 1f).Div(2f).AtLeast(0f).AtMost(0.6f);
         var offset = new Vector2(Data.Float("offsetX"), Data.Float("offsetY"));

@@ -142,9 +142,9 @@ public sealed class OutlineVirtTexture : VirtTexture {
                 outline.SetData(outData);
 
                 lock (this) {
-                    _texture = outline;
-                    ClipRect = new(0, 0, _texture!.Width, _texture.Height);
-                    _state = State.Loaded;
+                    LoadedTexture = outline;
+                    ClipRect = new(0, 0, LoadedTexture!.Width, LoadedTexture.Height);
+                    State = States.Loaded;
                 }
             } catch (Exception ex) {
                 Logger.Write("OutlineSprite", LogLevel.Error, ex.ToString());

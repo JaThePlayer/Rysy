@@ -10,8 +10,8 @@ namespace Rysy.Mods;
 public sealed class FolderModFilesystem : IWriteableModFilesystem {
     public string Root { get; init; }
 
-    private ConcurrentDictionary<string, List<WatchedAsset>> WatchedAssets = new(StringComparer.Ordinal);
-    private FileSystemWatcher Watcher;
+    private ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
+    private FileSystemWatcher _watcher;
     // keeps track of whether a file is known to exist or known not to exist in the directory.
     private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
 
@@ -26,7 +26,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
 
         Directory.CreateDirectory(dirName);
         
-        Watcher = new FileSystemWatcher(dirName.CorrectSlashes());
+        _watcher = new FileSystemWatcher(dirName.CorrectSlashes());
 
         FileSystemEventHandler watcherCallback = (_, e) => {
             if (e.Name is null)
@@ -35,14 +35,14 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
             _knownExistingFiles.Clear();
             var path = e.Name.Unbackslash();
 
-            if (WatchedAssets.TryGetValue(path, out var watched)) {
+            if (_watchedAssets.TryGetValue(path, out var watched)) {
                 Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
                     $"Hot reloading {path}, with {watched.Count} watchers. [{e.ChangeType}]");
                 CallWatchers(path, watched, e.ChangeType);
             }
 
             // handle directory watchers
-            foreach (var directoryWatchers in WatchedAssets.Where(w =>
+            foreach (var directoryWatchers in _watchedAssets.Where(w =>
                          path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
                 if (Directory.Exists(VirtToRealPath(path))) {
                     Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
@@ -56,12 +56,12 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
             }
         };
         
-        Watcher.Changed += watcherCallback;
-        Watcher.Deleted += watcherCallback;
-        Watcher.Created += watcherCallback;
+        _watcher.Changed += watcherCallback;
+        _watcher.Deleted += watcherCallback;
+        _watcher.Created += watcherCallback;
         
-        Watcher.IncludeSubdirectories = true;
-        Watcher.EnableRaisingEvents = true;
+        _watcher.IncludeSubdirectories = true;
+        _watcher.EnableRaisingEvents = true;
     }
 
     private void CallWatchers(string path, List<WatchedAsset>? watched, WatcherChangeTypes type) {
@@ -203,7 +203,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
-        var assets = WatchedAssets.GetOrAdd(path, static _ => new(1));
+        var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
 
         assets.Add(asset);
     }

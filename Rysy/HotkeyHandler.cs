@@ -7,7 +7,7 @@ using Rysy.Helpers;
 namespace Rysy;
 
 public class HotkeyHandler {
-    private List<Hotkey> Hotkeys = new();
+    private List<Hotkey> _hotkeys = new();
 
     /// <summary>
     /// Specifies how this hotkey manager responds to ImGui usage
@@ -68,8 +68,8 @@ public class HotkeyHandler {
                 ImGuiMode = imguiMode,
             };
 
-            lock (Hotkeys)
-                Hotkeys.Add(hotkey);
+            lock (_hotkeys)
+                _hotkeys.Add(hotkey);
         }
 
         return this;
@@ -93,8 +93,8 @@ public class HotkeyHandler {
         var ctrl = Input.Keyboard.Ctrl();
         var shift = Input.Keyboard.Shift();
         var alt = Input.Keyboard.Alt();
-        lock (Hotkeys)
-            foreach (var hotkey in Hotkeys) {
+        lock (_hotkeys)
+            foreach (var hotkey in _hotkeys) {
                 if (!ImGuiModeMet(hotkey.ImGuiMode))
                     return;
                 if (hotkey.Ctrl == ctrl && hotkey.Shift == shift && hotkey.Alt == alt) {

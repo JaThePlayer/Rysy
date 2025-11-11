@@ -43,8 +43,8 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult TooManyElements(int max) => new(ValidationMessage.TooManyElements(max));
 
     public static ValidationResult MustBeColor(ColorFormat format) => format switch {
-        ColorFormat.RGB => MustBeRgb,
-        ColorFormat.RGBA => MustBeRgba,
+        ColorFormat.Rgb => MustBeRgb,
+        ColorFormat.Rgba => MustBeRgba,
         _ => GenericError,
     };
     

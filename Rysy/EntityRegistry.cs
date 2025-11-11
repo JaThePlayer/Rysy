@@ -79,20 +79,20 @@ public static class EntityRegistry {
             .Where(kv => kv.Value.Type == RegisteredEntityType.Trigger)
             .SelectMany(kv => kv.Value.Placements);
 
-    private static readonly Lazy<Cache<List<Placement>>> _stylegroundPlacements = new(() => RegisteredStyles.CreateCache(d => d
+    private static readonly Lazy<Cache<List<Placement>>> StylegroundPlacementsCache = new(() => RegisteredStyles.CreateCache(d => d
         .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
         .SelectMany(kv => kv.Value.Placements)
         .ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static readonly Lazy<Cache<List<Placement>>> _bgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
+    private static readonly Lazy<Cache<List<Placement>>> BgStylegroundPlacementsCache = new(() => StylegroundPlacementsCache.Value.Chain(x => 
         x.Where(pl => Style.FromPlacement(pl).CanBeInBackground).ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
     
-    private static readonly Lazy<Cache<List<Placement>>> _fgStylegroundPlacements = new(() => _stylegroundPlacements.Value.Chain(x => 
+    private static readonly Lazy<Cache<List<Placement>>> FgStylegroundPlacementsCache = new(() => StylegroundPlacementsCache.Value.Chain(x => 
         x.Where(pl => Style.FromPlacement(pl).CanBeInForeground).ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
     
-    public static IEnumerable<Placement> StylegroundPlacements => _stylegroundPlacements.Value.Value;
-    public static IEnumerable<Placement> BgStylegroundPlacements => _bgStylegroundPlacements.Value.Value;
-    public static IEnumerable<Placement> FgStylegroundPlacements => _fgStylegroundPlacements.Value.Value;
+    public static IEnumerable<Placement> StylegroundPlacements => StylegroundPlacementsCache.Value.Value;
+    public static IEnumerable<Placement> BgStylegroundPlacements => BgStylegroundPlacementsCache.Value.Value;
+    public static IEnumerable<Placement> FgStylegroundPlacements => FgStylegroundPlacementsCache.Value.Value;
     
     public static IEnumerable<Placement> DecalRegistryPropertyPlacements
         => RegisteredDecalRegistryProperties
@@ -114,11 +114,10 @@ public static class EntityRegistry {
         };
     }
     
-    private static LuaCtx? _LuaCtx = null;
-    internal static LuaCtx LuaCtx => _LuaCtx ??= LuaCtx.CreateNew();
+    internal static LuaCtx LuaCtx => field ??= LuaCtx.CreateNew();
 
-    public const string FGDecalSID = "fgDecal";
-    public const string BGDecalSID = "bgDecal";
+    public const string FgDecalSid = "fgDecal";
+    public const string BgDecalSid = "bgDecal";
 
     public static RegisteredEntity? GetInfo(string sid, RegisteredEntityType type) => GetRegistryFor(type).TryGetValue(sid, out var ret) ? ret : null;
 
@@ -178,7 +177,7 @@ public static class EntityRegistry {
         return info.Fields(obj!);
     }
 
-    public static Type? GetTypeForSID(string sid, RegisteredEntityType type) {
+    public static Type? GetTypeForSid(string sid, RegisteredEntityType type) {
         return GetInfo(sid, type)?.CSharpType;
     }
 
@@ -237,7 +236,7 @@ public static class EntityRegistry {
     private static void ModScanner(ModMeta mod, Assembly? oldAsm) {
         if (oldAsm is { }) {
             foreach (var (t, rt) in GetEntityTypesFromAsm(oldAsm)) {
-                foreach (var sid in GetSIDsForType(t)) {
+                foreach (var sid in GetSiDsForType(t)) {
                     var info = GetInfo(sid, rt);
                     if (info is null)
                         continue;
@@ -354,7 +353,7 @@ public static class EntityRegistry {
                 }
                 
                 foreach (var pl in plugin.Placements) {
-                    pl.SID ??= plugin.Name;
+                    pl.Sid ??= plugin.Name;
                     pl.RegisteredEntityType = RegisteredEntityType.Style;
 
                     info.Placements.Add(pl);
@@ -401,8 +400,8 @@ public static class EntityRegistry {
 
     private static void RegisterHardcoded() {
         var decalFields = Decal.GetFields();
-        Register(CreateDecalInfo(FGDecalSID));
-        Register(CreateDecalInfo(BGDecalSID));
+        Register(CreateDecalInfo(FgDecalSid));
+        Register(CreateDecalInfo(BgDecalSid));
 
         RegisteredEntity CreateDecalInfo(string sid) => new(sid, RegisteredEntityType.Entity) {
             CSharpType = typeof(Decal),
@@ -468,7 +467,7 @@ public static class EntityRegistry {
             foreach (var lonnPlacement in placements) {
                 var csPlacement = new Placement(lonnPlacement.Name) {
                     ValueOverrides = lonnPlacement.Data,
-                    SID = into.Sid,
+                    Sid = into.Sid,
                     PlacementHandler = trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity,
                     RegisteredEntityType = trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity,
                     AlternativeNames = lonnPlacement.AlternativeNames,
@@ -491,7 +490,7 @@ public static class EntityRegistry {
                         && (t.IsSubclassOf(typeof(Entity)) || t.IsSubclassOf(typeof(Style)) || t.IsSubclassOf(typeof(DecalRegistryProperty))) && t != typeof(UnknownEntity) && t != typeof(Trigger))
             .Select(t => (t, CSharpToRegisteredType(t)));
 
-    private static List<string> GetSIDsForType(Type type)
+    private static List<string> GetSiDsForType(Type type)
         => type.GetCustomAttributes<CustomEntityAttribute>().Select(attr => attr.Name).ToList();
     
     private static bool HandleAssociatedMods(RegisteredEntity into, string[] associated, ModMeta? mod) {
@@ -604,18 +603,18 @@ public static class EntityRegistry {
         
         
         foreach (var placement in plcementList) {
-            placement.SID ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
+            placement.Sid ??= sids.Count == 1 ? sids[0] : throw new Exception($"Entity {t} has multiple {typeof(CustomEntityAttribute)} attributes, but its placement {placement.Name} doesn't have the SID field set");
             placement.PlacementHandler = rt == RegisteredEntityType.Trigger ? EntityPlacementHandler.Trigger : EntityPlacementHandler.Entity;
             placement.RegisteredEntityType = rt;
             
-            var info = GetOrCreateInfo(placement.SID, rt);
+            var info = GetOrCreateInfo(placement.Sid, rt);
             info.MainPlacement ??= placement;
             info.Placements.Add(placement);
         }
     }
 
     public static Dictionary<string, object> GetDataFromPlacement(Placement from) {
-        var sid = from.SID ?? throw new NullReferenceException($"Placement.SID is null");
+        var sid = from.Sid ?? throw new NullReferenceException($"Placement.SID is null");
         Dictionary<string, object> data = new(from.ValueOverrides, StringComparer.Ordinal);
 
         if (GetFields(sid, from.RegisteredEntityType) is {} fields) {
@@ -630,13 +629,13 @@ public static class EntityRegistry {
         return data;
     }
 
-    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignID, bool isTrigger) {
+    public static Entity Create(Placement from, Vector2 pos, Room room, bool assignId, bool isTrigger) {
         ArgumentNullException.ThrowIfNull(from);
 
-        var sid = from.SID ?? throw new ArgumentException($"Placement.SID is null");
+        var sid = from.Sid ?? throw new ArgumentException($"Placement.SID is null");
         var data = GetDataFromPlacement(from);
 
-        var entity = CreateCore(sid, pos, assignID ? null : -1, new(sid, data, from.Nodes), room, isTrigger,
+        var entity = CreateCore(sid, pos, assignId ? null : -1, new(sid, data, from.Nodes), room, isTrigger,
             fromBinary: false);
 
         from.Finalizer?.Invoke(entity);
@@ -700,7 +699,7 @@ public static class EntityRegistry {
         };
 
         e.EntityData = entityData;
-        e.Id = id ?? room.NextEntityID();
+        e.Id = id ?? room.NextEntityId();
         e.Room = room;
 
         if (e is IHasLonnPlugin hasLonnPlugin) {
@@ -731,7 +730,7 @@ public static class EntityRegistry {
         }
 
         if (e is Decal d) {
-            d.FG = sid == FGDecalSID;
+            d.Fg = sid == FgDecalSid;
 
             d.OnCreated();
         }

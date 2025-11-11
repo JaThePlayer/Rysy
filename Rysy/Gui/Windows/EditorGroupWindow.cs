@@ -123,7 +123,7 @@ internal sealed class GroupEditWindow : Window {
     
     public GroupEditWindow(EditorGroupWindow parent, Map map, EditorGroup? group) 
         : base((group is {} ? EditName : NewName).Translate(), 
-            new(FormWindow.ITEM_WIDTH * 2.25f, ImGui.GetTextLineHeightWithSpacing() * 8f)) {
+            new(FormWindow.ItemWidth * 2.25f, ImGui.GetTextLineHeightWithSpacing() * 8f)) {
         _map = map;
         _newGroupName = group?.Name ?? "";
         _parent = parent;
@@ -153,7 +153,7 @@ internal sealed class GroupEditWindow : Window {
 
         if (_autoAssignChanged)
             ImGuiManager.PushEditedStyle();
-        ImGui.SetNextItemWidth(FormWindow.ITEM_WIDTH);
+        ImGui.SetNextItemWidth(FormWindow.ItemWidth);
         if (_autoAssignToField.RenderGui("Auto Assign", _autoAssignString) is string newAutoAssign) {
             _autoAssignString = newAutoAssign;
             _autoAssignChanged = _sourceGroup is null || !EditorGroup.CreateAutoAssignFromString(_autoAssignString).SetEquals(_sourceGroup.AutoAssignTo);
@@ -162,7 +162,7 @@ internal sealed class GroupEditWindow : Window {
         
         if (_autoAssignDecalsChanged)
             ImGuiManager.PushEditedStyle();
-        ImGui.SetNextItemWidth(FormWindow.ITEM_WIDTH);
+        ImGui.SetNextItemWidth(FormWindow.ItemWidth);
         if (_autoAssignToDecalField.RenderGui("Auto Assign to Decals", _autoAssignDecalsString) is string newAutoAssignDecal) {
             _autoAssignDecalsString = newAutoAssignDecal;
             _autoAssignDecalsChanged = true;

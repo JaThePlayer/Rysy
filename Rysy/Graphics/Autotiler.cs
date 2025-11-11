@@ -30,8 +30,8 @@ public sealed class Autotiler {
 
     public Dictionary<char, TilesetData> Tilesets = new();
 
-    private bool _Loaded = false;
-    public bool Loaded => _Loaded;
+    private bool _loaded = false;
+    public bool Loaded => _loaded;
 
     public CacheToken TilesetDataCacheToken { get; set; } = new();
 
@@ -88,7 +88,7 @@ public sealed class Autotiler {
 
         TilesetDataCacheToken.Invalidate();
         TilesetDataCacheToken.Reset();
-        _Loaded = true;
+        _loaded = true;
     }
 
     public void ReadTilesetNode(XmlNode tileset, bool clearCache = true, bool addToXml = false, TilesetData? into = null) {
@@ -106,7 +106,7 @@ public sealed class Autotiler {
         tilesetData.Id = id;
         tilesetData.Autotiler = this;
         tilesetData.Filename = path;
-        tilesetData.Texture = GFX.Atlas[$"tilesets/{path}"];
+        tilesetData.Texture = Gfx.Atlas[$"tilesets/{path}"];
         tilesetData.Ignores = ignores;
         tilesetData.IgnoreExceptions = ignoreExceptions;
         tilesetData.IgnoreAll = ignoresAll;
@@ -229,7 +229,7 @@ public sealed class Autotiler {
         if (clearCache) {
             TilesetDataCacheToken.Invalidate();
             TilesetDataCacheToken.Reset();
-            _Loaded = true;
+            _loaded = true;
         }
     }
 
@@ -294,8 +294,8 @@ public sealed class Autotiler {
     /// <summary>
     /// Generates sprites needed to render a tile grid
     /// </summary>
-    public AutotiledSpriteList GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOOB = true) {
-        return GetSprites(position, new TilegridTileChecker(tileGrid, tilesOOB), tileGrid.GetLength(0), tileGrid.GetLength(1), color);
+    public AutotiledSpriteList GetSprites(Vector2 position, char[,] tileGrid, Color color, bool tilesOob = true) {
+        return GetSprites(position, new TilegridTileChecker(tileGrid, tilesOob), tileGrid.GetLength(0), tileGrid.GetLength(1), color);
     }
     
     public AutotiledSprite? GetSprite<T>(T tileChecker, int x, int y, ref List<char>? unknownTilesetsUsed)
@@ -325,12 +325,12 @@ public sealed class Autotiler {
         Logger.Write("Autotiler", LogLevel.Warning, $"Unknown tileset {c} ({(int) c}) at {{{x},{y}}} (and possibly more)");
     }
     
-    internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOOB) {
+    internal void UpdateSpriteList(AutotiledSpriteList toUpdate, char[,] tileGrid, int changedX, int changedY, bool tilesOob) {
         var sprites = toUpdate.Sprites;
         int offsetX = MaxScanWidth / 2;
         int offsetY = MaxScanHeight / 2;
 
-        var checker = new TilegridTileChecker(tileGrid, tilesOOB);
+        var checker = new TilegridTileChecker(tileGrid, tilesOob);
         var endX = (changedX + offsetX).AtMost(tileGrid.GetLength(0) - 1);
         var endY = (changedY + offsetY).AtMost(tileGrid.GetLength(1) - 1);
         for (int x = (changedX - offsetX).AtLeast(0); x <= endX; x++) {
@@ -346,14 +346,14 @@ public sealed class Autotiler {
     /// Also updates nearby tiles as needed by mask size.
     /// More efficient than individually calling <see cref="UpdateSpriteList"/> on each point.
     /// </summary>
-    internal void BulkUpdateSpriteList<T>(AutotiledSpriteList toUpdate, char[,] tileGrid, T changed, bool tilesOOB)
+    internal void BulkUpdateSpriteList<T>(AutotiledSpriteList toUpdate, char[,] tileGrid, T changed, bool tilesOob)
         where T : IEnumerator<Point> {
         var sprites = toUpdate.Sprites;
         int offsetX = MaxScanWidth / 2;
         int offsetY = MaxScanHeight / 2;
 
         var changeMask = WrappedBitArray.Rent(tileGrid.Length);
-        var checker = new TilegridTileChecker(tileGrid, tilesOOB);
+        var checker = new TilegridTileChecker(tileGrid, tilesOob);
         
         while (changed.MoveNext()) {
             var (changedX, changedY) = changed.Current;
@@ -495,7 +495,7 @@ public sealed class AutotiledSprite {
     /// Represents a missing tile
     /// </summary>
     public static AutotiledSprite Missing => _missing 
-        ??= new(GFX.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
+        ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
         
     private static AutotiledSprite? _invalid;
         
@@ -503,7 +503,7 @@ public sealed class AutotiledSprite {
     /// Represents an invalid tile
     /// </summary>
     public static AutotiledSprite Invalid => _invalid 
-        ??= new(GFX.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
+        ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
 }
 
 public sealed record AutotiledSpriteList : ISprite {
@@ -539,7 +539,7 @@ public sealed record AutotiledSpriteList : ISprite {
     
     public void UseRenderTarget(bool enable) {
         if (enable) {
-            _renderTarget ??= new RenderTarget2D(GFX.Batch.GraphicsDevice, 
+            _renderTarget ??= new RenderTarget2D(Gfx.Batch.GraphicsDevice, 
                 Sprites.GetLength(0) * 8, Sprites.GetLength(1) * 8, 
                 false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
             _renderTargetCached = false;
@@ -556,18 +556,18 @@ public sealed record AutotiledSpriteList : ISprite {
 
     private void ScheduleCache(Room? room) {
         RysyState.OnEndOfThisFrame += () => {
-            var b = GFX.Batch;
+            var b = Gfx.Batch;
             var gd = b.GraphicsDevice;
             
             RenderTargetBinding[]? renderTargetBindings = gd.GetRenderTargets();
             gd.SetRenderTarget(_renderTarget);
             gd.Clear(Color.Transparent);
 
-            GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
+            Gfx.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
 
             DoRender(SpriteRenderCtx.Default(false), default, room);
             
-            GFX.EndBatch();
+            Gfx.EndBatch();
             gd.SetRenderTargets(renderTargetBindings);
         };
     }
@@ -581,7 +581,7 @@ public sealed record AutotiledSpriteList : ISprite {
         }
         
         if (_renderTarget is { } cache && !shouldCache) {
-            GFX.Batch.Draw(cache, Pos, Color.White);
+            Gfx.Batch.Draw(cache, Pos, Color.White);
             return;
         }
         
@@ -589,7 +589,7 @@ public sealed record AutotiledSpriteList : ISprite {
     }
 
     private void DoRender(SpriteRenderCtx ctx, Vector2 selfPos, Room? room) {
-        var b = GFX.Batch;
+        var b = Gfx.Batch;
         var sprites = Sprites;
         
         int left, right, top, bot;

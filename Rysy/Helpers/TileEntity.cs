@@ -18,8 +18,8 @@ public abstract class TileEntity : Entity {
         ArgumentNullException.ThrowIfNull(room);
 
         return layer switch {
-            TileLayer.BG => room.BG,
-            TileLayer.FG => room.FG,
+            TileLayer.Bg => room.Bg,
+            TileLayer.Fg => room.Fg,
             _ => throw new Exception($"Unknown TileLayer: {layer}")
         };
     }
@@ -27,8 +27,8 @@ public abstract class TileEntity : Entity {
     public static Autotiler GetAutotiler(Map map, TileLayer layer) {
         ArgumentNullException.ThrowIfNull(map);
         return layer switch {
-            TileLayer.BG => map.BGAutotiler,
-            TileLayer.FG => map.FGAutotiler,
+            TileLayer.Bg => map.BgAutotiler,
+            TileLayer.Fg => map.FgAutotiler,
             _ => throw new Exception($"Unknown TileLayer: {layer}")
         };
     }

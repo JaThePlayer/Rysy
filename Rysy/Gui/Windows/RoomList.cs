@@ -109,20 +109,20 @@ public static class RoomList {
                     }
 
                     cam.Move(spawn);
-                    var prev = GFX.EndBatch();
+                    var prev = Gfx.EndBatch();
                     
                     var renderStylegrounds = Settings.Instance?.StylegroundPreview ?? false;
                     var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
                     
                     if (renderStylegrounds)
-                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.BG, filter: StylegroundRenderer.NotMasked);
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Bg, filter: StylegroundRenderer.NotMasked);
                     
                     room.Render(cam, Room.RenderConfig.Preview, Colorgrade.None);
                     
                     if (renderStylegrounds && fgInFront)
-                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.FG, filter: StylegroundRenderer.NotMasked);
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Fg, filter: StylegroundRenderer.NotMasked);
                     
-                    GFX.BeginBatch(prev);
+                    Gfx.BeginBatch(prev);
                 });
                 ImGui.EndTooltip();
             }

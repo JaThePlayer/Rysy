@@ -182,7 +182,7 @@ static string Compress(byte[] input) {
     }
 
     private static List<Rectangle> GetTileRectangles(List<CopiedSelection> pasted) {
-        return pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
+        return pasted.Where(pasted => pasted.Layer is SelectionLayer.BgTiles or SelectionLayer.FgTiles).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
 
@@ -193,13 +193,13 @@ static string Compress(byte[] input) {
     }
 
     private static List<Selection> PasteTileSelections(Room room, List<CopiedSelection> pasted, Vector2 offset) {
-        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BGTiles or SelectionLayer.FGTiles).Select(s => {
+        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BgTiles or SelectionLayer.FgTiles).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
 
             var dest = s.Layer switch {
-                SelectionLayer.FGTiles => room.FG,
-                _ => room.BG,
+                SelectionLayer.FgTiles => room.Fg,
+                _ => room.Bg,
             };
             var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
             var rPos = (new Vector2(x, y) + offset).GridPosFloor(8);
@@ -215,7 +215,7 @@ static string Compress(byte[] input) {
         entities = new();
         var entitiesNotRef = entities;
 
-        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FGDecals or SelectionLayer.BGDecals).SelectMany(s => {
+        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FgDecals or SelectionLayer.BgDecals).SelectMany(s => {
             var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
             e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
             entitiesNotRef.Add(e);

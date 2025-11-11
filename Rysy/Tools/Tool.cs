@@ -158,14 +158,14 @@ public abstract class Tool {
         }
     }
 
-    private HashSet<string>? _Favorites;
+    private HashSet<string>? _favorites;
     public HashSet<string>? Favorites {
-        get => UsePersistence ? _Favorites ??= Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _Favorites;
+        get => UsePersistence ? _favorites ??= Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _favorites;
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.{Layer.Name}.Favorites", value);
             }
-            _Favorites = value;
+            _favorites = value;
         }
     }
 
@@ -196,7 +196,7 @@ public abstract class Tool {
             Persistence.Save(Persistence.Instance);
         }
         
-        CachedSearch = null;
+        _cachedSearch = null;
     }
 
     public abstract void Update(Camera camera, Room? room);
@@ -287,7 +287,7 @@ public abstract class Tool {
         => GetSelectionColorCore(rect.Size().ToVector2().Length());
     
     private (Color outline, Color fill) GetSelectionColorCore(float len) {
-        var outline = ColorHelper.HSVToColor(len.Div(2f).AtMost(70f), 1f, 1f);
+        var outline = ColorHelper.HsvToColor(len.Div(2f).AtMost(70f), 1f, 1f);
         return (outline, outline * 0.3f);
     }
     
@@ -337,11 +337,11 @@ public abstract class Tool {
     public virtual object GetGroupKeyForMaterial(object material) => material;
 
 
-    private Dictionary<object, string> GroupKeyToMainPlacementName = new();
+    private Dictionary<object, string> _groupKeyToMainPlacementName = new();
     
     private (object material, Searchable searchable) GetMainPlacementForGroupKey(object key, 
         List<(object material, Searchable searchable)> group) {
-        if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
+        if (!_groupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
             return group[0];
 
         foreach (var pair in group) {
@@ -358,12 +358,12 @@ public abstract class Tool {
 
         var currentLayer = Layer ??= ValidLayers.FirstOrDefault()!;
 
-        if (currentLayer != CachedLayer) {
-            CachedSearch = null;
-            CachedLayer = currentLayer;
+        if (currentLayer != _cachedLayer) {
+            _cachedSearch = null;
+            _cachedLayer = currentLayer;
         }
 
-        var cachedSearch = CachedSearch ??=
+        var cachedSearch = _cachedSearch ??=
             (GetMaterials(currentLayer) ?? [])
             .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search)
@@ -423,7 +423,7 @@ public abstract class Tool {
                     if (comboOpened) {
                         foreach (var (mat, searchable) in group) {
                             if (RenderMaterialListElement(currentLayer, mat, searchable)) {
-                                GroupKeyToMainPlacementName[groupKey] = searchable.Text;
+                                _groupKeyToMainPlacementName[groupKey] = searchable.Text;
                             }
                         }
                         
@@ -446,12 +446,12 @@ public abstract class Tool {
 
     public virtual bool AllowSwappingRooms => true;
 
-    private EditorLayer? CachedLayer;
-    private List<List<(object material, Searchable displayName)>>? CachedSearch;
+    private EditorLayer? _cachedLayer;
+    private List<List<(object material, Searchable displayName)>>? _cachedSearch;
 
     public virtual void ClearMaterialListCache() {
-        CachedSearch = null;
-        CachedLayer = null;
+        _cachedSearch = null;
+        _cachedLayer = null;
 
         Material = null;
     }
@@ -481,7 +481,7 @@ public abstract class Tool {
         // your search would persist to the different layer/tool
         if (ImGuiManager.SearchInput(ref search, SearchPersistenceKey)) {
             Search = search;
-            CachedSearch = null;
+            _cachedSearch = null;
         }
     }
 
@@ -522,7 +522,7 @@ public abstract class Tool {
         var prevStyles = ImGuiManager.PopAllStyles();
 
         XnaWidgetDef? tooltipPreview = GetMaterialPreview(layer, material) is {} p2 ? CreateTooltipPreview(p2, material) : null;
-        tooltipPreview = tooltipPreview is { } p3 ? p3 with { ID = "upsized_preview" } : null;
+        tooltipPreview = tooltipPreview is { } p3 ? p3 with { Id = "upsized_preview" } : null;
 
         var w = (tooltipPreview?.W ?? 256) + ImGui.GetStyle().FramePadding.X * 4;
         ImGui.SetNextWindowSize(new(w.AtLeast(256), 0));

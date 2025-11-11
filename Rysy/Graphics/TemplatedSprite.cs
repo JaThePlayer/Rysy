@@ -55,16 +55,16 @@ public record struct TemplatedRainbowSprite(SpriteTemplate Template) : ITextureS
     
     public Vector2 Pos { get; set; }
     
-    private float Alpha = 1f;
+    private float _alpha = 1f;
 
     [Obsolete("Only used to implement ISprite, unused otherwise.")]
     public Color Color {
         get => ColorHelper.GetRainbowColor(Room.DummyRoom, Pos);
-        set => Alpha = value.A / 255f;
+        set => _alpha = value.A / 255f;
     }
     
     public ISprite WithMultipliedAlpha(float alpha) => this with {
-        Alpha = Alpha * alpha,
+        _alpha = _alpha * alpha,
     };
 
     public bool IsLoaded => Template.IsLoaded;
@@ -76,7 +76,7 @@ public record struct TemplatedRainbowSprite(SpriteTemplate Template) : ITextureS
             ? ColorHelper.GetRainbowColorAnimated(room, pos)
             : ColorHelper.GetRainbowColor(room, pos);
         
-        Template.RenderAt(ctx, pos, color * Alpha, default);
+        Template.RenderAt(ctx, pos, color * _alpha, default);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);

@@ -5,32 +5,32 @@ using YamlDotNet.Core.Tokens;
 namespace Rysy.Mods;
 
 public class LayeredFilesystem : IModFilesystem {
-    private List<ModMeta> Mods = new();
+    private List<ModMeta> _mods = new();
 
     public LayeredFilesystem() {
         
     }
 
     public LayeredFilesystem(LayeredFilesystem toClone) {
-        foreach (var mod in toClone.Mods) {
+        foreach (var mod in toClone._mods) {
             AddMod(mod);
         }
     }
 
     public void AddMod(ModMeta modFilesystem) {
-        lock (Mods)
-            Mods.Add(modFilesystem);
+        lock (_mods)
+            _mods.Add(modFilesystem);
     }
     
     public void AddFilesystem(IModFilesystem modFilesystem, string name) {
-        lock (Mods)
-            Mods.Add(new ModMeta { Filesystem = modFilesystem, EverestYaml = [ new() { Name = name } ]});
+        lock (_mods)
+            _mods.Add(new ModMeta { Filesystem = modFilesystem, EverestYaml = [ new() { Name = name } ]});
     }
 
     public string Root => "";
 
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {
-        foreach (var fs in Mods) {
+        foreach (var fs in _mods) {
             foreach (var item in fs.Filesystem.FindFilesInDirectoryRecursive(directory, extension)) {
                 yield return item;
             }
@@ -38,7 +38,7 @@ public class LayeredFilesystem : IModFilesystem {
     }
     
     public IEnumerable<string> FindFilesInDirectory(string directory, string extension) {
-        foreach (var fs in Mods) {
+        foreach (var fs in _mods) {
             foreach (var item in fs.Filesystem.FindFilesInDirectory(directory, extension)) {
                 yield return item;
             }
@@ -46,7 +46,7 @@ public class LayeredFilesystem : IModFilesystem {
     }
     
     public IEnumerable<string> FindDirectories(string directory) {
-        foreach (var fs in Mods) {
+        foreach (var fs in _mods) {
             foreach (var item in fs.Filesystem.FindDirectories(directory)) {
                 yield return item;
             }
@@ -54,7 +54,7 @@ public class LayeredFilesystem : IModFilesystem {
     }
 
     public void NotifyFileCreated(string virtPath) {
-        foreach (var m in Mods) {
+        foreach (var m in _mods) {
             m.Filesystem.NotifyFileCreated(virtPath);
         }
     }
@@ -63,7 +63,7 @@ public class LayeredFilesystem : IModFilesystem {
     /// Same as <see cref="FindFilesInDirectoryRecursive(string, string)"/>, but also returns the mod the path comes from.
     /// </summary>
     public IEnumerable<(string, ModMeta)> FindFilesInDirectoryRecursiveWithMod(string directory, string extension) {
-        foreach (var fs in Mods) {
+        foreach (var fs in _mods) {
             foreach (var item in fs.Filesystem.FindFilesInDirectoryRecursive(directory, extension)) {
                 yield return (item, fs);
             }
@@ -74,7 +74,7 @@ public class LayeredFilesystem : IModFilesystem {
         WatchedAsset asset = new() {
             OnChanged = (path) => {
                 onChanged();
-                foreach (var mod in Mods) {
+                foreach (var mod in _mods) {
                     if (!(filter?.Invoke(mod) ?? true))
                         continue;
                     
@@ -83,7 +83,7 @@ public class LayeredFilesystem : IModFilesystem {
             }
         };
 
-        foreach (var mod in Mods) {
+        foreach (var mod in _mods) {
             if (!(filter?.Invoke(mod) ?? true))
                 continue;
             
@@ -98,8 +98,8 @@ public class LayeredFilesystem : IModFilesystem {
     /// <param name="path"></param>
     /// <param name="callback"></param>
     public bool TryWatchAndOpenWithMod(string path, Action<Stream, ModMeta> callback) {
-        lock (Mods) {
-            foreach (var mod in Mods) {
+        lock (_mods) {
+            foreach (var mod in _mods) {
                 if (!mod.Filesystem.TryOpenFile(path, stream => callback(stream, mod))) {
                     continue;
                 }
@@ -123,16 +123,16 @@ public class LayeredFilesystem : IModFilesystem {
         if (filepath is null)
             return null;
         
-        return Mods.FirstOrDefault(m => m.Filesystem.FileExists(filepath));
+        return _mods.FirstOrDefault(m => m.Filesystem.FileExists(filepath));
     }
 
     public Task InitialScan() {
-        return Task.WhenAll(Mods.Select(f => Task.Run(async () => await f.Filesystem.InitialScan())));
+        return Task.WhenAll(_mods.Select(f => Task.Run(async () => await f.Filesystem.InitialScan())));
     }
 
     public bool TryOpenFile<T>(string path, Func<Stream, T> callback, [NotNullWhen(true)] out T? value) {
-        lock (Mods) {
-            foreach (var fs in Mods) {
+        lock (_mods) {
+            foreach (var fs in _mods) {
                 if (fs.Filesystem.TryOpenFile(path, callback, out value))
                     return true;
             }
@@ -143,7 +143,7 @@ public class LayeredFilesystem : IModFilesystem {
     }
 
     public void RegisterFilewatch(string path, WatchedAsset asset) {
-        foreach (var fs in Mods) {
+        foreach (var fs in _mods) {
             if (fs.Filesystem.FileExists(path)) {
                 fs.Filesystem.RegisterFilewatch(path, asset);
                 return;
@@ -152,6 +152,6 @@ public class LayeredFilesystem : IModFilesystem {
     }
 
     public bool FileExists(string path) {
-        return Mods.Any(fs => fs.Filesystem.FileExists(path));
+        return _mods.Any(fs => fs.Filesystem.FileExists(path));
     }
 }

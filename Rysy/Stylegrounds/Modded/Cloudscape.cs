@@ -74,14 +74,14 @@ internal sealed class Cloudscape : LuaStyle, IPlaceable {
     [Bind("lightningColors")]
     internal ReadOnlyArray<Color> LightningColors;
 
-    [Bind("offsetX")] internal float _offsetX;
-    [Bind("offsetY")] internal float _offsetY;
-    internal Vector2 Offset => new(_offsetX, _offsetY);
+    [Bind("offsetX")] internal float OffsetX;
+    [Bind("offsetY")] internal float OffsetY;
+    internal Vector2 Offset => new(OffsetX, OffsetY);
     
     
-    [Bind("parallaxX")] internal float _parallaxX;
-    [Bind("parallaxY")] internal float _parallaxY;
-    internal Vector2 Parallax => new(_parallaxX, _parallaxY);
+    [Bind("parallaxX")] internal float ParallaxX;
+    [Bind("parallaxY")] internal float ParallaxY;
+    internal Vector2 Parallax => new(ParallaxX, ParallaxY);
 
     [Bind("alpha")]
     internal float BufferAlpha;
@@ -104,9 +104,9 @@ internal sealed class Cloudscape : LuaStyle, IPlaceable {
         var baseFields = EntityRegistry.GetInfo("CommunalHelper/Cloudscape", RegisteredEntityType.Style)!
             .LonnStylePlugin!.FieldList!(null!);
 
-        baseFields["bgColor"] = Fields.RGBA("4f9af7ff");
-        baseFields["lightningFlashColor"] = Fields.RGBA("ffffff");
-        baseFields["colors"] = new ListField(Fields.RGBA("ffffff"), "6d8adaff,aea0c1ff,d9cbbcff");
+        baseFields["bgColor"] = Fields.Rgba("4f9af7ff");
+        baseFields["lightningFlashColor"] = Fields.Rgba("ffffff");
+        baseFields["colors"] = new ListField(Fields.Rgba("ffffff"), "6d8adaff,aea0c1ff,d9cbbcff");
         baseFields["zoomBehavior"] = Fields.EnumNamesDropdown(ZoomBehaviors.StaySame);
         
         return baseFields;
@@ -151,7 +151,7 @@ internal static class CloudscapeResources {
             return;
         }
 
-        var gd = GFX.Batch.GraphicsDevice;
+        var gd = Gfx.Batch.GraphicsDevice;
 
         if (ch.Filesystem.TryReadAllBytes("Effects/CommunalHelper/cloudscape.cso") is not { } bytes) {
             Logger.Write("CommunalHelper.Cloudscape", LogLevel.Error, $"Failed to find cloudscape shader");
@@ -171,7 +171,7 @@ internal static class CloudscapeResources {
     public static IAtlas Atlas { get; private set; }
 }
 
-internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
+internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
     public StylegroundRenderCtx? StylegroundCtx { get; set; }
     
     private const uint LevelOfDetail = 16;
@@ -193,7 +193,7 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
             zoom /= 6f;
         }
 
-        if (zoom < (1f / 6f) && scape.ZoomBehavior == Cloudscape.ZoomBehaviors.Adjust) {
+        if (zoom < (1f / 6f) && Scape.ZoomBehavior == Cloudscape.ZoomBehaviors.Adjust) {
             return;
         }
         
@@ -201,9 +201,9 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
             CreateMesh();
         }
         
-        var bounds = StylegroundCtx?.FullScreenBounds ?? scape.PreviewRectangle();
+        var bounds = StylegroundCtx?.FullScreenBounds ?? Scape.PreviewRectangle();
 
-        var zoomMode = scape.ZoomBehavior;
+        var zoomMode = Scape.ZoomBehavior;
 
         var bufferSize = zoomMode switch {
             Cloudscape.ZoomBehaviors.StaySame => new Point(320, 180),
@@ -214,14 +214,14 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
         using var buffer = RenderTargetPool.Get(bufferSize.X, bufferSize.Y);
         using var colorBuffer = RenderTargetPool.Get(_clouds.Length, 1);
         
-        var gd = GFX.Batch.GraphicsDevice;
+        var gd = Gfx.Batch.GraphicsDevice;
 
-        var st = GFX.EndBatch();
+        var st = Gfx.EndBatch();
         
         var prev = gd.GetRenderTargets();
         
         gd.SetRenderTarget(buffer.Target);
-        gd.Clear(scape.Sky);
+        gd.Clear(Scape.Sky);
         gd.BlendState = BlendState.AlphaBlend;
 
         var effect = CloudscapeResources.Effect;
@@ -236,7 +236,7 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
         for (int i = 0; i < _clouds.Length; i++)
         {
             var cloud = _clouds[i];
-            cloud.Update(scape.Lightning, ctx.Animate ? Time.Delta : 0f, Random.Shared);
+            cloud.Update(Scape.Lightning, ctx.Animate ? Time.Delta : 0f, Random.Shared);
             _colors[i] = cloud.CalculateColor();
         }
         colorBuffer.Target.SetData(_colors);
@@ -244,18 +244,18 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
         parameters["color_buffer_size"].SetValue(colorBuffer.Target.Width);
         parameters["color_texture"].SetValue(colorBuffer.Target);
         
-        var translate = scape.Offset - (ctx.Camera?.ScreenToReal(Vector2.Zero).Floored() ?? new()) * scape.Parallax;
+        var translate = Scape.Offset - (ctx.Camera?.ScreenToReal(Vector2.Zero).Floored() ?? new()) * Scape.Parallax;
         
         
         //Console.WriteLine((zoom, 1f/6f, zoom.AtLeast(1f / 6f)));
-        parameters["offset"].SetValue(scape.ZoomBehavior switch
+        parameters["offset"].SetValue(Scape.ZoomBehavior switch
         {
             Cloudscape.ZoomBehaviors.Adjust => translate / zoom,
             Cloudscape.ZoomBehaviors.StaySame => translate,
         });
-        parameters["inner_rotation"].SetValue(scape.InnerRotation);
-        parameters["outer_rotation"].SetValue(scape.OuterRotation);
-        parameters["rotation_exponent"].SetValue(scape.RotationExponent);
+        parameters["inner_rotation"].SetValue(Scape.InnerRotation);
+        parameters["outer_rotation"].SetValue(Scape.OuterRotation);
+        parameters["rotation_exponent"].SetValue(Scape.RotationExponent);
         parameters["time"].SetValue(ctx.Time);
         parameters["dimensions"].SetValue(new Vector2(bufferSize.X, bufferSize.Y));
 
@@ -273,14 +273,14 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
         // present onto RT
         gd.SetRenderTargets(prev);
 
-        GFX.BeginBatch(st);
+        Gfx.BeginBatch(st);
 
         switch (zoomMode) {
             case Cloudscape.ZoomBehaviors.Adjust:
-                GFX.Batch.Draw(buffer.Target, bounds, null, Color.White * scape.BufferAlpha);
+                Gfx.Batch.Draw(buffer.Target, bounds, null, Color.White * Scape.BufferAlpha);
                 break;
             case Cloudscape.ZoomBehaviors.StaySame:
-                GFX.Batch.Draw(buffer.Target, Vector2.Zero, null, Color.White * scape.BufferAlpha, 0f, Vector2.Zero, 1f / zoom, SpriteEffects.None, 0f);
+                Gfx.Batch.Draw(buffer.Target, Vector2.Zero, null, Color.White * Scape.BufferAlpha, 0f, Vector2.Zero, 1f / zoom, SpriteEffects.None, 0f);
                 break;
         }
         
@@ -294,15 +294,15 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
     private void CreateMesh() {
         _mesh = new();
 
-        var rng = new Random(scape.Seed.GetHashCode());
+        var rng = new Random(Scape.Seed.GetHashCode());
 
         List<WarpedCloud> clouds = new();
         List<Ring> rings = new();
 
-        int count = scape.Count;
+        int count = Scape.Count;
 
-        float a = MathHelper.Min(scape.InnerRadius, scape.OuterRadius);
-        float b = MathHelper.Max(scape.InnerRadius, scape.OuterRadius);
+        float a = MathHelper.Min(Scape.InnerRadius, Scape.OuterRadius);
+        float b = MathHelper.Max(Scape.InnerRadius, Scape.OuterRadius);
         float d = b - a;
 
         short id = 0; // cloud ID for color lookup
@@ -312,9 +312,9 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
         {
             float percent = (float) r / count;
 
-            Color color = Util.ColorArrayLerp(percent * (scape.Colors.Count - 1), scape.Colors);
+            Color color = Util.ColorArrayLerp(percent * (Scape.Colors.Count - 1), Scape.Colors);
             float radius = a + (d * percent);
-            float density = MathHelper.Lerp(scape.InnerDensity, scape.OuterDensity, percent);
+            float density = MathHelper.Lerp(Scape.InnerDensity, Scape.OuterDensity, percent);
 
             if (density == 0)
                 continue;
@@ -327,7 +327,7 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
             float angle = 0f;
             while (angle < MathHelper.TwoPi)
             {
-                WarpedCloud cloud = new(scape, color);
+                WarpedCloud cloud = new(Scape, color);
                 clouds.Add(cloud);
                 cloudsInRing.Add(cloud);
 
@@ -400,19 +400,19 @@ internal sealed record CloudscapeSprite(Cloudscape scape) : ISprite {
 internal sealed class Ring
 {
     public float Lerp { get; }
-    private readonly WarpedCloud[] clouds;
+    private readonly WarpedCloud[] _clouds;
 
     public Ring(float lerp, WarpedCloud[] clouds)
     {
         Lerp = lerp;
-        this.clouds = clouds;
+        this._clouds = clouds;
     }
 
     public void ApplyIdleColor(Color color, Color[] array)
     {
-        for (int i = 0; i < clouds.Length; i++)
+        for (int i = 0; i < _clouds.Length; i++)
         {
-            var cloud = clouds[i];
+            var cloud = _clouds[i];
             cloud.IdleColor = color;
             array[i] = cloud.CalculateColor(force: true);
         }
@@ -642,7 +642,7 @@ internal sealed class Mesh<T> where T : struct, IVertexType
         if (VertexCount == 0)
             return;
 
-        GFX.Batch.GraphicsDevice.DrawUserIndexedPrimitives
+        Gfx.Batch.GraphicsDevice.DrawUserIndexedPrimitives
         (
             PrimitiveType.TriangleList,
             Vertices, 0, VertexCount,

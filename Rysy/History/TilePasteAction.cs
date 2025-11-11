@@ -7,7 +7,7 @@ public class TilePasteAction : IHistoryAction {
     public readonly Tilegrid Destination;
     public readonly Point Pos;
 
-    private char[,] Old;
+    private char[,] _old;
 
     public TilePasteAction(Tilegrid source, Tilegrid destination, Point pos) {
         Source = source;
@@ -19,7 +19,7 @@ public class TilePasteAction : IHistoryAction {
         var (w, h) = (Source.Width, Source.Height);
         var (xOff, yOff) = Pos;
 
-        Old = new char[w, h];
+        _old = new char[w, h];
 
         bool changed = false;
 
@@ -27,9 +27,9 @@ public class TilePasteAction : IHistoryAction {
             for (int y = 0; y < h; y++) {
                 var c = Source.Tiles[x, y];
                 if (c != '0')
-                    changed |= Destination.SafeReplaceTile(c, x + xOff, y + yOff, out Old[x, y]);
+                    changed |= Destination.SafeReplaceTile(c, x + xOff, y + yOff, out _old[x, y]);
                 else
-                    Old[x, y] = Destination.SafeTileAt(x + xOff, y + yOff);
+                    _old[x, y] = Destination.SafeTileAt(x + xOff, y + yOff);
             }
         }
 
@@ -42,7 +42,7 @@ public class TilePasteAction : IHistoryAction {
 
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
-                Destination.SafeReplaceTile(Old[x, y], x + xOff, y + yOff, out _);
+                Destination.SafeReplaceTile(_old[x, y], x + xOff, y + yOff, out _);
             }
         }
     }

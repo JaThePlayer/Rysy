@@ -8,11 +8,12 @@ using System.Text.Json.Serialization;
 namespace Rysy.Helpers;
 
 public static class PrefabHelper {
-    private static ListenableDictionary<string, Prefab>? _CurrentPrefabs;
-    public static ListenableDictionary<string, Prefab> CurrentPrefabs => _CurrentPrefabs ??= Load();
+    private static ListenableDictionary<string, Prefab>? CurrentPrefabsMutable;
+    
+    public static ListenableDictionary<string, Prefab> CurrentPrefabs => (CurrentPrefabsMutable ??= Load());
 
     private static ListenableDictionary<string, Prefab> Load() {
-        _CurrentPrefabs = new(StringComparer.Ordinal);
+        CurrentPrefabsMutable = new(StringComparer.Ordinal);
 
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
@@ -20,9 +21,9 @@ public static class PrefabHelper {
             LoadFromFile(file);
         }
 
-        RysyState.OnNextReload += () => _CurrentPrefabs = null;
+        RysyState.OnNextReload += () => CurrentPrefabsMutable = null;
 
-        return _CurrentPrefabs;
+        return CurrentPrefabsMutable;
     }
 
     internal static Prefab? LoadFromFile(string path) {
@@ -37,7 +38,7 @@ public static class PrefabHelper {
 
             return prefab;
         }) is {} prefab) {
-            _CurrentPrefabs[prefab.Name] = prefab;
+            CurrentPrefabsMutable![prefab.Name] = prefab;
             return prefab;
         }
 
@@ -56,8 +57,8 @@ public static class PrefabHelper {
             Objects = selections,
         };
 
-        lock (_CurrentPrefabs) {
-            _CurrentPrefabs[prefab.Name] = prefab;
+        lock (CurrentPrefabsMutable) {
+            CurrentPrefabsMutable[prefab.Name] = prefab;
         }
 
         var path = GetPrefabPath(prefab);
@@ -68,10 +69,12 @@ public static class PrefabHelper {
     }
 
     public static void Remove(string name) {
-        if (!CurrentPrefabs.TryGetValue(name, out var prefab))
+        var prefabs = CurrentPrefabsMutable;
+        if (prefabs is null)
             return;
-
-        CurrentPrefabs.Remove(name);
+        
+        if (!prefabs.Remove(name, out var prefab))
+            return;
 
         var path = prefab.Filename;
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
@@ -111,9 +114,9 @@ public static class PrefabHelper {
         public string Filename { get; internal set; }
     }
 
-    private sealed record class PrefabPlacementHandler(Prefab prefab) : IPlacementHandler {
+    private sealed record class PrefabPlacementHandler(Prefab Prefab) : IPlacementHandler {
         public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room) {
-            var selections = CopypasteHelper.PasteSelections(prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
+            var selections = CopypasteHelper.PasteSelections(Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
             if (pastedRooms) {
                 throw new NotImplementedException("Pasting rooms in prefabs is not supported yet!");
             }

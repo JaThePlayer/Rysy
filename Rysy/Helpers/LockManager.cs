@@ -34,9 +34,9 @@ public sealed class LockManager {
 /// Represents a lock created by a <see cref="LockManager"/>
 /// </summary>
 public sealed class ManagedLock {
-    private LockManager? Parent;
+    private LockManager? _parent;
 
-    internal ManagedLock(LockManager parent) { Parent = parent; }
+    internal ManagedLock(LockManager parent) { _parent = parent; }
 
     /// <summary>
     /// Toggles whether the lock is active or not. Setting this to false does not remove the lock from the manager.
@@ -55,7 +55,7 @@ public sealed class ManagedLock {
     /// Releases the lock from its <see cref="LockManager"/>, so that it is no longer taken into consideration.
     /// </summary>
     public void Release() {
-        Parent?.ReleaseLock(this);
-        Parent = null;
+        _parent?.ReleaseLock(this);
+        _parent = null;
     }
 }

@@ -44,7 +44,7 @@ public record class Placement : IUntypedData {
 
     public IReadOnlyList<string> AlternativeNames { get; init; } = [];
 
-    public string? SID { get; set; }
+    public string? Sid { get; set; }
 
     public string? Tooltip { get; set; }
 
@@ -53,23 +53,23 @@ public record class Placement : IUntypedData {
 
     [JsonIgnore]
     // set in entity registry
-    private IPlacementHandler? _PlacementHandler;
+    private IPlacementHandler? _placementHandler;
 
     public RegisteredEntityType RegisteredEntityType { get; set; }
     
     [JsonIgnore]
     public IPlacementHandler PlacementHandler {
-        get => _PlacementHandler ??= GuessHandler()!;
-        internal set => _PlacementHandler = value;
+        get => _placementHandler ??= GuessHandler()!;
+        internal set => _placementHandler = value;
     }
 
     private IPlacementHandler? GuessHandler() {
-        if (SID == null)
+        if (Sid == null)
             return null;
 
-        var trivial = SID switch {
-            EntityRegistry.BGDecalSID => EntityPlacementHandler.BGDecals,
-            EntityRegistry.FGDecalSID => EntityPlacementHandler.FGDecals,
+        var trivial = Sid switch {
+            EntityRegistry.BgDecalSid => EntityPlacementHandler.BgDecals,
+            EntityRegistry.FgDecalSid => EntityPlacementHandler.FgDecals,
             _ => null,
         };
 
@@ -77,7 +77,7 @@ public record class Placement : IUntypedData {
             return trivial;
         };
 
-        var t = EntityRegistry.GetTypeForSID(SID, RegisteredEntityType);
+        var t = EntityRegistry.GetTypeForSid(Sid, RegisteredEntityType);
 
         if (t is not { }) {
             return null;
@@ -99,8 +99,8 @@ public record class Placement : IUntypedData {
     private List<string>? _associatedMods;
     private IReadOnlyList<string>? _associatedTags;
 
-    public Placement WithSID(string sid) {
-        SID = sid;
+    public Placement WithSid(string sid) {
+        Sid = sid;
 
         return this;
     }
@@ -179,13 +179,13 @@ public record class Placement : IUntypedData {
             return mod;
         
         if (IsDecal()) {
-            var texture = GFX.Atlas[Decal.GetTexturePathFromPlacement(this)];
+            var texture = Gfx.Atlas[Decal.GetTexturePathFromPlacement(this)];
             if (texture is ModTexture modTexture)
                 return modTexture.Mod;
             return null;
         }
 
-        if (SID is { } sid) {
+        if (Sid is { } sid) {
             return EntityRegistry.GetDefiningMod(sid, RegisteredEntityType);
         }
 
@@ -272,7 +272,7 @@ public record class Placement : IUntypedData {
     /// <summary>
     /// Checks whether this placement will place a decal.
     /// </summary>
-    public bool IsDecal() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BGDecals or SelectionLayer.FGDecals };
+    public bool IsDecal() => PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BgDecals or SelectionLayer.FgDecals };
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);
 
@@ -297,7 +297,7 @@ public record class Placement : IUntypedData {
         
         return RegisteredEntityType == other.RegisteredEntityType
             && Name == other.Name
-            && SID == other.SID
+            && Sid == other.Sid
             && ValueOverrides.SequenceEqual(other.ValueOverrides);
     }
 
@@ -350,8 +350,8 @@ public interface IPlacementHandler {
 public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHandler {
     public static readonly EntityPlacementHandler Entity = new(SelectionLayer.Entities);
     public static readonly EntityPlacementHandler Trigger = new(SelectionLayer.Triggers);
-    public static readonly EntityPlacementHandler FGDecals = new(SelectionLayer.FGDecals);
-    public static readonly EntityPlacementHandler BGDecals = new(SelectionLayer.BGDecals);
+    public static readonly EntityPlacementHandler FgDecals = new(SelectionLayer.FgDecals);
+    public static readonly EntityPlacementHandler BgDecals = new(SelectionLayer.BgDecals);
 
     private Entity CreateFromPlacement(Placement placement, Vector2 pos, Room room) {
         Entity? entity = null;
@@ -359,11 +359,11 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
             case SelectionLayer.Entities:
                 entity = EntityRegistry.Create(placement, pos, room, false, false);
                 break;
-            case SelectionLayer.FGDecals:
+            case SelectionLayer.FgDecals:
                 entity = EntityRegistry.Create(placement, pos, room, false, false);
-                entity.AsDecal()!.FG = true;
+                entity.AsDecal()!.Fg = true;
                 break;
-            case SelectionLayer.BGDecals:
+            case SelectionLayer.BgDecals:
                 entity = EntityRegistry.Create(placement, pos, room, false, false);
                 break;
             case SelectionLayer.Triggers:
@@ -513,7 +513,7 @@ public interface IPlaceable {
     public static abstract PlacementList GetPlacements();
 }
 
-public interface IMultiSIDPlaceable {
+public interface IMultiSidPlaceable {
     public static abstract FieldList GetFields(string sid);
     public static abstract PlacementList GetPlacements(string sid);
 }

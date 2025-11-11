@@ -23,7 +23,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 try {
                     Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
                         lock (this) {
-                            _texture?.Dispose();
+                            LoadedTexture?.Dispose();
 
                             Texture2D? texture;
 #if FNA
@@ -38,7 +38,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
 #endif
                             ClipRect = new(0, 0, texture.Width, texture.Height);
-                            _texture = texture;
+                            LoadedTexture = texture;
                         }
                     });
                 } catch (Exception e) {
@@ -46,7 +46,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                     throw;
                 }
 
-                _state = State.Loaded;
+                State = States.Loaded;
             }
         );
     }
@@ -56,7 +56,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
     protected override bool TryPreloadClipRect() {
         lock (Mod.Filesystem) {
             return Mod.Filesystem.OpenFile(VirtPath, stream => {
-                if (FileVirtTexture.PreloadSizeFromPNG(stream, VirtPath, out int w, out int h)) {
+                if (FileVirtTexture.PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
                     ClipRect = new(0, 0, w, h);
                     return true;
                 } else {

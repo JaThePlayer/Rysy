@@ -8,7 +8,7 @@ namespace Rysy.Entities;
 [CustomEntity("triggerSpikesOriginalDown")]
 [CustomEntity("triggerSpikesOriginalLeft")]
 [CustomEntity("triggerSpikesOriginalRight")]
-public sealed class TriggerSpikes : Entity, IMultiSIDPlaceable {
+public sealed class TriggerSpikes : Entity, IMultiSidPlaceable {
     public override int Depth => -1;
 
     public static SpikeHelper.Direction Direction(string sid) => sid switch {
@@ -22,18 +22,18 @@ public sealed class TriggerSpikes : Entity, IMultiSIDPlaceable {
     public override bool ResizableY => Direction(Name) is SpikeHelper.Direction.Left or SpikeHelper.Direction.Right;
 
     public override Entity? TryFlipHorizontal() => Direction(Name) switch {
-        SpikeHelper.Direction.Left => CloneWith(pl => pl.SID = "triggerSpikesOriginalRight"),
-        SpikeHelper.Direction.Right => CloneWith(pl => pl.SID = "triggerSpikesOriginalLeft"),
+        SpikeHelper.Direction.Left => CloneWith(pl => pl.Sid = "triggerSpikesOriginalRight"),
+        SpikeHelper.Direction.Right => CloneWith(pl => pl.Sid = "triggerSpikesOriginalLeft"),
         _ => null,
     };
 
     public override Entity? TryFlipVertical() => Direction(Name) switch {
-        SpikeHelper.Direction.Up => CloneWith(pl => pl.SID = "triggerSpikesOriginalDown"),
-        SpikeHelper.Direction.Down => CloneWith(pl => pl.SID = "triggerSpikesOriginalUp"),
+        SpikeHelper.Direction.Up => CloneWith(pl => pl.Sid = "triggerSpikesOriginalDown"),
+        SpikeHelper.Direction.Down => CloneWith(pl => pl.Sid = "triggerSpikesOriginalUp"),
         _ => null,
     };
 
-    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Direction(Name)) switch {
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSid(dir.AddRotationTo(Direction(Name)) switch {
         SpikeHelper.Direction.Up => "triggerSpikesOriginalUp",
         SpikeHelper.Direction.Down => "triggerSpikesOriginalDown",
         SpikeHelper.Direction.Left => "triggerSpikesOriginalLeft",

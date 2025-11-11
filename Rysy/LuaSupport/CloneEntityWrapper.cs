@@ -52,7 +52,7 @@ public class CloneEntityWrapper(Entity entity) : ILuaWrapper {
     public Entity? CreateMutatedCloneIfChanged() => IsChanged ? CreateMutatedClone() : null;
     
     public Entity CreateMutatedClone() => Entity.CloneWith(pl => {
-        pl.SID = NewSid ?? Entity.Name;
+        pl.Sid = NewSid ?? Entity.Name;
 
         foreach (var (k, v) in Changes) {
             pl[k] = v;

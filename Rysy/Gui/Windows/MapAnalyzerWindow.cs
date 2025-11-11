@@ -5,12 +5,12 @@ using Rysy.MapAnalyzers;
 namespace Rysy.Gui.Windows;
 
 internal sealed class MapAnalyzerWindow : Window {
-    private AnalyzerCtx? Ctx;
-    private List<IAnalyzerResult>? Results;
+    private AnalyzerCtx? _ctx;
+    private List<IAnalyzerResult>? _results;
 
     public Action? SaveAnyway;
 
-    public static new string Name => "rysy.analyzers.window.name".Translate();
+    public new static string Name => "rysy.analyzers.window.name".Translate();
 
     public MapAnalyzerWindow() : base(Name, new(600, 500)) {
         NoSaveData = false;
@@ -32,12 +32,12 @@ internal sealed class MapAnalyzerWindow : Window {
 
 
     private void Update() {
-        Ctx = null;
-        Results = null;
+        _ctx = null;
+        _results = null;
 
         if (EditorState.Map is not { } map) {
-            Ctx = null;
-            Results = null;
+            _ctx = null;
+            _results = null;
 
             return;
         }
@@ -49,20 +49,20 @@ internal sealed class MapAnalyzerWindow : Window {
         }
 
         var ctx = MapAnalyzerRegistry.Global.Analyze(map);
-        Ctx = ctx;
+        _ctx = ctx;
 
-        Results = ctx.Results.OrderByDescending(r => r.Level).ToList();
+        _results = ctx.Results.OrderByDescending(r => r.Level).ToList();
 
-        ForceSetSize(new(Size!.Value.X, Results!.Count.AtLeast(1) * ImGui.GetTextLineHeightWithSpacing() + ImGui.GetFrameHeightWithSpacing() * 3
+        ForceSetSize(new(Size!.Value.X, _results!.Count.AtLeast(1) * ImGui.GetTextLineHeightWithSpacing() + ImGui.GetFrameHeightWithSpacing() * 3
             + ImGui.GetTextLineHeight() * 2));
     }
 
     protected override void Render() {
         base.Render();
 
-        if (Ctx is null) {
+        if (_ctx is null) {
             SetCtx();
-            if (Ctx is null)
+            if (_ctx is null)
                 return;
         }
 
@@ -81,8 +81,8 @@ internal sealed class MapAnalyzerWindow : Window {
         ImGui.TableHeadersRow();
 
         var i = 0;
-        if (Results is { }) {
-            foreach (var res in Results) {
+        if (_results is { }) {
+            foreach (var res in _results) {
                 ImGui.TableNextRow();
 
                 ImGui.TableNextColumn();

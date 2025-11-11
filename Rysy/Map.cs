@@ -42,12 +42,12 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         Rooms.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
     }
 
-    private MapMetadata _Meta = new();
+    private MapMetadata _meta = new();
     public MapMetadata Meta { 
-        get => _Meta; 
+        get => _meta; 
         set {
-            OnMetaChanged?.Invoke(_Meta, value);
-            _Meta = value;
+            OnMetaChanged?.Invoke(_meta, value);
+            _meta = value;
         }
     }
 
@@ -58,8 +58,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
     public AnimatedTileBank AnimatedTiles { get; set; } = new();
     
-    public Autotiler BGAutotiler { get; set; } = new();
-    public Autotiler FGAutotiler { get; set; } = new();
+    public Autotiler BgAutotiler { get; set; } = new();
+    public Autotiler FgAutotiler { get; set; } = new();
 
     public SpriteBank Sprites { get; set; } = new();
 
@@ -117,8 +117,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             },
         }, room, false));
 
-        room.FG.SafeSetTile('1', 1, 21);
-        room.FG.SafeSetTile('1', 2, 21);
+        room.Fg.SafeSetTile('1', 1, 21);
+        room.Fg.SafeSetTile('1', 2, 21);
 
         return map;
     }
@@ -187,12 +187,12 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             }
         }
 
-        BGAutotiler.AnimatedTiles = AnimatedTiles;
-        FGAutotiler.AnimatedTiles = AnimatedTiles;
+        BgAutotiler.AnimatedTiles = AnimatedTiles;
+        FgAutotiler.AnimatedTiles = AnimatedTiles;
         
         if (meta.BackgroundTiles is { } moddedBgTiles && oldMeta?.BackgroundTiles != meta.BackgroundTiles) {
             if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), stream => {
-                    BGAutotiler.ReadFromXml(stream);
+                    BgAutotiler.ReadFromXml(stream);
                     Rooms.ForEach(r => r.ClearRenderCacheAggressively());
                 })) {
                 Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
@@ -201,7 +201,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
         if (meta.ForegroundTiles is { } moddedFgTiles && oldMeta?.ForegroundTiles != meta.ForegroundTiles) {
             if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), stream => {
-                    FGAutotiler.ReadFromXml(stream);
+                    FgAutotiler.ReadFromXml(stream);
                     Rooms.ForEach(r => r.ClearRenderCacheAggressively());
                 })) {
                 Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
@@ -278,12 +278,12 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     }
 
     private void UseVanillaTilesetsIfNeeded() {
-        if (!BGAutotiler.Loaded) {
-            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/BackgroundTiles.xml", BGAutotiler.ReadFromXml);
+        if (!BgAutotiler.Loaded) {
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/BackgroundTiles.xml", BgAutotiler.ReadFromXml);
         }
 
-        if (!FGAutotiler.Loaded) {
-            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FGAutotiler.ReadFromXml);
+        if (!FgAutotiler.Loaded) {
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FgAutotiler.ReadFromXml);
         }
         
         if (!Sprites.Loaded) {
@@ -339,7 +339,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     }
     
     public void SaveTilesetXml(bool bg) {
-        var autotiler = bg ? BGAutotiler : FGAutotiler;
+        var autotiler = bg ? BgAutotiler : FgAutotiler;
         var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
         
         if (path is null || GetModContainingTilesetXml(bg) is not { Filesystem: IWriteableModFilesystem fs })
@@ -591,7 +591,7 @@ public sealed record MapMetadata {
         set => Data.SetNullableObj("cassetteSong", value);
     }
 
-    public string? PostcardSoundID {
+    public string? PostcardSoundId {
         get => Data.Attr("postcardSoundID", null!);
         set => Data.SetNullableObj("postcardSoundID", value);
     }
@@ -720,7 +720,7 @@ public sealed class MetaMode {
         set => Data.SetNullableObj("path", value);
     }
 
-    public string PoemID {
+    public string PoemId {
         get => Data.Attr("poemId");
         set => Data.SetNullableObj("poemId", value);
     }

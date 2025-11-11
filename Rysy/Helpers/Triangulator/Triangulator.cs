@@ -18,10 +18,10 @@ namespace Triangulator {
     public static class Triangulator {
         #region Fields
 
-        static readonly IndexableCyclicalLinkedList<Vertex> polygonVertices = new IndexableCyclicalLinkedList<Vertex>();
-        static readonly IndexableCyclicalLinkedList<Vertex> earVertices = new IndexableCyclicalLinkedList<Vertex>();
-        static readonly CyclicalList<Vertex> convexVertices = new CyclicalList<Vertex>();
-        static readonly CyclicalList<Vertex> reflexVertices = new CyclicalList<Vertex>();
+        static readonly IndexableCyclicalLinkedList<Vertex> PolygonVertices = new IndexableCyclicalLinkedList<Vertex>();
+        static readonly IndexableCyclicalLinkedList<Vertex> EarVertices = new IndexableCyclicalLinkedList<Vertex>();
+        static readonly CyclicalList<Vertex> ConvexVertices = new CyclicalList<Vertex>();
+        static readonly CyclicalList<Vertex> ReflexVertices = new CyclicalList<Vertex>();
 
         #endregion
 
@@ -62,29 +62,29 @@ namespace Triangulator {
             };
 
             //clear all of the lists
-            polygonVertices.Clear();
-            earVertices.Clear();
-            convexVertices.Clear();
-            reflexVertices.Clear();
+            PolygonVertices.Clear();
+            EarVertices.Clear();
+            ConvexVertices.Clear();
+            ReflexVertices.Clear();
 
             //generate the cyclical list of vertices in the polygon
             for (int i = 0; i < outputVertices.Length; i++)
-                polygonVertices.AddLast(new Vertex(outputVertices[i], i));
+                PolygonVertices.AddLast(new Vertex(outputVertices[i], i));
 
             //categorize all of the vertices as convex, reflex, and ear
             FindConvexAndReflexVertices();
             FindEarVertices();
 
             //clip all the ear vertices
-            while (polygonVertices.Count > 3 && earVertices.Count > 0)
+            while (PolygonVertices.Count > 3 && EarVertices.Count > 0)
                 ClipNextEar(triangles);
 
             //if there are still three points, use that for the last triangle
-            if (polygonVertices.Count == 3)
+            if (PolygonVertices.Count == 3)
                 triangles.Add(new Triangle(
-                    polygonVertices[0].Value,
-                    polygonVertices[1].Value,
-                    polygonVertices[2].Value));
+                    PolygonVertices[0].Value,
+                    PolygonVertices[1].Value,
+                    PolygonVertices[2].Value));
 
             //add all of the triangle indices to the output array
             indices = new int[triangles.Count * 3];
@@ -123,18 +123,18 @@ namespace Triangulator {
             holeVerts = EnsureWindingOrder(holeVerts, WindingOrder.Clockwise);
 
             //clear all of the lists
-            polygonVertices.Clear();
-            earVertices.Clear();
-            convexVertices.Clear();
-            reflexVertices.Clear();
+            PolygonVertices.Clear();
+            EarVertices.Clear();
+            ConvexVertices.Clear();
+            ReflexVertices.Clear();
 
             //generate the cyclical list of vertices in the polygon
             for (int i = 0; i < shapeVerts.Length; i++)
-                polygonVertices.AddLast(new Vertex(shapeVerts[i], i));
+                PolygonVertices.AddLast(new Vertex(shapeVerts[i], i));
 
             CyclicalList<Vertex> holePolygon = new CyclicalList<Vertex>();
             for (int i = 0; i < holeVerts.Length; i++)
-                holePolygon.Add(new Vertex(holeVerts[i], i + polygonVertices.Count));
+                holePolygon.Add(new Vertex(holeVerts[i], i + PolygonVertices.Count));
 
             FindConvexAndReflexVertices();
             FindEarVertices();
@@ -149,9 +149,9 @@ namespace Triangulator {
             //is to the right of the rightmost hole vertex with one vertex
             //above the hole vertex and one below
             List<LineSegment> segmentsToTest = new List<LineSegment>();
-            for (int i = 0; i < polygonVertices.Count; i++) {
-                Vertex a = polygonVertices[i].Value;
-                Vertex b = polygonVertices[i + 1].Value;
+            for (int i = 0; i < PolygonVertices.Count; i++) {
+                Vertex a = PolygonVertices[i].Value;
+                Vertex b = PolygonVertices[i + 1].Value;
 
                 if ((a.Position.X > rightMostHoleVertex.Position.X || b.Position.X > rightMostHoleVertex.Position.X) &&
                     ((a.Position.Y >= rightMostHoleVertex.Position.Y && b.Position.Y <= rightMostHoleVertex.Position.Y) ||
@@ -179,17 +179,17 @@ namespace Triangulator {
                 return shapeVerts;
 
             //otherwise we can find our mutually visible vertex to split the polygon
-            Vector2 I = rightMostHoleVertex.Position + Vector2.UnitX * closestPoint.Value;
-            Vertex P = (closestSegment.A.Position.X > closestSegment.B.Position.X)
+            Vector2 pos = rightMostHoleVertex.Position + Vector2.UnitX * closestPoint.Value;
+            Vertex p = (closestSegment.A.Position.X > closestSegment.B.Position.X)
                 ? closestSegment.A
                 : closestSegment.B;
 
             //construct triangle MIP
-            Triangle mip = new Triangle(rightMostHoleVertex, new Vertex(I, 1), P);
+            Triangle mip = new Triangle(rightMostHoleVertex, new Vertex(pos, 1), p);
 
             //see if any of the reflex vertices lie inside of the MIP triangle
             List<Vertex> interiorReflexVertices = new List<Vertex>();
-            foreach (Vertex v in reflexVertices)
+            foreach (Vertex v in ReflexVertices)
                 if (mip.ContainsPoint(v))
                     interiorReflexVertices.Add(v);
 
@@ -206,7 +206,7 @@ namespace Triangulator {
                     if (dot > closestDot) {
                         //save the value and save the vertex as P
                         closestDot = dot;
-                        P = v;
+                        p = v;
                     }
                 }
             }
@@ -215,17 +215,17 @@ namespace Triangulator {
             //we know we have to inject the hole into the main array after point P going from
             //rightMostHoleVertex around and then back to P.
             int mIndex = holePolygon.IndexOf(rightMostHoleVertex);
-            int injectPoint = polygonVertices.IndexOf(P);
+            int injectPoint = PolygonVertices.IndexOf(p);
 
             for (int i = mIndex; i <= mIndex + holePolygon.Count; i++) {
-                polygonVertices.AddAfter(polygonVertices[injectPoint++], holePolygon[i]);
+                PolygonVertices.AddAfter(PolygonVertices[injectPoint++], holePolygon[i]);
             }
-            polygonVertices.AddAfter(polygonVertices[injectPoint], P);
+            PolygonVertices.AddAfter(PolygonVertices[injectPoint], p);
 
             //finally we write out the new polygon vertices and return them out
-            Vector2[] newShapeVerts = new Vector2[polygonVertices.Count];
-            for (int i = 0; i < polygonVertices.Count; i++)
-                newShapeVerts[i] = polygonVertices[i].Value.Position;
+            Vector2[] newShapeVerts = new Vector2[PolygonVertices.Count];
+            for (int i = 0; i < PolygonVertices.Count; i++)
+                newShapeVerts[i] = PolygonVertices[i].Value.Position;
 
             return newShapeVerts;
         }
@@ -311,14 +311,14 @@ namespace Triangulator {
 
         private static void ClipNextEar(List<Triangle> triangles) {
             //find the triangle
-            Vertex ear = earVertices[0].Value;
-            Vertex prev = polygonVertices[polygonVertices.IndexOf(ear) - 1].Value;
-            Vertex next = polygonVertices[polygonVertices.IndexOf(ear) + 1].Value;
+            Vertex ear = EarVertices[0].Value;
+            Vertex prev = PolygonVertices[PolygonVertices.IndexOf(ear) - 1].Value;
+            Vertex next = PolygonVertices[PolygonVertices.IndexOf(ear) + 1].Value;
             triangles.Add(new Triangle(ear, next, prev));
 
             //remove the ear from the shape
-            earVertices.RemoveAt(0);
-            polygonVertices.RemoveAt(polygonVertices.IndexOf(ear));
+            EarVertices.RemoveAt(0);
+            PolygonVertices.RemoveAt(PolygonVertices.IndexOf(ear));
 
             //validate the neighboring vertices
             ValidateAdjacentVertex(prev);
@@ -330,21 +330,21 @@ namespace Triangulator {
         #region ValidateAdjacentVertex
 
         private static void ValidateAdjacentVertex(Vertex vertex) {
-            if (reflexVertices.Contains(vertex)) {
+            if (ReflexVertices.Contains(vertex)) {
                 if (IsConvex(vertex)) {
-                    reflexVertices.Remove(vertex);
-                    convexVertices.Add(vertex);
+                    ReflexVertices.Remove(vertex);
+                    ConvexVertices.Add(vertex);
                 }
             }
 
-            if (convexVertices.Contains(vertex)) {
-                bool wasEar = earVertices.Contains(vertex);
+            if (ConvexVertices.Contains(vertex)) {
+                bool wasEar = EarVertices.Contains(vertex);
                 bool isEar = IsEar(vertex);
 
                 if (wasEar && !isEar) {
-                    earVertices.Remove(vertex);
+                    EarVertices.Remove(vertex);
                 } else if (!wasEar && isEar) {
-                    earVertices.AddFirst(vertex);
+                    EarVertices.AddFirst(vertex);
                 }
             }
         }
@@ -354,13 +354,13 @@ namespace Triangulator {
         #region FindConvexAndReflexVertices
 
         private static void FindConvexAndReflexVertices() {
-            for (int i = 0; i < polygonVertices.Count; i++) {
-                Vertex v = polygonVertices[i].Value;
+            for (int i = 0; i < PolygonVertices.Count; i++) {
+                Vertex v = PolygonVertices[i].Value;
 
                 if (IsConvex(v)) {
-                    convexVertices.Add(v);
+                    ConvexVertices.Add(v);
                 } else {
-                    reflexVertices.Add(v);
+                    ReflexVertices.Add(v);
                 }
             }
         }
@@ -370,11 +370,11 @@ namespace Triangulator {
         #region FindEarVertices
 
         private static void FindEarVertices() {
-            for (int i = 0; i < convexVertices.Count; i++) {
-                Vertex c = convexVertices[i];
+            for (int i = 0; i < ConvexVertices.Count; i++) {
+                Vertex c = ConvexVertices[i];
 
                 if (IsEar(c)) {
-                    earVertices.AddLast(c);
+                    EarVertices.AddLast(c);
                 }
             }
         }
@@ -384,10 +384,10 @@ namespace Triangulator {
         #region IsEar
 
         private static bool IsEar(Vertex c) {
-            Vertex p = polygonVertices[polygonVertices.IndexOf(c) - 1].Value;
-            Vertex n = polygonVertices[polygonVertices.IndexOf(c) + 1].Value;
+            Vertex p = PolygonVertices[PolygonVertices.IndexOf(c) - 1].Value;
+            Vertex n = PolygonVertices[PolygonVertices.IndexOf(c) + 1].Value;
 
-            foreach (Vertex t in reflexVertices) {
+            foreach (Vertex t in ReflexVertices) {
                 if (t.Equals(p) || t.Equals(c) || t.Equals(n))
                     continue;
 
@@ -404,8 +404,8 @@ namespace Triangulator {
         #region IsConvex
 
         private static bool IsConvex(Vertex c) {
-            Vertex p = polygonVertices[polygonVertices.IndexOf(c) - 1].Value;
-            Vertex n = polygonVertices[polygonVertices.IndexOf(c) + 1].Value;
+            Vertex p = PolygonVertices[PolygonVertices.IndexOf(c) - 1].Value;
+            Vertex n = PolygonVertices[PolygonVertices.IndexOf(c) + 1].Value;
 
             Vector2 d1 = Vector2.Normalize(c.Position - p.Position);
             Vector2 d2 = Vector2.Normalize(n.Position - c.Position);

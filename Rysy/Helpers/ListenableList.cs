@@ -14,63 +14,63 @@ public interface IListenableList<T> : IList<T> {
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class ListenableList<T> : IListenableList<T> {
-    private List<T> Inner;
+    private List<T> _inner;
     public Action? OnChanged { get; set; }
 
-    private bool Suppressed;
+    private bool _suppressed;
 
     public void SuppressCallbacks() {
-        Suppressed = true;
+        _suppressed = true;
     }
 
     public void Unsuppress() {
-        Suppressed = false;
+        _suppressed = false;
     }
     
     protected void CallOnChanged() {
-        if (!Suppressed)
+        if (!_suppressed)
             OnChanged?.Invoke();
     }
 
     public ListenableList() {
-        Inner = new();
+        _inner = new();
     }
 
     public ListenableList(Action onChanged) {
-        Inner = new();
+        _inner = new();
 
         OnChanged = onChanged;
     }
 
     public ListenableList(Action onChanged, int capacity) {
-        Inner = new(capacity);
+        _inner = new(capacity);
 
         OnChanged = onChanged;
     }
 
     public ListenableList(int capacity) {
-        Inner = new(capacity);
+        _inner = new(capacity);
     }
 
     public ListenableList(IEnumerable<T> from) {
-        Inner = new(from);
+        _inner = new(from);
     }
 
     public T this[int index] {
-        get => Inner[index];
+        get => _inner[index];
         set {
-            Inner[index] = value;
+            _inner[index] = value;
             CallOnChanged();
         }
     }
 
-    public int Count => Inner.Count;
+    public int Count => _inner.Count;
 
     public bool IsReadOnly => false;
 
 
     public void Add(T item) {
-        Inner.Add(item);
+        _inner.Add(item);
         CallOnChanged();
     }
 
@@ -78,7 +78,7 @@ public class ListenableList<T> : IListenableList<T> {
         bool any = false;
 
         foreach (var item in items) {
-            Inner.Add(item);
+            _inner.Add(item);
             any = true;
         }
 
@@ -87,20 +87,20 @@ public class ListenableList<T> : IListenableList<T> {
     }
 
     public void Clear() {
-        Inner.Clear();
+        _inner.Clear();
         CallOnChanged();
     }
 
-    public bool Contains(T? item) => Inner.Contains(item!);
+    public bool Contains(T? item) => _inner.Contains(item!);
 
     public void CopyTo(T[] array, int arrayIndex) {
-        Inner.CopyTo(array, arrayIndex);
+        _inner.CopyTo(array, arrayIndex);
     }
 
-    public int IndexOf(T item) => Inner.IndexOf(item);
+    public int IndexOf(T item) => _inner.IndexOf(item);
 
     public void Insert(int index, T item) {
-        Inner.Insert(index, item);
+        _inner.Insert(index, item);
         CallOnChanged();
     }
 
@@ -108,11 +108,11 @@ public class ListenableList<T> : IListenableList<T> {
         bool changed = false;
 
         for (int i = Count - 1; i >= 0; i--) {
-            var item = Inner[i];
+            var item = _inner[i];
 
             if (predicate(item)) {
                 changed = true;
-                Inner.RemoveAt(i);
+                _inner.RemoveAt(i);
             }
         }
 
@@ -121,7 +121,7 @@ public class ListenableList<T> : IListenableList<T> {
     }
 
     public bool Remove(T item) {
-        if (Inner.Remove(item)) {
+        if (_inner.Remove(item)) {
             CallOnChanged();
             return true;
         }
@@ -129,11 +129,11 @@ public class ListenableList<T> : IListenableList<T> {
     }
 
     public void RemoveAt(int index) {
-        Inner.RemoveAt(index);
+        _inner.RemoveAt(index);
         CallOnChanged();
     }
 
-    public List<T>.Enumerator GetEnumerator() => Inner.GetEnumerator();
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => Inner.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => Inner.GetEnumerator();
+    public List<T>.Enumerator GetEnumerator() => _inner.GetEnumerator();
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => _inner.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _inner.GetEnumerator();
 }

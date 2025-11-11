@@ -13,13 +13,13 @@ public sealed partial class Decal : Entity, IPlaceable {
     internal static partial Regex NumberAtEnd();
 
     [JsonIgnore]
-    public bool FG { get; set; }
+    public bool Fg { get; set; }
 
     public void OnCreated() {
         Texture = Texture.TrimStart("decals/");
     }
 
-    public VirtTexture GetVirtTexture() => GFX.Atlas[MapTextureToPath(Texture)];
+    public VirtTexture GetVirtTexture() => Gfx.Atlas[MapTextureToPath(Texture)];
 
     private string? _texture;
     
@@ -67,9 +67,9 @@ public sealed partial class Decal : Entity, IPlaceable {
     }
 
     public Color Color {
-        get => EntityData.RGBA("color", Color.White);
+        get => EntityData.Rgba("color", Color.White);
         set {
-            EntityData["color"] = value.ToRGBAString();
+            EntityData["color"] = value.ToRgbaString();
             ClearRoomRenderCache();
         }
     }
@@ -82,7 +82,7 @@ public sealed partial class Decal : Entity, IPlaceable {
         }
     }
 
-    public override int Depth => Int("depth", FG ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
+    public override int Depth => Int("depth", Fg ? Depths.FGDecals : Depths.BGDecals); // TODO: Decal registry depth
 
     public override IEnumerable<ISprite> GetSprites() => GetSprite();
 
@@ -91,7 +91,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     public ISprite GetSprite() {
         if (_template is null) {
             var path = MapTextureToPath(Texture);
-            if (GFX.Atlas.GetSubtextures(path) is { Count: > 1 }) {
+            if (Gfx.Atlas.GetSubtextures(path) is { Count: > 1 }) {
                 var animation = SimpleAnimation.FromPathSubtextures(path, 12f);
             
                 _template = new AnimatedSpriteTemplate(SpriteTemplate.FromTexture(path, Depth) with {
@@ -116,7 +116,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     }
 
     public static Decal Create(BinaryPacker.Element from, bool fg, Room room) {
-        from.Name = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID;
+        from.Name = fg ? EntityRegistry.FgDecalSid : EntityRegistry.BgDecalSid;
 
         var dec = (Decal)EntityRegistry.Create(from, room, false);
 
@@ -126,7 +126,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     }
 
     /// <summary>
-    /// Converts a decal path stored in the map .bin into a texture path that can be used to index <see cref="GFX.Atlas"/>
+    /// Converts a decal path stored in the map .bin into a texture path that can be used to index <see cref="Gfx.Atlas"/>
     /// </summary>
     public static string MapTextureToPath(string textureFromMap) {
         if (textureFromMap.EndsWith(".png", StringComparison.Ordinal)) {
@@ -154,7 +154,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     }
 
     /// <summary>
-    /// Retrieves the texture path from the given decal placement. This path can be used to index <see cref="GFX.Atlas"/>
+    /// Retrieves the texture path from the given decal placement. This path can be used to index <see cref="Gfx.Atlas"/>
     /// </summary>
     public static string GetTexturePathFromPlacement(Placement placement)
         => MapTextureToPath(placement["texture"]?.ToString() ?? "");
@@ -166,10 +166,10 @@ public sealed partial class Decal : Entity, IPlaceable {
                 ["scaleY"] = scale.Y,
                 ["texture"] = path,
                 ["rotation"] = rotation,
-                ["color"] = color.ToRGBAString(),
+                ["color"] = color.ToRgbaString(),
             },
-            PlacementHandler = fg ? EntityPlacementHandler.FGDecals : EntityPlacementHandler.BGDecals,
-            SID = fg ? EntityRegistry.FGDecalSID : EntityRegistry.BGDecalSID,
+            PlacementHandler = fg ? EntityPlacementHandler.FgDecals : EntityPlacementHandler.BgDecals,
+            Sid = fg ? EntityRegistry.FgDecalSid : EntityRegistry.BgDecalSid,
         };
     }
 
@@ -201,7 +201,7 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public static FieldList GetFields() => new() { 
         ["texture"] = Fields.String(""),
-        ["color"] = Fields.RGBA(Color.White),
+        ["color"] = Fields.Rgba(Color.White),
         ["scaleX"] = Fields.Float(1f),
         ["scaleY"] = Fields.Float(1f),
         ["rotation"] = Fields.Float(0f),
@@ -210,7 +210,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     };
 
     protected override BinaryPacker.Element DoPack(bool trim) {
-        var el = new BinaryPacker.Element(EntityData.SID);
+        var el = new BinaryPacker.Element(EntityData.Sid);
         var attr = new Dictionary<string, object>(EntityData.Inner.Count, StringComparer.Ordinal) {
             ["x"] = X,
             ["y"] = Y,
@@ -241,7 +241,7 @@ public sealed partial class Decal : Entity, IPlaceable {
 
     public override void ClearRoomRenderCache() {
         if (Room is { } r) {
-            if (FG)
+            if (Fg)
                 r.ClearFgDecalsRenderCache();
             else
                 r.ClearBgDecalsRenderCache();
@@ -268,7 +268,7 @@ public sealed partial class Decal : Entity, IPlaceable {
                 return v;
 
             var cacheToken = new CacheToken();
-            var cache = new Cache<List<string>>(cacheToken, () => GFX.Atlas.GetTextures()
+            var cache = new Cache<List<string>>(cacheToken, () => Gfx.Atlas.GetTextures()
                 .Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal))
                 .SelectWhereNotNull(p => {
                     if (NumberAtEnd().Match(p.virtPath) is { Success: true } match) {
@@ -284,12 +284,12 @@ public sealed partial class Decal : Entity, IPlaceable {
                 }).ToList());
             _validDecalPaths = cache;
 
-            GFX.Atlas.OnTextureLoad += path => {
+            Gfx.Atlas.OnTextureLoad += path => {
                 if (path.StartsWith("decals/", StringComparison.Ordinal)) {
                     cacheToken.Invalidate();
                 }
             };
-            GFX.Atlas.OnUnload += cacheToken.Invalidate;
+            Gfx.Atlas.OnUnload += cacheToken.Invalidate;
 
             return cache;
         }

@@ -2,22 +2,22 @@
 
 namespace Rysy.History;
 public record class RemoveStyleAction(IList<Style> Styles, Style ToRemove, StyleFolder? Folder) : IHistoryAction {
-    private int Index;
-    private bool RemovedFromParent;
+    private int _index;
+    private bool _removedFromParent;
 
     public bool Apply(Map map) {
-        Index = Styles.IndexOf(ToRemove);
+        _index = Styles.IndexOf(ToRemove);
         if (ToRemove.Parent == Folder) {
             ToRemove.Parent = null;
-            RemovedFromParent = true;
+            _removedFromParent = true;
         }
 
         return Styles.Remove(ToRemove);
     }
 
     public void Undo(Map map) {
-        Styles.Insert(Index, ToRemove);
-        if (RemovedFromParent) {
+        Styles.Insert(_index, ToRemove);
+        if (_removedFromParent) {
             ToRemove.Parent = Folder;
         }
     }

@@ -13,8 +13,8 @@ public class EntityPropertyWindow : FormWindow {
     public Entity Main { get; }
     public List<Entity> All { get; }
 
-    private HistoryHandler History;
-    private Action HistoryHook;
+    private HistoryHandler _history;
+    private Action _historyHook;
 
     public static (FieldList, Func<string, bool> exists) GetFields(Entity main) {
         ArgumentNullException.ThrowIfNull(main);
@@ -51,7 +51,7 @@ public class EntityPropertyWindow : FormWindow {
         order.Add(Entity.EditorGroupEntityDataKey);
 
         if (main is Trigger tr) {
-            fields["_editorColor"] = Fields.RGBA(tr.Color).AllowNull().TreatEmptyAsNull();
+            fields["_editorColor"] = Fields.Rgba(tr.Color).AllowNull().TreatEmptyAsNull();
             order.Add("_editorColor");
         }
 
@@ -104,20 +104,20 @@ public class EntityPropertyWindow : FormWindow {
     }
 
     public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) 
-        : base($"Edit: {main.EntityData.SID}:{string.Join(',', all.Select(e => e.Id))}") {
+        : base($"Edit: {main.EntityData.Sid}:{string.Join(',', all.Select(e => e.Id))}") {
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(main);
         ArgumentNullException.ThrowIfNull(all);
 
         Main = main;
         All = all;
-        History = history;
+        _history = history;
 
         var (fields, exists) = GetFields(main);
         Init(fields, exists);
 
         OnChanged = (edited) => {
-            History.ApplyNewAction(new EntityEditAction(All, edited));
+            _history.ApplyNewAction(new EntityEditAction(All, edited));
         };
         OnLiveUpdate = (edited) => {
             foreach (var e in All) {
@@ -125,12 +125,12 @@ public class EntityPropertyWindow : FormWindow {
             }
         };
         
-        HistoryHook = ReevaluateEditedValues;
-        history.OnApply += HistoryHook;
-        history.OnUndo += HistoryHook;
+        _historyHook = ReevaluateEditedValues;
+        history.OnApply += _historyHook;
+        history.OnUndo += _historyHook;
         SetRemoveAction((w) => {
-            History.OnApply -= HistoryHook;
-            History.OnUndo -= HistoryHook;
+            _history.OnApply -= _historyHook;
+            _history.OnUndo -= _historyHook;
         });
     }
 

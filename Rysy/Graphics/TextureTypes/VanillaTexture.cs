@@ -6,10 +6,10 @@ internal sealed class VanillaTexture : UndisposableVirtTexture {
     public override int Width => W;
     public override int Height => H;
 
-    public override Rectangle GetSubtextureRect(int x, int y, int w, int h, out Vector2 _drawOffset, Rectangle? _clipRect = null) {
-        _drawOffset = default;
+    public override Rectangle GetSubtextureRect(int x, int y, int w, int h, out Vector2 drawOffset, Rectangle? clipRect = null) {
+        drawOffset = default;
 
-        var clip = ClipRect;
+        var clip = ((VirtTexture)this).ClipRect;
 
         x += (int) DrawOffset.X;
         y += (int) DrawOffset.Y;
@@ -20,14 +20,14 @@ internal sealed class VanillaTexture : UndisposableVirtTexture {
         if (newX < clip.X) {
             var dif = newX - clip.X;
             newX -= dif;
-            _drawOffset.X -= dif;
+            drawOffset.X -= dif;
             w += dif;
         }
 
         if (newY < clip.Y) {
             var dif = newY - clip.Y;
             newY -= dif;
-            _drawOffset.Y -= dif;
+            drawOffset.Y -= dif;
             h += dif;
         }
 

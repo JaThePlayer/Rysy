@@ -32,7 +32,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     public T Default { get; set; }
 
-    private string Search = "";
+    private string _search = "";
 
     public DropdownField() {
         if (DropdownHelper.DefaultStringToT.TryGetValue(typeof(T), out var obj)) {
@@ -99,10 +99,10 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         var prevVal = val;
 
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref Search, Tooltip,
+            return ImGuiManager.EditableCombo(fieldName, ref val, GetValues(), StringToT, ref _search, Tooltip,
                 menuItemRenderer: MenuItemRenderer) ? RealValue(val) : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref Search, Tooltip, 
+            return ImGuiManager.Combo(fieldName, ref val, GetValues(), ref _search, Tooltip, 
                 menuItemRenderer: MenuItemRenderer) ? RealValue(val) : null;
         }
     }
@@ -222,7 +222,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 }
 
 public record class DropdownField : Field {
-    private string Search = "";
+    private string _search = "";
     
     public IDictionary<object, string> Values { get; set; }
     
@@ -241,10 +241,10 @@ public record class DropdownField : Field {
 
     public override object RenderGui(string fieldName, object value) {
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref value, Values, ValueTransformer, ref Search, Tooltip,
+            return ImGuiManager.EditableCombo(fieldName, ref value, Values, ValueTransformer, ref _search, Tooltip,
                 menuItemRenderer: MenuItemRenderer, tToString: DisplayTransformer) ? value : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref value, Values, ref Search, Tooltip, 
+            return ImGuiManager.Combo(fieldName, ref value, Values, ref _search, Tooltip, 
                 menuItemRenderer: MenuItemRenderer) ? value : null;
         }
     }

@@ -79,7 +79,7 @@ public static class RysyState {
     /// <summary>
     /// The current FPS
     /// </summary>
-    public static double CurrentFPS { get; set; }
+    public static double CurrentFps { get; set; }
 
     public static float ForceActiveTimer { get; set; } = 0.0f;
 
@@ -129,7 +129,7 @@ public static class RysyState {
                     _hideUi = !_hideUi; 
                 }
 
-                SmartFPSHandler.Update();
+                SmartFpsHandler.Update();
 
                 Scene.Update();
 
@@ -157,7 +157,7 @@ public static class RysyState {
 
         GraphicsDevice.Clear(Color.Black);
 
-        var renderUI = !_hideUi;
+        var renderUi = !_hideUi;
         var uiRenderingSuccessful = false;
         
         if (ImGuiAvailable) {
@@ -165,7 +165,7 @@ public static class RysyState {
             try {
 #endif
                 ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
-                if (renderUI)
+                if (renderUi)
                     Scene.RenderImGui();
                 if (DebugInfoWindow.Enabled)
                     DebugInfoWindow.Instance.RenderGui();
@@ -194,7 +194,7 @@ public static class RysyState {
 
         _smartFramerate.Update(elapsed);
 
-        CurrentFPS = _smartFramerate.framerate;
+        CurrentFps = _smartFramerate.Framerate;
     }
 
     public static void DispatchOnNextReload() {
@@ -231,7 +231,7 @@ public static class RysyState {
                         var droppedFileDir = sdlEvent->drop.file;
                         var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
-                        SDL2Ext.SDL_free(droppedFileDir);
+                        Sdl2Ext.SDL_free(droppedFileDir);
 
                         Scene?.OnFileDrop(pathString);
                         break;
@@ -297,20 +297,20 @@ public static class RysyState {
     
     //https://stackoverflow.com/a/44689035
     sealed class SmartFramerate {
-        double currentFrametimes;
-        double weight;
-        int numerator;
+        double _currentFrametimes;
+        double _weight;
+        int _numerator;
 
-        public double framerate => (numerator / currentFrametimes);
+        public double Framerate => (_numerator / _currentFrametimes);
 
         public SmartFramerate(int oldFrameWeight) {
-            numerator = oldFrameWeight;
-            weight = (double) oldFrameWeight / ((double) oldFrameWeight - 1d);
+            _numerator = oldFrameWeight;
+            _weight = (double) oldFrameWeight / ((double) oldFrameWeight - 1d);
         }
 
         public void Update(double timeSinceLastFrame) {
-            currentFrametimes /= weight;
-            currentFrametimes += timeSinceLastFrame;
+            _currentFrametimes /= _weight;
+            _currentFrametimes += timeSinceLastFrame;
         }
     }
 }

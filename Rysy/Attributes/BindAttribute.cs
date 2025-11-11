@@ -32,7 +32,7 @@ public sealed class BindAttribute : Attribute {
 
     static Dictionary<string, object> ContextCache = new();
 
-    internal static List<Field> _boundFields = new();
+    internal static List<Field> BoundFields = new();
 
     internal static Ctx<BaseT> GetBindContext<BaseT>(IBindTarget entity) where BaseT : IBindTarget {
         var entityType = entity.GetType();
@@ -82,13 +82,13 @@ public sealed class BindAttribute : Attribute {
                 var loadValueFromEntity = entity.GetValueForField;
                 var loadField = LoadFieldByBindId;
 
-                _boundFields.Add(field);
+                BoundFields.Add(field);
                 var fieldLocal = il.DeclareLocal(typeof(Field));
 
                 il.Emit(OpCodes.Ldarg_0);
 
                 // load the right Field instance
-                il.Emit(OpCodes.Ldc_I4, _boundFields.Count - 1);
+                il.Emit(OpCodes.Ldc_I4, BoundFields.Count - 1);
                 il.Emit(OpCodes.Call, loadField.Method);
                 il.Emit(OpCodes.Stloc, fieldLocal);
                 il.Emit(OpCodes.Ldloc, fieldLocal);
@@ -168,7 +168,7 @@ public sealed class BindAttribute : Attribute {
         return converterMethod;
     }
 
-    internal static Field LoadFieldByBindId(int id) => _boundFields[id];
+    internal static Field LoadFieldByBindId(int id) => BoundFields[id];
 
     internal static object LoadValueFromEntity(Field field, Entity entity, string key) {
         if (entity.EntityData.TryGetValue(key, out var value))

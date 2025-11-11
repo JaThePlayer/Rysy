@@ -17,7 +17,7 @@ public class RoomLayer : EditorLayer {
                     ["hasPlayer"] = true,
                 },
                 PlacementHandler = new RoomPlacementHandler(),
-                SID = "room",
+                Sid = "room",
                 Name = "default"
             },
             new Placement() {
@@ -27,7 +27,7 @@ public class RoomLayer : EditorLayer {
                     ["hasPlayer"] = false,
                 },
                 PlacementHandler = new RoomPlacementHandler(),
-                SID = "fillerRoom",
+                Sid = "fillerRoom",
                 Name = "filler",
             }
         ];

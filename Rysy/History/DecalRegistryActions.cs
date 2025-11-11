@@ -7,13 +7,13 @@ internal sealed record DecalRegistryRemoveEntryAction(DecalRegistryEntry Entry) 
     private int _index;
     
     public bool Apply(Map map) {
-        _index = GFX.DecalRegistry.GetEntriesForMod(map.Mod!).IndexOf(Entry);
+        _index = Gfx.DecalRegistry.GetEntriesForMod(map.Mod!).IndexOf(Entry);
         
-        return GFX.DecalRegistry.RemoveEntryFromMod(map.Mod!, Entry);
+        return Gfx.DecalRegistry.RemoveEntryFromMod(map.Mod!, Entry);
     }
 
     public void Undo(Map map) {
-        GFX.DecalRegistry.AddEntryToMod(map.Mod!, Entry, _index);
+        Gfx.DecalRegistry.AddEntryToMod(map.Mod!, Entry, _index);
     }
 }
 
@@ -32,13 +32,13 @@ internal sealed record DecalRegistryRemovePropAction(DecalRegistryEntry Entry, D
 
 internal sealed record DecalRegistryAddEntryAction(DecalRegistryEntry Entry) : IHistoryAction {
     public bool Apply(Map map) {
-        GFX.DecalRegistry.AddEntryToMod(map.Mod!, Entry);
+        Gfx.DecalRegistry.AddEntryToMod(map.Mod!, Entry);
 
         return true;
     }
 
     public void Undo(Map map) {
-        GFX.DecalRegistry.RemoveEntryFromMod(map.Mod!, Entry);
+        Gfx.DecalRegistry.RemoveEntryFromMod(map.Mod!, Entry);
     }
 }
 
@@ -55,17 +55,17 @@ internal sealed record DecalRegistryAddPropAction(DecalRegistryEntry Entry, Deca
 }
 
 internal sealed record DecalRegistryChangeEntryPathAction(DecalRegistryEntry Entry, string NewPath) : IHistoryAction {
-    private string OldPath;
+    private string _oldPath;
     
     public bool Apply(Map map) {
-        OldPath = Entry.Path;
+        _oldPath = Entry.Path;
         Entry.Path = NewPath;
 
         return true;
     }
 
     public void Undo(Map map) {
-        Entry.Path = OldPath;
+        Entry.Path = _oldPath;
     }
 }
 
@@ -73,7 +73,7 @@ internal sealed record DecalRegistryMoveEntryAction(DecalRegistryEntry Entry, in
     private int _startIdx;
     
     public bool Apply(Map map) {
-        var entries = GFX.DecalRegistry.GetEntriesForMod(map.Mod!);
+        var entries = Gfx.DecalRegistry.GetEntriesForMod(map.Mod!);
         
         var idx = entries.IndexOf(Entry);
         if (idx == -1)
@@ -92,7 +92,7 @@ internal sealed record DecalRegistryMoveEntryAction(DecalRegistryEntry Entry, in
     }
 
     public void Undo(Map map) {
-        var entries = GFX.DecalRegistry.GetEntriesForMod(map.Mod!);
+        var entries = Gfx.DecalRegistry.GetEntriesForMod(map.Mod!);
         var i = _startIdx + Offset;
 
         (entries[i], entries[_startIdx]) = (entries[_startIdx], entries[i]);

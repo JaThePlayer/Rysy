@@ -183,10 +183,10 @@ internal static partial class ImGuiMarkdown {
                 ImGuiManager.PushEmphasis(emphasis);
                     
                 if (emphasis is { Link: {  } link, LinkIsImage: true }) {
-                    if (GFX.Atlas.TryGet(link, out var texture)) {
+                    if (Gfx.Atlas.TryGet(link, out var texture)) {
                         DrawTexture(texture, contentTrimmed);
                     } else if (LinkOpenHelper.IsValidLink(link, out var uri)) {
-                        if (GFX.GetTextureFromWebIfReady(uri) is { } webTexture) {
+                        if (Gfx.GetTextureFromWebIfReady(uri) is { } webTexture) {
                             DrawTexture(webTexture, contentTrimmed);
                         }
                     }

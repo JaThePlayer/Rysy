@@ -1,7 +1,7 @@
 ﻿namespace Rysy.Stylegrounds;
 
 [CustomEntity("snowFg")]
-public sealed class SnowFG : Style, IPlaceable {
+public sealed class SnowFg : Style, IPlaceable {
     public static FieldList GetFields() => new();
 
     public static PlacementList GetPlacements() => new("default");
@@ -10,7 +10,7 @@ public sealed class SnowFG : Style, IPlaceable {
 }
 
 [CustomEntity("snowBg")]
-public sealed class SnowBG : Style, IPlaceable {
+public sealed class SnowBg : Style, IPlaceable {
     public static FieldList GetFields() => new();
 
     public static PlacementList GetPlacements() => new("default");
@@ -21,7 +21,7 @@ public sealed class SnowBG : Style, IPlaceable {
 [CustomEntity("windSnow")]
 public sealed class WindSnow : Style, IPlaceable {
     public static FieldList GetFields() => new(new {
-        color = Fields.RGB(null!).AllowNull(),
+        color = Fields.Rgb(null!).AllowNull(),
     });
 
     public static PlacementList GetPlacements() => new("default");

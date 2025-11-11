@@ -245,12 +245,12 @@ public class ToolHandler {
         if (currentRoom is { }) {
             currentRoom.StartBatch(camera, Colorgrade.None);
             CurrentTool.Render(camera, currentRoom);
-            GFX.EndBatch();
+            Gfx.EndBatch();
         }
         
-        GFX.BeginBatch();
+        Gfx.BeginBatch();
         CurrentTool.RenderOverlay();
-        GFX.EndBatch();
+        Gfx.EndBatch();
     }
 
     private bool _firstGui = true;

@@ -58,7 +58,7 @@ public sealed class Spinner : Entity, IPlaceable {
     public bool Dust;
 
     [Bind("color")]
-    private SpinnerColors SpinnerColor;
+    private SpinnerColors _spinnerColor;
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
@@ -140,7 +140,7 @@ public sealed class Spinner : Entity, IPlaceable {
             ];
         }
 
-        var color = SpinnerColor;
+        var color = _spinnerColor;
         var rainbow = color == SpinnerColors.Rainbow;
         var pos = Pos;
 

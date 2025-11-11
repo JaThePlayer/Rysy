@@ -12,7 +12,7 @@ public record struct SimpleSprite : ITextureSprite {
     public Vector2 Pos { get; set; }
     public VirtTexture Texture;
     public Vector2 Origin;
-    private bool Prepared;
+    private bool _prepared;
     
     public SimpleSprite(VirtTexture text) {
         Texture = text;
@@ -30,8 +30,8 @@ public record struct SimpleSprite : ITextureSprite {
     public bool IsLoaded => Texture.Texture is { };
 
     private void CacheFields() {
-        if (!Prepared) {
-            Prepared = true;
+        if (!_prepared) {
+            _prepared = true;
 
             // Fixup properties now, at this point nothing should try to get stuff from the sprite...
 
@@ -62,7 +62,7 @@ public record struct SimpleSprite : ITextureSprite {
             }
 
             if (color != default) {
-                GFX.Batch.Draw(texture, pos, Texture.ClipRect, color, 0f, origin, Vector2.One, SpriteEffects.None, 0f);
+                Gfx.Batch.Draw(texture, pos, Texture.ClipRect, color, 0f, origin, Vector2.One, SpriteEffects.None, 0f);
             }
         }
     }

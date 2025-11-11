@@ -20,11 +20,11 @@
 
             bool oddNodes = false;
 
-            if (checkPointToSegment(C, A, point))
+            if (CheckPointToSegment(C, A, point))
                 oddNodes = !oddNodes;
-            if (checkPointToSegment(A, B, point))
+            if (CheckPointToSegment(A, B, point))
                 oddNodes = !oddNodes;
-            if (checkPointToSegment(B, C, point))
+            if (CheckPointToSegment(B, C, point))
                 oddNodes = !oddNodes;
 
             return oddNodes;
@@ -34,7 +34,7 @@
             return new Triangle(a, b, c).ContainsPoint(point);
         }
 
-        static bool checkPointToSegment(Vertex sA, Vertex sB, Vertex point) {
+        static bool CheckPointToSegment(Vertex sA, Vertex sB, Vertex point) {
             if ((sA.Position.Y < point.Position.Y && sB.Position.Y >= point.Position.Y) ||
                 (sB.Position.Y < point.Position.Y && sA.Position.Y >= point.Position.Y)) {
                 float x =

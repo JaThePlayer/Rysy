@@ -14,19 +14,19 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public void OnDeselected() {
     }
 
-    private Entity _Entity;
+    private Entity _entity;
 
     public Entity Entity {
-        get => _Entity;
+        get => _entity;
         internal set {
-            if (_Entity != value) {
-                if (_Entity is { }) {
+            if (_entity != value) {
+                if (_entity is { }) {
                     // transfer the handler to the new entity, to make node selections aware of this change
                     //_Entity._SelectionHandler = null;
-                    value._SelectionHandler = this;
+                    value.SelectionHandler = this;
                 }
 
-                _Entity = value;
+                _entity = value;
                 ClearCollideCache();
             }
         }
@@ -36,8 +36,8 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
     public SelectionLayer Layer => Entity.GetSelectionLayer();
 
-    private ISelectionCollider? _Collider;
-    private ISelectionCollider Collider => _Collider ??= Entity.GetMainSelection();
+    private ISelectionCollider? _collider;
+    private ISelectionCollider Collider => _collider ??= Entity.GetMainSelection();
 
     public Rectangle Rect => Collider.Rect;
 
@@ -96,7 +96,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public bool ResizableY => Entity.ResizableY;
 
     public void ClearCollideCache() {
-        _Collider = null;
+        _collider = null;
     }
 
     internal IHistoryAction? FlipImpl(Entity? flipped, string funcName) {

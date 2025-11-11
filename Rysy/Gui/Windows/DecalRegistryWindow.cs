@@ -13,63 +13,63 @@ namespace Rysy.Gui.Windows;
 public sealed class DecalRegistryWindow : Window {
     const string CreateNewEntryPopupId = "create_new_entry";
     
-    private readonly Map Map;
+    private readonly Map _map;
 
-    internal ModMeta Mod => Map.Mod!;
+    internal ModMeta Mod => _map.Mod!;
     
-    bool firstRender = true;
+    bool _firstRender = true;
 
-    private DecalRegistryEntry? Selection;
-    private DecalRegistryProperty? SelectionProp;
+    private DecalRegistryEntry? _selection;
+    private DecalRegistryProperty? _selectionProp;
 
-    private FormWindow? Form;
-    private DecalRegistryProperty? FormProp;
+    private FormWindow? _form;
+    private DecalRegistryProperty? _formProp;
 
-    private readonly HotkeyHandler HotkeyHandler;
-    private readonly HistoryHandler History;
+    private readonly HotkeyHandler _hotkeyHandler;
+    private readonly HistoryHandler _history;
 
-    internal List<DecalRegistryEntry> Entries => GFX.DecalRegistry.GetEntriesForMod(Map.Mod!);
+    internal List<DecalRegistryEntry> Entries => Gfx.DecalRegistry.GetEntriesForMod(_map.Mod!);
 
     public DecalRegistryWindow(Map map) : base("Decal Registry", new(1200, 800)) {
-        Map = map;
+        _map = map;
 
-        History = new(map) {
+        _history = new(map) {
             OnApply = HistoryHook,
             OnUndo = HistoryHook
         };
         
-        HotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
-        HotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
+        _hotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
+        _hotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
         
-        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => MoveSelections(-1), HotkeyModes.OnHoldSmoothInterval);
-        HotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDown", "down", () => MoveSelections(1), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveUp", "up", () => MoveSelections(-1), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeyHandler.AddHotkeyFromSettings("stylegrounds.moveDown", "down", () => MoveSelections(1), HotkeyModes.OnHoldSmoothInterval);
 
-        HotkeyHandler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
-        HotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
-        HotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
+        _hotkeyHandler.AddHotkeyFromSettings("copy", "ctrl+c", CopySelections);
+        _hotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
+        _hotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
         
-        HotkeyHandler.AddHistoryHotkeys(History.Undo, History.Redo, Save);
+        _hotkeyHandler.AddHistoryHotkeys(_history.Undo, _history.Redo, Save);
     }
 
     private void HistoryHook() {
-        Form?.ReevaluateChanged(FormProp!.Data.Inner);
+        _form?.ReevaluateChanged(_formProp!.Data.Inner);
         Save();
     }
 
     private void MoveSelections(int by) {
-        if (Selection is not { } entry)
+        if (_selection is not { } entry)
             return;
 
-        if (SelectionProp is { } prop) {
-            History.ApplyNewAction(new DecalRegistryMovePropAction(entry, prop, by));
+        if (_selectionProp is { } prop) {
+            _history.ApplyNewAction(new DecalRegistryMovePropAction(entry, prop, by));
         } else {
-            History.ApplyNewAction(new DecalRegistryMoveEntryAction(entry, by));
+            _history.ApplyNewAction(new DecalRegistryMoveEntryAction(entry, by));
         }
     }
 
     private void SetSelection(DecalRegistryEntry? entry, DecalRegistryProperty? property) {
-        Selection = entry;
-        SelectionProp = property;
+        _selection = entry;
+        _selectionProp = property;
 
         CreateForm(property);
     }
@@ -78,10 +78,10 @@ public sealed class DecalRegistryWindow : Window {
         => ForAllSelections(RemoveEntry, RemoveProp);
 
     private void CopySelections() {
-        if (Selection is not { } entry)
+        if (_selection is not { } entry)
             return;
         
-        if (SelectionProp is { } prop) {
+        if (_selectionProp is { } prop) {
             Input.Clipboard.Set(prop.Serialize().ToString());
         } else {
             Input.Clipboard.Set(entry.Serialize().ToString());
@@ -101,7 +101,7 @@ public sealed class DecalRegistryWindow : Window {
             
             if (xdoc.Element("decal") is { } decalEl && DecalRegistryEntry.TryLoadFromNode(decalEl, out var newEntry)) {
                 AddEntry(newEntry);
-            } else if (Selection is {} entry) {
+            } else if (_selection is {} entry) {
                 foreach (var el in xdoc.Elements()) {
                     var prop = DecalRegistryProperty.FromNode(el);
                     
@@ -145,7 +145,7 @@ public sealed class DecalRegistryWindow : Window {
 
     private void CreateForm(DecalRegistryProperty? prop) {
         if (prop is null) {
-            Form = null;
+            _form = null;
             return;
         }
 
@@ -154,30 +154,30 @@ public sealed class DecalRegistryWindow : Window {
         var form = new FormWindow(fields, prop.Name);
         form.Exists = prop.Data.Has;
         form.OnChanged = (edited) => {
-            History.ApplyNewAction(new DecalRegistryChangePropertyAction(prop, edited));
+            _history.ApplyNewAction(new DecalRegistryChangePropertyAction(prop, edited));
 
             Save();
         };
         form.OnLiveUpdate = (edited) => {
             prop.Data.SetOverlay(edited);
         };
-        FormProp?.Data.SetOverlay(null);
-        FormProp = prop;
-        Form = form;
+        _formProp?.Data.SetOverlay(null);
+        _formProp = prop;
+        _form = form;
     }
 
     private void Save() {
-        GFX.DecalRegistry.SaveMod(Mod);
+        Gfx.DecalRegistry.SaveMod(Mod);
     }
     
     protected override void Render() {
         base.Render();
         
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows) && !ImGui.GetIO().WantCaptureKeyboard) {
-            HotkeyHandler.Update();
+            _hotkeyHandler.Update();
         }
 
-        if (Map.Mod is not { } mod) {
+        if (_map.Mod is not { } mod) {
             ImGui.Text("Decal Registry can only be edited for packaged mods.");
             return;
         }
@@ -186,7 +186,7 @@ public sealed class DecalRegistryWindow : Window {
 
         ImGui.Columns(2);
 
-        if (firstRender)
+        if (_firstRender)
             ImGui.SetColumnWidth(0, size.X / 3);
 
         RenderList(mod);
@@ -199,11 +199,11 @@ public sealed class DecalRegistryWindow : Window {
         cam.Move(-new Vector2(previewW / 2f / cam.Scale, 300 / 2f / cam.Scale));
 
         ImGuiManager.XnaWidget("decal_registry_preview", previewW, 300, () => {
-            if (Selection is { } entry) {
+            if (_selection is { } entry) {
                 var ctx = SpriteRenderCtx.Default(true);
 
                 IEnumerable<ISprite>? sprites;
-                if (Form is {} && FormProp is { } prop) {
+                if (_form is {} && _formProp is { } prop) {
                     sprites = entry.GetAffectedTextures().SelectMany(t => prop.GetSprites(t, ctx));
                 } else {
                     sprites = entry.GetSprites();
@@ -216,12 +216,12 @@ public sealed class DecalRegistryWindow : Window {
         }, cam, rerender: true);
 
         ImGui.BeginChild("form");
-        Form?.RenderBody();
+        _form?.RenderBody();
         ImGui.EndChild();
 
         ImGui.Columns();
 
-        firstRender = false;
+        _firstRender = false;
     }
 
     private void RenderProp(DecalRegistryEntry entry, DecalRegistryProperty prop) {
@@ -231,7 +231,7 @@ public sealed class DecalRegistryWindow : Window {
         ImGui.TableNextColumn();
 
         var flags = ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanFullWidth;
-        if (SelectionProp == prop) {
+        if (_selectionProp == prop) {
             flags |= ImGuiTreeNodeFlags.Selected;
         }
 
@@ -251,10 +251,10 @@ public sealed class DecalRegistryWindow : Window {
     }
 
     private void ForAllSelections(Action<DecalRegistryEntry>? onEntry, Action<DecalRegistryEntry, DecalRegistryProperty>? onProp) {
-        if (Selection is not { } entry)
+        if (_selection is not { } entry)
             return;
         
-        if (SelectionProp is { } prop) {
+        if (_selectionProp is { } prop) {
             onProp?.Invoke(entry, prop);
         } else {
             onEntry?.Invoke(entry);
@@ -262,21 +262,21 @@ public sealed class DecalRegistryWindow : Window {
     }
     
     private void RemoveEntry(DecalRegistryEntry entry) {
-        History.ApplyNewAction(new DecalRegistryRemoveEntryAction(entry));
+        _history.ApplyNewAction(new DecalRegistryRemoveEntryAction(entry));
         
-        if (Selection == entry)
-            Selection = null;
+        if (_selection == entry)
+            _selection = null;
     }
     
     private void RemoveProp(DecalRegistryEntry entry, DecalRegistryProperty prop) {
-        History.ApplyNewAction(new DecalRegistryRemovePropAction(entry, prop));
+        _history.ApplyNewAction(new DecalRegistryRemovePropAction(entry, prop));
         
-        if (SelectionProp == prop)
-            SelectionProp = null;
+        if (_selectionProp == prop)
+            _selectionProp = null;
     }
     
     private void AddProp(DecalRegistryEntry entry, DecalRegistryProperty prop) {
-        History.ApplyNewAction(new DecalRegistryAddPropAction(entry, prop));
+        _history.ApplyNewAction(new DecalRegistryAddPropAction(entry, prop));
     }
     
     private void RenderEntry(DecalRegistryEntry entry) {
@@ -287,7 +287,7 @@ public sealed class DecalRegistryWindow : Window {
         ImGui.TableNextColumn();
 
         var flags = ImGuiTreeNodeFlags.SpanFullWidth;
-        if (Selection == entry) {
+        if (_selection == entry) {
             flags |= ImGuiTreeNodeFlags.Selected;
         }
 
@@ -327,9 +327,9 @@ public sealed class DecalRegistryWindow : Window {
 
             if (ImGui.BeginPopupContextWindow(popupid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
                 var blocked = entry.Props.Where(p => !p.AllowMultiple).Select(p => p.Name).ToHashSet();
-                var placements = EntityRegistry.DecalRegistryPropertyPlacements.Where(p => !blocked.Contains(p.SID ?? ""));
+                var placements = EntityRegistry.DecalRegistryPropertyPlacements.Where(p => !blocked.Contains(p.Sid ?? ""));
                 
-                ImGuiManager.List(placements, p => new Searchable(p.SID ?? p.Name), _newPropertyComboCache, (pl) => {
+                ImGuiManager.List(placements, p => new Searchable(p.Sid ?? p.Name), _newPropertyComboCache, (pl) => {
                     var prop = DecalRegistryProperty.CreateFromPlacement(pl);
                     AddProp(entry, prop);
                     
@@ -407,7 +407,7 @@ public sealed class DecalRegistryWindow : Window {
             }
 
             if (toChange is { }) {
-                History.ApplyNewAction(new DecalRegistryChangeEntryPathAction(toChange, _newEntryName));
+                _history.ApplyNewAction(new DecalRegistryChangeEntryPathAction(toChange, _newEntryName));
                 SetSelection(toChange, null);
             } else {
                 var entry = new DecalRegistryEntry { Path = _newEntryName };
@@ -425,7 +425,7 @@ public sealed class DecalRegistryWindow : Window {
 
     private void AddEntry(DecalRegistryEntry entry)
     {
-        History.ApplyNewAction(new DecalRegistryAddEntryAction(entry));
+        _history.ApplyNewAction(new DecalRegistryAddEntryAction(entry));
         SetSelection(entry, null);
     }
 
@@ -434,7 +434,7 @@ public sealed class DecalRegistryWindow : Window {
     }
     
     internal bool IsValidPath(FoundPath path)
-        => GFX.Atlas.TryGet(path.Path, out var texture) && texture is ModTexture modTexture && modTexture.Mod == Mod && !EntryExistsFor(path.Captured);
+        => Gfx.Atlas.TryGet(path.Path, out var texture) && texture is ModTexture modTexture && modTexture.Mod == Mod && !EntryExistsFor(path.Captured);
     
     private void AddContextWindow(string id, Action? remove = null, Action? render = null) {
         var sid = $"d_ctx_{id}";

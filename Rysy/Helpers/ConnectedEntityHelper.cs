@@ -86,7 +86,7 @@ public static class ConnectedEntityHelper {
             return false;
         }
 
-        if (!handleInnerCorners && loc is NineSliceLocation.InnerCorner_UpRight or NineSliceLocation.InnerCorner_UpLeft or NineSliceLocation.InnerCorner_DownLeft or NineSliceLocation.InnerCorner_DownRight) {
+        if (!handleInnerCorners && loc is NineSliceLocation.InnerCornerUpRight or NineSliceLocation.InnerCornerUpLeft or NineSliceLocation.InnerCornerDownLeft or NineSliceLocation.InnerCornerDownRight) {
             spr = default;
             return false;
         }
@@ -97,11 +97,11 @@ public static class ConnectedEntityHelper {
 
     private static NineSliceLocation DefaultMaskToLocation(bool upLeft, bool up, bool upRight, bool left, bool mid, bool right, bool botLeft, bool botMid, bool botRight) {
         return (upLeft, up, upRight, left, mid, right, botLeft, botMid, botRight) switch {
-            (true, false, _, false, _, _, _, _, _) => NineSliceLocation.InnerCorner_UpLeft,
-            (_, false, true, _, _, false, _, _, _) => NineSliceLocation.InnerCorner_UpRight,
+            (true, false, _, false, _, _, _, _, _) => NineSliceLocation.InnerCornerUpLeft,
+            (_, false, true, _, _, false, _, _, _) => NineSliceLocation.InnerCornerUpRight,
 
-            (_, _, _, false, _, _, true, false, _) => NineSliceLocation.InnerCorner_DownLeft,
-            (_, _, _, _, _, false, _, false, true) => NineSliceLocation.InnerCorner_DownRight,
+            (_, _, _, false, _, _, true, false, _) => NineSliceLocation.InnerCornerDownLeft,
+            (_, _, _, _, _, false, _, false, true) => NineSliceLocation.InnerCornerDownRight,
 
             (_, true, _, true, _, false, _, _, _) => NineSliceLocation.TopLeft,
             (_, true, _, false, _, true, _, _, _) => NineSliceLocation.TopRight,

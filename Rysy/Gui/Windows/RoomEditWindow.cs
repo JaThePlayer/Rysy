@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace Rysy.Gui.Windows;
 
 public sealed partial class RoomEditWindow : Window {
-    private Action HistoryHook;
+    private Action _historyHook;
     private readonly FormWindow _generalTab;
     private readonly Room _room;
     private readonly RoomAttributes _attrs;
@@ -117,12 +117,12 @@ public sealed partial class RoomEditWindow : Window {
         };
 
         var history = EditorState.History!;
-        HistoryHook = ReevaluateEditedValues;
-        history.OnApply += HistoryHook;
-        history.OnUndo += HistoryHook;
+        _historyHook = ReevaluateEditedValues;
+        history.OnApply += _historyHook;
+        history.OnUndo += _historyHook;
         SetRemoveAction((w) => {
-            history.OnApply -= HistoryHook;
-            history.OnUndo -= HistoryHook;
+            history.OnApply -= _historyHook;
+            history.OnUndo -= _historyHook;
         });
     }
     

@@ -2,7 +2,7 @@
 using Rysy.Gui;
 
 namespace Rysy;
-public static class SmartFPSHandler {
+public static class SmartFpsHandler {
     private static float InactiveTimer;
     private static bool LoweredFps;
 

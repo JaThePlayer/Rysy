@@ -1,7 +1,7 @@
 ﻿namespace Rysy.History;
 
 public record RoomResizeAction(RoomRef Room, int Width, int Height) : IHistoryAction {
-    private char[,] _origBG, _origFG;
+    private char[,] _origBg, _origFg;
     private int _origWidth, _origHeight;
 
     public bool Apply(Map map) {
@@ -19,13 +19,13 @@ public record RoomResizeAction(RoomRef Room, int Width, int Height) : IHistoryAc
             h = 8;
         }
 
-        _origBG = room.BG.Tiles;
-        _origFG = room.FG.Tiles;
+        _origBg = room.Bg.Tiles;
+        _origFg = room.Fg.Tiles;
         _origHeight = room.Height;
         _origWidth = room.Width;
 
-        room.BG.Resize(w, h);
-        room.FG.Resize(w, h);
+        room.Bg.Resize(w, h);
+        room.Fg.Resize(w, h);
 
         room.Attributes.Width = w;
         room.Attributes.Height = h;
@@ -36,8 +36,8 @@ public record RoomResizeAction(RoomRef Room, int Width, int Height) : IHistoryAc
     public void Undo(Map map) {
         var room = Room.Resolve(map);
         
-        room.BG.Tiles = _origBG;
-        room.FG.Tiles = _origFG;
+        room.Bg.Tiles = _origBg;
+        room.Fg.Tiles = _origFg;
         room.Attributes.Width = _origWidth;
         room.Attributes.Height = _origHeight;
     }

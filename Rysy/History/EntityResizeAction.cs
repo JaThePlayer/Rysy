@@ -3,7 +3,7 @@
 namespace Rysy.History;
 
 public record EntityResizeAction(EntityRef Entity, Point Delta, bool UseRecommendedSizes) : IHistoryAction {
-    private Point? PrevSize;
+    private Point? _prevSize;
 
     public bool Apply(Map map) {
         var entity = Entity.Resolve(map);
@@ -13,7 +13,7 @@ public record EntityResizeAction(EntityRef Entity, Point Delta, bool UseRecommen
         var minSize = UseRecommendedSizes ? entity.RecommendedMinimumSize : entity.MinimumSize;
         var maxSize = UseRecommendedSizes ? entity.RecommendedMaximumSize : entity.MaximumSize;
 
-        PrevSize ??= new(entity.Width, entity.Height);
+        _prevSize ??= new(entity.Width, entity.Height);
 
         if (entity.ResizableX && Delta.X != 0) {
             var prevW = entity.Width;
@@ -35,7 +35,7 @@ public record EntityResizeAction(EntityRef Entity, Point Delta, bool UseRecommen
     public void Undo(Map map) {
         var entity = Entity.Resolve(map);
         
-        entity.Width = PrevSize!.Value.X;
-        entity.Height = PrevSize.Value.Y;
+        entity.Width = _prevSize!.Value.X;
+        entity.Height = _prevSize.Value.Y;
     }
 }

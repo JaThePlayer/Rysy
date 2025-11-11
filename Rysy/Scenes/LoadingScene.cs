@@ -32,7 +32,7 @@ public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Sce
         base.Render();
 
         var windowSize = RysyState.Window.ClientBounds.Size();
-        GFX.BeginBatch();
+        Gfx.BeginBatch();
 
         const int scale = 4;
         
@@ -45,6 +45,6 @@ public class LoadingScene(LoadTaskManager taskManager, Action onCompleted) : Sce
             PicoFont.Print(text, new Rectangle(0, windowSize.Y / 2 + yOffset, windowSize.X, windowSize.Y / 2), Color.LightSkyBlue, scale: scale);
             yOffset += PicoFont.H * scale;
         }
-        GFX.EndBatch();
+        Gfx.EndBatch();
     }
 }

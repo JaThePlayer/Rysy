@@ -40,8 +40,8 @@ public static partial class LonnDrawables {
         var layer = lua.PeekTableStringValue(top, "layer"u8) ?? "tilesFg";
 
         var sprites = layer switch {
-            "tilesFg" => room.FG.Autotiler?.GetFilledRectSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
-            "tilesBg" => room.BG.Autotiler?.GetFilledRectSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
+            "tilesFg" => room.Fg.Autotiler?.GetFilledRectSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
+            "tilesBg" => room.Bg.Autotiler?.GetFilledRectSprites(new(x, y), material[0], w / 8, h / 8, Color.White),
             _ => null
         };
         return sprites;
@@ -199,7 +199,7 @@ public static partial class LonnDrawables {
         var h = lua.PeekTableIntValue(top, "h"u8) ?? 0;
         var fillColor = lua.PeekTableColorValue(top, "fillColor"u8, Color.White);
         var borderColor = lua.PeekTableColorValue(top, "borderColor"u8, Color.White);
-        var layer = lua.PeekTableBoolValue(top, "fg"u8) is true ? BigWaterfall.Layers.FG : BigWaterfall.Layers.BG;
+        var layer = lua.PeekTableBoolValue(top, "fg"u8) is true ? BigWaterfall.Layers.Fg : BigWaterfall.Layers.Bg;
         
         return BigWaterfall.GetSprites(new(x, y), w, h, fillColor, borderColor, layer);
     }

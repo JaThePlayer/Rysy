@@ -25,7 +25,7 @@ internal sealed class StyleMask : LonnEntity {
 
 [CustomEntity("SJ2021/StylegroundMask", associatedMods: new string[] { "StrawberryJam2021" })]
 [CustomEntity("SJ2021/AllInOneMask", associatedMods: new string[] { "StrawberryJam2021" })]
-internal sealed class SJAllInOneStyleMask : LonnEntity {
+internal sealed class SjAllInOneStyleMask : LonnEntity {
     public string Tag => Attr("tag", null!) ?? Attr("stylemaskTag");
 
     public override int Depth => Bool("behindFg") ? Depths.BGTerrain + 1 : Depths.Above;
@@ -50,11 +50,11 @@ static class StyleMaskHelper {
                 return;
             
             if (ctx.Camera?.IsRectVisible(self.Rectangle.MovedBy(ctx.CameraOffset)) ?? true) {
-                var lastState = GFX.EndBatch();
-                StylegroundRenderer.Render(self.Room, self.Room.Map.Style, ctx.Camera ?? EditorState.Camera, StylegroundRenderer.Layers.BGAndFG, s => s.HasTag(tag!), 
+                var lastState = Gfx.EndBatch();
+                StylegroundRenderer.Render(self.Room, self.Room.Map.Style, ctx.Camera ?? EditorState.Camera, StylegroundRenderer.Layers.BgAndFg, s => s.HasTag(tag!), 
                     scissorRectWorldPos: self.Rectangle.MovedBy(self.Room.Pos));
 
-                GFX.BeginBatch(lastState);
+                Gfx.BeginBatch(lastState);
             }
         });
     }

@@ -9,8 +9,8 @@ public sealed class StarClimbController : SpriteEntity, IPlaceable {
     public override string TexturePath => "@Internal@/northern_lights";
 
     public static FieldList GetFields() => new(new {
-        fgColor = Fields.RGB("a3ffff"),
-        bgColor = Fields.RGB("293e4b")
+        fgColor = Fields.Rgb("a3ffff"),
+        bgColor = Fields.Rgb("293e4b")
     });
 
     public static PlacementList GetPlacements() => new("controller");

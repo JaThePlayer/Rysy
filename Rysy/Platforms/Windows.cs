@@ -40,7 +40,7 @@ public partial class Windows : RysyPlatform {
     public override void Init() {
         base.Init();
 
-        EnableANSI();
+        EnableAnsi();
     }
 
     public override void ResizeWindow(int x, int y, int w, int h) {
@@ -73,12 +73,12 @@ public partial class Windows : RysyPlatform {
     #region ANSI codes
     // Based on:
     // https://gist.github.com/tomzorz/6142d69852f831fb5393654c90a1f22e
-    private void EnableANSI() {
+    private void EnableAnsi() {
         // Running the .exe directly doesn't enable ANSI codes on Windows, even though cmd supports them.
         // We can enable it by calling into the Windows API though!
 
-        var iStdIn = GetStdHandle(STD_INPUT_HANDLE);
-        var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        var iStdIn = GetStdHandle(StdInputHandle);
+        var iStdOut = GetStdHandle(StdOutputHandle);
 
         if (!GetConsoleMode(iStdIn, out uint inConsoleMode)) {
             //Console.WriteLine("Failed to get input console mode. Not enabling ANSI codes!");
@@ -89,8 +89,8 @@ public partial class Windows : RysyPlatform {
             return;
         }
 
-        inConsoleMode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
-        outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        inConsoleMode |= EnableVirtualTerminalInput;
+        outConsoleMode |= EnableVirtualTerminalProcessing;
 
         if (!SetConsoleMode(iStdIn, inConsoleMode)) {
             //Console.WriteLine($"failed to set input console mode, error code: {GetLastError()}. Not enabling ANSI codes!");
@@ -104,13 +104,13 @@ public partial class Windows : RysyPlatform {
         Logger.UseColorsInConsole = true;
     }
 
-    private const int STD_INPUT_HANDLE = -10;
+    private const int StdInputHandle = -10;
 
-    private const int STD_OUTPUT_HANDLE = -11;
+    private const int StdOutputHandle = -11;
 
-    private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+    private const uint EnableVirtualTerminalProcessing = 0x0004;
 
-    private const uint ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200;
+    private const uint EnableVirtualTerminalInput = 0x0200;
 
     [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

@@ -5,19 +5,19 @@ using System.IO.Compression;
 namespace Rysy.Graphics.TextureTypes;
 
 public sealed class ZipVirtTexture : VirtTexture {
-    private string archivePath;
-    private string entryName;
+    private string _archivePath;
+    private string _entryName;
 
     public ZipVirtTexture(string archivePath, ZipArchiveEntry entry) {
-        entryName = entry.FullName;
-        this.archivePath = archivePath;
+        _entryName = entry.FullName;
+        this._archivePath = archivePath;
     }
 
     protected override Task? QueueLoad() {
         return Task.Run(() => {
             try {
 
-                var arch = SharedZipArchive.Get(archivePath);
+                var arch = SharedZipArchive.Get(_archivePath);
 #if DirectX && !FNA
                 // DirectX is super fast at loading textures it seems, so this is more performant than reading to an intermediate buffer
                 lock (arch) {
@@ -31,45 +31,45 @@ public sealed class ZipVirtTexture : VirtTexture {
                 byte[] buffer;
                 lock (arch)
                 {
-                    var entry = arch.GetEntry(entryName)!;
+                    var entry = arch.GetEntry(_entryName)!;
 
                     using var stream = entry.Open();
                     buffer = new byte[entry.Length];
                     stream.ReadExactly(buffer);
 
-                    SharedZipArchive.Release(archivePath);
+                    SharedZipArchive.Release(_archivePath);
                 }
                 using var memStr = new MemoryStream(buffer);
                 var texture = Texture2D.FromStream(RysyState.GraphicsDevice, memStr);
                 ClipRect = new(0, 0, texture.Width, texture.Height);
-                _texture = texture;
+                LoadedTexture = texture;
 #endif
             } catch (Exception e) {
                 Logger.Write("ZipVirtTexture", LogLevel.Error, $"Failed loading zip texture {this}, {e}");
                 throw;
             }
 
-            _state = State.Loaded;
+            State = States.Loaded;
         }
         );
     }
 
     protected override bool TryPreloadClipRect() {
-        var arch = SharedZipArchive.Get(archivePath);
+        var arch = SharedZipArchive.Get(_archivePath);
         lock (arch) {
-            using var stream = arch.GetEntry(entryName)!.Open();
-            if (FileVirtTexture.PreloadSizeFromPNG(stream, entryName, out int w, out int h)) {
+            using var stream = arch.GetEntry(_entryName)!.Open();
+            if (FileVirtTexture.PreloadSizeFromPng(stream, _entryName, out int w, out int h)) {
                 ClipRect = new(0, 0, w, h);
-                SharedZipArchive.Release(archivePath);
+                SharedZipArchive.Release(_archivePath);
                 return true;
             } else {
-                SharedZipArchive.Release(archivePath);
-                throw new Exception($"Invalid PNG for {entryName}");
+                SharedZipArchive.Release(_archivePath);
+                throw new Exception($"Invalid PNG for {_entryName}");
             }
         }
     }
 
-    public override string ToString() => $"ZipVirtTexture:{{{entryName}, {archivePath.CorrectSlashes()}}}";
+    public override string ToString() => $"ZipVirtTexture:{{{_entryName}, {_archivePath.CorrectSlashes()}}}";
 }
 
 /// <summary>

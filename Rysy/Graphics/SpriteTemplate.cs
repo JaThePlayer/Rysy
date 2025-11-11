@@ -9,12 +9,12 @@ namespace Rysy.Graphics;
 /// </summary>
 public sealed record SpriteTemplate {
     public static SpriteTemplate FromTexture(string path, int depth)
-        => FromTexture(GFX.Atlas[path], depth);
+        => FromTexture(Gfx.Atlas[path], depth);
     
     public static SpriteTemplate FromTexture(VirtTexture texture, int depth) {
         return new() {
             Texture = texture,
-            DrawOffset = texture.DrawOffset,
+            _drawOffset = texture.DrawOffset,
             Depth = depth,
         };
     }
@@ -22,7 +22,7 @@ public sealed record SpriteTemplate {
     public static SpriteTemplate FromSprite(Sprite sprite) {
         return new() {
             Texture = sprite.Texture, 
-            DrawOffset = sprite.DrawOffset,
+            _drawOffset = sprite.DrawOffset,
             Depth = sprite.Depth ?? 0,
             Origin = sprite.Origin,
             Scale = sprite.Scale,
@@ -32,7 +32,7 @@ public sealed record SpriteTemplate {
 
     public SpriteTemplate WithTexture(VirtTexture newTex) => this with {
         Texture = newTex,
-        DrawOffset = newTex.DrawOffset
+        _drawOffset = newTex.DrawOffset
     };
 
     public SpriteTemplate WithOutlineTexture() => WithTexture(Texture.GetOutlineTexture());
@@ -95,10 +95,10 @@ public sealed record SpriteTemplate {
 
     public bool IsLoaded => Texture.Texture is { };
     
-    private Vector2 DrawOffset;
-    private int Width;
-    private int Height;
-    private Vector2 SubtextureOffset;
+    private Vector2 _drawOffset;
+    private int _width;
+    private int _height;
+    private Vector2 _subtextureOffset;
     
     // Origin multiplied by the size of the texture, needed to pass it to SpriteBatch
     private Vector2 _multOrigin;
@@ -132,17 +132,17 @@ public sealed record SpriteTemplate {
             // todo: figure out if calculating rotated rectangles for culling is worth it
             if (ctx.Camera is { } cam) {
                 var rPos = pos - origin * scale;
-                if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int)(Width * scale.X), (int) (Height * scale.Y)))
+                if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int)(_width * scale.X), (int) (_height * scale.Y)))
                     return;
             }
 
-            pos += SubtextureOffset;
+            pos += _subtextureOffset;
         } else {
-            pos += SubtextureOffset.Rotate(rotation);
+            pos += _subtextureOffset.Rotate(rotation);
         }
 
         var flip = Flip;
-        var batch = GFX.Batch;
+        var batch = Gfx.Batch;
 
         if (outlineColor != default) {
             batch.Draw(texture, pos + new Vector2(-1f, 0f), ClipRect, outlineColor, rotation, origin, scale, flip, 0f);
@@ -156,8 +156,8 @@ public sealed record SpriteTemplate {
     }
     
     private void LoadSizeFromTexture() {
-        Width = Texture.Width;
-        Height = Texture.Height;
+        _width = Texture.Width;
+        _height = Texture.Height;
     }
     
     public Rectangle? GetRenderRect(Vector2 atPos) {
@@ -171,7 +171,7 @@ public sealed record SpriteTemplate {
         var scale = _realScale;
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
         if (Rotation == 0f) {
-            Vector2 pos = atPos - _multOrigin * scale + SubtextureOffset;
+            Vector2 pos = atPos - _multOrigin * scale + _subtextureOffset;
 
             return new Rectangle((int) pos.X, (int) pos.Y, (int) size.X, (int) size.Y);
         }
@@ -187,11 +187,11 @@ public sealed record SpriteTemplate {
         var r1 = atPos + new Vector2(
             Math.Min(p4.X, Math.Min(p3.X, Math.Min(p1.X, p2.X))),
             Math.Min(p4.Y, Math.Min(p3.Y, Math.Min(p1.Y, p2.Y)))
-        ) + SubtextureOffset.Rotate(Rotation);
+        ) + _subtextureOffset.Rotate(Rotation);
         var r2 = atPos + new Vector2(
             Math.Max(p4.X, Math.Max(p3.X, Math.Max(p1.X, p2.X))),
             Math.Max(p4.Y, Math.Max(p3.Y, Math.Max(p1.Y, p2.Y)))
-        ) + SubtextureOffset.Rotate(Rotation);
+        ) + _subtextureOffset.Rotate(Rotation);
 
         return RectangleExt.FromPoints(r1.ToPoint(), r2.ToPoint());
     }
@@ -204,15 +204,15 @@ public sealed record SpriteTemplate {
             
         ClipRect ??= Texture.ClipRect;
 
-        if (Width == 0)
+        if (_width == 0)
             LoadSizeFromTexture();
             
         // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
-        var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
+        var nonDivisibleBy2 = new Vector2(_width % 2, _height % 2);
         if (nonDivisibleBy2 != default)
-            DrawOffset += (nonDivisibleBy2 * Origin);
+            _drawOffset += (nonDivisibleBy2 * Origin);
 
-        _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+        _multOrigin = (Origin * new Vector2(_width, _height)) + _drawOffset;
         _realScale = Scale;
             
         if (Scale.X < 0) {
@@ -229,7 +229,7 @@ public sealed record SpriteTemplate {
 
     private void MarkChanged() {
         _prepared = false;
-        DrawOffset = Texture.DrawOffset;
+        _drawOffset = Texture.DrawOffset;
         Flip = SpriteEffects.None;
     }
 }
@@ -305,7 +305,7 @@ public record SimpleAnimation(IReadOnlyList<VirtTexture> Textures, float Animati
     public VirtTexture GetTextureByIndex(int index) => Textures[index];
 
     public static SimpleAnimation FromPathSubtextures(string path, float animationSpeed) {
-        var textures = GFX.Atlas.GetSubtextures(path);
+        var textures = Gfx.Atlas.GetSubtextures(path);
 
         return new(textures, animationSpeed);
     }

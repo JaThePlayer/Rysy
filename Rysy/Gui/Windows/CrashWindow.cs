@@ -9,18 +9,18 @@ public class CrashWindow : Window {
     public Action<CrashWindow> ButtonGenerator;
     public string Message;
 
-    private string ExceptionString;
+    private string _exceptionString;
 
     public CrashWindow(string message, Exception e, Action<CrashWindow> buttonGenerator) : base("Crash Handler", new(800, 500)) {
         Exception = e;
         ButtonGenerator = buttonGenerator;
         Message = message;
 
-        ExceptionString = Exception.ToString().Censor();
+        _exceptionString = Exception.ToString().Censor();
 
         try {
             // avoid future crashes
-            GFX.EndBatch();
+            Gfx.EndBatch();
         } catch {
 
         }
@@ -31,7 +31,7 @@ public class CrashWindow : Window {
 
         ImGui.TextColored(Color.Red.ToNumVec4(), Message);
 
-        ImGuiManager.ReadOnlyInputTextMultiline("Exception", ExceptionString, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()));
+        ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()));
 
         ImGui.NewLine();
 

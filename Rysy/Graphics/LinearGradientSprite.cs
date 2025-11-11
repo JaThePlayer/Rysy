@@ -28,9 +28,9 @@ public record LinearGradientSprite : ISprite {
     
     public bool LoopY { get; set; }
 
-    private float Alpha = 1f;
+    private float _alpha = 1f;
 
-    public ISprite WithMultipliedAlpha(float alpha) => this with { Alpha = Alpha * alpha, _polygonSprite = null };
+    public ISprite WithMultipliedAlpha(float alpha) => this with { _alpha = _alpha * alpha, _polygonSprite = null };
 
     public bool IsLoaded => true;
     
@@ -68,19 +68,19 @@ public sealed class LinearGradient : ISpanParsable<LinearGradient>
     public LinearGradient() { }
     
     public List<Entry> Entries { get; init; } = [];
-    private float? entryPercentageSum = null;
+    private float? _entryPercentageSum = null;
     
     public void GetVertexes(ref VertexPositionColor[]? into, Directions dir, Rectangle bounds, Vector2 basePos, bool loopX, bool loopY, out int vertexCount) {
-        entryPercentageSum ??= Entries.Sum(e => e.Percent);
+        _entryPercentageSum ??= Entries.Sum(e => e.Percent);
 
         float yUnit = bounds.Height / 100f;
         float xUnit = bounds.Width / 100f;
         
         // Perf: Modulo the position of looping directions by the size of the gradient
         if (loopY && dir == Directions.Vertical) {
-            basePos.Y %= entryPercentageSum.Value * yUnit * 2;
+            basePos.Y %= _entryPercentageSum.Value * yUnit * 2;
         } else if (loopX && dir == Directions.Horizontal) {
-            basePos.X %= entryPercentageSum.Value * xUnit * 2;
+            basePos.X %= _entryPercentageSum.Value * xUnit * 2;
         }
         
         vertexCount = 0;
@@ -271,7 +271,7 @@ public sealed class LinearGradient : ISpanParsable<LinearGradient>
             return true;
         }
 
-        public override string ToString() => $"{ColorFrom.ToRGBAString()},{ColorTo.ToRGBAString()},{Percent.ToString(CultureInfo.InvariantCulture)}";
+        public override string ToString() => $"{ColorFrom.ToRgbaString()},{ColorTo.ToRgbaString()},{Percent.ToString(CultureInfo.InvariantCulture)}";
     }
 
     public enum Directions {

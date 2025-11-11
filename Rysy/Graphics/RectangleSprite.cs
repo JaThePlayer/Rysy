@@ -48,18 +48,18 @@ public record struct RectangleSprite : ISprite {
 
 
             if (outline.A != byte.MaxValue || color.A != byte.MaxValue) {
-                GFX.Batch.Draw(GFX.Pixel, new Rectangle(left, top, w, outlineWidth), null, outline);
-                GFX.Batch.Draw(GFX.Pixel, new Rectangle(left, bottom, w, outlineWidth), null, outline);
-                GFX.Batch.Draw(GFX.Pixel, new Rectangle(left, top + outlineWidth, outlineWidth, h - (outlineWidth * 2)), null, outline);
-                GFX.Batch.Draw(GFX.Pixel, new Rectangle(right, top + outlineWidth, outlineWidth, h - (outlineWidth * 2)), null, outline);
+                Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(left, top, w, outlineWidth), null, outline);
+                Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(left, bottom, w, outlineWidth), null, outline);
+                Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(left, top + outlineWidth, outlineWidth, h - (outlineWidth * 2)), null, outline);
+                Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(right, top + outlineWidth, outlineWidth, h - (outlineWidth * 2)), null, outline);
             } else {
                 // if the colors are fully opaque, we can just render one big rectangle, since the smaller inner rectangle will fully cover up the overlapping parts
-                GFX.Batch.Draw(GFX.Pixel, Pos, null, outline);
+                Gfx.Batch.Draw(Gfx.Pixel, Pos, null, outline);
             }
 
-            GFX.Batch.Draw(GFX.Pixel, new Rectangle(left + outlineWidth, top + outlineWidth, w - (outlineWidth * 2), h - (outlineWidth * 2)), null, color);
+            Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(left + outlineWidth, top + outlineWidth, w - (outlineWidth * 2), h - (outlineWidth * 2)), null, color);
         } else {
-            GFX.Batch.Draw(GFX.Pixel, Pos, null, color);
+            Gfx.Batch.Draw(Gfx.Pixel, Pos, null, color);
         }
     }
 

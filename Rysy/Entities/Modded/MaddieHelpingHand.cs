@@ -11,24 +11,24 @@ namespace Rysy.Entities.Modded;
 [CustomEntity("MaxHelpingHand/RainbowSpinnerColorAreaController", associatedMods: [ "MaxHelpingHand" ])]
 internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinnerController, IPlaceable {
     [Bind("colors")]
-    private ReadOnlyArray<Color> Colors;
+    private ReadOnlyArray<Color> _colors;
     
     [Bind("gradientSize")]
-    private float GradientSize;
+    private float _gradientSize;
     
     [Bind("loopColors")]
-    private bool LoopColors;
+    private bool _loopColors;
     
     [Bind("centerX")]
-    private float CenterX;
+    private float _centerX;
     
     [Bind("centerY")]
-    private float CenterY;
+    private float _centerY;
     
     [Bind("gradientSpeed")]
-    private float GradientSpeed;
+    private float _gradientSpeed;
 
-    private Vector2 Center => new(CenterX, CenterY);
+    private Vector2 Center => new(_centerX, _centerY);
     
     private bool IsAreaController 
         => Name is "MaxHelpingHand/RainbowSpinnerColorAreaController" or "MaxHelpingHand/FlagRainbowSpinnerColorAreaController";
@@ -39,7 +39,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
             return false;
         }
         
-        res = GetModHue(Colors,GradientSize, pos, LoopColors, Center, GradientSpeed, time);
+        res = GetModHue(_colors,_gradientSize, pos, _loopColors, Center, _gradientSpeed, time);
         return true;
     }
 
@@ -79,7 +79,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
     
     // Define fields for the [Bind] attribute, but the lonn plugins are still used for actual placements
     public static FieldList GetFields() => new(new {
-        colors = Fields.List("89E5AE,88E0E0,87A9DD,9887DB,D088E2",Fields.RGB(Color.White)),
+        colors = Fields.List("89E5AE,88E0E0,87A9DD,9887DB,D088E2",Fields.Rgb(Color.White)),
         gradientSize = 280.0f,
         gradientSpeed = 50.0f,
         centerX = 0.0f,

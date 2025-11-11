@@ -13,9 +13,9 @@ public class LoadErrorScene : Scene {
     public override void Render() {
         base.Render();
 
-        GFX.BeginBatch();
+        Gfx.BeginBatch();
         var bounds = RysyState.Window.ClientBounds.Size();
         PicoFont.Print(Text, new Rectangle(0, 0, bounds.X, bounds.Y), Color.LightSkyBlue, scale: 4f);
-        GFX.EndBatch();
+        Gfx.EndBatch();
     }
 }

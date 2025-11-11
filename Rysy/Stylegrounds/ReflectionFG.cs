@@ -1,7 +1,7 @@
 ﻿namespace Rysy.Stylegrounds;
 
 [CustomEntity("reflectionfg")]
-public sealed class ReflectionFG : Style, IPlaceable {
+public sealed class ReflectionFg : Style, IPlaceable {
     public static FieldList GetFields() => new();
 
     public static PlacementList GetPlacements() => new("default");

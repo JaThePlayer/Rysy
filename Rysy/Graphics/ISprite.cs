@@ -30,7 +30,7 @@ public interface ISprite : IEnumerable<ISprite> {
 #pragma warning restore CA1033 // Interface methods should be callable by child types
 
     public static Sprite FromTexture(string texturePath)
-    => new(GFX.Atlas[texturePath]) {
+    => new(Gfx.Atlas[texturePath]) {
         Color = Color.White,
     };
 
@@ -40,13 +40,13 @@ public interface ISprite : IEnumerable<ISprite> {
     };
 
     public static Sprite FromTexture(Vector2 pos, string texturePath)
-    => new(GFX.Atlas[texturePath]) {
+    => new(Gfx.Atlas[texturePath]) {
         Pos = pos.Floored(),
         Color = Color.White,
     };
 
     public static Sprite FromTexture(Vector2 pos, string texturePath, Vector2 origin)
-    => new(GFX.Atlas[texturePath]) {
+    => new(Gfx.Atlas[texturePath]) {
         Pos = pos.Floored(),
         Color = Color.White,
         Origin = origin,
@@ -59,7 +59,7 @@ public interface ISprite : IEnumerable<ISprite> {
     };
     
     public static SimpleSprite SimpleSpriteFromTexture(Vector2 pos, string texturePath)
-        => new(GFX.Atlas[texturePath]) {
+        => new(Gfx.Atlas[texturePath]) {
             Color = Color.White,
             Pos = pos,
         };
@@ -68,24 +68,24 @@ public interface ISprite : IEnumerable<ISprite> {
         bank ??= EditorState.Map?.Sprites;
 
         if (bank is null) {
-            return FromTexture(pos, GFX.VirtPixel);
+            return FromTexture(pos, Gfx.VirtPixel);
         }
 
         var def = bank.Get(name);
         if (def is null) {
             Logger.Write("ISprite.FromSpriteBank", LogLevel.Warning, $"Missing SpriteBank entry: {name}");
 
-            return FromTexture(pos, GFX.VirtPixel);
+            return FromTexture(pos, Gfx.VirtPixel);
         }
 
         if (!def.Animations.TryGetValue(animation, out var anim)) {
             Logger.Write("ISprite.FromSpriteBank", LogLevel.Warning, $"Missing SpriteBank animation: {name}->{animation}");
             def.LogAsJson();
 
-            return FromTexture(pos, GFX.VirtPixel);
+            return FromTexture(pos, Gfx.VirtPixel);
         }
 
-        return FromTexture(pos, anim.GetTexture(GFX.Atlas)) with {
+        return FromTexture(pos, anim.GetTexture(Gfx.Atlas)) with {
             Origin = def.Origin
         };
     }
@@ -94,7 +94,7 @@ public interface ISprite : IEnumerable<ISprite> {
         => NineSliceFromTexture(new((int) pos.X, (int) pos.Y, w, h), texturePath);
 
     public static NineSliceSprite NineSliceFromTexture(Rectangle pos, string texturePath)
-    => new(GFX.Atlas[texturePath]) {
+    => new(Gfx.Atlas[texturePath]) {
         Pos = pos,
         Color = Color.White,
     };

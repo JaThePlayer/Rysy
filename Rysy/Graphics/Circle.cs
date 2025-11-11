@@ -15,14 +15,14 @@ public record struct CircleSprite : ISprite {
     public bool IsLoaded => true;
 
 
-    private int _Resolution;
+    private int _resolution;
     /// <summary>
     /// Determines the quality of the circle, higher numbers are more laggy.
     /// This is 1/4 of the amount of lines used to render the circle
     /// </summary>
     public int Resulution {
-        get => _Resolution / 4;
-        set => _Resolution = value * 4;
+        get => _resolution / 4;
+        set => _resolution = value * 4;
     }
 
     public float Radius;
@@ -39,7 +39,7 @@ public record struct CircleSprite : ISprite {
                 return;
         }
         
-        GFX.Batch.DrawCircle(Pos, Radius, _Resolution, Color, Thickness);
+        Gfx.Batch.DrawCircle(Pos, Radius, _resolution, Color, Thickness);
     }
 
     public ISelectionCollider GetCollider() => ISelectionCollider.FromRect(Pos - new Vector2(Radius), (int) Radius * 2, (int) Radius * 2);

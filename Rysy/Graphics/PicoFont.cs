@@ -30,7 +30,7 @@ public static class PicoFont {
             return Texture = texture!;
         }
 
-        return Texture = GFX.UnknownTexture;
+        return Texture = Gfx.UnknownTexture;
     }
 
     private static Sprite _GetSprite(char c, Vector2 pos, Color color, float scale) {

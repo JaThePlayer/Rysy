@@ -4,36 +4,36 @@ using Rysy.Helpers;
 namespace Rysy.Gui.Windows;
 
 public class Window {
-    private Action<Window> RemoveSelfImpl;
+    private Action<Window> _removeSelfImpl;
 
     public readonly string Name;
     public NumVector2? Size;
     public bool Resizable;
 
-    private bool _ForceResize = false;
+    private bool _forceResize = false;
 
     public void ForceSetSize(NumVector2 size) {
         Size = size;
-        _ForceResize = true;
+        _forceResize = true;
     }
 
     /// <summary>
     /// The ID used for ImGui.Begin, which guarantees that multiple windows with the same name with pop up seperately.
     /// </summary>
-    private string WindowID;
+    private string _windowId;
 
-    private bool _NoSaveData = true;
+    private bool _noSaveData = true;
     /// <summary>
     /// Tells imgui not to store any data about this window to its ini file.
     /// Use for auto-generated windows.
     /// </summary>
     public bool NoSaveData {
-        get => _NoSaveData;
+        get => _noSaveData;
         set {
-            if (value != _NoSaveData) {
-                _NoSaveData = value;
+            if (value != _noSaveData) {
+                _noSaveData = value;
 
-                GenerateID();
+                GenerateId();
             }
         }
     }
@@ -45,49 +45,49 @@ public class Window {
 
     public bool Closeable { get; set; } = true;
 
-    private void GenerateID() {
+    private void GenerateId() {
         if (NoSaveData)
-            WindowID = $"{Name}##{Guid.NewGuid()}";
+            _windowId = $"{Name}##{Guid.NewGuid()}";
         else
-            WindowID = Name;
+            _windowId = Name;
     }
 
     public Window(string name, NumVector2? size = null) {
         Name = name;
         Size = size;
 
-        GenerateID();
+        GenerateId();
     }
 
-    public void SetRemoveAction(Action<Window> removeSelf) => RemoveSelfImpl += removeSelf;
+    public void SetRemoveAction(Action<Window> removeSelf) => _removeSelfImpl += removeSelf;
 
     public void RenderGui() {
         if (!Visible)
             return;
 
         if (Size is { } size)
-            ImGui.SetNextWindowSize(size, _ForceResize ? ImGuiCond.Always : ImGuiCond.Once);
+            ImGui.SetNextWindowSize(size, _forceResize ? ImGuiCond.Always : ImGuiCond.Once);
 
         ImGuiManager.PushWindowStyle();
         var open = true;
 
-        var flags = (Resizable && !_ForceResize) ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable;
+        var flags = (Resizable && !_forceResize) ? ImGuiManager.WindowFlagsResizable : ImGuiManager.WindowFlagsUnresizable;
 
-        if (NoSaveData || _ForceResize)
+        if (NoSaveData || _forceResize)
             flags |= ImGuiWindowFlags.NoSavedSettings;
-        _ForceResize = false;
+        _forceResize = false;
 
         if (NoMove)
             flags |= ImGuiWindowFlags.NoMove;
 
         var isOpen = Closeable
-            ? ImGui.Begin(WindowID, ref open, EditWindowFlags(flags))
-            : ImGui.Begin(WindowID, EditWindowFlags(flags));
+            ? ImGui.Begin(_windowId, ref open, EditWindowFlags(flags))
+            : ImGui.Begin(_windowId, EditWindowFlags(flags));
         
         try {
             if (isOpen) {
                 if (HasBottomBar) {
-                    ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{WindowID}.child"), StringComparison.Ordinal));
+                    ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{_windowId}.child"), StringComparison.Ordinal));
                 } else {
                     Render();
                 }
@@ -118,7 +118,7 @@ public class Window {
     protected virtual bool Visible => true;
 
     public virtual void RemoveSelf() {
-        RemoveSelfImpl?.Invoke(this);
+        _removeSelfImpl?.Invoke(this);
     }
 }
 

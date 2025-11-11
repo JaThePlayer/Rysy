@@ -15,27 +15,27 @@ public sealed class ModMeta {
     /// </summary>
     public ModModule? Module { get; internal set; }
 
-    private Assembly? _PluginAssembly;
+    private Assembly? _pluginAssembly;
 
     /// <summary>
     /// The assembly containing this plugin's code.
     /// </summary>
     public Assembly? PluginAssembly {
-        get => _PluginAssembly;
+        get => _pluginAssembly;
         internal set {
-            var oldAsm = _PluginAssembly;
-            _PluginAssembly = value;
+            var oldAsm = _pluginAssembly;
+            _pluginAssembly = value;
 
             ModRegistry.ModAssemblyScannerInstance?.Invoke(this, oldAsm);
             OnAssemblyReloaded?.Invoke(value);
         } 
     }
 
-    private ModSettings? _Settings;
+    private ModSettings? _settings;
     public ModSettings? Settings {
-        get => _Settings;
+        get => _settings;
         internal set {
-            _Settings = value;
+            _settings = value;
             // todo: lonn bindings
         }
     }
@@ -194,21 +194,21 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     /// Unused by Rysy, but still read to not break the yaml upon saving.
     /// </summary>
     [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
-    public string? DLL { get; set; }
+    public string? Dll { get; set; }
 
     /// <summary>
     /// The mod version.
     /// </summary>
     [YamlIgnore]
     public Version Version { get; set; } = new Version(1, 0);
-    private string _VersionString;
+    private string _versionString;
     [YamlMember(Alias = "Version")]
     public string VersionString {
-        get => _VersionString ?? Version.ToString();
+        get => _versionString ?? Version.ToString();
         set {
             ArgumentNullException.ThrowIfNull(value);
 
-            _VersionString = value;
+            _versionString = value;
             int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);
@@ -267,14 +267,14 @@ public class EverestDependency {
     /// </summary>
     [YamlIgnore]
     public Version Version { get; set; } = new Version(1, 0);
-    private string _VersionString;
+    private string _versionString;
     [YamlMember(Alias = "Version")]
     public string VersionString {
-        get => _VersionString ?? Version.ToString();
+        get => _versionString ?? Version.ToString();
         set {
             ArgumentNullException.ThrowIfNull(value);
 
-            _VersionString = value;
+            _versionString = value;
             int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);

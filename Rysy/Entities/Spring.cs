@@ -21,7 +21,7 @@ public sealed class Spring : SpriteEntity, IPlaceable {
         var other => throw new NotImplementedException($"Unknown spring orientation {other}")
     };
 
-    public Orientations Orientation => EntityData.SID switch {
+    public Orientations Orientation => EntityData.Sid switch {
         "spring" => Orientations.Floor,
         "wallSpringLeft" => Orientations.WallLeft,
         "wallSpringRight" => Orientations.WallRight,
@@ -30,12 +30,12 @@ public sealed class Spring : SpriteEntity, IPlaceable {
 
     public override Entity? TryFlipHorizontal() => Orientation switch {
         Orientations.Floor => null,
-        Orientations.WallLeft => CloneWith(placement => placement.SID = "wallSpringRight"),
-        Orientations.WallRight => CloneWith(placement => placement.SID = "wallSpringLeft"),
+        Orientations.WallLeft => CloneWith(placement => placement.Sid = "wallSpringRight"),
+        Orientations.WallRight => CloneWith(placement => placement.Sid = "wallSpringLeft"),
         _ => throw new NotImplementedException()
     };
 
-    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Orientation) switch {
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSid(dir.AddRotationTo(Orientation) switch {
         Orientations.Floor => "spring",
         Orientations.WallLeft => "wallSpringLeft",
         Orientations.WallRight => "wallSpringRight",
@@ -53,8 +53,8 @@ public sealed class Spring : SpriteEntity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => new() {
-        new Placement("up").WithSID("spring"),
-        new Placement("right").WithSID("wallSpringLeft"),
-        new Placement("left").WithSID("wallSpringRight"),
+        new Placement("up").WithSid("spring"),
+        new Placement("right").WithSid("wallSpringLeft"),
+        new Placement("left").WithSid("wallSpringRight"),
     };
 }

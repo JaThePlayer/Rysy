@@ -4,17 +4,17 @@ using Rysy.Gui.Windows;
 namespace Rysy;
 
 public abstract class Scene {
-    private readonly List<Window> Windows = [];
+    private readonly List<Window> _windows = [];
     
-    private readonly List<(string Id, Action Render)> Popups = [];
-    private readonly Queue<string> NewPopupQueue = [];
+    private readonly List<(string Id, Action Render)> _popups = [];
+    private readonly Queue<string> _newPopupQueue = [];
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
 
     protected Scene() {
-        RemoveWindow = (w) => {
-            RysyState.OnEndOfThisFrame += () => Windows.Remove(w);
+        _removeWindow = (w) => {
+            RysyState.OnEndOfThisFrame += () => _windows.Remove(w);
         };
     }
 
@@ -51,16 +51,16 @@ public abstract class Scene {
     }
 
     public virtual void RenderImGui() {
-        for (int i = 0; i < Windows.Count; i++) {
-            Windows[i].RenderGui();
+        for (int i = 0; i < _windows.Count; i++) {
+            _windows[i].RenderGui();
         }
 
-        while (NewPopupQueue.TryDequeue(out var id)) {
+        while (_newPopupQueue.TryDequeue(out var id)) {
             ImGui.OpenPopup(id);
         }
         
-        for (int i = Popups.Count - 1; i >= 0; i--) {
-            var popup = Popups[i];
+        for (int i = _popups.Count - 1; i >= 0; i--) {
+            var popup = _popups[i];
 
             if (ImGui.BeginPopup(popup.Id)) {
                 try {
@@ -69,26 +69,26 @@ public abstract class Scene {
                     ImGui.EndPopup();
                 }
             } else {
-                Popups.RemoveAt(i);
+                _popups.RemoveAt(i);
             }
         }
     }
 
-    private readonly Action<Window> RemoveWindow;
+    private readonly Action<Window> _removeWindow;
 
     /// <summary>
     /// Adds a window to this scene.
     /// </summary>
     public void AddWindow(Window wind) {
-        wind.SetRemoveAction(RemoveWindow);
-        Windows.Add(wind);
+        wind.SetRemoveAction(_removeWindow);
+        _windows.Add(wind);
     }
 
     /// <summary>
     /// Adds a new window of type <typeparamref name="T"/> if there's no window of that type in the scene.
     /// </summary>
     public T AddWindowIfNeeded<T>() where T : Window, new() {
-        var window = Windows.OfType<T>().FirstOrDefault();
+        var window = _windows.OfType<T>().FirstOrDefault();
 
         if (window is { })
             return window;
@@ -101,10 +101,10 @@ public abstract class Scene {
     /// Toggles the window of type <typeparamref name="T"/>
     /// </summary>
     public void ToggleWindow<T>() where T : Window, new() {
-        var existing = Windows.FirstOrDefault(w => w is T);
+        var existing = _windows.FirstOrDefault(w => w is T);
 
         if (existing is { })
-            RemoveWindow(existing);
+            _removeWindow(existing);
         else
             AddWindow(new T());
     }
@@ -114,13 +114,13 @@ public abstract class Scene {
     /// Creates the instance by calling <paramref name="factory"/>
     /// </summary>
     public void AddWindowIfNeeded<T>(Func<T> factory) where T : Window {
-        if (!Windows.Any(w => w is T))
+        if (!_windows.Any(w => w is T))
             AddWindow(factory());
     }
 
     public void AddPopup(string id, Action renderImgui) {
-        Popups.Add((id, renderImgui));
-        NewPopupQueue.Enqueue(id);
+        _popups.Add((id, renderImgui));
+        _newPopupQueue.Enqueue(id);
     }
 
     protected internal virtual void OnFileDrop(string filePath) {

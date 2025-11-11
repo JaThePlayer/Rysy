@@ -6,10 +6,10 @@ namespace Rysy.Entities;
 [CustomEntity("flutterbird")]
 public class Flutterbird : SpriteEntity, IPlaceable {
     private static readonly Color[] Colors = {
-        "89FBFF".FromRGB(),
-        "F0FC6C".FromRGB(),
-        "F493FF".FromRGB(),
-        "93BAFF".FromRGB()
+        "89FBFF".FromRgb(),
+        "F0FC6C".FromRgb(),
+        "F493FF".FromRgb(),
+        "93BAFF".FromRgb()
     };
 
     public override int Depth => -9999;

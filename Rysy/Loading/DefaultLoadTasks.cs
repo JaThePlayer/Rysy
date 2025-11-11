@@ -15,13 +15,13 @@ public static class DefaultLoadTasks {
     }
     
     public static async Task<LoadTaskResult> LoadGfx(SimpleLoadTask task) {
-        await GFX.LoadAsync(task);
+        await Gfx.LoadAsync(task);
         
         return LoadTaskResult.Success();
     }
     
     public static Task<LoadTaskResult> LoadDecalRegistry(SimpleLoadTask task) {
-        GFX.LoadDecalRegistry(task);
+        Gfx.LoadDecalRegistry(task);
         
         return Task.FromResult(LoadTaskResult.Success());
     }

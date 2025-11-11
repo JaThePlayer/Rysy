@@ -7,7 +7,7 @@ using System.Xml.Linq;
 namespace Rysy.Helpers;
 
 public sealed class DecalRegistry : IDisposable {
-    public IReadOnlyList<DecalRegistryEntry> Entries => _Entries;
+    public IReadOnlyList<DecalRegistryEntry> Entries => EntriesMutable;
 
     public List<DecalRegistryEntry> GetEntriesForMod(ModMeta mod) {
         if (mod is null)
@@ -20,7 +20,7 @@ public sealed class DecalRegistry : IDisposable {
     }
 
     public void AddEntryToMod(ModMeta mod, DecalRegistryEntry newEntry, int index = -1) {
-        _Entries.Add(newEntry);
+        EntriesMutable.Add(newEntry);
         
         if (EntriesByRoot.TryGetValue(mod.Filesystem.Root, out var entries)) {
             if (index >= 0) {
@@ -34,7 +34,7 @@ public sealed class DecalRegistry : IDisposable {
     }
     
     public bool RemoveEntryFromMod(ModMeta mod, DecalRegistryEntry toRemove) {
-        _Entries.Remove(toRemove);
+        EntriesMutable.Remove(toRemove);
         
         if (EntriesByRoot.TryGetValue(mod.Filesystem.Root, out var entries)) {
             return entries.Remove(toRemove);
@@ -45,7 +45,7 @@ public sealed class DecalRegistry : IDisposable {
 
     public void SaveMod(ModMeta mod) {
         var entries = GetEntriesForMod(mod);
-        var serialized = GFX.DecalRegistry.Serialize(entries);
+        var serialized = Gfx.DecalRegistry.Serialize(entries);
 
         if (mod.Filesystem is IWriteableModFilesystem fs) {
             fs.TryWriteToFile("DecalRegistry.xml", s => serialized.Save(s));
@@ -67,7 +67,7 @@ public sealed class DecalRegistry : IDisposable {
     }
 
     private static Dictionary<string, List<DecalRegistryEntry>> EntriesByRoot = new(StringComparer.Ordinal);
-    private static List<DecalRegistryEntry> _Entries = new List<DecalRegistryEntry>();
+    private static List<DecalRegistryEntry> EntriesMutable = [];
 
     private static bool Disposed;
 
@@ -100,7 +100,7 @@ public sealed class DecalRegistry : IDisposable {
                     entries.Add(entry);
             }
 
-            lock (_Entries) {
+            lock (EntriesMutable) {
                 lock (EntriesByRoot) {
                     var prevEntries = EntriesByRoot.GetValueOrDefault(fs.Root);
 
@@ -122,14 +122,14 @@ public sealed class DecalRegistry : IDisposable {
                         EntriesByRoot[fs.Root] = entries;
                     }
 
-                    _Entries = EntriesByRoot.SelectMany(kv => kv.Value).ToList();
+                    EntriesMutable = EntriesByRoot.SelectMany(kv => kv.Value).ToList();
                 }
             }
         });
     }
 
     public void Dispose() {
-        _Entries.Clear();
+        EntriesMutable.Clear();
         EntriesByRoot.Clear();
         Disposed = true;
     }
@@ -161,7 +161,7 @@ public record struct DecalRegistryPath {
     
     public IEnumerable<VirtTexture> GetAffectedTextures() {
         return Type switch {
-            DecalRegistryEntry.Types.SingleTexture => [ GFX.Atlas[Decal.MapTextureToPath(Value)] ],
+            DecalRegistryEntry.Types.SingleTexture => [ Gfx.Atlas[Decal.MapTextureToPath(Value)] ],
             DecalRegistryEntry.Types.Directory => [],
             DecalRegistryEntry.Types.StartsWith => [],
             _ => []
@@ -264,7 +264,7 @@ public sealed class DecalRegistryEntry {
 }
 
 public abstract class DecalRegistryProperty {
-    public string Name => Data.SID;
+    public string Name => Data.Sid;
 
     public EntityData Data { get; private set; }
 
@@ -291,7 +291,7 @@ public abstract class DecalRegistryProperty {
     }
 
     public static DecalRegistryProperty CreateFromPlacement(Placement placement) {
-        var sid = placement.SID ?? "";
+        var sid = placement.Sid ?? "";
         var prop = CreateNewUninitialized(sid);
         
         if (EntityRegistry.GetFields(sid, RegisteredEntityType.DecalRegistryProperty) is {} fields) {

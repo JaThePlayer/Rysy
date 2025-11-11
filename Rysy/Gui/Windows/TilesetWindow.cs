@@ -25,31 +25,31 @@ public sealed class TilesetWindow : Window {
 
     internal ModMeta? Mod => Map?.Mod;
     
-    bool firstRender = true;
+    bool _firstRender = true;
 
-    private FormWindow? Form;
+    private FormWindow? _form;
 
-    private char formPropId = '\0';
-    private string? formPropAnimName;
+    private char _formPropId = '\0';
+    private string? _formPropAnimName;
 
     private IXmlBackedEntityData? FormProp {
         get {
             if (_tab is Tabs.Fg or Tabs.Bg) {
-                return (_bg ? Map!.BGAutotiler : Map!.FGAutotiler).Tilesets.GetValueOrDefault(formPropId);
+                return (Bg ? Map!.BgAutotiler : Map!.FgAutotiler).Tilesets.GetValueOrDefault(_formPropId);
             } else {
-                return formPropAnimName is not null ? Map!.AnimatedTiles.Tiles.GetValueOrDefault(formPropAnimName) : null;
+                return _formPropAnimName is not null ? Map!.AnimatedTiles.Tiles.GetValueOrDefault(_formPropAnimName) : null;
             }
         }
         set {
             if (value is TilesetData tilesetData) {
-                formPropId = tilesetData.Id;
-                formPropAnimName = null;
+                _formPropId = tilesetData.Id;
+                _formPropAnimName = null;
             } else if (value is AnimatedTileData animatedTileData) {
-                formPropId = '\0';
-                formPropAnimName = animatedTileData.Name;
+                _formPropId = '\0';
+                _formPropAnimName = animatedTileData.Name;
             } else {
-                formPropId = '\0';
-                formPropAnimName = null;
+                _formPropId = '\0';
+                _formPropAnimName = null;
             }
         }
     }
@@ -57,7 +57,7 @@ public sealed class TilesetWindow : Window {
     private readonly HotkeyHandler _hotkeyHandler;
     private HistoryHandler? _history;
 
-    private bool _bg
+    private bool Bg
         => _tab == Tabs.Bg;
 
     public TilesetWindow() : base("rysy.tilesetWindow.name".Translate(), new(1200, 800)) {
@@ -76,7 +76,7 @@ public sealed class TilesetWindow : Window {
     private void HistoryHook() {
         var prop = FormProp;
         if (prop is { }) {
-            Form?.ReevaluateChanged(prop.FakeData.Inner);
+            _form?.ReevaluateChanged(prop.FakeData.Inner);
         }
         Save();
     }
@@ -89,7 +89,7 @@ public sealed class TilesetWindow : Window {
         => ForAllSelections((e) => {
             switch (e) {
                 case TilesetData t:
-                    RemoveEntry(t.Id, _bg);
+                    RemoveEntry(t.Id, Bg);
                     break;
                 case AnimatedTileData a:
                     RemoveEntry(a);
@@ -98,7 +98,7 @@ public sealed class TilesetWindow : Window {
         });
 
     private FieldList GetFields(TilesetData main) {
-        FieldList fieldInfo = main.GetFields(_bg);
+        FieldList fieldInfo = main.GetFields(Bg);
 
         var fields = new FieldList();
         var order = new List<string>();
@@ -129,7 +129,7 @@ public sealed class TilesetWindow : Window {
     private void CreateForm(object? propObj) {
         if (propObj is null) {
             CleanupPreviousForm();
-            Form = null;
+            _form = null;
             FormProp = null;
             return;
         }
@@ -141,7 +141,7 @@ public sealed class TilesetWindow : Window {
             form.Exists = prop.FakeData.Has;
             form.OnChanged = (edited) => {
                 FormProp?.FakeData.SetOverlay(null);
-                _history?.ApplyNewAction(new TilesetChangedAction(formPropId, _bg, new(edited)));
+                _history?.ApplyNewAction(new TilesetChangedAction(_formPropId, Bg, new(edited)));
 
                 Save();
             };
@@ -155,7 +155,7 @@ public sealed class TilesetWindow : Window {
             CleanupPreviousForm();
         
             FormProp = prop;
-            Form = form;
+            _form = form;
         }
         
         else if (propObj is AnimatedTileData propAnim) {
@@ -179,7 +179,7 @@ public sealed class TilesetWindow : Window {
             CleanupPreviousForm();
         
             FormProp = propAnim;
-            Form = form;
+            _form = form;
         }
 
         return;
@@ -210,7 +210,7 @@ public sealed class TilesetWindow : Window {
     private void Save() {
         switch (_tab) {
             case Tabs.Fg or Tabs.Bg:
-                Map?.SaveTilesetXml(_bg);
+                Map?.SaveTilesetXml(Bg);
                 break;
             case Tabs.AnimatedTiles:
                 Map?.SaveAnimatedTilesXml();
@@ -251,7 +251,7 @@ public sealed class TilesetWindow : Window {
 
         ImGui.Columns(2);
 
-        if (firstRender)
+        if (_firstRender)
             ImGui.SetColumnWidth(0, size.X / 3);
 
         if (ImGui.BeginTabBar("layer")) {
@@ -286,11 +286,11 @@ public sealed class TilesetWindow : Window {
             var ctx = SpriteRenderCtx.Default(true);
                 
             IEnumerable<ISprite>? sprites;
-            if (Form is {} && FormProp is TilesetData prop) {
+            if (_form is {} && FormProp is TilesetData prop) {
                 sprites = ISprite.FromTexture(prop.Texture).Centered();
             } else if (FormProp is AnimatedTileData animProp) {
-                animProp.RenderAt(ctx, GFX.Batch, default, Color.White);
-                sprites = Map.FGAutotiler.GetSprites(default, new[,] { { 'z' } }, Color.White, tilesOOB: false);
+                animProp.RenderAt(ctx, Gfx.Batch, default, Color.White);
+                sprites = Map.FgAutotiler.GetSprites(default, new[,] { { 'z' } }, Color.White, tilesOob: false);
             } else {
                 sprites = [];
             }
@@ -300,12 +300,12 @@ public sealed class TilesetWindow : Window {
             }
         }, cam, rerender: true);
 
-        if (Form is { }) {
+        if (_form is { }) {
             ImGui.BeginChild("form");
-            Form?.RenderBody(() => {
+            _form?.RenderBody(() => {
                 if (FormProp is TilesetData { Xml: {} } formProp) {
                     if (ImGuiManager.TranslatedButton("rysy.tilesetWindow.editXml")) {
-                        var bg = _bg;
+                        var bg = Bg;
                         
                         var sw = new StringWriter(CultureInfo.InvariantCulture);
                         var xmlWriter = XmlWriter.Create(sw, new XmlWriterSettings {
@@ -317,7 +317,7 @@ public sealed class TilesetWindow : Window {
                         var xml = sw.ToString();
 
                         var tab = _tab;
-                        var editedTileId = formPropId;
+                        var editedTileId = _formPropId;
                         
                         RysyState.Scene.AddWindow(new ScriptedWindow("rysy.tilesetWindow.editXml".Translate(), (w) => {
                             var size = ImGui.GetContentRegionAvail();
@@ -338,7 +338,7 @@ public sealed class TilesetWindow : Window {
         }
         ImGui.Columns();
 
-        firstRender = false;
+        _firstRender = false;
     }
 
     private void ForAllSelections(Action<object>? onEntry) {
@@ -349,7 +349,7 @@ public sealed class TilesetWindow : Window {
     }
 
     private bool CanRemove(char id) {
-        var autotiler = GetAutotiler(_bg);
+        var autotiler = GetAutotiler(Bg);
 
         return autotiler.Tilesets.All(x => x.Value.CopyFrom != id);
     }
@@ -361,7 +361,7 @@ public sealed class TilesetWindow : Window {
     }
     
     private void RemoveEntry(char entryId, bool bg) {
-        var autotiler = GetAutotiler(_bg);
+        var autotiler = GetAutotiler(Bg);
 
         if (!CanRemove(entryId))
             return;
@@ -374,16 +374,16 @@ public sealed class TilesetWindow : Window {
                     ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.removeSourceTexture");
                 }, new(400, ImGui.GetTextLineHeightWithSpacing() * 4 + ImGui.GetFrameHeightWithSpacing() * 2), bottomBarFunc: (w) => {
                     if (ImGuiManager.TranslatedButton("rysy.ok")) {
-                        _history?.ApplyNewAction(new RemoveTilesetAction(entryId, _bg, removeSourceTexture: true));
-                        if (formPropId == entryId)
+                        _history?.ApplyNewAction(new RemoveTilesetAction(entryId, Bg, removeSourceTexture: true));
+                        if (_formPropId == entryId)
                             SetSelection(null);
                         w.RemoveSelf();
                     }
                     
                     ImGui.SameLine();
                     if (ImGuiManager.TranslatedButton("rysy.no")) {
-                        _history?.ApplyNewAction(new RemoveTilesetAction(entryId, _bg, removeSourceTexture: false));
-                        if (formPropId == entryId)
+                        _history?.ApplyNewAction(new RemoveTilesetAction(entryId, Bg, removeSourceTexture: false));
+                        if (_formPropId == entryId)
                             SetSelection(null);
                         w.RemoveSelf();
                     }
@@ -394,8 +394,8 @@ public sealed class TilesetWindow : Window {
                     }
                 }));
         } else {
-            _history?.ApplyNewAction(new RemoveTilesetAction(entryId, _bg, removeSourceTexture: false));
-            if (formPropId == entryId)
+            _history?.ApplyNewAction(new RemoveTilesetAction(entryId, Bg, removeSourceTexture: false));
+            if (_formPropId == entryId)
                 SetSelection(null);
         }
     }
@@ -426,17 +426,17 @@ public sealed class TilesetWindow : Window {
         var open = ImGui.TreeNodeEx(Interpolator.TempU8($"##{id}"), flags);
         var clicked = ImGui.IsItemClicked();
         var tileid = entry.Id;
-        var bg = _bg;
+        var bg = Bg;
         var sid = ImGuiManager.PerFrameInterpolator.Utf8($"d_ctx_{id}");
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
         if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
-            var autotiler = GetAutotiler(_bg);
+            var autotiler = GetAutotiler(Bg);
             var tileset = autotiler.GetTilesetData(tileid);
             if (tileset is { Xml: not null } && ImGuiManager.TranslatedButton("rysy.tilesetWindow.clone")) {
                 RysyState.Scene.AddWindow(new CreateTilesetWindow(new ImportedTileset {
                     Texture = tileset.Texture,
                     CreateTextureClone = false,
-                    IsBg = _bg,
+                    IsBg = Bg,
                     Name = tileset.Filename,
                     Template = tileset.Xml.InnerXml,
                     CopyFrom = tileset.CopyFrom,
@@ -522,7 +522,7 @@ public sealed class TilesetWindow : Window {
         ImGui.BeginChild("list", new NumVector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         
         var entries = _tab switch {
-            Tabs.Bg or Tabs.Fg => GetAutotiler(_bg).Tilesets.Values.AsEnumerable<object>(),
+            Tabs.Bg or Tabs.Fg => GetAutotiler(Bg).Tilesets.Values.AsEnumerable<object>(),
             Tabs.AnimatedTiles => Map.AnimatedTiles.Tiles.Values.Where(v => v.Xml is {}).AsEnumerable<object>(),
             _ => throw new UnreachableException()
         };
@@ -554,12 +554,12 @@ public sealed class TilesetWindow : Window {
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (_tab is Tabs.Bg or Tabs.Fg) {
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromAssetDrive")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(_bg));
+                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(Bg));
                     ImGui.CloseCurrentPopup();
                 }
             
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromExistingSprite")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteTilesetImportWindow(_bg));
+                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteTilesetImportWindow(Bg));
                     ImGui.CloseCurrentPopup();
                 }
             } else if (_tab is Tabs.AnimatedTiles) {
@@ -582,7 +582,7 @@ public sealed class TilesetWindow : Window {
 
     private Autotiler GetAutotiler(bool bg)
     {
-        return bg ? Map.BGAutotiler : Map.FGAutotiler;
+        return bg ? Map.BgAutotiler : Map.FgAutotiler;
     }
 
     private void AddContextWindow(string id, Action? render = null) {
@@ -737,7 +737,7 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
 
     public override void RenderBottomBar() {
         VirtTexture? texture = null!;
-        ImGui.BeginDisabled(!_wasValid || !GFX.Atlas.TryGet($"tilesets/{_path}", out texture));
+        ImGui.BeginDisabled(!_wasValid || !Gfx.Atlas.TryGet($"tilesets/{_path}", out texture));
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && texture is {}) {
             RysyState.Scene.AddWindow(new CreateTilesetWindow(new ImportedTileset {
                 Texture = texture,

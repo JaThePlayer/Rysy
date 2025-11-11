@@ -8,7 +8,7 @@ public sealed class Lamp : Entity, IPlaceable {
     public override int Depth => 5;
 
     public override IEnumerable<ISprite> GetSprites() {
-        var lampTexture = GFX.Atlas["scenery/lamp"];
+        var lampTexture = Gfx.Atlas["scenery/lamp"];
 
         var (w, h) = (lampTexture.Width, lampTexture.Height);
 

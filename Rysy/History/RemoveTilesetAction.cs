@@ -9,7 +9,7 @@ public class RemoveTilesetAction(char tileId, bool bg, bool removeSourceTexture)
     private TilesetData? _tilesetData;
 
     public bool Apply(Map map) {
-        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg ? map.BgAutotiler : map.FgAutotiler;
 
         _tilesetData = autotiler.GetTilesetData(tileId);
         if (_tilesetData is null)
@@ -34,7 +34,7 @@ public class RemoveTilesetAction(char tileId, bool bg, bool removeSourceTexture)
     }
 
     public void Undo(Map map) {
-        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg ? map.BgAutotiler : map.FgAutotiler;
         
         if (_sourceTextureBackup is {} 
             && removeSourceTexture && _tilesetData!.Texture is ModTexture {

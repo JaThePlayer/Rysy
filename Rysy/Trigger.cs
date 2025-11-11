@@ -10,7 +10,7 @@ public class Trigger : Entity {
     public Color Color {
         get {
             var stored = EntityData.Attr("_editorColor");
-            if (!string.IsNullOrWhiteSpace(stored) && ColorHelper.TryGet(stored, ColorFormat.RGBA, out var storedColor))
+            if (!string.IsNullOrWhiteSpace(stored) && ColorHelper.TryGet(stored, ColorFormat.Rgba, out var storedColor))
                 return storedColor;
             
             if (Themes.Current.TriggerCategoryColors.TryGetValue(Category, out var categoryColor))
@@ -39,7 +39,7 @@ public class Trigger : Entity {
 
     public static string GetDefaultTextForSid(string sid) => TriggerHelpers.Humanize(sid);
     
-    public virtual string Text => GetDefaultTextForSid(EntityData.SID);
+    public virtual string Text => GetDefaultTextForSid(EntityData.Sid);
 
     public override int Depth => Depths.Top;
 

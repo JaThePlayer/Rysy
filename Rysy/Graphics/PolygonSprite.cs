@@ -4,14 +4,14 @@ using Triangulator;
 namespace Rysy.Graphics;
 
 public record struct PolygonSprite : ISprite {
-    private Vector2[] Nodes;
+    private Vector2[] _nodes;
 
-    private VertexPositionColor[]? VertexPositionColors;
+    private VertexPositionColor[]? _vertexPositionColors;
 
     private Rectangle? _bounds;
 
     public PolygonSprite(IEnumerable<Vector2> nodes, WindingOrder? windingOrder = null) {
-        Nodes = nodes is Vector2[] arr ? arr : nodes.ToArray();
+        _nodes = nodes is Vector2[] arr ? arr : nodes.ToArray();
         Order = windingOrder;
     }
 
@@ -21,8 +21,8 @@ public record struct PolygonSprite : ISprite {
     }
 
     public PolygonSprite(VertexPositionColor[] vertexes) {
-        VertexPositionColors = vertexes;
-        Nodes = [];
+        _vertexPositionColors = vertexes;
+        _nodes = [];
     }
 
     public int? Depth { get; set; }
@@ -38,15 +38,15 @@ public record struct PolygonSprite : ISprite {
         => ISelectionCollider.FromRect(0, 0, 0, 0);
     
     public void Render(SpriteRenderCtx ctx) {
-        if (Nodes.Length < 3 && VertexPositionColors is null)
+        if (_nodes.Length < 3 && _vertexPositionColors is null)
             return;
         
-        VertexPositionColors ??= GetFillVertsFromNodes(Nodes, Color, Order);
-        if (VertexPositionColors.Length < 3)
+        _vertexPositionColors ??= GetFillVertsFromNodes(_nodes, Color, Order);
+        if (_vertexPositionColors.Length < 3)
             return;
 
         var cam = ctx.Camera;
-        var prevSettings = GFX.EndBatch();
+        var prevSettings = Gfx.EndBatch();
         var matrix = prevSettings?.TransformMatrix;
         if (matrix is null && cam is { }) {
             matrix = cam.Matrix * (Matrix.CreateTranslation(ctx.CameraOffset.X * cam.Scale, ctx.CameraOffset.Y * cam.Scale, 0f));
@@ -56,21 +56,21 @@ public record struct PolygonSprite : ISprite {
 
         if (matrix is { } m) {
             if (prevSettings is { ScissorRect: { } scissorRect }) {
-                GFX.Batch.GraphicsDevice.ScissorRectangle = scissorRect;
+                Gfx.Batch.GraphicsDevice.ScissorRectangle = scissorRect;
             }
-            GFX.DrawVertices(m, VertexPositionColors, VertexPositionColors.Length, rasterizerState: prevSettings?.RasterizerState);
+            Gfx.DrawVertices(m, _vertexPositionColors, _vertexPositionColors.Length, rasterizerState: prevSettings?.RasterizerState);
         }
-        GFX.BeginBatch(prevSettings);
+        Gfx.BeginBatch(prevSettings);
         
         if (OutlineColor != default) {
-            LineSprite.DoRender(cam, ctx.CameraOffset, Nodes, OutlineColor, ref _bounds, connectFirstWithLast: true);
+            LineSprite.DoRender(cam, ctx.CameraOffset, _nodes, OutlineColor, ref _bounds, connectFirstWithLast: true);
         }
     }
 
     public ISprite WithMultipliedAlpha(float alpha) {
         return this with {
             Color = Color * alpha,
-            VertexPositionColors = VertexPositionColors?
+            _vertexPositionColors = _vertexPositionColors?
                 .Select(vpc => vpc with { Color = vpc.Color * alpha })
                 .ToArray(),
         };

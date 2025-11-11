@@ -6,28 +6,28 @@ using Rysy.Platforms;
 namespace Rysy.Scenes;
 
 public class CrashScene : Scene {
-    private Scene PrevScene;
-    private Exception Exception;
+    private Scene _prevScene;
+    private Exception _exception;
 
-    private DateTime? LastBackupDate;
+    private DateTime? _lastBackupDate;
 
     public CrashScene(Scene prev, Exception e) {
-        PrevScene = prev;
-        Exception = e;
+        _prevScene = prev;
+        _exception = e;
 
         if (prev is EditorScene)
-            LastBackupDate = BackupHandler.GetMostRecentBackupDate();
+            _lastBackupDate = BackupHandler.GetMostRecentBackupDate();
     }
 
     public override void OnBegin() {
         base.OnBegin();
 
-        AddWindow(new CrashWindow("Caught an unknown exception:", Exception, RenderButtons));
+        AddWindow(new CrashWindow("Caught an unknown exception:", _exception, RenderButtons));
     }
 
     private void RenderButtons(CrashWindow w) {
-        if (PrevScene is EditorScene { Map: { } map } editor) {
-            if (LastBackupDate is { } date && ImGui.Button("Load Backup").WithTooltip($"Tries to load the most recent backup of your map.\n[{date}]\nSafest option.")) {
+        if (_prevScene is EditorScene { Map: { } map } editor) {
+            if (_lastBackupDate is { } date && ImGui.Button("Load Backup").WithTooltip($"Tries to load the most recent backup of your map.\n[{date}]\nSafest option.")) {
                 var backupMap = BackupHandler.LoadMostRecentBackup();
                 if (backupMap == null) {
                     return;
@@ -50,7 +50,7 @@ public class CrashScene : Scene {
 
         ImGui.SameLine();
         if (ImGui.Button("Ignore").WithTooltip("Ignores the exception, and tries to resume the editor as if nothing happened.\nCan cause further crashes!")) {
-            RysyEngine.Scene = PrevScene;
+            RysyEngine.Scene = _prevScene;
         }
     }
 }

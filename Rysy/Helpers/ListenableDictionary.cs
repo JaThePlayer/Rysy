@@ -69,7 +69,7 @@ public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
 
 public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     where TKey : notnull {
-    internal readonly Dictionary<TKey, TValue> _inner;
+    internal readonly Dictionary<TKey, TValue> Inner;
 
     public Action? OnChanged { get; set; }
 
@@ -79,11 +79,11 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     public long Version { get; private set; }
     
     public ListenableDictionary(IEqualityComparer<TKey> comparer) {
-        _inner = new(comparer);
+        Inner = new(comparer);
     }
     
     public ListenableDictionary() {
-        _inner = new();
+        Inner = new();
     }
 
     public static implicit operator ReadOnlyListenableDictionary<TKey, TValue>(ListenableDictionary<TKey, TValue> d) => new(d);
@@ -100,9 +100,9 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     }
     
     public TValue this[TKey key] {
-        get => _inner[key];
+        get => Inner[key];
         set {
-            _inner[key] = value;
+            Inner[key] = value;
             HandleOnChanged();
         }
     }
@@ -114,65 +114,65 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     public ListenableDictionaryRef<TKey, TValue> GetReference(TKey key)
         => new(this, key);
 
-    public ICollection<TKey> Keys => _inner.Keys;
+    public ICollection<TKey> Keys => Inner.Keys;
 
-    public ICollection<TValue> Values => _inner.Values;
+    public ICollection<TValue> Values => Inner.Values;
 
-    public int Count => _inner.Count;
+    public int Count => Inner.Count;
 
     public bool IsReadOnly => false;
 
     public void Add(TKey key, TValue value) {
-        _inner.Add(key, value);
+        Inner.Add(key, value);
         HandleOnChanged();
     }
 
     public void Add(KeyValuePair<TKey, TValue> item) {
-        ((ICollection<KeyValuePair<TKey, TValue>>) _inner).Add(item);
+        ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Add(item);
         HandleOnChanged();
     }
 
     public void Clear() {
-        _inner.Clear();
+        Inner.Clear();
         HandleOnChanged();
     }
 
     public bool Contains(KeyValuePair<TKey, TValue> item) {
-        return _inner.Contains(item);
+        return Inner.Contains(item);
     }
 
     public bool ContainsKey(TKey key) {
-        return _inner.ContainsKey(key);
+        return Inner.ContainsKey(key);
     }
 
     public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) {
-        ((ICollection<KeyValuePair<TKey, TValue>>) _inner).CopyTo(array, arrayIndex);
+        ((ICollection<KeyValuePair<TKey, TValue>>) Inner).CopyTo(array, arrayIndex);
     }
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
-        return _inner.GetEnumerator();
+        return Inner.GetEnumerator();
     }
 
     public bool Remove(TKey key) {
-        var ret = _inner.Remove(key);
+        var ret = Inner.Remove(key);
         if (ret)
             HandleOnChanged();
         return ret;
     }
 
     public bool Remove(KeyValuePair<TKey, TValue> item) {
-        var ret = ((ICollection<KeyValuePair<TKey, TValue>>) _inner).Remove(item);
+        var ret = ((ICollection<KeyValuePair<TKey, TValue>>) Inner).Remove(item);
         if (ret)
             HandleOnChanged();
         return ret;
     }
 
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) {
-        return _inner.TryGetValue(key, out value);
+        return Inner.TryGetValue(key, out value);
     }
 
     IEnumerator IEnumerable.GetEnumerator() {
-        return _inner.GetEnumerator();
+        return Inner.GetEnumerator();
     }
 
     /*
@@ -184,14 +184,14 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     */
 
     public TValue? GetValueOrDefault(TKey key) {
-        return _inner.GetValueOrDefault(key);
+        return Inner.GetValueOrDefault(key);
     }
 }
 
 // Needed because GetAlternateLookup cannot work on a generic due to Rider bug breaking hot reload :/
 internal static class ListenableDictionaryExtensions {
     public static Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> GetSpanAlternateLookup<TValue>(this ListenableDictionary<string, TValue> dict) {
-        return dict._inner.GetAlternateLookup<ReadOnlySpan<char>>();
+        return dict.Inner.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 }
 
@@ -203,7 +203,7 @@ public readonly struct ReadOnlyListenableDictionary<TKey, TValue> : IReadOnlyDic
         _inner = d;
     }
 
-    public readonly Action? OnChanged {
+    public Action? OnChanged {
         get => _inner.OnChanged;
         set => _inner.OnChanged = value;
     }

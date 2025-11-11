@@ -37,17 +37,17 @@ public record struct Sprite : ITextureSprite {
     public float Rotation = 0f;
     public Vector2 Origin = Vector2.Zero;
     public Vector2 Scale = Vector2.One;
-    private SpriteEffects Flip;
+    private SpriteEffects _flip;
 
     public Vector2 DrawOffset;
-    private int Width;
-    private int Height;
+    private int _width;
+    private int _height;
 
     private Vector2 _multOrigin;
 
-    private Vector2 SubtextureOffset;
+    private Vector2 _subtextureOffset;
 
-    private bool Prepared;
+    private bool _prepared;
 
     public Sprite(VirtTexture text) {
         Texture = text;
@@ -72,27 +72,27 @@ public record struct Sprite : ITextureSprite {
     /// Forcefully gets the width of this sprite. If this uses a modded texture, it'll likely cause preloading.
     /// </summary>
     public int ForceGetWidth() {
-        if (Width == 0) {
+        if (_width == 0) {
             LoadSizeFromTexture();
         }
 
-        return Width;
+        return _width;
     }
 
     /// <summary>
     /// Forcefully gets the height of this sprite. If this uses a modded texture, it'll likely cause preloading.
     /// </summary>
     public int ForceGetHeight() {
-        if (Height == 0) {
+        if (_height == 0) {
             LoadSizeFromTexture();
         }
 
-        return Height;
+        return _height;
     }
 
     private void LoadSizeFromTexture() {
-        Width = Texture.Width;
-        Height = Texture.Height;
+        _width = Texture.Width;
+        _height = Texture.Height;
     }
 
     public void Render(SpriteRenderCtx ctx) {
@@ -106,15 +106,15 @@ public record struct Sprite : ITextureSprite {
 
             // todo: figure out if calculating rotated rectangles for culling is worth it
             if (ctx.Camera is { } cam && Rotation == 0f) {
-                var size = new Vector2(Width * scale.X, Height * scale.Y);
+                var size = new Vector2(_width * scale.X, _height * scale.Y);
                 var rPos = Pos - origin * scale;
                 //ISprite.OutlinedRect(rPos + offset, (int)size.X, (int)size.Y, Color.Transparent, Color.Red).Render();
                 if (!cam.IsRectVisible(rPos + ctx.CameraOffset, (int) size.X, (int) size.Y))
                     return;
             }
 
-            var flip = Flip;
-            var pos = Pos + SubtextureOffset.Rotate(Rotation);
+            var flip = _flip;
+            var pos = Pos + _subtextureOffset.Rotate(Rotation);
 
             if (OutlineColor != default) {
                 var color = OutlineColor;
@@ -150,7 +150,7 @@ public record struct Sprite : ITextureSprite {
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
         Vector2 pos;
         if (Rotation == 0f) {
-            pos = Pos - _multOrigin * scale + SubtextureOffset;
+            pos = Pos - _multOrigin * scale + _subtextureOffset;
             if (OutlineColor != default) {
                 return new Rectangle((int) pos.X - 1, (int) pos.Y - 1, (int) size.X + 2, (int) size.Y + 2);
             } else {
@@ -169,11 +169,11 @@ public record struct Sprite : ITextureSprite {
         var r1 = Pos + new Vector2(
             Math.Min(p4.X, Math.Min(p3.X, Math.Min(p1.X, p2.X))),
             Math.Min(p4.Y, Math.Min(p3.Y, Math.Min(p1.Y, p2.Y)))
-        ) + SubtextureOffset.Rotate(Rotation);
+        ) + _subtextureOffset.Rotate(Rotation);
         var r2 = Pos + new Vector2(
             Math.Max(p4.X, Math.Max(p3.X, Math.Max(p1.X, p2.X))),
             Math.Max(p4.Y, Math.Max(p3.Y, Math.Max(p1.Y, p2.Y)))
-        ) + SubtextureOffset.Rotate(Rotation);
+        ) + _subtextureOffset.Rotate(Rotation);
 
         if (OutlineColor != default) {
             r1 -= new Vector2(1);
@@ -188,30 +188,30 @@ public record struct Sprite : ITextureSprite {
     private void CacheFields() {
         ClipRect ??= Texture.ClipRect;
         //if (Width == 0) {
-        if (!Prepared) {
-            Prepared = true;
+        if (!_prepared) {
+            _prepared = true;
 
-            if (Width == 0)
+            if (_width == 0)
                 LoadSizeFromTexture();
 
             // Fixup properties now, at this point nothing should try to get stuff from the sprite...
 
             // sprites with dimensions not divible by 2 would get rendered at half pixel offsets while centering...
-            var nonDivisibleBy2 = new Vector2(Width % 2, Height % 2);
+            var nonDivisibleBy2 = new Vector2(_width % 2, _height % 2);
             if (nonDivisibleBy2 != default)
                 DrawOffset += (nonDivisibleBy2 * Origin);
 
-            _multOrigin = (Origin * new Vector2(Width, Height)) + DrawOffset;
+            _multOrigin = (Origin * new Vector2(_width, _height)) + DrawOffset;
             // Monogame doesn't like negative scales...
             
             if (Scale.X < 0) {
                 Scale.X = -Scale.X;
-                Flip ^= SpriteEffects.FlipHorizontally;
+                _flip ^= SpriteEffects.FlipHorizontally;
                 _multOrigin.X = ClipRect!.Value.Width - _multOrigin.X;
             }
             if (Scale.Y < 0) {
                 Scale.Y = -Scale.Y;
-                Flip ^= SpriteEffects.FlipVertically;
+                _flip ^= SpriteEffects.FlipVertically;
                 _multOrigin.Y = ClipRect!.Value.Height - _multOrigin.Y;
             }
         }
@@ -219,7 +219,7 @@ public record struct Sprite : ITextureSprite {
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Render(Texture2D texture, Vector2 pos, Color color, Vector2 scale, SpriteEffects flip, Vector2 origin) {
-        GFX.Batch.Draw(texture, pos, ClipRect, color, Rotation, origin, scale, flip, 0f);
+        Gfx.Batch.Draw(texture, pos, ClipRect, color, Rotation, origin, scale, flip, 0f);
     }
 
     public Sprite Centered() {
@@ -247,10 +247,10 @@ public record struct Sprite : ITextureSprite {
         return this with {
             ClipRect = clip,
             DrawOffset = new Vector2(-Math.Min(x - DrawOffset.X, 0f), -Math.Min(y - DrawOffset.Y, 0f)),
-            Width = w,
-            Height = h,
+            _width = w,
+            _height = h,
             Pos = Pos,
-            SubtextureOffset = offset,
+            _subtextureOffset = offset,
         };
     }
 

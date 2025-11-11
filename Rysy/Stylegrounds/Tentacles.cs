@@ -5,7 +5,7 @@ namespace Rysy.Stylegrounds;
 [CustomEntity("tentacles")]
 public sealed class Tentacles : Style, IPlaceable {
     public static FieldList GetFields() => new(new {
-        color = Fields.RGB(null!).AllowNull(),
+        color = Fields.Rgb(null!).AllowNull(),
         side = TentacleEffectDirections.Right,
         offset = 0.0f
     });

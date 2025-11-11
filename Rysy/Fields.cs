@@ -81,7 +81,7 @@ public static partial class Fields {
             return new Dictionary<string, string>();
         }
 
-        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg ? map.BgAutotiler : map.FgAutotiler;
 
         var dict = autotiler.Tilesets
             .ToDictionary(t => t.Key.ToString(), t => $"[{t.Key}] {autotiler.GetTilesetDisplayName(t.Key)}");
@@ -100,7 +100,7 @@ public static partial class Fields {
             return null;
         }
 
-        var autotiler = bg ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg ? map.BgAutotiler : map.FgAutotiler;
 
         return autotiler.Tilesets.TryGetValue(id, out var tileset) ? tileset.GetPreview(8 * 3) : null;
     });
@@ -112,7 +112,7 @@ public static partial class Fields {
             return new Dictionary<char, string>();
         }
 
-        var autotiler = bg(ctx) ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg(ctx) ? map.BgAutotiler : map.FgAutotiler;
 
         return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
     });
@@ -126,7 +126,7 @@ public static partial class Fields {
     /// <param name="regex">The regex to use to find texture paths</param>
     /// <param name="captureConverter">A function which converts a texture found by the regex into the key to use to save to mapdata. By default, it returns texture.Captured</param>
     public static PathField AtlasPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<FoundPath, string>? captureConverter = null)
-        => new PathField(def, GFX.Atlas, regex, captureConverter).AllowEdits();
+        => new PathField(def, Gfx.Atlas, regex, captureConverter).AllowEdits();
 
     /// <summary>
     /// Creates a field with a dropdown that automatically gets populated with possible sprite bank paths matching the provided <paramref name="regex"/>.
@@ -173,34 +173,34 @@ public static partial class Fields {
         return mod.GetAllDependenciesFilesystem();
     }
     
-    public static ColorField RGBA(Color def) => new() { 
-        Default = def.ToString(ColorFormat.RGBA),
-        Format = ColorFormat.RGBA,
+    public static ColorField Rgba(Color def) => new() { 
+        Default = def.ToString(ColorFormat.Rgba),
+        Format = ColorFormat.Rgba,
     };
 
-    public static ColorField RGBA(string def) => new() {
+    public static ColorField Rgba(string def) => new() {
         Default = def,
-        Format = ColorFormat.RGBA,
+        Format = ColorFormat.Rgba,
     };
 
-    public static ColorField RGB(Color def) => new() {
-        Default = def.ToString(ColorFormat.RGB),
-        Format = ColorFormat.RGB,
+    public static ColorField Rgb(Color def) => new() {
+        Default = def.ToString(ColorFormat.Rgb),
+        Format = ColorFormat.Rgb,
     };
 
-    public static ColorField RGB(string? def) => new() {
+    public static ColorField Rgb(string? def) => new() {
         Default = def,
-        Format = ColorFormat.RGB,
+        Format = ColorFormat.Rgb,
     };
 
-    public static ColorField ARGB(Color def) => new() {
-        Default = def.ToString(ColorFormat.ARGB),
-        Format = ColorFormat.ARGB,
+    public static ColorField Argb(Color def) => new() {
+        Default = def.ToString(ColorFormat.Argb),
+        Format = ColorFormat.Argb,
     };
 
-    public static ColorField ARGB(string def) => new() {
+    public static ColorField Argb(string def) => new() {
         Default = def,
-        Format = ColorFormat.ARGB,
+        Format = ColorFormat.Argb,
     };
 
     public static ListField List(string def, Field baseField) => new(baseField, def);
@@ -210,7 +210,7 @@ public static partial class Fields {
     private static Field GuessStringFormat(string s) {
         // TODO: remove
         if (HexColorListRegex().IsMatch(s))
-            return new ListField(RGB(Color.White), s);
+            return new ListField(Rgb(Color.White), s);
 
         return String(s);
     }
@@ -232,7 +232,7 @@ public static partial class Fields {
         if (map is null)
             return ValidationResult.Ok;
         
-        var autotiler = bg() ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = bg() ? map.BgAutotiler : map.FgAutotiler;
 
         if (autotiler.Tilesets.Count(kv => kv.Value.GetDisplayName() == x) > (selfIsTileset ? 1 : 0))
             return ValidationResult.TilesetDisplayNameInUse;
@@ -265,7 +265,7 @@ public static partial class Fields {
             return ValidationResult.CantBeNull;
 
         var real = $"{prefix}{x}";
-        if (GFX.Atlas.TryGet(real, out var tex)) {
+        if (Gfx.Atlas.TryGet(real, out var tex)) {
             var mod = tex is IModAsset modAsset ? modAsset.SourceModName : null;
             return ValidationResult.TexturePathInUse(mod);
         }

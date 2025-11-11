@@ -4,9 +4,9 @@ namespace Rysy.Stylegrounds;
 
 public static class StylegroundRenderer {
     public enum Layers {
-        FG = 1,
-        BG = 2,
-        BGAndFG = BG | FG,
+        Fg = 1,
+        Bg = 2,
+        BgAndFg = Bg | Fg,
     }
 
     private static readonly RasterizerState CullNoneWithScissor = new() {
@@ -38,12 +38,12 @@ public static class StylegroundRenderer {
             st.RasterizerState = CullNoneWithScissor;
         }
 
-        GFX.BeginBatch(st);
+        Gfx.BeginBatch(st);
 
         var allStyles = layers switch {
-            Layers.BG => styles.AllBackgroundStylesRecursive(),
-            Layers.FG => styles.AllForegroundStylesRecursive(),
-            Layers.BGAndFG => styles.AllStylesRecursive(),
+            Layers.Bg => styles.AllBackgroundStylesRecursive(),
+            Layers.Fg => styles.AllForegroundStylesRecursive(),
+            Layers.BgAndFg => styles.AllStylesRecursive(),
             _ => Array.Empty<Style>(),
         };
 
@@ -54,7 +54,7 @@ public static class StylegroundRenderer {
 
         //ISprite.OutlinedRect(new(0,0, 320, 180), Color.Transparent, Color.Red).Render();
 
-        GFX.EndBatch();
+        Gfx.EndBatch();
     }
 
     private static void Render(Style s, StylegroundRenderCtx ctx) {
@@ -73,15 +73,15 @@ public static class StylegroundRenderer {
                 return;
             }
 
-            var lastState = GFX.EndBatch();
-            GFX.BeginBatch(state);
+            var lastState = Gfx.EndBatch();
+            Gfx.BeginBatch(state);
             try {
                 foreach (var sprite in sprites) {
                     sprite.Render(renderCtx);
                 }
             } finally {
-                GFX.EndBatch();
-                GFX.BeginBatch(lastState);
+                Gfx.EndBatch();
+                Gfx.BeginBatch(lastState);
             }
         } catch (Exception ex) {
             Logger.Error(ex, $"Failed to render styleground: {s}");

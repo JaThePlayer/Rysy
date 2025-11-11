@@ -30,6 +30,6 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
 
         await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, null, cSharpPlugins);
         await EntityRegistry.RegisterAsync(task: null, loadLuaPlugins: luaPlugins);
-        GFX.HeadlessSetup();
+        Gfx.HeadlessSetup();
     }
 }

@@ -309,15 +309,15 @@ public struct CastEnumerator<TFrom, TFromEnumerator, TTo>(TFromEnumerator enumer
 
 public struct SingleEnumerator<T> : IEnumerator<T> {
     private bool _moved = false;
-    private T Item;
+    private T _item;
 
     internal SingleEnumerator(T item) {
-        Item = item;
+        _item = item;
     }
 
-    public T Current => Item;
+    public T Current => _item;
 
-    object IEnumerator.Current => Item!;
+    object IEnumerator.Current => _item!;
 
     public void Dispose() {
     }

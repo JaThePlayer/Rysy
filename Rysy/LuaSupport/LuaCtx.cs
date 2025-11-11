@@ -250,7 +250,7 @@ public class LuaCtx {
             var path = lua.FastToString(1);
             var atlasName = lua.FastToString(2);
 
-            var texture = GFX.Atlas[path];
+            var texture = Gfx.Atlas[path];
             var clipRect = texture.ClipRect;
 
             lua.PushNumber(clipRect.X); 
@@ -430,7 +430,7 @@ public class LuaCtx {
             
             // TODO: handle different atlases
 
-            lua.PushBoolean(GFX.Atlas.TryGetWithoutTryingFrames(texture, out _));
+            lua.PushBoolean(Gfx.Atlas.TryGetWithoutTryingFrames(texture, out _));
 
             return 1;
         });
@@ -469,7 +469,7 @@ public class LuaCtx {
         lua.Register("_RYSY_fake_tiles_get", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
             var layer = lua.FastToString(1);
-            lua.PushWrapper(new LuaTilesetsDictionaryWrapper(layer == "tilesFg" ? TileLayer.FG : TileLayer.BG));
+            lua.PushWrapper(new LuaTilesetsDictionaryWrapper(layer == "tilesFg" ? TileLayer.Fg : TileLayer.Bg));
 
             return 1;
         });
@@ -562,7 +562,7 @@ public class LuaCtx {
             var placement = new LonnPlacement(lua, 2);
             var trigger = false;
 
-            if (EntityRegistry.GetTypeForSID(sid, RegisteredEntityType.Entity) is { } t) {
+            if (EntityRegistry.GetTypeForSid(sid, RegisteredEntityType.Entity) is { } t) {
                 trigger = t.IsSubclassOf(typeof(Trigger));
             }
 
@@ -749,14 +749,14 @@ public class LuaCtx {
             end
             """u8, "fix_shallow_copy");
 
-        RegisterAPIFuncs(lua);
+        RegisterApiFuncs(lua);
 
         var orig = lua.AtPanic(AtLuaPanic);
 
         return luaCtx;
     }
 
-    private static void RegisterAPIFuncs(Lua lua) {
+    private static void RegisterApiFuncs(Lua lua) {
         lua.GetGlobal("RYSY");
         var rysyTableLoc = lua.GetTop();
 

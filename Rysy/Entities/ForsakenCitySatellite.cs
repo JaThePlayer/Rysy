@@ -7,11 +7,11 @@ namespace Rysy.Entities;
 [CustomEntity("birdForsakenCityGem")]
 public sealed class ForsakenCitySatellite : Entity, IPlaceable {
     private static Dictionary<string, (float Angle, Color)> BirdColors => new() {
-        ["U"] = (-90f.ToRad(), "f0f0f0".FromRGB()),
-        ["L"] = (-180f.ToRad(), "9171f2".FromRGB()),
-        ["DR"] = (45f.ToRad(), "0a44e0".FromRGB()),
-        ["UR"] = (-45f.ToRad(), "b32d00".FromRGB()),
-        ["UL"] = (-135f.ToRad(), "ffcd37".FromRGB())
+        ["U"] = (-90f.ToRad(), "f0f0f0".FromRgb()),
+        ["L"] = (-180f.ToRad(), "9171f2".FromRgb()),
+        ["DR"] = (45f.ToRad(), "0a44e0".FromRgb()),
+        ["UR"] = (-45f.ToRad(), "b32d00".FromRgb()),
+        ["UL"] = (-135f.ToRad(), "ffcd37".FromRgb())
     };
 
     public override int Depth => 8999;

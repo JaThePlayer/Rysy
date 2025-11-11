@@ -103,13 +103,13 @@ public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(G
             return [];
         }
 
-        var autotiler = layer == TileLayer.BG ? map.BGAutotiler : map.FGAutotiler;
+        var autotiler = layer == TileLayer.Bg ? map.BgAutotiler : map.FgAutotiler;
         var tiles = autotiler.Tilesets.Select(t => (t.Key, autotiler.GetTilesetDisplayName(t.Key)));
         
         return tiles.ToDictionary(x => x.Item2, x => (object) x.Key.ToString());
     }
 
     public Field CreateField(char def) {
-        return Fields.TileDropdown(def, TileLayer == TileLayer.BG);
+        return Fields.TileDropdown(def, TileLayer == TileLayer.Bg);
     }
 }

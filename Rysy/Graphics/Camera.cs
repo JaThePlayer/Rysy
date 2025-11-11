@@ -7,20 +7,20 @@ public class Camera {
     private XnaVector2 _pos;
     public XnaVector2 Pos => _pos;
 
-    private float _Scale = 1f;
+    private float _scale = 1f;
     public float Scale {
-        get => _Scale;
+        get => _scale;
         set {
-            _Scale = value;
+            _scale = value;
             RecalculateMatrix();
         }
     }
 
-    private Viewport _Viewport = RysyState.GraphicsDevice?.Viewport ?? new Viewport();
+    private Viewport _viewport = RysyState.GraphicsDevice?.Viewport ?? new Viewport();
     public Viewport Viewport {
-        get => _Viewport;
+        get => _viewport;
         set {
-            _Viewport = value;
+            _viewport = value;
             RecalculateMatrix();
         }
     }
@@ -35,7 +35,7 @@ public class Camera {
         if (!_listeningToViewportChanges && Settings.UiEnabled) {
             _listeningToViewportChanges = true;
             RysyState.OnViewportChanged += v => {
-                _Viewport = v;
+                _viewport = v;
                 RecalculateMatrix();
             };
         }
@@ -44,7 +44,7 @@ public class Camera {
     }
 
     public Camera(Viewport viewport) {
-        _Viewport = viewport;
+        _viewport = viewport;
 
         RecalculateMatrix();
     }
@@ -54,12 +54,12 @@ public class Camera {
     /// </summary>
     public Matrix Inverse => Matrix.Invert(Matrix);
 
-    private Matrix _Matrix;
-    public Matrix Matrix => _Matrix;
+    private Matrix _matrix;
+    public Matrix Matrix => _matrix;
           
 
     private void RecalculateMatrix() {
-        _Matrix = Matrix.CreateTranslation(-MathF.Floor(Pos.X), -MathF.Floor(Pos.Y), 0f)
+        _matrix = Matrix.CreateTranslation(-MathF.Floor(Pos.X), -MathF.Floor(Pos.Y), 0f)
         * Matrix.CreateScale(Scale);
     }
     /// <summary>

@@ -9,7 +9,7 @@ namespace Rysy.LuaSupport;
 /// Keeps the value alive on the Lua side until <see cref="LuaExt.ClearLuaResources"/> gets called after this object gets GC'd.
 /// </summary>
 public class LuaRef {
-    private readonly long Id;
+    private readonly long _id;
 
     private readonly byte[] _luaGlobalKey;
     
@@ -18,8 +18,8 @@ public class LuaRef {
     
     protected internal LuaRef(Lua lua, long id) {
         Lua = lua;
-        Id = id;
-        _luaGlobalKey = Encoding.UTF8.GetBytes($"__rysy_ref{Id}");
+        _id = id;
+        _luaGlobalKey = Encoding.UTF8.GetBytes($"__rysy_ref{_id}");
     }
     
     public static LuaRef MakeFrom(Lua lua, int loc) {
@@ -45,7 +45,7 @@ public class LuaRef {
     ~LuaRef() {
         // Clear the reference on the lua side
         var lua = Lua;
-        var id = Id;
+        var id = _id;
         LuaExt.RegisterLuaCleanupAction(() => {
             lua.GetGlobal("__rysy_gcr"u8);
             lua.PushInteger(id);

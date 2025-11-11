@@ -16,7 +16,7 @@ public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPr
     private bool IsValidPath(FoundPath path) => DecalRegistryWindow?.IsValidPath(path) ?? true;
 
     private bool SingleTextureIsValid(string path) {
-        if (!GFX.Atlas.TryGet(Decal.MapTextureToPath(path), out var texture))
+        if (!Gfx.Atlas.TryGet(Decal.MapTextureToPath(path), out var texture))
             return false;
         
         if (DecalRegistryWindow is null)
@@ -51,7 +51,7 @@ public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPr
         PathField? field = null;
         switch (data.Type) {
             case DecalRegistryEntry.Types.StartsWith:
-                _newEntryDecalPathFieldStartsWith ??= new("", GFX.Atlas, "^decals/(.*)$") {
+                _newEntryDecalPathFieldStartsWith ??= new("", Gfx.Atlas, "^decals/(.*)$") {
                     Filter = IsValidPath,
                     Editable = true,
                 };
@@ -59,7 +59,7 @@ public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPr
                 field = _newEntryDecalPathFieldStartsWith;
                 break;
             case DecalRegistryEntry.Types.Directory:
-                _newEntryDecalPathFieldDirectory ??= new("", GFX.Atlas, "^decals/(.*)/.*$") {
+                _newEntryDecalPathFieldDirectory ??= new("", Gfx.Atlas, "^decals/(.*)/.*$") {
                     Filter = IsValidPath,
                     Editable = true,
                 };
@@ -71,7 +71,7 @@ public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPr
                     isInvalid = !SingleTextureIsValid(newEntryName);
                 }
 
-                _newEntryDecalPathFieldSingleTexture ??= new("", GFX.Atlas, "^decals/(.*)$") {
+                _newEntryDecalPathFieldSingleTexture ??= new("", Gfx.Atlas, "^decals/(.*)$") {
                     Filter = IsValidPath,
                     Editable = true,
                 };

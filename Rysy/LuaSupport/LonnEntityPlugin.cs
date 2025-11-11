@@ -423,16 +423,16 @@ public sealed class LonnEntityPlugin {
         LonnPlacement? defaultPlacement = null;
 
         if (lua.GetTable(top, "placements"u8) == LuaType.Table) {
-            var placement1loc = lua.GetTop();
+            var placement1Loc = lua.GetTop();
 
-            switch (lua.PeekTableType(placement1loc, "name"u8)) {
+            switch (lua.PeekTableType(placement1Loc, "name"u8)) {
                 case LuaType.String:
                     // name is provided, so there's 1 placement
                     defaultPlacement = new(lua);
                     plugin.Placements.Add(defaultPlacement);
                     break;
                 default:
-                    if (lua.GetTable(placement1loc, "default"u8) == LuaType.Table) {
+                    if (lua.GetTable(placement1Loc, "default"u8) == LuaType.Table) {
                         //plugin.Placements.Add(new(lua));
                         defaultPlacement = new(lua);
                     }

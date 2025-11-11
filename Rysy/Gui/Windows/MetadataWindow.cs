@@ -29,7 +29,7 @@ public sealed class MetadataWindow : Window {
             Dreaming = Fields.Bool(meta.Dreaming),
             IntroType = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(meta.IntroType!).AllowNull(),
             Portraits = Fields.Path(meta.Portraits, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
-            PostcardSoundID = Fields.String(meta.PostcardSoundID!).AllowNull(),
+            PostcardSoundID = Fields.String(meta.PostcardSoundId!).AllowNull(),
             Wipe = Fields.String(meta.Wipe!).AllowNull(), // todo: dropdown
         }));
     }
@@ -69,9 +69,9 @@ public sealed class MetadataWindow : Window {
         return AddTooltips(new(new {
             Icon = Fields.Path(meta.Icon, "Graphics/Atlases/Gui", "png", fs).AllowNull(), //Fields.String(meta.Icon).AllowNull(),
             Interlude = Fields.Bool(meta.Interlude ?? false),
-            TitleAccentColor = Fields.RGB(meta.TitleAccentColor.FromRGB()),
-            TitleBaseColor = Fields.RGB(meta.TitleBaseColor.FromRGB()),
-            TitleTextColor = Fields.RGB(meta.TitleTextColor.FromRGB()),
+            TitleAccentColor = Fields.Rgb(meta.TitleAccentColor.FromRgb()),
+            TitleBaseColor = Fields.Rgb(meta.TitleBaseColor.FromRgb()),
+            TitleTextColor = Fields.Rgb(meta.TitleTextColor.FromRgb()),
             preview = new TitleCardPreviewField(),
         }));
     }
@@ -79,25 +79,25 @@ public sealed class MetadataWindow : Window {
     public HistoryHandler History { get; private set; }
     public Map Map { get; private set; }
 
-    private List<(string Name, FormWindow Window)> Tabs = new();
+    private List<(string Name, FormWindow Window)> _tabs = new();
 
     public MetadataWindow(HistoryHandler history, Map map) : base("Map Metadata", new(800, 400)) {
         Map = map;
         History = history;
 
-        Tabs.Add(("Main", new(GetMainFieldInfo(map, map.Meta), "##main") {
+        _tabs.Add(("Main", new(GetMainFieldInfo(map, map.Meta), "##main") {
             OnChanged = ApplyChanges
         }));
-        Tabs.Add(("Mode", new(GetModeFieldInfo(map.Meta), "##mode") {
+        _tabs.Add(("Mode", new(GetModeFieldInfo(map.Meta), "##mode") {
             OnChanged = ApplyChanges
         }));
-        Tabs.Add(("Cassette", new(GetCassetteFieldInfo(map.Meta), "##cass") {
+        _tabs.Add(("Cassette", new(GetCassetteFieldInfo(map.Meta), "##cass") {
             OnChanged = ApplyChanges
         }));
-        Tabs.Add(("Music", new(GetMusicFieldInfo(map.Meta), "##music") {
+        _tabs.Add(("Music", new(GetMusicFieldInfo(map.Meta), "##music") {
             OnChanged = ApplyChanges
         }));
-        Tabs.Add(("Overworld", new(GetOverworldFieldInfo(map, map.Meta), "##overworld") {
+        _tabs.Add(("Overworld", new(GetOverworldFieldInfo(map, map.Meta), "##overworld") {
             OnChanged = ApplyChanges
         }));
 
@@ -133,7 +133,7 @@ public sealed class MetadataWindow : Window {
         base.Render();
 
         if (ImGui.BeginTabBar("Tabbar")) {
-            foreach (var tab in Tabs) {
+            foreach (var tab in _tabs) {
                 if (ImGui.BeginTabItem(tab.Name)) {
                     tab.Window.RenderBody();
                     ImGui.EndTabItem();
@@ -158,9 +158,9 @@ internal sealed record TitleCardPreviewField : Field {
         ImGuiManager.XnaWidget("tile_card_preview", width, height, () => {
             var renderCtx = SpriteRenderCtx.Default();
             
-            var baseColor = Context.RGBA("TitleBaseColor", "6c7c81");
-            var accentColor = Context.RGBA("TitleAccentColor", "2f344b");
-            var textColor = Context.RGBA("TitleTextColor", "ffffff");
+            var baseColor = Context.Rgba("TitleBaseColor", "6c7c81");
+            var accentColor = Context.Rgba("TitleAccentColor", "2f344b");
+            var textColor = Context.Rgba("TitleTextColor", "ffffff");
                 
             var accentWidth = 30.AtMost(width / 3);
             

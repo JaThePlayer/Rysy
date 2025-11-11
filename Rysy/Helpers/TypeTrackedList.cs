@@ -9,7 +9,7 @@ namespace Rysy.Helpers;
 public class TypeTrackedList<T> : IListenableList<T> {
     protected List<T> Inner = new();
 
-    private Dictionary<Type, List<T>> ByType = new();
+    private Dictionary<Type, List<T>> _byType = new();
 
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
@@ -31,7 +31,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
     }
 
     public List<T> this[Type type] {
-        get => ByType.GetValueOrDefault(type) ?? (ByType[type] = new());
+        get => _byType.GetValueOrDefault(type) ?? (_byType[type] = new());
     }
 
     public int Count => Inner.Count;
@@ -39,10 +39,10 @@ public class TypeTrackedList<T> : IListenableList<T> {
     public bool IsReadOnly => false;
 
     private void TrackAsType(T item, Type t) {
-        if (ByType.TryGetValue(t, out var l))
+        if (_byType.TryGetValue(t, out var l))
             l.Add(item);
         else
-            ByType.Add(t, new() { item });
+            _byType.Add(t, new() { item });
     }
 
     private void TrackNewItem(T item) {
@@ -56,9 +56,9 @@ public class TypeTrackedList<T> : IListenableList<T> {
     private void UntrackItem(T item) {
         var t = item!.GetType();
 
-        ByType[t].Remove(item);
+        _byType[t].Remove(item);
         foreach (var inter in t.GetInterfaces())
-            ByType[inter].Remove(item);
+            _byType[inter].Remove(item);
     }
 
     public void Add(T item) {
@@ -72,7 +72,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
     public void Clear() {
         Inner.Clear();
-        ByType.Clear();
+        _byType.Clear();
 
         OnChanged?.Invoke();
     }

@@ -10,7 +10,7 @@ using Rysy.Layers;
 namespace Rysy.Tools;
 
 public class TileTool : Tool {
-    public Color DefaultColor = ColorHelper.HSVToColor(0f, 1f, 1f);
+    public Color DefaultColor = ColorHelper.HsvToColor(0f, 1f, 1f);
 
     private readonly List<ToolMode> _tileModes;
 
@@ -28,11 +28,9 @@ public class TileTool : Tool {
         ];
     }
     
-    private static List<EditorLayer> _ValidLayers { get; } =[
+    public override List<EditorLayer> ValidLayers { get; } = [
         EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
     ];
-
-    public override List<EditorLayer> ValidLayers => _ValidLayers;
 
     public override List<ToolMode> ValidModes => _tileModes;
 
@@ -111,15 +109,15 @@ public class TileTool : Tool {
             return tileLayer;
         }
 
-        return TileLayer.FG;
+        return TileLayer.Fg;
     }
 
     public Autotiler? GetAutotiler(EditorLayer layer) {
         if (RysyEngine.Scene is EditorScene { Map: { } map }) {
             if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
                 return tileLayer switch {
-                    TileLayer.FG => map.FGAutotiler,
-                    TileLayer.BG => map.BGAutotiler,
+                    TileLayer.Fg => map.FgAutotiler,
+                    TileLayer.Bg => map.BgAutotiler,
                     _ => null,
                 };
             }
@@ -181,13 +179,13 @@ public class TileTool : Tool {
             return tileEditorLayer.GetGrid(room);
 
         if (layer == EditorLayers.BothTilegrids)
-            return room.FG;
+            return room.Fg;
 
         throw new ArgumentException("Provided layer is not a tile layer", nameof(layer));
     }
 
     public Tilegrid? GetSecondGrid(Room room) 
-        => Layer == EditorLayers.BothTilegrids ? room.BG : null;
+        => Layer == EditorLayers.BothTilegrids ? room.Bg : null;
 
     public Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
         var pos = room.WorldToRoomPos(camera, (fakeMousePos ?? Input.Mouse.Pos).ToVector2());
@@ -201,8 +199,8 @@ public class TileTool : Tool {
     protected void HandleMiddleClick(Room currentRoom, int tx, int ty) {
         if (Input.Mouse.Middle.Clicked()) {
             Input.Mouse.ConsumeMiddle();
-            var fg = currentRoom.FG.SafeTileAt(tx, ty);
-            var bg = currentRoom.BG.SafeTileAt(tx, ty);
+            var fg = currentRoom.Fg.SafeTileAt(tx, ty);
+            var bg = currentRoom.Bg.SafeTileAt(tx, ty);
 
             (Layer, Tile) = (fg, bg) switch {
                 ('0', '0') => (EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.

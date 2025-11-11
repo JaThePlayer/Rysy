@@ -13,7 +13,7 @@ public static partial class LuaSerializer {
 
     private static string CorrectDecalPathForLonn(string rysyPath) {
         // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...
-        if (GFX.Atlas.TryGet($"decals/{rysyPath}00", out _))
+        if (Gfx.Atlas.TryGet($"decals/{rysyPath}00", out _))
             return $"{rysyPath}00";
 
         return rysyPath;
@@ -27,8 +27,8 @@ public static partial class LuaSerializer {
         builder.AppendLine("{");
         foreach (var item in copied)
             switch (item.Layer) {
-                case SelectionLayer.FGDecals:
-                case SelectionLayer.BGDecals:
+                case SelectionLayer.FgDecals:
+                case SelectionLayer.BgDecals:
                     builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                             {
                                 _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
@@ -74,8 +74,8 @@ public static partial class LuaSerializer {
                     AppendData(builder, item, blacklistedKeys: new() { "id" });
                     builder.AppendLine("    },");
                     break;
-                case SelectionLayer.FGTiles:
-                case SelectionLayer.BGTiles:
+                case SelectionLayer.FgTiles:
+                case SelectionLayer.BgTiles:
                     builder.AppendLine(CultureInfo.InvariantCulture, $$"""
                         {
                             _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
@@ -189,10 +189,10 @@ public static partial class LuaSerializer {
 
                 var name = selection.GetValueOrDefault("_name") as string;
                 // bg and fg decals don't have _name set, let's grab the hardcoded SID instead
-                name ??= DefaultSIDForLayer(layer);
+                name ??= DefaultSidForLayer(layer);
 
                 var tiles = selection.GetValueOrDefault("tiles") as string;
-                if (layer is SelectionLayer.FGTiles or SelectionLayer.BGTiles && tiles is null)
+                if (layer is SelectionLayer.FgTiles or SelectionLayer.BgTiles && tiles is null)
                     continue;
 
                 if (layer == SelectionLayer.None || name is not { })
@@ -208,7 +208,7 @@ public static partial class LuaSerializer {
                 var data = new BinaryPacker.Element() {
                     Name = name,
                     Attributes = layer switch {
-                        SelectionLayer.FGTiles or SelectionLayer.BGTiles => new() {
+                        SelectionLayer.FgTiles or SelectionLayer.BgTiles => new() {
                             ["text"] = tiles!,
                             ["x"] = Convert.ToInt32(selection["x"], CultureInfo.InvariantCulture) * 8 - 8,
                             ["y"] = Convert.ToInt32(selection["y"], CultureInfo.InvariantCulture) * 8 - 8,
@@ -236,20 +236,20 @@ public static partial class LuaSerializer {
     public static SelectionLayer LonnLayerToSelectionLayer(string? typeStr) => typeStr switch {
         "entities" => SelectionLayer.Entities,
         "triggers" => SelectionLayer.Triggers,
-        "decalsBg" => SelectionLayer.BGDecals,
-        "decalsFg" => SelectionLayer.FGDecals,
-        "tilesFg" => SelectionLayer.FGTiles,
-        "tilesBg" => SelectionLayer.BGTiles,
+        "decalsBg" => SelectionLayer.BgDecals,
+        "decalsFg" => SelectionLayer.FgDecals,
+        "tilesFg" => SelectionLayer.FgTiles,
+        "tilesBg" => SelectionLayer.BgTiles,
         _ => SelectionLayer.None,
     };
 
     public static string? SelectionLayerToLonnLayer(SelectionLayer layer) => layer switch {
         SelectionLayer.Entities => "entities",
         SelectionLayer.Triggers => "triggers",
-        SelectionLayer.BGDecals => "decalsBg",
-        SelectionLayer.FGDecals => "decalsFg",
-        SelectionLayer.FGTiles => "tilesFg",
-        SelectionLayer.BGTiles => "tilesBg",
+        SelectionLayer.BgDecals => "decalsBg",
+        SelectionLayer.FgDecals => "decalsFg",
+        SelectionLayer.FgTiles => "tilesFg",
+        SelectionLayer.BgTiles => "tilesBg",
         _ => null,
     };
 
@@ -259,10 +259,10 @@ public static partial class LuaSerializer {
         _ => null,
     };
 
-    public static string? DefaultSIDForLayer(SelectionLayer layer) => layer switch {
-        SelectionLayer.BGDecals => EntityRegistry.BGDecalSID,
-        SelectionLayer.FGDecals => EntityRegistry.FGDecalSID,
-        SelectionLayer.FGTiles or SelectionLayer.BGTiles => "tiles",
+    public static string? DefaultSidForLayer(SelectionLayer layer) => layer switch {
+        SelectionLayer.BgDecals => EntityRegistry.BgDecalSid,
+        SelectionLayer.FgDecals => EntityRegistry.FgDecalSid,
+        SelectionLayer.FgTiles or SelectionLayer.BgTiles => "tiles",
         _ => null,
     };
 

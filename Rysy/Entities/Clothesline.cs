@@ -31,10 +31,10 @@ internal sealed class Clothesline : Entity, IPlaceable {
         LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f),
         PinColor = Color.Gray,
         Colors = [
-            "0d2e6b".FromRGB(),
-            "3d2688".FromRGB(),
-            "4f6e9d".FromRGB(),
-            "47194a".FromRGB()
+            "0d2e6b".FromRgb(),
+            "3d2688".FromRgb(),
+            "4f6e9d".FromRgb(),
+            "47194a".FromRgb()
         ],
         FlagHeight = 8..20,
         FlagLength = 8..16,

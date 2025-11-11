@@ -4,28 +4,28 @@ using Rysy.Extensions;
 namespace Rysy.Helpers;
 
 public static class ColorHelper {
-    static Dictionary<string, Color> cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
-    static Dictionary<string, Color[]> colorArrayCache = new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase);
+    static Dictionary<string, Color> Cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
+    static Dictionary<string, Color[]> ColorArrayCache = new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase);
     static ColorHelper() {
         foreach (var prop in typeof(Color).GetProperties())
             if (prop.GetValue(default(Color), null) is Color color)
-                cache[prop.Name] = color;
-        cache[""] = Color.White;
-        colorArrayCache[""] = null!;
+                Cache[prop.Name] = color;
+        Cache[""] = Color.White;
+        ColorArrayCache[""] = null!;
     }
 
 
     /// <summary>
     /// Gets a <see cref="Color"/> from the <paramref name="color"/> string, by either using an XNA color name, or converting a hex code from a given format
     /// </summary>
-    public static Color Get(string color, ColorFormat format = ColorFormat.RGBA, bool allowXNA = true) {
-        if (allowXNA && cache.TryGetValue(color, out var xnaColor))
+    public static Color Get(string color, ColorFormat format = ColorFormat.Rgba, bool allowXna = true) {
+        if (allowXna && Cache.TryGetValue(color, out var xnaColor))
             return xnaColor;
 
         return format switch {
-            ColorFormat.RGB => RGB(color),
-            ColorFormat.RGBA => RGBA(color),
-            ColorFormat.ARGB => ARGB(color),
+            ColorFormat.Rgb => Rgb(color),
+            ColorFormat.Rgba => Rgba(color),
+            ColorFormat.Argb => Argb(color),
             _ => throw new NotImplementedException($"Unknown color format {format}"),
         };
     }
@@ -33,9 +33,9 @@ public static class ColorHelper {
     /// <summary>
     /// Tries to convert a string to a color using the given format.
     /// </summary>
-    public static bool TryGet(string colorString, ColorFormat format, out Color color, bool allowXNA = true) {
+    public static bool TryGet(string colorString, ColorFormat format, out Color color, bool allowXna = true) {
         try {
-            color = Get(colorString, format, allowXNA);
+            color = Get(colorString, format, allowXna);
             return true;
         } catch {
             color = default;
@@ -45,9 +45,9 @@ public static class ColorHelper {
 
     /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as RRGGBB
-    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.RGB"/> as the second parameter if this is needed
+    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.Rgb"/> as the second parameter if this is needed
     /// </summary>
-    public static Color RGB(ReadOnlySpan<char> hexCode) {
+    public static Color Rgb(ReadOnlySpan<char> hexCode) {
         if (hexCode.IsEmpty)
             return Color.White;
 
@@ -62,9 +62,9 @@ public static class ColorHelper {
 
     /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as AARRGGBB.
-    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.ARGB"/> as the second parameter if this is needed
+    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.Argb"/> as the second parameter if this is needed
     /// </summary>
-    public static Color ARGB(ReadOnlySpan<char> hexCode) {
+    public static Color Argb(ReadOnlySpan<char> hexCode) {
         hexCode = PrepareSpan(hexCode);
         var packedValue = GetPacked(hexCode);
         return hexCode.Length switch {
@@ -76,9 +76,9 @@ public static class ColorHelper {
 
     /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as RRGGBBAA
-    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.RGBA"/> as the second parameter if this is needed
+    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.Rgba"/> as the second parameter if this is needed
     /// </summary>
-    public static Color RGBA(ReadOnlySpan<char> hexCode) {
+    public static Color Rgba(ReadOnlySpan<char> hexCode) {
         hexCode = PrepareSpan(hexCode);
         var packedValue = GetPacked(hexCode);
         return hexCode.Length switch {
@@ -106,21 +106,20 @@ public static Color HsvToColor(float h, float s, float v) {
     /// <param name="s">The saturation value (0-1)</param>
     /// <param name="v">The v value (0-1)</param>
     /// <returns></returns>
-    public static Color HSVToColor(float h, float s, float v) {
-        float H = h;
-        while (H < 0)
-            H += 360;
+    public static Color HsvToColor(float h, float s, float v) {
+        while (h < 0)
+            h += 360;
 
-        while (H >= 360)
-            H -= 360;
+        while (h >= 360)
+            h -= 360;
 
-        float R, G, B;
+        float r, g, b;
         if (v <= 0)
-            R = G = B = 0;
+            r = g = b = 0;
         else if (s <= 0)
-            R = G = B = v;
+            r = g = b = v;
         else {
-            float hf = H / 60.0f;
+            float hf = h / 60.0f;
             int i = (int) Math.Floor(hf);
             float f = hf - i;
             float pv = v * (1 - s);
@@ -129,62 +128,62 @@ public static Color HsvToColor(float h, float s, float v) {
             switch (i) {
                 // Red is the dominant color
                 case 0:
-                    R = v;
-                    G = tv;
-                    B = pv;
+                    r = v;
+                    g = tv;
+                    b = pv;
                     break;
 
                 // Green is the dominant color
                 case 1:
-                    R = qv;
-                    G = v;
-                    B = pv;
+                    r = qv;
+                    g = v;
+                    b = pv;
                     break;
                 case 2:
-                    R = pv;
-                    G = v;
-                    B = tv;
+                    r = pv;
+                    g = v;
+                    b = tv;
                     break;
 
                 // Blue is the dominant color
                 case 3:
-                    R = pv;
-                    G = qv;
-                    B = v;
+                    r = pv;
+                    g = qv;
+                    b = v;
                     break;
                 case 4:
-                    R = tv;
-                    G = pv;
-                    B = v;
+                    r = tv;
+                    g = pv;
+                    b = v;
                     break;
 
                 // Red is the dominant color
                 case 5:
-                    R = v;
-                    G = pv;
-                    B = qv;
+                    r = v;
+                    g = pv;
+                    b = qv;
                     break;
 
                 // Just in case we overshoot on our math by a little, we put these here. Since its a switch it won't slow us down at all to put these here.
                 case 6:
-                    R = v;
-                    G = tv;
-                    B = pv;
+                    r = v;
+                    g = tv;
+                    b = pv;
                     break;
                 case -1:
-                    R = v;
-                    G = pv;
-                    B = qv;
+                    r = v;
+                    g = pv;
+                    b = qv;
                     break;
 
                 // The color is not defined, we should throw an error.
                 default:
-                    R = G = B = v; // Just pretend its black/white
+                    r = g = b = v; // Just pretend its black/white
                     break;
             }
         }
 
-        return new Color(R, G, B);
+        return new Color(r, g, b);
     }
 
     /// <summary>
@@ -196,7 +195,7 @@ public static Color HsvToColor(float h, float s, float v) {
         
         float num = 280f;
         float value = ((room.Pos + pos).Length()) % num / num;
-        return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
+        return HsvToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
     }
     
     /// <summary>
@@ -209,7 +208,7 @@ public static Color HsvToColor(float h, float s, float v) {
         
         float num = 280f;
         float value = ((room.Pos + pos).Length() + time * 50f) % num / num;
-        return HSVToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
+        return HsvToColor((0.4f + Easing.YoYo(value) * 0.4f) * 360f, 0.4f, 0.9f);
     }
 
     private static uint GetPacked(ReadOnlySpan<char> s)
@@ -228,7 +227,7 @@ public static Color HsvToColor(float h, float s, float v) {
     /// </summary>
     /// <param name="color"></param>
     /// <returns></returns>
-    public static string ToRGBAString(Color color) {
+    public static string ToRgbaString(Color color) {
         if (color.A == 255)
             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
@@ -240,7 +239,7 @@ public static Color HsvToColor(float h, float s, float v) {
     /// </summary>
     /// <param name="color"></param>
     /// <returns></returns>
-    public static string ToARGBString(Color color) {
+    public static string ToArgbString(Color color) {
         if (color.A == 255)
             return $"{color.R:x2}{color.G:x2}{color.B:x2}";
 
@@ -252,61 +251,61 @@ public static Color HsvToColor(float h, float s, float v) {
     /// </summary>
     public static string ToString(Color color, ColorFormat format) {
         return format switch {
-            ColorFormat.RGBA => ToRGBAString(color),
-            ColorFormat.RGB => ToRGBAString(color),
-            ColorFormat.ARGB => ToARGBString(color),
+            ColorFormat.Rgba => ToRgbaString(color),
+            ColorFormat.Rgb => ToRgbaString(color),
+            ColorFormat.Argb => ToArgbString(color),
             _ => throw new NotImplementedException(),
         };
     }
 }
 
 public enum ColorFormat {
-    RGB,
-    RGBA,
-    ARGB,
+    Rgb,
+    Rgba,
+    Argb,
 }
 
 public static class ColorHelperExtensions {
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.RGB(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Rgb"/>
     /// </summary>
-    public static Color FromRGB(this string hexCode) => ColorHelper.RGB(hexCode);
+    public static Color FromRgb(this string hexCode) => ColorHelper.Rgb(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.RGBA(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Rgba"/>
     /// </summary>
-    public static Color FromRGBA(this string hexCode) => ColorHelper.RGBA(hexCode);
+    public static Color FromRgba(this string hexCode) => ColorHelper.Rgba(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.ARGB(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Argb"/>
     /// </summary>
-    public static Color FromARGB(this string hexCode) => ColorHelper.ARGB(hexCode);
+    public static Color FromArgb(this string hexCode) => ColorHelper.Argb(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.RGB(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Rgb"/>
     /// </summary>
-    public static Color FromRGB(this ReadOnlySpan<char> hexCode) => ColorHelper.RGB(hexCode);
+    public static Color FromRgb(this ReadOnlySpan<char> hexCode) => ColorHelper.Rgb(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.RGBA(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Rgba"/>
     /// </summary>
-    public static Color FromRGBA(this ReadOnlySpan<char> hexCode) => ColorHelper.RGBA(hexCode);
+    public static Color FromRgba(this ReadOnlySpan<char> hexCode) => ColorHelper.Rgba(hexCode);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.ARGB(ReadOnlySpan{char})"/>
+    /// <inheritdoc cref="ColorHelper.Argb"/>
     /// </summary>
-    public static Color FromARGB(this ReadOnlySpan<char> hexCode) => ColorHelper.ARGB(hexCode);
+    public static Color FromArgb(this ReadOnlySpan<char> hexCode) => ColorHelper.Argb(hexCode);
 
     /// <summary>
     /// <inheritdoc cref="ColorHelper.Get"/>
     /// </summary>
-    public static Color ToColor(this string str, ColorFormat format = ColorFormat.RGBA) => ColorHelper.Get(str, format);
+    public static Color ToColor(this string str, ColorFormat format = ColorFormat.Rgba) => ColorHelper.Get(str, format);
     
-    public static Color ToColorOr(this string? str, Color def, ColorFormat format = ColorFormat.RGBA) {
+    public static Color ToColorOr(this string? str, Color def, ColorFormat format = ColorFormat.Rgba) {
         return str is {} ? ColorHelper.TryGet(str, format, out var color) ? color : def : def;
     }
     
-    public static Color ToColorOr(this string? str, string def, ColorFormat format = ColorFormat.RGBA) {
+    public static Color ToColorOr(this string? str, string def, ColorFormat format = ColorFormat.Rgba) {
         return str is {} && ColorHelper.TryGet(str, format, out var color) ? color : def.ToColorOr(Color.White);
     }
 
@@ -316,9 +315,9 @@ public static class ColorHelperExtensions {
     public static bool TryToColor(this string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
 
     /// <summary>
-    /// <inheritdoc cref="ColorHelper.ToRGBAString(Color)"/>
+    /// <inheritdoc cref="ColorHelper.ToRgbaString"/>
     /// </summary>
-    public static string ToRGBAString(this Color color) => ColorHelper.ToRGBAString(color);
+    public static string ToRgbaString(this Color color) => ColorHelper.ToRgbaString(color);
 
     /// <summary>
     /// <inheritdoc cref="ColorHelper.ToString(Color, ColorFormat)"/>
@@ -333,7 +332,7 @@ public static class ColorHelperExtensions {
     /// <param name="s">The saturation value (0, 100f)</param>
     /// <param name="v">The value value (0, 100f)</param>
     /// <returns></returns>
-    public static Color AddHSV(this Color c, float h, float s, float v) {
+    public static Color AddHsv(this Color c, float h, float s, float v) {
         var cv = c.ToNumVec4();
         float oh = 0f, os = 0f, ov = 0f;
 
@@ -364,7 +363,7 @@ internal readonly struct RgbaOrXnaColor : ISpanParsable<RgbaOrXnaColor> {
     }
 
     public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out RgbaOrXnaColor result) {
-        if (!ColorHelper.TryGet(s.ToString(), ColorFormat.RGBA, out var color)) {
+        if (!ColorHelper.TryGet(s.ToString(), ColorFormat.Rgba, out var color)) {
             result = default;
             return false;
         }

@@ -4,12 +4,12 @@ namespace Rysy.Helpers;
 public static class CelesteEnums {
     public static Color[] RoomColors { get; } = new Color[] {
         Color.White,
-        "f6735e".FromRGB(),
-        "85f65e".FromRGB(),
-        "37d7e3".FromRGB(),
-        "376be3".FromRGB(),
-        "c337e3".FromRGB(),
-        "e33773".FromRGB()
+        "f6735e".FromRgb(),
+        "85f65e".FromRgb(),
+        "37d7e3".FromRgb(),
+        "376be3".FromRgb(),
+        "c337e3".FromRgb(),
+        "e33773".FromRgb()
     };
 
     public static string[] RoomColorNames { get; } = new string[] {

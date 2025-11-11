@@ -4,12 +4,12 @@ using System.Xml.Linq;
 namespace Rysy.Extensions;
 
 public static class VectorExt {
-    public static Vector2 XY(this Rectangle r) => new(r.X, r.Y);
+    public static Vector2 Xy(this Rectangle r) => new(r.X, r.Y);
 
     /// <summary>
     /// Returns new <see cref="Vector2"/>(<paramref name="r"/>.Width, <paramref name="r"/>.Height)
     /// </summary>
-    public static Vector2 WH(this Rectangle r) => new(r.Width, r.Height);
+    public static Vector2 Wh(this Rectangle r) => new(r.Width, r.Height);
 
     public static Vector2 Add(this Vector2 v, float x, float y) => new(v.X + x, v.Y + y);
     public static Vector2 AddX(this Vector2 v, float toAdd) => new(v.X + toAdd, v.Y);

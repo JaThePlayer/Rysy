@@ -31,10 +31,10 @@ public class CliffFlags : Entity, IPlaceable {
         LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f),
         PinColor = Color.Gray,
         Colors = [
-            "d85f2f".FromRGB(),
-            "d82f63".FromRGB(),
-            "2fd8a2".FromRGB(),
-            "d8d62f".FromRGB()
+            "d85f2f".FromRgb(),
+            "d82f63".FromRgb(),
+            "2fd8a2".FromRgb(),
+            "d8d62f".FromRgb()
         ],
         FlagHeight = 10..10,
         FlagLength = 10..10,

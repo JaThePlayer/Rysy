@@ -11,11 +11,11 @@ using Rysy.Tools;
 namespace Rysy.Gui.FieldTypes;
 
 public record class TilegridField : Field {
-    private TileLayer Layer;
+    private TileLayer _layer;
 
-    public TilegridField(TileLayer layer = TileLayer.FG) {
+    public TilegridField(TileLayer layer = TileLayer.Fg) {
         Default = "";
-        Layer = layer;
+        _layer = layer;
 
         TilegridParser ??= DefaultTilegridParser;
         GridToSavedString ??= DefaultGridToSavedString;
@@ -41,10 +41,10 @@ public record class TilegridField : Field {
         var xPadding = ImGui.GetStyle().FramePadding.X;
 
         if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Map is { } map) {
-            if (Window is not { }) {
-                Window = new(val, TileEntity.GetAutotiler(map, Layer) ?? new(), Context, Layer, this);
-                Window.SetRemoveAction((w) => Window = null);
-                RysyEngine.Scene.AddWindow(Window);
+            if (_window is not { }) {
+                _window = new(val, TileEntity.GetAutotiler(map, _layer) ?? new(), Context, _layer, this);
+                _window.SetRemoveAction((w) => _window = null);
+                RysyEngine.Scene.AddWindow(_window);
             }
         }
 
@@ -52,19 +52,19 @@ public record class TilegridField : Field {
         ImGui.Text(fieldName);
         true.WithTooltip(Tooltip);
 
-        if (Window is { Edited: true }) {
-            Window.Edited = false;
+        if (_window is { Edited: true }) {
+            _window.Edited = false;
 
-            var (width, height) = (Window.Width, Window.Height);
-            var tiles = Window.Tiles;
+            var (width, height) = (_window.Width, _window.Height);
+            var tiles = _window.Tiles;
 
             var trimmedTiles = tiles.CreateTrimmed('0', out int offX, out int offY);
 
             Context.SetValue("width", trimmedTiles.GetLength(0) * 8);
             Context.SetValue("height", trimmedTiles.GetLength(1) * 8);
 
-            if (Window.ShouldClose)
-                Window.RemoveSelf();
+            if (_window.ShouldClose)
+                _window.RemoveSelf();
 
             return GridToSavedString(trimmedTiles);
         }
@@ -77,7 +77,7 @@ public record class TilegridField : Field {
         GridToSavedString = gridToSavedString,
     };
 
-    private EditTileDataWindow? Window;
+    private EditTileDataWindow? _window;
 
     public static char[,] DefaultTilegridParser(string tiles, int w, int h) => Tilegrid.TileArrayFromString(w * 8, h * 8, tiles);
     public static string DefaultGridToSavedString(char[,] tiles) => Tilegrid.GetSaveString(tiles);
@@ -86,113 +86,113 @@ public record class TilegridField : Field {
 internal sealed class EditTileDataWindow : Window {
     public bool Edited;
 
-    private readonly string XnaBufferID;
+    private readonly string _xnaBufferId;
 
-    private readonly Autotiler Autotiler;
+    private readonly Autotiler _autotiler;
 
-    private AutotiledSpriteList? Sprites;
+    private AutotiledSpriteList? _sprites;
 
-    private readonly Camera Camera;
+    private readonly Camera _camera;
 
-    private readonly Input Input;
+    private readonly Input _input;
 
-    private readonly HistoryHandler History;
+    private readonly HistoryHandler _history;
 
-    private readonly ToolHandler Tools;
+    private readonly ToolHandler _tools;
 
-    private readonly HotkeyHandler Hotkeys;
+    private readonly HotkeyHandler _hotkeys;
 
-    private readonly Room FakeRoom;
+    private readonly Room _fakeRoom;
 
-    private TileLayer Layer;
+    private TileLayer _layer;
 
     internal bool ShouldClose;
 
-    internal Tilegrid Tilegrid => TileEntity.GetTilegrid(FakeRoom, Layer);
-    internal char[,] Tiles => TileEntity.GetTilegrid(FakeRoom, Layer).Tiles;
+    internal Tilegrid Tilegrid => TileEntity.GetTilegrid(_fakeRoom, _layer);
+    internal char[,] Tiles => TileEntity.GetTilegrid(_fakeRoom, _layer).Tiles;
 
-    private readonly FormContext FormCtx;
+    private readonly FormContext _formCtx;
 
     internal int Width {
-        get => FormCtx.Int("width");
-        set => FormCtx.SetValue("width", value);
+        get => _formCtx.Int("width");
+        set => _formCtx.SetValue("width", value);
     }
 
     internal int Height {
-        get => FormCtx.Int("height");
-        set => FormCtx.SetValue("height", value);
+        get => _formCtx.Int("height");
+        set => _formCtx.SetValue("height", value);
     }
 
     public EditTileDataWindow(string val, Autotiler autotiler, FormContext formCtx, TileLayer layer, TilegridField field) : base("Edit Tile Data") {
-        Layer = layer;
-        FormCtx = formCtx;
-        Autotiler = autotiler;
-        XnaBufferID = Guid.NewGuid().ToString();
+        _layer = layer;
+        _formCtx = formCtx;
+        _autotiler = autotiler;
+        _xnaBufferId = Guid.NewGuid().ToString();
 
-        Camera = new(new Viewport(0, 0, 800, 800));
-        Camera.Scale = 2;
+        _camera = new(new Viewport(0, 0, 800, 800));
+        _camera.Scale = 2;
 
-        Input = new();
+        _input = new();
 
-        Input.Update(Time.Delta);
+        _input.Update(Time.Delta);
 
-        History = new(EditorState.Map ?? throw new Exception("Not in a map?"));
+        _history = new(EditorState.Map ?? throw new Exception("Not in a map?"));
 
-        Hotkeys = new(Input, HotkeyHandler.ImGuiModes.Ignore);
+        _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 
-        Tools = new ToolHandler(History, Input).UsePersistence(false);
-        Tools.InitHotkeys(Hotkeys);
-        Tools.CurrentTool.Layer = layer == TileLayer.FG ? EditorLayers.Fg : EditorLayers.Bg;
+        _tools = new ToolHandler(_history, _input).UsePersistence(false);
+        _tools.InitHotkeys(_hotkeys);
+        _tools.CurrentTool.Layer = layer == TileLayer.Fg ? EditorLayers.Fg : EditorLayers.Bg;
 
-        Hotkeys.AddHistoryHotkeys(Undo, Redo, Save);
+        _hotkeys.AddHistoryHotkeys(Undo, Redo, Save);
 
-        Hotkeys.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.upsizeTop", "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 8), new()), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.upsizeTop", "w", CreateUpsizeHandler(new(0, 8), new(0, -8)), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.upsizeBottom", "s", CreateUpsizeHandler(new(0, 8), new()), HotkeyModes.OnHoldSmoothInterval);
 
-        Hotkeys.AddHotkeyFromSettings("selection.downsizeRight", "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.downsizeLeft", "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.downsizeBottom", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
-        Hotkeys.AddHotkeyFromSettings("selection.downsizeTop", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.downsizeRight", "shift+d", CreateUpsizeHandler(new(-8, 0), new(8, 0)), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.downsizeLeft", "shift+a", CreateUpsizeHandler(new(-8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.downsizeBottom", "shift+s", CreateUpsizeHandler(new(0, -8), new(0, 8)), HotkeyModes.OnHoldSmoothInterval);
+        _hotkeys.AddHotkeyFromSettings("selection.downsizeTop", "shift+w", CreateUpsizeHandler(new(0, -8), new()), HotkeyModes.OnHoldSmoothInterval);
 
-        Camera.CreateCameraHotkeys(Hotkeys);
+        _camera.CreateCameraHotkeys(_hotkeys);
         
         var tiles = field.TilegridParser(val, Width / 8, Height / 8);
-        FakeRoom = new(EditorState.Map!, tiles.GetLength(0), tiles.GetLength(1));
+        _fakeRoom = new(EditorState.Map!, tiles.GetLength(0), tiles.GetLength(1));
 
-        if (layer == TileLayer.FG) {
-            FakeRoom.FG.Tiles = tiles;
+        if (layer == TileLayer.Fg) {
+            _fakeRoom.Fg.Tiles = tiles;
         } else {
-            FakeRoom.BG.Tiles = tiles;
+            _fakeRoom.Bg.Tiles = tiles;
         }
 
-        FakeRoom.FG.RenderCacheToken!.OnInvalidate += () => {
-            Sprites = null;
+        _fakeRoom.Fg.RenderCacheToken!.OnInvalidate += () => {
+            _sprites = null;
         };
-        FakeRoom.BG.RenderCacheToken!.OnInvalidate += () => {
-            Sprites = null;
+        _fakeRoom.Bg.RenderCacheToken!.OnInvalidate += () => {
+            _sprites = null;
         };
 
         var clientBounds = RysyState.Window.ClientBounds;
-        Size = new((Width * Camera.Scale).AtMost(clientBounds.Width - 600) + 300, (Height * Camera.Scale).AtMost(clientBounds.Height - 400) + ImGui.GetTextLineHeightWithSpacing() * 4f);
+        Size = new((Width * _camera.Scale).AtMost(clientBounds.Width - 600) + 300, (Height * _camera.Scale).AtMost(clientBounds.Height - 400) + ImGui.GetTextLineHeightWithSpacing() * 4f);
 
         if (RysyEngine.Scene is { } scene) {
             // we need to lock global hotkeys while hovering over this window, as otherwise ctrl+z would undo changes outside the window as well
-            GlobalHotkeyLock = scene.HotkeysIgnoreImGui.LockManager.CreateLock();
+            _globalHotkeyLock = scene.HotkeysIgnoreImGui.LockManager.CreateLock();
         }
 
-        History.OnApply += () => Edited = true;
-        History.OnUndo += () => Edited = true;
+        _history.OnApply += () => Edited = true;
+        _history.OnUndo += () => Edited = true;
     }
 
     public override void RemoveSelf() {
-        GlobalHotkeyLock?.Release();
+        _globalHotkeyLock?.Release();
 
         base.RemoveSelf();
     }
 
-    private ManagedLock? GlobalHotkeyLock;
+    private ManagedLock? _globalHotkeyLock;
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         Width = (Width + resize.X).AtLeast(8);
@@ -215,32 +215,32 @@ internal sealed class EditTileDataWindow : Window {
                 grid.SafeReplaceTile(c, x, y, out char orig);
             }
 
-        Camera.Move(-move);
+        _camera.Move(-move);
     };
 
-    private void Undo() => History.Undo();
-    private void Redo() => History.Redo();
+    private void Undo() => _history.Undo();
+    private void Redo() => _history.Redo();
 
     protected override void Render() {
         base.Render();
 
         var pos = ImGui.GetWindowPos() + ImGui.GetCursorPos();
-        Input.Mouse.Offset = new((int) -pos.X, (int) -pos.Y);
-        Input.Update(Time.Delta);
+        _input.Mouse.Offset = new((int) -pos.X, (int) -pos.Y);
+        _input.Update(Time.Delta);
 
         if (ImGui.IsWindowHovered()) {
-            Hotkeys.Update();
-            GlobalHotkeyLock?.SetActive(true);
+            _hotkeys.Update();
+            _globalHotkeyLock?.SetActive(true);
 
-            Camera.Viewport = new Viewport((int) pos.X, (int) pos.Y, 800, 800);
-            Camera.HandleMouseMovement(Input);
+            _camera.Viewport = new Viewport((int) pos.X, (int) pos.Y, 800, 800);
+            _camera.HandleMouseMovement(_input);
 
-            Tools.Update(Camera, FakeRoom);
+            _tools.Update(_camera, _fakeRoom);
 
             NoMove = true;
         } else {
             NoMove = false;
-            GlobalHotkeyLock?.SetActive(false);
+            _globalHotkeyLock?.SetActive(false);
         }
 
         var imgHeight = ImGui.GetContentRegionAvail().Y.AtLeast(1);
@@ -248,18 +248,18 @@ internal sealed class EditTileDataWindow : Window {
 
         // prevent scrolling the internal part of the window
         ImGui.BeginChild("##", new(), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoInputs);
-        ImGuiManager.XnaWidget(XnaBufferID, imgWidth, (int) imgHeight, () => {
-            Sprites = Tilegrid.GetSprites();// Autotiler.GetSprites(default, Tiles, Color.White).ToList();
+        ImGuiManager.XnaWidget(_xnaBufferId, imgWidth, (int) imgHeight, () => {
+            _sprites = Tilegrid.GetSprites();// Autotiler.GetSprites(default, Tiles, Color.White).ToList();
 
-            ISprite.OutlinedRect(default, Tilegrid.Width * 8, Tilegrid.Height * 8, Color.White * 0.1f, Color.White, outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
+            ISprite.OutlinedRect(default, Tilegrid.Width * 8, Tilegrid.Height * 8, Color.White * 0.1f, Color.White, outlineWidth: (int) (1f / _camera.Scale).AtLeast(1)).Render();
 
             var ctx = SpriteRenderCtx.Default();
-            Sprites.Render(ctx);
+            _sprites.Render(ctx);
 
-            Tools.CurrentTool.Render(Camera, FakeRoom);
-        }, Camera);
+            _tools.CurrentTool.Render(_camera, _fakeRoom);
+        }, _camera);
         ImGui.SameLine();
-        Tools.CurrentTool.RenderGui(new(ImGui.GetContentRegionAvail().X, imgHeight + ImGui.GetFrameHeightWithSpacing()), id: "##fancyTileToolList");
+        _tools.CurrentTool.RenderGui(new(ImGui.GetContentRegionAvail().X, imgHeight + ImGui.GetFrameHeightWithSpacing()), id: "##fancyTileToolList");
         ImGui.EndChild();
 
     }

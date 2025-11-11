@@ -72,7 +72,7 @@ public sealed class Colorgrade {
         }
         
         var percent = float.Clamp(p, 0f, 1f);
-        var graphics = GFX.Batch.GraphicsDevice;
+        var graphics = Gfx.Batch.GraphicsDevice;
         
         if (from == to || percent <= 0f)
         {

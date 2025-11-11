@@ -4,7 +4,7 @@ using Rysy.Graphics;
 namespace Rysy.Entities;
 
 [CustomEntity("kevins_pc")]
-public sealed class KevinsPC : Entity, IPlaceable {
+public sealed class KevinsPc : Entity, IPlaceable {
     public override int Depth => 8999;
 
     public override IEnumerable<ISprite> GetSprites() {

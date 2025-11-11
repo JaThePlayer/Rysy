@@ -18,7 +18,7 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
         2 => "fcdc3a",
         3 => "38e04e",
         _ => "49aaf0",
-    }).FromRGB();
+    }).FromRgb();
 
     private Sprite GetSprite(Vector2 pos, NineSliceLocation loc) {
         var (sx, sy) = loc switch {
@@ -32,10 +32,10 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
             NineSliceLocation.BottomMiddle => (8, 16),
             NineSliceLocation.BottomRight => (16, 16),
 
-            NineSliceLocation.InnerCorner_UpRight => (24, 0),
-            NineSliceLocation.InnerCorner_UpLeft => (24, 8),
-            NineSliceLocation.InnerCorner_DownRight => (24, 16),
-            NineSliceLocation.InnerCorner_DownLeft => (24, 24),
+            NineSliceLocation.InnerCornerUpRight => (24, 0),
+            NineSliceLocation.InnerCornerUpLeft => (24, 8),
+            NineSliceLocation.InnerCornerDownRight => (24, 16),
+            NineSliceLocation.InnerCornerDownLeft => (24, 24),
             _ => throw new NotImplementedException(),
         };
 

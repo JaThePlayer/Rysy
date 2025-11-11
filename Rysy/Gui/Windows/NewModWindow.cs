@@ -12,7 +12,7 @@ internal sealed partial class NewModWindow : Window {
     private static partial Regex NameRegex();
     
     private string _modName = "";
-    private string _binFilename => _modName;
+    private string BinFilename => _modName;
     private string _modAuthor = "";
 
     private string _mapEnglishName = "";
@@ -175,8 +175,8 @@ internal sealed partial class NewModWindow : Window {
                 WriteFile(fs, "", f);
             }
 
-            var map = Map.NewMap(_binFilename);
-            map.Filepath = Path.Combine(fs.Root, "Maps", _modAuthor, _modName, $"{_binFilename}.bin");
+            var map = Map.NewMap(BinFilename);
+            map.Filepath = Path.Combine(fs.Root, "Maps", _modAuthor, _modName, $"{BinFilename}.bin");
            // map.Meta.Sprites = $"Graphics/{_modAuthor}/{_modName}XMLs/Sprites.xml";
            // map.Meta.ForegroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/ForegroundTiles.xml";
            // map.Meta.BackgroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/BackgroundTiles.xml";
@@ -220,7 +220,7 @@ internal sealed partial class NewModWindow : Window {
                 new ("Checkpoints", [
                     new(_modAuthor, [
                         new(_modName, [
-                            new(_binFilename, [
+                            new(BinFilename, [
                                 new ("A", [])
                             ]),
                         ])
@@ -242,7 +242,7 @@ internal sealed partial class NewModWindow : Window {
         new("Maps", [
             new(_modAuthor, [
                 new(_modName, [
-                    new($"{_binFilename}.bin"),
+                    new($"{BinFilename}.bin"),
                 ])
             ])
         ]),
@@ -252,7 +252,7 @@ internal sealed partial class NewModWindow : Window {
     
     private string GetEnglishDialogContents() => $"""
     {_modAuthor}_{_modName}={_levelsetEnglishName}
-    {_modAuthor}_{_modName}_{_binFilename}={_mapEnglishName}
+    {_modAuthor}_{_modName}_{BinFilename}={_mapEnglishName}
     """;
     
     private string GetEverestYamlContents() => $"""

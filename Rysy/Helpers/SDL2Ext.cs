@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Rysy.Helpers;
 
-public static partial class SDL2Ext {
+public static partial class Sdl2Ext {
     [LibraryImport("SDL2", EntryPoint = "SDL_GetClipboardText")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static unsafe partial byte* SDL_GetClipboardText();

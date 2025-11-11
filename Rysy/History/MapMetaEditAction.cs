@@ -1,12 +1,12 @@
 ﻿namespace Rysy.History;
 
 public record MapMetaEditAction(MapMetadata New) : IHistoryAction {
-    private MapMetadata Orig;
+    private MapMetadata _orig;
 
     public bool Apply(Map map) {
-        Orig = map.Meta;
+        _orig = map.Meta;
 
-        if (Orig == New)
+        if (_orig == New)
             return false;
 
         map.Meta = New;
@@ -15,6 +15,6 @@ public record MapMetaEditAction(MapMetadata New) : IHistoryAction {
     }
 
     public void Undo(Map map) {
-        map.Meta = Orig;
+        map.Meta = _orig;
     }
 }

@@ -13,9 +13,9 @@ internal sealed class FileVirtTexture : VirtTexture {
     protected override Task? QueueLoad() {
         return Task.Run(() => {
             try {
-                _texture = FnaMonogameCompat.Texture2DFromFile(RysyState.GraphicsDevice, Filename);
-                ClipRect = new(0, 0, _texture.Width, _texture.Height);
-                _state = State.Loaded;
+                LoadedTexture = FnaMonogameCompat.Texture2DFromFile(RysyState.GraphicsDevice, Filename);
+                ClipRect = new(0, 0, LoadedTexture.Width, LoadedTexture.Height);
+                State = States.Loaded;
             } catch (Exception e) {
                 Logger.Write("FileVirtTexture", LogLevel.Error, $"Failed loading file texture {this}, {e}");
                 throw;
@@ -27,7 +27,7 @@ internal sealed class FileVirtTexture : VirtTexture {
     protected override bool TryPreloadClipRect() {
         using var stream = File.OpenRead(Filename);
 
-        if (PreloadSizeFromPNG(stream, Filename, out int w, out int h)) {
+        if (PreloadSizeFromPng(stream, Filename, out int w, out int h)) {
             ClipRect = new(0, 0, w, h);
             return true;
         } else {
@@ -35,7 +35,7 @@ internal sealed class FileVirtTexture : VirtTexture {
         }
     }
 
-    public static bool PreloadSizeFromPNG(Stream stream, string filename, out int w, out int h) {
+    public static bool PreloadSizeFromPng(Stream stream, string filename, out int w, out int h) {
         w = 0;
         h = 0;
         using var binaryReader = new BinaryReader(stream);
@@ -53,8 +53,8 @@ internal sealed class FileVirtTexture : VirtTexture {
             return false;
         }
 
-        uint IHDRMarker = binaryReader.ReadUInt32();
-        if (IHDRMarker != 1380206665u) {
+        uint ihdrMarker = binaryReader.ReadUInt32();
+        if (ihdrMarker != 1380206665u) {
             Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"PNG IHDR marker mismatch for {filename.CorrectSlashes()} - got {firstChunkLen:0xX8}, expected 0x52444849");
             return false;
         }

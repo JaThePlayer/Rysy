@@ -164,14 +164,14 @@ public enum SelectionLayer {
     None = 0,
     Entities = 1 << 0,
     Triggers = 1 << 1,
-    FGDecals = 1 << 2,
-    BGDecals = 1 << 3,
-    FGTiles = 1 << 4,
-    BGTiles = 1 << 5,
+    FgDecals = 1 << 2,
+    BgDecals = 1 << 3,
+    FgTiles = 1 << 4,
+    BgTiles = 1 << 5,
     Rooms = 1 << 6,
 
     // intentionally omits "Rooms"
-    All = Entities | Triggers | FGDecals | BGDecals | FGTiles | BGTiles,
+    All = Entities | Triggers | FgDecals | BgDecals | FgTiles | BgTiles,
 }
 
 public static class SelectionLayerExt {
@@ -180,10 +180,10 @@ public static class SelectionLayerExt {
             SelectionLayer.None => nameof(SelectionLayer.None),
             SelectionLayer.Entities => nameof(SelectionLayer.Entities),
             SelectionLayer.Triggers => nameof(SelectionLayer.Triggers),
-            SelectionLayer.FGDecals => nameof(SelectionLayer.FGDecals),
-            SelectionLayer.BGDecals => nameof(SelectionLayer.BGDecals),
-            SelectionLayer.FGTiles => nameof(SelectionLayer.FGTiles),
-            SelectionLayer.BGTiles => nameof(SelectionLayer.BGTiles),
+            SelectionLayer.FgDecals => nameof(SelectionLayer.FgDecals),
+            SelectionLayer.BgDecals => nameof(SelectionLayer.BgDecals),
+            SelectionLayer.FgTiles => nameof(SelectionLayer.FgTiles),
+            SelectionLayer.BgTiles => nameof(SelectionLayer.BgTiles),
             SelectionLayer.Rooms => nameof(SelectionLayer.Rooms),
             SelectionLayer.All => nameof(SelectionLayer.All),
             _ => layer.ToString(),
@@ -220,18 +220,18 @@ public sealed record class RectangleSelection : ISelectionCollider {
 }
 
 public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T : ITextureSprite {
-    private Vector2 DrawOffset;
-    private Point SizeOffset;
+    private Vector2 _drawOffset;
+    private Point _sizeOffset;
 
-    private Rectangle? _Rect;
+    private Rectangle? _rect;
 
     public Rectangle Rect {
         get {
-            if (_Rect is { } r)
+            if (_rect is { } r)
                 return r;
 
             if (GetSpriteRenderRect() is { } correctRect) {
-                _Rect = correctRect;
+                _rect = correctRect;
                 return correctRect;
             }
 
@@ -241,11 +241,11 @@ public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T :
     }
 
     public void MoveBy(Vector2 offset) {
-        DrawOffset += offset;
+        _drawOffset += offset;
     }
 
     public void ResizeBy(Point offset) {
-        SizeOffset += offset;
+        _sizeOffset += offset;
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) {
@@ -261,47 +261,47 @@ public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T :
     }
 
     private Rectangle? GetSpriteRenderRect() {
-        return Sprite.GetRenderRect()?.MovedBy(DrawOffset).AddSize(SizeOffset);
+        return Sprite.GetRenderRect()?.MovedBy(_drawOffset).AddSize(_sizeOffset);
     }
 }
 
 public sealed class MergedSpriteSelection : ISelectionCollider {
-    List<Sprite> Sprites;
+    List<Sprite> _sprites;
 
     public MergedSpriteSelection(IEnumerable<ISprite> sprites) {
-        Sprites = sprites.OfType<Sprite>().ToList();
+        _sprites = sprites.OfType<Sprite>().ToList();
     }
 
-    private Vector2 DrawOffset;
-    private Point SizeOffset;
+    private Vector2 _drawOffset;
+    private Point _sizeOffset;
 
     public Rectangle Rect => GetRectangle();
 
     public void MoveBy(Vector2 offset) {
-        DrawOffset += offset;
+        _drawOffset += offset;
     }
 
     public void ResizeBy(Point offset) {
-        SizeOffset += offset;
+        _sizeOffset += offset;
     }
 
     private Rectangle GetRectangle() {
-        var rects = Sprites.SelectWhereNotNull(s => s.GetRenderRect());
+        var rects = _sprites.SelectWhereNotNull(s => s.GetRenderRect());
 
         return RectangleExt.Merge(rects);
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) {
-        return GetRectangle().MovedBy(DrawOffset).AddSize(SizeOffset).Intersects(roomPos);
+        return GetRectangle().MovedBy(_drawOffset).AddSize(_sizeOffset).Intersects(roomPos);
     }
 
     public void Render(Color c) {
         if (GetRectangle() is { } r)
-            ISprite.OutlinedRect(r.MovedBy(DrawOffset), c * 0.4f, c).Render();
+            ISprite.OutlinedRect(r.MovedBy(_drawOffset), c * 0.4f, c).Render();
     }
     
     public void RenderHollow(Color c) {
         if (GetRectangle() is { } r)
-            ISprite.OutlinedRect(r.MovedBy(DrawOffset), Color.Transparent, c).Render();
+            ISprite.OutlinedRect(r.MovedBy(_drawOffset), Color.Transparent, c).Render();
     }
 }

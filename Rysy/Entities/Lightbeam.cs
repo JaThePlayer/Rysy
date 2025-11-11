@@ -13,7 +13,7 @@ public sealed class Lightbeam : Entity, IPlaceable {
     public override bool ResizableY => true;
 
     public override IEnumerable<ISprite> GetSprites() {
-        var texture = GFX.Atlas["util/lightbeam"];
+        var texture = Gfx.Atlas["util/lightbeam"];
         var color = new Color(0.8f, 1.0f, 1.0f, 0.4f);
         var angle = Float("rotation").ToRad();
         var (w, h) = (Width, Height);

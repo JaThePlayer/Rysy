@@ -16,13 +16,13 @@ public struct PopupCtx {
 public static class SelectionContextWindowRegistry {
     private sealed class PopupInfo {
         public SelectionLayer Layer;
-        public string PopupID;
+        public string PopupId;
 
         public ISelectionHandler Main;
         public List<Selection> Selections;
     }
 
-    private static string LayerToPopupID(SelectionLayer layer)
+    private static string LayerToPopupId(SelectionLayer layer)
         => $"context_window_{layer}";
 
     private static Dictionary<SelectionLayer, ContextWindowDraw> DrawFunctions = new();
@@ -53,16 +53,16 @@ public static class SelectionContextWindowRegistry {
     internal static void Init() {
         DrawFunctions.Clear();
 
-        AddHandler(SelectionLayer.FGTiles, RemoveAll);
-        AddHandler(SelectionLayer.BGTiles, RemoveAll);
+        AddHandler(SelectionLayer.FgTiles, RemoveAll);
+        AddHandler(SelectionLayer.BgTiles, RemoveAll);
         AddHandler(SelectionLayer.Entities, RemoveAll);
         AddHandler(SelectionLayer.Triggers, RemoveAll);
-        AddHandler(SelectionLayer.BGDecals, RemoveAll);
-        AddHandler(SelectionLayer.FGDecals, RemoveAll);
+        AddHandler(SelectionLayer.BgDecals, RemoveAll);
+        AddHandler(SelectionLayer.FgDecals, RemoveAll);
         AddHandler(SelectionLayer.Rooms, RemoveAll);
 
-        AddHandler(SelectionLayer.FGTiles, ConvertTilesToEntity(TileLayer.FG));
-        AddHandler(SelectionLayer.BGTiles, ConvertTilesToEntity(TileLayer.BG));
+        AddHandler(SelectionLayer.FgTiles, ConvertTilesToEntity(TileLayer.Fg));
+        AddHandler(SelectionLayer.BgTiles, ConvertTilesToEntity(TileLayer.Bg));
     }
 
     private static Cache<List<(string, Type, TileLayer)>>? TilegridEntityTypes;
@@ -70,18 +70,18 @@ public static class SelectionContextWindowRegistry {
     public static void Render(SelectionTool selectionTool, Room room) {
         while (NewPopupQueue.TryDequeue(out var incomingPopup)) {
             CurrentPopups.Add(incomingPopup);
-            ImGui.OpenPopup(incomingPopup.PopupID);
+            ImGui.OpenPopup(incomingPopup.PopupId);
         }
 
         for (int i = CurrentPopups.Count - 1; i >= 0; i--) {
             var popup = CurrentPopups[i];
 
-            if (!ImGui.IsPopupOpen(popup.PopupID)) {
+            if (!ImGui.IsPopupOpen(popup.PopupId)) {
                 CurrentPopups.Remove(popup);
                 continue;
             }
 
-            if (ImGui.BeginPopupContextWindow(popup.PopupID, ImGuiPopupFlags.MouseButtonRight)) {
+            if (ImGui.BeginPopupContextWindow(popup.PopupId, ImGuiPopupFlags.MouseButtonRight)) {
                 DrawFunctions[popup.Layer](popup.Main, popup.Selections, new() {
                     Room = room,
                     SelectionTool = selectionTool,
@@ -99,12 +99,12 @@ public static class SelectionContextWindowRegistry {
             return;
         }
 
-        var id = LayerToPopupID(layer);
+        var id = LayerToPopupId(layer);
         NewPopupQueue.Enqueue(new PopupInfo() {
             Main = main,
             Selections = all.ToList(),
             Layer = layer,
-            PopupID = id,
+            PopupId = id,
         });
     }
 

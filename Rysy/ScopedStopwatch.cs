@@ -11,8 +11,8 @@ public sealed class ScopedStopwatch : IDisposable {
     public Stopwatch Watch;
     public string Message;
 
-    private string CallerMethod, CallerFile;
-    private int CallerLineNumber;
+    private string _callerMethod, _callerFile;
+    private int _callerLineNumber;
 
     public ScopedStopwatch(string msg, 
         [CallerMemberName] string callerMethod = "",
@@ -22,12 +22,12 @@ public sealed class ScopedStopwatch : IDisposable {
         Message = msg;
         Watch = Stopwatch.StartNew();
 
-        (CallerMethod, CallerFile, CallerLineNumber) = (callerMethod, callerFile, lineNumber);
+        (_callerMethod, _callerFile, _callerLineNumber) = (callerMethod, callerFile, lineNumber);
     }
 
     public void Dispose() {
         Watch.Stop();
 
-        Logger.Write("ScopedStopwatch", LogLevel.Debug, $"{Message}: {Watch.Elapsed.TotalMilliseconds}ms", CallerMethod, CallerFile, CallerLineNumber);
+        Logger.Write("ScopedStopwatch", LogLevel.Debug, $"{Message}: {Watch.Elapsed.TotalMilliseconds}ms", _callerMethod, _callerFile, _callerLineNumber);
     }
 }

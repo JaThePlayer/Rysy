@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("movingPlatform")]
 [CustomEntity("sinkingPlatform")]
-public sealed class Platform : Entity, IMultiSIDPlaceable {
+public sealed class Platform : Entity, IMultiSidPlaceable {
     public override int Depth => 1;
 
     public override Range NodeLimits => Name == "movingPlatform" ? 1..1 : 0..0;
@@ -51,7 +51,7 @@ public sealed class Platform : Entity, IMultiSIDPlaceable {
         var angle = (centerTo - centerFrom).Normalized();
         var perpendicular = new Vector2(-angle.Y, angle.X);
 
-        var line = ISprite.LineFloored(centerFrom, centerTo, "2a1923".FromRGB()) with {
+        var line = ISprite.LineFloored(centerFrom, centerTo, "2a1923".FromRgb()) with {
             Depth = 9001,
         };
 
@@ -59,7 +59,7 @@ public sealed class Platform : Entity, IMultiSIDPlaceable {
         yield return line.MovedBy(-angle);
         yield return line.MovedBy(-angle + perpendicular);
         yield return line with {
-            Color = "160b12".FromRGB(),
+            Color = "160b12".FromRgb(),
         };
     }
 

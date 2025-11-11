@@ -14,7 +14,7 @@ public class CrumbleBlocks : LoopingSpriteSliceEntity, ISolid, IPlaceable {
     public override bool ResizableX => true;
 
     public static FieldList GetFields() => new(new {
-        texture = new PathField("default", GFX.Atlas, @"objects/crumbleBlock/(.*)").AllowEdits(),  //Fields.Dropdown("default", () => KnownPaths.Value.Value, editable: true),
+        texture = new PathField("default", Gfx.Atlas, @"objects/crumbleBlock/(.*)").AllowEdits(),  //Fields.Dropdown("default", () => KnownPaths.Value.Value, editable: true),
     });
 
     public static PlacementList GetPlacements() => new("default");

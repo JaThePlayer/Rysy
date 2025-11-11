@@ -7,7 +7,7 @@ namespace Rysy.Entities;
 internal sealed class ConditionBlock : TileEntity, IPlaceable {
     public override char Tiletype => Char("tileType", '3');
 
-    public override TileLayer Layer => TileLayer.FG;
+    public override TileLayer Layer => TileLayer.Fg;
 
     public override int Depth => -13000;
 

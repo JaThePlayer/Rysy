@@ -248,7 +248,7 @@ public sealed class SettingsWindow : Window {
         ImGui.EndTabItem();
     }
 
-    private string ModBarSearch = "";
+    private string _modBarSearch = "";
     private void ModBar() {
         if (!ImGui.BeginTabItem("Mods")) {
             return;
@@ -272,7 +272,7 @@ public sealed class SettingsWindow : Window {
             mod = modsWithSettings.First();
         }
 
-        if (ImGuiManager.Combo("Selected Mod", ref mod!, modsWithSettings, m => new Searchable(m?.DisplayName ?? ""), ref ModBarSearch)) {
+        if (ImGuiManager.Combo("Selected Mod", ref mod!, modsWithSettings, m => new Searchable(m?.DisplayName ?? ""), ref _modBarSearch)) {
             _selectedMod = mod;
         }
 

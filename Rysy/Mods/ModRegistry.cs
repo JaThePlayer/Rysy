@@ -15,9 +15,9 @@ public static class ModRegistry {
 
     internal static ModAssemblyScanner? ModAssemblyScannerInstance;
 
-    private static Dictionary<string, ModMeta> _Mods { get; set; } = new(StringComparer.Ordinal);
+    private static Dictionary<string, ModMeta> ModsMutable { get; set; } = new(StringComparer.Ordinal);
 
-    public static IReadOnlyDictionary<string, ModMeta> Mods => _Mods.AsReadOnly();
+    public static IReadOnlyDictionary<string, ModMeta> Mods => ModsMutable.AsReadOnly();
 
     public static LayeredFilesystem Filesystem { get; private set; } = new();
     
@@ -27,7 +27,7 @@ public static class ModRegistry {
     /// Tries to get a <see cref="ModMeta"/> for a mod using its everest.yaml name.
     /// Returns null if the mod is not loaded.
     /// </summary>
-    public static ModMeta? GetModByName(string modName) => _Mods.GetValueOrDefault(modName ?? "");
+    public static ModMeta? GetModByName(string modName) => ModsMutable.GetValueOrDefault(modName ?? "");
 
     /// <summary>
     /// Tries to get the settings of mod <paramref name="modName"/>. If the mod doesn't exist, null is returned.
@@ -64,7 +64,7 @@ public static class ModRegistry {
         var unbackslashed = Interpolator.Shared.Clone(realPath);
         unbackslashed.Replace('\\', '/');
 
-        foreach (var (_, mod) in _Mods) {
+        foreach (var (_, mod) in Mods) {
             if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
                 // the root is correct, check if the file actually exists there though
                 var vpath = unbackslashed[mod.Filesystem.Root.Length..].TrimStart('/').ToString();
@@ -83,7 +83,7 @@ public static class ModRegistry {
         var unbackslashed = Interpolator.Shared.Clone(realPath);
         unbackslashed.Replace('\\', '/');
 
-        foreach (var (_, mod) in _Mods) {
+        foreach (var (_, mod) in Mods) {
             if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
                 var vpath = unbackslashed[mod.Filesystem.Root.Length..].TrimStart('/').ToString();
                 mod.Filesystem.NotifyFileCreated(vpath);
@@ -95,7 +95,7 @@ public static class ModRegistry {
         task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
-        _Mods.Clear();
+        ModsMutable.Clear();
 
         Filesystem = new();
 
@@ -141,10 +141,10 @@ public static class ModRegistry {
     {
         Filesystem.AddMod(meta);
 
-        if (_Mods.TryGetValue(meta.Name, out var prevMod)) {
+        if (ModsMutable.TryGetValue(meta.Name, out var prevMod)) {
             Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
         }
-        _Mods[meta.Name] = meta;
+        ModsMutable[meta.Name] = meta;
     }
 
     public static ModMeta CreateNewMod(string id) {
@@ -193,7 +193,7 @@ public static class ModRegistry {
     private static void UnloadAllMods() {
         IsLoaded = false;
 
-        foreach (var (_, mod) in _Mods) {
+        foreach (var (_, mod) in ModsMutable) {
             mod.Module?.Unload();
             mod.PluginAssembly = null;
         }

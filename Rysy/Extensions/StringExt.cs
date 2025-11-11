@@ -155,7 +155,7 @@ public static partial class StringExt {
 
     private static readonly char[] HumanizeReplacedChars = new[] { '.', '_'};
 
-    private static readonly ConcurrentDictionary<string, string> _humanizeCache = new();
+    private static readonly ConcurrentDictionary<string, string> HumanizeCache = new();
 
     /// <summary>
     /// Combines <see cref="SplitPascalCase(string)"/> and <see cref="UppercaseFirst(string)"/>
@@ -166,7 +166,7 @@ public static partial class StringExt {
         if (text is null)
             return "";
 
-        return _humanizeCache.GetOrAdd(text, static text => text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "");
+        return HumanizeCache.GetOrAdd(text, static text => text?.TrimStart('_').ReplaceAll(HumanizeReplacedChars, ' ').SplitPascalCase().UppercaseFirst() ?? "");
     }
 
     /// <summary>

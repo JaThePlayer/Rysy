@@ -74,7 +74,7 @@ public sealed partial class Parallax : Style, IPlaceable {
             }),
         blendmode = Fields.Dropdown("alphablend", BlendModes.Select(kv => kv.Key).ToList(), editable: true),
         alpha = 1f,
-        color = Fields.RGB(Color.White).AllowNull(),
+        color = Fields.Rgb(Color.White).AllowNull(),
         scrollx = 0f,
         scrolly = 0f,
         speedx = 0f,
@@ -185,20 +185,20 @@ public sealed partial class Parallax : Style, IPlaceable {
         return baseSprite.CreateRepeating(bounds, Color * fade);
     }
 
-    public override SpriteBatchState? GetSpriteBatchState() => GFX.GetCurrentBatchState() with 
+    public override SpriteBatchState? GetSpriteBatchState() => Gfx.GetCurrentBatchState() with 
     { 
         SamplerState = SamplerState.PointWrap,
         BlendState = Blend,
     };
 
-    private static ListenableDictionary<string, BlendState> _BlendModes = new(StringComparer.OrdinalIgnoreCase) {
+    private static readonly ListenableDictionary<string, BlendState> BlendModesMutable = new(StringComparer.OrdinalIgnoreCase) {
         ["alphablend"] = BlendState.AlphaBlend,
         ["additive"] = BlendState.Additive,
     };
 
-    public static ReadOnlyListenableDictionary<string, BlendState> BlendModes => _BlendModes;
+    public static ReadOnlyListenableDictionary<string, BlendState> BlendModes => BlendModesMutable;
 
     public static void RegisterBlendMode(string name, BlendState state) {
-        _BlendModes[name] = state;
+        BlendModesMutable[name] = state;
     }
 }

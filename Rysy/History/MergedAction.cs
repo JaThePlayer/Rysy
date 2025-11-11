@@ -14,28 +14,28 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
         Actions = new(actions.Where(act => act is not null)!);
     }
 
-    private bool[] Applied;
+    private bool[] _applied;
 
     internal static MergedAction Preapplied(List<IHistoryAction> actions) {
         var act = new MergedAction();
         act.Actions = actions;
-        act.Applied = new bool[act.Actions.Count];
-        Array.Fill(act.Applied, true);
+        act._applied = new bool[act.Actions.Count];
+        Array.Fill(act._applied, true);
 
         return act;
     }
 
     public bool Apply(Map map) {
-        Applied ??= new bool[Actions.Count];
+        _applied ??= new bool[Actions.Count];
         
-        Array.Clear(Applied);
+        Array.Clear(_applied);
         var ret = false;
 
         for (int i = 0; i < Actions.Count; i++) {
             var action = Actions[i];
 
             var r = action.Apply(map);
-            Applied[i] = r;
+            _applied[i] = r;
             ret |= r;
         }
 
@@ -44,7 +44,7 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
 
     public void Undo(Map map) {
         for (int i = Actions.Count - 1; i >= 0; i--) {
-            if (Applied[i]) {
+            if (_applied[i]) {
                 Actions[i].Undo(map);
             }
         }

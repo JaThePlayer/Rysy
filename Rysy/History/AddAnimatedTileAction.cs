@@ -3,10 +3,10 @@
 namespace Rysy.History;
 
 internal sealed class AddAnimatedTileAction(string xmlContents) : IHistoryAction {
-    List<string> createdTiles = [];
+    List<string> _createdTiles = [];
     
     public bool Apply(Map map) {
-        createdTiles.Clear();
+        _createdTiles.Clear();
         
         var xml = map.AnimatedTiles.Xml;
 
@@ -44,12 +44,12 @@ internal sealed class AddAnimatedTileAction(string xmlContents) : IHistoryAction
         if (map.AnimatedTiles.ReadXmlNode(newEl) is not { } newTile)
             return false;
         map.AnimatedTiles.Xml.DocumentElement!.AppendChild(newEl);
-        createdTiles.Add(newTile.Name);
+        _createdTiles.Add(newTile.Name);
         return true;
     }
 
     public void Undo(Map map) {
-        foreach (var toRemoveName in createdTiles) {
+        foreach (var toRemoveName in _createdTiles) {
             map.AnimatedTiles.Remove(toRemoveName);
         }
         

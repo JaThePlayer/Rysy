@@ -25,7 +25,7 @@ public static class RenderTargetPool {
                 }
             }
 
-            var target = new RenderTarget2D(GFX.Batch.GraphicsDevice, w, h);
+            var target = new RenderTarget2D(Gfx.Batch.GraphicsDevice, w, h);
             var newRef = new RenderTargetPoolRef(target);
             newRef.AddRef();
             Items.Add(newRef);

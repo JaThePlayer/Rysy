@@ -6,11 +6,11 @@ using DepthValue = (int Value, string Name);
 namespace Rysy.Gui.FieldTypes;
 
 public sealed record NullableDepthField : Field {
-    private object? Default;
+    private object? _default;
 
-    public override object GetDefault() => Default!;
+    public override object GetDefault() => _default!;
 
-    public override void SetDefault(object newDefault) => Default = newDefault;
+    public override void SetDefault(object newDefault) => _default = newDefault;
 
     private string _search = "";
     private ComboCache<DepthValue> _comboCache = new();

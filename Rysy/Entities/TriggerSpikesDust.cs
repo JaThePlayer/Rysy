@@ -8,24 +8,24 @@ namespace Rysy.Entities;
 [CustomEntity("triggerSpikesDown")]
 [CustomEntity("triggerSpikesLeft")]
 [CustomEntity("triggerSpikesRight")]
-public sealed class TriggerSpikesDust : Entity, IMultiSIDPlaceable {
+public sealed class TriggerSpikesDust : Entity, IMultiSidPlaceable {
     public override int Depth => 0;
     public override bool ResizableX => Direction(Name) is SpikeHelper.Direction.Up or SpikeHelper.Direction.Down;
     public override bool ResizableY => Direction(Name) is SpikeHelper.Direction.Left or SpikeHelper.Direction.Right;
 
     public override Entity? TryFlipHorizontal() => Direction(Name) switch {
-        SpikeHelper.Direction.Left => CloneWith(pl => pl.SID = "triggerSpikesRight"),
-        SpikeHelper.Direction.Right => CloneWith(pl => pl.SID = "triggerSpikesLeft"),
+        SpikeHelper.Direction.Left => CloneWith(pl => pl.Sid = "triggerSpikesRight"),
+        SpikeHelper.Direction.Right => CloneWith(pl => pl.Sid = "triggerSpikesLeft"),
         _ => null,
     };
 
     public override Entity? TryFlipVertical() => Direction(Name) switch {
-        SpikeHelper.Direction.Up => CloneWith(pl => pl.SID = "triggerSpikesDown"),
-        SpikeHelper.Direction.Down => CloneWith(pl => pl.SID = "triggerSpikesUp"),
+        SpikeHelper.Direction.Up => CloneWith(pl => pl.Sid = "triggerSpikesDown"),
+        SpikeHelper.Direction.Down => CloneWith(pl => pl.Sid = "triggerSpikesUp"),
         _ => null,
     };
 
-    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSID(dir.AddRotationTo(Direction(Name)) switch {
+    public override Entity? TryRotate(RotationDirection dir) => CloneWith(pl => pl.WithSid(dir.AddRotationTo(Direction(Name)) switch {
         SpikeHelper.Direction.Up => "triggerSpikesUp",
         SpikeHelper.Direction.Down => "triggerSpikesDown",
         SpikeHelper.Direction.Left => "triggerSpikesLeft",

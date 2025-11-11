@@ -23,10 +23,10 @@ public sealed class PlaybackBillboard : Entity, IPlaceable {
             NineSliceLocation.BottomLeft => (0, 16),
             NineSliceLocation.BottomMiddle => (8, 16),
             NineSliceLocation.BottomRight => (16, 16),
-            NineSliceLocation.InnerCorner_UpRight => (32, 0),
-            NineSliceLocation.InnerCorner_UpLeft => (24, 0),
-            NineSliceLocation.InnerCorner_DownRight => (32, 16),
-            NineSliceLocation.InnerCorner_DownLeft => (24, 16),
+            NineSliceLocation.InnerCornerUpRight => (32, 0),
+            NineSliceLocation.InnerCornerUpLeft => (24, 0),
+            NineSliceLocation.InnerCornerDownRight => (32, 16),
+            NineSliceLocation.InnerCornerDownLeft => (24, 16),
             _ => (0, 0)
         };
 
@@ -39,10 +39,10 @@ public sealed class PlaybackBillboard : Entity, IPlaceable {
             (_, _, _, true, _, _, false, true, _) => NineSliceLocation.TopRight,
             (_, true, false, _, _, true, _, _, _) => NineSliceLocation.BottomLeft,
             (false, true, _, true, _, _, _, _, _) => NineSliceLocation.BottomRight,
-            (_, _, _, _, _, false, _, false, _) => NineSliceLocation.InnerCorner_UpLeft,
-            (_, _, _, false, _, _, _, false, _) => NineSliceLocation.InnerCorner_UpRight,
-            (_, false, _, _, _, false, _, _, _) => NineSliceLocation.InnerCorner_DownLeft,
-            (_, false, _, false, _, _, _, _, _) => NineSliceLocation.InnerCorner_DownRight,
+            (_, _, _, _, _, false, _, false, _) => NineSliceLocation.InnerCornerUpLeft,
+            (_, _, _, false, _, _, _, false, _) => NineSliceLocation.InnerCornerUpRight,
+            (_, false, _, _, _, false, _, _, _) => NineSliceLocation.InnerCornerDownLeft,
+            (_, false, _, false, _, _, _, _, _) => NineSliceLocation.InnerCornerDownRight,
 
             (_, _, _, _, _, _, _, false, _) => NineSliceLocation.TopMiddle,
             (_, _, _, _, _, false, _, _, _) => NineSliceLocation.Left,
@@ -77,7 +77,7 @@ public sealed class PlaybackBillboard : Entity, IPlaceable {
         var rect = Rectangle;
         yield return ISprite.Rect(rect, Color.Lerp(Color.DarkSlateBlue, Color.Black, 0.6f));
 
-        var noise = GFX.Atlas["util/noise"];
+        var noise = Gfx.Atlas["util/noise"];
         var nw = noise.Width;
         var nh = noise.Height;
 

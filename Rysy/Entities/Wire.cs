@@ -10,7 +10,7 @@ public class Wire : Entity, IPlaceable {
 
     public override Range NodeLimits => 1..1;
 
-    public Color Color => RGB("color", "595866");
+    public Color Color => Rgb("color", "595866");
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) => Array.Empty<ISprite>();
     public override IEnumerable<ISprite> GetNodePathSprites() => Array.Empty<ISprite>();
@@ -26,7 +26,7 @@ public class Wire : Entity, IPlaceable {
 
     public static FieldList GetFields() => new(new {
         above = false,
-        color = Fields.RGB("595866"),
+        color = Fields.Rgb("595866"),
         fixWindBehavior = Fields.Bool(false)
     });
 

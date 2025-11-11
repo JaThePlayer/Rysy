@@ -205,14 +205,14 @@ public static class Menubar {
             var p = Persistence.Instance;
             bool b;
 
-            b = p.FGTilesVisible;
+            b = p.FgTilesVisible;
             if (ImGui.Checkbox("FG Tiles", ref b)) {
-                p.FGTilesVisible = b;
+                p.FgTilesVisible = b;
             }
 
-            b = p.BGTilesVisible;
+            b = p.BgTilesVisible;
             if (ImGui.Checkbox("BG Tiles", ref b)) {
-                p.BGTilesVisible = b;
+                p.BgTilesVisible = b;
             }
 
             b = p.EntitiesVisible;
@@ -225,14 +225,14 @@ public static class Menubar {
                 p.TriggersVisible = b;
             }
 
-            b = p.FGDecalsVisible;
+            b = p.FgDecalsVisible;
             if (ImGui.Checkbox("FG Decals", ref b)) {
-                p.FGDecalsVisible = b;
+                p.FgDecalsVisible = b;
             }
 
-            b = p.BGDecalsVisible;
+            b = p.BgDecalsVisible;
             if (ImGui.Checkbox("BG Decals", ref b)) {
-                p.BGDecalsVisible = b;
+                p.BgDecalsVisible = b;
             }
 
             /*
@@ -298,7 +298,7 @@ public static class Menubar {
         }
 
         if (ImGui.MenuItem("GC").WithTooltip("Causes a very aggressive GC call")) {
-            GCHelper.VeryAggressiveGC();
+            GcHelper.VeryAggressiveGc();
         }
 
         /*

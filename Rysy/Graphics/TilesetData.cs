@@ -223,7 +223,7 @@ public sealed class TilesetData : IXmlBackedEntityData {
             
         var tileGrid = new char[previewSizePixels / 8, previewSizePixels / 8];
         tileGrid.Fill(Id);
-        _preview = Autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOOB: false);
+        _preview = Autotiler.GetSprites(Vector2.Zero, tileGrid, Color.White, tilesOob: false);
 
         return _preview;
     }

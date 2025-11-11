@@ -4,15 +4,15 @@ using Rysy.Graphics;
 namespace Rysy.Helpers;
 
 public abstract class TilegridEntity : Entity {
-    public virtual TileLayer Layer => TileLayer.FG;
+    public virtual TileLayer Layer => TileLayer.Fg;
 
     public virtual Color Color => Color.White;
 
     public override Point MinimumSize => new(8, 8);
 
     public override int Depth => Layer switch {
-        TileLayer.FG => Depths.FGTerrain - 1,
-        TileLayer.BG => Depths.BGTerrain - 1,
+        TileLayer.Fg => Depths.FGTerrain - 1,
+        TileLayer.Bg => Depths.BGTerrain - 1,
         _ => 0,
     };
 
@@ -20,8 +20,8 @@ public abstract class TilegridEntity : Entity {
         => Tilegrid.TileArrayFromString(widthTiles * 8, heightTiles * 8, gridString);
 
     public override IEnumerable<ISprite> GetSprites() {
-        if (CachedSprites is { })
-            return CachedSprites;
+        if (_cachedSprites is { })
+            return _cachedSprites;
 
         var tileData = Attr("tileData", "");
         if (string.IsNullOrWhiteSpace(tileData)) {
@@ -30,13 +30,13 @@ public abstract class TilegridEntity : Entity {
 
         var tiles = ParseTilegrid(tileData, Width / 8, Height / 8);
 
-        return CachedSprites = TileEntity.GetTilegrid(Room, Layer).Autotiler!.GetSprites(Pos, tiles, Color, tilesOOB: false);
+        return _cachedSprites = TileEntity.GetTilegrid(Room, Layer).Autotiler!.GetSprites(Pos, tiles, Color, tilesOob: false);
     }
 
     public override void OnChanged(EntityDataChangeCtx changed) {
         base.OnChanged(changed);
 
-        CachedSprites = null;
+        _cachedSprites = null;
     }
 
     public override Entity? TryFlipHorizontal()
@@ -73,5 +73,5 @@ public abstract class TilegridEntity : Entity {
         return cloned;
     }
 
-    private AutotiledSpriteList? CachedSprites;
+    private AutotiledSpriteList? _cachedSprites;
 }

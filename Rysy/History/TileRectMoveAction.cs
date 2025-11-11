@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.History;
 
 internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] Orig, char[,] ToMove, Point Offset) : IHistoryAction {
-    char[,] Old;
+    char[,] _old;
 
     public bool Apply(Map map) {
         var ox = Offset.X;
@@ -13,7 +13,7 @@ internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,]
         if (Rect.Width < 1 || Rect.Height < 1)
             return false;
 
-        Old = Grid.Tiles; // todo: avoid holding a reference to the entire tile grid...
+        _old = Grid.Tiles; // todo: avoid holding a reference to the entire tile grid...
 
         var cachedSprites = Grid.CachedSprites;
         
@@ -50,7 +50,7 @@ internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,]
 
     public void Undo(Map map) {
         var cachedSprites = Grid.CachedSprites;
-        Grid.Tiles = Old;
+        Grid.Tiles = _old;
 
         UpdateCache(cachedSprites);
     }

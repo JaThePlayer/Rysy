@@ -29,20 +29,20 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     /// </summary>
     public Func<TKey, string> Converter { get; set; }
 
-    private Dictionary<TKey, string?> Items = new();
+    private Dictionary<TKey, string?> _items = new();
 
     private string Translate(TKey key) {
-        if (!Items.TryGetValue(key, out var translationKey) || translationKey is null)
+        if (!_items.TryGetValue(key, out var translationKey) || translationKey is null)
             translationKey = Converter(key);
 
         return translationKey.TranslateOrHumanize(Prefix);
     }
 
-    public ICollection<TKey> Keys => Items.Keys;
+    public ICollection<TKey> Keys => _items.Keys;
 
-    public ICollection<string> Values => Items.Select(p => Translate(p.Key)).ToList();
+    public ICollection<string> Values => _items.Select(p => Translate(p.Key)).ToList();
 
-    public int Count => Items.Count;
+    public int Count => _items.Count;
 
     public bool IsReadOnly => false;
 
@@ -53,7 +53,7 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     /// </summary>
     public string this[TKey key] { 
         get => Translate(key); 
-        set => Items[key] = value; 
+        set => _items[key] = value; 
     }
 
     /// <summary>
@@ -61,24 +61,24 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     /// If <paramref name="value"/> is null, it will be automatically generated using the <see cref="Prefix"/>.
     /// </summary>
     public void Add(TKey key, string? value) {
-        Items.Add(key, value);
+        _items.Add(key, value);
     }
 
     /// <summary>
     /// Adds a new value to the dictionary. The translation key will be automatically generated using the <see cref="Prefix"/>.
     /// </summary>
     public void Add(TKey key) {
-        Items.Add(key, null);
+        _items.Add(key, null);
     }
 
-    public bool ContainsKey(TKey key) => Items.ContainsKey(key);
+    public bool ContainsKey(TKey key) => _items.ContainsKey(key);
 
     public bool Remove(TKey key) {
-        return Items.Remove(key);
+        return _items.Remove(key);
     }
 
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out string value) {
-        if (!Items.ContainsKey(key)) {
+        if (!_items.ContainsKey(key)) {
             value = null;
             return false;
         }
@@ -92,7 +92,7 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     }
 
     public void Clear() {
-        Items.Clear();
+        _items.Clear();
     }
 
     public bool Contains(KeyValuePair<TKey, string> item) {
@@ -108,7 +108,7 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     }
 
     public IEnumerator<KeyValuePair<TKey, string>> GetEnumerator() {
-        foreach (var item in Items) {
+        foreach (var item in _items) {
             yield return new(item.Key, Translate(item.Key));
         }
     }

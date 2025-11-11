@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("moveBlock")]
 public class MoveBlock : Entity, IPlaceable {
-    private static Color FillColor = "474070".FromRGB();
+    private static Color FillColor = "474070".FromRgb();
 
     public override int Depth => Depths.Solids;
     

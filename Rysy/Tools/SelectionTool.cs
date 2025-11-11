@@ -23,23 +23,23 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         RotationGesture,
     }
 
-    private States State = States.Idle;
+    private States _state = States.Idle;
 
-    private SelectRectangleGesture SelectionGestureHandler;
+    private SelectRectangleGesture _selectionGestureHandler;
 
-    private Point? MoveGestureStart, MoveGestureLastMousePos;
-    private Vector2 MoveGestureFinalDelta;
-    private NineSliceLocation MoveGestureGrabbedLocation;
+    private Point? _moveGestureStart, _moveGestureLastMousePos;
+    private Vector2 _moveGestureFinalDelta;
+    private NineSliceLocation _moveGestureGrabbedLocation;
 
-    private List<Selection>? CurrentSelections;
-    private List<Selection> SelectionsToHighlight = new();
+    private List<Selection>? _currentSelections;
+    private List<Selection> _selectionsToHighlight = new();
 
-    private SelectionLayer CustomLayer;
+    private SelectionLayer _customLayer;
 
     private static int ClickInPlaceIdx;
     
-    private Point? RotationGestureStart;
-    private float? RotationGestureLastAngle;
+    private Point? _rotationGestureStart;
+    private float? _rotationGestureLastAngle;
 
     public SelectionTool() {
     }
@@ -47,7 +47,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     public override void Init() {
         base.Init();
 
-        SelectionGestureHandler = new(Input);
+        _selectionGestureHandler = new(Input);
     }
 
     public override void InitHotkeys(HotkeyHandler handler) {
@@ -91,24 +91,24 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private void SelectAll() {
         if (EditorState.CurrentRoom is { } room) {
             Deselect();
-            CurrentSelections = room.GetSelectionsInRect(null, 
-                EditorLayers.ToolLayerToEnum(Layer, CustomLayer));
+            _currentSelections = room.GetSelectionsInRect(null, 
+                EditorLayers.ToolLayerToEnum(Layer, _customLayer));
         }
     }
     
     private void SelectAllSimilar() {
-        if (CurrentSelections is not { Count: > 0})
+        if (_currentSelections is not { Count: > 0})
             return;
         
         if (EditorState.CurrentRoom is { } room) {
-            var newSelections = room.GetSelectionsForSimilar(CurrentSelections[0].Handler);
+            var newSelections = room.GetSelectionsForSimilar(_currentSelections[0].Handler);
             Deselect();
-            CurrentSelections = newSelections;
+            _currentSelections = newSelections;
         }
     }
 
     private void CreatePrefab() {
-        if (CurrentSelections is not { } selections)
+        if (_currentSelections is not { } selections)
             return;
 
         if (CopypasteHelper.CopySelections(selections) is not { } copied)
@@ -138,7 +138,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void CutSelections() {
-        if (CurrentSelections is not { } selections) {
+        if (_currentSelections is not { } selections) {
             return;
         }
 
@@ -157,7 +157,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         if (selections != null) {
             Deselect();
-            CurrentSelections = selections;
+            _currentSelections = selections;
         }
 
         Input.Keyboard.ConsumeKeyClick(Microsoft.Xna.Framework.Input.Keys.LeftControl);
@@ -165,23 +165,23 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void CopySelections() {
-        CopypasteHelper.CopySelectionsToClipboard(CurrentSelections);
+        CopypasteHelper.CopySelectionsToClipboard(_currentSelections);
     }
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
-        if (CurrentSelections is { } selections) {
+        if (_currentSelections is { } selections) {
             ResizeSelectionsBy(resize.Mult(GridSize), move * GridSize, selections);
         }
     };
 
     private Action CreateMoveHandler(Vector2 offset, bool precise) => () => {
-        if (CurrentSelections is { } selections) {
+        if (_currentSelections is { } selections) {
             MoveSelectionsBy(precise ? offset : offset * GridSize, selections, NineSliceLocation.Middle);
         }
     };
 
     void ISelectionHotkeyTool.AddNode(Vector2? at) {
-        if (CurrentSelections is not { } selections) {
+        if (_currentSelections is not { } selections) {
             return;
         }
 
@@ -204,12 +204,12 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClearColliderCachesInSelections();
             History.ApplyNewAction(actions.MergeActions());
 
-            CurrentSelections = [..selections.Except(unselected).Concat(newSelections)];
+            _currentSelections = [..selections.Except(unselected).Concat(newSelections)];
         }
     }
 
     void ISelectionHotkeyTool.Flip(bool vertical) {
-        if (CurrentSelections is not { } selections) {
+        if (_currentSelections is not { } selections) {
             return;
         }
 
@@ -226,7 +226,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     void ISelectionHotkeyTool.Rotate(RotationDirection dir) {
-        if (CurrentSelections is not { } selections) {
+        if (_currentSelections is not { } selections) {
             return;
         }
 
@@ -279,7 +279,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     public void DeleteSelections() {
-        if (CurrentSelections is { } selections) {
+        if (_currentSelections is { } selections) {
             var action = selections.Select(s => s.Handler.DeleteSelf()).MergeActions();
             Deselect();
             ClearColliderCachesInSelections();
@@ -288,51 +288,49 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    private void ClearColliderCachesInSelections() => CurrentSelections?.ForEach(s => s.Handler.ClearCollideCache());
+    private void ClearColliderCachesInSelections() => _currentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
     public void Deselect() {
-        if (CurrentSelections is not { Count: > 0 })
+        if (_currentSelections is not { Count: > 0 })
             return;
 
-        foreach (var selection in CurrentSelections) {
+        foreach (var selection in _currentSelections) {
             selection.Handler.OnDeselected();
         }
 
         // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
-        CurrentSelections?.Clear();
-        CurrentSelections = null;
+        _currentSelections?.Clear();
+        _currentSelections = null;
 
         OnSelectionsChanged();
     }
 
     public void Deselect(ISelectionHandler handler) {
-        if (CurrentSelections is null)
+        if (_currentSelections is null)
             return;
 
-        var selection = CurrentSelections.Find(s => s.Handler == handler);
+        var selection = _currentSelections.Find(s => s.Handler == handler);
         if (selection is { }) {
-            CurrentSelections.Remove(selection);
+            _currentSelections.Remove(selection);
             handler.OnDeselected();
 
             OnSelectionsChanged();
         }
     }
 
-    private static readonly List<EditorLayer> _ValidLayers = new() {
+    public override List<EditorLayer> ValidLayers { get; } = [
         EditorLayers.Entities, EditorLayers.Triggers,
         EditorLayers.FgDecals, EditorLayers.BgDecals,
         EditorLayers.Fg, EditorLayers.Bg,
         EditorLayers.Room,
         EditorLayers.All, EditorLayers.CustomLayer
-    };
-
-    public override List<EditorLayer> ValidLayers => _ValidLayers;
+    ];
 
     public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         throw new NotImplementedException();
     }
 
-    public override IEnumerable<object>? GetMaterials(EditorLayer layer) => Array.Empty<object>();
+    public override IEnumerable<object> GetMaterials(EditorLayer layer) => [];
 
     public override string? SerializeMaterial(EditorLayer layer, object? material) {
         return null;
@@ -359,8 +357,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (Layer != EditorLayers.Room)
             return;
 
-        GFX.EndBatch();
-        GFX.BeginBatch(EditorState.Camera!);
+        Gfx.EndBatch();
+        Gfx.BeginBatch(EditorState.Camera!);
 
         var room = EditorState.CurrentRoom;
         if (Layer == EditorLayers.Room)
@@ -428,7 +426,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             return null;
         }
 
-        var exceptCurrent = selections.Except(CurrentSelections ?? []).ToList();
+        var exceptCurrent = selections.Except(_currentSelections ?? []).ToList();
         if (exceptCurrent.Count > 0)
             selections = exceptCurrent;
 
@@ -440,7 +438,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void DoRender(Camera camera, Room? room) {
-        if (CurrentSelections is not { Count: > 0 }) {
+        if (_currentSelections is not { Count: > 0 }) {
             // If we're in room selection mode, always select the current room if there are no other selections
             // We do this here instead of Update, as Update is not called when hovering over imgui elements
             if (Layer == EditorLayers.Room && EditorState.CurrentRoom is { } currentRoom) {
@@ -448,7 +446,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
         }
 
-        if (SelectionGestureHandler.CurrentRectangle is { } rect) {
+        if (_selectionGestureHandler.CurrentRectangle is { } rect) {
             DrawSelectionRect(rect);
         }
 
@@ -456,24 +454,24 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
         var selectionsUnderCursor = 
-            room?.GetSelectionsInRect(SelectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), 
-                EditorLayers.ToolLayerToEnum(Layer, CustomLayer)) ?? [];
+            room?.GetSelectionsInRect(_selectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), 
+                EditorLayers.ToolLayerToEnum(Layer, _customLayer)) ?? [];
 
         selectionsUnderCursor = GetSortedSelections(selectionsUnderCursor.Where(s => s.Handler is not TileSelectionHandler));
 
-        Selection? selectionToBeSelectedOnClick = !SelectionGestureHandler.Started && State == States.Idle
+        Selection? selectionToBeSelectedOnClick = !_selectionGestureHandler.Started && _state == States.Idle
                 ? GetSelectionToBeSelectedOnClick(selectionsUnderCursor)
                 : null;
         
-        if (CurrentSelections is { } selections) {
+        if (_currentSelections is { } selections) {
             foreach (var selection in selections) {
-                if (!imguiWantsMouse && (State != States.Idle || selection.Check(mousePos.X, mousePos.Y))) {
+                if (!imguiWantsMouse && (_state != States.Idle || selection.Check(mousePos.X, mousePos.Y))) {
                     if (selectionToBeSelectedOnClick is {})
                         selection.Render(Color.Red);
                     else
-                        SelectionsToHighlight.Add(selection);
+                        _selectionsToHighlight.Add(selection);
 
-                    if (State == States.Idle) {
+                    if (_state == States.Idle) {
                         var r = selection.Handler.Rect;
                         var cursorType =
                             AdjustGrabLocBasedOnResizable(r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle, selection.Handler)
@@ -486,11 +484,11 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
         }
         
-        if (State == States.Idle && !imguiWantsMouse) {
-            HandleHoveredSelections(room, selectionsUnderCursor, CurrentSelections, Input, middleClick: true);
+        if (_state == States.Idle && !imguiWantsMouse) {
+            HandleHoveredSelections(room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
 
             if (selectionToBeSelectedOnClick is {} s) {
-                var isToBeSelectedAlreadySelected = CurrentSelections?.Contains(s) ?? false;
+                var isToBeSelectedAlreadySelected = _currentSelections?.Contains(s) ?? false;
                 var color = isToBeSelectedAlreadySelected ? Color.Gold : Color.Pink;
                 s.Render(color);
                 if (s.Handler is EntitySelectionHandler { Entity: Trigger trigger }) {
@@ -503,15 +501,15 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
         }
 
-        if (SelectionsToHighlight is { Count: > 0 }) {
-            foreach (var selection in SelectionsToHighlight) {
+        if (_selectionsToHighlight is { Count: > 0 }) {
+            foreach (var selection in _selectionsToHighlight) {
                 selection.Render(Color.Gold);
             }
             
-            SelectionsToHighlight.Clear();
+            _selectionsToHighlight.Clear();
         }
 
-        if (RotationGestureStart is { } rotStart) {
+        if (_rotationGestureStart is { } rotStart) {
             var ctx = SpriteRenderCtx.Default();
             ISprite.Circle(rotStart.ToVector2(), 8, Color.Gray, 32, thickness: 0.5f).Render(ctx);
             ISprite.Circle(rotStart.ToVector2(), 1, Color.Gold, 8).Render(ctx);
@@ -577,7 +575,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private void FinalizeStates() {
         History.UndoSimulations();
 
-        if (State == States.MoveOrResizeGesture) {
+        if (_state == States.MoveOrResizeGesture) {
             FinalizeMove(EditorState.Camera, EditorState.CurrentRoom);
         }
     }
@@ -586,16 +584,16 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (Layer == EditorLayers.Room)
             room ??= EditorState.Map?.Rooms.FirstOrDefault();
         
-        if (CurrentSelections is { } selections) {
+        if (_currentSelections is { } selections) {
             var mouseRoomPos = GetMouseRoomPos(camera, room);
             var mouseRect = new Rectangle(mouseRoomPos.X, mouseRoomPos.Y, 1, 1);
             if (Input.Mouse.Left.Clicked()) {
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
-                        MoveGestureStart = mouseRoomPos;
-                        State = States.MoveOrResizeGesture;
-                        MoveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
-                        MoveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(MoveGestureGrabbedLocation, selection.Handler);
+                        _moveGestureStart = mouseRoomPos;
+                        _state = States.MoveOrResizeGesture;
+                        _moveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
+                        _moveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(_moveGestureGrabbedLocation, selection.Handler);
                         break;
                     }
                 }
@@ -611,7 +609,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
         }
 
-        switch (State) {
+        switch (_state) {
             case States.Idle:
                 UpdateDragGesture(camera, room);
                 break;
@@ -630,20 +628,20 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         base.CancelInteraction();
 
         EndMoveGesture(false, null, null);
-        SelectionGestureHandler.CancelGesture();
+        _selectionGestureHandler.CancelGesture();
         Deselect();
     }
 
     public override bool AllowSwappingRooms => Layer != EditorLayers.Room;
 
     private IHistoryAction? GetPreciseRotationAction(float realAngle) {
-        if (CurrentSelections is null)
+        if (_currentSelections is null)
             return null;
 
         var actions = new List<IHistoryAction>();
-        foreach (var s in CurrentSelections) {
+        foreach (var s in _currentSelections) {
             if (s.Handler is ISelectionPreciseRotationHandler rotationHandler) {
-                if (rotationHandler.TryPreciseRotate(realAngle, RotationGestureStart!.Value.ToVector2()) is { } act) {
+                if (rotationHandler.TryPreciseRotate(realAngle, _rotationGestureStart!.Value.ToVector2()) is { } act) {
                     actions.Add(act);
                 }
                 s.Handler.ClearCollideCache();
@@ -654,7 +652,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void EndRotationGesture(Camera camera, Room room, float angle) {
-        if (CurrentSelections is null) {
+        if (_currentSelections is null) {
             return;
         }
         
@@ -669,38 +667,38 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClearColliderCachesInSelections();
         }
         
-        RotationGestureStart = null;
+        _rotationGestureStart = null;
     }
 
     private void UpdateRotationGesture(Camera camera, Room? room) {
         if (room is null)
             return;
         
-        if (CurrentSelections is null) {
-            State = States.Idle;
+        if (_currentSelections is null) {
+            _state = States.Idle;
             EndRotationGesture(camera, room, 0f);
             return;
         }
 
-        if (RotationGestureStart is null) {
+        if (_rotationGestureStart is null) {
             CreateMousePosRect(camera, room, out var start);
-            RotationGestureStart = start;
-            RotationGestureLastAngle = null;
+            _rotationGestureStart = start;
+            _rotationGestureLastAngle = null;
         }
 
         CreateMousePosRect(camera, room, out var currentPos);
-        var angle = VectorExt.Angle(RotationGestureStart.Value.ToVector2(), currentPos.ToVector2());
+        var angle = VectorExt.Angle(_rotationGestureStart.Value.ToVector2(), currentPos.ToVector2());
         var realAngle = angle;
-        if (RotationGestureLastAngle is null) {
-            RotationGestureLastAngle = angle;
+        if (_rotationGestureLastAngle is null) {
+            _rotationGestureLastAngle = angle;
             angle = 0f;
         } else {
-            (angle, RotationGestureLastAngle) = (angle - RotationGestureLastAngle.Value, angle);
+            (angle, _rotationGestureLastAngle) = (angle - _rotationGestureLastAngle.Value, angle);
         }
 
-        if (!Input.Keyboard.Shift() || CurrentSelections is null) {
+        if (!Input.Keyboard.Shift() || _currentSelections is null) {
             EndRotationGesture(camera, room, angle);
-            State = States.MoveOrResizeGesture;
+            _state = States.MoveOrResizeGesture;
             return;
         }
 
@@ -713,7 +711,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
             case MouseInputState.Released: {
                 EndRotationGesture(camera, room, realAngle);
-                State = States.Idle;
+                _state = States.Idle;
 
                 break;
             }
@@ -721,24 +719,24 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void FinalizeMove(Camera camera, Room? room) {
-        if (CurrentSelections is { } selections && MoveGestureStart is { } start) {
+        if (_currentSelections is { } selections && _moveGestureStart is { } start) {
             Point mousePos = GetMouseRoomPos(camera, room);
-            Vector2 delta = MoveGestureFinalDelta;
+            Vector2 delta = _moveGestureFinalDelta;
 
             if (delta.LengthSquared() <= 0) {
                 // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
                 SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
             } else {
-                MoveSelectionsBy(delta, selections, MoveGestureGrabbedLocation);
+                MoveSelectionsBy(delta, selections, _moveGestureGrabbedLocation);
             }
 
-            MoveGestureStart = mousePos;
-            MoveGestureFinalDelta = default;
+            _moveGestureStart = mousePos;
+            _moveGestureFinalDelta = default;
         }
     }
     
     private void EndMoveGesture(bool simulate, Camera? camera, Room? room) {
-        if (State != States.MoveOrResizeGesture)
+        if (_state != States.MoveOrResizeGesture)
             return;
 
         History.UndoSimulations();
@@ -747,11 +745,11 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             FinalizeMove(camera, room);
         }
         
-        MoveGestureStart = null;
-        MoveGestureLastMousePos = null;
-        MoveGestureFinalDelta = Vector2.Zero;
-        State = States.Idle;
-        MoveGestureGrabbedLocation = NineSliceLocation.Middle;
+        _moveGestureStart = null;
+        _moveGestureLastMousePos = null;
+        _moveGestureFinalDelta = Vector2.Zero;
+        _state = States.Idle;
+        _moveGestureGrabbedLocation = NineSliceLocation.Middle;
     }
 
     private void UpdateMoveGesture(Camera camera, Room? room) {
@@ -759,7 +757,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         if (Input.Keyboard.Shift()) {
             EndMoveGesture(false, camera, room);
-            State = States.RotationGesture;
+            _state = States.RotationGesture;
             return;
         }
 
@@ -769,20 +767,20 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 break;
             }
             case MouseInputState.Held: {
-                if (CurrentSelections is { } selections && MoveGestureStart is { } start) {
+                if (_currentSelections is { } selections && _moveGestureStart is { } start) {
                     var mousePos = GetMouseRoomPos(camera, room);
-                    MoveGestureLastMousePos ??= mousePos;
+                    _moveGestureLastMousePos ??= mousePos;
 
-                    Vector2 delta = CalculateMovementDelta(MoveGestureLastMousePos!.Value, mousePos);
+                    Vector2 delta = CalculateMovementDelta(_moveGestureLastMousePos!.Value, mousePos);
 
                     if (delta.LengthSquared() != 0) {
-                        MoveGestureLastMousePos += delta.ToPoint();
-                        MoveGestureFinalDelta += delta;
+                        _moveGestureLastMousePos += delta.ToPoint();
+                        _moveGestureFinalDelta += delta;
                         //Console.WriteLine(MoveGestureFinalDelta);
-                        SimulateMoveSelectionsBy(MoveGestureFinalDelta, selections, MoveGestureGrabbedLocation);
+                        SimulateMoveSelectionsBy(_moveGestureFinalDelta, selections, _moveGestureGrabbedLocation);
                     }
 
-                    var cursorType = MoveGestureGrabbedLocation.ToMouseCursor();
+                    var cursorType = _moveGestureGrabbedLocation.ToMouseCursor();
                     ImGui.SetMouseCursor(cursorType);
                 }
                 break;
@@ -811,7 +809,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void UpdateDragGesture(Camera camera, Room? room) {
-        if (SelectionGestureHandler.Update((p) => GetMouseRoomPos(camera, room, p)) is { } rect) {
+        if (_selectionGestureHandler.Update((p) => GetMouseRoomPos(camera, room, p)) is { } rect) {
             SelectWithin(room, rect);
         }
     }
@@ -823,7 +821,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .ToList();
 
     private void SelectWithin(Room? room, Rectangle rect) {
-        var selections = room?.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, CustomLayer)) ?? [];
+        var selections = room?.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, _customLayer)) ?? [];
         selections = GetSortedSelections(selections);
         
         List<Selection>? finalSelections = null;
@@ -836,7 +834,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 ClickInPlaceIdx = (idx + 1) % selections.Count;
 
                 finalSelections = [ toSelect ];
-            } else if (CurrentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
+            } else if (_currentSelections?.Count > 0 && Input.Mouse.LeftDoubleClicked()) {
                 // if you double clicked in place, select all similar entities/decals
                 var handler = selections[0].Handler;
                 finalSelections = Input.Keyboard.Shift() 
@@ -853,27 +851,27 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         // Deselect all current selections, we will call OnSelected on all remaining ones at the end anyway
-        if (CurrentSelections is { })
-            foreach (var selection in CurrentSelections) {
+        if (_currentSelections is { })
+            foreach (var selection in _currentSelections) {
                 selection.Handler.OnDeselected();
             }
 
-        if (Input.Keyboard.Shift() && CurrentSelections is { }) {
+        if (Input.Keyboard.Shift() && _currentSelections is { }) {
             // Add new selections
 
-            foreach (var h in CurrentSelections.SelectWhereNotNull(s => s.Handler as TileSelectionHandler))
+            foreach (var h in _currentSelections.SelectWhereNotNull(s => s.Handler as TileSelectionHandler))
                 h.MergeWith(rect, exclude: false);
 
-            CurrentSelections = CurrentSelections
+            _currentSelections = _currentSelections
                 .Concat(finalSelections)
                 .DistinctBy(x => x.Handler.Parent)
                 .ToList();
-        } else if (Input.Keyboard.Ctrl() && CurrentSelections is { }) {
+        } else if (Input.Keyboard.Ctrl() && _currentSelections is { }) {
             // Remove existing selections
-            var newSelections = CurrentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
+            var newSelections = _currentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
 
             // tile selections are unique - they need to remain in the selection list, and we need to call MergeWith
-            foreach (var tileSelection in CurrentSelections.Where(s => s.Handler is TileSelectionHandler)) {
+            foreach (var tileSelection in _currentSelections.Where(s => s.Handler is TileSelectionHandler)) {
                 if (tileSelection is { Handler: TileSelectionHandler tileHandler }) {
                     tileHandler.MergeWith(rect, exclude: true);
 
@@ -881,15 +879,15 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 }
             }
 
-            CurrentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
+            _currentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
         } else {
             // Set selections
             Deselect();
-            CurrentSelections = finalSelections;
+            _currentSelections = finalSelections;
         }
 
         // Tell the handlers that they're selected
-        foreach (var selection in CurrentSelections) {
+        foreach (var selection in _currentSelections) {
             selection.Handler.OnSelected();
         }
 
@@ -897,14 +895,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void OnSelectionsChanged() {
-        if (CurrentSelections is [{ Handler: RoomSelectionHandler roomSelection }]) {
+        if (_currentSelections is [{ Handler: RoomSelectionHandler roomSelection }]) {
             // you only selected 1 room, let's swap to that room as well
             EditorState.CurrentRoom = roomSelection.Room;
         }
     }
 
     public void AddSelection(Selection selection) {
-        CurrentSelections = CurrentSelections?
+        _currentSelections = _currentSelections?
         .Append(selection)
         .DistinctBy(x => x.Handler.Parent)
         .ToList() ?? [ selection ];
@@ -927,21 +925,21 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         showSearchBar = false;
 
         if (Layer == EditorLayers.CustomLayer) {
-            var c = (int) CustomLayer;
+            var c = (int) _customLayer;
             ImGui.CheckboxFlags(EditorLayers.Entities.LocalizedName, ref c, (int) SelectionLayer.Entities);
             ImGui.CheckboxFlags(EditorLayers.Triggers.LocalizedName, ref c, (int) SelectionLayer.Triggers);
-            ImGui.CheckboxFlags(EditorLayers.FgDecals.LocalizedName, ref c, (int) SelectionLayer.FGDecals);
-            ImGui.CheckboxFlags(EditorLayers.BgDecals.LocalizedName, ref c, (int) SelectionLayer.BGDecals);
-            ImGui.CheckboxFlags(EditorLayers.Bg.LocalizedName, ref c, (int) SelectionLayer.BGTiles);
-            ImGui.CheckboxFlags(EditorLayers.Fg.LocalizedName, ref c, (int) SelectionLayer.FGTiles);
+            ImGui.CheckboxFlags(EditorLayers.FgDecals.LocalizedName, ref c, (int) SelectionLayer.FgDecals);
+            ImGui.CheckboxFlags(EditorLayers.BgDecals.LocalizedName, ref c, (int) SelectionLayer.BgDecals);
+            ImGui.CheckboxFlags(EditorLayers.Bg.LocalizedName, ref c, (int) SelectionLayer.BgTiles);
+            ImGui.CheckboxFlags(EditorLayers.Fg.LocalizedName, ref c, (int) SelectionLayer.FgTiles);
 
-            CustomLayer = (SelectionLayer) c;
+            _customLayer = (SelectionLayer) c;
 
             ImGui.Separator();
         }
 
         ImGui.Text("Selections");
-        if (CurrentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
+        if (_currentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
             CreatePrefab();
         }
 
@@ -956,8 +954,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         ImGui.TableSetupColumn("Edit", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
-        if (CurrentSelections is { })
-            foreach (var selection in CurrentSelections) {
+        if (_currentSelections is { })
+            foreach (var selection in _currentSelections) {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
@@ -975,20 +973,20 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         ImGui.Text(tiles.Layer.FastToString());
                         break;
                 }
-                HighlightIfHovered(SelectionsToHighlight, selection);
+                HighlightIfHovered(_selectionsToHighlight, selection);
                 ImGui.TableNextColumn();
 
                 ImGuiManager.PushNullStyle();
                 if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.TempU8($"Deselect##{selection.GetHashCode()}"))) {
                     DeselectOnEndOfFrame(selection);
                 }
-                HighlightIfHovered(SelectionsToHighlight, selection);
+                HighlightIfHovered(_selectionsToHighlight, selection);
                 ImGui.TableNextColumn();
 
                 if (RysyEngine.Scene is EditorScene && ImGui.Selectable(Interpolator.TempU8($"Edit##{selection.GetHashCode()}"))) {
                     RightClickOnEndOfFrame(selection);
                 }
-                HighlightIfHovered(SelectionsToHighlight, selection);
+                HighlightIfHovered(_selectionsToHighlight, selection);
 
                 ImGuiManager.PopNullStyle();
 

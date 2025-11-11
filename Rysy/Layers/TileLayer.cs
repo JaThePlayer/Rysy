@@ -14,8 +14,8 @@ public sealed class TileEditorLayer : EditorLayer {
     public override string Name => TileLayer.FastToString();
 
     public override SelectionLayer SelectionLayer => TileLayer switch {
-        TileLayer.BG => SelectionLayer.BGTiles,
-        TileLayer.FG => SelectionLayer.FGTiles,
+        TileLayer.Bg => SelectionLayer.BgTiles,
+        TileLayer.Fg => SelectionLayer.FgTiles,
         _ => throw new ArgumentOutOfRangeException()
     };
 
@@ -23,7 +23,7 @@ public sealed class TileEditorLayer : EditorLayer {
         => Array.Empty<Placement>();
 
     public Tilegrid GetGrid(Room room) => TileLayer switch {
-        TileLayer.BG => room.BG,
-        _ => room.FG
+        TileLayer.Bg => room.Bg,
+        _ => room.Fg
     };
 }

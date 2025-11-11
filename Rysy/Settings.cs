@@ -98,12 +98,11 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
 
     public static event Action<Settings> OnLoaded;
 
-    private static Settings _Instance = null!;
     public static Settings Instance {
-        get => _Instance;
+        get;
         internal set {
-            if (_Instance != value) {
-                _Instance = value;
+            if (field != value) {
+                field = value;
                 OnLoaded?.Invoke(value);
             }
         }
@@ -207,53 +206,53 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
 
     public int MaxBackups { get; set; } = 25;
 
-    private float _HiddenLayerAlpha = 0.3f;
+    private float _hiddenLayerAlpha = 0.3f;
     public float HiddenLayerAlpha {
-        get => _HiddenLayerAlpha;
+        get => _hiddenLayerAlpha;
         set {
-            _HiddenLayerAlpha = value;
+            _hiddenLayerAlpha = value;
             if (RysyEngine.Scene is EditorScene editor) {
                 editor.ClearMapRenderCache();
             }
         }
     }
 
-    private int _TargetFps = 60;
+    private int _targetFps = 60;
     public int TargetFps {
-        get => _TargetFps;
+        get => _targetFps;
         set {
-            _TargetFps = value;
+            _targetFps = value;
             RysyEngine.SetTargetFps(value);
         }
     }
 
-    private bool _VSync = true;
+    private bool _vSync = true;
     public bool VSync {
-        get => _VSync;
+        get => _vSync;
         set {
-            _VSync = value;
+            _vSync = value;
             RysyEngine.ToggleVSync(value);
         }
     }
 
-    private bool _SmartFramerate = false;
+    private bool _smartFramerate = false;
     public bool SmartFramerate {
-        get => _SmartFramerate;
+        get => _smartFramerate;
         set {
-            _SmartFramerate = value;
-            SmartFPSHandler.OnToggle();
+            _smartFramerate = value;
+            SmartFpsHandler.OnToggle();
         }
     }
 
     public bool MinifyClipboard { get; set; } = false;
 
 
-    private bool _BorderlessFullscreen = false;
+    private bool _borderlessFullscreen = false;
     // has issues with mouse positions
     public bool BorderlessFullscreen {
-        get => _BorderlessFullscreen;
+        get => _borderlessFullscreen;
         set {
-            _BorderlessFullscreen = value;
+            _borderlessFullscreen = value;
 
             RysyEngine.ToggleBorderlessFullscreen(value);
         }

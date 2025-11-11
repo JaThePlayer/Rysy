@@ -9,7 +9,7 @@ public sealed class LightDecalRegistryProperty : DecalRegistryProperty, IPlaceab
     public static FieldList GetFields() => new(new {
         offsetX = 0f,
         offsetY = 0f,
-        color = Fields.RGB("ffffff").AllowNull(),
+        color = Fields.Rgb("ffffff").AllowNull(),
         alpha = Fields.Float(1f).WithMin(0f).WithMax(1f),
         startFade = Fields.Int(16).WithMin(0),
         endFade = Fields.Int(24).WithMin(0)

@@ -87,12 +87,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
 
-    private bool _FGTilesVisible = true;
-    public bool FGTilesVisible {
-        get => _FGTilesVisible;
+    private bool _fgTilesVisible = true;
+    public bool FgTilesVisible {
+        get => _fgTilesVisible;
         set {
-            if (_FGTilesVisible != value) {
-                _FGTilesVisible = value;
+            if (_fgTilesVisible != value) {
+                _fgTilesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
                 Save(this);
@@ -100,12 +100,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
         }
     }
 
-    private bool _BGTilesVisible = true;
-    public bool BGTilesVisible {
-        get => _BGTilesVisible;
+    private bool _bgTilesVisible = true;
+    public bool BgTilesVisible {
+        get => _bgTilesVisible;
         set {
-            if (_BGTilesVisible != value) {
-                _BGTilesVisible = value;
+            if (_bgTilesVisible != value) {
+                _bgTilesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
                 Save(this);
@@ -113,12 +113,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
         }
     }
 
-    private bool _FGDecalsVisible = true;
-    public bool FGDecalsVisible {
-        get => _FGDecalsVisible;
+    private bool _fgDecalsVisible = true;
+    public bool FgDecalsVisible {
+        get => _fgDecalsVisible;
         set {
-            if (_FGDecalsVisible != value) {
-                _FGDecalsVisible = value;
+            if (_fgDecalsVisible != value) {
+                _fgDecalsVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
                 Save(this);
@@ -126,12 +126,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
         }
     }
 
-    private bool _BGDecalsVisible = true;
-    public bool BGDecalsVisible {
-        get => _BGDecalsVisible;
+    private bool _bgDecalsVisible = true;
+    public bool BgDecalsVisible {
+        get => _bgDecalsVisible;
         set {
-            if (_BGDecalsVisible != value) {
-                _BGDecalsVisible = value;
+            if (_bgDecalsVisible != value) {
+                _bgDecalsVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
                 Save(this);
@@ -139,12 +139,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
         }
     }
 
-    private bool _EntitiesVisible = true;
+    private bool _entitiesVisible = true;
     public bool EntitiesVisible {
-        get => _EntitiesVisible;
+        get => _entitiesVisible;
         set {
-            if (_EntitiesVisible != value) {
-                _EntitiesVisible = value;
+            if (_entitiesVisible != value) {
+                _entitiesVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
                 Save(this);
@@ -152,12 +152,12 @@ public class Persistence : IHasJsonCtx<Persistence> {
         }
     }
 
-    private bool _TriggersVisible = true;
+    private bool _triggersVisible = true;
     public bool TriggersVisible {
-        get => _TriggersVisible;
+        get => _triggersVisible;
         set {
-            if (_TriggersVisible != value) {
-                _TriggersVisible = value;
+            if (_triggersVisible != value) {
+                _triggersVisible = value;
 
                 EditorState.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
                 Save(this);

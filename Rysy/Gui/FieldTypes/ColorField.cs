@@ -102,7 +102,7 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
 
     public override Field CreateClone() => this with { };
 
-    public ColorField AllowXNAColors() {
+    public ColorField AllowXnaColors() {
         XnaColorsAllowed = true;
 
         return this;
@@ -121,19 +121,19 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
     }
 
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
-        var format = ColorFormat.RGB;
+        var format = ColorFormat.Rgb;
         if (fieldInfoEntry.Bool("useAlpha")) {
-            format = ColorFormat.RGBA;
+            format = ColorFormat.Rgba;
         }
         
-        var allowXNA = fieldInfoEntry.Bool("allowXNAColors", false);
+        var allowXna = fieldInfoEntry.Bool("allowXNAColors", false);
 
         var colorField = new ColorField() {
             Format = format,
         };
         
-        if (allowXNA)
-            colorField.AllowXNAColors();
+        if (allowXna)
+            colorField.AllowXnaColors();
 
         if (fieldInfoEntry.Bool("allowEmpty")) {
             colorField.AllowNull().TreatEmptyAsNull();
@@ -144,11 +144,11 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
         return colorField;
     }
 
-    NumVector3 HsvFilterStorage = default;
+    NumVector3 _hsvFilterStorage = default;
 
     public void RenderPostListElementsGui(ListFieldContext ctx) {
         if (!ImGui.BeginMenu("HSV Filter")) {
-            HsvFilterStorage = default;
+            _hsvFilterStorage = default;
             return;
         }
 
@@ -174,24 +174,24 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
                 var cv = color.ToNumVec4();
                 float h = 0f, s = 0f, v = 0f;
                 ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, ref h, ref s, ref v);
-                ImGui.ColorConvertHSVtoRGB(h + HsvFilterStorage.X.Div(180f), s + HsvFilterStorage.Y.Div(100f), v + HsvFilterStorage.Z.Div(100f), ref cv.X, ref cv.Y, ref cv.Z);
+                ImGui.ColorConvertHSVtoRGB(h + _hsvFilterStorage.X.Div(180f), s + _hsvFilterStorage.Y.Div(100f), v + _hsvFilterStorage.Z.Div(100f), ref cv.X, ref cv.Y, ref cv.Z);
 
                 ImGui.ColorButton(item, cv, ImGuiColorEditFlags.NoTooltip);
             }
         }
         ImGui.PopID();
 
-        ImGui.DragFloat("H", ref HsvFilterStorage.X, 1f, vMin: -180f, vMax: 180f);
-        ImGui.DragFloat("S", ref HsvFilterStorage.Y, 1f, vMin: -100f, vMax: 100f);
-        ImGui.DragFloat("V", ref HsvFilterStorage.Z, 1f, vMin: -100f, vMax: 100f);
+        ImGui.DragFloat("H", ref _hsvFilterStorage.X, 1f, vMin: -180f, vMax: 180f);
+        ImGui.DragFloat("S", ref _hsvFilterStorage.Y, 1f, vMin: -100f, vMax: 100f);
+        ImGui.DragFloat("V", ref _hsvFilterStorage.Z, 1f, vMin: -100f, vMax: 100f);
 
         if (ImGui.Button("Apply")) {
             for (int i = 0; i < values.Count; i++) {
                 if (ColorHelper.TryGet(values[i], Format, out var color)) {
-                    ctx.SetValue(i, ColorHelper.ToString(color.AddHSV(HsvFilterStorage.X, HsvFilterStorage.Y, HsvFilterStorage.Z), Format));
+                    ctx.SetValue(i, ColorHelper.ToString(color.AddHsv(_hsvFilterStorage.X, _hsvFilterStorage.Y, _hsvFilterStorage.Z), Format));
                 }
             }
-            HsvFilterStorage = default;
+            _hsvFilterStorage = default;
         }
 
         ImGui.EndMenu();

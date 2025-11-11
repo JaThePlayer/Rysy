@@ -1,12 +1,12 @@
 ﻿namespace Rysy.MapAnalyzers;
 
 public record class AnalyzerCtx(Map Map) {
-    private readonly List<IAnalyzerResult> MutableResults = new();
+    private readonly List<IAnalyzerResult> _mutableResults = new();
 
-    public IReadOnlyList<IAnalyzerResult> Results => MutableResults;
+    public IReadOnlyList<IAnalyzerResult> Results => _mutableResults;
 
     public void AddResult(IAnalyzerResult result) {
-        MutableResults.Add(result);
+        _mutableResults.Add(result);
     }
 }
 

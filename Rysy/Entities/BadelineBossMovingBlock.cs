@@ -7,7 +7,7 @@ namespace Rysy.Entities;
 internal sealed class BadelineBossMovingBlock : TileEntity, IPlaceable {
     public override char Tiletype => 'G';
 
-    public override TileLayer Layer => TileLayer.FG;
+    public override TileLayer Layer => TileLayer.Fg;
 
     public override int Depth => 0;
 

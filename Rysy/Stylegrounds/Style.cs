@@ -22,16 +22,16 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
 
     public string Name { get; set; }
 
-    private EntityData _Data;
+    private EntityData _data;
 
     public EntityData Data {
-        get => _Data;
+        get => _data;
         set {
-            if (_Data is not null) {
-                _Data.OnChanged -= OnChanged;
+            if (_data is not null) {
+                _data.OnChanged -= OnChanged;
             }
-            _Data = value;
-            _Data.OnChanged += OnChanged;
+            _data = value;
+            _data.OnChanged += OnChanged;
 
             OnChanged(new() {
                 AllChanged = true
@@ -65,12 +65,12 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         return false;
     }
 
-    private StyleFolder? _Parent;
+    private StyleFolder? _parent;
     [JsonIgnore]
     public StyleFolder? Parent {
-        get => _Parent;
+        get => _parent;
         internal set {
-            _Parent = value;
+            _parent = value;
             OnChanged(new() {
                 AllChanged = true
             });
@@ -211,7 +211,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
 
         return FromElement(new() {
             Attributes = data,
-            Name = pl.SID
+            Name = pl.Sid
         });
     }
 
@@ -219,7 +219,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         if (from.Name is null)
             throw new Exception("Style with null name???");
 
-        if (EntityRegistry.GetTypeForSID(from.Name, RegisteredEntityType.Style) is { } t && t.IsSubclassOf(typeof(Style))) {
+        if (EntityRegistry.GetTypeForSid(from.Name, RegisteredEntityType.Style) is { } t && t.IsSubclassOf(typeof(Style))) {
             var style = (Style) Activator.CreateInstance(t)!;
             style.Unpack(from);
 

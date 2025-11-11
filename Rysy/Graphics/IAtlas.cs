@@ -21,7 +21,7 @@ public interface IAtlas {
     public VirtTexture this[string key] {
         get {
             if (key is null)
-                return GFX.UnknownTexture;
+                return Gfx.UnknownTexture;
 
             if (TryGet(key, out var texture))
                 return texture;
@@ -29,14 +29,14 @@ public interface IAtlas {
             if (LogMissingTextures && LogMissingTexturesData.LoggedMissingTextures.Add(key))
                 Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key} that doesn't exist!");
         
-            return GFX.UnknownTexture;
+            return Gfx.UnknownTexture;
         }
     }
 
     public VirtTexture this[string key, int frame] {
         get {
             if (key is null)
-                return GFX.UnknownTexture;
+                return Gfx.UnknownTexture;
 
             if (TryGet(key, frame, out var texture))
                 return texture;
@@ -44,7 +44,7 @@ public interface IAtlas {
             if (LogMissingTextures && LogMissingTexturesData.LoggedMissingTextures.Add(key))
                 Logger.Write("Atlas", LogLevel.Warning, $"Tried to access texture {key}, frame {frame} that doesn't exist!");
         
-            return GFX.UnknownTexture;
+            return Gfx.UnknownTexture;
         }
     }
 
@@ -117,7 +117,7 @@ public static class IAtlasExt {
                 // ignore internal textures
                 if (texture is ModTexture modTex && modTex.Mod == ModRegistry.RysyMod)
                     continue;
-                if (texture == GFX.UnknownTexture)
+                if (texture == Gfx.UnknownTexture)
                     continue;
                 
                 if (path.StartsWith("Rysy:", StringComparison.Ordinal) ||
@@ -312,15 +312,15 @@ public static class IAtlasExt {
 
                 if (runLenEncodingSize > 4) {
                     int nextPixel = index + 4;
-                    int endRLE = index + runLenEncodingSize;
+                    int endRle = index + runLenEncodingSize;
 
                     // weird pointer shenanigans to read/write a i32 from a byte[]
                     int col = *(int*) &textureBuffer[index];
-                    if (endRLE - 4 >= textureBufferBytes.Length) {
+                    if (endRle - 4 >= textureBufferBytes.Length) {
                         throw new Exception("Atlas Texture is too big!");
                     }
                     
-                    while (nextPixel < endRLE) {
+                    while (nextPixel < endRle) {
                         *(int*) &textureBuffer[nextPixel] = col;
                         nextPixel += 4;
                     }
@@ -349,6 +349,6 @@ public static class IAtlasExt {
     /// </summary>
     public static IReadOnlyList<VirtTexture> GetSubtexturesOrPlaceholder(this IAtlas atlas, string key) {
         var ret = atlas.GetSubtextures(key);
-        return ret.Count == 0 ? [ GFX.UnknownTexture ] : ret;
+        return ret.Count == 0 ? [ Gfx.UnknownTexture ] : ret;
     }
 }

@@ -12,10 +12,10 @@ public class FormWindow : Window {
 
     internal List<Prop> FieldList = new();
     public Dictionary<string, object> EditedValues = new();
-    internal const int ITEM_WIDTH = 175;
+    internal const int ItemWidth = 175;
 
     private Func<FormContext, IEnumerable<string>>? _getDynamicallyHiddenFields;
-    private HashSet<string> dynamicallyHiddenFields = [];
+    private HashSet<string> _dynamicallyHiddenFields = [];
 
     public FormWindowChanged OnChanged { get; set; }
     public FormWindowChanged OnLiveUpdate { get; set; }
@@ -44,11 +44,11 @@ public class FormWindow : Window {
 
     public Func<string, bool> Exists;
 
-    private FormContext FormContext;
+    private FormContext _formContext;
 
 
     // used for deciding whether the form should be displayed in columns or not.
-    float LongestFieldSize;
+    float _longestFieldSize;
 
     /// <summary>
     /// Creates a dictionary containing all values in all fields, regardless of whether they've been edited or not.
@@ -68,7 +68,7 @@ public class FormWindow : Window {
     public void Init(FieldList fields, Func<string, bool>? exists = null) {
         Exists = exists ?? (_ => true);
         
-        FormContext ctx = FormContext = new(this);
+        FormContext ctx = _formContext = new(this);
 
         foreach (var (fieldName, field) in fields.OrderedEnumerable(null!)) {
             field.Context = ctx;
@@ -78,12 +78,12 @@ public class FormWindow : Window {
             });
         }
 
-        LongestFieldSize = fields.Count > 0 ? FieldList
+        _longestFieldSize = fields.Count > 0 ? FieldList
             .Select(p => ImGui.CalcTextSize(p.Field.NameOverride ?? p.Name).X)
             .Chunk(2)
             .Max(pair => pair.Sum()) : 50;
         Size = new(
-            LongestFieldSize + ITEM_WIDTH * 2.5f,
+            _longestFieldSize + ItemWidth * 2.5f,
             // ReSharper disable once PossibleLossOfFraction
             ImGui.GetFrameHeightWithSpacing() * (FieldList.Count / 2 + 2) + ImGui.GetFrameHeightWithSpacing() * 2 + ImGui.GetStyle().WindowPadding.Y
         );
@@ -131,14 +131,14 @@ public class FormWindow : Window {
 
     protected void UpdateDynamicallyHiddenFields() {
         if (_getDynamicallyHiddenFields is { } getHidden) {
-            dynamicallyHiddenFields = getHidden(FormContext).ToHashSet();
+            _dynamicallyHiddenFields = getHidden(_formContext).ToHashSet();
         }
     }
 
-    private bool AllFieldsValid;
+    private bool _allFieldsValid;
 
     protected override void Render() {
-        var hasColumns = FieldList.Count > 1 && ImGui.GetContentRegionAvail().X >= (LongestFieldSize + ITEM_WIDTH * 2.3f);
+        var hasColumns = FieldList.Count > 1 && ImGui.GetContentRegionAvail().X >= (_longestFieldSize + ItemWidth * 2.3f);
 
         if (hasColumns)
             ImGui.Columns(2);
@@ -147,7 +147,7 @@ public class FormWindow : Window {
         var i = 0;
 
         foreach (var prop in FieldList) {
-            if (prop.Field.IsHidden(FormContext) || dynamicallyHiddenFields.Contains(prop.Name))
+            if (prop.Field.IsHidden(_formContext) || _dynamicallyHiddenFields.Contains(prop.Name))
                 continue;
 
             ImGui.PushID(i++);
@@ -186,13 +186,13 @@ public class FormWindow : Window {
         if (hasColumns)
             ImGui.Columns();
 
-        AllFieldsValid = valid;
+        _allFieldsValid = valid;
     }
 
     public override bool HasBottomBar => true;
 
     public override void RenderBottomBar() {
-        ImGui.BeginDisabled(!AllFieldsValid);
+        ImGui.BeginDisabled(!_allFieldsValid);
 
         if (ImGui.Button(SaveChangesButtonName)) {
             OnChanged?.Invoke(EditedValues);
@@ -238,7 +238,7 @@ public class FormWindow : Window {
             ImGuiManager.PushNullStyle();
 
         object? newVal = null;
-        ImGui.SetNextItemWidth(ITEM_WIDTH);
+        ImGui.SetNextItemWidth(ItemWidth);
         try {
             var field = prop.Field;
             newVal = field.RenderGuiWithValidation(field.NameOverride ??= name.Humanize(), val, valid);
@@ -268,11 +268,11 @@ public class FormWindow : Window {
 }
 
 public class FormContext : ILuaWrapper, IUntypedData {
-    private FormWindow Window;
+    private FormWindow _window;
 
-    public FormContext(FormWindow window) => Window = window;
+    public FormContext(FormWindow window) => _window = window;
 
-    private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => Window.FieldList.FirstOrDefault(f => f.Name == fieldName);
+    private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => _window.FieldList.FirstOrDefault(f => f.Name == fieldName);
     
     /// <summary>
     /// Tries to get the value of the field of name <paramref name="key"/>
@@ -299,7 +299,7 @@ public class FormContext : ILuaWrapper, IUntypedData {
     /// </summary>
     public void SetValue(string fieldName, object newValue) {
         if (GetPropByNameOrNull(fieldName) is { } prop)
-            Window.Set(prop, newValue);
+            _window.Set(prop, newValue);
     }
 
     public int LuaIndex(Lua lua, long key) {

@@ -40,11 +40,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         Width = width;
         Height = height;
 
-        FG = new(width, height);
-        BG = new(width, height);
+        Fg = new(width, height);
+        Bg = new(width, height);
 
-        SetupFGTilegrid();
-        SetupBGTilegrid();
+        SetupFgTilegrid();
+        SetupBgTilegrid();
     }
 
     public CacheToken RenderCacheToken;
@@ -55,7 +55,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     public CacheToken FgTilesRenderCacheToken;
     public CacheToken BgTilesRenderCacheToken;
 
-    private RenderTarget2D? FullRenderCanvas;
+    private RenderTarget2D? _fullRenderCanvas;
 
     private bool CanUseCanvas => Width < 4098 && Height < 4098;
 
@@ -115,8 +115,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     public ListenableList<Entity> BgDecals { get; private set; }
     public ListenableList<Entity> FgDecals { get; private set; }
 
-    public Tilegrid FG = null!;
-    public Tilegrid BG = null!;
+    public Tilegrid Fg = null!;
+    public Tilegrid Bg = null!;
 
     /// <summary>
     /// Currently unparsed
@@ -157,19 +157,19 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// </summary>
     public event Action<string, string>? OnNameChanged;
 
-    private List<ISprite>? CachedSprites;
-    private List<ISprite>? CachedEntitySprites;
-    private List<ISprite>? CachedTriggerSprites;
-    private List<ISprite>? CachedBgDecalSprites;
-    private List<ISprite>? CachedFgDecalSprites;
-    private List<ISprite>? CachedBgTileSprites;
-    private List<ISprite>? CachedFgTileSprites;
+    private List<ISprite>? _cachedSprites;
+    private List<ISprite>? _cachedEntitySprites;
+    private List<ISprite>? _cachedTriggerSprites;
+    private List<ISprite>? _cachedBgDecalSprites;
+    private List<ISprite>? _cachedFgDecalSprites;
+    private List<ISprite>? _cachedBgTileSprites;
+    private List<ISprite>? _cachedFgTileSprites;
 
     /// <summary>
     /// Gets an entity ID that's not yet used in this room.
     /// </summary>
     /// <returns></returns>
-    public int NextEntityID() {
+    public int NextEntityId() {
         if (Entities.Count > 0 || Triggers.Count > 0)
             return Entities.Concat(Triggers).Max(e => e.Id) + 1;
 
@@ -249,12 +249,12 @@ public sealed class Room : IPackable, ILuaWrapper {
                     ObjTiles = child;
                     break;
                 case "solids":
-                    FG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    SetupFGTilegrid();
+                    Fg = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                    SetupFgTilegrid();
                     break;
                 case "bg":
-                    BG = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
-                    SetupBGTilegrid();
+                    Bg = Tilegrid.FromString(Width, Height, child.Attr("innerText"));
+                    SetupBgTilegrid();
                     break;
             }
         }
@@ -266,16 +266,16 @@ public sealed class Room : IPackable, ILuaWrapper {
         // However, they aren't parsed here simply because they are so rarely needed and object tiles work fine.
     }
 
-    private void SetupBGTilegrid() {
-        BG.Depth = Depths.BGTerrain;
-        BG.Autotiler = Map.BGAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
-        BG.RenderCacheToken = BgTilesRenderCacheToken;
+    private void SetupBgTilegrid() {
+        Bg.Depth = Depths.BGTerrain;
+        Bg.Autotiler = Map.BgAutotiler ?? throw new Exception("Map.BGAutotiler must not be null!");
+        Bg.RenderCacheToken = BgTilesRenderCacheToken;
     }
 
-    private void SetupFGTilegrid() {
-        FG.Depth = Depths.FGTerrain;
-        FG.Autotiler = Map.FGAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
-        FG.RenderCacheToken = FgTilesRenderCacheToken;
+    private void SetupFgTilegrid() {
+        Fg.Depth = Depths.FGTerrain;
+        Fg.Autotiler = Map.FgAutotiler ?? throw new Exception("Map.FGAutotiler must not be null!");
+        Fg.RenderCacheToken = FgTilesRenderCacheToken;
     }
 
     public BinaryPacker.Element Pack() {
@@ -310,8 +310,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         var trimEntities = Settings.Instance.TrimEntities;
         
         var children = new List<BinaryPacker.Element> {
-            FG.Pack("solids"),
-            BG.Pack("bg"),
+            Fg.Pack("solids"),
+            Bg.Pack("bg"),
             ObjTiles,
             new("fgtiles") {
                 Attributes = new() {
@@ -373,7 +373,7 @@ public sealed class Room : IPackable, ILuaWrapper {
            );
 
     internal void StartBatch(Camera camera, Colorgrade colorgrade) {
-        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, colorgrade.Set(), camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
+        Gfx.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, colorgrade.Set(), camera.Matrix * (Matrix.CreateTranslation(X * camera.Scale, Y * camera.Scale, 0f))));
     }
 
     public RectangleSprite GetBorderSprite(float cameraScale) 
@@ -382,7 +382,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     public IEnumerable<ISprite> GetInteriorSprites() {
         CacheSpritesIfNeeded();
         
-        return CachedSprites!;
+        return _cachedSprites!;
     }
 
     public enum RenderConfig {
@@ -393,13 +393,13 @@ public sealed class Room : IPackable, ILuaWrapper {
     
     public void Render(Camera camera, RenderConfig cfg, Colorgrade colorgrade) {
         if (cfg == RenderConfig.Unselected && !camera.IsRectVisible(Bounds)) {
-            if (CachedSprites is {} || FullRenderCanvas is {})
+            if (_cachedSprites is {} || _fullRenderCanvas is {})
                 ClearRenderCacheIfWanted();
             
             return;
         }
 
-        var canvasReady = FullRenderCanvas is { IsDisposed: false };
+        var canvasReady = _fullRenderCanvas is { IsDisposed: false };
 
         // canvases are not used in selected rooms, free the canvas
         if (canvasReady && cfg == RenderConfig.Selected)
@@ -430,12 +430,12 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (cfg == RenderConfig.Unselected)
             ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
         
-        GFX.EndBatch();
+        Gfx.EndBatch();
     }
 
     private void SetupRainbowTilesets() {
-        Map.FGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.FG));
-        Map.BGAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.BG));
+        Map.FgAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.Fg));
+        Map.BgAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.Bg));
     }
 
     private void DrawRoomInterior(Camera camera, bool selected, bool canvasReady) {
@@ -444,7 +444,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         } else {
             CacheSpritesIfNeeded();
 
-            if (!selected && CachedSprites!.TrueForAll(s => s.IsLoaded)) {
+            if (!selected && _cachedSprites!.TrueForAll(s => s.IsLoaded)) {
                 RysyState.RegisterOnEndOfThisFrame(camera, CacheIntoCanvas);
             }
 
@@ -452,7 +452,7 @@ public sealed class Room : IPackable, ILuaWrapper {
                 SetupRainbowTilesets();
 
                 var ctx = new SpriteRenderCtx(camera, new(X, Y), this, Settings.Instance?.Animate ?? false);
-                foreach (var item in CachedSprites!) {
+                foreach (var item in _cachedSprites!) {
                     item.Render(ctx);
                 }
             }
@@ -460,19 +460,19 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     internal void CacheSpritesIfNeeded() {
-        if (CachedSprites is null) {
+        if (_cachedSprites is null) {
             using var w = Settings.Instance.LogSpriteCachingTimes ? new ScopedStopwatch($"Generating sprites for {Name}") : null;
 
             IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
             var p = Persistence.Instance;
 
             if (p.EntitiesVisible) {
-                if (CachedEntitySprites is null) {
+                if (_cachedEntitySprites is null) {
 #if LOG_PER_ENTITY_PERF
                     Dictionary<string, TimeSpan> TimePerType = new(StringComparer.Ordinal);
 #endif
 
-                    CachedEntitySprites = Entities.Select(e => {
+                    _cachedEntitySprites = Entities.Select(e => {
                         var spr = e.GetSpritesWithNodes();
                         if (!e.EditorGroups.Enabled)
                             spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
@@ -499,11 +499,11 @@ public sealed class Room : IPackable, ILuaWrapper {
                 }
 
 
-                sprites = sprites.Concat(CachedEntitySprites);
+                sprites = sprites.Concat(_cachedEntitySprites);
             }
 
             if (p.TriggersVisible) {
-                CachedTriggerSprites ??= Triggers.Select(e => {
+                _cachedTriggerSprites ??= Triggers.Select(e => {
                     var spr = e.GetSpritesWithNodes();
                     if (!e.EditorGroups.Enabled)
                         spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
@@ -512,36 +512,36 @@ public sealed class Room : IPackable, ILuaWrapper {
                 }).SelectMany(x => x).ToList();
                 TriggerRenderCacheToken.Reset();
 
-                sprites = sprites.Concat(CachedTriggerSprites);
+                sprites = sprites.Concat(_cachedTriggerSprites);
             }
 
-            if (p.FGTilesVisible) {
-                if (CachedFgTileSprites is null) {
-                    var fgsprites = FG.GetSprites();
+            if (p.FgTilesVisible) {
+                if (_cachedFgTileSprites is null) {
+                    var fgsprites = Fg.GetSprites();
                     //fgsprites.UseRenderTarget(true);
                     
-                    CachedFgTileSprites ??= fgsprites.ToList();
+                    _cachedFgTileSprites ??= fgsprites.ToList();
                 }
                 FgTilesRenderCacheToken.Reset();
 
-                sprites = sprites.Concat(CachedFgTileSprites);
+                sprites = sprites.Concat(_cachedFgTileSprites);
             }
 
-            if (p.BGTilesVisible) {
-                if (CachedBgTileSprites is null) {
-                    var bgsprites = BG.GetSprites();
+            if (p.BgTilesVisible) {
+                if (_cachedBgTileSprites is null) {
+                    var bgsprites = Bg.GetSprites();
                     //bgsprites.UseRenderTarget(true);
                     
-                    CachedBgTileSprites ??= bgsprites.ToList();
+                    _cachedBgTileSprites ??= bgsprites.ToList();
                 }
                 //CachedBgTileSprites ??= BG.GetSprites().ToList();
                 BgTilesRenderCacheToken.Reset();
 
-                sprites = sprites.Concat(CachedBgTileSprites);
+                sprites = sprites.Concat(_cachedBgTileSprites);
             }
 
-            if (p.FGDecalsVisible) {
-                CachedFgDecalSprites ??= FgDecals.Select<Entity, ISprite>(d => {
+            if (p.FgDecalsVisible) {
+                _cachedFgDecalSprites ??= FgDecals.Select<Entity, ISprite>(d => {
                     var spr = d.AsDecal()!.GetSprite();
                     if (!d.EditorGroups.Enabled)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
@@ -550,10 +550,10 @@ public sealed class Room : IPackable, ILuaWrapper {
                 }).ToList();
                 FgDecalsRenderCacheToken.Reset();
 
-                sprites = sprites.Concat(CachedFgDecalSprites);
+                sprites = sprites.Concat(_cachedFgDecalSprites);
             }
-            if (p.BGDecalsVisible) {
-                CachedBgDecalSprites ??= BgDecals.Select<Entity, ISprite>(d => {
+            if (p.BgDecalsVisible) {
+                _cachedBgDecalSprites ??= BgDecals.Select<Entity, ISprite>(d => {
                     var spr = d.AsDecal()!.GetSprite();
                     if (!d.EditorGroups.Enabled)
                         spr.Color *= Settings.Instance.HiddenLayerAlpha;
@@ -562,15 +562,15 @@ public sealed class Room : IPackable, ILuaWrapper {
                 }).ToList();
                 BgDecalsRenderCacheToken.Reset();
 
-                sprites = sprites.Concat(CachedBgDecalSprites);
+                sprites = sprites.Concat(_cachedBgDecalSprites);
             }
 
-            CachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
+            _cachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();
 
             RenderCacheToken.Reset();
             
             if (w is { })
-                w.Message = $"Generating {CachedSprites.Count} sprites for {Name}";
+                w.Message = $"Generating {_cachedSprites.Count} sprites for {Name}";
 
             if (Settings.Instance.LogTextureLoadTimes)
                 StartTextureLoadTimer();
@@ -578,12 +578,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     private void DrawFromCanvas(Camera camera) {
-        if (FullRenderCanvas is {} canvas)
-            GFX.Batch.Draw(canvas, new Vector2(0, 0), Color.White);
+        if (_fullRenderCanvas is {} canvas)
+            Gfx.Batch.Draw(canvas, new Vector2(0, 0), Color.White);
     }
 
     private void CacheIntoCanvas(Camera camera) {
-        if (CachedSprites is null)
+        if (_cachedSprites is null)
             return;
 
         var gd = RysyState.GraphicsDevice;
@@ -592,25 +592,25 @@ public sealed class Room : IPackable, ILuaWrapper {
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);
 
-        GFX.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
+        Gfx.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
 
         SetupRainbowTilesets();
         var ctx = new SpriteRenderCtx(null, default, this, false);
-        foreach (var item in CachedSprites) {
+        foreach (var item in _cachedSprites) {
             item.Render(ctx);
         }
 
-        GFX.EndBatch();
+        Gfx.EndBatch();
         gd.SetRenderTarget(null);
 
         ClearRenderCache();
-        FullRenderCanvas = canvas;
+        _fullRenderCanvas = canvas;
     }
 
     private void StartTextureLoadTimer() {
         Task.Run(async () => {
-            using (var w = new ScopedStopwatch($"Loading {CachedSprites!.Count} textures for {Name}"))
-                while (!CachedSprites!.All(s => s.IsLoaded)) {
+            using (var w = new ScopedStopwatch($"Loading {_cachedSprites!.Count} textures for {Name}"))
+                while (!_cachedSprites!.All(s => s.IsLoaded)) {
                     await Task.Delay(100);
                 }
         });
@@ -642,8 +642,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         ClearRenderCache();
         
         // clear autotiled sprite caches for tilegrids
-        FG.ClearSpriteCache();
-        BG.ClearSpriteCache();
+        Fg.ClearSpriteCache();
+        Bg.ClearSpriteCache();
         
         foreach (var e in Entities) {
             e.ClearInnerCaches();
@@ -660,32 +660,32 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void ClearEntityRenderCache() {
-        CachedEntitySprites?.Clear();
-        CachedEntitySprites = null;
+        _cachedEntitySprites?.Clear();
+        _cachedEntitySprites = null;
         ClearFullRenderCache();
     }
 
     public void ClearTriggerRenderCache() {
-        CachedTriggerSprites = null;
+        _cachedTriggerSprites = null;
         ClearFullRenderCache();
     }
 
     public void ClearFgDecalsRenderCache() {
-        CachedFgDecalSprites = null;
+        _cachedFgDecalSprites = null;
         ClearFullRenderCache();
     }
 
     public void ClearBgDecalsRenderCache() {
-        CachedBgDecalSprites = null;
+        _cachedBgDecalSprites = null;
         ClearFullRenderCache();
     }
 
     public void ClearFgTilesRenderCache() {
-        CachedFgTileSprites = null;
+        _cachedFgTileSprites = null;
         ClearFullRenderCache();
     }
     public void ClearBgTilesRenderCache() {
-        CachedBgTileSprites = null;
+        _cachedBgTileSprites = null;
         ClearFullRenderCache();
     }
 
@@ -694,16 +694,16 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// and the render target if it exists.
     /// </summary>
     private void ClearFullRenderCache() {
-        FullRenderCanvas?.Dispose();
-        FullRenderCanvas = null;
-        CachedSprites = null;
+        _fullRenderCanvas?.Dispose();
+        _fullRenderCanvas = null;
+        _cachedSprites = null;
     }
 
     public bool IsTileAt(Vector2 roomPos) {
         int x = (int) float.Floor(roomPos.X / 8f);
         int y = (int) float.Floor(roomPos.Y / 8f);
 
-        return FG.SafeTileAt(x, y) != '0';
+        return Fg.SafeTileAt(x, y) != '0';
     }
 
     public bool IsSolidAt(Vector2 roomPos) {
@@ -793,20 +793,20 @@ public sealed class Room : IPackable, ILuaWrapper {
             GetSelectionsInRectForEntities(rect, Triggers, list);
         }
 
-        if ((layer & SelectionLayer.FGDecals) != 0) {
+        if ((layer & SelectionLayer.FgDecals) != 0) {
             GetSelectionsInRectForDecals(rect, FgDecals, list);
         }
 
-        if ((layer & SelectionLayer.BGDecals) != 0) {
+        if ((layer & SelectionLayer.BgDecals) != 0) {
             GetSelectionsInRectForDecals(rect, BgDecals, list);
         }
 
-        if ((layer & SelectionLayer.FGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, FG, list, SelectionLayer.FGTiles);
+        if ((layer & SelectionLayer.FgTiles) != 0) {
+            GetSelectionsInRectForGrid(rect, Fg, list, SelectionLayer.FgTiles);
         }
 
-        if ((layer & SelectionLayer.BGTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, BG, list, SelectionLayer.BGTiles);
+        if ((layer & SelectionLayer.BgTiles) != 0) {
+            GetSelectionsInRectForGrid(rect, Bg, list, SelectionLayer.BgTiles);
         }
 
         return list;
@@ -818,8 +818,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     public List<Selection>? GetSelectionsForSameType(ISelectionHandler objHandler) {
         switch (objHandler.Parent) {
             case Entity e:
-                var sid = e.EntityData.SID;
-                return e.GetRoomList().Where(x => x.EntityData.SID == sid && x.EditorGroups.Enabled).Select(CreateSelectionFrom).ToList();
+                var sid = e.EntityData.Sid;
+                return e.GetRoomList().Where(x => x.EntityData.Sid == sid && x.EditorGroups.Enabled).Select(CreateSelectionFrom).ToList();
             case Room room:
                 if (room.Map is { } map) {
                     return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
@@ -841,8 +841,8 @@ public sealed class Room : IPackable, ILuaWrapper {
             case Entity e:
                 if (e.Nodes.Count > 0)
                     return MakeSelectionsForAllNodesOfEntity(e);
-                var sid = e.EntityData.SID;
-                return e.GetRoomList().Where(x => x.EntityData.SID == sid && x.EditorGroups.Enabled && e.SimilarTo(x)).Select(CreateSelectionFrom).ToList();
+                var sid = e.EntityData.Sid;
+                return e.GetRoomList().Where(x => x.EntityData.Sid == sid && x.EditorGroups.Enabled && e.SimilarTo(x)).Select(CreateSelectionFrom).ToList();
             case Room room:
                 if (room.Map is { } map) {
                     return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();
@@ -905,8 +905,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
 
-    private RoomSelectionHandler? _SelectionHandler;
-    public ISelectionHandler GetSelectionHandler() => _SelectionHandler ??= new RoomSelectionHandler(this);
+    private RoomSelectionHandler? _selectionHandler;
+    public ISelectionHandler GetSelectionHandler() => _selectionHandler ??= new RoomSelectionHandler(this);
 
     #endregion
 
@@ -924,10 +924,10 @@ public sealed class Room : IPackable, ILuaWrapper {
                 lua.PushWrapper(Entities);
                 return 1;
             case "tilesFg":
-                lua.PushWrapper(FG);
+                lua.PushWrapper(Fg);
                 return 1;
             case "tilesBg":
-                lua.PushWrapper(BG);
+                lua.PushWrapper(Bg);
                 return 1;
             case "width":
                 lua.PushNumber(Width);

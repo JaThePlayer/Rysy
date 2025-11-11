@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Rysy.Scripting;
 
 public static class ScriptRegistry {
-    private static List<Script> _Scripts;
+    private static List<Script>? ScriptsMutable;
 
     private static Dictionary<string, List<Script>> ModScripts = new();
 
@@ -15,15 +15,15 @@ public static class ScriptRegistry {
     /// </summary>
     public static event Action OnScriptReloaded;
 
-    public static List<Script> Scripts => _Scripts ??= LoadAll();
+    public static IReadOnlyList<Script> Scripts => ScriptsMutable ??= LoadAll();
 
     private static List<Script> LoadAll() {
-        _Scripts = new();
+        ScriptsMutable = new();
 
         foreach (var mod in ModRegistry.Mods.Values) {
             mod.OnAssemblyReloaded += (asm) => {
                 foreach (var oldScript in ModScripts[mod.Name]) {
-                    _Scripts.Remove(oldScript);
+                    ScriptsMutable.Remove(oldScript);
                 }
 
                 LoadFromAsm(mod.Name, asm);
@@ -33,7 +33,7 @@ public static class ScriptRegistry {
             LoadFromAsm(mod.Name, mod.PluginAssembly);
         }
 
-        return _Scripts;
+        return ScriptsMutable;
     }
 
     private static void LoadFromAsm(string modName, Assembly? asm) {
@@ -45,8 +45,8 @@ public static class ScriptRegistry {
         foreach (var scriptType in asm.GetTypes().Where(t => t.IsSubclassOf(typeof(Script)))) {
             var script = (Script?)Activator.CreateInstance(scriptType) ?? throw new Exception("Huh?");
             
-            lock (_Scripts) {
-                _Scripts.Add(script);
+            lock (ScriptsMutable) {
+                ScriptsMutable.Add(script);
                 ModScripts[modName].Add(script);
             }
         }

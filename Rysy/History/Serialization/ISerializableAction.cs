@@ -132,7 +132,7 @@ public static class HistorySerializer {
         }
 
         if (el.TryGetValue("_registeredEntity", out var entityType)) {
-            type = EntityRegistry.GetTypeForSID(el.Name ?? "", entityType switch {
+            type = EntityRegistry.GetTypeForSid(el.Name ?? "", entityType switch {
                 "Entity" => RegisteredEntityType.Entity,
                 "Trigger" => RegisteredEntityType.Trigger,
                 "Style" => RegisteredEntityType.Style,

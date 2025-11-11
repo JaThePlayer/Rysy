@@ -4,14 +4,14 @@ using SDL2;
 namespace Rysy.Extensions {
     public static class FnaMonogameCompat {
         #if FNA
-        private static Dictionary<MouseCursor, IntPtr> sdlMouseCursors = new() {
+        private static Dictionary<MouseCursor, IntPtr> SdlMouseCursors = new() {
             [MouseCursor.Arrow] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW),
             [MouseCursor.IBeam] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM),
             [MouseCursor.SizeAll] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL),
-            [MouseCursor.SizeNS] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS),
-            [MouseCursor.SizeWE] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE),
-            [MouseCursor.SizeNESW] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW),
-            [MouseCursor.SizeNWSE] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE),
+            [MouseCursor.SizeNs] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS),
+            [MouseCursor.SizeWe] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE),
+            [MouseCursor.SizeNesw] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW),
+            [MouseCursor.SizeNwse] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE),
             [MouseCursor.Hand] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND),
             [MouseCursor.No] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO),
         };
@@ -19,7 +19,7 @@ namespace Rysy.Extensions {
         
         public static void SetMouseCursor(MouseCursor cursor) {
             #if FNA
-            if (sdlMouseCursors.TryGetValue(cursor, out var sdlCursor))
+            if (SdlMouseCursors.TryGetValue(cursor, out var sdlCursor))
                 SDL2.SDL.SDL_SetCursor(sdlCursor);
             #else
             Mouse.SetCursor(cursor);
@@ -66,7 +66,7 @@ namespace Rysy.Extensions {
 #if FNA
 namespace Microsoft.Xna.Framework {
     public enum MouseCursor {
-        Arrow, IBeam, SizeAll, SizeNS, SizeWE, SizeNESW, SizeNWSE, Hand, No
+        Arrow, IBeam, SizeAll, SizeNs, SizeWe, SizeNesw, SizeNwse, Hand, No
     }
 
     public static class FnaMonogame {

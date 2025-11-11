@@ -31,7 +31,7 @@ internal sealed class CustomSpinner : LonnEntity {
     [Bind("imageScale")]
     public float ImageScale;
 
-    public Color BorderColor => RGBA("borderColor", Color.Black);
+    public Color BorderColor => Rgba("borderColor", Color.Black);
 
     private SpinnerPathCache? _cache;
 
@@ -80,11 +80,11 @@ internal sealed class CustomSpinner : LonnEntity {
             directory += "/00";
 
         var fgs = 
-            GFX.Atlas.GetSubtexturesOrPlaceholder($"{directory}/fg{suffix}")
+            Gfx.Atlas.GetSubtexturesOrPlaceholder($"{directory}/fg{suffix}")
                 .Select(t => SpriteTemplate.FromTexture(t, depth).Centered() with { Scale = new(imageScale) })
                 .ToList();
         var bgs = 
-            GFX.Atlas.GetSubtexturesOrPlaceholder($"{directory}/bg{suffix}")
+            Gfx.Atlas.GetSubtexturesOrPlaceholder($"{directory}/bg{suffix}")
                 .Select(t => SpriteTemplate.FromTexture(t, depth).Centered() with { Depth = depth + 1, Scale = new(imageScale) })
                 .ToList();
 
@@ -191,7 +191,7 @@ internal sealed class RainbowTilesetController : LonnEntity, IPlaceable {
     [Bind("bg")]
     public bool Bg;
 
-    public TileLayer TileLayer => Bg ? TileLayer.BG : TileLayer.FG;
+    public TileLayer TileLayer => Bg ? TileLayer.Bg : TileLayer.Fg;
     
     public static FieldList GetFields() => new(new {
         tilesets = Fields.List("3", Fields.TileDropdown('3', ctx => ctx.Bool("bg"))),
@@ -209,7 +209,7 @@ internal sealed class ArbitraryShapeCloud : Entity
     public override IEnumerable<ISprite> GetSprites()
     {
         var nodes = Nodes.Select(n => n.Pos).Append(Pos).ToList();
-        var color = RGBA("color");
+        var color = Rgba("color");
         var fillColor = color;
 
         var textures = ParseTextureList(Attr("textures", DefaultTextureString));
@@ -225,7 +225,7 @@ internal sealed class ArbitraryShapeCloud : Entity
             var dist = Vector2.Distance(start, n);
             while (dist > 0) {
                 var t = (curr + Room.Pos).SeededRandomFrom(textures);
-                var spr = GFX.Atlas[t.Path];
+                var spr = Gfx.Atlas[t.Path];
                 var sprW = spr.Width * 3 / 4;
                 var offset = Math.Min(0, dist - sprW);
                 var rot = angle + t.DefaultRotation;

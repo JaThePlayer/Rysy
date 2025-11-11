@@ -6,14 +6,14 @@ namespace Rysy.Layers;
 public static class EditorLayers {
     internal static List<EditorLayer> KnownLayers { get; } = new();
     
-    public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.FG);
-    public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.BG);
+    public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.Fg);
+    public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.Bg);
     public static EditorLayer BothTilegrids { get; } = new FakeLayer("Both");
     
     public static EditorLayer Entities { get; } = new EntityLayer(SelectionLayer.Entities);
     public static EditorLayer Triggers { get; } = new EntityLayer(SelectionLayer.Triggers);
-    public static EditorLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FGDecals);
-    public static EditorLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BGDecals);
+    public static EditorLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FgDecals);
+    public static EditorLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BgDecals);
 
     public static EditorLayer Room { get; } = new RoomLayer();
 

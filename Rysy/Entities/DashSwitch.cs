@@ -5,7 +5,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("dashSwitchV")]
 [CustomEntity("dashSwitchH")]
-public class DashSwitch : Entity, IMultiSIDPlaceable {
+public class DashSwitch : Entity, IMultiSidPlaceable {
     public override int Depth => 0;
 
     Directions Direction => Name switch {
@@ -37,7 +37,7 @@ public class DashSwitch : Entity, IMultiSIDPlaceable {
         };
 
         return CloneWith(pl => {
-            pl.SID = sid;
+            pl.Sid = sid;
             pl["ceiling"] = null;
             pl["leftSide"] = null;
             pl[field] = val;

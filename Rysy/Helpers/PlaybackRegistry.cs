@@ -46,7 +46,7 @@ public static class PlaybackRegistry {
             if (skip)
                 continue;
 
-            if (bank.Exists("player_playback", state.Animation, GFX.Atlas)) {
+            if (bank.Exists("player_playback", state.Animation, Gfx.Atlas)) {
                 anim = state.Animation;
             }
 

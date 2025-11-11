@@ -33,13 +33,13 @@ public record struct RepeatingSprite : ISprite {
             return;
 
         // Modded, un-atlased textures can be rendered more efficiently if PointWrap is used.
-        if (vTexture is ModTexture && GFX.GetCurrentBatchState().SamplerState == SamplerState.PointWrap) {
+        if (vTexture is ModTexture && Gfx.GetCurrentBatchState().SamplerState == SamplerState.PointWrap) {
             var clipRect = vTexture.ClipRect;
 
             clipRect.Width = bounds.Width;
             clipRect.Height = bounds.Height;
         
-            GFX.Batch.Draw(texture2d, bounds.Location.ToVector2(), clipRect, Color, Template.Rotation, Template.Origin, Template.Scale, Template.Flip, 0f);
+            Gfx.Batch.Draw(texture2d, bounds.Location.ToVector2(), clipRect, Color, Template.Rotation, Template.Origin, Template.Scale, Template.Flip, 0f);
             return;
         }
 

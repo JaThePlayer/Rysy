@@ -11,7 +11,7 @@ public class HangingLamp : LoopingSpriteSliceEntity, IPlaceable {
 
     public override int Depth => 2000;
 
-    public override LoopingMode LoopMode => LoopingMode.UseEdgeTiles_RepeatMiddle;
+    public override LoopingMode LoopMode => LoopingMode.UseEdgeTilesRepeatMiddle;
 
     public override bool ResizableY => true;
 

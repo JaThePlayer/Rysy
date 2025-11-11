@@ -118,23 +118,23 @@ public static class UntypedDataExt {
         return def;
     }
 
-    public static Color RGB(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.RGB);
+    public static Color Rgb(this IUntypedData self, string attrName, Color def)
+        => self.GetColor(attrName, def, ColorFormat.Rgb);
 
-    public static Color RGB(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.RGB);
+    public static Color Rgb(this IUntypedData self, string attrName, string def)
+        => self.GetColor(attrName, def, ColorFormat.Rgb);
 
-    public static Color RGBA(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.RGBA);
+    public static Color Rgba(this IUntypedData self, string attrName, Color def)
+        => self.GetColor(attrName, def, ColorFormat.Rgba);
 
-    public static Color RGBA(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.RGBA);
+    public static Color Rgba(this IUntypedData self, string attrName, string def)
+        => self.GetColor(attrName, def, ColorFormat.Rgba);
 
-    public static Color ARGB(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.ARGB);
+    public static Color Argb(this IUntypedData self, string attrName, Color def)
+        => self.GetColor(attrName, def, ColorFormat.Argb);
 
-    public static Color ARGB(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.ARGB);
+    public static Color Argb(this IUntypedData self, string attrName, string def)
+        => self.GetColor(attrName, def, ColorFormat.Argb);
     
     public static Color GetColor(this IUntypedData self, string attrName, Color def, ColorFormat format) {
         if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))

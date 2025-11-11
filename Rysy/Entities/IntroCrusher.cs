@@ -10,7 +10,7 @@ public sealed class IntroCrusher : TileEntity, IPlaceable {
 
     public override char Tiletype => Char("tiletype", '3');
 
-    public override TileLayer Layer => TileLayer.FG;
+    public override TileLayer Layer => TileLayer.Fg;
 
     public static FieldList GetFields() => new(new {
         tiletype = Fields.TileDropdown('3', bg: false),

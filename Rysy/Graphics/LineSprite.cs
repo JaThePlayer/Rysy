@@ -24,7 +24,7 @@ public record struct LineSprite : ISprite {
 
     public bool ConnectFirstWithLast { get; set; } = false;
 
-    private Rectangle? Bounds;
+    private Rectangle? _bounds;
 
     public LineSprite(IEnumerable<Vector2> positions) {
         Positions = positions.ToListIfNotList();
@@ -45,7 +45,7 @@ public record struct LineSprite : ISprite {
     }
 
     public void Render(SpriteRenderCtx ctx) {
-        DoRender(ctx.Camera, ctx.CameraOffset, Positions, Color, ref Bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
+        DoRender(ctx.Camera, ctx.CameraOffset, Positions, Color, ref _bounds, Thickness, Offset, MagnitudeOffset, ConnectFirstWithLast);
     }
 
     internal static void DoRender(Camera? cam, Vector2 offset, IList<Vector2> positions, Color c, ref Rectangle? bounds, 
@@ -64,7 +64,7 @@ public record struct LineSprite : ISprite {
             }
         }
 
-        var b = GFX.Batch;
+        var b = Gfx.Batch;
         for (int i = 0; i < positions.Count - 1; i++) {
             var start = positions[i];
             var end = positions[i + 1];
@@ -80,6 +80,6 @@ public record struct LineSprite : ISprite {
     }
 
     public ISelectionCollider GetCollider() {
-        return ISelectionCollider.FromRect(Bounds ??= RectangleExt.FromPoints(Positions));
+        return ISelectionCollider.FromRect(_bounds ??= RectangleExt.FromPoints(Positions));
     }
 }

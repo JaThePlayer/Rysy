@@ -4,12 +4,9 @@ namespace Rysy.Entities;
 
 [CustomEntity("lightning")]
 public class Lightning : RectangleEntity, IPlaceable {
-    private static readonly Color outlineColor = "fcf579".FromRGB();
-    private static readonly Color color = outlineColor * .3f;
+    public override Color FillColor => OutlineColor * 0.3f;
 
-    public override Color FillColor => color;
-
-    public override Color OutlineColor => outlineColor;
+    public override Color OutlineColor => "fcf579".FromRgb();
 
     public override int Depth => -1000100;
 

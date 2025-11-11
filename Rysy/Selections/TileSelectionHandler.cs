@@ -7,12 +7,12 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public Tilegrid Grid;
     public Rectangle Rect;
 
-    private List<(bool Exclude, Rectangle)> ToMoveRects = new();
+    private List<(bool Exclude, Rectangle)> _toMoveRects = new();
 
-    private char[,] ToMove;
-    private char[,]? Orig;
+    private char[,] _toMove;
+    private char[,]? _orig;
 
-    private SelectionLayer SelectionLayer;
+    private SelectionLayer _selectionLayer;
 
     public bool ResizableX => false;
 
@@ -20,17 +20,17 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, SelectionLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
-        ToMoveRects.Add((false, Rect));
-        SelectionLayer = layer;
+        _toMoveRects.Add((false, Rect));
+        _selectionLayer = layer;
     }
 
     internal TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, char[,] toMove, SelectionLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
-        ToMoveRects.Add((false, Rect));
+        _toMoveRects.Add((false, Rect));
 
-        ToMove = toMove;
-        Orig = (char[,]) Grid.Tiles.Clone();
-        SelectionLayer = layer;
+        _toMove = toMove;
+        _orig = (char[,]) Grid.Tiles.Clone();
+        _selectionLayer = layer;
     }
 
     public bool AnyTileWithin() {
@@ -45,12 +45,12 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public object Parent => Grid;
 
-    public char[,] GetSelectedTiles() => ToMove ?? CreateToMove();
+    public char[,] GetSelectedTiles() => _toMove ?? CreateToMove();
 
     public IHistoryAction DeleteSelf() {
         // todo: use this when possible for less memory usage
         //return new TileRectChangeAction('0', Rect.Div(8), Grid);
-        var toMove = ToMove ?? CreateToMove();
+        var toMove = _toMove ?? CreateToMove();
         var (w, h) = (toMove.GetLength(0), toMove.GetLength(1));
         var mask = new bool[w, h];
         for (int x = 0; x < w; x++) {
@@ -76,7 +76,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         ConsumeTilesIfNeeded();
 
-        var action = new TileRectMoveAction(Grid, Rect.Div(8), Orig!, ToMove, tileOffset)
+        var action = new TileRectMoveAction(Grid, Rect.Div(8), _orig!, _toMove, tileOffset)
             .WithHook(
             onApply: () => MoveRects(tileOffset),
             onUndo: () => MoveRects(new(-tileOffset.X, -tileOffset.Y)));
@@ -87,22 +87,22 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     private void MoveRects(Point tileOffset) {
         var moveOffset = tileOffset.ToVector2() * 8;
         Rect = Rect.MovedBy(moveOffset);
-        for (int i = 0; i < ToMoveRects.Count; i++)
-            ToMoveRects[i] = (ToMoveRects[i].Exclude, ToMoveRects[i].Item2.MovedBy(moveOffset));
+        for (int i = 0; i < _toMoveRects.Count; i++)
+            _toMoveRects[i] = (_toMoveRects[i].Exclude, _toMoveRects[i].Item2.MovedBy(moveOffset));
     }
 
     private void ConsumeTilesIfNeeded() {
-        if (Orig is null) {
-            Orig ??= (char[,]) Grid.Tiles.Clone();
+        if (_orig is null) {
+            _orig ??= (char[,]) Grid.Tiles.Clone();
             var rect = Rect.Div(8);
 
-            var toMove = ToMove ??= CreateToMove();
+            var toMove = _toMove ??= CreateToMove();
 
             for (int x = rect.X; x < rect.Right; x++)
                 for (int y = rect.Y; y < rect.Bottom; y++)
                     if (x >= 0 && y >= 0 && x < Grid.Width && y < Grid.Height
                         && toMove[x - rect.X, y - rect.Y] != '0') {
-                        Orig[x, y] = '0';
+                        _orig[x, y] = '0';
                     }
         }
     }
@@ -113,7 +113,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var toMove = new char[w, h];
         toMove.Fill('0');
-        foreach (var (exclude, r) in ToMoveRects)
+        foreach (var (exclude, r) in _toMoveRects)
             HandleToMove(toMove, r.Div(8), exclude, rect.X, rect.Y);
 
         return toMove;
@@ -128,7 +128,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         rect.Width = rect.Width.AtLeast(1);
         rect.Height = rect.Height.AtLeast(1);
 
-        if (ToMove is not { } toMove)
+        if (_toMove is not { } toMove)
             toMove = CreateToMove();
         var offX = Rect.Div(8).X;
         var offY = Rect.Div(8).Y;
@@ -155,11 +155,11 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         Vector2 rPos = pos ?? new(rect.X * 8, rect.Y * 8);
 
-        ToMove ??= CreateToMove();
+        _toMove ??= CreateToMove();
 
         var fillColor = hollow ? Color.Transparent : c * 0.3f;
 
-        if (ToMove is { } toMove)
+        if (_toMove is { } toMove)
             // if we've moved the tiles, make sure to render ToMove instead of the current grid,
             // as otherwise we might render an outline on a tile that's within range, but not actually selected
             for (int x = 0; x < toMove.GetLength(0); x++)
@@ -174,11 +174,11 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var merged = RectangleExt.Merge(Rect, rectPixels);
         Rect = merged;
-        ToMoveRects.Add((exclude, rectPixels));
+        _toMoveRects.Add((exclude, rectPixels));
 
-        if (ToMove is { }) {
-            ToMove = null!;
-            Orig = null;
+        if (_toMove is { }) {
+            _toMove = null!;
+            _orig = null;
         }
     }
 
@@ -191,7 +191,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public BinaryPacker.Element? PackParent() {
-        var toMove = ToMove ?? CreateToMove();
+        var toMove = _toMove ?? CreateToMove();
 
         return new("tiles") {
             Attributes = new() {
@@ -216,20 +216,20 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction PlaceClone(Room room) {
-        return new TilePasteAction(new(ToMove), Grid, Rect.Div(8).Location);
+        return new TilePasteAction(new(_toMove), Grid, Rect.Div(8).Location);
     }
 
     public IHistoryAction PlaceCloneAt(Room room, Point tilePos) {
-        return new TilePasteAction(new(ToMove), Grid, tilePos);
+        return new TilePasteAction(new(_toMove), Grid, tilePos);
     }
 
     public IHistoryAction? TryFlipHorizontal() {
         ConsumeTilesIfNeeded();
 
-        var newToMove = ToMove.CreateFlippedHorizontally();
+        var newToMove = _toMove.CreateFlippedHorizontally();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), Orig!, newToMove);
-        ToMove = newToMove;
+        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove);
+        _toMove = newToMove;
 
         return action;
     }
@@ -237,10 +237,10 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public IHistoryAction? TryFlipVertical() {
         ConsumeTilesIfNeeded();
 
-        var newToMove = ToMove.CreateFlippedVertically();
+        var newToMove = _toMove.CreateFlippedVertically();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), Orig!, newToMove);
-        ToMove = newToMove;
+        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove);
+        _toMove = newToMove;
 
         return action;
     }
@@ -250,7 +250,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         return null;
     }
 
-    public SelectionLayer Layer => SelectionLayer;
+    public SelectionLayer Layer => _selectionLayer;
 
     Rectangle ISelectionHandler.Rect => Rect;
 

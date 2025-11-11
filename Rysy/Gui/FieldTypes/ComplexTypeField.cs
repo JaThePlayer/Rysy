@@ -33,9 +33,9 @@ public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var buttonWidth = ImGui.GetFrameHeight();
-        const int ButtonAmt = 1;
+        const int buttonAmt = 1;
 
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * ButtonAmt) - xPadding * ButtonAmt);
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * buttonAmt) - xPadding * buttonAmt);
         ImGui.BeginDisabled(true);
         ImGui.InputText($"##text{fieldName}", ref str, (uint)str.Length).WithTooltip(Tooltip);
         ImGui.EndDisabled();

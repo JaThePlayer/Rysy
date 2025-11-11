@@ -1,7 +1,7 @@
 ﻿namespace Rysy.Stylegrounds;
 
 [CustomEntity("mirrorfg")]
-public sealed class MirrorFG : Style, IPlaceable {
+public sealed class MirrorFg : Style, IPlaceable {
     public static FieldList GetFields() => new();
 
     public static PlacementList GetPlacements() => new("default");

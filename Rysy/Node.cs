@@ -43,24 +43,24 @@ public sealed class Node : IDepth, ILuaWrapper {
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseRotationHandler {
-    private EntitySelectionHandler Handler;
-    private int PrevNodeId;
-    private Entity LastEntity;
+    private EntitySelectionHandler _handler;
+    private int _prevNodeId;
+    private Entity _lastEntity;
 
-    public Entity Entity => Handler.Entity;
+    public Entity Entity => _handler.Entity;
 
     public Node Node;
 
     public NodeSelectionHandler(EntitySelectionHandler entity, Node node) {
-        Handler = entity;
+        _handler = entity;
         Node = node;
 
-        PrevNodeId = NodeIdx;
-        LastEntity = Entity;
+        _prevNodeId = NodeIdx;
+        _lastEntity = Entity;
     }
 
     internal NodeSelectionHandler(EntitySelectionHandler entity, Node node, int nodeId) : this(entity, node) {
-        PrevNodeId = nodeId;
+        _prevNodeId = nodeId;
     }
 
     public void OnDeselected() {
@@ -72,29 +72,29 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
 
     public SelectionLayer Layer => Entity.GetSelectionLayer(); 
 
-    private ISelectionCollider? _Collider;
+    private ISelectionCollider? _collider;
     private ISelectionCollider Collider {
         get {
             EnsureValid();
 
-            return _Collider ??= Entity.GetNodeSelection(PrevNodeId);
+            return _collider ??= Entity.GetNodeSelection(_prevNodeId);
         }
     }
 
     internal void RecalculateId() {
-        PrevNodeId = Entity.Nodes.IndexOf(Node);
+        _prevNodeId = Entity.Nodes.IndexOf(Node);
         ClearCollideCache();
     }
 
     public Rectangle Rect => Collider.Rect;
 
     public IHistoryAction? MoveBy(Vector2 offset) {
-        var newEntity = Entity.MoveBy(offset, PrevNodeId, out var shouldDoNormalMove);
+        var newEntity = Entity.MoveBy(offset, _prevNodeId, out var shouldDoNormalMove);
         if (shouldDoNormalMove) {
             return new MoveNodeAction(Node, Entity, offset);
         }
 
-        return newEntity is { } ? Handler.FlipImpl(newEntity, nameof(Entity.MoveBy)) : null;
+        return newEntity is { } ? _handler.FlipImpl(newEntity, nameof(Entity.MoveBy)) : null;
     }
 
     public IHistoryAction DeleteSelf() {
@@ -123,7 +123,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
 
         return (
             new AddNodeAction(Entity, node, NodeIdx + 1),
-            Entity.CreateNodeSelection(NodeIdx + 1, new NodeSelectionHandler(Handler, node, NodeIdx + 1)).Handler
+            Entity.CreateNodeSelection(NodeIdx + 1, new NodeSelectionHandler(_handler, node, NodeIdx + 1)).Handler
         );
     }
 
@@ -138,18 +138,18 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);
 
     public void ClearCollideCache() {
-        _Collider = null;
+        _collider = null;
 
-        if (LastEntity != Entity) {
+        if (_lastEntity != Entity) {
             // transfer over to the node instance on the new entity
-            Node = Entity.Nodes[PrevNodeId];
-            PrevNodeId = NodeIdx;
-            LastEntity = Entity;
+            Node = Entity.Nodes[_prevNodeId];
+            _prevNodeId = NodeIdx;
+            _lastEntity = Entity;
         }
     }
 
     private void EnsureValid() {
-        if (LastEntity != Entity)
+        if (_lastEntity != Entity)
             ClearCollideCache();
     }
 
@@ -166,13 +166,13 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
-        if (!Entity.CreateNodeSelection(PrevNodeId).Check(origin)) {
+        if (!Entity.CreateNodeSelection(_prevNodeId).Check(origin)) {
             return null;
         }
         if (Entity.RotatePreciseBy(angle, origin) is not { } rotated) {
             return null;
         }
 
-        return Handler.FlipImpl(rotated, nameof(Entity.RotatePreciseBy));
+        return _handler.FlipImpl(rotated, nameof(Entity.RotatePreciseBy));
     }
 }
