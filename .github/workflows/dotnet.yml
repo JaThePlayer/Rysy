@@ -17,18 +17,18 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
         include-prerelease: true
     - name: Restore dependencies
       run: dotnet restore
     - name: Build with .NET Core
       run: |
-        dotnet publish -c "Release" -f net9.0 -r win-x64 --no-self-contained
-        dotnet publish -c "Release" -f net9.0 -r linux-x64 --no-self-contained
-        dotnet publish -c "Release" -f net9.0 -r osx-x64 --no-self-contained
+        dotnet publish -c "Release" -f net10.0 -r win-x64 --no-self-contained
+        dotnet publish -c "Release" -f net10.0 -r linux-x64 --no-self-contained
+        dotnet publish -c "Release" -f net10.0 -r osx-x64 --no-self-contained
       
     - name: Create release folders
-      working-directory: ./Rysy/bin/Release/net9.0
+      working-directory: ./Rysy/bin/Release/net10.0
       run: |
         echo "Preparing build dirs"
         ls
@@ -61,16 +61,16 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Rysy-windows
-        path: Rysy/bin/Release/net9.0/win-x64/publish
+        path: Rysy/bin/Release/net10.0/win-x64/publish
 
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
       with:
         name: Rysy-linux
-        path: Rysy/bin/Release/net9.0/linux-x64/publish
+        path: Rysy/bin/Release/net10.0/linux-x64/publish
 
     - name: Upload OSX artifact
       uses: actions/upload-artifact@v4
       with:
         name: Rysy-osx
-        path: Rysy/bin/Release/net9.0/osx-x64/publish
+        path: Rysy/bin/Release/net10.0/osx-x64/publish
