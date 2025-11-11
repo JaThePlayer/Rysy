@@ -36,7 +36,7 @@ public sealed class FilesystemExplorerWindow : Window {
             
             _foundFilesDict ??= _foundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.DisplayName}]");
 
-            if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, null, _cache)) {
+            if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, default, _cache)) {
                 if (_openedFile!.Mod.Filesystem.TryReadAllText(_openedFile.Path) is { } text) {
                     _fileText = text;
                 }
@@ -77,7 +77,7 @@ public sealed class FilesystemExplorerWindow : Window {
                 opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
                     using var filestream = File.OpenWrite(chosenFile);
 
-                    stream.CopyToAsync(filestream);
+                    stream.CopyTo(filestream);
                     filestream.Flush();
                 });
             }

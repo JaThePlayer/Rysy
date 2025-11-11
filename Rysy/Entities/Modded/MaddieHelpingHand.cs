@@ -28,7 +28,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
     [Bind("gradientSpeed")]
     private float _gradientSpeed;
 
-    private Vector2 Center => new(_centerX, _centerY);
+    private Vector2 GradientCenter => new(_centerX, _centerY);
     
     private bool IsAreaController 
         => Name is "MaxHelpingHand/RainbowSpinnerColorAreaController" or "MaxHelpingHand/FlagRainbowSpinnerColorAreaController";
@@ -39,7 +39,7 @@ internal sealed class RainbowSpinnerColorController : LonnEntity, IRainbowSpinne
             return false;
         }
         
-        res = GetModHue(_colors,_gradientSize, pos, _loopColors, Center, _gradientSpeed, time);
+        res = GetModHue(_colors,_gradientSize, pos, _loopColors, GradientCenter, _gradientSpeed, time);
         return true;
     }
 

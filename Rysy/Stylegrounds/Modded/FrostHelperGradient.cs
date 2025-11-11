@@ -139,9 +139,9 @@ sealed record GradientEntryField : ComplexTypeField<LinearGradient.Entry> {
     public override bool RenderDetailedWindow(ref LinearGradient.Entry data) {
         bool anyChanged = false;
 
-        anyChanged |= ImGuiManager.ColorEdit("From", ref data.ColorFrom, ColorFormat.Rgba, "The color at the start of this segment");
-        anyChanged |= ImGuiManager.ColorEdit("To", ref data.ColorTo, ColorFormat.Rgba, "The color at the end of this segment");
-        anyChanged |= ImGui.InputFloat("Percent", ref data.Percent).WithTooltip("How much of the screen this entry takes up");
+        anyChanged |= ImGuiManager.ColorEditTranslated("FrostHelper.fields.gradient.from", ref data.ColorFrom, ColorFormat.Rgba, "FrostHelper.fields.gradient.from.tooltip");
+        anyChanged |= ImGuiManager.ColorEditTranslated("FrostHelper.fields.gradient.to", ref data.ColorTo, ColorFormat.Rgba, "FrostHelper.fields.gradient.to.tooltip");
+        anyChanged |= ImGui.InputFloat("FrostHelper.fields.gradient.percent".Translate(), ref data.Percent).WithTranslatedTooltip("FrostHelper.fields.gradient.percent.tooltip");
 
         return anyChanged;
     }

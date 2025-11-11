@@ -49,8 +49,6 @@ public readonly struct Tooltip : ITooltip {
     public void RenderIfHovered() {
         true.WithTooltip(new Tooltip(this));
     }
-    
-    public static implicit operator Tooltip(string? text) => new(text);
 
     public static Tooltip CreateTranslatedOrNull(string id, string? fallbackId = null)
         => new Tooltip(new TranslatedOrNullTooltip(id, fallbackId));

@@ -516,6 +516,11 @@ public static class ImGuiManager {
     
     #endregion
 
+    public static bool ColorEditTranslated(string label, ref Color color, ColorFormat format, string tooltipId,
+        string? hexCodeOverride = null) {
+        return ColorEdit(label.Translate(), ref color, format, new Tooltip(tooltipId.Translate()) , hexCodeOverride);
+    }
+    
     public static bool ColorEdit(string label, ref Color color, ColorFormat format, Tooltip tooltip = default, string? hexCodeOverride = null) {
         var colorHex = hexCodeOverride ?? ColorHelper.ToString(color, format);
         bool edited = false;
@@ -1103,7 +1108,6 @@ public static class ImGuiManager {
 
         private Dictionary<IntPtr, Texture2D> _textures;
         private int _textureId = 1;
-        private IntPtr? _fontTextureId;
 
         private int _scrollWheelValue;
         

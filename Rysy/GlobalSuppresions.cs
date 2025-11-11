@@ -35,3 +35,4 @@
 [assembly: SuppressMessage("Usage", "CA1024:Use properties where appropriate", Justification = "way too agressive", Scope = "module")]
 [assembly: SuppressMessage("Usage", "CA1033", Justification = "", Scope = "module")]
 [assembly: SuppressMessage("Usage", "CA5394:Random is an insecure rng", Justification = "Don't need crypto-safe rng", Scope = "module")]
+[assembly: SuppressMessage("Usage", "CA1859:Change return type of method to concrete type", Justification = "Triggers in many irrelevant places (like where they would get boxed immediately anyway)", Scope = "module")]

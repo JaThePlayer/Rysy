@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -235,6 +236,7 @@ internal partial class AbstractExpression {
                 expression = new BinOpExpression(new LiteralExpression<int>(0), right, kind switch {
                     ExpressionToken.Kinds.Add => BinOpExpression.Operators.Add,
                     ExpressionToken.Kinds.Sub => BinOpExpression.Operators.Sub,
+                    _ => throw new UnreachableException()
                 });
                 
                 return true;
@@ -300,6 +302,7 @@ internal partial class AbstractExpression {
                 ExpressionToken.Kinds.Le => BinOpExpression.Operators.Le,
                 ExpressionToken.Kinds.BitwiseAnd => BinOpExpression.Operators.BitwiseAnd,
                 ExpressionToken.Kinds.BitwiseOr => BinOpExpression.Operators.BitwiseOr,
+                _ => throw new UnreachableException()
             });
             return true;
         }

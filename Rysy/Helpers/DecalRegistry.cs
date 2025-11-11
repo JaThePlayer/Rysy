@@ -144,6 +144,7 @@ public record struct DecalRegistryPath {
         DecalRegistryEntry.Types.SingleTexture => Value,
         DecalRegistryEntry.Types.Directory => $"{Value}/",
         DecalRegistryEntry.Types.StartsWith => $"{Value}*",
+        _ => throw new ArgumentOutOfRangeException(nameof(Type))
     };
 
     public DecalRegistryPath(string path) {

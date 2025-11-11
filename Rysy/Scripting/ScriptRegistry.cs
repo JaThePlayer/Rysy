@@ -1,6 +1,4 @@
-﻿using Rysy.Extensions;
-using Rysy.Helpers;
-using Rysy.Mods;
+﻿using Rysy.Mods;
 using System.Reflection;
 
 namespace Rysy.Scripting;
@@ -45,7 +43,7 @@ public static class ScriptRegistry {
         foreach (var scriptType in asm.GetTypes().Where(t => t.IsSubclassOf(typeof(Script)))) {
             var script = (Script?)Activator.CreateInstance(scriptType) ?? throw new Exception("Huh?");
             
-            lock (ScriptsMutable) {
+            lock (ScriptsMutable!) {
                 ScriptsMutable.Add(script);
                 ModScripts[modName].Add(script);
             }

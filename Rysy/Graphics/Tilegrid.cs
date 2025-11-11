@@ -156,7 +156,7 @@ public class Tilegrid : ILuaWrapper {
     /// </summary>
     internal bool BulkReplaceTiles<T>(T locations, BulkReplaceDelta delta) where T : IEnumerator<Point> {
         if (delta.OldTiles is not { } oldTiles) {
-            throw new ObjectDisposedException(delta.GetType().FullName);
+            throw new InvalidOperationException($"The provided delta has been cleared already.");
         }
         
         var tiles = Tiles;

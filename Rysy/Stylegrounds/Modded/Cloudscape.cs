@@ -294,7 +294,7 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
     private void CreateMesh() {
         _mesh = new();
 
-        var rng = new Random(Scape.Seed.GetHashCode());
+        var rng = new Random(Scape.Seed.GetHashCode(StringComparison.Ordinal));
 
         List<WarpedCloud> clouds = new();
         List<Ring> rings = new();

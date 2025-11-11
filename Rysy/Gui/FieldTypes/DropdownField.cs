@@ -239,12 +239,12 @@ public record class DropdownField : Field {
 
     public override void SetDefault(object newDefault) => Default = newDefault;
 
-    public override object RenderGui(string fieldName, object value) {
+    public override object? RenderGui(string fieldName, object value) {
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref value, Values, ValueTransformer, ref _search, Tooltip,
+            return ImGuiManager.EditableCombo(fieldName, ref value!, Values, ValueTransformer, ref _search, Tooltip,
                 menuItemRenderer: MenuItemRenderer, tToString: DisplayTransformer) ? value : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref value, Values, ref _search, Tooltip, 
+            return ImGuiManager.Combo(fieldName, ref value!, Values, ref _search, Tooltip, 
                 menuItemRenderer: MenuItemRenderer) ? value : null;
         }
     }

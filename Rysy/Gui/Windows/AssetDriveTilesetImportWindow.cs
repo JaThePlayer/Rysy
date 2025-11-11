@@ -201,7 +201,7 @@ internal sealed partial class CreateTilesetWindow : Window {
         }
 
         _copyFromField = Fields.TileDropdown(_copyFromId, _isBg, addDontCopyOption: true);
-        _copyFromField.Tooltip = "rysy.tilesetImport.copyFromId.tooltip".Translate();
+        _copyFromField.WithTooltipTranslated("rysy.tilesetImport.copyFromId.tooltip");
 
         _idField = Fields.Char(_id).WithValidator((x) => {
             if (x is not char c)

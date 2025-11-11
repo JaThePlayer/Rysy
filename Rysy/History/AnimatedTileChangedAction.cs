@@ -27,10 +27,12 @@ public class AnimatedTileChangedAction(string name, Dictionary<string, object> v
         if (!tiles.Tiles.TryGetValue(name, out var tile))
             return;
         var xml = tile.Xml;
+        if (xml is null)
+            return;
         
         foreach (var (k, v) in _old) {
             tile.FakeData[k] = v;
-            if (xml.Attributes[k] is { } existing) {
+            if (xml.Attributes![k] is { } existing) {
                 existing.Value = v.ToString();
             } else {
                 var attr = xml.OwnerDocument!.CreateAttribute(k);

@@ -104,16 +104,6 @@ public class FormWindow : Window {
             var exists = newDefaults.TryGetValue(name, out var current);
             var propValue = exists ? prop.ValueOrDefault() : prop.Value;
 
-            /*
-            if (inMain && (name is "x" or "y" ? Convert.ToInt32(current) != Convert.ToInt32(prop.Value) :
-                current switch {
-                    string currStr => currStr != (string?) prop.Value,
-                    null => prop.Value != current,
-                    _ => !current.Equals(prop.Value)
-                }
-            )) {
-                EditedValues[name] = prop.Value;
-            }*/
             if (!(current?.Equals(propValue) ?? current == propValue)
                 && (current, propValue) switch {
                     (float f, int i) => f != i,
@@ -121,7 +111,7 @@ public class FormWindow : Window {
                     _ => true,
                 }) {
 
-                EditedValues[name] = propValue;
+                EditedValues[name] = propValue!;
                 //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
             }
         }

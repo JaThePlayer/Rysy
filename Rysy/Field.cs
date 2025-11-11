@@ -122,7 +122,7 @@ public static class FieldExtensions {
     /// Adds a tooltip to this <see cref="Field"/>, and returns this instance.
     /// </summary>
     public static T WithTooltip<T>(this T field, string? tooltip) where T : Field {
-        field.Tooltip = tooltip;
+        field.Tooltip = new Tooltip(tooltip);
 
         return field;
     }
@@ -132,7 +132,7 @@ public static class FieldExtensions {
     /// If no translation is found, the tooltip gets set to null.
     /// </summary>
     public static T WithTooltipTranslated<T>(this T field, string? tooltip) where T : Field {
-        field.Tooltip = tooltip?.TranslateOrNull();
+        field.Tooltip = tooltip is not null ? Tooltip.CreateTranslatedOrNull(tooltip) : default;
 
         return field;
     }

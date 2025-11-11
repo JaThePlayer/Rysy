@@ -255,7 +255,7 @@ public static class EntityRegistry {
                             RegisteredEntityType.Trigger => typeof(LonnTrigger),
                             RegisteredEntityType.Style => typeof(LuaStyle),
                             RegisteredEntityType.DecalRegistryProperty => typeof(DecalRegistryProperty),
-                            _ => throw new ArgumentOutOfRangeException()
+                            _ => throw new ArgumentOutOfRangeException(nameof(info.Type))
                         };
                     }
                 }

@@ -12,7 +12,7 @@ public static class MathExpression {
 
             result = 0;
             return ValidationResult.Combine(logger.Errors
-                .Select(x => new ValidationMessage { Level = LogLevel.Error, Tooltip = new(x) }).ToArray());
+                .Select(x => new ValidationMessage { Level = LogLevel.Error, Tooltip = new(x) }).ToArray()!);
         }
         
         return Evaluate(expr, out result);

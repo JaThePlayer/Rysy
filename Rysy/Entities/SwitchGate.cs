@@ -22,9 +22,11 @@ public class SwitchGate : NineSliceEntity, ISolid, IPlaceable {
         persistent = false
     });
 
+#pragma warning disable CA1861
     public static PlacementList GetPlacements() => new[] { "block", "mirror", "temple", "stars" }
         .Select(t => new Placement(t, new {
             sprite = t
         }))
         .ToPlacementList();
+#pragma warning restore CA1861
 }

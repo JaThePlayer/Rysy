@@ -51,6 +51,8 @@ public static class PrefabHelper {
     public static void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
         if (!SelectionsLegal(selections))
             return;
+        if (CurrentPrefabsMutable is null)
+            return;
 
         var prefab = new Prefab {
             Name = name,
