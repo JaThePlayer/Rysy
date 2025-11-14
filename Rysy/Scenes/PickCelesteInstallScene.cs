@@ -13,7 +13,15 @@ public class PickCelesteInstallScene : Scene {
         base.OnFileDrop(filePath);
 
         if (Path.GetFileName(filePath) is "Celeste.exe" or "Celeste.dll") {
-            Profile.Instance.CelesteDirectory = Path.GetDirectoryName(filePath)!;
+            var dir = Path.GetDirectoryName(filePath) ?? "";
+            // If the user provided the Celeste.exe in the '/orig' directory, silently fix the path to use the main dir instead.
+            if (dir.EndsWith("/orig", StringComparison.Ordinal) || dir.EndsWith("\\orig", StringComparison.Ordinal)) {
+                var mainDir = dir[..^"/orig".Length];
+                if (File.Exists(Path.Combine(mainDir, "Celeste.exe"))) {
+                    dir = mainDir;
+                }
+            }
+            Profile.Instance.CelesteDirectory = dir;
             Profile.Instance.Save();
 
             RysyEngine.Scene = _nextScene;
