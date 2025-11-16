@@ -398,10 +398,10 @@ public sealed class BinaryPacker {
         public string? Name { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, object> Attributes { get; set; }
+        public Dictionary<string, object> Attributes { get; set; } = [];
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Element[] Children = null!;
+        public Element[] Children = [];
         
         public bool TryGetValue(string key, [NotNullWhen(true)] out object? value) {
             if (Attributes is null) {
