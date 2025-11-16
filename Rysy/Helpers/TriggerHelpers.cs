@@ -1,10 +1,7 @@
-﻿using Rysy.Extensions;
-using System.Runtime.CompilerServices;
+﻿namespace Rysy.Helpers;
 
-namespace Rysy.Helpers;
-
-public static partial class TriggerHelpers {
-    private static ConditionalWeakTable<string, string> HumanizedNames = new();
+public static class TriggerHelpers {
+    private static readonly Dictionary<string, string> HumanizedNames = new();
 
     /// <summary>
     /// Humanizes a trigger name into something ready to be rendered.
