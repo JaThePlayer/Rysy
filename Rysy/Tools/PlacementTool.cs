@@ -442,7 +442,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         
        // MaterialPreviewCache.Clear();
 
-        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}");
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}_{placement.ValueOverrides.ContentsHashCode()}");
         var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
         
         if (cacheLookup.TryGetValue(keySpan, out var value)) {

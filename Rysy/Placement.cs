@@ -3,6 +3,7 @@ using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
 using System;
@@ -11,7 +12,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy;
 
-public record class Placement : IUntypedData {
+public record class Placement : IUntypedData, ISimilar<Placement> {
     /// <summary>
     /// Creates a placement with value overrides using an anonymous object of the style of { fieldName = value, field2 = value2, ...}
     /// </summary>
@@ -300,9 +301,33 @@ public record class Placement : IUntypedData {
             && Sid == other.Sid
             && ValueOverrides.SequenceEqual(other.ValueOverrides);
     }
+    
+    public bool IsSimilarTo(Placement other) {
+        if (ReferenceEquals(this, other))
+            return true;
+        if (RegisteredEntityType != other.RegisteredEntityType)
+            return false;
+        if (Sid != other.Sid)
+            return false;
+        
+        if (CreateFakeEntity() is {} fakeA && other.CreateFakeEntity() is {} fakeB)
+            return fakeA.IsSimilarTo(fakeB);
+        
+        foreach (var (k, v) in ValueOverrides.Concat(other.ValueOverrides)) {
+            if (k is "x" or "y" or "width" or "height" or "id" or Entity.EditorGroupEntityDataKey)
+                continue;
 
-    public override int GetHashCode()
-    {
+            if (!other.ValueOverrides.TryGetValue(k, out var otherVal) || !ISimilar.Check(otherVal, v))
+                return false;
+
+            if (!ValueOverrides.TryGetValue(k, out var val) || !ISimilar.Check(val, v))
+                return false;
+        }
+
+        return true;
+    }
+
+    public override int GetHashCode() {
         throw new InvalidOperationException("Placements are not immutable and should not be used in hash-based collections.");
     }
 }

@@ -721,8 +721,8 @@ public static class ImGuiManager {
         // Delay resizing the field a bit,
         // so that clicking on a dropdown window that got moved by this input being larger still works.
         isOpen = ImGui.IsWindowFocused() || (isOpen && Input.Global.Mouse.LeftHoldTime is > 0f and < 0.1f);
-            
-        ret = ImGui.InputText(fieldName, ref input, maxLen).WithTooltip(tooltip);
+
+        ret = ImGui.InputText(fieldName, ref input, uint.Max(maxLen, (uint)input.Length + 16)).WithTooltip(tooltip);
             
         ImGui.EndChild();
 

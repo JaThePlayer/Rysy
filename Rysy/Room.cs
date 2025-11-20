@@ -842,7 +842,7 @@ public sealed class Room : IPackable, ILuaWrapper {
                 if (e.Nodes.Count > 0)
                     return MakeSelectionsForAllNodesOfEntity(e);
                 var sid = e.EntityData.Sid;
-                return e.GetRoomList().Where(x => x.EntityData.Sid == sid && x.EditorGroups.Enabled && e.SimilarTo(x)).Select(CreateSelectionFrom).ToList();
+                return e.GetRoomList().Where(x => x.EntityData.Sid == sid && x.EditorGroups.Enabled && e.IsSimilarTo(x)).Select(CreateSelectionFrom).ToList();
             case Room room:
                 if (room.Map is { } map) {
                     return map.Rooms.Select(r => new Selection(r.GetSelectionHandler())).ToList();

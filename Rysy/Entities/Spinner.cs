@@ -211,8 +211,8 @@ public sealed class Spinner : Entity, IPlaceable {
         dust = false,
     });
 
-    public static PlacementList GetPlacements() => IterationHelper.EachNameToLower<SpinnerColors>()
-        .Select(n => new Placement(n, new {
+    public static PlacementList GetPlacements() => IterationHelper.EachName<SpinnerColors>()
+        .Select(n => new Placement(n.ToLower(), new {
             color = n
         }))
         .Append(new Placement("dust", new {

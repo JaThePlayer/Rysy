@@ -16,7 +16,7 @@ using LuaException = Rysy.LuaSupport.LuaException;
 namespace Rysy;
 
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData {
+public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData, ISimilar<Entity> {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -369,7 +369,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// <summary>
     /// Checks whether this is similar to the given entity, used for the select-similar hotkey.
     /// </summary>
-    public virtual bool SimilarTo(Entity entity) {
+    public virtual bool IsSimilarTo(Entity entity) {
         if (entity.Name != Name)
             return false;
         
@@ -708,7 +708,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     public Placement ToPlacement() {
-        var overrides = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
+        var overrides = new Dictionary<string, object>(
+            EntityData.Inner.Where(x=> !IsDefault(x.Key, x.Value)), 
+            StringComparer.Ordinal);
 
         return new Placement(EntityData.Sid) {
             Sid = EntityData.Sid,

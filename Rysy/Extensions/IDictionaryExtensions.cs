@@ -21,4 +21,14 @@ internal static class DictionaryExtensions {
         dictionary[key] = defaultValue;
         return defaultValue;
     }
+
+    public static int ContentsHashCode<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, 
+        IEqualityComparer<TKey>? keyComparer = null, IEqualityComparer<TValue>? valueComparer = null) {
+        HashCode c = new();
+        foreach (var (k, v) in dictionary) {
+            c.Add(k, keyComparer);
+            c.Add(v, valueComparer);
+        }
+        return c.ToHashCode();
+    }
 }

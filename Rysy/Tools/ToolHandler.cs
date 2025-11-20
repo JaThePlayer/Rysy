@@ -217,7 +217,7 @@ public class ToolHandler {
         QuickActionInfo quickAction;
 
         // TODO: ignore x,y,width,height fields for placements.
-        var duplicateIdx = _quickActions.FindIndex(x => material.Equals(x.GetMaterial(this)));
+        var duplicateIdx = _quickActions.FindIndex(x => ISimilar.Check(material, x.GetMaterial(this)));
         if (duplicateIdx >= 0) {
             quickAction = _quickActions[duplicateIdx];
             // Don't move favourites around.
@@ -399,7 +399,7 @@ public class ToolHandler {
             var layer = EditorLayers.EditorLayerFromName(action.Layer);
 
             if (i % visibleActionsPerRow == 0 && i > 0) {
-                ImGui.NewLine();   
+                ImGui.NewLine();
             }
             ImGui.PushID($"quick-action-{i++}-{action.MaterialString}");
             
@@ -410,7 +410,7 @@ public class ToolHandler {
                 size.X = preview.W;
                 size.Y = preview.H;
                 
-                if (ImGui.Selectable("##selectable"u8, CurrentTool == tool && material.Equals(tool.Material), ImGuiSelectableFlags.AllowOverlap, size)) {
+                if (ImGui.Selectable("##selectable"u8, CurrentTool == tool && ISimilar.Check(material, tool.Material), ImGuiSelectableFlags.AllowOverlap, size)) {
                     action.Apply(this);
                 }
 

@@ -522,7 +522,7 @@ public abstract class Tool {
         var prevStyles = ImGuiManager.PopAllStyles();
 
         XnaWidgetDef? tooltipPreview = GetMaterialPreview(layer, material) is {} p2 ? CreateTooltipPreview(p2, material) : null;
-        tooltipPreview = tooltipPreview is { } p3 ? p3 with { Id = "upsized_preview" } : null;
+        tooltipPreview = tooltipPreview is { } p3 ? p3 with { Id = p3.Id + "upsized_preview" } : null;
 
         var w = (tooltipPreview?.W ?? 256) + ImGui.GetStyle().FramePadding.X * 4;
         ImGui.SetNextWindowSize(new(w.AtLeast(256), 0));

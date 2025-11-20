@@ -183,7 +183,7 @@ public static class Gfx {
             BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
     }
 
-    private static Stack<SpriteBatchState> BatchStateHistory = new(2);
+    private static readonly Stack<SpriteBatchState> BatchStateHistory = new(2);
 
     public static SpriteBatchState GetCurrentBatchState() {
         return BatchStateHistory.Peek();
