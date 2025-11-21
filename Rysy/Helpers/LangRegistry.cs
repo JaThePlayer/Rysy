@@ -1,6 +1,7 @@
 ﻿using Rysy.Loading;
 using Rysy.Mods;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text;
 
 namespace Rysy.Helpers;
@@ -49,15 +50,11 @@ public static class LangRegistry {
 
     public static Task LoadFromModAsync(ModMeta mod) {
         var fs = mod.Filesystem;
-        var files = fs.FindFilesInDirectoryRecursive("Loenn/lang", "lang");
 
-        if (mod.IsRysy) {
-            // Load rysy's lang files as well
-            files = files.Concat(fs.FindFilesInDirectoryRecursive("lang", "lang"));
-        }
-        
+        IEnumerable<string> files = fs.FindFilesInDirectoryRecursive(mod.IsRysy ? "lang" : "Loenn/lang", "lang");
+
         foreach (var file in files.ToList()) {
-            var langName = file.FilenameNoExt()!;
+            var langName = file.FilenameNoExt() ?? "en_gb";
             fs.TryWatchAndOpen(file, stream => {
                 try {
                     LoadFromLangFile(langName, stream.ReadAllText());
