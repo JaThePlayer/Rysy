@@ -15,7 +15,11 @@ public sealed class FloatySpaceBlock : TileEntity, ISolid, IPlaceable {
         disableSpawnOffset = false,
     });
 
-    public static PlacementList GetPlacements() => new("floaty_space_block");
+    public static PlacementList GetPlacements() => [
+        new Placement("floaty_space_block") {
+            AlternativeNames = [ "moon_block" ]
+        }
+    ];
 
     public override bool CanTrim(string key, object val) => IsDefault(key, val);
 }

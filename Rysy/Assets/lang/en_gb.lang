@@ -736,7 +736,9 @@ entities.wallBooster.attributes.description.notCoreMode=Determines whether the e
 
 # Bounce Block
 entities.bounceBlock.placements.name.fire=Bounce Block
+entities.bounceBlock.placements.name.fire_core=Core Block
 entities.bounceBlock.placements.name.ice=Ice Crumble Block
+entities.bounceBlock.placements.name.ice_core=Core Block (Ice)
 entities.bounceBlock.attributes.description.notCoreMode=Determines whether the entity should ignore the current core mode and default to ice variant.
 
 # Dark Chaser
@@ -1223,6 +1225,7 @@ entities.powerSourceNumber.attributes.description.keys=Determines when the entit
 
 # Floaty Space Block
 entities.floatySpaceBlock.placements.name.floaty_space_block=Floaty Space Block
+entities.floatySpaceBlock.placements.name.moon_block=Moon Block
 entities.floatySpaceBlock.attributes.description.tiletype=Determines the visual appearance of the wall.
 entities.floatySpaceBlock.attributes.description.disableSpawnOffset=Whether or not the entity should spawn without the random offset.
 

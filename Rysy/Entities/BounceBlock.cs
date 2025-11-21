@@ -23,8 +23,12 @@ public class BounceBlock : Entity, ISolid, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => [
-        new("fire"),
-        new("ice", new { notCoreMode = true })
+        new Placement("fire") {
+            AlternativeNames = [ "fire_core" ],
+        },
+        new Placement("ice", new { notCoreMode = true }) {
+            AlternativeNames = [ "ice_core" ],
+        }
     ];
     
     public override bool CanTrim(string key, object val) => IsDefault(key, val);
