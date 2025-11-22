@@ -1,0 +1,5 @@
+﻿# Additional tooltips and such for entities.
+# Separated from loenn's tooltips for easier merging.
+
+entities.darkChaserEnd.placements.name.barrier=Badeline Chaser Barrier
+entities.darkChaserEnd.placements.description.barrier=When the player enters this barrier, all Badeline Chasers vanish.
