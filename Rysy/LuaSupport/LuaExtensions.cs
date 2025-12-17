@@ -13,14 +13,17 @@ public static partial class LuaExt {
     /// Converts the Lua value at the given index to a C# string
     /// </summary>
     public static unsafe string FastToString(this Lua state, int index, bool callMetamethod = true) {
-        UIntPtr num;
+        ulong num;
         IntPtr source;
+        /*
         if (callMetamethod) {
             source = luaL_tolstring(state.Handle, index, out num);
             state.Pop(1);
         } else {
             source = lua_tolstring(state.Handle, index, out num);
         }
+        */
+        source = state.ToLString(index, out num);
 
         if (source == IntPtr.Zero)
             return null!;
@@ -51,14 +54,17 @@ public static partial class LuaExt {
     internal static char[] SharedToStringBuffer = new char[4098];
 
     public static unsafe Span<char> ToStringInto(this Lua state, int index, Span<char> buffer, bool callMetamethod = true) {
-        UIntPtr num;
+        ulong num;
         IntPtr source;
+        /*
         if (callMetamethod) {
             source = luaL_tolstring(state.Handle, index, out num);
             state.Pop(1);
         } else {
             source = lua_tolstring(state.Handle, index, out num);
         }
+        */
+        source = state.ToLString(index, out num);
 
         if (source == IntPtr.Zero)
             return Span<char>.Empty;
@@ -75,14 +81,10 @@ public static partial class LuaExt {
     }
 
     public static unsafe Span<byte> ToStringIntoAscii(this Lua state, int index, bool callMetamethod = true) {
-        UIntPtr num;
+        ulong num;
         IntPtr source;
-        if (callMetamethod) {
-            source = luaL_tolstring(state.Handle, index, out num);
-            state.Pop(1);
-        } else {
-            source = lua_tolstring(state.Handle, index, out num);
-        }
+        
+        source = state.ToLString(index, out num);
 
         if (source == IntPtr.Zero)
             return Span<byte>.Empty;
@@ -110,9 +112,8 @@ public static partial class LuaExt {
     /// </summary>
     /// <param name="lua"></param>
     /// <param name="value"></param>
-    public static unsafe void PushString(this Lua lua, ReadOnlySpan<byte> value) {
-        fixed (byte* ptr = &value[0])
-            lua_pushlstring(lua.Handle, ptr, (nuint)value.Length);
+    public static void PushString(this Lua lua, ReadOnlySpan<byte> value) {
+        lua.PushBuffer(value);
     }
 
     public static void PushCharAsString(this Lua lua, char c) {
@@ -121,10 +122,6 @@ public static partial class LuaExt {
             
         lua.PushString(buffer.Slice(2 - written));
     }
-    
-    
-    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl)]
-    internal static extern unsafe nint lua_pushlstring(nint luaState, byte* s, UIntPtr len);
 
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
         string code;
@@ -150,8 +147,8 @@ public static partial class LuaExt {
     }
     
     
-    [DllImport("lua54", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    private static extern unsafe LuaStatus luaL_loadbufferx(nint luaState, byte* buff, nuint sz, string? name, string? mode);
+    [DllImport("lua51", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern unsafe LuaStatus luaL_loadbufferx(nuint luaState, byte* buff, nuint sz, string? name, string? mode);
     
     public static unsafe void LoadStringWithSelene(this Lua lua, ReadOnlySpan<byte> strUtf8, string? chunkName = null) {
         ReadOnlySpan<byte> code;
@@ -973,7 +970,7 @@ where TArg1 : class, ILuaWrapper {
         
         var handlePos = state.GetTop();
         
-        if (NewMetatable(state, "CsObj"u8)) {
+        if (state.NewMetatable("CsObj"u8)) {
             int metatableStackLoc = state.GetTop();
             
             state.PushString("__index"u8);
@@ -1070,6 +1067,28 @@ where TArg1 : class, ILuaWrapper {
                 }
             });
             state.SetTable(metatableStackLoc);
+            
+            // ipairs
+            state.PushString("__ipairs"u8);
+            state.PushCFunction(static (nint s) => {
+                var lua = Lua.FromIntPtr(s);
+                var wrapper = lua.UnboxWrapper(1);
+                
+                lua.PushCFunction(Next);
+                lua.PushWrapper(wrapper);
+                lua.PushInteger(0);
+                
+                return 3;
+
+                static int Next(nint s) {
+                    var lua = Lua.FromIntPtr(s);
+                    var wrapper = lua.UnboxWrapper(1);
+                    var key = (int)lua.ToInteger(2);
+
+                    return wrapper.LuaNextIPairs(lua, key);
+                }
+            });
+            state.SetTable(metatableStackLoc);
         }
         
         state.SetMetaTable(handlePos);
@@ -1163,53 +1182,7 @@ where TArg1 : class, ILuaWrapper {
         lua.SetGlobal("_RYSY_CURRENT_MOD");
     }
 
-    public static unsafe LuaType GetGlobal(this Lua lua, ReadOnlySpan<byte> asciiName) {
-        fixed (byte* ptr = &asciiName[0]) {
-            return (LuaType)lua_getglobal(lua.Handle, ptr);
-        }
-    }
-
-    public static unsafe bool NewMetatable(this Lua lua, ReadOnlySpan<byte> asciiName) {
-        fixed (byte* ptr = &asciiName[0]) {
-            return luaL_newmetatable(lua.Handle, ptr) != 0;
-        }
-    }
-    
-    public static unsafe void GetMetatable(this Lua lua, ReadOnlySpan<byte> utf8Name) {
-        fixed (byte* ptr = &utf8Name[0]) {
-            _ = lua_getfield(lua.Handle, (int)LuaRegistry.Index, ptr);
-        }
-    }
-
     public static long ToIntegerSafe(Lua lua, int index) {
         return lua.ToIntegerX(index) ?? throw new LuaException(lua, new InvalidCastException($"Can't convert lua {lua.Type(index)} [{lua.ToString(index)}] to c# integer"));
     }
-
-    public static unsafe LuaType GetFieldRva(this Lua lua, int tableStackIdx, ReadOnlySpan<byte> fieldName) {
-        fixed (byte* ptr = &fieldName[0])
-            return (LuaType)lua_getfield(lua.Handle, tableStackIdx, ptr);
-    }
-
-
-    [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial IntPtr luaL_tolstring(IntPtr luaState, int index, out UIntPtr len);
-
-    [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial IntPtr lua_tolstring(IntPtr luaState, int index, out UIntPtr strLen);
-
-    [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static unsafe partial int lua_getglobal(nint luaState, byte* name);
-
-    [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static unsafe partial int luaL_newmetatable(nint luaState, byte* name);
-    
-    [LibraryImport("lua54")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static unsafe partial int lua_getfield(nint luaState, int index, byte* name);
-    
-    
 }

@@ -29,28 +29,28 @@ public class LuaFunctionRef : LuaRef {
     public void InvokeVoid(params Span<object?> args) => InvokeVoid(lua: null, args);
     
     public void InvokeVoid(Lua? lua = null, params Span<object?> args) {
-        lua ??= Lua;
+        var luaNotNull = lua ?? Lua;
         
         PushToStack(lua);
         foreach (var val in args) {
-            lua.Push(val);
+            luaNotNull.Push(val);
         }
-        lua.PCallThrowIfError(arguments: args.Length, results: 0);
+        luaNotNull.PCallThrowIfError(arguments: args.Length, results: 0);
     }
     
     public object? Invoke(params Span<object?> args) => Invoke(lua: null, args);
     
     public object? Invoke(Lua? lua = null, params Span<object?> args) {
-        lua ??= Lua;
+        var luaNotNull = lua ?? Lua;
         
         PushToStack(lua);
         foreach (var val in args) {
-            lua.Push(val);
+            luaNotNull.Push(val);
         }
-        lua.PCallThrowIfError(arguments: args.Length, results: 1);
+        luaNotNull.PCallThrowIfError(arguments: args.Length, results: 1);
 
-        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
-        lua.Pop(1);
+        var ret = luaNotNull.ToCSharp(luaNotNull.GetTop(), makeLuaFuncRefs: true);
+        luaNotNull.Pop(1);
 
         return ret;
     }

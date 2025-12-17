@@ -1,0 +1,3 @@
+﻿-- Love2d ships with utf8 library, we'll need to reimplement it in c# as luaJIT doesn't have it...
+
+return __RYSY_utf8_load()

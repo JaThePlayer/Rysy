@@ -25,6 +25,22 @@ public record class ListWrapper<T>(List<T> Inner) : ILuaWrapper {
 
         return 1;
     }
+
+    public int LuaNextIPairs(Lua lua, int key) {
+        key++;
+        
+        var i = key - 1;
+        var inner = Inner;
+
+        if (i < inner.Count) {
+            lua.PushInteger(key);
+            lua.Push(inner[i]);
+            return 2;
+        }
+        
+        lua.PushNil();
+        return 1;
+    }
 }
 
 public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
@@ -48,6 +64,22 @@ public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
     public int LuaLen(Lua lua) {
         lua.PushInteger(Inner.Count);
 
+        return 1;
+    }
+    
+    public int LuaNextIPairs(Lua lua, int key) {
+        key++;
+        
+        var i = key - 1;
+        var inner = Inner;
+
+        if (i < inner.Count) {
+            lua.PushInteger(key);
+            lua.Push(inner[i]);
+            return 2;
+        }
+        
+        lua.PushNil();
         return 1;
     }
 }

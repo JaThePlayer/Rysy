@@ -16,3 +16,7 @@ global using XnaVector2 = Microsoft.Xna.Framework.Vector2;
 #if !FNA
 global using SpriteBatch = Rysy.Graphics.FnaSpriteBatch;
 #endif
+
+global using Lua = LuaNET.LuaJIT.lua_State;
+global using LuaFunction = LuaNET.LuaJIT.Lua.lua_CFunction;
+global using Rysy.LuaSupport.KeraLuaPolyfill;

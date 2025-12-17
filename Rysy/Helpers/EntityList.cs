@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using LuaNET.LuaJIT;
 using Rysy.LuaSupport;
 
 namespace Rysy.Helpers;
