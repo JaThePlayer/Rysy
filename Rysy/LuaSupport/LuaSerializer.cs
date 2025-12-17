@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace Rysy.LuaSupport;
 
 public static partial class LuaSerializer {
-    private static Lua GetSandboxedLua() => new(openLibs: false) { Encoding = Encoding.UTF8 };
+    private static Lua GetSandboxedLua() => Lua.CreateNew(openLibs: false);
 
     private static string CorrectDecalPathForLonn(string rysyPath) {
         // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...
@@ -284,7 +284,7 @@ public static partial class LuaSerializer {
     /// Deserializes a lua value from a string, using <paramref name="valueGetter"/> to convert lua state into a c# object.
     /// </summary>
     public static T? Deserialize<T>(string str, Func<Lua, T?> valueGetter) where T : class {
-        using var lua = GetSandboxedLua();
+        var lua = GetSandboxedLua();
 
         var sanitized = SanitizeCode(str);
 
@@ -299,7 +299,6 @@ public static partial class LuaSerializer {
             return d;
         }
 
-        Console.WriteLine(sanitized);
         return null;
     }
 
@@ -307,7 +306,7 @@ public static partial class LuaSerializer {
     /// Checks whether the given code is valid lua code, by running it in a sandboxed lua instance with a timeout.
     /// </summary>
     public static bool IsValidLua(string str) {
-        using var lua = GetSandboxedLua();
+        var lua = GetSandboxedLua();
         if (PCallString(lua, str) != LuaStatus.OK)
             return false;
         
@@ -324,6 +323,8 @@ public static partial class LuaSerializer {
         return str;
     }
 
+    private static readonly Lock _pCallStringLock = new();
+    
     private static LuaStatus PCallString(Lua lua, string code, string? chunkName = null, int args = 0, int results = 1) {
         var st = lua.LoadString(code, chunkName ?? code);
         if (st != LuaStatus.OK)
@@ -332,7 +333,7 @@ public static partial class LuaSerializer {
         const int millisecondsTimeout = 1_000;
         LuaStatus status = LuaStatus.ErrRun;
 
-        lock (lua) {
+        lock (_pCallStringLock) {
             var task = Task.Run(() => lua.PCall(args, results, 0));
 
             if (task.Wait(millisecondsTimeout))
@@ -343,9 +344,7 @@ public static partial class LuaSerializer {
                 // From now on, as soon as a line is executed, error
                 // keep erroring until the script reaches the top
                 // https://stackoverflow.com/questions/6913999/forcing-a-lua-script-to-exit
-                lua.SetHook(static (s, b) => {
-                    var lua = Lua.FromIntPtr(s);
-
+                lua.SetHook(static (lua, b) => {
                     lua.Error();
                 }, LuaHookMask.Count, 1);
             }

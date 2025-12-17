@@ -1,5 +1,6 @@
 ﻿local utils = require("utils")
 local matrix = require("utils.matrix")
+local utf8 = require("utf8")
 
 local fakeTilesHelper = {}
 

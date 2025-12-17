@@ -19,8 +19,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AnalysisMode>All</AnalysisMode>
   <!--
+    <AnalysisMode>All</AnalysisMode>
     <WarningsAsErrors>$(WarningsAsErrors);CA1307;CA1309;CA1310;CA1305;CA1311</WarningsAsErrors>
   -->
   </PropertyGroup>
@@ -103,7 +103,10 @@
     <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     -->
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
+      <!--
     <PackageReference Include="KeraLua" Version="1.4.7" />
+    -->
+    <PackageReference Include="Lua.NET" Version="6.0.1" />
     <PackageReference Include="Markdig" Version="0.43.0" />
     <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />

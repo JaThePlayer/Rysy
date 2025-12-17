@@ -44,4 +44,9 @@ public interface ILuaWrapper {
         lua.PushNil();
         return 1;
     }
+    
+    public int LuaNextIPairs(Lua lua, int i) {
+        lua.PushNil();
+        return 1;
+    }
 }

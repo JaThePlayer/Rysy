@@ -13,7 +13,7 @@ using System.Text;
 namespace Rysy.LuaSupport;
 
 public class LuaCtx {
-    public Lua Lua { get; private set; } = new() { Encoding = Encoding.UTF8, };
+    public Lua Lua { get; private set; } = Lua.CreateNew(openLibs: true);
     
     public static bool SeleneLoaded { get; private set; }
 
@@ -44,7 +44,8 @@ public class LuaCtx {
             lua.PushString("parse");
             lua.GetTable(seleneLoc);
 
-            lua.Rotate(1, 2); // put the string from arg1 to the top of the stack
+            lua.PushCopy(1);
+            //lua.Rotate(1, 2); // put the string from arg1 to the top of the stack
             var result = lua.PCall(1, 1, 0); // call selene.parse(arg)
             if (result != LuaStatus.OK) {
                 var errMsgPos = lua.GetTop();
@@ -183,6 +184,22 @@ public class LuaCtx {
             _G["__rysy_ref" .. id] = nil
         end
         """u8, "setup_lua_ref_glue");
+        
+        lua.PCallStringThrowIfError("""
+        local orig_ipairs = ipairs
+        
+        function ipairs(t)
+            local mt = getmetatable(t)
+            if mt then
+                if mt.__ipairs then
+                    return mt.__ipairs(t)
+                end
+            end
+            return orig_ipairs(t)
+        end
+        """, "fix_luajit_ipairs");
+
+        Utf8Lib.Register(lua);
 
         lua.Register("_RYSY_DRAWABLE_fixPath", (nint s) => {
             var lua = Lua.FromIntPtr(s);
@@ -761,8 +778,7 @@ public class LuaCtx {
         var rysyTableLoc = lua.GetTop();
 
         // (room, string) -> table
-        RegisterApi("entitiesWithSID", static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
+        RegisterApi("entitiesWithSID", static lua => {
 
             var room = lua.UnboxRoomWrapper(1);
             var sid = lua.FastToString(2);
@@ -775,9 +791,7 @@ public class LuaCtx {
         });
 
         // (room, string, entity, int) -> table
-        RegisterApi("entitiesWithSIDWithinRangeUntilThis", static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
+        RegisterApi("entitiesWithSIDWithinRangeUntilThis", static lua => {
             var room = lua.UnboxRoomWrapper(1);
             var sid = lua.FastToString(2);
             var entity = lua.UnboxWrapper<Entity>(3);
@@ -788,7 +802,7 @@ public class LuaCtx {
             var enumerator = room.Entities[sid].GetEnumerator();
             long i = 0;
 
-            lua.PushAndPinFunction((nint s) => {
+            lua.PushAndPinFunction(lua => {
                 start:
                 if (enumerator.MoveNext()) {
                     i++;
@@ -818,8 +832,7 @@ public class LuaCtx {
         }
     }
 
-    private static int AtLuaPanic(nint s) {
-        var lua = Lua.FromIntPtr(s);
-        throw new LuaException(lua);
+    private static int AtLuaPanic(Lua s) {
+        throw new LuaException(s);
     }
 }

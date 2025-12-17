@@ -38,8 +38,8 @@ public class LuaRef {
     }
 
     public void PushToStack(Lua? lua = null) {
-        lua ??= Lua;
-        lua.GetGlobal(_luaGlobalKey);
+        var luaNotNull = lua ?? Lua;
+        luaNotNull.GetGlobal(_luaGlobalKey);
     }
     
     ~LuaRef() {

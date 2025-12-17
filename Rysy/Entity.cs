@@ -892,6 +892,20 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
             return 1;
         }
+        
+        public int LuaNextIPairs(Lua lua, int key) {
+            key++;
+        
+            var node = Entity.Nodes?.ElementAtOrDefault(key - 1);
+            if (node is { } n) {
+                lua.PushInteger(key);
+                lua.PushWrapper(node);
+
+                return 2;
+            }
+            
+            return 0;
+        }
     }
     #endregion
 }
