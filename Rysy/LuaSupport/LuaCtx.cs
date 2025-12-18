@@ -209,6 +209,22 @@ public class LuaCtx {
             _G["__rysy_ref" .. id] = nil
         end
         """u8, "setup_lua_ref_glue");
+        
+        lua.PCallStringThrowIfError("""
+        local orig_ipairs = ipairs
+        
+        function ipairs(t)
+            local mt = getmetatable(t)
+            if mt then
+                if mt.__ipairs then
+                    return mt.__ipairs(t)
+                end
+            end
+            return orig_ipairs(t)
+        end
+        """, "fix_luajit_ipairs");
+
+        Utf8Lib.Register(lua);
 
         Utf8Lib.Register(lua);
 
