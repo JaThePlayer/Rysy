@@ -127,15 +127,40 @@ local function insert(tbl, fuzzyList, key, value)
   end
 end
 
-local function mpairs(obj)
-  if type(obj) == "table" and isList(obj) then
-    return ipairs(obj)
+local function mrpairs(t, oldf, mf)
+  if type(t) == "table" then
+    local res, mt = pcall(getmetatable, t)
+    if res and mt and mt[mf] then
+      local m1,m2,m3 = mt[mf](t)
+      return m1,m2,m3
+    end
+  end
+  return oldf(t)
+end
+
+local mpairs
+
+do
+  if _VERSION == "Lua 5.1" then
+    mpairs = function(obj)
+      if type(obj) == "table" and isList(obj) then
+        return mrpairs(obj, ipairs, "__ipairs")
+      else
+        return mrpairs(obj, pairs, "__pairs")
+      end
+    end
   else
-    return pairs(obj)
+    mpairs = function(obj)
+      if type(obj) == "table" and isList(obj) then
+        return ipairs(obj)
+      else
+        return pairs(obj)
+      end
+    end
   end
 end
 
-local validMaps = { map = true, list = true, stringlist = true }
+local validMaps = { map = true, list = true, stringlist = true, array = true }
 
 local function lpairs(obj)
   if validMaps[tblType(obj)] then
@@ -254,7 +279,7 @@ lmt.islist = true
 lmt.__ipairs = function(tbl)
   return function(tbl, i)
     i = i + 1
-    if i <= #tbl then
+    if i <= tbl:len() then
       return i, tbl[i]
     end
   end, tbl, 0
@@ -624,11 +649,11 @@ end
 -- local utility functions for more efficient code
 
 local function wrap_dropfromleft(self, amt)
-  return amt + 1, #self
+  return amt + 1, self:len()
 end
 
 local function wrap_dropfromright(self, amt)
-  return 1, #self - amt
+  return 1, self:len() - amt
 end
 
 local function wrap_takefromleft(self, amt)
@@ -636,7 +661,7 @@ local function wrap_takefromleft(self, amt)
 end
 
 local function wrap_takefromright(self, amt)
-  return #self - amt + 1, #self
+  return self:len() - amt + 1, self:len()
 end
 
 local function wrap_returnsecond(i, j)
@@ -723,7 +748,7 @@ end
 local function wrap_handleDropReturn(self, amt, wrap, whenzero, whenall, normal)
   if amt == 0 then
     return whenzero(self)
-  elseif amt == #self then
+  elseif amt == self:len() then
     return whenall(self)
   else
     return normal(self, amt, wrap)
@@ -733,7 +758,7 @@ end
 local function wrap_dropOrTake(self, amt, wrap, whenzero, whenall)
   checkType(1, self, "list", "stringlist", "array")
   checkArg(2, amt, "number")
-  amt = clamp(amt, 0, #self)
+  amt = clamp(amt, 0, self:len())
   return wrap_handleDropReturn(self, amt, wrap, whenzero, whenall, wrap_tableDropReturn)
 end
 
@@ -788,8 +813,8 @@ local function wrap_rawslice(self, start, stop, step, sub, returned)
   if step == 0 then
     error("[Selene] bad argument #4 (got step size of 0)", 3)
   end
-  start = math.max(1, (not start or start == 0) and (step < 0 and #self or 1) or (start < 0 and start + #self + 1) or start)
-  stop = math.min(#self, (not stop or stop == 0) and (step < 0 and 1 or #self) or (stop < 0 and stop + #self + 1) or stop)
+  start = math.max(1, (not start or start == 0) and (step < 0 and self:len() or 1) or (start < 0 and start + self:len() + 1) or start)
+  stop = math.min(self:len(), (not stop or stop == 0) and (step < 0 and 1 or self:len()) or (stop < 0 and stop + self:len() + 1) or stop)
   local sliced = {}
   for i = start, stop, step do
     insert(sliced, false, sub(self, i))
@@ -952,7 +977,7 @@ end
 
 local function tbl_zip(self, other)
   checkType(1, self, "list", "stringlist")
-  checkType(2, other, "list", "stringlist", "function", "table")
+  checkType(2, other, "list", "stringlist", "function")
   local zipped = {}
   local tp = tblType(other)
   if tp == "function" then
@@ -961,12 +986,12 @@ local function tbl_zip(self, other)
       table.insert(zipped, { j, f(parCnt(i, j)) })
     end
   elseif tp == "table" then checkList(2, other)
-    assert(#self == #other, "length mismatch in zip: Argument #1 has " .. tostring(#self) .. ", argument #2 has " .. tostring(#other))
+    assert(self:len() == other:len(), "length mismatch in zip: Argument #1 has " .. tostring(self:len()) .. ", argument #2 has " .. tostring(other:len()))
     for i in mpairs(self) do
       table.insert(zipped, { self._tbl[i], other[i] })
     end
   else
-    assert(#self == #other, "length mismatch in zip: Argument #1 has " .. tostring(#self) .. ", argument #2 has " .. tostring(#other))
+    assert(self:len() == other:len(), "length mismatch in zip: Argument #1 has " .. tostring(self:len()) .. ", argument #2 has " .. tostring(other:len()))
     for i in mpairs(self) do
       table.insert(zipped, { self._tbl[i], other._tbl[i] })
     end
@@ -1804,7 +1829,7 @@ end
 
 local function opAN(tbl, n, op)
   local r = {}
-  for i = 1, #tbl do
+  for i = 1, tbl:len() do
     r[i] = op(tbl[i], n)
   end
   return newArray(r, tbl._size)
@@ -1813,7 +1838,7 @@ end
 local function opAA(first, second, op)
   checkSize(first, second)
   local r = {}
-  for i = 1, #first do
+  for i = 1, first:len() do
     r[i] = op(first[i], second[i])
   end
   return newArray(r, first._size)
@@ -1887,7 +1912,7 @@ end
 
 mdmt.__unm = function(arr)
   local r = {}
-  for i = 1, #arr do
+  for i = 1, arr:len() do
     r[i] = -arr[i]
   end
   return newArray(r, arr._size)
@@ -2140,7 +2165,8 @@ local function populateTables()
   end
 
   _Table.len = function(self)
-    return #self._tbl
+    local mt = getmetatable(self)
+    return mt and mt.__len and mt.__len(self) or #self._tbl
   end
 end
 
