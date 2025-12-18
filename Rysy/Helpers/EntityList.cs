@@ -48,4 +48,20 @@ public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
 
         return 1;
     }
+    
+    public int LuaNextIPairs(Lua lua, int key) {
+        key++;
+        
+        var i = key - 1;
+        var inner = Inner;
+
+        if (i < inner.Count) {
+            lua.PushInteger(key);
+            lua.Push(inner[i]);
+            return 2;
+        }
+        
+        lua.PushNil();
+        return 1;
+    }
 }
