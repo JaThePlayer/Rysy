@@ -185,7 +185,7 @@ public static partial class LuaExt {
     }
     
     /// <summary>
-    /// <inheritdoc cref="PCallStringThrowIfError(KeraLua.Lua,string,string?,int,int,int)"/>
+    /// <inheritdoc cref="PCallStringThrowIfError(Lua,string,string?,int,int,int)"/>
     /// </summary>
     public static void PCallStringThrowIfError(this Lua lua, ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
         lua.LoadStringWithSelene(code, chunkName);
@@ -569,23 +569,33 @@ public static partial class LuaExt {
         return ret;
     }
 
+    private static int errF(Lua lua) {
+        var ex = new LuaException(lua, "");
+        Console.WriteLine(ex.Message);
+        return 0;
+    }
+    
     public static TOut? PCallFunction<TArg1, TArg2, TOut>(this Lua lua, TArg1 arg1, TArg2 arg2, Func<Lua, int, TOut?> retGetter, int results = 1)
 where TArg1 : class, ILuaWrapper
 where TArg2 : class, ILuaWrapper {
         TOut? ret;
 
+       // lua.PushCFunction(errF);
+        var exfi = lua.GetTop();
         lua.PushWrapper(arg1);
         lua.PushWrapper(arg2);
-
+        
         var result = lua.PCall(2, results, 0);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
             lua.Pop(1);
+            //lua.Pop(1);
             throw ex;
         }
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
+        //lua.Pop(1);
 
         ClearLuaResources();
 
