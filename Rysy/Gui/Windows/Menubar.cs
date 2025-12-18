@@ -282,6 +282,10 @@ public static class Menubar {
         if (ImGui.Checkbox("History Window (DEBUG)", ref Persistence.Instance.HistoryWindowOpen)) {
             RysyEngine.Scene.AddWindowIfNeeded<HistoryWindow>();
         }
+        
+        if (ImGui.MenuItem("Lua REPL")) {
+            RysyEngine.Scene.AddWindowIfNeeded<LuaReplWindow>();
+        }
 
         if (EditorState.Map is { } map && EditorState.History is { } history) {
             if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {

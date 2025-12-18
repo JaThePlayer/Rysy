@@ -372,6 +372,9 @@ rysy.roomPlacements.room.placements.description.default=Creates a new playable r
 rysy.roomPlacements.fillerRoom.placements.name.filler=Empty Room
 rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room without a spawn point, useful for creating fillers to place tiles outside of rooms for nicer screen transitions.
 
+rysy.luaRepl=Lua REPL
+rysy.luaRepl.run=Run
+
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
 rysy.validate.mustBeInt=Value must be an integer.

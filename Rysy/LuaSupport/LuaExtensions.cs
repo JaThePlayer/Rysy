@@ -828,12 +828,39 @@ where TArg1 : class, ILuaWrapper {
             LuaType.Boolean => s.ToBoolean(index),
             LuaType.Number => (float)s.ToNumber(index),
             LuaType.String => s.FastToString(index, false),
-            LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.FastToString(index, false),
+            LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.ToString(index),
             LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
             LuaType.UserData when s.IsWrapper(index) => s.UnboxWrapper(index), 
             _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
         };
         return val;
+    }
+
+    private static LuaFunctionRef? _utilsSerialize;
+    
+    public static string Serialize(this Lua s, int index) {
+        if (_utilsSerialize is null) {
+            s.PCallStringThrowIfError("""
+            local utils = require("utils")
+            
+            return function (x)
+                if x == nil then
+                    return false, "[nil]"
+                end
+                return utils.serialize(x)
+            end
+            """, "get_utils_serialize", results: 1);
+            _utilsSerialize = LuaFunctionRef.MakeFrom(s, s.GetTop());
+            s.Pop(1);
+        }
+        
+        _utilsSerialize.PushToStack(s);
+        s.PushCopy(index);
+        s.PCallThrowIfError(1, 2);
+        var res = s.FastToString(s.GetTop());
+        s.Pop(2);
+        
+        return res;
     }
 
     public static Rectangle ToRectangle(this Lua lua, int index) {

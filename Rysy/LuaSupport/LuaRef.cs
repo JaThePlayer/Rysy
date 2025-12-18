@@ -19,7 +19,7 @@ public class LuaRef {
     protected internal LuaRef(Lua lua, long id) {
         Lua = lua;
         _id = id;
-        _luaGlobalKey = Encoding.UTF8.GetBytes($"__rysy_ref{_id}");
+        _luaGlobalKey = Encoding.UTF8.GetBytes($"__rysy_ref{_id}\0");
     }
     
     public static LuaRef MakeFrom(Lua lua, int loc) {

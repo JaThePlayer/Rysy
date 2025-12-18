@@ -130,6 +130,31 @@ public class LuaCtx {
         end
         """u8, "new_require");
 
+        lua.PCallStringThrowIfError("""
+        local orig_ipairs = ipairs
+        local orig_pairs = pairs
+        
+        function ipairs(t)
+            local mt = getmetatable(t)
+            if mt then
+                if mt.__ipairs then
+                    return mt.__ipairs(t)
+                end
+            end
+            return orig_ipairs(t)
+        end
+        
+        function pairs(t)
+            local mt = getmetatable(t)
+            if mt then
+                if mt.__pairs then
+                    return mt.__pairs(t)
+                end
+            end
+            return orig_pairs(t)
+        end
+        """, "fix_luajit_ipairs");
+
         // Load selene
         lua.PCallStringThrowIfError("""
             local selene = require("lua.selene")
@@ -184,20 +209,6 @@ public class LuaCtx {
             _G["__rysy_ref" .. id] = nil
         end
         """u8, "setup_lua_ref_glue");
-        
-        lua.PCallStringThrowIfError("""
-        local orig_ipairs = ipairs
-        
-        function ipairs(t)
-            local mt = getmetatable(t)
-            if mt then
-                if mt.__ipairs then
-                    return mt.__ipairs(t)
-                end
-            end
-            return orig_ipairs(t)
-        end
-        """, "fix_luajit_ipairs");
 
         Utf8Lib.Register(lua);
 

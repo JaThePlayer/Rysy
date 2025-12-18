@@ -175,30 +175,13 @@ local function tokenize(value, stripcomments, utime)
     else -- normal char
       token = token .. char
     end
-
-	if NEO_LUA then
-		local toRemove = {}
-		for wi, w in pairs(waiting) do
-		  if w then
-			waiting[wi] = false
-		  else
-			--waiting[wi] = nil
-			toRemove[wi] = true
-		  end
-		end
-
-		for wi, _ in pairs(toRemove) do
-			waiting[wi] = nil
-		end
-	else
-		for wi, w in pairs(waiting) do
-		  if w then
-			waiting[wi] = false
-		  else
-			waiting[wi] = nil
-		  end
-		end
-	end
+    for wi, w in pairs(waiting) do
+      if w then
+        waiting[wi] = false
+      else
+        waiting[wi] = nil
+      end
+    end
   end
   if quoted and quoted ~= "--" then
     return nil, string.format("unclosed quote at index %d (quote %s) near line %d", start, quoted, startline)
