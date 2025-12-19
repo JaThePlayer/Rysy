@@ -29,6 +29,10 @@ public static class LuaStateExt {
             LuaI.lua_pop(lua, idx);
         }
 
+        /// <summary>
+        /// Removes the element at the given valid index, shifting down the elements above this index to fill the gap.
+        /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
+        /// </summary>
         public void Remove(int idx) {
             LuaI.lua_remove(lua, idx);
         }
@@ -43,6 +47,14 @@ public static class LuaStateExt {
 
         public LuaType Type(int idx) {
             return (LuaType)LuaI.lua_type(lua, idx);
+        }
+        
+        /// <summary>
+        /// Moves the top element into the given valid index, shifting up the elements above this index to open space.
+        /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
+        /// </summary>
+        public void Insert(int targetIdx) {
+            LuaI.lua_insert(lua, targetIdx);
         }
         #endregion
         
@@ -263,7 +275,7 @@ public static class LuaStateExt {
         }
 
         public void Traceback(Lua state, string msg, int level) {
-            LuaI.luaL_traceback(lua, state,  msg, level);
+            LuaI.luaL_traceback(state, state,  msg, level);
         }
         #endregion
     }

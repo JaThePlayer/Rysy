@@ -6,25 +6,24 @@ namespace Rysy.LuaSupport;
 /// Wraps a lua error into an Exception, with nice error messages.
 /// </summary>
 public class LuaException : Exception {
-    string _error;
+    private string _error;
 
-    public LuaException(Lua state) {
-        //error = state.FastToString(state.GetTop());
-        state.Traceback(state, state.FastToString(state.GetTop()), 0);
+    private void SetError(Lua state, string msg) {
+        state.Traceback(state, msg, 0);
         _error = state.FastToString(state.GetTop());
         state.Pop(1);
+    }
+    
+    public LuaException(Lua state) {
+        SetError(state, state.FastToString(state.GetTop()));
     }
 
     public LuaException(Lua state, Exception inner) : base(null, inner) {
-        state.Traceback(state, inner.Message, 0);
-        _error = state.FastToString(state.GetTop());
-        state.Pop(1);
+        SetError(state, inner.Message);
     }
 
     public LuaException(Lua state, string innerMessage) : base(null) {
-        state.Traceback(state, innerMessage, 0);
-        _error = state.FastToString(state.GetTop());
-        state.Pop(1);
+        SetError(state, innerMessage);
     }
 
     public override string Message => _error;

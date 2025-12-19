@@ -177,32 +177,43 @@ public static partial class LuaExt {
     }
 
     /// <summary>
-    /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int, int)"/>
+    /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int)"/>
     /// </summary>
-    public static void PCallStringThrowIfError(this Lua lua, string code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
+    public static void PCallStringThrowIfError(this Lua lua, string code, string? chunkName = null, int arguments = 0, int results = 0) {
         lua.LoadStringWithSelene(code, chunkName);
-        lua.PCallThrowIfError(arguments, results, errorFunctionIndex);
+        lua.PCallThrowIfError(arguments, results);
     }
     
     /// <summary>
-    /// <inheritdoc cref="PCallStringThrowIfError(Lua,string,string?,int,int,int)"/>
+    /// <inheritdoc cref="PCallStringThrowIfError(Lua,string,string?,int,int)"/>
     /// </summary>
-    public static void PCallStringThrowIfError(this Lua lua, ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
+    public static void PCallStringThrowIfError(this Lua lua, ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0) {
         lua.LoadStringWithSelene(code, chunkName);
-        lua.PCallThrowIfError(arguments, results, errorFunctionIndex);
+        lua.PCallThrowIfError(arguments, results);
     }
 
+    private static int ErrorFunc(Lua state) {
+        state.Traceback(state, state.ToString(state.GetTop()), 1);
+        return 1;
+    }
+    
     /// <summary>
-    /// Calls <see cref="Lua.PCall(int, int, int)"/>, throwing a <see cref="LuaException"/> if the call failed.
+    /// Performs a pcall, throwing a <see cref="LuaException"/> if the call failed.
     /// </summary>
     /// <exception cref="LuaException"></exception>
-    public static void PCallThrowIfError(this Lua lua, int arguments = 0, int results = 0, int errorFunctionIndex = 0) {
-        var result = lua.PCall(arguments, results, errorFunctionIndex);
+    public static void PCallThrowIfError(this Lua lua, int arguments = 0, int results = 0) {
+        var targetIdx = lua.GetTop() - arguments;
+
+        lua.PushCFunction(ErrorFunc);
+        lua.Insert(targetIdx);
+
+        var result = lua.PCall(arguments, results, targetIdx);
         if (result != LuaStatus.OK) {
             var ex = new LuaException(lua);
-            lua.Pop(1);
+            lua.Pop(2); // error msg + error function
             throw ex;
         }
+        lua.Remove(targetIdx);
     }
 
     public static void PrintStack(this Lua state, int startI = 1,
@@ -212,7 +223,7 @@ public static partial class LuaExt {
     ) {
         Logger.Write("Lua", LogLevel.Info, "Stack:", callerMethod, callerFile, lineNumber);
         for (int i = startI; i <= state.GetTop(); i++) {
-            Console.WriteLine($"[{i}]: {state.FastToString(i)}");
+            Console.WriteLine($"[{i}]: {state.ToString(i)} [{state.Type(i)}]");
         }
     }
 
@@ -580,18 +591,10 @@ where TArg1 : class, ILuaWrapper
 where TArg2 : class, ILuaWrapper {
         TOut? ret;
 
-       // lua.PushCFunction(errF);
-        var exfi = lua.GetTop();
         lua.PushWrapper(arg1);
         lua.PushWrapper(arg2);
         
-        var result = lua.PCall(2, results, 0);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(1);
-            //lua.Pop(1);
-            throw ex;
-        }
+        lua.PCallThrowIfError(2, results);
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
@@ -609,12 +612,7 @@ where TArg2 : class, ILuaWrapper {
             lua.Push(arg);
         }
 
-        var result = lua.PCall(args.Length, results, 0);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(1);
-            throw ex;
-        }
+        lua.PCallThrowIfError(args.Length, results);
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
@@ -627,12 +625,7 @@ where TArg2 : class, ILuaWrapper {
     public static TOut? PCallFunction<TOut>(this Lua lua, Func<Lua, int, TOut?> retGetter, int results = 1) {
         TOut? ret;
 
-        var result = lua.PCall(0, results, 0);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(1);
-            throw ex;
-        }
+        lua.PCallThrowIfError(0, results);
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
@@ -651,12 +644,7 @@ where TArg2 : class, ILuaWrapper {
         lua.Push(arg3);
         lua.Push(arg4);
 
-        var result = lua.PCall(4, results, 0);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(1);
-            throw ex;
-        }
+        lua.PCallThrowIfError(4, results);
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
@@ -671,12 +659,7 @@ where TArg1 : class, ILuaWrapper {
         TOut? ret;
 
         lua.PushWrapper(arg1);
-        var result = lua.PCall(1, results, 0);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(1);
-            throw ex;
-        }
+        lua.PCallThrowIfError(1, results);
 
         ret = retGetter(lua, lua.GetTop());
         lua.Pop(results);
