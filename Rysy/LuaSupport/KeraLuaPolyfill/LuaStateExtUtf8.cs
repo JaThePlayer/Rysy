@@ -2,8 +2,6 @@
 
 namespace Rysy.LuaSupport.KeraLuaPolyfill;
 
-using LuaI = LuaNET.LuaJIT.Lua;
-
 public static class LuaStateExtUtf8 {
     extension(Lua lua) {
         public void GetGlobal(ReadOnlySpan<byte> fieldName) {

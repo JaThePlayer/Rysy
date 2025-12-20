@@ -1,7 +1,4 @@
 ﻿using System.Text;
-using System.Text.Unicode;
-
-using static LuaNET.LuaJIT.Lua;
 
 namespace Rysy.LuaSupport;
 
@@ -47,16 +44,15 @@ static struct luaL_Reg funcs[] = {
 
         var len = s.Length;
         var posi = (n >= 0) ? 1 : len + 1;
-        posi = u_posrelat((int)LuaNET.LuaJIT.Lua.luaL_optinteger(lua, 3, posi), len);
-        LuaNET.LuaJIT.Lua.luaL_argcheck(lua, 1 <= posi && --posi <= len, 3,
-            "position out of range");
+        posi = u_posrelat((int)lua.OptInteger(3, posi), len);
+        lua.ArgCheck(1 <= posi && --posi <= len, 3, "position out of range");
         if (n == 0) {
             /* find beginning of current byte sequence */
             while (posi > 0 && iscont(s[posi])) posi--;
         }
         else {
             if (iscont(s[posi]))
-                LuaNET.LuaJIT.Lua.luaL_error(lua, "initial position is a continuation byte");
+                lua.Error("initial position is a continuation byte");
             if (n < 0) {
                 while (n < 0 && posi > 0) {  /* move back */
                     do {  /* find beginning of previous character */
@@ -109,18 +105,17 @@ static struct luaL_Reg funcs[] = {
     }
 
     private static int Codepoint(Lua L) {
-        ulong len = 0;
-        var s = luaL_checklstring(L, 1, ref len) ?? "";
-        var posi = u_posrelat((int)luaL_optinteger(L, 2, 1), (int)len);
-        var pose = u_posrelat((int)luaL_optinteger(L, 3, posi), (int)len);
+        var s = L.CheckLString(1, out var len) ?? "";
+        var posi = u_posrelat((int)L.OptInteger(2, 1), (int)len);
+        var pose = u_posrelat((int)L.OptInteger(3, posi), (int)len);
         int n;
-        luaL_argcheck(L, posi >= 1, 2, "out of range");
-        luaL_argcheck(L, pose <= (int)len, 3, "out of range");
+        L.ArgCheck(posi >= 1, 2, "out of range");
+        L.ArgCheck(pose <= (int)len, 3, "out of range");
         if (posi > pose) return 0;  /* empty interval; return no values */
         n = pose -  posi + 1;
         if (posi + n <= pose)  /* (lua_Integer -> int) overflow? */
-            return luaL_error(L, "string slice too long");
-        luaL_checkstack(L, n, "string slice too long");
+            return L.Error("string slice too long");
+        L.CheckStack(n, "string slice too long");
         n = 0;
         unsafe {
             fixed (char* sPtrX = &s.AsSpan()[0]) {
@@ -130,13 +125,12 @@ static struct luaL_Reg funcs[] = {
                     int code;
                     sPtr = utf8_decode(sPtr, &code);
                     if (sPtr == null)
-                        return luaL_error(L, "invalid UTF-8 code");
-                    lua_pushinteger(L, code);
+                        return L.Error("invalid UTF-8 code");
+                    L.PushInteger(code);
                     n++;
                 }
             }
         }
-        
 
         return n;
     }
@@ -163,30 +157,29 @@ static struct luaL_Reg funcs[] = {
     }
     
     static unsafe void pushutfchar(Lua L, int arg) {
-        var code = luaL_checkinteger(L, arg);
-        luaL_argcheck(L, 0 <= code && code <= MAXUNICODE, arg, "value out of range");
+        var code = L.CheckInteger(arg);
+        L.ArgCheck(0 <= code && code <= MAXUNICODE, arg, "value out of range");
 
         /* the %U string format does not exist in lua 5.1 or 5.2, so we emulate it */
         /* (code from luaO_pushvfstring in lobject.c) */
         char* buff = stackalloc char[UTF8BUFFSZ];
         int l = utf8esc(buff, (ulong)code);
         L.PushBuffer(new ReadOnlySpan<byte>(buff + UTF8BUFFSZ - l, l));
-        //lua_pushlstring(L, buff + UTF8BUFFSZ - l, l);
     }
     
     static int utfchar (Lua L) {
-        int n = lua_gettop(L);  /* number of arguments */
+        int n = L.GetTop();  /* number of arguments */
         if (n == 1)  /* optimize common case of single char */
             pushutfchar(L, 1);
         else {
             int i;
-            luaL_Buffer b = default;
-            luaL_buffinit(L, b);
+            LuaNET.LuaLBuffer b = default;
+            LuaNET.LuaNative.luaL_buffinit(L, b);
             for (i = 1; i <= n; i++) {
                 pushutfchar(L, i);
-                luaL_addvalue(b);
+                LuaNET.LuaNative.luaL_addvalue(b);
             }
-            luaL_pushresult(b);
+            LuaNET.LuaNative.luaL_pushresult(b);
         }
         return 1;
     }

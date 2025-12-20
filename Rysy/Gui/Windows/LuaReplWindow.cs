@@ -39,7 +39,7 @@ public class LuaReplWindow() : Window("rysy.luaRepl".Translate(), new GuiSize(12
         if (_lua is null) {
             var mainLua = EntityRegistry.LuaCtx.Lua;
 
-            _lua = LuaNET.LuaJIT.Lua.lua_newthread(mainLua);
+            _lua = mainLua.NewThread();
         }
 
         var lua = _lua.Value;

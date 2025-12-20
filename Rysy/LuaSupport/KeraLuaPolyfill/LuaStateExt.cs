@@ -1,32 +1,32 @@
 ﻿using KeraLua;
+using LuaNET;
 using System.Runtime.InteropServices;
 using System.Text;
+using LuaType = KeraLua.LuaType;
 
 namespace Rysy.LuaSupport.KeraLuaPolyfill;
 
-using LuaI = LuaNET.LuaJIT.Lua;
+using LuaI = LuaNET.Lua;
 
 public static class LuaStateExt {
     extension(Lua lua) {
         public static Lua CreateNew(bool openLibs) {
-            var st = LuaI.luaL_newstate();
+            var st = LuaI.NewState();
             if (openLibs)
-                LuaI.luaL_openlibs(st);
+                LuaI.OpenLibs(st);
 
             return st;
         }
         
         public static Lua FromIntPtr(nint s) {
-            unchecked {
-                return new Lua { Handle = (nuint)s };
-            }
+            return new Lua { pointer = s };
         }
 
         public Encoding Encoding => Encoding.UTF8;
         
         #region Stack Manip
         public void Pop(int idx) {
-            LuaI.lua_pop(lua, idx);
+            LuaI.Pop(lua, idx);
         }
 
         /// <summary>
@@ -34,19 +34,19 @@ public static class LuaStateExt {
         /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
         /// </summary>
         public void Remove(int idx) {
-            LuaI.lua_remove(lua, idx);
+            LuaI.Remove(lua, idx);
         }
         
         public int GetTop() {
-            return LuaI.lua_gettop(lua);
+            return LuaI.GetTop(lua);
         }
 
         public LuaType TopType() {
-            return (LuaType)LuaI.lua_type(lua, lua.GetTop());
+            return (LuaType)LuaI.Type(lua, lua.GetTop());
         }
 
         public LuaType Type(int idx) {
-            return (LuaType)LuaI.lua_type(lua, idx);
+            return (LuaType)LuaI.Type(lua, idx);
         }
         
         /// <summary>
@@ -54,35 +54,35 @@ public static class LuaStateExt {
         /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
         /// </summary>
         public void Insert(int targetIdx) {
-            LuaI.lua_insert(lua, targetIdx);
+            LuaI.Insert(lua, targetIdx);
         }
         #endregion
         
         #region TableMethods
         public LuaType GetTable(int idx) {
-            LuaI.lua_gettable(lua, idx);
+            LuaI.GetTable(lua, idx);
             return lua.TopType();
         }
 
         public LuaType GetField(int idx, string fieldName) {
-            LuaI.lua_getfield(lua, idx, fieldName);
+            LuaI.GetField(lua, idx, fieldName);
             return lua.TopType();
         }
         
         public void SetField(int idx, string fieldName) {
-            LuaI.lua_setfield(lua, idx, fieldName);
+            LuaI.SetField(lua, idx, fieldName);
         }
         
         public bool GetMetaTable(int objIndex) {
-            return LuaI.lua_getmetatable(lua, objIndex) != 0;
+            return LuaI.GetMetaTable(lua, objIndex) != 0;
         }
 
         public LuaType GetMetaField(int idx, string name) {
-            return (LuaType)LuaI.luaL_getmetafield(lua, idx, name);
+            return (LuaType)LuaI.GetMetaField(lua, idx, name);
         }
         
         public bool SetMetaTable(int objIndex) {
-            return LuaI.lua_setmetatable(lua, objIndex) != 0;
+            return LuaI.SetMetaTable(lua, objIndex) != 0;
         }
 
         public void Register(string name, KeraLuaStyleLuaFunction f) {
@@ -91,82 +91,82 @@ public static class LuaStateExt {
         }
         
         public void SetGlobal(string fieldName) {
-            LuaI.lua_setglobal(lua, fieldName);
+            LuaI.SetGlobal(lua, fieldName);
         }
         
         public void GetGlobal(string fieldName) {
-            LuaI.lua_getglobal(lua, fieldName);
+            LuaI.GetGlobal(lua, fieldName);
         }
 
         public void SetTable(int idx) {
-            LuaI.lua_settable(lua, idx);
+            LuaI.SetTable(lua, idx);
         }
 
         public LuaType RawGetInteger(int idx, int n) {
-            LuaI.lua_rawgeti(lua, idx, n);
+            LuaI.RawGetI(lua, idx, n);
             return lua.TopType();
         }
 
         public bool Next(int idx) {
-            return LuaI.lua_next(lua, idx) != 0;
+            return LuaI.Next(lua, idx) != 0;
         }
         #endregion
 
         public void Call(int args, int results) {
-            LuaI.lua_call(lua, args, results);
+            LuaI.Call(lua, args, results);
         }
 
         public LuaStatus PCall(int args, int results, int errorFunctionIndex) {
-            return (LuaStatus)LuaI.lua_pcall(lua, args, results, errorFunctionIndex);
+            return (LuaStatus)LuaI.PCall(lua, args, results, errorFunctionIndex);
         }
         
         #region IsMethods
 
         public bool IsNumber(int idx) {
-            return LuaI.lua_isnumber(lua, idx) != 0;
+            return LuaI.IsNumber(lua, idx);
         }
         
         #endregion
 
         #region ToMethods
         public string ToString(int stackIdx) {
-            return LuaI.lua_tostring(lua, stackIdx) ?? "";
+            return LuaI.ToString(lua, stackIdx) ?? "";
         }
         
         public double ToNumber(int stackIdx) {
-            return LuaI.lua_tonumber(lua, stackIdx);
+            return LuaI.ToNumber(lua, stackIdx);
         }
         
         public long ToInteger(int stackIdx) {
-            return LuaI.lua_tointeger(lua, stackIdx);
+            return LuaI.ToInteger(lua, stackIdx);
         }
         
         public long? ToIntegerX(int stackIdx) {
             int isnum = 0;
-            var res = LuaI.lua_tointegerx(lua, stackIdx, ref isnum);
+            var res = LuaI.ToIntegerX(lua, stackIdx, ref isnum);
             if (isnum == 0)
                 return null;
             return res;
         }
         
         public bool ToBoolean(int stackIdx) {
-            return LuaI.lua_toboolean(lua, stackIdx) != 0;
+            return LuaI.ToBoolean(lua, stackIdx);
         }
         
         public double ToNumberX(int stackIdx) {
             int isnum = 0;
-            return LuaI.lua_tonumberx(lua, stackIdx, ref isnum);
+            return LuaI.ToNumberX(lua, stackIdx, ref isnum);
         }
         
         public double ToNumberX(int stackIdx, out bool isNum) {
             int isnum = 0;
-            var res = LuaI.lua_tonumberx(lua, stackIdx, ref isnum);
+            var res = LuaI.ToNumberX(lua, stackIdx, ref isnum);
             isNum = isnum != 0;
             return res;
         }
 
         public nuint ToUserData(int idx) {
-            return LuaI.lua_touserdata(lua, idx);
+            return (nuint)LuaI.ToUserData(lua, idx);
         }
 
         public nint ToLString(int idx, out ulong len) {
@@ -178,31 +178,31 @@ public static class LuaStateExt {
         #region PushMethods
 
         public void PushCopy(int idx) {
-            LuaI.lua_pushvalue(lua, idx);
+            LuaI.PushValue(lua, idx);
         }
         
         public void PushNil() {
-            LuaI.lua_pushnil(lua);
+            LuaI.PushNil(lua);
         }
         
         public void PushBoolean(bool x) {
-            LuaI.lua_pushboolean(lua, x ? 1 : 0);
+            LuaI.PushBoolean(lua, x);
         }
         
         public void PushNumber(double x) {
-            LuaI.lua_pushnumber(lua, x);
+            LuaI.PushNumber(lua, x);
         }
         
         public void PushInteger(long x) {
-            LuaI.lua_pushinteger(lua, x);
+            LuaI.PushInteger(lua, x);
         }
 
         public void PushString(string x) {
-            LuaI.lua_pushstring(lua, x);
+            LuaI.PushString(lua, x);
         }
 
         public void PushCFunction(LuaFunction f) {
-            LuaI.lua_pushcfunction(lua, f);
+            LuaI.PushCFunction(lua, f);
         }
         
         public void PushCFunction(KeraLuaStyleLuaFunction f) {
@@ -218,52 +218,79 @@ public static class LuaStateExt {
         #region NewMethods
 
         public nuint NewUserData(int size) {
-            return LuaI.lua_newuserdata(lua, (ulong) size);
+            return (nuint)LuaI.NewUserData(lua, (ulong) size);
         }
 
         public void NewTable() {
-            LuaI.lua_newtable(lua);
+            LuaI.NewTable(lua);
+        }
+
+        public Lua NewThread() {
+            return LuaI.NewThread(lua);
         }
 
         public void CreateTable(int narr, int nrec) {
-            LuaI.lua_createtable(lua, narr, nrec);
+            LuaI.CreateTable(lua, narr, nrec);
+        }
+        #endregion
+        
+        #region CheckMethods
+        public string CheckLString(int idx, out ulong len) {
+            len = 0;
+            return LuaI.CheckLString(lua, 1, ref len);
+        }
+        
+        public long CheckInteger(int idx) {
+            return LuaI.CheckInteger(lua, idx);
+        }
+
+        public long OptInteger(int nArg, long def) {
+            return LuaI.OptInteger(lua, nArg, def);
+        }
+
+        public void ArgCheck(bool cond, int argNumber, string msg) {
+            LuaI.ArgCheck(lua, cond, argNumber, msg);
+        }
+
+        public void CheckStack(int n, string msg) {
+            LuaNative.luaL_checkstack(lua, n, msg);
         }
         #endregion
         
         #region LoadingMethods
 
         public LuaStatus LoadString(string code, string chunkName) {
-            return (LuaStatus) LuaI.luaL_loadbuffer(lua, code, (uint)code.Length, chunkName);
+            return (LuaStatus) LuaI.LoadBuffer(lua, code, (uint)code.Length, chunkName);
         }
 
         public void DoString(string code) {
-            LuaI.luaL_dostring(lua, code);
+            LuaI.DoString(lua, code);
         }
         #endregion
         
         #region DebugMethods
-        public void SetHook(LuaI.lua_Hook f, LuaHookMask mask, int count) {
-            LuaI.lua_sethook(lua, f, (int) mask, count);
+        public void SetHook(LuaHook f, LuaHookMask mask, int count) {
+            LuaI.SetHook(lua, f, (int) mask, count);
         }
 
-        public void Error() {
-            LuaI.lua_error(lua);
+        public int Error() {
+            return LuaI.Error(lua);
         }
         
-        public void Error(string msg) {
-            LuaI.luaL_error(lua, msg);
+        public int Error(string msg) {
+            return LuaI.Error(lua, msg, "");
         }
 
         public LuaFunction? AtPanic(LuaFunction f) {
-            return LuaI.lua_atpanic(lua, f);
+            return LuaI.AtPanic(lua, f);
         }
 
         public void GarbageCollector(LuaGC what, int n) {
-            LuaI.lua_gc(lua, (int)what, n);
+            LuaI.GC(lua, (LuaGCParam)what, n);
         }
 
         public void Traceback(Lua state, string msg, int level) {
-            LuaI.luaL_traceback(state, state,  msg, level);
+            LuaI.TraceBack(state, state,  msg, level);
         }
         #endregion
     }
