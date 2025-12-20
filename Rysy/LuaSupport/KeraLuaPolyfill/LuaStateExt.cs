@@ -168,13 +168,9 @@ public static class LuaStateExt {
         public nuint ToUserData(int idx) {
             return LuaI.lua_touserdata(lua, idx);
         }
-        
-        [DllImport("lua51", EntryPoint = "lua_tolstring", CallingConvention = (CallingConvention) 2)]
-        private static extern nint _lua_tolstring(Lua L, int idx, ref ulong len);
 
         public nint ToLString(int idx, out ulong len) {
-            len = 0;
-            return _lua_tolstring(lua, idx, ref len);
+            return LuaImports.lua_tolstring(lua, idx, out len);
         }
         
         #endregion
@@ -209,20 +205,13 @@ public static class LuaStateExt {
             LuaI.lua_pushcfunction(lua, f);
         }
         
-        public void PushCFunctionNew(LuaFunction f) {
-            LuaI.lua_pushcfunction(lua, f);
-        }
-        
         public void PushCFunction(KeraLuaStyleLuaFunction f) {
             lua_pushcclosure(lua, f, 0);
         }
-        
-        [DllImport("lua51", EntryPoint = "lua_pushcclosure", CallingConvention = (CallingConvention) 2)]
-        private static extern void _lua_pushcclosure(Lua L, IntPtr fn, int n);
 
         private static void lua_pushcclosure(Lua L, KeraLuaStyleLuaFunction? fn, int n)
         {
-            Lua._lua_pushcclosure(L, fn == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(fn), n);
+            LuaImports.lua_pushcclosure(L, fn == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(fn), n);
         }
         #endregion
         
@@ -244,8 +233,7 @@ public static class LuaStateExt {
         #region LoadingMethods
 
         public LuaStatus LoadString(string code, string chunkName) {
-            
-            return (LuaStatus) LuaI.luaL_loadbuffer(lua, code, (uint)code.Length, chunkName);//LuaI.luaL_loadstring(lua, code);
+            return (LuaStatus) LuaI.luaL_loadbuffer(lua, code, (uint)code.Length, chunkName);
         }
 
         public void DoString(string code) {

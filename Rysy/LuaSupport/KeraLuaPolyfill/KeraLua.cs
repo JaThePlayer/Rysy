@@ -1,9 +1,5 @@
 ﻿namespace KeraLua;
 
-public class KeraLuaPoly {
-        
-}
-
 /// <summary>
 /// Lua Load/Call status return
 /// </summary>
@@ -119,9 +115,7 @@ public enum LuaHookMask
     /// <summary>
     /// Disabled hook
     /// </summary>
-#pragma warning disable CA1008 // Enums should have zero value
     Disabled = 0,
-#pragma warning restore CA1008 // Enums should have zero value
     /// <summary>
     /// The call hook: is called when the interpreter calls a function. The hook is called just after Lua enters the new function, before the function gets its arguments. 
     /// </summary>
@@ -141,64 +135,52 @@ public enum LuaHookMask
 }
 
 /// <summary>
-    /// Garbage Collector operations
-    /// </summary>
+/// Garbage Collector operations
+/// </summary>
 public enum LuaGC
 {
-        /// <summary>
-        ///  Stops the garbage collector. 
-        /// </summary>
-        Stop = 0,
-        /// <summary>
-        /// Restarts the garbage collector. 
-        /// </summary>
-        Restart = 1,
-        /// <summary>
-        /// Performs a full garbage-collection cycle. 
-        /// </summary>
-        Collect = 2,
-        /// <summary>
-        ///  Returns the current amount of memory (in Kbytes) in use by Lua. 
-        /// </summary>
-        Count = 3,
-        /// <summary>
-        ///  Returns the remainder of dividing the current amount of bytes of memory in use by Lua by 1024
-        /// </summary>
-        Countb = 4,
-        /// <summary>
-        ///  Performs an incremental step of garbage collection. 
-        /// </summary>
-        Step = 5,
-        /// <summary>
-        /// The options LUA_GCSETPAUSE and LUA_GCSETSTEPMUL of the function lua_gc are deprecated. You should use the new option LUA_GCINC to set them. 
-        /// </summary>
-        [Obsolete("Deprecatad since Lua 5.4, Use Incremental instead")]
-        SetPause = 6,
-        /// <summary>
-        /// The options LUA_GCSETPAUSE and LUA_GCSETSTEPMUL of the function lua_gc are deprecated. You should use the new option LUA_GCINC to set them. 
-        /// </summary>
-        [Obsolete("Deprecatad since Lua 5.4, Use Incremental instead")]
-        SetStepMultiplier = 7,
-        /// <summary>
-        ///  returns a boolean that tells whether the collector is running
-        /// </summary>
-        IsRunning = 9,
-        /// <summary>
-        ///  Changes the collector to generational mode with the given parameters (see §2.5.2). Returns the previous mode (LUA_GCGEN or LUA_GCINC). 
-        /// </summary>
-        Generational = 10,
-        /// <summary>
-        /// Changes the collector to incremental mode with the given parameters (see §2.5.1). Returns the previous mode (LUA_GCGEN or LUA_GCINC). 
-        /// </summary>
-        Incremental = 11,
-    }
+    /// <summary>
+    ///  Stops the garbage collector. 
+    /// </summary>
+    Stop = 0,
+    /// <summary>
+    /// Restarts the garbage collector. 
+    /// </summary>
+    Restart = 1,
+    /// <summary>
+    /// Performs a full garbage-collection cycle. 
+    /// </summary>
+    Collect = 2,
+    /// <summary>
+    ///  Returns the current amount of memory (in Kbytes) in use by Lua. 
+    /// </summary>
+    Count = 3,
+    /// <summary>
+    ///  Returns the remainder of dividing the current amount of bytes of memory in use by Lua by 1024
+    /// </summary>
+    Countb = 4,
+    /// <summary>
+    ///  Performs an incremental step of garbage collection. 
+    /// </summary>
+    Step = 5,
+    /// <summary>
+    ///  returns a boolean that tells whether the collector is running
+    /// </summary>
+    IsRunning = 9,
+    /// <summary>
+    ///  Changes the collector to generational mode with the given parameters (see §2.5.2). Returns the previous mode (LUA_GCGEN or LUA_GCINC). 
+    /// </summary>
+    Generational = 10,
+    /// <summary>
+    /// Changes the collector to incremental mode with the given parameters (see §2.5.1). Returns the previous mode (LUA_GCGEN or LUA_GCINC). 
+    /// </summary>
+    Incremental = 11,
+}
 
 /// <summary>
 /// Enum for pseudo-index used by registry table
 /// </summary>
-#pragma warning disable CA1008 // Enums should have zero value
 public enum LuaRegistry
-#pragma warning restore CA1008 // Enums should have zero value
 {
     /* LUAI_MAXSTACK		1000000 */
     /// <summary>
@@ -210,9 +192,7 @@ public enum LuaRegistry
 /// <summary>
 /// Registry index 
 /// </summary>
-#pragma warning disable CA1008 // Enums should have zero value
 public enum LuaRegistryIndex
-#pragma warning restore CA1008 // Enums should have zero value
 {
     /// <summary>
     ///  At this index the registry has the main thread of the state.

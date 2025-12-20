@@ -146,10 +146,6 @@ public static partial class LuaExt {
         }
     }
     
-    
-    [DllImport("lua51", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    private static extern unsafe LuaStatus luaL_loadbufferx(nuint luaState, byte* buff, nuint sz, string? name, string? mode);
-    
     public static unsafe void LoadStringWithSelene(this Lua lua, ReadOnlySpan<byte> strUtf8, string? chunkName = null) {
         ReadOnlySpan<byte> code;
         if (LuaCtx.SeleneLoaded) {
@@ -168,7 +164,7 @@ public static partial class LuaExt {
         }
 
         fixed (byte* strFirstChar = &code[0]) {
-            var st = luaL_loadbufferx(lua.Handle, strFirstChar, (nuint)strUtf8.Length, chunkName, null);
+            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)strUtf8.Length, chunkName, null);
             if (st != LuaStatus.OK) {
                 throw new LuaException(lua);
             }
