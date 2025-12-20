@@ -111,7 +111,20 @@ public class LuaCtx {
         
         // Rewrite 'require' so that it runs selene and runs through IModFilesystem
         lua.PCallStringThrowIfError("""
+        local orig_require = require
+        
+        local builtins = {
+            -- Extensions built into LuaJit
+            ["bit"] = true,
+            ["ffi"] = true,
+            ["string.buffer"] = true,
+        }
+        
         function require(modname)
+            if builtins[modname] then
+                return orig_require(modname)
+            end
+
             local alreadyLoaded = package.loaded[modname]
 
             if alreadyLoaded then
@@ -238,53 +251,6 @@ public class LuaCtx {
 
         if (ModRegistry.RysyMod.Filesystem.TryReadAllText("lua/funpack.lua") is {} funpack)
             lua.PCallStringThrowIfError(funpack, "funpack");
-
-        lua.Register("_RYSY_bit_lshift", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var x = (int) lua.ToNumber(-2);
-            var n = (int) lua.ToNumber(-1);
-            lua.Pop(2);
-
-            lua.PushNumber(x << n);
-
-            return 1;
-        });
-        
-        lua.Register("_RYSY_bit_bor", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var x = lua.ToInteger(-2);
-            var n = lua.ToInteger(-1);
-            lua.Pop(2);
-
-            lua.PushInteger(x | n);
-
-            return 1;
-        });
-        
-        lua.Register("_RYSY_bit_band", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var x = lua.ToInteger(-2);
-            var n = lua.ToInteger(-1);
-            lua.Pop(2);
-
-            lua.PushInteger(x & n);
-
-            return 1;
-        });
-        
-        lua.Register("_RYSY_bit_bnot", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            var x = lua.ToInteger(-1);
-            lua.Pop(1);
-
-            lua.PushInteger(~x);
-
-            return 1;
-        });
 
         // _RYSY_DRAWABLE_getTextureSize(texturePath, atlaspath) -> number, number, number, number, number, number
         // gets the clip rectangle and draw offset for a texture, potentially causing preloading.
