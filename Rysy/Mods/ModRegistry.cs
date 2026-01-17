@@ -110,7 +110,7 @@ public static class ModRegistry {
                 .ToHashSet()
             ) ?? new(StringComparer.Ordinal) : new(StringComparer.Ordinal);
 
-        var allMods =
+        IEnumerable<Task<ModMeta?>> allMods =
             Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache", StringComparison.Ordinal))
             .Concat(Directory.GetFiles(modDir, "*.zip"))
             .Select(f => f.Unbackslash())
@@ -120,18 +120,19 @@ public static class ModRegistry {
                     return CreateModAsync(f, zip: true, loadCSharpPlugins);
 
                 return CreateModAsync(f, zip: false, loadCSharpPlugins);
-            })
-            .Append(Task.FromResult(CreateRysyMod()));
+            })!
+            .Append(Task.FromResult(CreateRysyMod()))!;
 
         if (CreateVanillaMod() is { } vanilla) {
-            allMods = allMods.Append(Task.FromResult(vanilla));
+            allMods = allMods!.Append(Task.FromResult(vanilla))!;
             VanillaMod = vanilla;
         }
 
         var all = await Task.WhenAll(allMods);
 
         foreach (var meta in all) {
-            RegisterMod(meta);
+            if (meta is not null)
+                RegisterMod(meta);
         }
 
         IsLoaded = true;
@@ -199,9 +200,16 @@ public static class ModRegistry {
         }
     }
 
-    private static async Task<ModMeta> CreateModAsync(string dir, bool zip, bool loadCSharp) {
+    private static async Task<ModMeta?> CreateModAsync(string dir, bool zip, bool loadCSharp) {
         var mod = new ModMeta();
-        IModFilesystem filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
+        IModFilesystem? filesystem = null;
+        try {
+            filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
+        } catch (Exception e) {
+            Logger.Error(e, $"Failed to create filesystem for mod at {dir.Unbackslash().Censor()}. Skipping loading the mod!");
+            return null;
+        }
+        
         await filesystem.InitialScan();
 
         mod.Filesystem = filesystem;
