@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Map : IPackable, ILuaWrapper {
+public sealed partial class Map : IPackable, ILuaWrapper, IDisposable {
     private static Map _dummyMap;
     
     /// <summary>
@@ -505,6 +505,23 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         
         lua.PushNil();
         return 1;
+    }
+
+    public void Dispose() {
+        GC.SuppressFinalize(this);
+        
+        _animatedTilesWatcher?.Dispose();
+        _bgTilesWatcher?.Dispose();
+        _fgTilesWatcher?.Dispose();
+        _spritesWatcher?.Dispose();
+        _animatedTilesWatcher = null;
+        _bgTilesWatcher = null;
+        _fgTilesWatcher = null;
+        _spritesWatcher = null;
+    }
+
+    ~Map() {
+        Dispose();
     }
 }
 
