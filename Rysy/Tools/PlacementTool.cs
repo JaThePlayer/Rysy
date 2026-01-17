@@ -529,12 +529,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 
                 // clear old references to let them get GC'd
                 placement = null!;
+                sprites ??= [];
             }
             
             // fixup phase - offset sprites and/or camera to make them fix within the preview rectangle better.
             if (!didFixups) {
-                selection = selection ?? throw new UnreachableException($"{nameof(selection)} is null!");
-                
                 // Wait with fixing up the preview offsets until all textures are ready
                 if (sprites.Any(x => !x.IsLoaded))
                     return;
@@ -546,7 +545,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                         sprites[0] = onlySprite;
                     }
                 }
-                else if (didResize && sprites.Count > 1 && selection.Parent is Entity e && (e.ResizableX || e.ResizableY) && sprites.All(s => s is Sprite)) {
+                else if (didResize && sprites.Count > 1 && selection?.Parent is Entity e && (e.ResizableX || e.ResizableY) && sprites.All(s => s is Sprite)) {
                     var spriteBounds = RectangleExt.Merge(sprites.OfType<Sprite>().Select(s => s.GetRenderRect() ?? default));
 
                     camOffset.X = spriteBounds.Left;
