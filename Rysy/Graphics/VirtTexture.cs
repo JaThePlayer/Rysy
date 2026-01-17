@@ -21,7 +21,7 @@ public class VirtTexture : IDisposable {
     /// </summary>
     protected Rectangle? LoadedClipRect;
 
-    private OutlineVirtTexture? _outlineTexture;
+    protected OutlineVirtTexture? OutlineTexture;
 
     public static VirtTexture FromTexture(Texture2D text) {
         return new UndisposableVirtTexture() {
@@ -111,7 +111,7 @@ public class VirtTexture : IDisposable {
     /// Gets a cached texture that can be used to render an outline for this texture.
     /// </summary>
     public VirtTexture GetOutlineTexture() {
-        return _outlineTexture ??= new OutlineVirtTexture(this);
+        return OutlineTexture ??= new OutlineVirtTexture(this);
     }
 
     private Texture2D? StartLoadingIfNeeded() {
@@ -135,9 +135,7 @@ public class VirtTexture : IDisposable {
     public virtual void Dispose() {
         State = States.Unloaded;
         Texture?.Dispose();
-        _outlineTexture?.Dispose();
-
-        GC.SuppressFinalize(this);
+        OutlineTexture?.Dispose();
     }
 
     protected virtual bool TryPreloadClipRect() { return false; }

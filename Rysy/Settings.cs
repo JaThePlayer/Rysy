@@ -293,6 +293,15 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
 
     public int GridSize { get; set; } = 8;
 
+    /// <summary>
+    /// Whether Texture2D instances can be created outside the main thread.
+    /// Not officially supported by FNA, but it works?
+    /// Leaving it here so others can experiment, but from my testing it makes no difference on D3D11,
+    /// and heavily regresses OpenGL, making this not worth it.
+    /// (Used to be the default on older versions of Rysy, disabled now)
+    /// </summary>
+    public bool AllowMultithreadedTextureCreation { get; set; }
+
     #endregion
 
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;

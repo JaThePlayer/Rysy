@@ -42,52 +42,93 @@ public sealed class ModTexture : VirtTexture, IModAsset {
         
     
     private Task _QueueLoad() {
-        return Task.Run(() => {
+        return Task.Run(async () => { 
+            var success = Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
                 try {
-                    Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
-                        lock (this) {
-                            LoadedTexture?.Dispose();
+                    lock (this) {
+                        State = States.Loading;
+                        LoadedTexture?.Dispose();
+                        LoadedTexture = null;
+                        OutlineTexture?.Dispose();
+                        OutlineTexture = null;
 
-                            Texture2D? texture;
-#if FNA
-                            if (Mod.Filesystem is FolderModFilesystem) {
-                                texture = ReadPremultipliedTextureFromStream(stream);
-                            } else {
-                                using var memStr = new MemoryStream();
-                                stream.CopyTo(memStr);
-                                memStr.Seek(0, SeekOrigin.Begin);
-                                texture = ReadPremultipliedTextureFromStream(memStr);
-                            }
-#else
-                        texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
-#endif
-                            ClipRect = new(0, 0, texture.Width, texture.Height);
-                            LoadedTexture = texture;
+                        int w, h, len;
+                        nint ptr;
+                        if (stream.CanSeek) {
+                            ptr = ReadPremultipliedTextureDataFromStream(stream, out w, out h, out len);
+                        } else {
+                            using var memStr = new MemoryStream();
+                            stream.CopyTo(memStr);
+                            memStr.Seek(0, SeekOrigin.Begin);
+                            ptr = ReadPremultipliedTextureDataFromStream(memStr, out w, out h, out len);
                         }
-                    }, out _watcher);
-                } catch (Exception e) {
-                    Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {e}");
-                    throw;
-                }
 
-                State = States.Loaded;
+                        if (Settings.Instance.AllowMultithreadedTextureCreation) {
+                            SendDataToGpu(w, h, ptr, len);
+                        } else {
+                            RysyState.OnEndOfThisFrame += () => {
+                                SendDataToGpu(w, h, ptr, len);
+                            };
+                        }
+                    }
+                } catch (Exception ex) {
+                    Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {ex}");
+                    SwitchToFallbackTexture();
+                }
+            }, out _watcher);
+
+            if (success) {
+                // Wait for our callback registered in RysyState.OnEndOfThisFrame to trigger.
+                while (State == States.Loading) {
+                    await Task.Delay(18);
+                }
+            } else {
+                Logger.Write("ModTexture", LogLevel.Error, $"Failed to find mod texture {this} - file does not exist anymore or could not be opened.");
+                SwitchToFallbackTexture();
             }
-        );
+        });
     }
 
-    private Texture2D ReadPremultipliedTextureFromStream(Stream stream)
+    private void SendDataToGpu(int w, int h, IntPtr ptr, int len) {
+        if (ptr == 0) {
+            Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this} - File was not a valid .png file.");
+            SwitchToFallbackTexture();
+            return;
+        }
+        
+        try {
+            var texture = new Texture2D(RysyState.GraphicsDevice, w, h);
+            texture.SetDataPointerEXT(0, null, ptr, len);
+            
+            ClipRect = new(0, 0, texture.Width, texture.Height);
+            LoadedTexture = texture;
+            State = States.Loaded;
+        } catch (Exception ex) {
+            Logger.Write("ModTexture", LogLevel.Error,
+                $"Failed loading mod texture {this}\n{ex}");
+            SwitchToFallbackTexture();
+        } finally {
+            Fna3dImageFree(ptr);
+        }
+    }
+
+    private void SwitchToFallbackTexture() {
+        var texture = Gfx.UnknownTexture.Texture ?? Gfx.Pixel;
+        ClipRect = new(0, 0, texture.Width, texture.Height);
+        LoadedTexture = texture;
+        State = States.Loaded;
+    }
+
+    private nint ReadPremultipliedTextureDataFromStream(Stream stream, out int w, out int h, out int len)
     {
-        var ptr = Fna3dReadImageStream(stream, out var w, out var h, out var len);
+        var ptr = Fna3dReadImageStream(stream, out w, out h, out len);
         unsafe {
             Debug.Assert(sizeof(Color) == 4);
             Span<Color> data = new Span<Color>((void*)ptr, w * h);
             Premultiply(data);
         }
-        
-        Texture2D texture = new(RysyState.GraphicsDevice, w, h);
-        texture.SetDataPointerEXT(0, null, ptr, len);
-        Fna3dImageFree(ptr);
-        return texture;
+
+        return ptr;
     }
 
     protected override Task QueueLoad() => _QueueLoad();
@@ -98,9 +139,9 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 if (PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
                     ClipRect = new(0, 0, w, h);
                     return true;
-                } else {
-                    throw new Exception($"Invalid PNG for {VirtPath}");
                 }
+
+                throw new Exception($"Invalid PNG for {VirtPath}");
             });
         }
     }
