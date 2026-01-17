@@ -20,8 +20,8 @@ public sealed class ReadonlyModFilesystem(IModFilesystem filesystem) : IModFiles
         return filesystem.TryOpenFile(path, callback, out value);
     }
 
-    public void RegisterFilewatch(string path, WatchedAsset asset) {
-        filesystem.RegisterFilewatch(path, asset);
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
+        return filesystem.RegisterFilewatch(path, asset);
     }
 
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {

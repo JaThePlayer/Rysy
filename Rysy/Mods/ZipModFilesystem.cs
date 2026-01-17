@@ -223,10 +223,24 @@ public sealed class ZipModFilesystem : IModFilesystem {
         return files;
     }
 
-    public void RegisterFilewatch(string path, WatchedAsset asset) {
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
         lock (_watchedAssets) {
             var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
             assets.Add(asset);
+        }
+        
+        return new FilewatchDisposable(this, path, asset);
+    }
+    
+    private class FilewatchDisposable(ZipModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
+        public void Dispose() {
+            lock (fs._watchedAssets) {
+                if (fs._watchedAssets.TryGetValue(path, out var assets)) {
+                    assets.Remove(asset);
+                    if (assets.Count == 0)
+                        fs._watchedAssets.Remove(path, out _);
+                }
+            }
         }
     }
     

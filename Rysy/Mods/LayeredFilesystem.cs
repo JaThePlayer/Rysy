@@ -70,7 +70,7 @@ public class LayeredFilesystem : IModFilesystem {
         }
     }
 
-    public void TryWatchAndOpenAll(string path, Action<Stream, ModMeta> callback, Action onChanged, Func<ModMeta, bool>? filter = null) {
+    public IDisposable TryWatchAndOpenAll(string path, Action<Stream, ModMeta> callback, Action onChanged, Func<ModMeta, bool>? filter = null) {
         WatchedAsset asset = new() {
             OnChanged = (path) => {
                 onChanged();
@@ -82,29 +82,32 @@ public class LayeredFilesystem : IModFilesystem {
                 }
             }
         };
+        List<IDisposable> disposables = [];
 
         foreach (var mod in _mods) {
             if (!(filter?.Invoke(mod) ?? true))
                 continue;
             
             mod.Filesystem.TryOpenFile(path, (stream) => callback(stream, mod));
-            mod.Filesystem.RegisterFilewatch(path, asset);
+            disposables.Add(mod.Filesystem.RegisterFilewatch(path, asset));
         }
+
+        return new ListDisposable(disposables);
     }
 
     /// <summary>
     /// Same as TryWatchAndOpen, but the callback receives the mod the file comes form
     /// </summary>
-    /// <param name="path"></param>
-    /// <param name="callback"></param>
-    public bool TryWatchAndOpenWithMod(string path, Action<Stream, ModMeta> callback) {
+    public bool TryWatchAndOpenWithMod(string path, Action<Stream, ModMeta> callback, 
+        [NotNullWhen(true)] out IDisposable? undoWatcher) {
+        undoWatcher = null;
         lock (_mods) {
             foreach (var mod in _mods) {
                 if (!mod.Filesystem.TryOpenFile(path, stream => callback(stream, mod))) {
                     continue;
                 }
 
-                mod.Filesystem.RegisterFilewatch(path, new() {
+                undoWatcher = mod.Filesystem.RegisterFilewatch(path, new() {
                     OnChanged = (path) => {
                         mod.Filesystem.TryOpenFile(path, stream => {
                             callback(stream, mod);
@@ -142,13 +145,19 @@ public class LayeredFilesystem : IModFilesystem {
         return false;
     }
 
-    public void RegisterFilewatch(string path, WatchedAsset asset) {
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
+        /*
         foreach (var fs in _mods) {
             if (fs.Filesystem.FileExists(path)) {
-                fs.Filesystem.RegisterFilewatch(path, asset);
-                return;
+                return fs.Filesystem.RegisterFilewatch(path, asset);
             }
+        }*/
+        List<IDisposable> watchers = [];
+        foreach (var fs in _mods) {
+            watchers.Add(fs.Filesystem.RegisterFilewatch(path, asset));
         }
+
+        return new ListDisposable(watchers);
     }
 
     public bool FileExists(string path) {

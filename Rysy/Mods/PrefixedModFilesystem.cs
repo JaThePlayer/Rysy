@@ -31,8 +31,8 @@ public sealed class PrefixedModFilesystem(string prefix, IModFilesystem inner) :
         return inner.TryOpenFile(ToInnerPath(path), callback, out value);
     }
 
-    public void RegisterFilewatch(string path, WatchedAsset asset) {
-        inner.RegisterFilewatch(ToInnerPath(path), asset);
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
+        return inner.RegisterFilewatch(ToInnerPath(path), asset);
     }
 
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {

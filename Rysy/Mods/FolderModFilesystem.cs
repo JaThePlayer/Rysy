@@ -202,10 +202,21 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         return true;
     }
 
-    public void RegisterFilewatch(string path, WatchedAsset asset) {
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
         var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
 
         assets.Add(asset);
+        return new FilewatchDisposable(this, path, asset);
+    }
+
+    private class FilewatchDisposable(FolderModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
+        public void Dispose() {
+            if (fs._watchedAssets.TryGetValue(path, out var assets)) {
+                assets.Remove(asset);
+                if (assets.Count == 0)
+                    fs._watchedAssets.Remove(path, out _);
+            }
+        }
     }
 
     public void AppendAllText(string path, string contents) {

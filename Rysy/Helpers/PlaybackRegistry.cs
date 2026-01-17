@@ -1,10 +1,13 @@
 ﻿using Rysy.Graphics;
 using Rysy.Mods;
+using System.Collections.Concurrent;
 
 namespace Rysy.Helpers;
 
 public static class PlaybackRegistry {
     private static Dictionary<string, List<ChaserState>> Tutorials = new();
+
+    private static readonly ConcurrentDictionary<string, IDisposable> _watchers = [];
 
     public static List<ChaserState>? GetTutorial(string name) {
         lock (Tutorials) {
@@ -18,7 +21,8 @@ public static class PlaybackRegistry {
             lock (Tutorials) {
                 Tutorials[name] = data;
             }
-        });
+        }, out var watcher);
+        _watchers.SetAndDisposeOld(name, watcher);
 
         if (exists) {
             return Tutorials[name];

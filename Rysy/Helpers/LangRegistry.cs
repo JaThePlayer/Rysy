@@ -39,6 +39,7 @@ public static class LangRegistry {
     public static async Task LoadAllAsync(SimpleLoadTask? task) {
         task?.SetMessage("Reading lang files");
 
+        LangFileWatchers.DisposeAllAndClear();
         Languages.Clear();
         Languages["en_gb"] = new("en_gb");
         
@@ -47,6 +48,8 @@ public static class LangRegistry {
         FallbackLang = Languages[Persistence.Instance.Get("Language", "en_gb")];
         CurrentLang = Languages["en_gb"];
     }
+
+    private static readonly ConcurrentDictionary<(ModMeta, string), IDisposable> LangFileWatchers = [];
 
     public static Task LoadFromModAsync(ModMeta mod) {
         var fs = mod.Filesystem;
@@ -61,7 +64,8 @@ public static class LangRegistry {
                 } catch (Exception e) {
                     e.LogAsJson();
                 }
-            });
+            }, out var watcher);
+            LangFileWatchers.SetAndDisposeOld((mod, file), watcher);
         }
 
         return Task.CompletedTask;

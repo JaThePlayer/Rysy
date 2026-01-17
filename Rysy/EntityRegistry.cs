@@ -6,6 +6,7 @@ using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -105,6 +106,8 @@ public static class EntityRegistry {
     public static ListenableDictionary<string, RegisteredEntity> RegisteredDecalRegistryProperties { get; } = new(StringComparer.Ordinal);
     
     public static ListenableDictionary<string, LonnFieldType> RegisteredLonnFieldTypes { get; } = new(StringComparer.Ordinal);
+    
+    private static readonly ConcurrentDictionary<(ModMeta, string), IDisposable> LuaPluginWatchers = [];
 
     public static ListenableDictionary<string, RegisteredEntity> GetRegistryFor(RegisteredEntityType type) {
         return type switch {
@@ -214,6 +217,7 @@ public static class EntityRegistry {
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
+        LuaPluginWatchers.DisposeAllAndClear();
         Registered.Clear();
         RegisteredStyles.Clear();
         RegisteredDecalRegistryProperties.Clear();
@@ -303,7 +307,9 @@ public static class EntityRegistry {
             WithLuaHotReloadInfo(pluginPath, "field", () => {
                 RegisterFieldFromLua(plugin, pluginPath, mod);
             });
-        });
+        }, out var watcher);
+
+        LuaPluginWatchers.SetAndDisposeOld((mod, pluginPath), watcher);
     }
     
     private static void RegisterFieldFromLua(string lua, string chunkName, ModMeta? mod = null) {
@@ -327,7 +333,9 @@ public static class EntityRegistry {
             WithLuaHotReloadInfo(pluginPath, "style", () => {
                 RegisterStyleFromLua(plugin, pluginPath, mod);
             });
-        });
+        }, out var watcher);
+        
+        LuaPluginWatchers.SetAndDisposeOld((mod, pluginPath), watcher);
     }
 
     private static void RegisterStyleFromLua(string lua, string chunkName, ModMeta? mod = null) {
@@ -390,7 +398,9 @@ public static class EntityRegistry {
             WithLuaHotReloadInfo(pluginPath, trigger ? "trigger" : "entity", () => {
                 RegisterFromLua(plugin, pluginPath, trigger, mod);
             });
-        });
+        }, out var watcher);
+
+        LuaPluginWatchers.SetAndDisposeOld((mod, pluginPath), watcher);
     }
 
     private static void Register(RegisteredEntity e) {

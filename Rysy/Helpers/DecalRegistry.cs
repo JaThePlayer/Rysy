@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Mods;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Linq;
 
@@ -71,6 +72,8 @@ public sealed class DecalRegistry : IDisposable {
 
     private static bool Disposed;
 
+    private static ConcurrentDictionary<ModMeta, IDisposable> _watchers = [];
+
     public void ReadFileFromMod(ModMeta mod) {
         var fs = mod.Filesystem;
         fs.TryWatchAndOpen("DecalRegistry.xml", (s) => {
@@ -125,12 +128,16 @@ public sealed class DecalRegistry : IDisposable {
                     EntriesMutable = EntriesByRoot.SelectMany(kv => kv.Value).ToList();
                 }
             }
-        });
+        }, out var watcher);
+
+        _watchers.SetAndDisposeOld(mod, watcher);
     }
 
     public void Dispose() {
+        _watchers.DisposeAllAndClear();
         EntriesMutable.Clear();
         EntriesByRoot.Clear();
+        
         Disposed = true;
     }
 }

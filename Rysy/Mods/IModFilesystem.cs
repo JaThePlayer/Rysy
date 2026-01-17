@@ -33,7 +33,7 @@ public interface IModFilesystem {
     /// Registers a file watcher for the given virtual path.
     /// Various callbacks from the <paramref name="asset"/> will be called when this file changes.
     /// </summary>
-    public void RegisterFilewatch(string path, WatchedAsset asset);
+    public IDisposable RegisterFilewatch(string path, WatchedAsset asset);
 
     /// <summary>
     /// Finds all files that are contained in the <paramref name="directory"/> with the file extension <paramref name="extension"/>.
@@ -153,13 +153,13 @@ public static class ModFilesystemExtensions {
     /// If the file exists, also sets up a file watcher which will call the <paramref name="callback"/> whenever the file changes.
     /// If the file doesn't exist, the <paramref name="callback"/> never gets called and this returns false.
     /// </summary>
-    public static bool TryWatchAndOpen(this IModFilesystem filesystem, string path, Action<Stream> callback) {
+    public static bool TryWatchAndOpen(this IModFilesystem filesystem, string path, Action<Stream> callback, 
+        [NotNullWhen(true)] out IDisposable? undoWatcher) {
+        undoWatcher = null;
         if (filesystem.TryOpenFile(path, callback)) {
-            filesystem.RegisterFilewatch(path, new() {
+            undoWatcher = filesystem.RegisterFilewatch(path, new() {
                 OnChanged = (path) => {
-                    filesystem.TryOpenFile(path, stream => {
-                        callback(stream);
-                    });
+                    filesystem.TryOpenFile(path, callback);
                 },
             });
 

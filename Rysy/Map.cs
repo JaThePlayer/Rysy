@@ -24,15 +24,13 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     /// </summary>
     public string? Package;
 
-    private string? _filepath;
-
     /// <summary>
     /// The filename of the file this map comes from, if it came from a file.
     /// </summary>
     public string? Filepath {
-        get => _filepath;
+        get;
         set {
-            _filepath = value;
+            field = value;
             _modChecked = false;
         }
     }
@@ -62,6 +60,9 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     public Autotiler FgAutotiler { get; set; } = new();
 
     public SpriteBank Sprites { get; set; } = new();
+
+    // TODO: make Map IDisposable?
+    private IDisposable? _animatedTilesWatcher, _bgTilesWatcher, _fgTilesWatcher, _spritesWatcher;
 
     public MapStylegrounds Style;
     /// <summary>
@@ -168,7 +169,11 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         void Load(Func<MapMetadata?, string?> xmlPathGetter, bool forceRead,
             Action<Stream, ModMeta> readFromXml,
             string errorPopupTitle, string missingFilePopupTitle,
-            string vanillaPath) {
+            string vanillaPath, ref IDisposable? watcher) {
+            
+            watcher?.Dispose();
+            watcher = null;
+            
             var oldPath = xmlPathGetter(oldMeta);
             var newPath = xmlPathGetter(meta);
             if (oldPath != newPath || newPath.IsNullOrWhitespace() || forceRead) {
@@ -181,7 +186,7 @@ public sealed partial class Map : IPackable, ILuaWrapper {
                                 errorPopupTitle.ToLangKey(newPath),
                                 () => readFromXml(stream, mod));
                             Rooms.ForEach(r => r.ClearRenderCacheAggressively());
-                        })) {
+                        }, out watcher)) {
                         PopupNotificationWindow.Show(missingFilePopupTitle.ToLangKey(newPath));
                         Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find xml '{newPath}'");
                         shouldReadVanilla = true;
@@ -201,7 +206,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             readFromXml: (stream, _) => AnimatedTiles.ReadFromXml(stream),
             errorPopupTitle: "rysy.popups.map.animatedTilesError",
             missingFilePopupTitle: "rysy.popups.map.animatedTilesMissing",
-            vanillaPath: "Graphics/AnimatedTiles.xml");
+            vanillaPath: "Graphics/AnimatedTiles.xml",
+            ref _animatedTilesWatcher);
 
         BgAutotiler.AnimatedTiles = AnimatedTiles;
         FgAutotiler.AnimatedTiles = AnimatedTiles;
@@ -210,14 +216,16 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             readFromXml: (stream, _) => BgAutotiler.ReadFromXml(stream),
             errorPopupTitle: "rysy.popups.map.backgroundTilesError",
             missingFilePopupTitle: "rysy.popups.map.backgroundTilesMissing",
-            vanillaPath: "Graphics/BackgroundTiles.xml"
+            vanillaPath: "Graphics/BackgroundTiles.xml",
+            ref _bgTilesWatcher
         );
         
         Load(x => x?.ForegroundTiles, forceRead: false,
             readFromXml: (stream, _) => FgAutotiler.ReadFromXml(stream),
             errorPopupTitle: "rysy.popups.map.foregroundTilesError",
             missingFilePopupTitle: "rysy.popups.map.foregroundTilesMissing",
-            vanillaPath: "Graphics/ForegroundTiles.xml"
+            vanillaPath: "Graphics/ForegroundTiles.xml",
+            ref _fgTilesWatcher
         );
         
         Load(x => x?.Sprites, forceRead: false,
@@ -227,7 +235,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
             },
             errorPopupTitle: "rysy.popups.map.spritesXmlError",
             missingFilePopupTitle: "rysy.popups.map.spritesXmlMissing",
-            vanillaPath: "Graphics/Sprites.xml"
+            vanillaPath: "Graphics/Sprites.xml",
+            ref _spritesWatcher
         );
     }
 
@@ -289,11 +298,13 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
     private void UseVanillaTilesetsIfNeeded() {
         if (!BgAutotiler.Loaded) {
-            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/BackgroundTiles.xml", BgAutotiler.ReadFromXml);
+            _bgTilesWatcher?.Dispose();
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/BackgroundTiles.xml", BgAutotiler.ReadFromXml, out _bgTilesWatcher);
         }
 
         if (!FgAutotiler.Loaded) {
-            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FgAutotiler.ReadFromXml);
+            _fgTilesWatcher?.Dispose();
+            ModRegistry.Filesystem.TryWatchAndOpen("Graphics/ForegroundTiles.xml", FgAutotiler.ReadFromXml, out _fgTilesWatcher);
         }
         
         if (!Sprites.Loaded) {
@@ -303,7 +314,8 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 
     private void LoadVanillaSpritesXml() {
         ModRegistry.VanillaMod.Filesystem.TryOpenFile("Graphics/Sprites.xml", s => Sprites.Load(s, ModRegistry.VanillaMod));
-        ModRegistry.Filesystem.TryWatchAndOpenAll("Graphics/Sprites.xml", Sprites.Load, Sprites.Clear, filter: m => !m.IsVanilla);
+        _spritesWatcher?.Dispose();
+        _spritesWatcher = ModRegistry.Filesystem.TryWatchAndOpenAll("Graphics/Sprites.xml", Sprites.Load, Sprites.Clear, filter: m => !m.IsVanilla);
     }
 
     public Room? TryGetRoomByName(string name) => Rooms.FirstOrDefault(r => r.Name == name);

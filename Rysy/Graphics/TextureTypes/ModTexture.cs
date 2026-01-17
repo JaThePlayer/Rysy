@@ -6,6 +6,8 @@ using System.Runtime.Intrinsics;
 namespace Rysy.Graphics.TextureTypes;
 
 public sealed class ModTexture : VirtTexture, IModAsset {
+    private IDisposable? _watcher;
+    
     public ModMeta Mod { get; init; }
     public string VirtPath { get; init; }
 
@@ -17,6 +19,11 @@ public sealed class ModTexture : VirtTexture, IModAsset {
     public string? SourceModName => Mod.Name;
 
     public List<string>? DependencyModNames => null;
+
+    public override void Dispose() {
+        _watcher?.Dispose();
+        base.Dispose();
+    }
 
     private Task _QueueLoad() {
         return Task.Run(() => {
@@ -40,7 +47,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                             ClipRect = new(0, 0, texture.Width, texture.Height);
                             LoadedTexture = texture;
                         }
-                    });
+                    }, out _watcher);
                 } catch (Exception e) {
                     Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {e}");
                     throw;
