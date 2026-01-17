@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Graphics;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.LuaSupport;
@@ -42,14 +43,13 @@ public sealed partial class Map : IPackable, ILuaWrapper {
         Rooms.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
     }
 
-    private MapMetadata _meta = new();
-    public MapMetadata Meta { 
-        get => _meta; 
+    public MapMetadata Meta {
+        get;
         set {
-            OnMetaChanged?.Invoke(_meta, value);
-            _meta = value;
+            OnMetaChanged?.Invoke(field, value);
+            field = value;
         }
-    }
+    } = new();
 
     /// <summary>
     /// (old, new)
@@ -165,60 +165,70 @@ public sealed partial class Map : IPackable, ILuaWrapper {
     }
 
     private void LoadAutotiler(MapMetadata? oldMeta, MapMetadata meta) {
-        if (oldMeta?.AnimatedTiles != meta.AnimatedTiles || meta.AnimatedTiles.IsNullOrWhitespace() || AnimatedTiles.Empty()) {
-            var readVanilla = true;
+        void Load(Func<MapMetadata?, string?> xmlPathGetter, bool forceRead,
+            Action<Stream, ModMeta> readFromXml,
+            string errorPopupTitle, string missingFilePopupTitle,
+            string vanillaPath) {
+            var oldPath = xmlPathGetter(oldMeta);
+            var newPath = xmlPathGetter(meta);
+            if (oldPath != newPath || newPath.IsNullOrWhitespace() || forceRead) {
+                var shouldReadVanilla = true;
             
-            if (!meta.AnimatedTiles.IsNullOrWhitespace()) {
-                readVanilla = false;
-                if (!ModRegistry.Filesystem.TryWatchAndOpen(meta.AnimatedTiles.Unbackslash(), stream => {
-                        AnimatedTiles.ReadFromXml(stream);
-                        Rooms.ForEach(r => r.ClearRenderCacheAggressively());
-                    })) {
-                    Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find animated tile xml {meta.AnimatedTiles}");
-                    readVanilla = true;
+                if (!newPath.IsNullOrWhitespace()) {
+                    shouldReadVanilla = false;
+                    if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(newPath.Unbackslash(), (stream, mod) => {
+                            shouldReadVanilla = PopupNotificationWindow.ShowOnException(
+                                errorPopupTitle.ToLangKey(newPath),
+                                () => readFromXml(stream, mod));
+                            Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                        })) {
+                        PopupNotificationWindow.Show(missingFilePopupTitle.ToLangKey(newPath));
+                        Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find xml '{newPath}'");
+                        shouldReadVanilla = true;
+                    }
+                }
+
+                if (shouldReadVanilla) {
+                    ModRegistry.VanillaMod.Filesystem.OpenFile(vanillaPath, (stream) => {
+                        readFromXml(stream, ModRegistry.VanillaMod);
+                        return true;
+                    });
                 }
             }
-
-            if (readVanilla) {
-                ModRegistry.VanillaMod.Filesystem.OpenFile("Graphics/AnimatedTiles.xml", (stream) => {
-                    AnimatedTiles.ReadFromXml(stream);
-                    return true;
-                });
-            }
         }
+        
+        Load(x => x?.AnimatedTiles, forceRead: AnimatedTiles.Empty(),
+            readFromXml: (stream, _) => AnimatedTiles.ReadFromXml(stream),
+            errorPopupTitle: "rysy.popups.map.animatedTilesError",
+            missingFilePopupTitle: "rysy.popups.map.animatedTilesMissing",
+            vanillaPath: "Graphics/AnimatedTiles.xml");
 
         BgAutotiler.AnimatedTiles = AnimatedTiles;
         FgAutotiler.AnimatedTiles = AnimatedTiles;
         
-        if (meta.BackgroundTiles is { } moddedBgTiles && oldMeta?.BackgroundTiles != meta.BackgroundTiles) {
-            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedBgTiles.Unbackslash(), stream => {
-                    BgAutotiler.ReadFromXml(stream);
-                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
-                })) {
-                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find bg tileset xml {moddedBgTiles}");
-            }
-        }
-
-        if (meta.ForegroundTiles is { } moddedFgTiles && oldMeta?.ForegroundTiles != meta.ForegroundTiles) {
-            if (!ModRegistry.Filesystem.TryWatchAndOpen(moddedFgTiles.Unbackslash(), stream => {
-                    FgAutotiler.ReadFromXml(stream);
-                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
-                })) {
-                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find fg tileset xml {moddedFgTiles}");
-            }
-        }
-
-        if (meta.Sprites is { } sprites && oldMeta?.Sprites != meta.Sprites) {
-            Sprites.Clear();
-            LoadVanillaSpritesXml();
-            
-            if (!ModRegistry.Filesystem.TryWatchAndOpenWithMod(sprites.Unbackslash(), (stream, mod) => {
-                    Sprites.Load(stream, mod);
-                    Rooms.ForEach(r => r.ClearRenderCacheAggressively());
-                })) {
-                Logger.Write("Autotiler", LogLevel.Error, $"Couldn't find sprites xml {sprites}");
-            }
-        }
+        Load(x => x?.BackgroundTiles, forceRead: false,
+            readFromXml: (stream, _) => BgAutotiler.ReadFromXml(stream),
+            errorPopupTitle: "rysy.popups.map.backgroundTilesError",
+            missingFilePopupTitle: "rysy.popups.map.backgroundTilesMissing",
+            vanillaPath: "Graphics/BackgroundTiles.xml"
+        );
+        
+        Load(x => x?.ForegroundTiles, forceRead: false,
+            readFromXml: (stream, _) => FgAutotiler.ReadFromXml(stream),
+            errorPopupTitle: "rysy.popups.map.foregroundTilesError",
+            missingFilePopupTitle: "rysy.popups.map.foregroundTilesMissing",
+            vanillaPath: "Graphics/ForegroundTiles.xml"
+        );
+        
+        Load(x => x?.Sprites, forceRead: false,
+            readFromXml: (stream, mod) => {
+                Sprites.Clear();
+                Sprites.Load(stream, mod);
+            },
+            errorPopupTitle: "rysy.popups.map.spritesXmlError",
+            missingFilePopupTitle: "rysy.popups.map.spritesXmlMissing",
+            vanillaPath: "Graphics/Sprites.xml"
+        );
     }
 
     public void Unpack(BinaryPacker.Element from) {
@@ -487,143 +497,143 @@ public sealed partial class Map : IPackable, ILuaWrapper {
 }
 
 public sealed record MapMetadata {
-    public BinaryPacker.Element Data = new("meta");
+    private BinaryPacker.Element _data = new("meta");
 
     public string Parent {
-        get => Data.Attr("parent");
-        set => Data.Attributes["parent"] = value;
+        get => _data.Attr("parent");
+        set => _data.Attributes["parent"] = value;
     }
 
     public string Icon {
-        get => Data.Attr("icon");
-        set => Data.Attributes["icon"] = value;
+        get => _data.Attr("icon");
+        set => _data.Attributes["icon"] = value;
     }
 
     public bool? Interlude {
-        get => Data.Has("interlude") ? Data.Bool("interlude") : null;
+        get => _data.Has("interlude") ? _data.Bool("interlude") : null;
         set {
             if (value is null) {
-                Data.Attributes.Remove("interlude");
+                _data.Attributes.Remove("interlude");
             } else {
-                Data.Attributes["interlude"] = value.Value;
+                _data.Attributes["interlude"] = value.Value;
             }
         }
     }
 
     public int? CassetteCheckpointIndex {        
-        get => Data.Has("cassetteCheckpointIndex") ? Data.Int("cassetteCheckpointIndex") : null;
+        get => _data.Has("cassetteCheckpointIndex") ? _data.Int("cassetteCheckpointIndex") : null;
         set {
             if (value is null) {
-                Data.Attributes.Remove("cassetteCheckpointIndex");
+                _data.Attributes.Remove("cassetteCheckpointIndex");
             } else {
-                Data.Attributes["cassetteCheckpointIndex"] = value.Value;
+                _data.Attributes["cassetteCheckpointIndex"] = value.Value;
             }
         }
     }
 
     public string TitleBaseColor {
-        get => Data.Attr("titleBaseColor", "6c7c81"); 
-        set => Data.Attributes["titleBaseColor"] = value;
+        get => _data.Attr("titleBaseColor", "6c7c81"); 
+        set => _data.Attributes["titleBaseColor"] = value;
     }
 
     public string TitleAccentColor {
-        get => Data.Attr("titleAccentColor", "2f344b"); 
-        set => Data.Attributes["titleAccentColor"] = value;
+        get => _data.Attr("titleAccentColor", "2f344b"); 
+        set => _data.Attributes["titleAccentColor"] = value;
     }
 
     public string TitleTextColor {
-        get => Data.Attr("titleTextColor", "ffffff"); 
-        set => Data.Attributes["titleTextColor"] = value;
+        get => _data.Attr("titleTextColor", "ffffff"); 
+        set => _data.Attributes["titleTextColor"] = value;
     }
 
     public string? IntroType {
-        get => Data.Attr("introType", null!);
-        set => Data.SetNullableObj("introType", value);
+        get => _data.Attr("introType", null!);
+        set => _data.SetNullableObj("introType", value);
     }
 
     public bool Dreaming {
-        get => Data.Bool("dreaming");
-        set => Data.Attributes["dreaming"] = value;
+        get => _data.Bool("dreaming");
+        set => _data.Attributes["dreaming"] = value;
     }
 
     public string? ColorGrade {
-        get => Data.Attr("colorGrade", null!);
-        set => Data.SetNullableObj("colorGrade", value);
+        get => _data.Attr("colorGrade", null!);
+        set => _data.SetNullableObj("colorGrade", value);
     }
 
     public string? Wipe {
-        get => Data.Attr("wipe", null!);
-        set => Data.SetNullableObj("wipe", value);
+        get => _data.Attr("wipe", null!);
+        set => _data.SetNullableObj("wipe", value);
     }
 
     public float DarknessAlpha {
-        get => Data.Float("darknessAlpha", 0.05f);
-        set => Data.Attributes["darknessAlpha"] = value;
+        get => _data.Float("darknessAlpha", 0.05f);
+        set => _data.Attributes["darknessAlpha"] = value;
     }
 
     public float BloomBase {
-        get => Data.Float("bloomBase", 0f);
-        set => Data.Attributes["bloomBase"] = value;
+        get => _data.Float("bloomBase", 0f);
+        set => _data.Attributes["bloomBase"] = value;
     }
 
     public float BloomStrength {
-        get => Data.Float("bloomStrength", 1f);
-        set => Data.Attributes["bloomStrength"] = value;
+        get => _data.Float("bloomStrength", 1f);
+        set => _data.Attributes["bloomStrength"] = value;
     }
 
     public string? Jumpthru {
-        get => Data.Attr("jumpthru", null!);
-        set => Data.SetNullableObj("jumpthru", value);
+        get => _data.Attr("jumpthru", null!);
+        set => _data.SetNullableObj("jumpthru", value);
     }
 
     public string? CoreMode {
-        get => Data.Attr("coreMode", null!);
-        set => Data.SetNullableObj("coreMode", value);
+        get => _data.Attr("coreMode", null!);
+        set => _data.SetNullableObj("coreMode", value);
     }
 
     public string? CassetteNoteColor {
-        get => Data.Attr("cassetteNoteColor", null!);
-        set => Data.SetNullableObj("cassetteNoteColor", value);
+        get => _data.Attr("cassetteNoteColor", null!);
+        set => _data.SetNullableObj("cassetteNoteColor", value);
     }
 
     public string? CassetteSong {
-        get => Data.Attr("cassetteSong", null!);
-        set => Data.SetNullableObj("cassetteSong", value);
+        get => _data.Attr("cassetteSong", null!);
+        set => _data.SetNullableObj("cassetteSong", value);
     }
 
     public string? PostcardSoundId {
-        get => Data.Attr("postcardSoundID", null!);
-        set => Data.SetNullableObj("postcardSoundID", value);
+        get => _data.Attr("postcardSoundID", null!);
+        set => _data.SetNullableObj("postcardSoundID", value);
     }
 
     public string? ForegroundTiles {
-        get => Data.Attr("foregroundTiles", null!);
-        set => Data.SetNullableObj("foregroundTiles", value);
+        get => _data.Attr("foregroundTiles", null!);
+        set => _data.SetNullableObj("foregroundTiles", value);
     }
 
     public string? BackgroundTiles {
-        get => Data.Attr("backgroundTiles", null!);
-        set => Data.SetNullableObj("backgroundTiles", value);
+        get => _data.Attr("backgroundTiles", null!);
+        set => _data.SetNullableObj("backgroundTiles", value);
     }
 
     public string? AnimatedTiles {
-        get => Data.Attr("animatedTiles", null!);
-        set => Data.SetNullableObj("animatedTiles", value);
+        get => _data.Attr("animatedTiles", null!);
+        set => _data.SetNullableObj("animatedTiles", value);
     }
 
     public string Sprites {
-        get => Data.Attr("sprites");
-        set => Data.SetNullableObj("sprites", value);
+        get => _data.Attr("sprites");
+        set => _data.SetNullableObj("sprites", value);
     }
 
     public string Portraits {
-        get => Data.Attr("portraits");
-        set => Data.SetNullableObj("portraits", value);
+        get => _data.Attr("portraits");
+        set => _data.SetNullableObj("portraits", value);
     }
 
     public bool OverrideASideMeta {
-        get => Data.Bool("overrideASideMeta");
-        set => Data.Attributes["overrideASideMeta"] = value;
+        get => _data.Bool("overrideASideMeta");
+        set => _data.Attributes["overrideASideMeta"] = value;
     }
 
     public MetaMode Mode { get; set; } = new();
@@ -638,48 +648,14 @@ public sealed record MapMetadata {
 
     //public MapMetaTextVignette LoadingVignetteText { get; set; }
 
-    Dictionary<string, object> SerializeAttrs<T>(T obj) {
-        return typeof(T).GetProperties()
-            .Where(p => p.PropertyType.Namespace!.Contains("System", StringComparison.Ordinal))
-            .Select(p => (p, p.GetValue(obj)!))
-            .Where(p => p.Item2 is { })
-            .ToDictionary(p => p.p.Name, p => p.Item2);
-    }
-
-    void Deserialize<T>(BinaryPacker.Element? el, T into) {
-        if (el is null)
-            return;
-        var props = typeof(T).GetProperties().ToDictionary(p => p.Name, p => p, StringComparer.InvariantCultureIgnoreCase);
-
-        foreach (var (attrName, val) in el.Attributes) {
-            if (!props.TryGetValue(attrName, out var prop))
-                continue;
-
-            if (prop.PropertyType == typeof(float) || prop.PropertyType == typeof(float?)) {
-                prop.SetValue(into, Convert.ToSingle(val, CultureInfo.InvariantCulture));
-            }
-            else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?)) {
-                prop.SetValue(into, Convert.ToInt32(val, CultureInfo.InvariantCulture));
-            }
-            else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?)) {
-                prop.SetValue(into, Convert.ToBoolean(val, CultureInfo.InvariantCulture));
-            }
-            else if (prop.PropertyType == typeof(string))
-                prop.SetValue(into, val.ToStringInvariant());
-            else {
-                prop.SetValue(into, val);
-            }
-        }
-    }
-
     public MapMetadata Unpack(BinaryPacker.Element el) {
-        Data = el.CreateWithComparer(StringComparer.OrdinalIgnoreCase);
-        if (Data.Children.FirstOrDefault(e => e.Name == "mode") is not { } mode) {
-            mode = Data.AddChild(new("mode"));
+        _data = el.CreateWithComparer(StringComparer.OrdinalIgnoreCase);
+        if (_data.Children.FirstOrDefault(e => e.Name == "mode") is not { } mode) {
+            mode = _data.AddChild(new("mode"));
         }
         Mode.Data = mode;
-        if (Data.Children.FirstOrDefault(e => e.Name == "cassettemodifier") is not { } modifier) {
-            modifier = Data.AddChild(new("cassettemodifier"));
+        if (_data.Children.FirstOrDefault(e => e.Name == "cassettemodifier") is not { } modifier) {
+            modifier = _data.AddChild(new("cassettemodifier"));
         }
         CassetteModifier.Data = modifier;
 
@@ -687,24 +663,23 @@ public sealed record MapMetadata {
     }
 
     public BinaryPacker.Element Pack() {
-        return Data;
+        return _data.Clone();
     }
 }
 
 public sealed class MetaMode {
-    private BinaryPacker.Element _data = new("mode");
-
     public BinaryPacker.Element Data {
-        get => _data;
+        get;
         set {
-            _data = value;
-            if (_data.Children.FirstOrDefault(e => e.Name == "audiostate") is not { } audioState) {
-                audioState = _data.AddChild(new("audiostate"));
+            field = value;
+            if (field.Children.FirstOrDefault(e => e.Name == "audiostate") is not { } audioState) {
+                audioState = field.AddChild(new("audiostate"));
             }
+
             AudioState.Data = audioState;
         }
-    }
-    
+    } = new("mode");
+
     public bool? IgnoreLevelAudioLayerData {
         get => Data.NullableBool("ignoreLevelAudioLayerData");
         set => Data.SetNullableStruct("ignoreLevelAudioLayerData", value);

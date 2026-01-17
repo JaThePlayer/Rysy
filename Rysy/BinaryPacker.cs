@@ -443,5 +443,15 @@ public sealed class BinaryPacker {
                 Attributes[key] = o.Value;
             }
         }
+
+        /// <summary>
+        /// Performs a deep clone of this Element.
+        /// </summary>
+        public Element Clone() {
+            return new Element(Name) {
+                Children = Children.Select(c => c.Clone()).ToArray(),
+                Attributes = Attributes.ToDictionary()
+            };
+        }
     }
 }

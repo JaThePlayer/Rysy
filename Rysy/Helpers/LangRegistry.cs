@@ -122,3 +122,26 @@ public sealed class Lang {
     public string? GetOrNull(ReadOnlySpan<char> key)
         => _translationsSpanLookup.TryGetValue(key, out var translated) ? translated : null;
 }
+
+public readonly struct LangKey {
+    public string Key { get; }
+
+    public object[] Args { get; } = [];
+    
+    public LangKey(string key) {
+        Key = key;
+    }
+
+    public LangKey(string key, params object[] args) {
+        Key = key;
+        Args = args;
+    }
+
+    public override string ToString() {
+        if (Args.Length == 0)
+            return Key.Translate();
+        return Key.TranslateFormatted(Args);
+    }
+    
+    public static implicit operator LangKey(string str) => new LangKey(str);
+}

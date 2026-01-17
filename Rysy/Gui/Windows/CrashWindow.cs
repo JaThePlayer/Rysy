@@ -29,9 +29,9 @@ public class CrashWindow : Window {
     protected override void Render() {
         base.Render();
 
-        ImGui.TextColored(Color.Red.ToNumVec4(), Message);
+        ImGui.TextColored(Themes.Current.ImGuiStyle.FormInvalidColor.ToNumVec4(), Message);
 
-        ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, Size!.Value - new NumVector2(0f, 6 * ImGui.GetTextLineHeightWithSpacing()));
+        ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, ImGui.GetContentRegionAvail());
 
         ImGui.NewLine();
 

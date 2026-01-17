@@ -45,6 +45,8 @@ public class Window {
 
     public bool Closeable { get; set; } = true;
 
+    public virtual bool PersistBetweenScenes => false;
+
     private void GenerateId() {
         if (NoSaveData)
             _windowId = $"{Name}##{Guid.NewGuid()}";

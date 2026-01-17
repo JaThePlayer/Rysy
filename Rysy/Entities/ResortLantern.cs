@@ -10,12 +10,15 @@ public sealed class ResortLantern : Entity, IPlaceable {
 
     public override IEnumerable<ISprite> GetSprites() {
         var pos = Pos;
-        var connected = Room.IsSolidAt(pos.AddX(8));
+        // TODO: correct this, needs a IsSolidAt(Rectangle) - new Hitbox(8f, 8f, -4f, -4f), base.CollideCheck<Solid>(this.Position + Vector2.UnitX * 8f)
+        var connected = 
+            Room.IsSolidAt(pos.AddX(8).AddY(-4))
+            || Room.IsSolidAt(pos.AddX(8).AddY(0));
 
         yield return ISprite.FromTexture(pos, "objects/resortLantern/holder").Centered() with {
             Scale = new(connected ? -1 : 1, 1),
         };
-        yield return ISprite.FromTexture(pos, "objects/resortLantern/lantern00").Centered() with {
+        yield return ISprite.FromTexture(pos.AddX(connected ? 2 : 0), "objects/resortLantern/lantern00").Centered() with {
             Scale = new(connected ? -1 : 1, 1),
         };
     }

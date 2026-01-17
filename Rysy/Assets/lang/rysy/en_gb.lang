@@ -375,6 +375,58 @@ rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room 
 rysy.luaRepl=Lua REPL
 rysy.luaRepl.run=Run
 
+rysy.popups.map.animatedTilesError=Animated Tiles Error
+rysy.popups.map.animatedTilesError.message="""
+There was an error while reading the map's AnimatedTiles.xml.
+Make sure the file is correctly structured.
+Path: '{0}'.
+"""
+
+rysy.popups.map.animatedTilesMissing=Animated Tiles Missing
+rysy.popups.map.animatedTilesMissing.message="""
+The AnimatedTiles.xml file for the map could not be found.
+Path: '{0}'.
+"""
+
+rysy.popups.map.backgroundTilesError=Background Tiles Error
+rysy.popups.map.backgroundTilesError.message="""
+There was an error while reading the map's BackgroundTiles.xml.
+Make sure the file is correctly structured.
+Path: '{0}'.
+"""
+
+rysy.popups.map.backgroundTilesMissing=Background Tiles Missing
+rysy.popups.map.backgroundTilesMissing.message="""
+The BackgroundTiles.xml file for the map could not be found.
+Path: '{0}'.
+"""
+
+rysy.popups.map.foregroundTilesError=Foreground Tiles Error
+rysy.popups.map.foregroundTilesError.message="""
+There was an error while reading the map's ForegroundTiles.xml.
+Make sure the file is correctly structured.
+Path: '{0}'.
+"""
+
+rysy.popups.map.foregroundTilesMissing=Foreground Tiles Missing
+rysy.popups.map.foregroundTilesMissing.message="""
+The ForegroundTiles.xml file for the map could not be found.
+Path: '{0}'.
+"""
+
+rysy.popups.map.spritesXmlError=Sprites.xml Error
+rysy.popups.map.spritesXmlError.message="""
+There was an error while reading the map's Sprites.xml.
+Make sure the file is correctly structured.
+Path: '{0}'.
+"""
+
+rysy.popups.map.spritesXmlMissing=Sprites.xml Missing
+rysy.popups.map.spritesXmlMissing.message="""
+The Sprites.xml file for the map could not be found.
+Path: '{0}'.
+"""
+
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
 rysy.validate.mustBeInt=Value must be an integer.

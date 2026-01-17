@@ -731,8 +731,10 @@ public static class ImGuiManager {
         return ret;
     }
 
+    public static float BottomBarHeight() => ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 2f;
+    
     public static void WithBottomBar(Action renderMain, Action renderBottomBar, uint? id = null) {
-        var height = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().FramePadding.Y * 2f;
+        var height = BottomBarHeight();
         var posy = ImGui.GetContentRegionAvail().Y - height;
 
         id ??= (uint) renderMain.Method.GetHashCode();

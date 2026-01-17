@@ -29,7 +29,11 @@ public static class RysyState {
         get => _scene;
         set {
             lock (_scene) {
-                _scene?.OnEnd();
+                var persistedWindows = _scene.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
+                _scene.OnEnd();
+                foreach (var w in persistedWindows) {
+                    value.AddWindow(w);
+                }
                 value.OnBegin();
                 _scene = value;
             }

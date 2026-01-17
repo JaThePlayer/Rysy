@@ -67,11 +67,7 @@ public readonly struct Tooltip : ITooltip {
                 prevContents = txt;
                 md = Markdown.Parse(txt, ImGuiMarkdown.MarkdownPipeline);
 
-                var lines = txt.Split('\n');
-                guiSize = new GuiSize(
-                    widthInChars: lines.Max(x => x.Length),
-                    heightInLines: lines.Length
-                );
+                guiSize = GuiSize.From(txt);
             }
 
             return (txt, md, guiSize);

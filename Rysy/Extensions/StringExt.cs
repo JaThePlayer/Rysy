@@ -295,6 +295,8 @@ public static partial class StringExt {
     
     public static string TranslateOrHumanize(this string str, ReadOnlySpan<char> prefix) => TranslateOrNull(str, prefix) ?? Humanize(str);
 
+    public static LangKey ToLangKey(this string str, params object[] args) => new LangKey(str, args);
+    
     public static int ToInt(this string s) => Convert.ToInt32(s, CultureInfo.InvariantCulture);
     public static int ToIntHex(this string s) => int.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
     public static uint ToUInt(this string s) => Convert.ToUInt32(s, CultureInfo.InvariantCulture);

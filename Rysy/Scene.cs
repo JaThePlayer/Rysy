@@ -6,6 +6,8 @@ namespace Rysy;
 public abstract class Scene {
     private readonly List<Window> _windows = [];
     
+    internal IReadOnlyList<Window> ActiveWindows => _windows;
+    
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
