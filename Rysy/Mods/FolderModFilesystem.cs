@@ -17,12 +17,18 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
 
     public string VirtToRealPath(string virtPath) => $"{Root}/{virtPath}";
 
+    private readonly DelayedTaskHelper<(string Path, WatcherChangeTypes ChangeType)>? _watcherDelayedTaskHelper;
+
     public FolderModFilesystem(string dirName) {
         Root = dirName;
 
         if (!RysyPlatform.Current.SupportFileWatchers) {
             return;
         }
+
+        _watcherDelayedTaskHelper = new() {
+            OnDelayElapsed = HandleFileWatcherEvent,
+        };
 
         Directory.CreateDirectory(dirName);
         
@@ -33,27 +39,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
                 return;
 
             _knownExistingFiles.Clear();
-            var path = e.Name.Unbackslash();
-
-            if (_watchedAssets.TryGetValue(path, out var watched)) {
-                Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
-                    $"Hot reloading {path}, with {watched.Count} watchers. [{e.ChangeType}]");
-                CallWatchers(path, watched, e.ChangeType);
-            }
-
-            // handle directory watchers
-            foreach (var directoryWatchers in _watchedAssets.Where(w =>
-                         path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
-                if (Directory.Exists(VirtToRealPath(path))) {
-                    Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
-                        $"Hot reloading directory {path}, with {directoryWatchers.Value.Count} watchers. [{e.ChangeType}]");
-                    foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
-                        CallWatchers(item, directoryWatchers.Value, e.ChangeType);
-                    }
-                } else {
-                    CallWatchers(path, directoryWatchers.Value, e.ChangeType);
-                }
-            }
+            _watcherDelayedTaskHelper.Register((e.Name.Unbackslash(), e.ChangeType));
         };
         
         _watcher.Changed += watcherCallback;
@@ -62,6 +48,30 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         
         _watcher.IncludeSubdirectories = true;
         _watcher.EnableRaisingEvents = true;
+    }
+
+    private void HandleFileWatcherEvent((string path, WatcherChangeTypes changeType) args) {
+        var (path, changeType) = args;
+        
+        if (_watchedAssets.TryGetValue(path, out var watched)) {
+            Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
+                $"Hot reloading {path}, with {watched.Count} watchers. [{changeType}]");
+            CallWatchers(path, watched, changeType);
+        }
+
+        // handle directory watchers
+        foreach (var directoryWatchers in _watchedAssets.Where(w =>
+                     path.StartsWith(w.Key, StringComparison.Ordinal) && path != w.Key)) {
+            if (Directory.Exists(VirtToRealPath(path))) {
+                Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
+                    $"Hot reloading directory {path}, with {directoryWatchers.Value.Count} watchers. [{changeType}]");
+                foreach (var item in FindFilesInDirectoryRecursive(path, "")) {
+                    CallWatchers(item, directoryWatchers.Value, changeType);
+                }
+            } else {
+                CallWatchers(path, directoryWatchers.Value, changeType);
+            }
+        }
     }
 
     private void CallWatchers(string path, List<WatchedAsset>? watched, WatcherChangeTypes type) {

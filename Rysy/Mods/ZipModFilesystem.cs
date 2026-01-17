@@ -22,8 +22,9 @@ public sealed class ZipModFilesystem : IModFilesystem {
 
     private BackgroundTaskInfo _cleanupTask;
 
-    private ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
-    private FileSystemWatcher _watcher;
+    private readonly ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
+    private readonly FileSystemWatcher _watcher;
+    private readonly DelayedTaskHelper<(string Path, WatcherChangeTypes ChangeType)>? _watcherDelayedTaskHelper;
     
     // These keep track of known filenames, so that checking if a file exists in a mod incurs no IO cost.
     private volatile string[] _allEntryFullNames;
@@ -42,28 +43,37 @@ public sealed class ZipModFilesystem : IModFilesystem {
             return;
         }
         
+        _watcherDelayedTaskHelper = new() {
+            OnDelayElapsed = HandleFileWatcherEvent,
+        };
+        
         _watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
         _watcher.Changed += (s, e) => {
             if (e.FullPath != Root.CorrectSlashes())
                 return;
-
+            if (e.Name is null)
+                return;
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return;
 
-            ScanForAllEntryNames();
-
-            foreach (var file in _watchedAssets) {
-                foreach (var asset in file.Value) {
-                    try {
-                        asset.OnChanged?.Invoke(file.Key);
-                    } catch (Exception ex) {
-                        Logger.Error(ex, $"Error when hot reloading {file.Key}");
-                    }
-                }
-            }
+            _watcherDelayedTaskHelper.Register((e.Name.Unbackslash(), e.ChangeType));
         };
 
         _watcher.EnableRaisingEvents = true;
+    }
+
+    private void HandleFileWatcherEvent((string path, WatcherChangeTypes changeType) args) {
+        ScanForAllEntryNames();
+
+        foreach (var file in _watchedAssets) {
+            foreach (var asset in file.Value) {
+                try {
+                    asset.OnChanged?.Invoke(file.Key);
+                } catch (Exception ex) {
+                    Logger.Error(ex, $"Error when hot reloading {file.Key}");
+                }
+            }
+        }
     }
 
     private void ScanForAllEntryNames() {
