@@ -1,6 +1,5 @@
-﻿using Rysy.Extensions;
-using Rysy.Mods;
-using System.Runtime.CompilerServices;
+﻿using Rysy.Mods;
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace Rysy.Graphics.TextureTypes;
@@ -25,6 +24,23 @@ public sealed class ModTexture : VirtTexture, IModAsset {
         base.Dispose();
     }
 
+    private delegate IntPtr Fna3DReadImageStreamDelegate(Stream stream, out int width, out int height, out int len, int forceW = -1, int forceH = -1, bool zoom = false);
+    private static readonly Fna3DReadImageStreamDelegate Fna3dReadImageStream =
+        typeof(Game).Assembly
+            .GetType("Microsoft.Xna.Framework.Graphics.FNA3D")
+            ?.GetMethod("ReadImageStream")
+            ?.CreateDelegate<Fna3DReadImageStreamDelegate>()
+        ?? throw new Exception("Microsoft.Xna.Framework.Graphics.FNA3D.ReadImageStream does not exist or has different signature, cannot proceed with texture loading!");
+    
+    private delegate void Fna3dImageFreeDelegate(IntPtr mem);
+    private static readonly Fna3dImageFreeDelegate Fna3dImageFree =
+        typeof(Game).Assembly
+            .GetType("Microsoft.Xna.Framework.Graphics.FNA3D")
+            ?.GetMethod("FNA3D_Image_Free")
+            ?.CreateDelegate<Fna3dImageFreeDelegate>() 
+        ?? throw new Exception("Microsoft.Xna.Framework.Graphics.FNA3D.FNA3D_Image_Free does not exist or has different signature, cannot proceed with texture loading!");
+        
+    
     private Task _QueueLoad() {
         return Task.Run(() => {
                 try {
@@ -35,11 +51,12 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                             Texture2D? texture;
 #if FNA
                             if (Mod.Filesystem is FolderModFilesystem) {
-                                texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, stream));
+                                texture = ReadPremultipliedTextureFromStream(stream);
                             } else {
                                 using var memStr = new MemoryStream();
                                 stream.CopyTo(memStr);
-                                texture = Premultiply(Texture2D.FromStream(RysyState.GraphicsDevice, memStr));
+                                memStr.Seek(0, SeekOrigin.Begin);
+                                texture = ReadPremultipliedTextureFromStream(memStr);
                             }
 #else
                         texture = Texture2D.FromStream(RysyEngine.GDM.GraphicsDevice, stream, DefaultColorProcessors.PremultiplyAlpha);
@@ -56,6 +73,21 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 State = States.Loaded;
             }
         );
+    }
+
+    private Texture2D ReadPremultipliedTextureFromStream(Stream stream)
+    {
+        var ptr = Fna3dReadImageStream(stream, out var w, out var h, out var len);
+        unsafe {
+            Debug.Assert(sizeof(Color) == 4);
+            Span<Color> data = new Span<Color>((void*)ptr, w * h);
+            Premultiply(data);
+        }
+        
+        Texture2D texture = new(RysyState.GraphicsDevice, w, h);
+        texture.SetDataPointerEXT(0, null, ptr, len);
+        Fna3dImageFree(ptr);
+        return texture;
     }
 
     protected override Task QueueLoad() => _QueueLoad();
@@ -75,10 +107,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
     public override string ToString() => $"ModTexture:{{{VirtPath}, [{Mod.Name}]}}";
     
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private unsafe Texture2D Premultiply(Texture2D texture) {
-        Color[] data = new Color[texture.Width * texture.Height];
-        texture.GetData(data);
+    private unsafe void Premultiply(Span<Color> data) {
         
         //using (var _w = new ScopedStopwatch($"Premultiply: {VirtPath}")) {
             fixed (Color* raw = data) {
@@ -122,10 +151,6 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                 }
             }
         //}
-        
-
-        texture.SetData(data);
-        return texture;
     }
     
     private static bool PreloadSizeFromPng(Stream stream, string filename, out int w, out int h) {
