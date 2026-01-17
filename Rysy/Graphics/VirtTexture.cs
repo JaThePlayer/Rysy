@@ -123,8 +123,7 @@ public class VirtTexture : IDisposable {
     }
 
     private Texture2D? StartLoadingIfNeeded() {
-        if (State == States.Unloaded) {
-            State = States.Loading;
+        if (Interlocked.CompareExchange(ref State, States.Loading, States.Unloaded) == States.Unloaded) {
             LoadTask = QueueLoad()?.ContinueWith((old) => LoadTask = null);
         }
 

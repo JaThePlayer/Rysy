@@ -23,23 +23,25 @@ public static class RysyState {
     public static GraphicsDevice GraphicsDevice => GraphicsDeviceManager.GraphicsDevice;
 
     public static GameWindow Window => Game.Window;
-    
-    private static Scene _scene = new BlankScene();
+
+    private static readonly Lock SceneChangeLock = new();
+
     public static Scene Scene {
-        get => _scene;
+        get;
         set {
-            lock (_scene) {
-                var persistedWindows = _scene.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
-                _scene.OnEnd();
+            lock (SceneChangeLock) {
+                var persistedWindows = field.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
+                field.OnEnd();
                 foreach (var w in persistedWindows) {
                     value.AddWindow(w);
                 }
+
                 value.OnBegin();
-                _scene = value;
+                field = value;
             }
         }
-    }
-    
+    } = new BlankScene();
+
     #region Events
     /// <summary>
     /// Action that will be called on the UI thread once this frame ends.
