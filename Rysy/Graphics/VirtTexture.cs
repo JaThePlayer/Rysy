@@ -22,14 +22,6 @@ public class VirtTexture : IDisposable {
     protected Rectangle? LoadedClipRect;
 
     private OutlineVirtTexture? _outlineTexture;
-    
-    public static VirtTexture FromFile(string filename) {
-        return new FileVirtTexture(filename);
-    }
-
-    public static VirtTexture FromFile(string archiveName, ZipArchiveEntry zip) {
-        return new ZipVirtTexture(archiveName, zip);
-    }
 
     public static VirtTexture FromTexture(Texture2D text) {
         return new UndisposableVirtTexture() {

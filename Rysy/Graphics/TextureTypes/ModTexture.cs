@@ -63,7 +63,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
     protected override bool TryPreloadClipRect() {
         lock (Mod.Filesystem) {
             return Mod.Filesystem.OpenFile(VirtPath, stream => {
-                if (FileVirtTexture.PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
+                if (PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
                     ClipRect = new(0, 0, w, h);
                     return true;
                 } else {
@@ -126,5 +126,39 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
         texture.SetData(data);
         return texture;
+    }
+    
+    private static bool PreloadSizeFromPng(Stream stream, string filename, out int w, out int h) {
+        w = 0;
+        h = 0;
+        using var binaryReader = new BinaryReader(stream);
+
+
+        ulong magic = binaryReader.ReadUInt64();
+        if (magic != 727905341920923785UL) {
+            Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"PNG magic mismatch for {filename.CorrectSlashes()} - got {magic:0xX16}, expected 0x0A1A0A0D474E5089");
+            return false;
+        }
+
+        uint firstChunkLen = binaryReader.ReadUInt32();
+        if (firstChunkLen != 218103808u) {
+            Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"PNG first chunk length mismatch for {filename.CorrectSlashes()} - got {firstChunkLen:0xX8}, expected 0x0D000000");
+            return false;
+        }
+
+        uint ihdrMarker = binaryReader.ReadUInt32();
+        if (ihdrMarker != 1380206665u) {
+            Logger.Write("VirtTexture.Preload", LogLevel.Warning, $"PNG IHDR marker mismatch for {filename.CorrectSlashes()} - got {firstChunkLen:0xX8}, expected 0x52444849");
+            return false;
+        }
+
+        w = SwapEndian(binaryReader.ReadInt32());
+        h = SwapEndian(binaryReader.ReadInt32());
+
+        return true;
+    }
+    
+    private static int SwapEndian(int data) {
+        return (data & 255) << 24 | (data >> 8 & 255) << 16 | (data >> 16 & 255) << 8 | (data >> 24 & 255);
     }
 }
