@@ -26,5 +26,5 @@ public class Door : SpriteBankEntity, IPlaceable {
             "" => "wood", // the wood doors don't follow the naming convention...
             var other => other,
         })
-        .WithFilter((found) => found.Path is not "ghost_door" and not "trapdoor");
+        .WithFilter((found) => found.Path is not "ghost_door" && !found.Path.Contains("trapdoor", StringComparison.OrdinalIgnoreCase));
 }
