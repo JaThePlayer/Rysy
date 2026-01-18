@@ -1257,6 +1257,10 @@ public static class ImGuiManager {
 
         protected unsafe void SetupInput() {
             ImGuiIOPtr io = ImGui.GetIO();
+            
+            // Make sure the DisplaySize is non-zero immediately,
+            // to avoid a crash when unfocusing the window immediately after it gets created.
+            io.DisplaySize = new(800f, 600f);
 #if FNA
             TextInputEXT.TextInput += OnTextInput;
             TextInputEXT.StartTextInput();
@@ -1305,8 +1309,12 @@ public static class ImGuiManager {
 
         protected void UpdateInput() {
             ImGuiIOPtr io = ImGui.GetIO();
-            
-            io.DisplaySize = new NumVector2(GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight);
+
+            var displaySize = new NumVector2(GraphicsDevice.PresentationParameters.BackBufferWidth,
+                GraphicsDevice.PresentationParameters.BackBufferHeight);
+            if (displaySize.X >= 0 && displaySize.Y >= 0) {
+                io.DisplaySize = displaySize;
+            }
             io.DisplayFramebufferScale = new NumVector2(1f, 1f);
             
             // Make sure the window is focused before responding to input.
