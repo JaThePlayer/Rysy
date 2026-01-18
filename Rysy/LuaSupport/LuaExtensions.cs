@@ -164,7 +164,7 @@ public static partial class LuaExt {
         }
 
         fixed (byte* strFirstChar = &code[0]) {
-            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)strUtf8.Length, chunkName, null);
+            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)code.Length, chunkName, null);
             if (st != LuaStatus.OK) {
                 throw new LuaException(lua);
             }
