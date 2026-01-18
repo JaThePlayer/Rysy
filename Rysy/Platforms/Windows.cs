@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using Rysy.Gui;
 using Rysy.Mods;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -41,6 +42,27 @@ public partial class Windows : RysyPlatform {
         base.Init();
 
         EnableAnsi();
+        
+        Themes.ThemeChanged += ThemesOnThemeChanged;
+    }
+
+    private void ThemesOnThemeChanged(Theme theme) {
+        // Enable dark theme on the window depending on the menubar color
+        var window = GetActiveWindow().ToInt32();
+        if (window != 0) {
+            var menubarColor = theme.ImGuiStyle.Colors.TryGetValue("MenuBarBg", out var menubarBg)
+                ? menubarBg
+                : new Color(0x23, 0x23, 0x23); // imgui default for dark theme (which is the default Rysy theme)
+            DwmApi.SetImmersiveDarkTheme(window, !IsColorLight(menubarColor));
+        }
+
+        return;
+
+        // https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/ui/apply-windows-themes#know-when-dark-mode-is-enabled
+        bool IsColorLight(Color clr)
+        {
+            return 5 * clr.G + 2 * clr.R + clr.B > 8 * 128;
+        }
     }
 
     public override void ResizeWindow(int x, int y, int w, int h) {
@@ -126,4 +148,81 @@ public partial class Windows : RysyPlatform {
     [LibraryImport("kernel32.dll")]
     private static partial uint GetLastError();
     #endregion
+    
+    internal static partial class DwmApi
+    {
+        public static void SetImmersiveDarkTheme(nint window, bool toggle) {
+            int value = toggle ? 1 : 0; // 1 = enable dark mode, 0 = disable
+
+            DwmSetWindowAttribute(
+                window,
+                WindowAttribute.DWMWA_USE_IMMERSIVE_DARK_MODE,
+                ref value,
+                sizeof(int)
+            );
+            
+            // Enable Mica
+            var backdrop = DWM_SYSTEMBACKDROP_TYPE.DWMSBT_MAINWINDOW;
+            DwmSetWindowAttribute(
+                window,
+                WindowAttribute.DWMWA_SYSTEMBACKDROP_TYPE,
+                ref backdrop,
+                sizeof(DWM_SYSTEMBACKDROP_TYPE)
+            );
+        }
+        
+        [LibraryImport("dwmapi.dll")]
+        internal static partial int DwmSetWindowAttribute(
+            IntPtr hwnd,
+            WindowAttribute dwAttribute,
+            ref int pvAttribute,
+            int cbAttribute
+        );
+        
+        [LibraryImport("dwmapi.dll")]
+        internal static partial int DwmSetWindowAttribute(
+            IntPtr hwnd,
+            WindowAttribute attribute,
+            ref DWM_SYSTEMBACKDROP_TYPE pvAttribute,
+            int cbAttribute
+        );
+        
+        internal enum DWM_SYSTEMBACKDROP_TYPE
+        {
+            DWMSBT_AUTO = 0,
+            DWMSBT_NONE = 1,
+            DWMSBT_MAINWINDOW = 2,   // Mica
+            DWMSBT_TRANSIENTWINDOW = 3,
+            DWMSBT_TABBEDWINDOW = 4  // Mica Alt
+        }
+        
+        internal enum WindowAttribute // DWMWINDOWATTRIBUTE
+        {
+            DWMWA_NCRENDERING_ENABLED = 0,
+            DWMWA_NCRENDERING_POLICY,
+            DWMWA_TRANSITIONS_FORCEDISABLED,
+            DWMWA_ALLOW_NCPAINT,
+            DWMWA_CAPTION_BUTTON_BOUNDS,
+            DWMWA_NONCLIENT_RTL_LAYOUT,
+            DWMWA_FORCE_ICONIC_REPRESENTATION,
+            DWMWA_FLIP3D_POLICY,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            DWMWA_HAS_ICONIC_BITMAP,
+            DWMWA_DISALLOW_PEEK,
+            DWMWA_EXCLUDED_FROM_PEEK,
+            DWMWA_CLOAK,
+            DWMWA_CLOAKED,
+            DWMWA_FREEZE_REPRESENTATION,
+            DWMWA_PASSIVE_UPDATE_MODE,
+            DWMWA_USE_HOSTBACKDROPBRUSH,
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+            DWMWA_BORDER_COLOR,
+            DWMWA_CAPTION_COLOR,
+            DWMWA_TEXT_COLOR,
+            DWMWA_VISIBLE_FRAME_BORDER_THICKNESS,
+            DWMWA_SYSTEMBACKDROP_TYPE,
+            DWMWA_LAST
+        }
+    }
 }
