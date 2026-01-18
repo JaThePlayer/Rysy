@@ -134,7 +134,7 @@ public class VirtTexture : IDisposable {
 
     public virtual void Dispose() {
         State = States.Unloaded;
-        Texture?.Dispose();
+        LoadedTexture?.Dispose();
         OutlineTexture?.Dispose();
     }
 
