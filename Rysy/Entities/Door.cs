@@ -18,7 +18,12 @@ public class Door : SpriteBankEntity, IPlaceable {
         type = GetTypeField()
     });
 
-    public static PlacementList GetPlacements() => new("wood");
+    public static PlacementList GetPlacements() => [
+        new Placement("wood"),
+        new Placement("metal", new {
+            type = "metal"
+        })
+    ];
 
     public static PathField GetTypeField() =>
         Fields.SpriteBankPath("wood", "(.*)door$", previewAnimation: "idle")
