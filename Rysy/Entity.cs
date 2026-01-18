@@ -708,9 +708,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     }
 
     public Placement ToPlacement() {
-        var overrides = new Dictionary<string, object>(
-            EntityData.Inner.Where(x=> !IsDefault(x.Key, x.Value) || x.Key is "width" or "height"), 
-            StringComparer.Ordinal);
+        var overrides = new Dictionary<string, object>(EntityData.Inner, StringComparer.Ordinal);
 
         return new Placement(EntityData.Sid) {
             Sid = EntityData.Sid,
