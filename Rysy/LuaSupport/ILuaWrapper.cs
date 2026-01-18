@@ -1,5 +1,4 @@
-﻿using KeraLua;
-using System.Text;
+﻿using Rysy.Helpers;
 
 namespace Rysy.LuaSupport;
 
@@ -18,9 +17,7 @@ public interface ILuaWrapper {
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key);
 
     public virtual int LuaIndex(Lua lua, ReadOnlySpan<byte> keyAscii) {
-        Span<char> buffer = LuaExt.SharedToStringBuffer.AsSpan();
-        var decoded = Encoding.ASCII.GetChars(keyAscii, buffer);
-        return LuaIndex(lua, buffer[..decoded]);
+        return LuaIndex(lua, Interpolator.Temp($"{keyAscii}"));
     }
 
     public virtual int LuaIndexNull(Lua lua) {

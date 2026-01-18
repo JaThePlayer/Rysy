@@ -22,7 +22,7 @@ static struct luaL_Reg funcs[] = {
     }
 
     private static int Len(Lua lua) {
-        var str = lua.ToStringIntoAscii(1);
+        var str = lua.DangerousToStringIntoUtf8InLuaMemory(1);
         
         lua.PushInteger(Encoding.UTF8.GetCharCount(str));
         return 1;
@@ -39,7 +39,7 @@ static struct luaL_Reg funcs[] = {
     }
         
     private static int Offset(Lua lua) {
-        var s = lua.ToStringIntoAscii(1);
+        var s = lua.DangerousToStringIntoUtf8InLuaMemory(1);
         var n = lua.ToInteger(2);
 
         var len = s.Length;

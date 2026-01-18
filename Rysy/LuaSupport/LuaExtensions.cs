@@ -10,81 +10,46 @@ namespace Rysy.LuaSupport;
 
 public static partial class LuaExt {
     /// <summary>
-    /// Converts the Lua value at the given index to a C# string
+    /// Converts the Lua value at the given index to a C# string.
     /// </summary>
-    public static unsafe string FastToString(this Lua state, int index, bool callMetamethod = true) {
-        ulong num;
-        IntPtr source;
-        /*
-        if (callMetamethod) {
-            source = luaL_tolstring(state.Handle, index, out num);
-            state.Pop(1);
-        } else {
-            source = lua_tolstring(state.Handle, index, out num);
-        }
-        */
-        source = state.ToLString(index, out num);
+    public static string FastToString(this Lua state, int index, bool callMetamethod = true) {
+        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
 
-        if (source == IntPtr.Zero)
-            return null!;
-
-        // todo: check if all these casts are needed?
-        int length = checked((int) (uint) num);
-        if (length == 0)
-            return "";
-
-        if (length == 1) {
-            var b = ((byte*) source)[0];
+        if (utf8.Length == 1) {
+            var b = utf8[0];
             switch (b) {
                 case (byte) 'x':
                     return "x";
                 case (byte) 'y':
                     return "y";
-                default:
-                    break;
             }
         }
 
-        var str = state.Encoding.GetString((byte*) source, length);
+        var str = state.Encoding.GetString(utf8);
 
         return str;
     }
+    
+    public static Span<char> ToStringInto(this Lua state, int index, Interpolator buffer, bool callMetamethod = true) {
+        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
+        var decoded = buffer.Utf16Mutable($"{utf8}");
 
+        return decoded;
+    }
+    
+    public static Span<byte> ToStringIntoUtf8(this Lua state, int index, Interpolator buffer, bool callMetamethod = true) {
+        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
+        var decoded = buffer.Clone(utf8);
 
-    internal static char[] SharedToStringBuffer = new char[4098];
-
-    public static unsafe Span<char> ToStringInto(this Lua state, int index, Span<char> buffer, bool callMetamethod = true) {
-        ulong num;
-        IntPtr source;
-        /*
-        if (callMetamethod) {
-            source = luaL_tolstring(state.Handle, index, out num);
-            state.Pop(1);
-        } else {
-            source = lua_tolstring(state.Handle, index, out num);
-        }
-        */
-        source = state.ToLString(index, out num);
-
-        if (source == IntPtr.Zero)
-            return Span<char>.Empty;
-
-        // todo: check if all these casts are needed?
-        int length = checked((int) (uint) num);
-        if (length == 0) {
-            return Span<char>.Empty;
-        }
-
-        var decoded = state.Encoding.GetChars(new Span<byte>((void*) source, length), buffer);
-
-        return buffer[..decoded];
+        return decoded;
     }
 
-    public static unsafe Span<byte> ToStringIntoAscii(this Lua state, int index, bool callMetamethod = true) {
-        ulong num;
-        IntPtr source;
-        
-        source = state.ToLString(index, out num);
+    /// <summary>
+    /// Gets a span over a lua string at the given stack index, in lua's memory.
+    /// The returned span is valid as long as that string remains on the lua execution stack.
+    /// </summary>
+    public static unsafe Span<byte> DangerousToStringIntoUtf8InLuaMemory(this Lua state, int index, bool callMetamethod = true) {
+        IntPtr source = state.ToLString(index, out ulong num);
 
         if (source == IntPtr.Zero)
             return Span<byte>.Empty;
@@ -95,8 +60,8 @@ public static partial class LuaExt {
             return Span<byte>.Empty;
         }
 
-        // let's hope we can trust the lua gc to not clear up the string,
-        // considering strings are always interned, this should be safe?
+        // This is safe as long as there's something pinning the string on lua's side
+        // (like the string being on the lua execution stack)
         return new Span<byte>((void*) source, length);
     }
 
@@ -157,7 +122,11 @@ public static partial class LuaExt {
             lua.PushString(strUtf8);
             lua.Call(1, 1); // call selene.parse(arg)
 
-            code = lua.ToStringIntoAscii(-1);
+            // Since we're about to pop the result of selene.parse,
+            // we need to store the string somewhere safe from the lua GC.
+            code = lua.ToStringIntoUtf8(-1, Interpolator.Shared);
+            
+            code = code.ToArray();
             lua.Pop(2);
         } else {
             code = strUtf8;
@@ -286,7 +255,7 @@ public static partial class LuaExt {
     public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyAscii, out Span<char> chars) {
         var type = lua.GetFieldRva(tableStackIndex, keyAscii);
         if (type == LuaType.String) {
-            chars = lua.ToStringInto(lua.GetTop(), SharedToStringBuffer);
+            chars = lua.ToStringInto(lua.GetTop(), Interpolator.Shared);
             lua.Pop(1);
             return true;
         }
@@ -913,11 +882,7 @@ where TArg1 : class, ILuaWrapper {
                 ret = obj.LuaIndex(lua, lua.ToInteger(top));
                 break;
             case LuaType.String:
-                //Span<char> buffer = SharedToStringBuffer.AsSpan();
-                //var str = lua.ToStringInto(top, buffer, callMetamethod: false);
-                //ret = obj.LuaIndex(lua, str);
-
-                ret = obj.LuaIndex(lua, lua.ToStringIntoAscii(top, callMetamethod: false));
+                ret = obj.LuaIndex(lua, lua.DangerousToStringIntoUtf8InLuaMemory(top, callMetamethod: false));
                 break;
             case LuaType.Nil:
                 ret = obj.LuaIndexNull(lua);
@@ -1011,8 +976,7 @@ where TArg1 : class, ILuaWrapper {
                         wrapper.LuaNewIndex(lua, lua.ToInteger(keyPos), value);
                         break;
                     case LuaType.String:
-                        Span<char> buffer = SharedToStringBuffer.AsSpan();
-                        var str = lua.ToStringInto(keyPos, buffer, callMetamethod: false);
+                        var str = lua.ToStringInto(keyPos, Interpolator.Shared, callMetamethod: false);
                         wrapper.LuaNewIndex(lua, str, value);
                         break;
                     default:

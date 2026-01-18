@@ -78,6 +78,17 @@ public sealed class Interpolator {
         return h.Result;
     }
     
+    public Span<char> Utf16Mutable([InterpolatedStringHandlerArgument("")] Handler h)
+    {
+        _buffer = h.Data;
+        if (ManualClear) {
+            // Move the start index further so that later interpolation steps don't overwrite existing ones
+            _startIndex += h.Result.Length;
+        }
+        
+        return h.Result;
+    }
+    
     public ReadOnlySpan<byte> Utf8([InterpolatedStringHandlerArgument("")] HandlerU8 h)
     {
         // Make sure the buffer ends with a null terminator, as some imgui functions expect it.
@@ -103,6 +114,24 @@ public sealed class Interpolator {
         }
         
         var b = _buffer.AsSpan()[_startIndex..];
+        str.CopyTo(b);
+        if (ManualClear) {
+            // Move the start index further so that later interpolation steps don't overwrite existing ones
+            _startIndex += str.Length;
+        }
+
+        return b[..str.Length];
+    }
+    
+    public Span<byte> Clone(ReadOnlySpan<byte> str) {
+        if (str.Length == 0)
+            return [];
+        
+        if (_bufferU8.Length < str.Length + _startIndex) {
+            Array.Resize(ref _bufferU8, Math.Max(_bufferU8.Length * 3 / 2, str.Length + _startIndex));
+        }
+        
+        var b = _bufferU8.AsSpan()[_startIndex..];
         str.CopyTo(b);
         if (ManualClear) {
             // Move the start index further so that later interpolation steps don't overwrite existing ones
@@ -212,7 +241,7 @@ public sealed class Interpolator {
             Array.Resize(ref Data, newSize);
         }
         
-        public ReadOnlySpan<char> Result => Data.AsSpan(_startIndex, _len);
+        public Span<char> Result => Data.AsSpan(_startIndex, _len);
 
         public int Length => _len;
         
@@ -234,6 +263,15 @@ public sealed class Interpolator {
         public void AppendFormatted(ReadOnlySpan<char> str)
         {
             AppendLiteral(str);
+        }
+        
+        public void AppendFormatted(ReadOnlySpan<byte> str)
+        {
+            int written;
+            while (System.Text.Unicode.Utf8.ToUtf16(str, RemainingSpan(), out _, out written) is OperationStatus.DestinationTooSmall) {
+                Expand(Data.Length * 2);
+            }
+            _len += written;
         }
         
         public void AppendFormatted<T2>(T2 v) where T2 : ISpanFormattable
