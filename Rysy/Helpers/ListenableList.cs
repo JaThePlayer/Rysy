@@ -7,15 +7,34 @@ public interface IListenableList<T> : IList<T> {
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
     public Action? OnChanged { get; set; }
+    
+    /// <summary>
+    /// Current version of the list, incremented each time OnChanged is called.
+    /// </summary>
+    public long Version { get; }
+}
+
+public interface IReadOnlyListenableList<T> : IReadOnlyList<T> {
+    /// <summary>
+    /// Will be called whenever the contents of the list get changed (Elements get added/removed)
+    /// </summary>
+    public Action? OnChanged { get; set; }
+    
+    /// <summary>
+    /// Current version of the list, incremented each time OnChanged is called.
+    /// </summary>
+    public long Version { get; }
 }
 
 /// <summary>
 /// Acts like a <see cref="List{T}"/>, but implements <see cref="IListenableList{T}"/>
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class ListenableList<T> : IListenableList<T> {
+public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> {
     private List<T> _inner;
     public Action? OnChanged { get; set; }
+    
+    public long Version { get; private set; }
 
     private bool _suppressed;
 
@@ -28,8 +47,10 @@ public class ListenableList<T> : IListenableList<T> {
     }
     
     protected void CallOnChanged() {
-        if (!_suppressed)
+        if (!_suppressed) {
+            Version++;
             OnChanged?.Invoke();
+        }
     }
 
     public ListenableList() {

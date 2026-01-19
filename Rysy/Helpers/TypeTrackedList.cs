@@ -16,6 +16,13 @@ public class TypeTrackedList<T> : IListenableList<T> {
     /// </summary>
     public Action? OnChanged { get; set; }
 
+    public long Version { get; private set; }
+
+    private void CallOnChanged() {
+        Version++;
+        OnChanged?.Invoke();
+    }
+
     public T this[int index] {
         get => Inner[index];
         set {
@@ -26,7 +33,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
             Inner[index] = value;
             TrackNewItem(value);
 
-            OnChanged?.Invoke();
+            CallOnChanged();
         }
     }
 
@@ -66,7 +73,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        OnChanged?.Invoke();
+        CallOnChanged();;
     }
 
 
@@ -74,7 +81,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
         Inner.Clear();
         _byType.Clear();
 
-        OnChanged?.Invoke();
+        CallOnChanged();;
     }
 
     public bool Contains(T item) {
@@ -102,14 +109,14 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        OnChanged?.Invoke();
+        CallOnChanged();;
     }
 
     public bool Remove(T item) {
         UntrackItem(item);
         var ret = Inner.Remove(item);
         if (ret)
-            OnChanged?.Invoke();
+            CallOnChanged();;
         return ret;
     }
 
@@ -117,7 +124,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
         UntrackItem(Inner[index]);
         Inner.RemoveAt(index);
 
-        OnChanged?.Invoke();
+        CallOnChanged();;
     }
 
     IEnumerator IEnumerable.GetEnumerator() {
