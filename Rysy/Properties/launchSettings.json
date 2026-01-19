@@ -3,6 +3,12 @@
     "Rysy": {
       "commandName": "Project"
     },
+    "Rysy-OpenGL": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "FNA3D_FORCE_DRIVER": "OpenGL"
+      }
+    },
     "WSL": {
       "commandName": "WSL2",
       "distributionName": ""
