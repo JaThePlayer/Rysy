@@ -1,4 +1,5 @@
-﻿using Rysy.Mods;
+﻿using Rysy.Helpers;
+using Rysy.Mods;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
@@ -57,7 +58,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
                         if (stream.CanSeek) {
                             ptr = ReadPremultipliedTextureDataFromStream(stream, out w, out h, out len);
                         } else {
-                            using var memStr = new MemoryStream();
+                            using var memStr = new PooledMemoryStream();
                             stream.CopyTo(memStr);
                             memStr.Seek(0, SeekOrigin.Begin);
                             ptr = ReadPremultipliedTextureDataFromStream(memStr, out w, out h, out len);
