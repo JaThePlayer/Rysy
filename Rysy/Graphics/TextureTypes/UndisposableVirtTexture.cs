@@ -11,7 +11,7 @@ internal class UndisposableVirtTexture : VirtTexture {
     }
     #pragma warning restore CA2215
 
-    protected override Task? QueueLoad() {
+    protected override Task? QueueLoad(CancellationToken ct) {
         return null;
     }
 }

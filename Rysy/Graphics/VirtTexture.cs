@@ -1,10 +1,10 @@
 ﻿using Rysy.Graphics.TextureTypes;
-using System.Diagnostics;
-using System.IO.Compression;
 
 namespace Rysy.Graphics;
 
 public class VirtTexture : IDisposable {
+    private CancellationTokenSource _loadTaskCancellationTokenSource = new();
+    
     protected Task? LoadTask;
     
     /// <summary>
@@ -116,7 +116,7 @@ public class VirtTexture : IDisposable {
 
     private Texture2D? StartLoadingIfNeeded() {
         if (Interlocked.CompareExchange(ref State, States.Loading, States.Unloaded) == States.Unloaded) {
-            LoadTask = QueueLoad()?.ContinueWith((old) => LoadTask = null);
+            LoadTask = QueueLoad(_loadTaskCancellationTokenSource.Token)?.ContinueWith((old) => LoadTask = null);
         }
 
         return null;
@@ -128,14 +128,19 @@ public class VirtTexture : IDisposable {
         Loaded
     }
 
-    protected virtual Task? QueueLoad() {
+    protected virtual Task? QueueLoad(CancellationToken ct) {
         throw new NotImplementedException();
     }
 
     public virtual void Dispose() {
         State = States.Unloaded;
+        _loadTaskCancellationTokenSource.Cancel();
+        _loadTaskCancellationTokenSource = new CancellationTokenSource();
+        LoadTask = null;
         LoadedTexture?.Dispose();
+        LoadedTexture = null;
         OutlineTexture?.Dispose();
+        OutlineTexture = null;
     }
 
     protected virtual bool TryPreloadClipRect() { return false; }

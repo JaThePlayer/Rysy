@@ -17,11 +17,11 @@ public sealed class ModSubtexture : VirtTexture {
         LoadedClipRect = rect;
     }
 
-    protected override Task? QueueLoad() {
+    protected override Task QueueLoad(CancellationToken ct) {
         return Task.Run(async () => {
             LoadedTexture = await _modTexture.ForceGetTexture();
             State = States.Loaded;
-        });
+        }, ct);
     }
 
     public override int Width => RealWidth ?? _rect.Width;

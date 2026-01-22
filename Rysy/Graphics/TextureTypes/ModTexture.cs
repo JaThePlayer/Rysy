@@ -7,6 +7,8 @@ namespace Rysy.Graphics.TextureTypes;
 
 public sealed class ModTexture : VirtTexture, IModAsset {
     private IDisposable? _watcher;
+
+    private readonly Lock _loadingLock = new();
     
     public ModMeta Mod { get; init; }
     public string VirtPath { get; init; }
@@ -22,6 +24,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
     public override void Dispose() {
         _watcher?.Dispose();
+        _watcher = null;
         base.Dispose();
     }
 
@@ -42,52 +45,48 @@ public sealed class ModTexture : VirtTexture, IModAsset {
         ?? throw new Exception("Microsoft.Xna.Framework.Graphics.FNA3D.FNA3D_Image_Free does not exist or has different signature, cannot proceed with texture loading!");
         
     
-    private Task _QueueLoad() {
-        return Task.Run(async () => { 
-            var success = Mod.Filesystem.TryWatchAndOpen(VirtPath, stream => {
-                try {
-                    lock (this) {
-                        State = States.Loading;
-                        LoadedTexture?.Dispose();
-                        LoadedTexture = null;
-                        OutlineTexture?.Dispose();
-                        OutlineTexture = null;
-
-                        int w, h, len;
-                        nint ptr;
-                        if (stream.CanSeek) {
-                            ptr = ReadPremultipliedTextureDataFromStream(stream, out w, out h, out len);
-                        } else {
-                            using var memStr = new PooledMemoryStream();
-                            stream.CopyTo(memStr);
-                            memStr.Seek(0, SeekOrigin.Begin);
-                            ptr = ReadPremultipliedTextureDataFromStream(memStr, out w, out h, out len);
-                        }
-
-                        if (Settings.Instance.AllowMultithreadedTextureCreation) {
-                            SendDataToGpu(w, h, ptr, len);
-                        } else {
-                            RysyState.OnEndOfThisFrame += () => {
-                                SendDataToGpu(w, h, ptr, len);
-                            };
-                        }
+    private async Task _QueueLoad(CancellationToken ct) {
+        _watcher ??= Mod.Filesystem.RegisterFilewatch(VirtPath, new WatchedAsset { OnChanged = _ => Dispose() });
+        
+        var success = Mod.Filesystem.TryOpenFile(VirtPath, stream => {
+            try {
+                lock (_loadingLock) {
+                    int w, h, len;
+                    nint ptr;
+                    if (stream.CanSeek) {
+                        ptr = ReadPremultipliedTextureDataFromStream(stream, out w, out h, out len);
+                    } else {
+                        using var memStr = new PooledMemoryStream();
+                        stream.CopyTo(memStr);
+                        memStr.Seek(0, SeekOrigin.Begin);
+                        ptr = ReadPremultipliedTextureDataFromStream(memStr, out w, out h, out len);
                     }
-                } catch (Exception ex) {
-                    Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {ex}");
-                    SwitchToFallbackTexture();
-                }
-            }, out _watcher);
 
-            if (success) {
-                // Wait for our callback registered in RysyState.OnEndOfThisFrame to trigger.
-                while (State == States.Loading) {
-                    await Task.Delay(18);
+                    ClipRect = new Rectangle(0, 0, w, h);
+
+                    if (Settings.Instance.AllowMultithreadedTextureCreation) {
+                        SendDataToGpu(w, h, ptr, len);
+                    } else {
+                        RysyState.OnEndOfThisFrame += () => {
+                            SendDataToGpu(w, h, ptr, len);
+                        };
+                    }
                 }
-            } else {
-                Logger.Write("ModTexture", LogLevel.Error, $"Failed to find mod texture {this} - file does not exist anymore or could not be opened.");
+            } catch (Exception ex) {
                 SwitchToFallbackTexture();
+                Logger.Write("ModTexture", LogLevel.Error, $"Failed loading mod texture {this}, {ex}");
             }
         });
+
+        if (success) {
+            // Wait for our callback registered in RysyState.OnEndOfThisFrame to trigger.
+            while (State == States.Loading) {
+                await Task.Delay(18, ct);
+            }
+        } else {
+            Logger.Write("ModTexture", LogLevel.Error, $"Failed to find mod texture {this} - file does not exist anymore or could not be opened.");
+            SwitchToFallbackTexture();
+        }
     }
 
     private void SendDataToGpu(int w, int h, IntPtr ptr, int len) {
@@ -132,19 +131,27 @@ public sealed class ModTexture : VirtTexture, IModAsset {
         return ptr;
     }
 
-    protected override Task QueueLoad() => _QueueLoad();
+    protected override Task QueueLoad(CancellationToken ct) => Task.Run(() => _QueueLoad(ct), ct);
 
     protected override bool TryPreloadClipRect() {
-        lock (Mod.Filesystem) {
-            return Mod.Filesystem.OpenFile(VirtPath, stream => {
-                if (PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
-                    ClipRect = new(0, 0, w, h);
-                    return true;
-                }
-
-                throw new Exception($"Invalid PNG for {VirtPath}");
-            });
+        // If we're currently loading, try waiting a bit to try to get the clip rect from the loading thread.
+        // Don't wait around forever though, the texture loading code needs to be able to run code on the main thread!
+        if (_loadingLock.TryEnter(TimeSpan.FromSeconds(0.25f))) {
+            _loadingLock.Exit();
         }
+
+        if (LoadedClipRect != null) {
+            return true;
+        }
+
+        return Mod.Filesystem.OpenFile(VirtPath, stream => {
+            if (PreloadSizeFromPng(stream, VirtPath, out int w, out int h)) {
+                ClipRect = new(0, 0, w, h);
+                return true;
+            }
+
+            throw new Exception($"Invalid PNG for {VirtPath}");
+        });
     }
 
     public override string ToString() => $"ModTexture:{{{VirtPath}, [{Mod.Name}]}}";

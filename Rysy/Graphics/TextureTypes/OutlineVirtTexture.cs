@@ -88,7 +88,7 @@ public sealed class OutlineVirtTexture : VirtTexture {
     }*/
     
     
-    protected override Task? QueueLoad() {
+    protected override Task QueueLoad(CancellationToken ct) {
         return Task.Run(async () => {
             var parent = _parent;
 
@@ -109,7 +109,7 @@ public sealed class OutlineVirtTexture : VirtTexture {
             };
 
             while (!dataLoaded) {
-                await Task.Delay(20);
+                await Task.Delay(20, ct);
             }
 
             var outHeight = th + 2;
@@ -149,6 +149,6 @@ public sealed class OutlineVirtTexture : VirtTexture {
             } catch (Exception ex) {
                 Logger.Write("OutlineSprite", LogLevel.Error, ex.ToString());
             }
-        });
+        }, ct);
     }
 }
