@@ -98,7 +98,6 @@ public class Atlas : IAtlas {
         foreach (var item in Textures.Values) {
             item.Dispose();
         }
-        Textures.Clear();
 
         OnUnload?.Invoke();
         OnChanged?.Invoke();
