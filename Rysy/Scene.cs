@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Gui.Windows;
+using Rysy.Scenes;
 
 namespace Rysy;
 
@@ -10,6 +11,8 @@ public abstract class Scene {
     
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
+
+    protected List<SceneComponent> Components = [];
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -27,13 +30,19 @@ public abstract class Scene {
     /// </summary>
     public virtual void OnBegin() {
         SetupHotkeys();
+        
+        foreach (var c in Components) {
+            c.OnBegin();
+        }
     }
 
     /// <summary>
     /// Called when this scene is unset from <see cref="RysyEngine.Scene"/>
     /// </summary>
     public virtual void OnEnd() {
-
+        foreach (var c in Components) {
+            c.OnEnd();
+        }
     }
 
     public virtual void SetupHotkeys() {
@@ -46,6 +55,10 @@ public abstract class Scene {
         HotkeysIgnoreImGui?.Update();
 
         TimeActive += Time.Delta;
+        
+        foreach (var c in Components) {
+            c.Update();
+        }
     }
 
     public virtual void Render() {

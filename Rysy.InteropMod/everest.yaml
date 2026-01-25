@@ -1,0 +1,6 @@
+- Name: Rysy.InteropMod
+  Version: 0.1.0
+  DLL: bin/Rysy.InteropMod.dll
+  Dependencies:
+    - Name: EverestCore
+      Version: 1.5935.0

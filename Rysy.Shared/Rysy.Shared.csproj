@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Limited to .net version used by Everest. -->
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <Target Name="CopyFiles" AfterTargets="Build" 
+            Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" 
+            Outputs="$(OutputPath)\..\..\$(AssemblyName).dll;$(OutputPath)\..\..\$(AssemblyName).pdb">
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="$(OutputPath)\..\.."/>
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="$(OutputPath)\..\.."/>
+    </Target>
+</Project>

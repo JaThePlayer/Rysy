@@ -1,15 +1,14 @@
 ﻿using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Input;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Layers;
 using Rysy.Loading;
 using Rysy.MapAnalyzers;
 using Rysy.Mods;
+using Rysy.Scenes.Components;
 using Rysy.Stylegrounds;
 using Rysy.Tools;
 
@@ -74,6 +73,8 @@ public sealed class EditorScene : Scene {
 
         if (Settings.Instance.NotificationWindowOpen)
             AddWindowIfNeeded<NotificationsWindow>();
+        
+        Components.Add(new PlayerTrailRenderer(this));
     }
 
     public EditorScene(Map map) : this() {
@@ -410,6 +411,10 @@ public sealed class EditorScene : Scene {
             room.GetBorderSprite(Camera.Scale).Render();
         }
         Gfx.EndBatch();
+
+        foreach (var c in Components) {
+            c.Render();
+        }
         
         ToolHandler.Render(Camera, CurrentRoom);
 

@@ -124,4 +124,12 @@
     <Folder Include="Assets\Rysy\" />
   </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Rysy.Shared\Rysy.Shared.csproj" />
+    </ItemGroup>
+<!--    
+    <PropertyGroup>
+        <ApplicationIcon>Assets/Icon/icon.ico</ApplicationIcon>
+    </PropertyGroup>
+    -->
 </Project>

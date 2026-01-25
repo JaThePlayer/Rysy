@@ -1,12 +1,11 @@
-﻿using Rysy.Extensions;
-using Rysy.Mods;
+﻿using Rysy.Mods;
 using Rysy.Platforms;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Rysy;
 
-public static class Logger {
+public sealed class Logger(string tag) : IRysyLogger {
     private const string LogFile = "log.txt";
     private const string LastLogFile = "prev-log.txt";
 
@@ -43,7 +42,7 @@ public static class Logger {
     private static string PrependLocation(string txt, string callerMethod, string callerFile, int lineNumber)
         => $"[{FancyTextHelper.Gray}{callerFile.TrimStart(CompilePath).Unbackslash()}:{callerMethod}:{lineNumber}{FancyTextHelper.ResetColor}] {txt}";
 
-    private static bool ValidLogLevel(LogLevel level) => Init() && level >= MinimumLevel;
+    internal static bool ValidLogLevel(LogLevel level) => Init() && level >= MinimumLevel;
 
     public static void Write(string tag, LogLevel logLevel, string msg, 
         [CallerMemberName] string callerMethod = "",
@@ -138,34 +137,6 @@ public static class Logger {
         WriteImpl(txt);
     }
 
-    /// <summary>
-    /// Writes this object to the log as JSON.
-    /// </summary>
-    public static void LogAsJson<T>(this T? obj, string tag = "LogAsJson", LogLevel level = LogLevel.Debug, [CallerArgumentExpression(nameof(obj))] string caller = "", 
-        [CallerMemberName] string callerMethod = "",
-        [CallerFilePath] string callerFile = "",
-        [CallerLineNumber] int lineNumber = 0
-    ) {
-        if (!ValidLogLevel(level))
-            return;
-
-        if (obj is null) {
-#if DEBUG
-            Write(tag, level, "null", callerMethod, callerFile, lineNumber);
-#else
-            Write(tag, level, "null");
-#endif
-            return;
-        }
-
-        FancyInterpolatedStringHandler txt = $"{caller} = {obj.ToJson()}";
-#if DEBUG
-        Write(tag, level, txt, callerMethod, callerFile, lineNumber);
-#else
-        Write(tag, level, txt);
-#endif
-    }
-
     private static void WriteImpl(string str) {
         var unformatted = str.UnformatColors();
 
@@ -183,16 +154,45 @@ public static class Logger {
         }
 
     }
-}
 
-public enum LogLevel {
-    Debug,
-    Info,
-    Warning,
-    Error,
+    public bool CanLog(LogLevel level) {
+        return ValidLogLevel(level);
+    }
+
+    public void Log(LogLevel logLevel, string message) {
+        Write(tag, logLevel, message);
+    }
 }
 
 public static class LogLevelExtensions {
+    /// <summary>
+    /// Writes this object to the log as JSON.
+    /// </summary>
+    public static void LogAsJson<T>(this T? obj, string tag = "LogAsJson", LogLevel level = LogLevel.Debug, [CallerArgumentExpression(nameof(obj))] string caller = "", 
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        if (!Logger.ValidLogLevel(level))
+            return;
+
+        if (obj is null) {
+#if DEBUG
+            Logger.Write(tag, level, "null", callerMethod, callerFile, lineNumber);
+#else
+            Write(tag, level, "null");
+#endif
+            return;
+        }
+
+        FancyInterpolatedStringHandler txt = $"{caller} = {obj.ToJson()}";
+#if DEBUG
+        Logger.Write(tag, level, txt, callerMethod, callerFile, lineNumber);
+#else
+        Write(tag, level, txt);
+#endif
+    }
+    
     public static string FastToString(this LogLevel logLevel)
         => logLevel switch {
             LogLevel.Debug => "Debug",
