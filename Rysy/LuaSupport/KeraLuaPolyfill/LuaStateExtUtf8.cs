@@ -18,8 +18,8 @@ public static class LuaStateExtUtf8 {
             }
         }
         
-        public unsafe bool NewMetatable(ReadOnlySpan<byte> asciiName) {
-            fixed (byte* ptr = asciiName) {
+        public unsafe bool NewMetatable(ReadOnlySpan<byte> utf8Name) {
+            fixed (byte* ptr = utf8Name) {
                 return LuaImports.luaL_newmetatable(lua, ptr) != 0;
             }
         }

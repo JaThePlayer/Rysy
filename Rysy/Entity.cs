@@ -448,7 +448,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     /// Should be called sparingly.
     /// </summary>
     public virtual void ClearInnerCaches() {
-        _nameAsAscii = null;
+        _nameAsUtf8 = null;
         EntityData.ClearCaches();
         _cachedPackedElement = null;
     }
@@ -805,7 +805,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     #endregion
 
     #region ILuaWrapper
-    private byte[]? _nameAsAscii = null;
+    private byte[]? _nameAsUtf8 = null;
     private NodesWrapper? _nodesWrapper;
 
     public int LuaIndex(Lua lua, long key) {
@@ -832,7 +832,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
                 return 1;
             case "_name":
-                lua.PushUtf8String(_nameAsAscii ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_nameAsUtf8 ??= Encoding.UTF8.GetBytes(Name));
                 return 1;
             default:
                 EntityData.TryGetValue(key.ToString(), out var value);
@@ -841,8 +841,8 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
 
-    public int LuaIndex(Lua lua, ReadOnlySpan<byte> keyAscii) {
-        switch (keyAscii) {
+    public int LuaIndex(Lua lua, ReadOnlySpan<byte> keyUtf8) {
+        switch (keyUtf8) {
             case [(byte) 'x']:
                 lua.PushNumber(X);
                 return 1;
@@ -853,7 +853,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 lua.PushNumber(Id);
                 return 1;
             case [(byte) '_', (byte) 'n', (byte) 'a', (byte) 'm', (byte) 'e']:
-                lua.PushUtf8String(_nameAsAscii ??= Encoding.ASCII.GetBytes(Name));
+                lua.PushUtf8String(_nameAsUtf8 ??= Encoding.UTF8.GetBytes(Name));
                 return 1;
             case [(byte) 'n', (byte) 'o', (byte) 'd', (byte) 'e', (byte) 's']:
                 if (Nodes is { }) {
@@ -863,7 +863,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
                 }
                 return 1;
             default:
-                EntityData.TryGetLuaValue(keyAscii, out var value);
+                EntityData.TryGetLuaValue(keyUtf8, out var value);
                 lua.Push(value);
                 return 1;
         }
@@ -955,7 +955,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     }
 
     /// <summary>
-    /// Used by lua to efficiently retrieve items from entity data using an ascii span, stores strings as ASCII
+    /// Used by lua to efficiently retrieve items from entity data using an utf8 span, stores strings as Utf8
     /// </summary>
     private Dictionary<nint, object>? _luaValues;
 
@@ -1126,7 +1126,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     }
 
     /// <summary>
-    /// Retries a value from this entity data using a span. All strings returned by this are converted to ASCII byte[]
+    /// Retries a value from this entity data using a span. All strings returned by this are converted to Utf8 byte[]
     /// </summary>
     internal unsafe bool TryGetLuaValue(ReadOnlySpan<byte> key, out object? value) {
         _luaValues ??= new();
@@ -1142,9 +1142,9 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
                 return true;
             }
 
-            if (TryGetValue(Encoding.ASCII.GetString(key), out var fromData)) {
+            if (TryGetValue(Encoding.UTF8.GetString(key), out var fromData)) {
                 if (fromData is string str) {
-                    fromData = Encoding.ASCII.GetBytes(str);
+                    fromData = Encoding.UTF8.GetBytes(str);
                 }
 
                 valueInDict = fromData;

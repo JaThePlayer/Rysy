@@ -16,8 +16,8 @@ public interface ILuaWrapper {
     /// </summary>
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key);
 
-    public virtual int LuaIndex(Lua lua, ReadOnlySpan<byte> keyAscii) {
-        return LuaIndex(lua, Interpolator.Temp($"{keyAscii}"));
+    public virtual int LuaIndex(Lua lua, ReadOnlySpan<byte> keyUtf8) {
+        return LuaIndex(lua, Interpolator.Temp($"{keyUtf8}"));
     }
 
     public virtual int LuaIndexNull(Lua lua) {

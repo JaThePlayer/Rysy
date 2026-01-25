@@ -252,8 +252,8 @@ public static partial class LuaExt {
         return ret;
     }
 
-    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyAscii, out Span<char> chars) {
-        var type = lua.GetFieldRva(tableStackIndex, keyAscii);
+    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyUtf8, out Span<char> chars) {
+        var type = lua.GetFieldRva(tableStackIndex, keyUtf8);
         if (type == LuaType.String) {
             chars = lua.ToStringInto(lua.GetTop(), Interpolator.Shared);
             lua.Pop(1);
@@ -499,8 +499,8 @@ public static partial class LuaExt {
             case ILuaWrapper wrapper:
                 lua.PushWrapper(wrapper);
                 break;
-            case byte[] asciiStr:
-                lua.PushUtf8String(asciiStr);
+            case byte[] utf8Str:
+                lua.PushUtf8String(utf8Str);
                 break;
             case long l:
                 lua.PushInteger(l);
