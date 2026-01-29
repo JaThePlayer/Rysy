@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 
-namespace Rysy.Helpers;
+namespace Rysy.Shared.Collections;
 
 /// <summary>
 /// Similar to List, but uses the Array Pool to store its items.
