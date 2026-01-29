@@ -1,13 +1,18 @@
-﻿using System.Numerics;
+﻿using Rysy.Shared.Collections;
+using System.Numerics;
 
 namespace Rysy.Shared.InteropMod;
 
-public record class PlayerTrailData {
+public sealed record PlayerTrailData : IDisposable {
     public string MapSid { get; init; }
     
     public string Room { get; init; }
 
-    public List<PlayerTrailFrame> Frames { get; init; } = [];
+    public PooledList<PlayerTrailFrame> Frames { get; init; } = [];
+
+    public void Dispose() {
+        Frames.Dispose();
+    }
 }
 
 public readonly record struct PlayerTrailFrame {

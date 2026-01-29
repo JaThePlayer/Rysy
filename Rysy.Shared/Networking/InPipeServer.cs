@@ -5,10 +5,9 @@ namespace Rysy.Shared.Networking;
 
 public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private Task _serverTask;
     private NamedPipeClientStream? _pipe;
     
-    private StreamReader _writer;
+    private StreamReader? _writer;
     
     public required Action<T> OnMessageReceived { get; init; }
     
@@ -37,28 +36,28 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
                 if (d is {})
                     OnMessageReceived(d);
             } catch (Exception e) {
-                logger.Error($"Error while parsing {typeof(T).FullName} from Celeste connection pipe.\n{e}");
+                logger.Error($"Error while parsing {typeof(T).FullName} from pipe.\n{e}");
                 break;
             }
         }
         
-        _pipe?.Close();
+        Dispose();
         return;
         
         async Task Restart() {
             _pipe?.Close();
             _pipe = CreatePipe();
-            logger.Info($"Awaiting for a {typeof(T).FullName} pipe with Celeste.");
+            logger.Info($"Awaiting for a {typeof(T).FullName} pipe.");
         
             await _pipe.ConnectAsync(ct);
         
-            logger.Info($"Connected to {typeof(T).FullName} pipe with Celeste.");
+            logger.Info($"Connected to {typeof(T).FullName} pipe.");
             _writer = new StreamReader(_pipe);
         }
     }
 
     public void Load() {
-        _serverTask = Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+        Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
     private static NamedPipeClientStream CreatePipe()
@@ -70,9 +69,10 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
     }
 
     public void Dispose() {
+        if (_pipe is { IsConnected: true })
+            logger.Info($"Disposing a {typeof(T).FullName} pipe.");
         _cancellationTokenSource.Dispose();
-        _serverTask.Dispose();
         _pipe?.Dispose();
-        _writer.Dispose();
+        _writer?.Dispose();
     }
 }

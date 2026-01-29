@@ -49,6 +49,7 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
     }
 
     private void OnMessageReceived(PlayerTrailData obj) {
+        _playerTrailData?.Dispose();
         _playerTrailData = obj;
     }
 

@@ -7,7 +7,7 @@ namespace Rysy.Shared.Collections;
 /// <summary>
 /// Similar to List, but uses the Array Pool to store its items.
 /// </summary>
-public struct PooledList<T> : IList<T>, IDisposable {
+public class PooledList<T> : IList<T>, IDisposable {
     private T[]? _array;
     private int _count;
     

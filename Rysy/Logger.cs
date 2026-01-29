@@ -180,7 +180,7 @@ public static class LogLevelExtensions {
 #if DEBUG
             Logger.Write(tag, level, "null", callerMethod, callerFile, lineNumber);
 #else
-            Write(tag, level, "null");
+            Logger.Write(tag, level, "null");
 #endif
             return;
         }
@@ -189,7 +189,7 @@ public static class LogLevelExtensions {
 #if DEBUG
         Logger.Write(tag, level, txt, callerMethod, callerFile, lineNumber);
 #else
-        Write(tag, level, txt);
+        Logger.Write(tag, level, txt);
 #endif
     }
     

@@ -10,10 +10,9 @@ namespace Rysy.Shared.Networking;
 /// <typeparam name="T">The type to be sent.</typeparam>
 public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private Task _serverTask;
     private NamedPipeServerStream? _pipe;
     
-    private StreamWriter _writer;
+    private StreamWriter? _writer;
     
     private readonly BlockingCollection<T> _messageQueue = new(boundedCapacity: 10);
 
@@ -24,6 +23,10 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
             if (_messageQueue.TryTake(out var message, TimeSpan.FromSeconds(1))) {
                 try {
                     await _writer.WriteLineAsync(JsonSerializer.Serialize(message, NetworkingJsonOptions.IncludeFields));
+
+                    if (message is IDisposable d) {
+                        d.Dispose();
+                    }
                 } catch (IOException e) {
                     logger.Error($"Error while sending message to stream: {e}");
                     await Restart();
@@ -50,7 +53,7 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
     public bool IsConnected => _pipe?.IsConnected ?? false;
 
     public void Load() {
-        _serverTask = Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+        Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
     private static NamedPipeServerStream CreatePipe()
@@ -66,9 +69,8 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
 
     public void Dispose() {
         _cancellationTokenSource.Dispose();
-        _serverTask.Dispose();
         _pipe?.Dispose();
-        _writer.Dispose();
+        _writer?.Dispose();
         _messageQueue.Dispose();
     }
 }
