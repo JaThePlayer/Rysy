@@ -302,6 +302,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
     /// </summary>
     public bool AllowMultithreadedTextureCreation { get; set; }
 
+    public float PlaytestTrailOpacity { get; set; } = 0.45f;
     #endregion
 
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;

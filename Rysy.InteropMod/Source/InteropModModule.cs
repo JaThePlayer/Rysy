@@ -44,8 +44,8 @@ public sealed class InteropModModule : EverestModule {
 
     public override void Load() {
         //Register<DebugRcExtension>();
-        var pipeServer = new OutPipeServer<PlayerTrailData>(MakeLogger("Rysy.Pipes.PlayerTrail"));
-        Register(new ModLifetimeOutPipeServer<PlayerTrailData>(pipeServer));
+        var pipeServer = new OutPipeServer<PlaybackTrailData>(MakeLogger("Rysy.Pipes.PlayerTrail"));
+        Register(new ModLifetimeOutPipeServer<PlaybackTrailData>(pipeServer));
         Register(new PlayerTrailDataCollector(pipeServer));
     }
 

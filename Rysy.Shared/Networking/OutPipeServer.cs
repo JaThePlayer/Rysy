@@ -69,8 +69,10 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
 
     public void Dispose() {
         _cancellationTokenSource.Dispose();
+        //_writer?.Dispose();
+        //_writer = null;
         _pipe?.Dispose();
-        _writer?.Dispose();
+        _pipe = null;
         _messageQueue.Dispose();
     }
 }

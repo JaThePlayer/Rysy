@@ -1,39 +1,35 @@
 ﻿using Rysy.Graphics;
 using Rysy.Shared.InteropMod;
 using Rysy.Shared.Networking;
-using System.Collections.Concurrent;
-using System.IO.Pipes;
-using System.Text.Json;
 
 namespace Rysy.Scenes.Components;
 
 internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
-    private InPipeServer<PlayerTrailData>? _server;
+    private InPipeServer<PlaybackTrailData>? _server;
 
-    private PlayerTrailData? _playerTrailData;
+    private PlaybackTrailData? _playbackTrailData;
+
+    private float Opacity => Settings.Instance?.PlaytestTrailOpacity ?? 0.45f;
+
+    private readonly List<(float, ISprite)> _sprites = [];
     
     public override void Update() {
         
     }
 
     public override void Render() {
-        if (_playerTrailData is null || scene.Map is null) {
+        if (_playbackTrailData is null || scene.Map is null) {
             return;
         }
 
-        if (scene.Map.TryGetRoomByName(_playerTrailData.Room) is not { } room)
+        if (scene.Map.TryGetRoomByName(_playbackTrailData.Room) is not { } room)
             return;
 
         var ctx = SpriteRenderCtx.Default();
         Gfx.BeginBatch(scene.Camera);
         
-        foreach (var f in _playerTrailData.Frames) {
-            var sprite = ISprite.FromTexture(f.Position.ToXna(), f.Animation) with {
-                Scale = f.Scale.ToXna(),
-                Origin = new(.5f, 1f),
-            };
-                
-            sprite.RenderWithColor(ctx, new Color{PackedValue = f.HairColor} * 0.7f);
+        foreach (var (_, sprite) in _sprites) {
+            sprite.Render(ctx);
         }
         
         Gfx.EndBatch();
@@ -42,15 +38,45 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
     public override void OnBegin() {
         _server?.Dispose();
         
-        _server = new InPipeServer<PlayerTrailData>(new Logger("Rysy.Pipes.PlayerTrailData")) {
+        _server = new InPipeServer<PlaybackTrailData>(new Logger("Rysy.Pipes.PlayerTrailData")) {
             OnMessageReceived = OnMessageReceived
         };
         _server.Load();
     }
 
-    private void OnMessageReceived(PlayerTrailData obj) {
-        _playerTrailData?.Dispose();
-        _playerTrailData = obj;
+    private void OnMessageReceived(PlaybackTrailData obj) {
+        _playbackTrailData?.Dispose();
+        _playbackTrailData = obj;
+        
+        _sprites.Clear();
+        
+        foreach (var f in _playbackTrailData.Player) {
+            var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
+            
+            _sprites.Add((f.TimeStamp, sprite));
+            _sprites.Add((f.TimeStamp, ISprite.FromTexture(f.Hair.ToXna(), "characters/player/bangs00").Centered() with {
+                Color =  new Color{PackedValue = f.HairColor} * Opacity
+            }));
+        }
+
+        foreach (var h in _playbackTrailData.Holdables) {
+            foreach (var f in h.Frames) {
+                var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
+            
+                _sprites.Add((f.TimeStamp, sprite));
+            }
+        }
+
+        _sprites.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+    }
+
+    private ISprite SpriteFromData(Vector2 pos, SpriteData data) {
+        return ISprite.FromTexture(pos, data.Texture) with {
+            Scale = data.Scale.ToXna(),
+            Origin = data.Origin.ToXna(),
+            Rotation = data.Rotation,
+            Color = new Color{PackedValue = data.Color}* Opacity,
+        };
     }
 
     public override void OnEnd() {
