@@ -79,5 +79,7 @@ jobs:
     - name: Upload InteropMod artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Rysy.InteropMod.zip
-        path: Rysy.InteropMod/Rysy.InteropMod.zip
+        name: Rysy.InteropMod
+        path: |
+          Rysy.InteropMod/everest.yaml
+          Rysy.InteropMod/bin
