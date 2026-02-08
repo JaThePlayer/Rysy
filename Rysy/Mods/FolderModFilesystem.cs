@@ -19,18 +19,27 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
 
     private readonly DelayedTaskHelper<(string Path, WatcherChangeTypes ChangeType)>? _watcherDelayedTaskHelper;
 
+    private readonly bool _valid;
+
     public FolderModFilesystem(string dirName) {
         Root = dirName;
 
-        if (!RysyPlatform.Current.SupportFileWatchers) {
+        try {
+            Directory.CreateDirectory(dirName);
+        } catch (IOException ex) {
+            Logger.Error("FolderModFilesystem", ex, $"Failed to create FolderModFilesystem for directory: {dirName}");
             return;
         }
 
+        _valid = true;
+        
+        if (!RysyPlatform.Current.SupportFileWatchers) {
+            return;
+        }
+        
         _watcherDelayedTaskHelper = new() {
             OnDelayElapsed = HandleFileWatcherEvent,
         };
-
-        Directory.CreateDirectory(dirName);
         
         _watcher = new FileSystemWatcher(dirName.CorrectSlashes());
 
@@ -105,7 +114,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public bool FileExists(string path) {
-        if (string.IsNullOrWhiteSpace(path))
+        if (!_valid || string.IsNullOrWhiteSpace(path))
             return false;
         
         if (_knownExistingFiles.TryGetValue(path, out var knownResult))
@@ -120,6 +129,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public Stream? OpenFile(string path) {
+        if (!_valid)
+            return null;
+        
         var realPath = VirtToRealPath(path);
         if (File.Exists(realPath)) {
             return TryHelper.Try(() => File.OpenRead(realPath), retries: 3);
@@ -143,7 +155,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
 
     public IEnumerable<string> FindFilesInDirectoryRecursive(string directory, string extension) {
         var realPath = VirtToRealPath(directory);
-        if (!Directory.Exists(realPath)) {
+        if (!_valid || !Directory.Exists(realPath)) {
             return [];
         }
         
@@ -155,7 +167,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     
     public IEnumerable<string> FindFilesInDirectory(string directory, string extension) {
         var realPath = VirtToRealPath(directory);
-        if (!Directory.Exists(realPath)) {
+        if (!_valid || !Directory.Exists(realPath)) {
             return [];
         }
 
@@ -167,7 +179,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     
     public IEnumerable<string> FindDirectories(string directory) {
         var realPath = VirtToRealPath(directory);
-        if (!Directory.Exists(realPath)) {
+        if (!_valid || !Directory.Exists(realPath)) {
             return [];
         }
         
@@ -180,6 +192,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public bool TryWriteToFile(string path, Action<Stream> write) {
+        if (!_valid)
+            return false;
+
         var realPath = VirtToRealPath(path);
 
         if (!realPath.StartsWith(Root, StringComparison.Ordinal))
@@ -198,6 +213,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public bool TryCreateDirectory(string path) {
+        if (!_valid)
+            return false;
+
         var realPath = VirtToRealPath(path);
 
         Directory.CreateDirectory(realPath);
@@ -206,6 +224,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public bool TryDeleteFile(string path) {
+        if (!_valid)
+            return false;
+
         var realPath = VirtToRealPath(path);
         File.Delete(realPath);
 
@@ -230,6 +251,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public void AppendAllText(string path, string contents) {
+        if (!_valid)
+            return;
+        
         var realPath = VirtToRealPath(path);
         if (!realPath.StartsWith(Root, StringComparison.Ordinal))
             return;
