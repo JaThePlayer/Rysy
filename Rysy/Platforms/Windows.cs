@@ -10,14 +10,6 @@ namespace Rysy.Platforms;
 public partial class Windows : RysyPlatform {
     private ReadonlyModFilesystem? _systemFontsFs;
     private IReadOnlyDictionary<string, string>? _fontFilenameToDisplayName;
-    
-    
-    private static string SaveLocation = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Rysy"
-    ).Unbackslash();
-
-    public override string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
 
     public override IModFilesystem GetSystemFontsFilesystem()
         => _systemFontsFs ??= new ReadonlyModFilesystem(new FolderModFilesystem("C:/Windows/Fonts"));

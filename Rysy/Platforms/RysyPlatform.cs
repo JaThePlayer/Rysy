@@ -64,10 +64,15 @@ public abstract class RysyPlatform {
 
     public bool HasForcedProfile => ForcedProfile() is { };
     
+    private static readonly string SaveLocation = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Rysy"
+    ).Unbackslash();
+
     /// <summary>
     /// Gets the location in which Rysy should save its settings
     /// </summary>
-    public abstract string GetSaveLocation();
+    public virtual string GetSaveLocation() => RysyState.CmdArguments.Portable ? "portableData" : SaveLocation;
 
     /// <summary>
     /// Initializes some things needed to properly run Rysy on this platform.
