@@ -33,8 +33,10 @@ public class Linux : RysyPlatform {
             return _fontFilesystem;
 
         _fontFilesystem = new LayeredFilesystem();
-        _fontFilesystem.AddFilesystem(new FolderModFilesystem("/usr/share/fonts"), "/usr/share/fonts");
-        _fontFilesystem.AddFilesystem(new FolderModFilesystem("/usr/local/share/fonts"), "/usr/local/share/fonts");
+        if (Path.Exists("/usr/share/fonts"))
+            _fontFilesystem.AddFilesystem(new FolderModFilesystem("/usr/share/fonts"), "/usr/share/fonts");
+        if (Path.Exists("/usr/local/share/fonts"))
+            _fontFilesystem.AddFilesystem(new FolderModFilesystem("/usr/local/share/fonts"), "/usr/local/share/fonts");
         
         return _fontFilesystem;
     }
