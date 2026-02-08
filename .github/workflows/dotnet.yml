@@ -23,9 +23,10 @@ jobs:
       run: dotnet restore
     - name: Build with .NET Core
       run: |
-        dotnet publish -c "Release" -f net10.0 -r win-x64 --no-self-contained
-        dotnet publish -c "Release" -f net10.0 -r linux-x64 --no-self-contained
-        dotnet publish -c "Release" -f net10.0 -r osx-x64 --no-self-contained
+        dotnet publish Rysy -c "Release" -f net10.0 -r win-x64 --no-self-contained
+        dotnet publish Rysy -c "Release" -f net10.0 -r linux-x64 --no-self-contained
+        dotnet publish Rysy -c "Release" -f net10.0 -r osx-x64 --no-self-contained
+        dotnet publish Rysy.InteropMod -c Release
       
     - name: Create release folders
       working-directory: ./Rysy/bin/Release/net10.0
@@ -74,3 +75,9 @@ jobs:
       with:
         name: Rysy-osx
         path: Rysy/bin/Release/net10.0/osx-x64/publish
+    
+    - name: Upload InteropMod artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Rysy.InteropMod.zip
+        path: Rysy.InteropMod/Rysy.InteropMod.zip
