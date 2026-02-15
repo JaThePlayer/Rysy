@@ -50,7 +50,7 @@ public class MapStylegrounds : IPackable {
             if (style is StyleFolder folder) {
                 using var innerStyles = AllStylesIn(folder.Styles).GetEnumerator();
                 while (innerStyles.MoveNext()) {
-                    ret.Add(folder);
+                    ret.Add(innerStyles.Current);
                 }
             }
         }
