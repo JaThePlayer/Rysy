@@ -12,6 +12,7 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
     private float Opacity => Settings.Instance?.PlaytestTrailOpacity ?? 0.45f;
 
     private readonly List<(float, ISprite)> _sprites = [];
+    private readonly Lock _spriteLock = new();
     
     public override void Update() {
         
@@ -28,9 +29,10 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
         var ctx = SpriteRenderCtx.Default();
         Gfx.BeginBatch(scene.Camera);
         
-        foreach (var (_, sprite) in _sprites) {
-            sprite.Render(ctx);
-        }
+        lock (_spriteLock)
+            foreach (var (_, sprite) in _sprites) {
+                sprite.Render(ctx);
+            }
         
         Gfx.EndBatch();
     }
@@ -47,27 +49,29 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
     private void OnMessageReceived(PlaybackTrailData obj) {
         _playbackTrailData?.Dispose();
         _playbackTrailData = obj;
-        
-        _sprites.Clear();
-        
-        foreach (var f in _playbackTrailData.Player) {
-            var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
-            
-            _sprites.Add((f.TimeStamp, sprite));
-            _sprites.Add((f.TimeStamp, ISprite.FromTexture(f.Hair.ToXna(), "characters/player/bangs00").Centered() with {
-                Color =  new Color{PackedValue = f.HairColor} * Opacity
-            }));
-        }
 
-        foreach (var h in _playbackTrailData.Holdables) {
-            foreach (var f in h.Frames) {
+        lock (_spriteLock) {
+            _sprites.Clear();
+        
+            foreach (var f in _playbackTrailData.Player) {
                 var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
             
                 _sprites.Add((f.TimeStamp, sprite));
+                _sprites.Add((f.TimeStamp, ISprite.FromTexture(f.Hair.ToXna(), "characters/player/bangs00").Centered() with {
+                    Color =  new Color{PackedValue = f.HairColor} * Opacity
+                }));
             }
-        }
 
-        _sprites.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            foreach (var h in _playbackTrailData.Holdables) {
+                foreach (var f in h.Frames) {
+                    var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
+            
+                    _sprites.Add((f.TimeStamp, sprite));
+                }
+            }
+
+            _sprites.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+        }
     }
 
     private ISprite SpriteFromData(Vector2 pos, SpriteData data) {
