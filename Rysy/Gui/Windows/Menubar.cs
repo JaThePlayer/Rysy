@@ -10,40 +10,30 @@ using Rysy.Scenes;
 
 namespace Rysy.Gui.Windows;
 
-public static class Menubar {
+public class Menubar : SceneComponent {
     private const string TabNameLangPrefix = "rysy.menubar.tab";
 
     private sealed record class Tab {
         public string Name;
-        public Action Render;
+        public Action<Scene> Render;
 
         public Tab(string name) {
             Name = name.TranslateOrHumanize(TabNameLangPrefix);
         }
     }
 
-    private static List<Tab> Tabs = new() {
-        new("file") {
-            Render = FileMenu,
-        },
-        new("edit") {
-            Render = EditMenu,
-        },
-        new("map") {
-            Render = MapMenu,
-        },
-        new("view") {
-            Render = ViewMenu,
-        },
-        new("debug") {
-            Render = DebugMenu,
-        },
-    };
-
+    private static readonly List<Tab> Tabs = [
+        new("file") { Render = FileMenu, },
+        new("edit") { Render = EditMenu, },
+        new("map") { Render = MapMenu, },
+        new("view") { Render = ViewMenu, },
+        new("debug") { Render = DebugMenu, }
+    ];
+    
     /// <summary>
     /// Adds a new tab to the menubar, or adds a callback to an existing tab.
     /// </summary>
-    public static void AddTab(string name, Action imguiCallback) {
+    public static void AddTab(string name, Action<Scene> imguiCallback) {
         if (Tabs.FirstOrDefault(t => t.Name == name) is { } existing) {
             existing.Render += imguiCallback;
         } else {
@@ -56,7 +46,7 @@ public static class Menubar {
     /// <summary>
     /// Removes the given callback from the tab, completely removing the tab if there are no callbacks left.
     /// </summary>
-    public static void RemoveTab(string name, Action imguiCallback) {
+    public static void RemoveTab(string name, Action<Scene> imguiCallback) {
         if (Tabs.FirstOrDefault(t => t.Name == name) is not { } existing) {
             return;
         }
@@ -70,7 +60,7 @@ public static class Menubar {
         existing.Render = newFunc;
     }
 
-    public static void Render(EditorScene editor) {
+    public override void RenderImGui() {
         ImGuiManager.PushWindowStyle();
         if (!ImGui.BeginMainMenuBar())
             return;
@@ -79,7 +69,7 @@ public static class Menubar {
 
         foreach (var tab in Tabs) {
             if (ImGui.BeginMenu(tab.Name)) {
-                tab.Render();
+                tab.Render(Scene);
 
                 ImGui.EndMenu();
             }
@@ -88,12 +78,7 @@ public static class Menubar {
         ImGui.EndMainMenuBar();
     }
 
-    private static void MapMenu() {
-        /*
-        if (RysyEngine.Scene is not EditorScene editor)
-            return;
-            */
-        var scene = RysyEngine.Scene;
+    private static void MapMenu(Scene scene) {
         var editorState = scene.Get<EditorState>();
         var history = scene.Get<HistoryHandler>();
         var map = editorState?.Map;
@@ -123,7 +108,7 @@ public static class Menubar {
 
     private static PathField? ColorgradePreviewField;
 
-    private static void ViewMenu() {
+    private static void ViewMenu(Scene scene) {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
 
@@ -278,8 +263,7 @@ public static class Menubar {
         ImGui.EndMenu();
     }
 
-    private static void DebugMenu() {
-        var scene = RysyEngine.Scene;
+    private static void DebugMenu(Scene scene) {
         var editorState = scene.Get<EditorState>();
         var map = editorState?.Map;
         
@@ -355,23 +339,22 @@ public static class Menubar {
         }
     #endif*/
 
-    private static void EditMenu() {
-        if (RysyEngine.Scene is not EditorScene editor)
-            return;
-
+    private static void EditMenu(Scene scene) {
         if (ImGui.MenuItem("Settings")) {
-            SettingsWindow.Add(editor);
+            SettingsWindow.Add(scene);
         }
 
-        if (ImGui.MenuItem("Undo", Settings.Instance.GetOrCreateHotkey("undo")))
-            editor.Undo();
+        if (scene.Get<HistoryHandler>() is { } history) {
+            if (ImGui.MenuItem("Undo", Settings.Instance.GetOrCreateHotkey("undo")))
+                history.Undo();
 
-        if (ImGui.MenuItem("Redo", Settings.Instance.GetOrCreateHotkey("redo")))
-            editor.Redo();
+            if (ImGui.MenuItem("Redo", Settings.Instance.GetOrCreateHotkey("redo")))
+                history.Redo();
+        }
     }
 
-    private static void FileMenu() {
-        if (RysyEngine.Scene is not EditorScene editor)
+    private static void FileMenu(Scene scene) {
+        if (scene is not EditorScene editor)
             return;
 
         if (ImGui.MenuItem("New Map", Settings.Instance.GetOrCreateHotkey("newMap"))) {
@@ -379,7 +362,7 @@ public static class Menubar {
         }
         
         if (ImGui.MenuItem("New Mod")) {
-            editor.AddWindowIfNeeded<NewModWindow>();
+            scene.AddWindowIfNeeded<NewModWindow>();
         }
 
         if (ImGui.MenuItem("Open", Settings.Instance.GetOrCreateHotkey("openMap"))) {

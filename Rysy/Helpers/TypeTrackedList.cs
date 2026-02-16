@@ -7,9 +7,9 @@ namespace Rysy.Helpers;
 /// allowing for quick access of all elements of a given type
 /// </summary>
 public class TypeTrackedList<T> : IListenableList<T> {
-    protected List<T> Inner = new();
+    protected readonly List<T> Inner = [];
 
-    private Dictionary<Type, List<T>> _byType = new();
+    private readonly Dictionary<Type, List<T>> _byType = [];
 
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
@@ -38,7 +38,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
     }
 
     public List<T> this[Type type] {
-        get => _byType.GetValueOrDefault(type) ?? (_byType[type] = new());
+        get => _byType.GetValueOrDefault(type) ?? (_byType[type] = []);
     }
 
     public int Count => Inner.Count;
@@ -49,13 +49,17 @@ public class TypeTrackedList<T> : IListenableList<T> {
         if (_byType.TryGetValue(t, out var l))
             l.Add(item);
         else
-            _byType.Add(t, new() { item });
+            _byType.Add(t, [item]);
     }
 
     private void TrackNewItem(T item) {
         var t = item!.GetType();
 
-        TrackAsType(item, t);
+        var nextType = t;
+        while (nextType != null && nextType != typeof(object)) {
+            TrackAsType(item, nextType);
+            nextType = nextType.BaseType;
+        }
         foreach (var inter in t.GetInterfaces())
             TrackAsType(item, inter);
     }

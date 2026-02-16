@@ -69,6 +69,10 @@ public abstract class Scene {
     }
 
     public virtual void RenderImGui() {
+        foreach (var c in GetAll<SceneComponent>()) {
+            c.RenderImGui();
+        }
+        
         for (int i = 0; i < _windows.Count; i++) {
             _windows[i].RenderGui();
         }

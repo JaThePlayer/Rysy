@@ -79,6 +79,7 @@ public sealed class EditorScene : Scene {
         Add(new PlayerTrailRenderer());
         Add(EditorState);
         Add(HistoryHandler);
+        Add(new Menubar());
     }
 
     public EditorScene(Map map) : this() {
@@ -452,7 +453,6 @@ public sealed class EditorScene : Scene {
     public override void RenderImGui() {
         base.RenderImGui();
 
-        Menubar.Render(this);
         RoomList.Render(this, Input.Global);
         ToolHandler?.RenderGui();
     }
