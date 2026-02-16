@@ -153,8 +153,8 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
             ClearCollideCache();
     }
 
-    public void OnRightClicked(IEnumerable<Selection> selections) {
-        EntitySelectionHandler.CreateEntityPropertyWindow(Entity, selections);
+    public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections) {
+        EntitySelectionHandler.CreateEntityPropertyWindow(Entity, selections, editorState.History);
     }
 
     public BinaryPacker.Element? PackParent() {

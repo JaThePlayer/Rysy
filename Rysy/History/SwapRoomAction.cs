@@ -13,8 +13,8 @@ public record class SwapRoomAction(Room Orig, Room New) : IHistoryAction {
         map.Rooms.Remove(orig);
         map.Rooms.Add(swapped);
 
-        if (EditorState.CurrentRoom == orig) {
-            EditorState.CurrentRoom = swapped;
+        if (EditorState.Current is {} state && state.CurrentRoom == orig) {
+            state.CurrentRoom = swapped;
         }
     }
 

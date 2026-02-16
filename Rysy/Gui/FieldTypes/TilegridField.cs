@@ -40,9 +40,9 @@ public record class TilegridField : Field {
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
 
-        if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Map is { } map) {
+        if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Current.Map is { } map) {
             if (_window is not { }) {
-                _window = new(val, TileEntity.GetAutotiler(map, _layer) ?? new(), Context, _layer, this);
+                _window = new(EditorState.Current, val, TileEntity.GetAutotiler(map, _layer) ?? new(), Context, _layer, this);
                 _window.SetRemoveAction((w) => _window = null);
                 RysyEngine.Scene.AddWindow(_window);
             }
@@ -123,7 +123,7 @@ internal sealed class EditTileDataWindow : Window {
         set => _formCtx.SetValue("height", value);
     }
 
-    public EditTileDataWindow(string val, Autotiler autotiler, FormContext formCtx, TileLayer layer, TilegridField field) : base("Edit Tile Data") {
+    public EditTileDataWindow(EditorState editorState, string val, Autotiler autotiler, FormContext formCtx, TileLayer layer, TilegridField field) : base("Edit Tile Data") {
         _layer = layer;
         _formCtx = formCtx;
         _autotiler = autotiler;
@@ -136,11 +136,11 @@ internal sealed class EditTileDataWindow : Window {
 
         _input.Update(Time.Delta);
 
-        _history = new(EditorState.Map ?? throw new Exception("Not in a map?"));
+        _history = new(editorState.Map ?? throw new Exception("Not in a map?"));
 
         _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 
-        _tools = new ToolHandler(_history, _input).UsePersistence(false);
+        _tools = new ToolHandler(editorState, _history, _input).UsePersistence(false);
         _tools.InitHotkeys(_hotkeys);
         _tools.CurrentTool.Layer = layer == TileLayer.Fg ? EditorLayers.Fg : EditorLayers.Bg;
 
@@ -159,7 +159,7 @@ internal sealed class EditTileDataWindow : Window {
         _camera.CreateCameraHotkeys(_hotkeys);
         
         var tiles = field.TilegridParser(val, Width / 8, Height / 8);
-        _fakeRoom = new(EditorState.Map!, tiles.GetLength(0), tiles.GetLength(1));
+        _fakeRoom = new(editorState.Map!, tiles.GetLength(0), tiles.GetLength(1));
 
         if (layer == TileLayer.Fg) {
             _fakeRoom.Fg.Tiles = tiles;

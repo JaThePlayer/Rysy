@@ -196,7 +196,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
         get => _triggerFontScale;
         set {
             _triggerFontScale = value;
-            if (EditorState.Map is { } map) {
+            if (EditorState.Current?.Map is { } map) {
                 map.ClearRenderCache();
             }
         }

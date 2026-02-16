@@ -17,6 +17,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     private Task<List<AssetDriveTileset>> _bg;
     private Task<List<AssetDriveTileset>> _fg;
 
+    private readonly EditorState _editorState;
     private bool _isBg;
     
     private string _searchText = "";
@@ -25,12 +26,13 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     private AssetDriveTileset? _selected;
     private readonly MarkdownDocument _tip;
 
-    public AssetDriveTilesetImportWindow(bool bg) : base("rysy.tilesetImport.fromAssetDrive".Translate(), new(640, 450))
+    public AssetDriveTilesetImportWindow(EditorState editorState, bool bg) : base("rysy.tilesetImport.fromAssetDrive".Translate(), new(640, 450))
     {
         _bg = MaddieAssetDriveTilesetApi.Bg.GetResourceAsync();
         _fg = MaddieAssetDriveTilesetApi.Fg.GetResourceAsync();
         
         _tip = Markdown.Parse("rysy.tilesetImport.browserTip".Translate(), ImGuiMarkdown.MarkdownPipeline);
+        _editorState = editorState;
         _isBg = bg;
     }
 
@@ -79,7 +81,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
                 var ret = s.RenderImGuiMenuItem();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip) && ImGui.BeginTooltip()) {
                     RenderPreview("tileset-import-preview-tooltip", tileset);
-                    s.RenderImGuiInfo();
+                    s.RenderImGuiInfo(_editorState);
                     ImGui.EndTooltip();
                 }
                 
@@ -121,7 +123,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         ImGui.BeginDisabled(!valid);
         
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && valid) {
-            RysyState.Scene.AddWindow(new CreateTilesetWindow(new() {
+            RysyState.Scene.AddWindow(new CreateTilesetWindow(_editorState, new() {
                 Name = _selected!.Name,
                 Template = _selected.Template,
                 IsBg = _isBg,
@@ -136,6 +138,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
 }
 
 internal sealed partial class CreateTilesetWindow : Window {
+    private readonly EditorState? _editorState;
     private readonly ImportedTileset _tileset;
 
     private char _id;
@@ -160,15 +163,16 @@ internal sealed partial class CreateTilesetWindow : Window {
     private readonly Field _displayNameField;
     private readonly Field _pathField;
     
-    public CreateTilesetWindow(ImportedTileset tileset) : base("rysy.tilesetImport.createWindow".Translate(), new(620, 400)) {
+    public CreateTilesetWindow(EditorState? editorState, ImportedTileset tileset) : base("rysy.tilesetImport.createWindow".Translate(), new(620, 400)) {
         _isBg = tileset.IsBg;
+        _editorState = editorState;
         _tileset = tileset;
 
         _path = _tileset.TexturePath ?? RedundantInfoRegex().Replace(tileset.Name.ToValidFilePath(), "").Trim().TrimPostfix(".png");
         _displayName = _tileset.DefaultDisplayName ?? "";
 
-        if (EditorState.Map?.Mod is { } mod && EditorState.Map?.Filepath is {}) {
-            var map = EditorState.Map;
+        if (editorState?.Map is { Mod: { } mod, Filepath: not null }) {
+            var map = editorState.Map;
 
             if (_tileset.TexturePath is null) {
                 var path = map.GetDefaultAssetSubdirectory();
@@ -206,7 +210,7 @@ internal sealed partial class CreateTilesetWindow : Window {
         _idField = Fields.Char(_id).WithValidator((x) => {
             if (x is not char c)
                 return ValidationResult.MustBeChar;
-            var map = EditorState.Map;
+            var map = editorState?.Map;
             if (map is null)
                 return ValidationResult.Ok;
             var autotiler = GetAutotiler(map);
@@ -225,12 +229,12 @@ internal sealed partial class CreateTilesetWindow : Window {
     }
 
     protected override void Render() {
-        if (EditorState.Map?.Mod is not { } mod) {
+        if (_editorState?.Map?.Mod is not { } mod) {
             _wasInvalid = true;
             ImGui.Text("Need to be in a packaged mod to import tilesets!");
             return;
         }
-        var map = EditorState.Map;
+        var map = _editorState.Map;
         var autotiler = GetAutotiler(map);
         
         if (_id == default) {
@@ -286,7 +290,7 @@ internal sealed partial class CreateTilesetWindow : Window {
         ImGui.BeginDisabled(_wasInvalid || _tileset.Texture.Texture is null);
 
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import")) {
-            if (EditorState.Map?.Mod is not { Filesystem: IWriteableModFilesystem fs } mod) {
+            if (_editorState?.Map?.Mod is not { Filesystem: IWriteableModFilesystem fs } mod) {
                 return;
             }
 
@@ -297,7 +301,7 @@ internal sealed partial class CreateTilesetWindow : Window {
                 });
             }
             
-            var map = EditorState.Map;
+            var map = _editorState.Map;
             var autotiler = GetAutotiler(map);
 
             var newEl = autotiler.Xml.CreateElement("Tileset");

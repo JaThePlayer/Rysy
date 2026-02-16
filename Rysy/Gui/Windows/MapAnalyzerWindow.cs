@@ -5,6 +5,7 @@ using Rysy.MapAnalyzers;
 namespace Rysy.Gui.Windows;
 
 internal sealed class MapAnalyzerWindow : Window {
+    private readonly EditorState _editorState;
     private AnalyzerCtx? _ctx;
     private List<IAnalyzerResult>? _results;
 
@@ -13,11 +14,12 @@ internal sealed class MapAnalyzerWindow : Window {
     public new static string Name => "rysy.analyzers.window.name".Translate();
 
     public MapAnalyzerWindow() : base(Name, new(600, 500)) {
+        _editorState = EditorState.Current!;
         NoSaveData = false;
 
-        EditorState.History!.OnApply += Update;
-        EditorState.History!.OnUndo += Update;
-        EditorState.OnMapChanged += Update;
+        _editorState.History!.OnApply += Update;
+        _editorState.History!.OnUndo += Update;
+        _editorState.OnMapChanged += Update;
 
         Update();
     }
@@ -25,9 +27,9 @@ internal sealed class MapAnalyzerWindow : Window {
     public override void RemoveSelf() {
         base.RemoveSelf();
 
-        EditorState.History!.OnApply -= Update;
-        EditorState.History!.OnUndo -= Update;
-        EditorState.OnMapChanged -= Update;
+        _editorState.History!.OnApply -= Update;
+        _editorState.History!.OnUndo -= Update;
+        _editorState.OnMapChanged -= Update;
     }
 
 
@@ -35,7 +37,7 @@ internal sealed class MapAnalyzerWindow : Window {
         _ctx = null;
         _results = null;
 
-        if (EditorState.Map is not { } map) {
+        if (_editorState.Map is not { } map) {
             _ctx = null;
             _results = null;
 
@@ -44,7 +46,7 @@ internal sealed class MapAnalyzerWindow : Window {
     }
 
     private void SetCtx() {
-        if (EditorState.Map is not { } map) {
+        if (_editorState.Map is not { } map) {
             return;
         }
 

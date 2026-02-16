@@ -8,7 +8,7 @@ internal sealed class MigrateLayersToGroups : Script {
     
     public override FieldList? Parameters => new(new {
         editorLayer = Fields.Int(1).WithTooltip("The Editor Layer to migrate into Groups"),
-        intoGroup = Fields.EditorGroup(EditorState.Map?.EditorGroups ?? new())
+        intoGroup = Fields.EditorGroup(EditorState.Current?.Map?.EditorGroups ?? new())
             .WithMinElements(1)
             .WithTooltip("Which group the entities should be moved into."),
         removeLayers = Fields.Bool(false).WithTooltip("Whether the _editorLayer field should be removed from entities.\nThis will break compatibility with Lönn Extended."),

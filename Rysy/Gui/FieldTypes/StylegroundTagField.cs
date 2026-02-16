@@ -3,7 +3,7 @@
 public record StylegroundTagField : DropdownField<string> {
     public StylegroundTagField(string def, bool editable) {
         Values = (ctx) => {
-            if (EditorState.Map is not { } map) {
+            if (ctx.EditorState?.Map is not { } map) {
                 return new Dictionary<string, string>();
             }
 

@@ -65,7 +65,7 @@ public interface ISprite : IEnumerable<ISprite> {
         };
 
     public static Sprite FromSpriteBank(Vector2 pos, string name, string animation, SpriteBank? bank = null) {
-        bank ??= EditorState.Map?.Sprites;
+        bank ??= EditorState.Current.Map?.Sprites;
 
         if (bank is null) {
             return FromTexture(pos, Gfx.VirtPixel);

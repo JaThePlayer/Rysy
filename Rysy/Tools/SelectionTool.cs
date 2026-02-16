@@ -150,7 +150,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (EditorState.CurrentRoom is null)
             return;
 
-        var selections = CopypasteHelper.PasteSelectionsFromClipboard(History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
+        var selections = CopypasteHelper.PasteSelectionsFromClipboard(EditorState, History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
         if (pastedRooms) {
             Layer = EditorLayers.Room;
         }
@@ -447,7 +447,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         if (_selectionGestureHandler.CurrentRectangle is { } rect) {
-            DrawSelectionRect(rect);
+            DrawSelectionRect(camera, rect);
         }
 
         var mousePos = GetMouseRoomPos(camera, room);
@@ -485,7 +485,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
         
         if (_state == States.Idle && !imguiWantsMouse) {
-            HandleHoveredSelections(room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
+            HandleHoveredSelections(EditorState, room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
 
             if (selectionToBeSelectedOnClick is {} s) {
                 var isToBeSelectedAlreadySelected = _currentSelections?.Contains(s) ?? false;
@@ -519,7 +519,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    internal static void HandleHoveredSelections(Room? room, List<Selection>? selectionsUnderCursor,
+    internal static void HandleHoveredSelections(EditorState editorState, Room? room, List<Selection>? selectionsUnderCursor,
         IEnumerable<Selection>? selected = null, Input? input = null, bool middleClick = false) {
         input ??= Input.Global;
         
@@ -550,7 +550,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         // allow right clicking a un-selected item
         if (canRightClick) {
-            firstSelection.Handler.OnRightClicked(new Selection[] { firstSelection });
+            firstSelection.Handler.OnRightClicked(editorState, [firstSelection]);
         }
 
         if (input.Mouse.Middle.Clicked() && RysyEngine.Scene is EditorScene editor && editor.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
@@ -602,7 +602,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             if (Input.Mouse.RightClickedInPlace()) {
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
-                        selection.Handler.OnRightClicked(selections);
+                        selection.Handler.OnRightClicked(EditorState, selections);
                         break;
                     }
                 }
@@ -1005,6 +1005,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
     
     void RightClickOnEndOfFrame(Selection selection) {
-        RysyState.OnEndOfThisFrame += () => selection.Handler.OnRightClicked([selection]);
+        RysyState.OnEndOfThisFrame += () => selection.Handler.OnRightClicked(EditorState, [selection]);
     }
 }

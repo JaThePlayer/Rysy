@@ -15,7 +15,7 @@ public sealed class PlayerPlayback : SpriteEntity, IPlaceable {
     public override Range NodeLimits => 0..2;
 
     public override IEnumerable<ISprite> GetSprites() {
-        return PlaybackRegistry.GetSprites(Pos, Attr("tutorial", "wavedash")).Prepend(GetSprite());
+        return PlaybackRegistry.GetSprites(Room.Map, Pos, Attr("tutorial", "wavedash")).Prepend(GetSprite());
     }
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {

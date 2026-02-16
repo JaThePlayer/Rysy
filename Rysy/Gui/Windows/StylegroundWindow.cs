@@ -27,11 +27,11 @@ public class StylegroundWindow : Window {
     
     private IEnumerable<ISprite>? _previewSprites;
 
-    public StylegroundWindow(HistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
+    public StylegroundWindow(EditorState editorState, HistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
         _history = history;
 
-        _map = EditorState.Map!;
-        EditorState.OnMapChanged += () => {
+        _map = editorState.Map!;
+        editorState.OnMapChanged += () => {
             //Map = EditorState.Map!;
             //if (Map is null) {
                 RemoveSelf();

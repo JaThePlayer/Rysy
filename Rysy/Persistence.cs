@@ -87,83 +87,77 @@ public class Persistence : IHasJsonCtx<Persistence> {
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
 
-    private bool _fgTilesVisible = true;
     public bool FgTilesVisible {
-        get => _fgTilesVisible;
+        get;
         set {
-            if (_fgTilesVisible != value) {
-                _fgTilesVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
-    private bool _bgTilesVisible = true;
     public bool BgTilesVisible {
-        get => _bgTilesVisible;
+        get;
         set {
-            if (_bgTilesVisible != value) {
-                _bgTilesVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
-    private bool _fgDecalsVisible = true;
     public bool FgDecalsVisible {
-        get => _fgDecalsVisible;
+        get;
         set {
-            if (_fgDecalsVisible != value) {
-                _fgDecalsVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
-    private bool _bgDecalsVisible = true;
     public bool BgDecalsVisible {
-        get => _bgDecalsVisible;
+        get;
         set {
-            if (_bgDecalsVisible != value) {
-                _bgDecalsVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
-    private bool _entitiesVisible = true;
     public bool EntitiesVisible {
-        get => _entitiesVisible;
+        get;
         set {
-            if (_entitiesVisible != value) {
-                _entitiesVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
-    private bool _triggersVisible = true;
     public bool TriggersVisible {
-        get => _triggersVisible;
+        get;
         set {
-            if (_triggersVisible != value) {
-                _triggersVisible = value;
+            if (field != value) {
+                field = value;
 
-                EditorState.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
+                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
                 Save(this);
             }
         }
-    }
+    } = true;
 
     public bool HistoryWindowOpen = false;
 

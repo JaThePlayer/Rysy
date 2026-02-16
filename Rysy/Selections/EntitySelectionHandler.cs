@@ -130,13 +130,11 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
         return FlipImpl(rotated, nameof(TryRotate));
     }
 
-    public void OnRightClicked(IEnumerable<Selection> selections) {
-        CreateEntityPropertyWindow(Entity, selections);
+    public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections) {
+        CreateEntityPropertyWindow(Entity, selections, editorState.History);
     }
 
-    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections) {
-        var history = EditorState.History;
-
+    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections, HistoryHandler? history) {
         if (history is { }) {
             var allEntities = selections.SelectWhereNotNull(s => {
                 switch (s.Handler) {

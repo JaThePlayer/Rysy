@@ -21,6 +21,7 @@ internal static class SelectionHotkeysExt {
         handler.AddHotkeyFromSettings("selection.rotateLeft",     "l", () => tool.Rotate(RotationDirection.Left));
         
         handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => tool.AddNode(at: null));
-        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", () => tool.AddNode(at: tool.GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom!).ToVector2().Snap(8)));
+        handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", 
+            () => tool.AddNode(at: tool.GetMouseRoomPos(tool.EditorState.Camera, tool.EditorState.CurrentRoom).ToVector2().Snap(8)));
     }
 }

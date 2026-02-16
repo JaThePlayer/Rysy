@@ -194,10 +194,10 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     }
 
     private Entity? CreateFakeEntity() {
-        if (!IsEntityOrTrigger())
+        if (!IsEntityOrTrigger() || EditorState.Current is not {} state)
             return null;
         
-        var handler = PlacementHandler.CreateSelection(this, default, Room.DummyRoom);
+        var handler = PlacementHandler.CreateSelection(state, this, default, Room.DummyRoom);
         if (handler is EntitySelectionHandler entityHandler) {
             return entityHandler.Entity;
         }
@@ -246,20 +246,6 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
         return _associatedTags ??= [];
     }
 
-    public bool AreAssociatedModsADependencyOfCurrentMap() {
-        if (EditorState.Map?.Mod is not { } currentMod) {
-            return true;
-        }
-
-        foreach (var associated in GetAssociatedMods()) {
-            if (!currentMod.DependencyMet(associated)) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
-
     /// <summary>
     /// Checks whether this placement will place a trigger or entity.
     /// </summary>
@@ -277,11 +263,11 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
 
     //public IHistoryAction Place(Vector2 pos, Room room) => PlacementHandler.Place(this, pos, room);
 
-    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler selection, Vector2 pos, Room room) 
-        => PlacementHandler.GetPreviewSprites(selection, pos, room);
+    public IEnumerable<ISprite> GetPreviewSprites(EditorState editorState, ISelectionHandler selection, Vector2 pos, Room room) 
+        => PlacementHandler.GetPreviewSprites(editorState, selection, pos, room);
     
-    public IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler selection, Vector2 pos, Room room) 
-        => PlacementHandler.GetWidgetSprites(selection, pos, room);
+    public IEnumerable<ISprite> GetWidgetSprites(EditorState editorState, ISelectionHandler selection, Vector2 pos, Room room) 
+        => PlacementHandler.GetWidgetSprites(editorState, selection, pos, room);
 
     public static Placement? TryCreateFromObject(object obj) => obj switch {
         IConvertibleToPlacement convertible => convertible.ToPlacement(),
@@ -359,17 +345,17 @@ public interface IPlacementHandler {
     
     public ModMeta? GetDefiningMod() => null;
     
-    public Vector2? GetPreviewSpritesOffset(ISelectionHandler handler, Vector2 pos, Room room) => null;
+    public Vector2? GetPreviewSpritesOffset(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room) => null;
     
-    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room);
+    public IEnumerable<ISprite> GetPreviewSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room);
 
-    public virtual IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler handler, Vector2 pos, Room room)
-        => GetPreviewSprites(handler, pos, room);
+    public virtual IEnumerable<ISprite> GetWidgetSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room)
+        => GetPreviewSprites(editorState, handler, pos, room);
     
     //public ISelectionHandler GetHandler(Placement placement);
 
-    public IHistoryAction Place(ISelectionHandler handler, Room room);
-    public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room);
+    public IHistoryAction Place(EditorState editorState, ISelectionHandler handler, Room room);
+    public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room room);
 }
 
 public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHandler {
@@ -413,7 +399,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         }
     }
 
-    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room) {
+    public IEnumerable<ISprite> GetPreviewSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room) {
         if (handler is EntitySelectionHandler entityHandler) {
             var entity = entityHandler.Entity;
 
@@ -439,7 +425,7 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         return Array.Empty<ISprite>();
     }
 
-    public IEnumerable<ISprite> GetWidgetSprites(ISelectionHandler handler, Vector2 pos, Room room) {
+    public IEnumerable<ISprite> GetWidgetSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room) {
         if (handler is EntitySelectionHandler entityHandler) {
             var entity = entityHandler.Entity;
 
@@ -458,17 +444,17 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
         }
             
 
-        return Array.Empty<ISprite>();
+        return [];
     }
     
-    public IHistoryAction Place(ISelectionHandler handler, Room room) {
+    public IHistoryAction Place(EditorState editorState, ISelectionHandler handler, Room room) {
         var act = handler.PlaceClone(room);
         handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(room.Map);
 
         return act;
     }
 
-    public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room) {
+    public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room room) {
         var entity = CreateFromPlacement(placement, pos, room);
 
         return entity.CreateSelection().Handler;
@@ -479,45 +465,45 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
 public record class RoomPlacementHandler : IPlacementHandler {
     public bool ShowVanillaAsDefiningModInPlacementName() => false;
     
-    public Vector2? GetPreviewSpritesOffset(ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
+    public Vector2? GetPreviewSpritesOffset(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
         var room = ((RoomSelectionHandler) handler).Room;
         room.Pos = pos;
 
         return pos;
     }
     
-    public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
+    public IEnumerable<ISprite> GetPreviewSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room? alwaysNull) {
         var room = ((RoomSelectionHandler) handler).Room;
         room.Pos = pos;
         room.ClearEntityRenderCache();
         
         return room.GetInteriorSprites()
-            .Concat(room.GetBorderSprite(EditorState.Camera.Scale) with {
+            .Concat(room.GetBorderSprite(editorState.Camera.Scale) with {
                 Depth = int.MinValue,
                 Pos = new(0, 0, room.Width, room.Height)
             });
     }
 
-    public IHistoryAction Place(ISelectionHandler handler, Room? alwaysNull) {
+    public IHistoryAction Place(EditorState editorState, ISelectionHandler handler, Room? alwaysNull) {
         var roomHandler = (RoomSelectionHandler) handler;
         
         var act = roomHandler.PlaceClone(newRoom => {
-            if (EditorState.Map is { } map) {
-                newRoom.Name = map.GuessNewRoomNameFromParent(EditorState.CurrentRoom) ?? map.DeduplicateRoomName("new_room");
-                EditorState.CurrentRoom = newRoom;
-                RysyState.Scene.AddWindow(new RoomEditWindow(newRoom, false));
+            if (editorState.Map is { } map) {
+                newRoom.Name = map.GuessNewRoomNameFromParent(editorState.CurrentRoom) ?? map.DeduplicateRoomName("new_room");
+                editorState.CurrentRoom = newRoom;
+                RysyState.Scene.AddWindow(new RoomEditWindow(editorState, newRoom, false));
             }
         });
-        handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(EditorState.Map!);
+        handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(editorState.Map!);
         if (roomHandler.Room.Entities["player"].Count > 0) {
-            handler.TryResize(new(40 * 8 - 8, 23 * 8 - 8))?.Apply(EditorState.Map!);
+            handler.TryResize(new(40 * 8 - 8, 23 * 8 - 8))?.Apply(editorState.Map!);
         }
         
         return act;
     }
 
-    public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room? alwaysNull) {
-        var newRoom = new Room(EditorState.Map!, placement.Int("width", 40 * 8), placement.Int("height", 23 * 8));
+    public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room? alwaysNull) {
+        var newRoom = new Room(editorState.Map!, placement.Int("width", 40 * 8), placement.Int("height", 23 * 8));
         newRoom.Pos = pos;
 
         if (placement.Bool("hasPlayer")) {

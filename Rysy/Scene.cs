@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Gui.Windows;
+using Rysy.Helpers;
 using Rysy.Scenes;
 
 namespace Rysy;
@@ -12,7 +13,7 @@ public abstract class Scene {
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
-    protected List<SceneComponent> Components = [];
+    private TypeTrackedList<object> Components { get; } = [];
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -31,7 +32,7 @@ public abstract class Scene {
     public virtual void OnBegin() {
         SetupHotkeys();
         
-        foreach (var c in Components) {
+        foreach (var c in GetAll<SceneComponent>()) {
             c.OnBegin();
         }
     }
@@ -40,7 +41,7 @@ public abstract class Scene {
     /// Called when this scene is unset from <see cref="RysyEngine.Scene"/>
     /// </summary>
     public virtual void OnEnd() {
-        foreach (var c in Components) {
+        foreach (var c in GetAll<SceneComponent>()) {
             c.OnEnd();
         }
     }
@@ -56,13 +57,15 @@ public abstract class Scene {
 
         TimeActive += Time.Delta;
         
-        foreach (var c in Components) {
+        foreach (var c in GetAll<SceneComponent>()) {
             c.Update();
         }
     }
 
     public virtual void Render() {
-
+        foreach (var c in GetAll<SceneComponent>()) {
+            c.Render();
+        }
     }
 
     public virtual void RenderImGui() {
@@ -150,5 +153,17 @@ public abstract class Scene {
 
         var time = Time.Elapsed;
         return time % interval < Time.Delta;
+    }
+
+    public void Add(object sceneComponent) {
+        Components.Add(sceneComponent);
+    }
+    
+    public T? Get<T>() where T : class {
+        return Components[typeof(T)].FirstOrDefault() as T;
+    }
+    
+    public IEnumerable<T> GetAll<T>() where T : class {
+        return Components[typeof(T)].Cast<T>();
     }
 }

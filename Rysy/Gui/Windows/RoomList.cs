@@ -129,7 +129,7 @@ public static class RoomList {
 
             if (ImGui.BeginPopupContextItem(name, ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGui.MenuItem("Edit")) {
-                    editor.AddWindow(new RoomEditWindow(room, newRoom: false));
+                    editor.AddWindow(new RoomEditWindow(editor.EditorState, room, newRoom: false));
                 }
                 if (ImGui.MenuItem("Remove")) {
                     var toRemove = room;

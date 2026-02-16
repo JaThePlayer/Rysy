@@ -25,6 +25,8 @@ public abstract class Tool {
     
     public ToolHandler ToolHandler { get; internal set; }
 
+    public EditorState EditorState => ToolHandler.EditorState;
+
     public abstract string Name { get; }
 
     /// <summary>
@@ -291,9 +293,9 @@ public abstract class Tool {
         return (outline, outline * 0.3f);
     }
     
-    public void DrawSelectionRect(Rectangle rect) {
+    public void DrawSelectionRect(Camera camera, Rectangle rect) {
         var c = GetSelectionColor(rect);
-        ISprite.OutlinedRect(rect, c.fill, c.outline, outlineWidth: (int) (1f / EditorState.Camera.Scale).AtLeast(1)).Render();
+        ISprite.OutlinedRect(rect, c.fill, c.outline, outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
     }
 
     protected bool IsEqual(EditorLayer layer, object? currentMaterial, string name) {
@@ -527,7 +529,7 @@ public abstract class Tool {
     /// Renders additional ImGui elements below the tooltip for the given material
     /// </summary>
     protected virtual void RenderMaterialTooltipExtraInfo(EditorLayer layer, object material, Searchable searchable) {
-        searchable.RenderImGuiInfo();
+        searchable.RenderImGuiInfo(EditorState);
     }
 
     internal void RenderMaterialTooltip(EditorLayer layer, object material, Searchable searchable) {
@@ -608,7 +610,7 @@ public abstract class Tool {
         if (showPlacementIcons)
             cursorStart.Y += (previewOrNull?.H / 2 - ImGui.GetFontSize() / 2f) ?? 0;
         ImGui.SetCursorPosY(cursorStart.Y);
-        searchable.RenderImGuiText();
+        searchable.RenderImGuiText(EditorState.Map?.Mod);
 
         return ret;
     }

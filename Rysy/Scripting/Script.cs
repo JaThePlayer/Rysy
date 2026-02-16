@@ -43,6 +43,8 @@ public record class ScriptArgs {
     /// </summary>
     public Vector2 RoomPos { get; internal set; }
 
+    public EditorState EditorState { get; internal set; }
+
     /// <summary>
     /// Gets the value of script parameter <paramref name="name"/>, casted to T.
     /// Note that values returned by this function will always be values saveable to .bins, meaning that complex types

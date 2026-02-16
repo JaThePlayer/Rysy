@@ -7,8 +7,8 @@ public record RoomDeleteAction(RoomRef Room) : IHistoryAction {
         var room = Room.Resolve(map);
         _removed = room;
         room.ClearRenderCache();
-        if (EditorState.CurrentRoom == room) {
-            EditorState.CurrentRoom = null;
+        if (EditorState.Current is {} state && state.CurrentRoom == room) {
+            state.CurrentRoom = null;
         }
 
         var removed = map.Rooms.Remove(room);

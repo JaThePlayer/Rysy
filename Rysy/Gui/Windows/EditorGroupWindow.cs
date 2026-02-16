@@ -48,7 +48,7 @@ public sealed class EditorGroupWindow : Window {
         if (!ImGui.BeginListBox("##", size))
             return;
 
-        if (EditorState.Map is not { } map) {
+        if (EditorState.Current is not { Map: { } map } state) {
             ImGui.EndListBox();
             return;
         }
@@ -85,7 +85,7 @@ public sealed class EditorGroupWindow : Window {
                 }
                 
                 if (ImGuiManager.TranslatedButton("rysy.delete")) {
-                    RysyState.OnEndOfThisFrame += () => EditorState.History?.ApplyNewAction(new RemoveEditorGroupAction(map, g));
+                    RysyState.OnEndOfThisFrame += () => state.History?.ApplyNewAction(new RemoveEditorGroupAction(map, g));
                 }
 
                 ImGui.EndPopup();
@@ -177,7 +177,7 @@ internal sealed class GroupEditWindow : Window {
         
         ImGui.BeginDisabled(!_valid);
         if (ImGuiManager.TranslatedButton("rysy.ok")) {
-            EditorState.History?.ApplyNewAction(new ChangeEditorGroupAction(_map, _newGroupName, 
+            EditorState.Current?.History?.ApplyNewAction(new ChangeEditorGroupAction(_map, _newGroupName, 
                 _autoAssignChanged ? _autoAssignString : null,
                 _autoAssignDecalsChanged ? _autoAssignDecalsString : null));
             if (_sourceGroup is null)

@@ -19,7 +19,7 @@ public class HistoryWindow : Window {
     protected override bool Visible => Persistence.Instance.HistoryWindowOpen;
 
     protected override void Render() {
-        var history = EditorState.History;
+        var history = EditorState.Current?.History;
         if (history is null)
             return;
 

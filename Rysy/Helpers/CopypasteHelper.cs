@@ -27,10 +27,10 @@ public static class CopypasteHelper {
 
     public static List<CopiedSelection>? GetSelectionsFromClipboard() => GetSelectionsFromString(Input.Clipboard.Get());
 
-    public static List<Selection>? PasteSelectionsFromClipboard(HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
-        => PasteSelections(GetSelectionsFromClipboard(), history, map, room, pos, out pastedRooms);
+    public static List<Selection>? PasteSelectionsFromClipboard(EditorState editorState, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
+        => PasteSelections(editorState, GetSelectionsFromClipboard(), history, map, room, pos, out pastedRooms);
 
-    public static List<Selection>? PasteSelections(List<CopiedSelection>? selections, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
+    public static List<Selection>? PasteSelections(EditorState editorState, List<CopiedSelection>? selections, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
         pastedRooms = false;
 
         var pasted = selections;
@@ -41,7 +41,7 @@ public static class CopypasteHelper {
         if (pasted.Any(p => p.Layer == SelectionLayer.Rooms)) {
             pastedRooms = true;
             if (map is { })
-                return PasteRoomSelections(history, map, pasted, pos);
+                return PasteRoomSelections(editorState, history, map, pasted, pos);
             else
                 return null;
         }
@@ -116,7 +116,7 @@ static string Compress(byte[] input) {
         return copied;
     }
 
-    private static List<Selection> PasteRoomSelections(HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
+    private static List<Selection> PasteRoomSelections(EditorState editorState, HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
         var rooms = pasted.Where(s => s.Layer == SelectionLayer.Rooms).Select(s => {
             var room = new Room();
             room.Map = map;
@@ -128,7 +128,7 @@ static string Compress(byte[] input) {
         var topLeft = new Vector2(rooms.Min(e => e.X), rooms.Min(e => e.Y)).Snap(8);
         var bottomRight = new Vector2(rooms.Max(e => e.X + e.Width), rooms.Max(e => e.Y + e.Height)).Snap(8);
 
-        var mousePos = pos ?? EditorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(8);
+        var mousePos = pos ?? editorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(8);
 
         var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f)).Snap(8);
 
@@ -143,7 +143,7 @@ static string Compress(byte[] input) {
         history?.ApplyNewAction(rooms.Select(r => new AddRoomAction(r)).MergeActions());
 
         if (rooms.Count == 1) {
-            EditorState.CurrentRoom = rooms[0];
+            editorState.CurrentRoom = rooms[0];
         }
 
         return selections;

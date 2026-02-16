@@ -3,6 +3,7 @@ using Rysy.Graphics;
 using Rysy.History;
 using Rysy.Mods;
 using Rysy.Selections;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
@@ -117,8 +118,10 @@ public static class PrefabHelper {
     }
 
     private sealed record class PrefabPlacementHandler(Prefab Prefab) : IPlacementHandler {
-        public ISelectionHandler CreateSelection(Placement placement, Vector2 pos, Room room) {
-            var selections = CopypasteHelper.PasteSelections(Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
+        public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room room) {
+            var selections = CopypasteHelper.PasteSelections(
+                EditorState.Current ?? throw new UnreachableException("EditorState.Current is null"), 
+                Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
             if (pastedRooms) {
                 throw new NotImplementedException("Pasting rooms in prefabs is not supported yet!");
             }
@@ -126,7 +129,7 @@ public static class PrefabHelper {
             return new MergedSelectionHandler(selections ?? new());
         }
 
-        public IEnumerable<ISprite> GetPreviewSprites(ISelectionHandler handler, Vector2 pos, Room room) {
+        public IEnumerable<ISprite> GetPreviewSprites(EditorState editorState, ISelectionHandler handler, Vector2 pos, Room room) {
             List<ISprite> sprites = new();
 
             if (handler is MergedSelectionHandler h) {
@@ -177,7 +180,7 @@ public static class PrefabHelper {
             }
         }
 
-        public IHistoryAction Place(ISelectionHandler handler, Room room) {
+        public IHistoryAction Place(EditorState editorState, ISelectionHandler handler, Room room) {
             return handler.PlaceClone(room);
         }
 
@@ -212,7 +215,7 @@ public static class PrefabHelper {
                 return Selections.Select(s => s.Handler.MoveBy(offset)).MergeActions();
             }
 
-            public void OnRightClicked(IEnumerable<Selection> selections) {
+            public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections) {
 
             }
 

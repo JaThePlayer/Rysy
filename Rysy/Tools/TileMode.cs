@@ -20,8 +20,7 @@ public abstract class TileMode : ToolMode {
 
     public abstract void Init();
 
-    public void ClearTilegridSpriteCache(Room? room = null) {
-        room ??= EditorState.CurrentRoom;
+    public void ClearTilegridSpriteCache(Room? room) {
         if (room is null)
             return;
         

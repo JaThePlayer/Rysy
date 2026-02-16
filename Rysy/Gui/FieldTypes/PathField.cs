@@ -204,7 +204,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
             }
 
             if (ImGui.BeginTooltip()) {
-                displayPath.RenderImGuiInfo();
+                displayPath.RenderImGuiInfo(EditorState.Current);
                 ImGui.EndTooltip();
             }
         }

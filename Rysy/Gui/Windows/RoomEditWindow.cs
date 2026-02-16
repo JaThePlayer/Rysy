@@ -87,7 +87,7 @@ public sealed partial class RoomEditWindow : Window {
         return ValidationResult.Ok;
     }
     
-    public RoomEditWindow(Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
+    public RoomEditWindow(EditorState editorState, Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
         Room room1 = room;
         var attrs = room.Attributes.Copy();
 
@@ -110,13 +110,13 @@ public sealed partial class RoomEditWindow : Window {
                 attrs.SetValueByName(k, v);
             }
             
-            EditorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room1, attrs));
+            editorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room1, attrs));
             if (newRoom) {
-                EditorState.CurrentRoom = room1;
+                editorState.CurrentRoom = room1;
             }
         };
 
-        var history = EditorState.History!;
+        var history = editorState.History!;
         _historyHook = ReevaluateEditedValues;
         history.OnApply += _historyHook;
         history.OnUndo += _historyHook;

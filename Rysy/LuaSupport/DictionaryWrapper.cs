@@ -99,7 +99,7 @@ public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(G
     public TileLayer TileLayer => layer;
     
     static Dictionary<string, object> GenerateDict(TileLayer layer) {
-        if (EditorState.Map is not {} map) {
+        if (EditorState.Current?.Map is not {} map) {
             return [];
         }
 

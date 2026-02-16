@@ -640,24 +640,25 @@ public class LuaCtx {
         lua.Register("_RYSY_loaded_state_getSelectedRoom", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
-            lua.Push((object?)EditorState.CurrentRoom ?? false);
+            lua.Push((object?)EditorState.Current?.CurrentRoom ?? false);
             return 1;
         });
         
         lua.Register("_RYSY_loaded_state_getMap", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
 
-            lua.Push(EditorState.Map);
+            lua.Push(EditorState.Current?.Map);
             return 1;
         });
         
         lua.Register("_RYSY_loaded_state_getRoomByName", static (nint s) => {
             var lua = Lua.FromIntPtr(s);
             var name = lua.FastToString(1);
+            var map = EditorState.Current?.Map;
 
-            if (EditorState.Map?.TryGetRoomByName(name) is { } room) {
+            if (map?.TryGetRoomByName(name) is { } room) {
                 lua.Push(room);
-                lua.PushInteger(EditorState.Map.Rooms.IndexOf(room) + 1);
+                lua.PushInteger(map.Rooms.IndexOf(room) + 1);
             } else {
                 lua.PushNil();
                 lua.PushNil();

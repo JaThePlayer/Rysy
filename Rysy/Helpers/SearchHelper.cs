@@ -46,7 +46,7 @@ public class Searchable {
     }
     
     public bool AreAssociatedModsADependencyOfMod(ModMeta? mod = null) {
-        mod ??= EditorState.Map?.Mod;
+        mod ??= EditorState.Current?.Map?.Mod;
         if (mod is null) {
             return true;
         }
@@ -72,7 +72,7 @@ public class Searchable {
             ImGuiManager.PopNullStyle();
     }
     
-    public void RenderImGuiText(ModMeta? currentMod = null) {
+    public void RenderImGuiText(ModMeta? currentMod) {
         var depsMet = AreAssociatedModsADependencyOfMod(currentMod);
         BeforeName(depsMet);
         
@@ -102,16 +102,16 @@ public class Searchable {
         return ret;
     }
     
-    public void RenderImGuiInfo(ModMeta? currentMod = null) {
-        RenderModList(currentMod);
+    public void RenderImGuiInfo(EditorState? editorState, ModMeta? currentMod = null) {
+        RenderModList(editorState, currentMod);
         RenderTagList(Tags);
         RenderAlternativeNamesList();
     }
 
-    private void RenderModList(ModMeta? currentMod) {
+    private void RenderModList(EditorState? editorState, ModMeta? currentMod) {
         if (HasNonVanillaMods) {
             var associated = Mods;
-            currentMod ??= EditorState.Map?.Mod;
+            currentMod ??= editorState?.Map?.Mod;
             
             ImGuiManager.TranslatedText("rysy.search.associatedMods");
 

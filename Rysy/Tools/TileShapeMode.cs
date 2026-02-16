@@ -25,8 +25,8 @@ public abstract class TileShapeMode : TileMode {
 
             ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * 8, startPos.ToVector2().Add(0.5f, 0.5f) * 8, outline).Render(SpriteRenderCtx.Default());
             
-            Tool.DrawSelectionRect(new Rectangle(startPos.X * 8, startPos.Y * 8, 8, 8));
-            Tool.DrawSelectionRect(new Rectangle(mousePos.X * 8, mousePos.Y * 8, 8, 8));
+            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * 8, startPos.Y * 8, 8, 8));
+            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * 8, mousePos.Y * 8, 8, 8));
         }
     }
 
@@ -73,7 +73,7 @@ public abstract class TileShapeMode : TileMode {
 
     public override void CancelInteraction() {
         if (_dragGesture.Begun)
-            ClearTilegridSpriteCache();
+            ClearTilegridSpriteCache(Tool.ToolHandler.EditorState.CurrentRoom);
         _dragGesture.CancelStroke();
     }
 

@@ -50,7 +50,7 @@ public sealed class FilesystemExplorerWindow : Window {
             
             if (ext == ".bin" && ImGui.Button("Open Map")) {
                 opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
-                    EditorState.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
+                    EditorState.Current?.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
                 });
 
                 shouldDisplayText = false;

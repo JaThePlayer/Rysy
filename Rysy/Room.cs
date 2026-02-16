@@ -1070,8 +1070,8 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
         return new RoomResizeAndMoveInsidesAction(Room, tileOffset.X * 8, tileOffset.Y * 8, offset, Input.Global.Keyboard.Ctrl());
     }
 
-    public void OnRightClicked(IEnumerable<Selection> selections) {
-        RysyEngine.Scene.AddWindow(new RoomEditWindow(Room, false));
+    public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections) {
+        RysyEngine.Scene.AddWindow(new RoomEditWindow(editorState, Room, false));
     }
 
     public BinaryPacker.Element? PackParent() {

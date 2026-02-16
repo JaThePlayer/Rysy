@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
+using Rysy.History;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
@@ -88,28 +89,36 @@ public static class Menubar {
     }
 
     private static void MapMenu() {
+        /*
         if (RysyEngine.Scene is not EditorScene editor)
             return;
+            */
+        var scene = RysyEngine.Scene;
+        var editorState = scene.Get<EditorState>();
+        var history = scene.Get<HistoryHandler>();
+        var map = editorState?.Map;
 
-        if (EditorState.Map is { } map && EditorState.History is { } history) {
-            if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindowIfNeeded(() => new MetadataWindow(history, map));
-            }
-
-            if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindowIfNeeded(() => new StylegroundWindow(history));
-            }
-
-            ImGui.BeginDisabled(map.Mod is not { });
-            if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindowIfNeeded(() => new DecalRegistryWindow(map));
-            }
-            
-            if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindowIfNeeded(() => new TilesetWindow());
-            }
-            ImGui.EndDisabled();
+        ImGui.BeginDisabled(history is null || map is null);
+        if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+            scene.AddWindowIfNeeded(() => new MetadataWindow(history!, map!));
         }
+        ImGui.EndDisabled();
+
+        ImGui.BeginDisabled(editorState is null || map is null);
+        if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+            scene.AddWindowIfNeeded(() => new StylegroundWindow(editorState!, history!));
+        }
+        ImGui.EndDisabled();
+
+        ImGui.BeginDisabled(map?.Mod is null);
+        if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+            scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map!));
+        }
+            
+        if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+            scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
+        }
+        ImGui.EndDisabled();
     }
 
     private static PathField? ColorgradePreviewField;
@@ -270,11 +279,12 @@ public static class Menubar {
     }
 
     private static void DebugMenu() {
-        if (RysyEngine.Scene is not EditorScene editor)
-            return;
-
+        var scene = RysyEngine.Scene;
+        var editorState = scene.Get<EditorState>();
+        var map = editorState?.Map;
+        
         if (ImGui.MenuItem("Style Editor").WithTooltip("WARNING: For development purposes only, changes done in this window don't save!")) {
-            editor.AddWindow(new ScriptedWindow("Style Editor", (w) => {
+            scene.AddWindow(new ScriptedWindow("Style Editor", (w) => {
                 ImGui.ShowStyleEditor();
             }));
         }
@@ -287,18 +297,18 @@ public static class Menubar {
             RysyEngine.Scene.AddWindowIfNeeded<LuaReplWindow>();
         }
 
-        if (EditorState.Map is { } map && EditorState.History is { } history) {
+        if (map is { } && editorState?.History is { } history) {
             if (ImGui.MenuItem("sizeoscope".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                editor.AddWindow(new MapSizeoscopeWindow(map, history));
+                scene.AddWindow(new MapSizeoscopeWindow(map, history));
             }
         }
         
-        if (editor.Map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
-            editor.Map.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+        if (map is { } && ImGui.MenuItem("Clear Render Cache").WithTooltip("Clears the render cache of all rooms in the map")) {
+            map.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
         }
 
-        if (editor.Map is { } && ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {
-            ImGui.SetClipboardText(editor.Map.Pack().ToJson());
+        if (map is { } && ImGui.MenuItem("Map as JSON").WithTooltip("Copies the map as JSON to your clipboard")) {
+            ImGui.SetClipboardText(map.Pack().ToJson());
         }
 
         if (ImGui.MenuItem("GC").WithTooltip("Causes a very aggressive GC call")) {

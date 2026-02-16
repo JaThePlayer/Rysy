@@ -137,7 +137,7 @@ public class DebugInfoWindow : Window {
 
                 ImGui.Text($"Pos: {cam.Pos}");
                 ImGui.Text($"Scale: {cam.Scale}");
-                ImGui.Text($"Room: {EditorState.CurrentRoom?.Pos ?? default}");
+                ImGui.Text($"Room: {EditorState.Current?.CurrentRoom?.Pos ?? default}");
                 ImGui.Text($"Viewport: {cam.Viewport.Bounds.Size()}");
                 ImGui.Text($"{Parallax.CalcCamPos(cam)}");
 
@@ -153,7 +153,7 @@ public class DebugInfoWindow : Window {
             }
 
             const int times = 100;
-            var room = EditorState.CurrentRoom;
+            var room = EditorState.Current?.CurrentRoom;
             if (room is { } && ImGui.Button("Benchmark current room")) {
                 Benchmark(room, false, times);
             }

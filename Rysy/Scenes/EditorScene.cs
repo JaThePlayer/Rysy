@@ -17,6 +17,8 @@ namespace Rysy.Scenes;
 public sealed class EditorScene : Scene {
     public ToolHandler ToolHandler;
 
+    public EditorState EditorState { get; set; } = new();
+
     public HistoryHandler HistoryHandler {
         get => EditorState.History ??= new HistoryHandler(Map);
         set => EditorState.History = value;
@@ -74,7 +76,9 @@ public sealed class EditorScene : Scene {
         if (Settings.Instance.NotificationWindowOpen)
             AddWindowIfNeeded<NotificationsWindow>();
         
-        Components.Add(new PlayerTrailRenderer(this));
+        Add(new PlayerTrailRenderer(this));
+        Add(EditorState);
+        Add(HistoryHandler);
     }
 
     public EditorScene(Map map) : this() {
@@ -289,7 +293,7 @@ public sealed class EditorScene : Scene {
                 ["y"] = 12 * 8,
             },
         }, room, false));
-        AddWindow(new RoomEditWindow(room, newRoom: true));
+        AddWindow(new RoomEditWindow(EditorState, room, newRoom: true));
     }
 
     public void MoveCurrentRoom(int tilesX, int tilesY) {
@@ -357,8 +361,6 @@ public sealed class EditorScene : Scene {
     }
 
     public override void Render() {
-        base.Render();
-
         var windowSize = RysyState.Window.ClientBounds.Size();
         if (Map is not { }) {
             var height = 4 * 6;
@@ -412,9 +414,7 @@ public sealed class EditorScene : Scene {
         }
         Gfx.EndBatch();
 
-        foreach (var c in Components) {
-            c.Render();
-        }
+        base.Render();
         
         ToolHandler.Render(Camera, CurrentRoom);
 
@@ -471,7 +471,7 @@ public sealed class EditorScene : Scene {
     }
 
     public override void OnBegin() {
-        ToolHandler = new ToolHandler(HistoryHandler, Input.Global).UsePersistence(true);
+        ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global).UsePersistence(true);
         EditorState.OnMapChanged += OnMapChanged;
         Themes.ThemeChanged += OnThemeChanged;
 

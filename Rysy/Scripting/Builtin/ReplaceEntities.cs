@@ -42,7 +42,7 @@ public sealed class ReplaceEntities : Script {
 
             // generally, your scripts should return a history action in Prerun instead of adding actions manually,
             // but in this case, our script actually finishes at an arbitrary time, so we have to do this ourselves
-            var history = EditorState.History;
+            var history = EditorState.Current?.History;
             history?.ApplyNewAction(action);
         };
 

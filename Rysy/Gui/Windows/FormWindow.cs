@@ -263,6 +263,8 @@ public class FormContext : ILuaWrapper, IUntypedData {
     public FormContext(FormWindow window) => _window = window;
 
     private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => _window.FieldList.FirstOrDefault(f => f.Name == fieldName);
+
+    public EditorState? EditorState => EditorState.Current;
     
     /// <summary>
     /// Tries to get the value of the field of name <paramref name="key"/>

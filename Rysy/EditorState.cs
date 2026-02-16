@@ -4,13 +4,18 @@ using Rysy.History;
 namespace Rysy;
 
 /// <summary>
-/// A singleton containing information about the current state of the editor.
+/// An object containing information about the current state of the editor.
 /// </summary>
-public static class EditorState {
+public class EditorState {
+    /// <summary>
+    /// Shortcut to get the editor state associated with the current scene.
+    /// </summary>
+    public static EditorState? Current => RysyEngine.Scene.Get<EditorState>();
+    
     /// <summary>
     /// The current camera.
     /// </summary>
-    public static Camera Camera {
+    public Camera Camera {
         get => field ??= new Camera().ListenToViewportChanges();
         set => field = value.ListenToViewportChanges();
     }
@@ -18,7 +23,7 @@ public static class EditorState {
     /// <summary>
     /// If the current scene is <see cref="Scenes.EditorScene"/>, gets/sets the currently selected room.
     /// </summary>
-    public static Room? CurrentRoom {
+    public Room? CurrentRoom {
         get;
         set {
             if (field == value)
@@ -34,12 +39,12 @@ public static class EditorState {
     /// <summary>
     /// Called whenever <see cref="CurrentRoom"/> gets changed.
     /// </summary>
-    public static event Action? OnCurrentRoomChanged;
+    public event Action? OnCurrentRoomChanged;
 
     /// <summary>
     /// If the current scene is <see cref="Scenes.EditorScene"/>, gets/sets the currently selected map.
     /// </summary>
-    public static Map? Map {
+    public Map? Map {
         get;
         set {
             if (field == value)
@@ -56,14 +61,14 @@ public static class EditorState {
     /// <summary>
     /// Called whenever <see cref="Map"/> gets changed.
     /// </summary>
-    public static Action? OnMapChanged { get; set; }
+    public Action? OnMapChanged { get; set; }
 
     /// <summary>
     /// The currently used history handler
     /// </summary>
-    public static HistoryHandler? History { get; set; }
+    public HistoryHandler? History { get; set; }
 
-    public static Colorgrade CurrentColograde {
+    public Colorgrade CurrentColograde {
         get {
             var colorgradeSetting = Persistence.Instance.ColorgradePreview;
             if (colorgradeSetting == Persistence.ColorgradePreviewMapDefaultValue) {

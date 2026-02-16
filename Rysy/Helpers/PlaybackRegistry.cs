@@ -31,16 +31,13 @@ public static class PlaybackRegistry {
         return null;
     }
 
-    public static IEnumerable<ISprite> GetSprites(Vector2 pos, string tutorial) {
+    public static IEnumerable<ISprite> GetSprites(Map map, Vector2 pos, string tutorial) {
         var data = GetTutorial(tutorial);
         if (data is null)
             yield break;
 
         var anim = "";
-        var bank = EditorState.Map?.Sprites;
-        if (bank is null) {
-            yield break;
-        }
+        var bank = map.Sprites;
 
         Vector2? lastPos = null;
         bool skip = true;

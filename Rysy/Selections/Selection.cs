@@ -107,7 +107,7 @@ public interface ISelectionHandler {
     
     public bool IsWithinRectangle(Rectangle roomPos);
     public void ClearCollideCache();
-    public void OnRightClicked(IEnumerable<Selection> selections);
+    public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections);
 
     public BinaryPacker.Element? PackParent();
 

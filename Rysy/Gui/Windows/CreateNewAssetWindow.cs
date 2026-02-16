@@ -6,7 +6,8 @@ namespace Rysy.Gui.Windows;
 
 public abstract class CreateNewAssetWindow : Window {
     protected readonly Field PathField;
-    
+
+    private readonly EditorState _editorState;
     protected string Path;
     
     private bool _wasInvalid;
@@ -17,7 +18,8 @@ public abstract class CreateNewAssetWindow : Window {
 
     protected abstract void Create(Map map, IWriteableModFilesystem fs, string realPath);
     
-    protected CreateNewAssetWindow(string name, string defaultPath, NumVector2? size = null) : base(name.Translate(), size ??= new(400, 300)) {
+    protected CreateNewAssetWindow(EditorState editorState, string name, string defaultPath, NumVector2? size = null) : base(name.Translate(), size ??= new(400, 300)) {
+        _editorState = editorState;
         Path = defaultPath;
         PathField = Fields.NewPath("", RealPath).Translated(PathFieldTranslationKey);
     }
@@ -37,15 +39,15 @@ public abstract class CreateNewAssetWindow : Window {
     public override bool HasBottomBar => true;
 
     public override void RenderBottomBar() {
-        if (EditorState.Map is not { Mod.Filesystem: IWriteableModFilesystem })
+        if (_editorState.Map is not { Mod.Filesystem: IWriteableModFilesystem })
             _wasInvalid = true;
         
         ImGui.BeginDisabled(_wasInvalid);
 
         if (ImGuiManager.TranslatedButton("rysy.ok") && !_wasInvalid) {
-            var fs = (IWriteableModFilesystem) EditorState.Map!.Mod!.Filesystem;
+            var fs = (IWriteableModFilesystem) _editorState.Map!.Mod!.Filesystem;
             var path = RealPath(Path);
-            Create(EditorState.Map, fs, path);
+            Create(_editorState.Map, fs, path);
             RemoveSelf();
         }
         

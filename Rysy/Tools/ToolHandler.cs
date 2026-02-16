@@ -1,6 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using Microsoft.Win32;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
@@ -22,6 +20,8 @@ public class ToolHandler {
     private readonly object _toolLock = new();
     
     private List<Tool> _tools;
+
+    public EditorState EditorState { get; }
     
     public IReadOnlyList<Tool> Tools => _tools;
 
@@ -44,6 +44,7 @@ public class ToolHandler {
     private Tool Create(Type type, HistoryHandler history, Input input) {
         var t = (Tool) Activator.CreateInstance(type)!;
 
+        t.ToolHandler = this;
         t.History = history;
         t.Input = input;
         t.Init();
@@ -51,14 +52,13 @@ public class ToolHandler {
         t.HotkeyHandler = new(input, HotkeyHandler.ImGuiModes.Never);
         t.InitHotkeys(t.HotkeyHandler);
 
-        t.ToolHandler = this;
-
         return t;
     }
 
     private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
-    public ToolHandler(HistoryHandler history, Input input, ToolRegistry? registry = null) {
+    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, ToolRegistry? registry = null) {
+        EditorState = editorState;
         History = history;
         Input = input;
         Registry = registry ?? ToolRegistry.Global;

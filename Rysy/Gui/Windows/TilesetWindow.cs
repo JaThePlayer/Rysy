@@ -13,6 +13,8 @@ using System.Xml.Linq;
 namespace Rysy.Gui.Windows;
 
 public sealed class TilesetWindow : Window {
+    private readonly EditorState _editorState;
+
     internal enum Tabs {
         Bg,
         Fg,
@@ -21,7 +23,7 @@ public sealed class TilesetWindow : Window {
     
     private Tabs _tab = Tabs.Fg;
     
-    private Map? Map => EditorState.Map;
+    private Map? Map => _editorState.Map;
 
     internal ModMeta? Mod => Map?.Mod;
     
@@ -60,7 +62,8 @@ public sealed class TilesetWindow : Window {
     private bool Bg
         => _tab == Tabs.Bg;
 
-    public TilesetWindow() : base("rysy.tilesetWindow.name".Translate(), new(1200, 800)) {
+    public TilesetWindow(EditorState editorState) : base("rysy.tilesetWindow.name".Translate(), new(1200, 800)) {
+        _editorState = editorState;
         _hotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
         _hotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
         
@@ -433,7 +436,7 @@ public sealed class TilesetWindow : Window {
             var autotiler = GetAutotiler(Bg);
             var tileset = autotiler.GetTilesetData(tileid);
             if (tileset is { Xml: not null } && ImGuiManager.TranslatedButton("rysy.tilesetWindow.clone")) {
-                RysyState.Scene.AddWindow(new CreateTilesetWindow(new ImportedTileset {
+                RysyState.Scene.AddWindow(new CreateTilesetWindow(EditorState.Current, new ImportedTileset {
                     Texture = tileset.Texture,
                     CreateTextureClone = false,
                     IsBg = Bg,
@@ -508,7 +511,7 @@ public sealed class TilesetWindow : Window {
         if (string.IsNullOrWhiteSpace(xmlPath)) {
             ImGuiManager.TranslatedTextWrapped("rysy.tilesetWindow.xmlCantBeEdited.notSet");
             if (ImGuiManager.TranslatedButton("rysy.tilesetWindow.xmlCantBeEdited.createNew")) {
-                RysyState.Scene.AddWindow(new CreateDefaultXmlWindow(_tab));
+                RysyState.Scene.AddWindow(new CreateDefaultXmlWindow(_editorState, _tab, Map));
             }
             
             return; 
@@ -554,7 +557,7 @@ public sealed class TilesetWindow : Window {
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (_tab is Tabs.Bg or Tabs.Fg) {
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromAssetDrive")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(Bg));
+                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(_editorState, Bg));
                     ImGui.CloseCurrentPopup();
                 }
             
@@ -564,7 +567,7 @@ public sealed class TilesetWindow : Window {
                 }
             } else if (_tab is Tabs.AnimatedTiles) {
                 if (ImGuiManager.TranslatedButton("rysy.animTileImport.new")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteAnimatedTileImportWindow(_history!));
+                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteAnimatedTileImportWindow(_history!, Map));
                     ImGui.CloseCurrentPopup();
                 }
                 if (ImGuiManager.TranslatedButton("rysy.animTileImport.importFromXml")) {
@@ -604,13 +607,13 @@ internal sealed class ExistingSpriteAnimatedTileImportWindow : Window {
     private string _name = "";
     private bool _wasInvalid = false;
     
-    public ExistingSpriteAnimatedTileImportWindow(HistoryHandler history) : base("rysy.animTileImport.new.windowName".Translate(),
+    public ExistingSpriteAnimatedTileImportWindow(HistoryHandler history, Map? map) : base("rysy.animTileImport.new.windowName".Translate(),
         new(400, ImGui.GetTextLineHeightWithSpacing() * 6)) {
         _history = history;
 
         _nameField = Fields.String("")
             .WithValidator(x => {
-                var tiles = EditorState.Map?.AnimatedTiles;
+                var tiles = map?.AnimatedTiles;
                 if (tiles is null)
                     return ValidationResult.Ok;
                 
@@ -739,7 +742,7 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
         VirtTexture? texture = null!;
         ImGui.BeginDisabled(!_wasValid || !Gfx.Atlas.TryGet($"tilesets/{_path}", out texture));
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && texture is {}) {
-            RysyState.Scene.AddWindow(new CreateTilesetWindow(new ImportedTileset {
+            RysyState.Scene.AddWindow(new CreateTilesetWindow(EditorState.Current, new ImportedTileset {
                 Texture = texture,
                 CopyFrom = null,
                 CreateTextureClone = false,
@@ -762,8 +765,8 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
     }
 }
 
-internal sealed class CreateDefaultXmlWindow(TilesetWindow.Tabs tab) 
-    : CreateNewAssetWindow("rysy.tilesetWindow.xmlCantBeEdited.createNew", GetDefaultPath(tab)) {
+internal sealed class CreateDefaultXmlWindow(EditorState editorState, TilesetWindow.Tabs tab, Map map) 
+    : CreateNewAssetWindow(editorState, "rysy.tilesetWindow.xmlCantBeEdited.createNew", GetDefaultPath(tab, map)) {
     
     protected override string RealPath(string userPath) {
         return $"Graphics/{userPath}.xml";
@@ -771,8 +774,7 @@ internal sealed class CreateDefaultXmlWindow(TilesetWindow.Tabs tab)
 
     protected override string PathFieldTranslationKey => "rysy.tilesetWindow.xmlCantBeEdited.path";
 
-    private static string GetDefaultPath(TilesetWindow.Tabs tab) {
-        var map = EditorState.Map;
+    private static string GetDefaultPath(TilesetWindow.Tabs tab, Map map) {
         if (map is null) {
             throw new Exception($"Map cant be null when {nameof(CreateDefaultXmlWindow)} is created");
         }

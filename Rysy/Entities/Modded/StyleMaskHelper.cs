@@ -51,7 +51,7 @@ static class StyleMaskHelper {
             
             if (ctx.Camera?.IsRectVisible(self.Rectangle.MovedBy(ctx.CameraOffset)) ?? true) {
                 var lastState = Gfx.EndBatch();
-                StylegroundRenderer.Render(self.Room, self.Room.Map.Style, ctx.Camera ?? EditorState.Camera, StylegroundRenderer.Layers.BgAndFg, s => s.HasTag(tag!), 
+                StylegroundRenderer.Render(self.Room, self.Room.Map.Style, ctx.Camera ?? EditorState.Current.Camera, StylegroundRenderer.Layers.BgAndFg, s => s.HasTag(tag!), 
                     scissorRectWorldPos: self.Rectangle.MovedBy(self.Room.Pos));
 
                 Gfx.BeginBatch(lastState);

@@ -211,7 +211,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     }
 
-    public void OnRightClicked(IEnumerable<Selection> selections) {
+    public void OnRightClicked(EditorState editorState, IEnumerable<Selection> selections) {
         SelectionContextWindowRegistry.OpenPopup(this, selections);
     }
 

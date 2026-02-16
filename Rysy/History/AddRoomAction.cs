@@ -15,8 +15,9 @@ public record class AddRoomAction(Room Room) : IHistoryAction {
 
     public void Undo(Map map) {
         map.Rooms.Remove(Room);
-        if (EditorState.CurrentRoom == Room) {
-            EditorState.CurrentRoom = null;
+        
+        if (EditorState.Current is {} state && state.CurrentRoom == Room) {
+            state.CurrentRoom = null;
         }
     }
 }

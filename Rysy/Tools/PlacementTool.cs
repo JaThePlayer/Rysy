@@ -182,7 +182,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
         if (Material is Placement place) {
             if (RectangleGesture.Update((p) => GetMousePos(camera, room, position: p.ToVector2())) is { } rect) {
-                History.ApplyNewAction(place.PlacementHandler.Place(placement, room!));
+                History.ApplyNewAction(place.PlacementHandler.Place(EditorState, placement, room!));
                 _anchorPos = null;
                 ResetDragState();
                 if (placement is EntitySelectionHandler entityHandler) {
@@ -262,7 +262,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             }
 
             var handler = place.PlacementHandler;
-            CurrentPlacement = handler.CreateSelection(place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom!);
+            CurrentPlacement = handler.CreateSelection(EditorState, place, GetMousePos(camera, currentRoom).ToVector2(), currentRoom!);
             _currentPlacementSourceMaterial = Material;
             if (CurrentPlacement is EntitySelectionHandler entityHandler) {
                 entityHandler.Entity.InitializeNodePositions();
@@ -295,7 +295,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         if (Material is Placement placement && CurrentPlacement is { } selection) {
             var pos = _anchorPos ?? (RectangleGesture.CurrentRectangle is { } rect ? rect.Location.ToVector2() : mouse.ToVector2());
             var ctx = SpriteRenderCtx.Default();
-            var offset = placement.PlacementHandler.GetPreviewSpritesOffset(selection, pos, room!);
+            var offset = placement.PlacementHandler.GetPreviewSpritesOffset(EditorState, selection, pos, room!);
             SpriteBatchState prevState = default;
             if (offset is { }) {
                 prevState = Gfx.EndBatch()!.Value;
@@ -304,7 +304,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 });
             }
             
-            foreach (var item in placement.GetPreviewSprites(selection, pos, room!)) {
+            foreach (var item in placement.GetPreviewSprites(EditorState, selection, pos, room!)) {
                 if (item is Sprite spr) {
                     spr.RenderWithColor(ctx, spr.Color * 0.4f);
                 } else {
@@ -323,7 +323,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
             var selectionsUnderCursor = room?.GetSelectionsInRect(new Rectangle(mousePos.X, mousePos.Y, 1, 1), EditorLayers.ToolLayerToEnum(Layer));
             
-            SelectionTool.HandleHoveredSelections(room, selectionsUnderCursor, selected: null, Input);
+            SelectionTool.HandleHoveredSelections(EditorState, room, selectionsUnderCursor, selected: null, Input);
         }
     }
 
@@ -502,7 +502,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                 try {
                     var prevLogErrors = Entity.LogErrors;
 
-                    selection = placement.PlacementHandler.CreateSelection(placement, default, Room.DummyRoom);
+                    selection = placement.PlacementHandler.CreateSelection(EditorState, placement, default, Room.DummyRoom);
 
                     var offset = new Vector2(PreviewSize / 2, PreviewSize / 2);
                     var rect = selection.Rect;
@@ -516,7 +516,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
                     }
 
                     try {
-                        sprites = placement.GetWidgetSprites(selection, offset, Room.DummyRoom).ToList();
+                        sprites = placement.GetWidgetSprites(EditorState, selection, offset, Room.DummyRoom).ToList();
                     } catch {
                         sprites = [];
                         return;

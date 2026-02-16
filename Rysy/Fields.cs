@@ -76,8 +76,8 @@ public static partial class Fields {
 
     public static DropdownField<string> TileDropdown(char def, bool bg, bool addDontCopyOption = false, bool addWildcardOption = false) => new DropdownField<string>() {
         Default = def.ToString(),
-    }.SetValues(() => {
-        if (EditorState.Map is not { } map) {
+    }.SetValues(ctx => {
+        if (ctx.EditorState?.Map is not { } map) {
             return new Dictionary<string, string>();
         }
 
@@ -96,7 +96,7 @@ public static partial class Fields {
         
         return dict;
     }).AddSpriteTooltips((key, display) => {
-        if (key is not [var id] || EditorState.Map is not { } map) {
+        if (key is not [var id] || EditorState.Current?.Map is not { } map) {
             return null;
         }
 
@@ -108,7 +108,7 @@ public static partial class Fields {
     public static DropdownField<char> TileDropdown(char def, Func<FormContext, bool> bg) => new DropdownField<char>() {
         Default = def,
     }.SetValues(ctx => {
-        if (EditorState.Map is not { } map) {
+        if (ctx.EditorState?.Map is not { } map) {
             return new Dictionary<char, string>();
         }
 
@@ -139,7 +139,7 @@ public static partial class Fields {
     /// <param name="previewAnimation">Animation name to use for creating the preview in the dropdown.</param>
     public static PathField SpriteBankPath(string def, [StringSyntax(StringSyntaxAttribute.Regex)] string regex,
         Func<FoundPath, string>? captureConverter = null, string? previewAnimation = null) {
-        var field = new PathField(def, EditorState.Map?.Sprites!, regex, captureConverter).AllowEdits();
+        var field = new PathField(def, EditorState.Current?.Map?.Sprites!, regex, captureConverter).AllowEdits();
 
         if (previewAnimation is { }) {
             field.PreviewSpriteGetter = (path) => ISprite.FromSpriteBank(default, path.Path, previewAnimation);
@@ -163,7 +163,7 @@ public static partial class Fields {
         => new PathField(def, filesystem ?? GetPathFieldFilesystem(), directory, fileExtension, null, filter).AllowEdits();
 
     private static IModFilesystem GetPathFieldFilesystem() {
-        if (EditorState.Map is not { } map)
+        if (EditorState.Current?.Map is not { } map)
             return ModRegistry.VanillaMod.Filesystem;
 
         if (map.Mod is not { } mod) {
@@ -227,8 +227,8 @@ public static partial class Fields {
         return new(def, allowedTypes);
     }
     
-    internal static StringField TilesetDisplayName(string def, Func<bool> bg, bool selfIsTileset) => String(def).WithValidator(x => {
-        var map = EditorState.Map;
+    internal static StringField TilesetDisplayName(string def, Func<bool> bg, bool selfIsTileset) => String(def).WithValidator((ctx, x) => {
+        var map = ctx.EditorState?.Map;
         if (map is null)
             return ValidationResult.Ok;
         
