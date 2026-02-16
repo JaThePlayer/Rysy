@@ -113,7 +113,7 @@ public class TileTool : Tool {
     }
 
     public Autotiler? GetAutotiler(EditorLayer layer) {
-        if (RysyEngine.Scene is EditorScene { Map: { } map }) {
+        if (EditorState.Map is { } map) {
             if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
                 return tileLayer switch {
                     TileLayer.Fg => map.FgAutotiler,

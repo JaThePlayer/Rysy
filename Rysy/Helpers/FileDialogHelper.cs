@@ -7,7 +7,7 @@ namespace Rysy.Helpers;
 
 public static class FileDialogHelper {
     public static string GetDefaultPath() {
-        if (RysyEngine.Scene is EditorScene editor && editor.Map?.Filepath?.Directory() is { } dir) {
+        if (EditorState.Current?.Map?.Filepath?.Directory() is { } dir) {
             return dir;
         }
 

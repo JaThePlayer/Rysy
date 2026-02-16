@@ -4,7 +4,7 @@ using Rysy.Shared.Networking;
 
 namespace Rysy.Scenes.Components;
 
-internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
+internal sealed class PlayerTrailRenderer : SceneComponent {
     private InPipeServer<PlaybackTrailData>? _server;
 
     private PlaybackTrailData? _playbackTrailData;
@@ -19,15 +19,16 @@ internal sealed class PlayerTrailRenderer(EditorScene scene) : SceneComponent {
     }
 
     public override void Render() {
-        if (_playbackTrailData is null || scene.Map is null) {
+        var editorState = Scene.Get<EditorState>();
+        if (_playbackTrailData is null || editorState?.Map is null) {
             return;
         }
 
-        if (scene.Map.TryGetRoomByName(_playbackTrailData.Room) is not { } room)
+        if (editorState.Map.TryGetRoomByName(_playbackTrailData.Room) is not { } room)
             return;
 
         var ctx = SpriteRenderCtx.Default();
-        Gfx.BeginBatch(scene.Camera);
+        Gfx.BeginBatch(editorState.Camera);
         
         lock (_spriteLock)
             foreach (var (_, sprite) in _sprites) {

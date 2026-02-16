@@ -323,7 +323,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
             var selectionsUnderCursor = room?.GetSelectionsInRect(new Rectangle(mousePos.X, mousePos.Y, 1, 1), EditorLayers.ToolLayerToEnum(Layer));
             
-            SelectionTool.HandleHoveredSelections(EditorState, room, selectionsUnderCursor, selected: null, Input);
+            SelectionTool.HandleHoveredSelections(this, room, selectionsUnderCursor, selected: null, Input);
         }
     }
 

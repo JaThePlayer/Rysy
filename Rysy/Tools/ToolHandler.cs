@@ -17,7 +17,7 @@ public class ToolHandler {
 
     public readonly ToolRegistry Registry;
 
-    private readonly object _toolLock = new();
+    private readonly Lock _toolLock = new();
     
     private List<Tool> _tools;
 
@@ -25,13 +25,12 @@ public class ToolHandler {
     
     public IReadOnlyList<Tool> Tools => _tools;
 
-    private Tool? _currentTool;
     public Tool CurrentTool {
-        get => _currentTool ??= _tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
+        get => field ??= _tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
         set {
-            if (_currentTool != value) {
+            if (field != value) {
                 CancelInteraction();
-                _currentTool = value;
+                field = value;
             }
         }
     }

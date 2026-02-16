@@ -157,6 +157,16 @@ public abstract class Scene {
 
     public void Add(object sceneComponent) {
         Components.Add(sceneComponent);
+        if (sceneComponent is SceneComponent c) {
+            c.Scene = this;
+        }
+    }
+    
+    public void Remove(object sceneComponent) {
+        Components.Add(sceneComponent);
+        if (sceneComponent is SceneComponent c) {
+            c.Scene = null!;
+        }
     }
     
     public T? Get<T>() where T : class {

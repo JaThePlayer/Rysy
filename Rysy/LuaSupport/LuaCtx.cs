@@ -340,8 +340,7 @@ public class LuaCtx {
                         lua.PushString(modName);
                         lua.Call(2, 0);
                     
-                        if (RysyState.Scene is EditorScene editorScene)
-                            editorScene.Map?.Rooms.ForEach(r => r.ClearRenderCacheAggressively());
+                        EditorState.Current?.Map?.ClearRenderCacheAggressively();
                     }
                 });
             }
@@ -496,7 +495,7 @@ public class LuaCtx {
             };
 
             if (rysyLayerName is null
-                || RysyState.Scene is not EditorScene { ToolHandler: { } toolHandler } 
+                || RysyState.Scene.Get<ToolHandler>() is not { } toolHandler
                 || toolHandler.GetTool<TileTool>() is not {} tileTool
                 || Persistence.Instance?.Get(tileTool.GetPersistenceMaterialKeyForLayer(rysyLayerName), (object) null!)?.ToString() is not {} mat) {
                 lua.PushNil();

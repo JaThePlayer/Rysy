@@ -1,11 +1,25 @@
 ﻿namespace Rysy.Scenes;
 
 public abstract class SceneComponent {
-    public abstract void Update();
-    
-    public abstract void Render();
+    public Scene Scene { get; internal set; }
 
-    public abstract void OnBegin();
-    
-    public abstract void OnEnd();
+    public virtual void Update() {
+        
+    }
+
+    public virtual void Render() {
+        
+    }
+
+    public virtual void RenderImGui() {
+        
+    }
+
+    public virtual void OnBegin() {
+        
+    }
+
+    public virtual void OnEnd() {
+        
+    }
 }

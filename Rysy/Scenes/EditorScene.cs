@@ -76,7 +76,7 @@ public sealed class EditorScene : Scene {
         if (Settings.Instance.NotificationWindowOpen)
             AddWindowIfNeeded<NotificationsWindow>();
         
-        Add(new PlayerTrailRenderer(this));
+        Add(new PlayerTrailRenderer());
         Add(EditorState);
         Add(HistoryHandler);
     }
@@ -464,14 +464,15 @@ public sealed class EditorScene : Scene {
     public override void OnEnd() {
         base.OnEnd();
 
-        ToolHandler?.Unload();
-        //ToolHandler = null!;
+        ToolHandler.Unload();
+        Remove(ToolHandler);
         EditorState.OnMapChanged -= OnMapChanged;
         Themes.ThemeChanged -= OnThemeChanged;
     }
 
     public override void OnBegin() {
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global).UsePersistence(true);
+        Add(ToolHandler);
         EditorState.OnMapChanged += OnMapChanged;
         Themes.ThemeChanged += OnThemeChanged;
 

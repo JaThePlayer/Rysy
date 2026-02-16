@@ -485,7 +485,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
         
         if (_state == States.Idle && !imguiWantsMouse) {
-            HandleHoveredSelections(EditorState, room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
+            HandleHoveredSelections(this, room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
 
             if (selectionToBeSelectedOnClick is {} s) {
                 var isToBeSelectedAlreadySelected = _currentSelections?.Contains(s) ?? false;
@@ -519,7 +519,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    internal static void HandleHoveredSelections(EditorState editorState, Room? room, List<Selection>? selectionsUnderCursor,
+    internal static void HandleHoveredSelections(Tool tool, Room? room, List<Selection>? selectionsUnderCursor,
         IEnumerable<Selection>? selected = null, Input? input = null, bool middleClick = false) {
         input ??= Input.Global;
         
@@ -550,15 +550,15 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         // allow right clicking a un-selected item
         if (canRightClick) {
-            firstSelection.Handler.OnRightClicked(editorState, [firstSelection]);
+            firstSelection.Handler.OnRightClicked(tool.EditorState, [firstSelection]);
         }
 
-        if (input.Mouse.Middle.Clicked() && RysyEngine.Scene is EditorScene editor && editor.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
+        if (input.Mouse.Middle.Clicked() && tool.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
             if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
                 // TODO: Create a proper helper for this!
                 if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer) is { } editorLayer) {
                     input.Mouse.ConsumeMiddle();
-                    editor.ToolHandler.SetTool<PlacementTool>();
+                    tool.ToolHandler.SetTool<PlacementTool>();
                     placementTool.Layer = editorLayer;
                     placementTool.OnMiddleClick();
                 }

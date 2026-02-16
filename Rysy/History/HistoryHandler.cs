@@ -116,7 +116,7 @@ public class HistoryHandler {
     public static List<IHistoryAction> Deserialize(string json) {
         var d = JsonSerializer.Deserialize<List<DeserializedAction>>(json);
 
-        var map = (RysyEngine.Scene as EditorScene)?.Map;
+        var map = EditorState.Current?.Map;
         if (map is null)
             return new();
 

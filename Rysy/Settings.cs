@@ -190,73 +190,63 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
                 RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(value);
         }
     }
-    
-    private float _triggerFontScale = 0.5f;
+
     public float TriggerFontScale {
-        get => _triggerFontScale;
+        get;
         set {
-            _triggerFontScale = value;
-            if (EditorState.Current?.Map is { } map) {
-                map.ClearRenderCache();
-            }
+            field = value;
+            EditorState.Current?.Map?.ClearRenderCache();
         }
-    }
+    } = 0.5f;
 
     public Dictionary<string, string> Hotkeys { get; set; } = new();
 
     public int MaxBackups { get; set; } = 25;
 
-    private float _hiddenLayerAlpha = 0.3f;
     public float HiddenLayerAlpha {
-        get => _hiddenLayerAlpha;
+        get;
         set {
-            _hiddenLayerAlpha = value;
-            if (RysyEngine.Scene is EditorScene editor) {
-                editor.ClearMapRenderCache();
-            }
+            field = value;
+            EditorState.Current?.Map?.ClearRenderCache();
         }
-    }
+    } = 0.3f;
 
-    private int _targetFps = 60;
     public int TargetFps {
-        get => _targetFps;
+        get;
         set {
-            _targetFps = value;
+            field = value;
             RysyEngine.SetTargetFps(value);
         }
-    }
+    } = 60;
 
-    private bool _vSync = true;
     public bool VSync {
-        get => _vSync;
+        get;
         set {
-            _vSync = value;
+            field = value;
             RysyEngine.ToggleVSync(value);
         }
-    }
+    } = true;
 
-    private bool _smartFramerate = false;
     public bool SmartFramerate {
-        get => _smartFramerate;
+        get;
         set {
-            _smartFramerate = value;
+            field = value;
             SmartFpsHandler.OnToggle();
         }
-    }
+    } = false;
 
     public bool MinifyClipboard { get; set; } = false;
 
 
-    private bool _borderlessFullscreen = false;
     // has issues with mouse positions
     public bool BorderlessFullscreen {
-        get => _borderlessFullscreen;
+        get;
         set {
-            _borderlessFullscreen = value;
+            field = value;
 
             RysyEngine.ToggleBorderlessFullscreen(value);
         }
-    }
+    } = false;
 
     public bool ReadBlacklist { get; set; } = true;
 
