@@ -1,0 +1,18 @@
+﻿# Last updated 16.02.2026
+windows-x86_64:
+  version: 10.0.3
+  download: https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.3/dotnet-runtime-10.0.3-win-x64.zip
+  download-sha512: 8f982640c5d34c9c59c98a8af2a7c270f2ade9fc09da68c6d7bed575a32cbbc11afc4f86cc4789b2c0c58eeac3b99b73f2444fba342a40b88e85a96556ddfd88
+  download-format: zip
+
+linux-x86_64:
+  version: 10.0.3
+  download: https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.3/dotnet-runtime-10.0.3-linux-x64.tar.gz
+  download-sha512: 870598f1294c0a029757646bc82fe41916cdb6df6cfd6f18b4487b48e9a0348b717be659f5ce3a6153d3f8dd3326ec59a1663c0b2ae91f450aa9eb4b5ec5d4b2
+  download-format: targz
+
+macos-x86_64:
+  version: 10.0.3
+  download: https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.3/dotnet-runtime-10.0.3-osx-x64.tar.gz
+  download-sha512: 033716731e17c119fbc6af63a173b6461f0961a8e5d5b6941ab190755d48cc6f75e5a61ea70fad30463ca2cfcddae1c4fcfcce34dafb1d27382890193fbc2cc2
+  download-format: targz

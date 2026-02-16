@@ -43,6 +43,12 @@
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'win-x64'">dll</_NativeLibExt>
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx'">dylib</_NativeLibExt>
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'linux-x64'">so</_NativeLibExt>
+
+    <_NativeExeExt Condition="'$(_NativeRuntime)' == 'win-x64'">.exe</_NativeExeExt>
+    <!-- Not needed, as empty is the default
+    <_NativeExeExt Condition="'$(_NativeRuntime)' == 'osx'"></_NativeExeExt>
+    <_NativeExeExt Condition="'$(_NativeRuntime)' == 'linux-x64'"></_NativeExeExt>
+    -->
   </PropertyGroup>
 
   <ItemGroup Condition="'$(FNA)' != ''">
@@ -91,7 +97,41 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
     <DefineConstants>$(DefineConstants);DirectX</DefineConstants>
   </PropertyGroup>
-  
+
+  <!-- Set up a Piton Apphost if wanted -->
+  <PropertyGroup>
+    <CustomAppHost Condition="'$(_IsPublishing)' == 'true'">true</CustomAppHost>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(CustomAppHost)' != ''">
+      <UseAppHost Condition="">false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(CustomAppHost)' != ''">
+      <Content Include="piton-runtime.yaml" TargetPath="piton-runtime.yaml" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="IncludeAppHosts" AfterTargets="CoreCompile" Condition="'$(CustomAppHost)' != ''">
+      <ItemGroup>
+          <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\piton$(_NativeExeExt)">
+              <Link>%(Filename)%(Extension)</Link>
+              <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+              <Visible>False</Visible>
+          </Content>
+      </ItemGroup>
+  </Target>
+  <Target Name="BindAppHosts" AfterTargets="CoreCompile" DependsOnTargets="IncludeAppHosts" Outputs="$(OutputPath)\Rysy$(_NativeExeExt)" Condition="'$(CustomAppHost)' != ''" >
+        <Message Importance="High" Text="Binding AppHost..." />
+
+        <CreateAppHost AppHostSourcePath="runtimes\$(_NativeRuntime)\native\piton$(_NativeExeExt)"
+                       AppHostDestinationPath="$(OutputPath)\Rysy$(_NativeExeExt)"
+                       AppBinaryName="$(AssemblyName)$(TargetExt)" 
+                       IntermediateAssembly="@(IntermediateAssembly->'%(FullPath)')"
+                       WindowsGraphicalUserInterface="$(_IsWindows)"
+        />
+  </Target>
+  <!-- The executable generated via CreateAppHost does not get auto-copied to the publish/ directory, we need to do this manually -->
+  <Target Name="CopyExecutableToPublish" AfterTargets="PrepareForPublish" DependsOnTargets="BindAppHosts" Condition="'$(CustomAppHost)' != ''">
+        <Copy SourceFiles="$(OutputPath)\Rysy$(_NativeExeExt)" DestinationFolder="$(PublishDir)" />
+  </Target>
+
   <PropertyGroup>
     <NoWarn>1701;1702;1591</NoWarn>
   </PropertyGroup>
