@@ -16,9 +16,7 @@ public sealed record NullableDepthField : Field {
     private ComboCache<DepthValue> _comboCache = new();
     
     public override object? RenderGui(string fieldName, object value) {
-        int? val = value is int j ? j : null;
-
-        object? returnValue = null;
+        int? returnValue = null;
 
         bool changed = false;
         var xPadding = ImGui.GetStyle().FramePadding.X;
@@ -52,7 +50,7 @@ public sealed record NullableDepthField : Field {
 
             foreach (var (depth, searchable) in filtered.OrderBy(x => x.Item1.Value)) {
                 if (searchable.RenderImGuiMenuItem()) {
-                    returnValue = depth;
+                    returnValue = depth.Value;
                     changed = true;
                 }
             }
@@ -65,7 +63,9 @@ public sealed record NullableDepthField : Field {
         ImGui.Text(fieldName);
         true.WithTooltip(Tooltip);
 
-        return returnValue ?? (changed ? new FieldNullReturn() : null);
+        if (returnValue is not null)
+            return returnValue;
+        return changed ? new FieldNullReturn() : null;
     }
 
     public override Field CreateClone() => this with { };
