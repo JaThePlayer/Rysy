@@ -337,11 +337,21 @@ public abstract class Tool {
     public virtual object GetGroupKeyForMaterial(object material) => material;
 
 
-    private Dictionary<object, string> _groupKeyToMainPlacementName = new();
+    private Dictionary<object, string> GroupKeyToMainPlacementName => field ??= UsePersistence 
+        ? Persistence.Instance.Get<Dictionary<object, string>>($"{PersistenceGroup}.MainPlacementsForGroups", [])
+        : [];
+
+    private void UpdateMainPlacementForGroup(object key, Searchable newName) {
+        GroupKeyToMainPlacementName[key] = newName.Text;
+
+        if (UsePersistence) {
+            Persistence.Instance.Set($"{PersistenceGroup}.MainPlacementsForGroups", GroupKeyToMainPlacementName);
+        }
+    }
     
     private (object material, Searchable searchable) GetMainPlacementForGroupKey(object key, 
         List<(object material, Searchable searchable)> group) {
-        if (!_groupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
+        if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
             return group[0];
 
         foreach (var pair in group) {
@@ -424,7 +434,7 @@ public abstract class Tool {
                     if (comboOpened) {
                         foreach (var (mat, searchable) in group) {
                             if (RenderMaterialListElement(currentLayer, mat, searchable)) {
-                                _groupKeyToMainPlacementName[groupKey] = searchable.Text;
+                                UpdateMainPlacementForGroup(groupKey, searchable);
                             }
                         }
                         
