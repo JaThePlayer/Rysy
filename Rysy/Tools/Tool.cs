@@ -401,6 +401,7 @@ public abstract class Tool {
 
                 var groupKey = GetGroupKeyForMaterial(group[0].material);
                 var first = GetMainPlacementForGroupKey(groupKey, group);
+                ImGui.PushID(first.searchable.TextWithMods);
                 
                 // draw dropdown for alternate placements
                 if (group.Count > 1) {
@@ -432,6 +433,8 @@ public abstract class Tool {
                 } else {
                     RenderMaterialListElement(currentLayer, first.material, first.searchable);
                 }
+                
+                ImGui.PopID();
                 
                 if (columns > 1)
                     ImGui.NextColumn();
