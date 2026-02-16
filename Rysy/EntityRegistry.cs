@@ -117,8 +117,7 @@ public static class EntityRegistry {
         };
     }
     
-    internal static LuaCtx LuaCtx => field ??= LuaCtx.CreateNew();
-
+    internal static LuaCtx LuaCtx { get; private set; }
     public const string FgDecalSid = "fgDecal";
     public const string BgDecalSid = "bgDecal";
 
@@ -217,6 +216,7 @@ public static class EntityRegistry {
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {
+        LuaCtx = LuaCtx.CreateNew();
         LuaPluginWatchers.DisposeAllAndClear();
         Registered.Clear();
         RegisteredStyles.Clear();

@@ -899,8 +899,10 @@ where TArg1 : class, ILuaWrapper {
     /// </summary>
     public static unsafe void PushWrapper(this Lua state, ILuaWrapper wrapper) {
         lock (NeoWrapperLock) {
+            var wrapperCacheRef = GetWrapperCacheRef(state);
+            
             if (WrapperObjToId.TryGetValue(wrapper, out var existingId)) {
-                _wrapperCacheRef!.PushToStack(state);
+                wrapperCacheRef.PushToStack(state);
                 state.PushInteger(existingId.Value);
                 if (state.GetTable(-2) == LuaType.UserData) {
                     // There's an userdata cached, we can return that. But first, pop the wrapper cache table.
@@ -924,20 +926,7 @@ where TArg1 : class, ILuaWrapper {
             }
             NeoWrapperCount++;
             WrapperObjToId.Add(wrapper, new(userdata->Id));
-            if (_wrapperCacheRef is null) {
-                state.NewTable();
-                var wrapperCacheLoc = state.GetTop();
-                _wrapperCacheRef = LuaTableRef.MakeFrom(state, wrapperCacheLoc);
-                state.NewTable();
-                var mt = state.GetTop();
-                state.PushString("v"u8);
-                state.SetField(mt, "__mode");
-                    
-                state.SetMetaTable(wrapperCacheLoc);
-                state.Pop(1);
-            }
-            
-            _wrapperCacheRef.PushToStack(state);
+            wrapperCacheRef.PushToStack(state);
             var cacheLoc = state.GetTop();
             state.PushInteger(userdata->Id);
             state.PushCopy(userdataLoc);
@@ -1072,6 +1061,24 @@ where TArg1 : class, ILuaWrapper {
         }
         
         state.SetMetaTable(handlePos);
+    }
+
+    private static LuaTableRef GetWrapperCacheRef(Lua state)
+    {
+        if (_wrapperCacheRef is null || _wrapperCacheRef.Lua.pointer != state.pointer) {
+            state.NewTable();
+            var wrapperCacheLoc = state.GetTop();
+            _wrapperCacheRef = LuaTableRef.MakeFrom(state, wrapperCacheLoc);
+            state.NewTable();
+            var mt = state.GetTop();
+            state.PushString("v"u8);
+            state.SetField(mt, "__mode");
+                    
+            state.SetMetaTable(wrapperCacheLoc);
+            state.Pop(1);
+        }
+
+        return _wrapperCacheRef;
     }
 
 

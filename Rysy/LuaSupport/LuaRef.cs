@@ -39,6 +39,8 @@ public class LuaRef {
 
     public void PushToStack(Lua? lua = null) {
         var luaNotNull = lua ?? Lua;
+        if (Lua.pointer != luaNotNull.pointer)
+            throw new Exception("Wrong Lua instance used to push to stack!");
         luaNotNull.GetGlobal(_luaGlobalKey);
     }
     
