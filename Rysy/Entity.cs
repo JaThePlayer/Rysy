@@ -603,7 +603,7 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         _pos = new(EntityData.X, EntityData.Y);
         _id = EntityData.Int("id");
         SelectionHandler?.ClearCollideCache();
-        if (changed.NodesChanged && NodeSelectionHandlers is { } handlers) {
+        if (NodeSelectionHandlers is { } handlers) {
             foreach (var item in handlers) {
                 item?.ClearCollideCache();
                 item?.RecalculateId();
