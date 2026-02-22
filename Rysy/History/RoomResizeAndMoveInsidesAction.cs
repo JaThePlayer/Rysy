@@ -86,7 +86,7 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
             _moveAction.Apply(map);
 
             _moveActions = new();
-            MoveAll(room, -Move);
+            MoveAll(_moveActions, room, -Move);
 
             var tileOffset = (-Move / 8).ToPoint();
             _moveActions.Add(new TilegridMoveActionAfterResize(room.Fg, fgTiles!, tileOffset.X, tileOffset.Y));
@@ -122,17 +122,15 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
         room.Pos += delta.ToVector2();
     }
 
-    private void MoveAll(Room room, Vector2 offset) {
+    private void MoveAll(List<IHistoryAction> into, Room room, Vector2 offset) {
         offset = offset.Snap(8);
         
         foreach (var e in room.Entities.Concat(room.Triggers).Concat(room.FgDecals).Concat(room.BgDecals)) {
-            e.Pos += offset;
+            into.Add(new MoveEntityAction(e, offset));
             foreach (var n in e.Nodes) {
-                n.Pos += offset;
+                into.Add(new MoveNodeAction(n, e, offset));
             }
         }
-
-        room.ClearRenderCache();
     }
 
     public void Undo(Map map) {
@@ -140,7 +138,6 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
         
         if (_moveAction is { }) {
             _moveAction?.Undo(map);
-            MoveAll(room, Move);
             if (_moveActions is { })
                 foreach (var item in _moveActions) {
                     item.Undo(map);
