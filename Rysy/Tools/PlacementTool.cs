@@ -575,7 +575,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return def;
     }
 
-    public override object GetGroupKeyForMaterial(object material) {
+    public override string GetGroupKeyForMaterial(object material) {
         if (material is Placement pl) {
             if (pl.Sid is { } sid && sid != EntityRegistry.FgDecalSid && sid != EntityRegistry.BgDecalSid)
                 return sid;
@@ -583,7 +583,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
             return pl.Name;
         }
 
-        return material;
+        return base.GetGroupKeyForMaterial(material);
     }
 
     protected override bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {

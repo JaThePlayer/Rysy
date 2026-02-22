@@ -336,14 +336,14 @@ public abstract class Tool {
     public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.ColumnCount", 1) : 1;
     
 
-    public virtual object GetGroupKeyForMaterial(object material) => material;
+    public virtual string GetGroupKeyForMaterial(object material) => material.ToStringInvariant();
 
 
-    private Dictionary<object, string> GroupKeyToMainPlacementName => field ??= UsePersistence 
-        ? Persistence.Instance.Get<Dictionary<object, string>>($"{PersistenceGroup}.MainPlacementsForGroups", [])
+    private Dictionary<string, string> GroupKeyToMainPlacementName => field ??= UsePersistence 
+        ? Persistence.Instance.Get<Dictionary<string, string>>($"{PersistenceGroup}.MainPlacementsForGroups", [])
         : [];
 
-    private void UpdateMainPlacementForGroup(object key, Searchable newName) {
+    private void UpdateMainPlacementForGroup(string key, Searchable newName) {
         GroupKeyToMainPlacementName[key] = newName.Text;
 
         if (UsePersistence) {
@@ -351,7 +351,7 @@ public abstract class Tool {
         }
     }
     
-    private (object material, Searchable searchable) GetMainPlacementForGroupKey(object key, 
+    private (object material, Searchable searchable) GetMainPlacementForGroupKey(string key, 
         List<(object material, Searchable searchable)> group) {
         if (!GroupKeyToMainPlacementName.TryGetValue(key, out var targetName)) 
             return group[0];
