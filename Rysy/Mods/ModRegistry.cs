@@ -7,6 +7,8 @@ using System.Text.Json;
 namespace Rysy.Mods;
 
 public static class ModRegistry {
+    private const string LogTag = "ModRegistry";
+    
     public static ModMeta VanillaMod { get; private set; }
     
     public static ModMeta RysyMod { get; private set; }
@@ -143,7 +145,7 @@ public static class ModRegistry {
         Filesystem.AddMod(meta);
 
         if (ModsMutable.TryGetValue(meta.Name, out var prevMod)) {
-            Logger.Write("ModRegistry", LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
+            Logger.Write(LogTag, LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
         }
         ModsMutable[meta.Name] = meta;
     }
@@ -201,33 +203,33 @@ public static class ModRegistry {
     }
 
     private static async Task<ModMeta?> CreateModAsync(string dir, bool zip, bool loadCSharp) {
-        var mod = new ModMeta();
-        IModFilesystem? filesystem = null;
+        IModFilesystem? filesystem;
         try {
             filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
+            await filesystem.InitialScan();
         } catch (Exception e) {
-            Logger.Error(e, $"Failed to create filesystem for mod at {dir.Unbackslash().Censor()}. Skipping loading the mod!");
+            Logger.Error(LogTag, e, $"Failed to create filesystem for mod at {dir.Unbackslash().Censor()}. Skipping loading the mod!");
             return null;
         }
+
+        var mod = new ModMeta {
+            Filesystem = filesystem,
+        };
+
+        mod.EverestYaml = ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
         
-        await filesystem.InitialScan();
-
-        mod.Filesystem = filesystem;
-
         try {
-            ReadEverestYaml(mod, guessedNameGetter: () => Path.GetFileName(dir));
             if (loadCSharp)
                 LoadModRysySourceCodePlugins(mod);
         } catch (Exception e) {
-            Logger.Error(e, $"Error loading mod: {dir}");
+            Logger.Error(LogTag, e, $"Error loading mod: {dir}");
         }
 
         try {
             LoadSettings(mod, registerListener: true);
         } catch (Exception e) {
-            Logger.Error(e, $"Error loading mod settings for {mod.Name}");
+            Logger.Error(LogTag, e, $"Error loading mod settings for {mod.Name}");
         }
-
 
         return mod;
     }
@@ -340,20 +342,30 @@ public static class ModRegistry {
         #endif
     }
 
-    private static void ReadEverestYaml(ModMeta mod, Func<string?>? guessedNameGetter) {
+    private static List<EverestModuleMetadata> ReadEverestYaml(ModMeta mod, Func<string?>? guessedNameGetter) {
         var filesystem = mod.Filesystem ?? throw new Exception($"{nameof(mod)}.{nameof(ModMeta.Filesystem)} needs to be set before calling {nameof(ReadEverestYaml)}!");
+        var guessedName = guessedNameGetter?.Invoke() ?? $"<unknown:{Guid.NewGuid()}>";
 
-        var parsedYaml = filesystem.OpenFile("everest.yaml", ParseEverestYaml)
-                      ?? filesystem.OpenFile("everest.yml", ParseEverestYaml);
-
-        if (parsedYaml is { } && parsedYaml.Count != 0 && parsedYaml.All(m => m.IsValid())) {
-            mod.EverestYaml = parsedYaml;
-            return;
+        List<EverestModuleMetadata>? parsedYaml;
+        try {
+            parsedYaml = filesystem.OpenFile("everest.yaml", ParseEverestYaml)
+                         ?? filesystem.OpenFile("everest.yml", ParseEverestYaml);
+        } catch (Exception ex) {
+            Logger.Error(LogTag, ex, $"Failed to parse everest.yaml for: {guessedName} [{filesystem.Root}]");
+            goto returnPlaceholder;
         }
 
-        var guessedName = guessedNameGetter?.Invoke() ?? $"<unknown:{Guid.NewGuid()}>";
-        Logger.Write("ModRegistry", LogLevel.Info, $"Found mod with no everest.yaml or an invalid one: {guessedName} [{filesystem.Root}]");
-        mod.EverestYaml = [
+        if (parsedYaml is null or []) {
+            Logger.Write(LogTag, LogLevel.Info, $"Found mod with no everest.yaml or an invalid one: {guessedName} [{filesystem.Root}]");
+            goto returnPlaceholder;
+        }
+
+        if (parsedYaml.All(m => m.IsValid())) {
+            return parsedYaml;
+        }
+        
+        returnPlaceholder:
+        return [
             new() {
                 Name = guessedName,
                 Version = new(1, 0, 0, 0),
@@ -364,7 +376,7 @@ public static class ModRegistry {
     private static List<EverestModuleMetadata>? ParseEverestYaml(Stream stream) {
         using var everestYamlReader = new StreamReader(stream);
         var yamls = YamlHelper.Deserializer.Deserialize<List<EverestModuleMetadata>>(everestYamlReader);
-        if (yamls.Count != 0) {
+        if (yamls is [_, ..]) {
             return yamls;
         }
 

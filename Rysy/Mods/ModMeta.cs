@@ -15,20 +15,18 @@ public sealed class ModMeta {
     /// </summary>
     public ModModule? Module { get; internal set; }
 
-    private Assembly? _pluginAssembly;
-
     /// <summary>
     /// The assembly containing this plugin's code.
     /// </summary>
     public Assembly? PluginAssembly {
-        get => _pluginAssembly;
+        get;
         internal set {
-            var oldAsm = _pluginAssembly;
-            _pluginAssembly = value;
+            var oldAsm = field;
+            field = value;
 
             ModRegistry.ModAssemblyScannerInstance?.Invoke(this, oldAsm);
             OnAssemblyReloaded?.Invoke(value);
-        } 
+        }
     }
 
     private ModSettings? _settings;
@@ -48,7 +46,7 @@ public sealed class ModMeta {
     /// <summary>
     /// The filesystem for this mod, used for retrieving assets contained in the mod.
     /// </summary>
-    public IModFilesystem Filesystem { get; internal set; }
+    public required IModFilesystem Filesystem { get; init; }
 
     public LayeredFilesystem GetAllDependenciesFilesystem(bool includeOptionalDeps = true) {
         var fs = new LayeredFilesystem();
@@ -100,12 +98,12 @@ public sealed class ModMeta {
     /// <summary>
     /// The metadata stored in the everest.yaml for this mod
     /// </summary>
-    public List<EverestModuleMetadata> EverestYaml { get; internal set; }
+    public List<EverestModuleMetadata> EverestYaml { get; internal set; } = [];
 
     /// <summary>
     /// The mod name, taken from the everest.yaml
     /// </summary>
-    public string Name => EverestYaml.First().Name;
+    public string Name => EverestYaml.FirstOrDefault()?.Name ?? $"<Unknown:{Path.GetFileName(Filesystem.Root)}>";
 
     /// <summary>
     /// Display name of the mod, taking into consideration the lang file.
@@ -115,7 +113,7 @@ public sealed class ModMeta {
     /// <summary>
     /// The mod version, taken from the everest.yaml
     /// </summary>
-    public Version Version => EverestYaml.First().Version;
+    public Version Version => EverestYaml.FirstOrDefault()?.Version ?? new Version();
 
     public bool IsVanilla => Name is "Rysy" or "Celeste";
 
@@ -201,14 +199,14 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     /// </summary>
     [YamlIgnore]
     public Version Version { get; set; } = new Version(1, 0);
-    private string _versionString;
+
     [YamlMember(Alias = "Version")]
     public string VersionString {
-        get => _versionString ?? Version.ToString();
+        get => field ?? Version.ToString();
         set {
             ArgumentNullException.ThrowIfNull(value);
 
-            _versionString = value;
+            field = value;
             int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);
@@ -221,20 +219,20 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     /// The dependencies of the mod.
     /// </summary>
     [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
-    public List<EverestDependency> Dependencies { get; set; } = new List<EverestDependency>();
+    public List<EverestDependency> Dependencies { get; set; } = [];
 
     /// <summary>
     /// The optional dependencies of the mod. This mod will load after the mods listed here if they are installed; if they aren't, the mod will load anyway.
     /// </summary>
     [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
-    public List<EverestDependency> OptionalDependencies { get; set; } = new List<EverestDependency>();
+    public List<EverestDependency> OptionalDependencies { get; set; } = [];
 
     public override string ToString() {
         return Name + " " + Version;
     }
 
     public bool IsValid() {
-        return !Name.IsNullOrWhitespace() && Version != null;
+        return !Name.IsNullOrWhitespace();
     }
     
     public int LuaIndex(Lua lua, long key) {
@@ -267,14 +265,14 @@ public class EverestDependency {
     /// </summary>
     [YamlIgnore]
     public Version Version { get; set; } = new Version(1, 0);
-    private string _versionString;
+
     [YamlMember(Alias = "Version")]
     public string VersionString {
-        get => _versionString ?? Version.ToString();
+        get => field ?? Version.ToString();
         set {
             ArgumentNullException.ThrowIfNull(value);
 
-            _versionString = value;
+            field = value;
             int versionSplitIndex = value.IndexOf('-', StringComparison.Ordinal);
             if (versionSplitIndex == -1)
                 Version = new Version(value);
