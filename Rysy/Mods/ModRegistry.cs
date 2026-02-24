@@ -24,6 +24,8 @@ public static class ModRegistry {
     public static LayeredFilesystem Filesystem { get; private set; } = new();
     
     public static bool IsLoaded { get; private set; }
+    
+    private static IComponentRegistry LastUsedComponentRegistry { get; set; }
 
     /// <summary>
     /// Tries to get a <see cref="ModMeta"/> for a mod using its everest.yaml name.
@@ -94,6 +96,7 @@ public static class ModRegistry {
     }
 
     public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
+        LastUsedComponentRegistry = componentRegistry;
         task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
@@ -134,13 +137,13 @@ public static class ModRegistry {
 
         foreach (var meta in all) {
             if (meta is not null)
-                RegisterMod(meta);
+                RegisterMod(componentRegistry, meta);
         }
 
         IsLoaded = true;
     }
 
-    private static void RegisterMod(ModMeta meta)
+    private static void RegisterMod(IComponentRegistry componentRegistry, ModMeta meta)
     {
         Filesystem.AddMod(meta);
 
@@ -148,6 +151,12 @@ public static class ModRegistry {
             Logger.Write(LogTag, LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
         }
         ModsMutable[meta.Name] = meta;
+
+        if (meta.Module is { } module) {
+            module.ComponentRegistryScope = new ComponentRegistryScope(componentRegistry);
+            module.ComponentRegistryScope.Add(module);
+            module.Load();
+        }
     }
 
     public static ModMeta CreateNewMod(string id) {
@@ -168,7 +177,7 @@ public static class ModRegistry {
 
         meta.TrySaveEverestYaml();
 
-        RegisterMod(meta);
+        RegisterMod(LastUsedComponentRegistry, meta);
 
         return meta;
     }
@@ -279,8 +288,6 @@ public static class ModRegistry {
 
         mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
         mod.Module.Meta = mod;
-        mod.Module.ComponentRegistryScope = new ComponentRegistryScope(componentRegistry);
-        mod.Module.Load();
     }
 
     private static void LoadModRysySourceCodePlugins(ModMeta mod, IComponentRegistry componentRegistry, bool registerFilewatch = true) {

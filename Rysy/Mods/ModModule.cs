@@ -7,6 +7,8 @@ public class ModModule {
 
     public IComponentRegistry ComponentRegistry => ComponentRegistryScope;
 
+    public IRysyLogger Logger => field ??= ComponentRegistry.GetRequired<IRysyLoggerFactory>().CreateLogger(GetType());
+
     public virtual void Load() {
 
     }

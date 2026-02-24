@@ -5,6 +5,7 @@ using Rysy.Helpers;
 IRysyLoggerFactory loggerFactory = new LoggerFactory();
 var globalComponents = new ComponentRegistry();
 globalComponents.Add(new RysyState());
+globalComponents.Add(loggerFactory);
 globalComponents.Add(RysyState.CmdArguments = new CommandlineArguments(args, loggerFactory.CreateLogger<CommandlineArguments>()));
 
 if (RysyState.CmdArguments.HelpDisplayed)

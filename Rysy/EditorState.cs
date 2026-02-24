@@ -15,10 +15,7 @@ public class EditorState {
     /// <summary>
     /// The current camera.
     /// </summary>
-    public Camera Camera {
-        get => field ??= new Camera().ListenToViewportChanges();
-        set => field = value.ListenToViewportChanges();
-    }
+    public Camera Camera => field ??= new Camera().ListenToViewportChanges();
 
     /// <summary>
     /// If the current scene is <see cref="Scenes.EditorScene"/>, gets/sets the currently selected room.

@@ -3,6 +3,7 @@
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
+using Rysy.Signals;
 #if FNA
 using Rysy.Helpers;
 using SDL2;
@@ -86,8 +87,6 @@ public class RysyState {
     public static event Action? OnRender = null;
 
     public static event Action? OnNextReload;
-    
-    public static Action<Viewport>? OnViewportChanged { get; set; }
     #endregion
     
     /// <summary>
@@ -120,7 +119,7 @@ public class RysyState {
     }
     
     internal void Window_ClientSizeChanged(object? sender, EventArgs e) {
-        OnViewportChanged?.Invoke(_GraphicsDevice.Viewport);
+        _Scene.OnSignal(new ViewportChanged(_GraphicsDevice.Viewport));
 
         if (Settings.Instance is { } settings && !_Window.IsBorderlessShared()) {
             settings.StartingWindowWidth = _GraphicsDevice.Viewport.Width;

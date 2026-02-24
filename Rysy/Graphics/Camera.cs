@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Rysy.Extensions;
+﻿using Rysy.Components;
+using Rysy.Signals;
 
 namespace Rysy.Graphics;
 
-public class Camera {
+public class Camera : ISignalListener<ViewportChanged> {
     private XnaVector2 _pos;
     public XnaVector2 Pos => _pos;
 
@@ -32,14 +32,7 @@ public class Camera {
     private bool _listeningToViewportChanges;
 
     public Camera ListenToViewportChanges() {
-        if (!_listeningToViewportChanges && Settings.UiEnabled) {
-            _listeningToViewportChanges = true;
-            RysyState.OnViewportChanged += v => {
-                _viewport = v;
-                RecalculateMatrix();
-            };
-        }
-
+        _listeningToViewportChanges = true;
         return this;
     }
 
@@ -231,5 +224,12 @@ public class Camera {
         hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup|ctrl+scrollup", () => ZoomIn(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown|ctrl+scrolldown", () => ZoomOut(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomRealScale", "", () => Zoom(6f));
+    }
+
+    public void OnSignal(ViewportChanged signal) {
+        if (_listeningToViewportChanges) {
+            _viewport = signal.Viewport;
+            RecalculateMatrix();
+        }
     }
 }

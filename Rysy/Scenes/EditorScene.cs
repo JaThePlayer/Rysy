@@ -63,10 +63,7 @@ public sealed class EditorScene : Scene {
         set => EditorState.CurrentRoom = value;
     }
 
-    public Camera Camera {
-        get => EditorState.Camera!;
-        set => EditorState.Camera = value;
-    } // will be set in Map.set
+    public Camera Camera => EditorState.Camera;
 
     public EditorScene() {
         //HistoryHandler = new();
@@ -80,6 +77,7 @@ public sealed class EditorScene : Scene {
         Add(EditorState);
         Add(HistoryHandler);
         Add(new Menubar());
+        Add(Camera);
     }
 
     public EditorScene(Map map) : this() {

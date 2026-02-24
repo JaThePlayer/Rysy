@@ -15,14 +15,6 @@ public static class RoomList {
 
     internal static string Search = "";
 
-    static RoomList() {
-        RysyState.OnViewportChanged += OnViewportChanged;
-    }
-
-    private static void OnViewportChanged(Viewport viewport) {
-        _firstGui = true;
-    }
-
     public static void Render(EditorScene editor, Input input) {
         if (editor is not { Map: { } map }) {
             return;

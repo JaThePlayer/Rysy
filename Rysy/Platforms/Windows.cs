@@ -161,7 +161,32 @@ public partial class Windows : RysyPlatform {
                 ref backdrop,
                 sizeof(DWM_SYSTEMBACKDROP_TYPE)
             );
+            
+            var margins = new MARGINS//
+            {
+                cxLeftWidth = 0,
+                cxRightWidth = 0,
+                cyTopHeight = 1, // important: >= 1
+                cyBottomHeight = 0
+            };
+
+            DwmExtendFrameIntoClientArea(window, ref margins);
         }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct MARGINS
+        {
+            public int cxLeftWidth;
+            public int cxRightWidth;
+            public int cyTopHeight;
+            public int cyBottomHeight;
+        }
+        
+        [LibraryImport("dwmapi.dll")]
+        internal static partial int DwmExtendFrameIntoClientArea(
+            IntPtr hwnd,
+            ref MARGINS margins
+        );
         
         [LibraryImport("dwmapi.dll")]
         internal static partial int DwmSetWindowAttribute(

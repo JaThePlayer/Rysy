@@ -1,13 +1,25 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Components;
+using Rysy.Helpers;
+using Rysy.Signals;
 
 namespace Rysy;
 
-public interface IComponentRegistry
+public interface IComponentRegistry : ISignalListener
 {
     void Add(object component);
     void Remove(object component);
     T? Get<T>() where T : class;
     IEnumerable<T> GetAll<T>() where T : class;
+
+    void ISignalListener.OnSignal<T>(T signal) {
+        foreach (var listener in GetAll<ISignalListener>()) {
+            listener.OnSignal(signal);
+        }
+            
+        foreach (var listener in GetAll<ISignalListener<T>>()) {
+            listener.OnSignal(signal);
+        }
+    }
 }
 
 public static class ComponentRegistryExt {
@@ -31,6 +43,10 @@ public static class ComponentRegistryExt {
             }
 
             return ret;
+        }
+        
+        public void OnSignal<T>(T signal) where T : ISignal {
+            registry.OnSignal(signal);
         }
     }
 }

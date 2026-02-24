@@ -1,11 +1,13 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Scenes;
+using Rysy.Signals;
 
 namespace Rysy;
 
-public abstract class Scene {
+public abstract class Scene : ISignalListener {
     private readonly List<Window> _windows = [];
     
     internal IReadOnlyList<Window> ActiveWindows => _windows;
@@ -192,6 +194,10 @@ public abstract class Scene {
     
     public IEnumerable<T> GetAll<T>() where T : class {
         return Components.GetAll<T>();
+    }
+
+    public void OnSignal<T>(T signal) where T : ISignal {
+        Components.OnSignal(signal);
     }
 }
 
