@@ -59,6 +59,75 @@ public sealed class Logger(string tag) : IRysyLogger {
         WriteImpl(txt);
     }
 
+    private static string NotVirtualExceptionToString(Exception ex, string? customMessage)
+    {
+        // Taken from Exception.ToString()
+        const string InnerExceptionPrefix = " ---> ";
+        
+        string className = ex.GetType().Name;
+        string? message = customMessage ?? ex.Message;
+        string innerExceptionString = ex.InnerException?.ToString() ?? "";
+        string endOfInnerExceptionResource = "   --- End of inner exception stack trace ---";//SR.Exception_EndOfInnerExceptionStack;
+        string? stackTrace = ex.StackTrace;
+
+        // Calculate result string length
+        int length = className.Length;
+        checked
+        {
+            if (!string.IsNullOrEmpty(message))
+            {
+                length += 2 + message.Length;
+            }
+            if (ex.InnerException != null)
+            {
+                length += Environment.NewLine.Length + InnerExceptionPrefix.Length + innerExceptionString.Length + Environment.NewLine.Length + 3 + endOfInnerExceptionResource.Length;
+            }
+            if (stackTrace != null)
+            {
+                length += Environment.NewLine.Length + stackTrace.Length;
+            }
+        }
+
+        return string.Create(length, (className, message, innerExceptionString, endOfInnerExceptionResource, stackTrace), static (resultSpan, data) => {
+            Write(data.className, ref resultSpan);
+            if (!string.IsNullOrEmpty(data.message)) {
+                Write(": ", ref resultSpan);
+                Write(data.message, ref resultSpan);
+            }
+
+            if (!string.IsNullOrWhiteSpace(data.innerExceptionString)) {
+                Write(Environment.NewLine, ref resultSpan);
+                Write(InnerExceptionPrefix, ref resultSpan);
+                Write(data.innerExceptionString, ref resultSpan);
+                Write(Environment.NewLine, ref resultSpan);
+                Write("   ", ref resultSpan);
+                Write(data.endOfInnerExceptionResource, ref resultSpan);
+            }
+
+            if (data.stackTrace != null) {
+                Write(Environment.NewLine, ref resultSpan);
+                Write(data.stackTrace, ref resultSpan);
+            }
+        });
+
+        static void Write(string source, ref Span<char> dest)
+        {
+            source.CopyTo(dest);
+            dest = dest[source.Length..];
+        }
+    }
+    
+    private static string ExceptionToString(Exception ex) {
+        switch (ex) {
+            case YamlDotNet.Core.YamlException yamlException:
+                // YamlException hides the type name and stack trace in ToString... thanks
+                return NotVirtualExceptionToString(ex, 
+                    $"({yamlException.Start}) - ({yamlException.End}): {yamlException.Message}");
+            default:
+                return ex.ToString();
+        }
+    }
+    
     public static void Write(string tag, LogLevel logLevel, FancyInterpolatedStringHandler msg, 
         [CallerMemberName] string callerMethod = "",
         [CallerFilePath] string callerFile = "",
@@ -84,7 +153,7 @@ public sealed class Logger(string tag) : IRysyLogger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-        var txt = $"[{LogLevel.Error.ToColoredString()}] {message}: {exception.ToString()}\n";
+        var txt = $"[{LogLevel.Error.ToColoredString()}] {message}: {ExceptionToString(exception)}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -101,12 +170,7 @@ public sealed class Logger(string tag) : IRysyLogger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-
-        var exString = exception switch {
-            _ => exception.ToString()
-        };
-
-        var txt = $"[{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exString}\n";
+        var txt = $"[{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {ExceptionToString(exception)}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
@@ -123,12 +187,7 @@ public sealed class Logger(string tag) : IRysyLogger {
         if (!ValidLogLevel(LogLevel.Error))
             return;
 
-
-        var exString = exception switch {
-            _ => exception.ToString()
-        };
-
-        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {exString}\n";
+        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{LogLevel.Error.ToColoredString()}] {message.GetFormattedText()}: {ExceptionToString(exception)}\n";
 
 #if DEBUG
         txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
