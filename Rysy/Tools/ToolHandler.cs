@@ -49,6 +49,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
 
         t.ToolHandler = this;
         t.Logger = _loggerFactory.CreateLogger(type);
+        t.ScopedComponentRegistry = new ComponentRegistryScope(ComponentRegistry);
         t.History = history;
         t.Input = input;
         t.Init();
@@ -123,6 +124,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
             if (_tools is { }) {
                 foreach (var t in _tools) {
                     t.Unload();
+                    (t.ScopedComponentRegistry as IDisposable)?.Dispose();
                 }
                 _tools.Clear();
             }

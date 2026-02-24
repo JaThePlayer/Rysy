@@ -17,7 +17,7 @@ namespace Rysy;
 /// <summary>
 /// Contains XNA state such as the current Game instance or GraphicsDevice.
 /// </summary>
-public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
+public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
     public static RysyState Instance {
         get => field ?? throw new Exception($"{nameof(RysyState)} isn't initialized!");
         private set => field = value;
@@ -73,11 +73,6 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
     public static void RegisterOnEndOfThisFrame<TState1, TState2>(TState1 state1, TState2 state2, Action<TState1, TState2> action) {
         OnEndOfThisFrame += () => action.Invoke(state1, state2);
     }
-
-    /// <summary>
-    /// Called when the window loses focus.
-    /// </summary>
-    public static event Action? OnLoseFocus = null;
 
     /// <summary>
     /// Called each frame in the Update method.
@@ -136,7 +131,7 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
     public void DispatchUpdate(float elapsed) {
         try {
             if (_lastActive != _Game.IsActive) {
-                OnLoseFocus?.Invoke();
+                this.Emit(new LostFocus());
             }
 
             if (true) {
@@ -348,6 +343,8 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
     public void OnSignal(RunAtEndOfThisFrame signal) {
         OnEndOfThisFrame += signal.Action;
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
 
 public static class RysyStateStaticExt {

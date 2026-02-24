@@ -1,11 +1,12 @@
-﻿using Rysy.Extensions;
+﻿using Rysy.Components;
+using Rysy.Signals;
 
 namespace Rysy.Helpers;
 
 /// <summary>
 /// Provides an easy way to implement a gesture for selecting a rectangle, to be used for tools.
 /// </summary>
-public sealed class SelectRectangleGesture {
+public sealed class SelectRectangleGesture : ISignalListener<LostFocus> {
     public Point? StartPos { get; private set; } = null;
 
     private Rectangle? _currentRect = null;
@@ -24,8 +25,6 @@ public sealed class SelectRectangleGesture {
     public Func<Point, Point> Transform { get; set; } = (p) => p;
 
     public SelectRectangleGesture(Input input, Action<Rectangle>? onSelectionFinish = null) {
-        RysyState.OnLoseFocus += OnLoseFocus;
-
         OnSelectionFinish = onSelectionFinish;
         Input = input ?? Input.Global;
     }
@@ -110,5 +109,9 @@ public sealed class SelectRectangleGesture {
     private void OnLoseFocus() {
         // After alt-tabbing and such, we should cancel the selection or we'll end up with accidental placements
         CancelGesture();
+    }
+
+    public void OnSignal(LostFocus signal) {
+        OnLoseFocus();
     }
 }

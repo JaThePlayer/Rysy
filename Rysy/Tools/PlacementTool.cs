@@ -369,7 +369,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
         PrefabHelper.CurrentPrefabs.OnChanged += ClearMaterialListCache;
 
-        RectangleGesture = new(Input);
+        ScopedComponentRegistry.Add(RectangleGesture = new SelectRectangleGesture(Input));
     }
 
     public override void Unload() {

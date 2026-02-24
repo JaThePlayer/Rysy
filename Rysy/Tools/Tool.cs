@@ -29,6 +29,11 @@ public abstract class Tool {
     
     public IRysyLogger Logger { get; internal set; }
 
+    /// <summary>
+    /// A component registry, components added to which will get automatically removed when this tool gets removed.
+    /// </summary>
+    public IComponentRegistry ScopedComponentRegistry { get; internal set; }
+
     public abstract string Name { get; }
 
     /// <summary>

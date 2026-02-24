@@ -49,7 +49,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     public override void Init() {
         base.Init();
 
-        _selectionGestureHandler = new(Input);
+        ScopedComponentRegistry.Add(_selectionGestureHandler = new SelectRectangleGesture(Input));
     }
 
     public override void InitHotkeys(HotkeyHandler handler) {
