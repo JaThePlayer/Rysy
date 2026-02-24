@@ -94,16 +94,9 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
         return hotkey;
     }
 
-    public static event Action<Settings> OnLoaded;
-
     public static Settings Instance {
         get;
-        internal set {
-            if (field != value) {
-                field = value;
-                OnLoaded?.Invoke(value);
-            }
-        }
+        internal set;
     }
 
     public static void ChangeProfile(string name, bool isNew) {

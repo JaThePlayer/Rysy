@@ -238,7 +238,7 @@ public static class ModRegistry {
         }
 
         try {
-            LoadSettings(mod, registerListener: true);
+            LoadSettings(mod);
         } catch (Exception e) {
             Logger.Error(LogTag, e, $"Error loading mod settings for {mod.Name}");
         }
@@ -246,9 +246,7 @@ public static class ModRegistry {
         return mod;
     }
 
-    private static void LoadSettings(ModMeta mod, bool registerListener) {
-        if (registerListener)
-            mod.OnAssemblyReloaded += (asm) => LoadSettings(mod, registerListener: false);
+    internal static void LoadSettings(ModMeta mod) {
         // todo: register a file watcher for the json file
 
         var settingsType = mod.PluginAssembly?.GetTypes().FirstOrDefault(t => t.IsSubclassOf(typeof(ModSettings))) ?? typeof(ModSettings);

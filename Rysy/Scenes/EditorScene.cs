@@ -470,7 +470,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
     }
 
     public override void OnBegin() {
-        ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, LoggerFactory).UsePersistence(true);
+        ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);
 
         OnMapChanged(null, EditorState.Map);

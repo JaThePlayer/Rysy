@@ -1,13 +1,13 @@
-﻿using KeraLua;
-using Rysy.Helpers;
+﻿using Rysy.Helpers;
 using Rysy.LuaSupport;
+using Rysy.Signals;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Rysy.Mods;
 
-public sealed class ModMeta {
+public sealed class ModMeta : ISignalEmitter {
     internal ModMeta() { }
 
     /// <summary>
@@ -24,8 +24,9 @@ public sealed class ModMeta {
             var oldAsm = field;
             field = value;
 
+            ModRegistry.LoadSettings(this);
             ModRegistry.ModAssemblyScannerInstance?.Invoke(this, oldAsm);
-            OnAssemblyReloaded?.Invoke(value);
+            this.Emit(new ModAssemblyReloaded(this, oldAsm, value));
         }
     }
 
@@ -37,11 +38,6 @@ public sealed class ModMeta {
             // todo: lonn bindings
         }
     }
-
-    /// <summary>
-    /// Gets called whenever the <see cref="PluginAssembly"/> gets reloaded.
-    /// </summary>
-    public event Action<Assembly?> OnAssemblyReloaded;
 
     /// <summary>
     /// The filesystem for this mod, used for retrieving assets contained in the mod.
@@ -175,6 +171,8 @@ public sealed class ModMeta {
         
         return fs.TryWriteToFile(yamlPath, yaml);
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
 
 /// <summary>

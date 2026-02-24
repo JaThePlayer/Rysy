@@ -135,9 +135,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             var old = Attributes.Name;
             if (old != value) {
                 Attributes.Name = value;
-                OnNameChanged?.Invoke(old, value);
             }
-
         }
     }
 
@@ -151,11 +149,6 @@ public sealed class Room : IPackable, ILuaWrapper {
             return _searchable ??= new Searchable(Name);
         }
     }
-
-    /// <summary>
-    /// Called with (oldName, newName) whenever this room's <see cref="Name"/> gets changed.
-    /// </summary>
-    public event Action<string, string>? OnNameChanged;
 
     private List<ISprite>? _cachedSprites;
     private List<ISprite>? _cachedEntitySprites;

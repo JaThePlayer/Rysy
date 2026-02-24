@@ -15,7 +15,9 @@ public abstract class Scene : ISignalListener {
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
-    private SceneComponentRegistry Components { get; }
+    private readonly SceneComponentRegistry _components;
+
+    public IComponentRegistry Components => _components;
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -24,7 +26,7 @@ public abstract class Scene : ISignalListener {
     public IRysyLogger Logger => this.AddIfMissing(self => self.LoggerFactory.CreateLogger(self.GetType()));
 
     protected Scene() {
-        Components = new SceneComponentRegistry();
+        _components = new SceneComponentRegistry();
         _removeWindow = (w) => {
             RysyState.OnEndOfThisFrame += () => {
                 w.Removed();
@@ -36,7 +38,7 @@ public abstract class Scene : ISignalListener {
     public float TimeActive { get; private set; }
 
     internal void SetGlobalComponentRegistry(IComponentRegistry globalComponents) {
-        Components.GlobalRegistry = globalComponents;
+        _components.GlobalRegistry = globalComponents;
     }
     
     /// <summary>
@@ -177,40 +179,40 @@ public abstract class Scene : ISignalListener {
 
     public void Add(object? sceneComponent) {
         if (sceneComponent is { })
-            Components.Add(sceneComponent);
+            _components.Add(sceneComponent);
     }
     
     public void Remove(object? sceneComponent) {
         if (sceneComponent is { })
-            Components.Remove(sceneComponent);
+            _components.Remove(sceneComponent);
     }
     
     public T AddIfMissing<T>() where T : class, new() {
-        return Components.AddIfMissing<T>();
+        return _components.AddIfMissing<T>();
     }
     
     public T AddIfMissing<T>(T newValue) where T : class {
-        return Components.AddIfMissing(newValue);
+        return _components.AddIfMissing(newValue);
     }
     
     public T? Get<T>() where T : class {
-        return Components.Get<T>();
+        return _components.Get<T>();
     }
     
     public T GetRequired<T>() where T : class {
-        return Components.GetRequired<T>();
+        return _components.GetRequired<T>();
     }
     
     public IEnumerable<T> GetAll<T>() where T : class {
-        return Components.GetAll<T>();
+        return _components.GetAll<T>();
     }
 
     public virtual void OnSignal<T>(T signal) where T : ISignal {
-        Components.TransmitSignalToSceneSpecificListener(signal);
+        _components.TransmitSignalToSceneSpecificListener(signal);
     }
     
     public void Emit<T>(T signal) where T : ISignal {
-        Components.OnSignal(signal);
+        _components.OnSignal(signal);
     }
 }
 

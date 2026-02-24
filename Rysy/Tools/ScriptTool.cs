@@ -3,14 +3,17 @@ using Rysy.Gui.Windows;
 using Rysy.History;
 using Rysy.Scripting;
 using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Extensions;
 using Rysy.Layers;
 
 namespace Rysy.Tools;
 
-public class ScriptTool : Tool {
+public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
     public static EditorLayer CurrentRoomLayer { get; } = new FakeLayer("Current Room");
     public static EditorLayer AllRoomsLayer { get; } = new FakeLayer("All Rooms");
+    
+    public ScriptRegistry Registry => field ??= ToolHandler.ComponentRegistry.AddIfMissing<ScriptRegistry>();
 
     public override string Name => "script";
 
@@ -36,14 +39,14 @@ public class ScriptTool : Tool {
 
     public override object? PersistenceObjToMaterial(object? material) {
         if (material is string str) {
-            return ScriptRegistry.Scripts.FirstOrDefault(s => s.Name == str);
+            return Registry.Scripts.FirstOrDefault(s => s.Name == str);
         }
 
         return null;
     }
 
     public override IEnumerable<object> GetMaterials(EditorLayer layer) 
-        => ScriptRegistry.Scripts;
+        => Registry.Scripts;
 
     public override string? SerializeMaterial(EditorLayer layer, object? material) => material switch {
         Script scr => scr.Name,
@@ -52,7 +55,7 @@ public class ScriptTool : Tool {
     };
 
     public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
-        return ScriptRegistry.Scripts.FirstOrDefault(s => s.Name == serializableMaterial);
+        return Registry.Scripts.FirstOrDefault(s => s.Name == serializableMaterial);
     }
 
     public override string? GetMaterialTooltip(EditorLayer layer, object material) {
@@ -180,9 +183,7 @@ public class ScriptTool : Tool {
         }
     }
 
-    public override void Init() {
-        base.Init();
-
-        ScriptRegistry.OnScriptReloaded += ClearMaterialListCache;
+    public void OnSignal(ScriptReloaded signal) {
+        ClearMaterialListCache();
     }
 }

@@ -16,6 +16,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     public readonly HistoryHandler History;
 
     public readonly Input Input;
+    public IComponentRegistry ComponentRegistry { get; }
     private readonly IRysyLoggerFactory _loggerFactory;
 
     public readonly ToolRegistry Registry;
@@ -60,11 +61,12 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
 
     private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
-    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, IRysyLoggerFactory loggerFactory, ToolRegistry? registry = null) {
+    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, IComponentRegistry componentRegistry, ToolRegistry? registry = null) {
         EditorState = editorState;
         History = history;
         Input = input;
-        _loggerFactory = loggerFactory;
+        ComponentRegistry = componentRegistry;
+        _loggerFactory = componentRegistry.GetRequired<IRysyLoggerFactory>();
         Registry = registry ?? ToolRegistry.Global;
 
         CreateTools();

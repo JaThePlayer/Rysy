@@ -98,7 +98,7 @@ internal sealed class EditTileDataWindow : Window {
 
     private readonly HistoryHandler _history;
 
-    private readonly ToolHandler _tools;
+    private ToolHandler _tools;
 
     private readonly HotkeyHandler _hotkeys;
 
@@ -140,10 +140,6 @@ internal sealed class EditTileDataWindow : Window {
 
         _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 
-        _tools = new ToolHandler(editorState, _history, _input, loggerFactory).UsePersistence(false);
-        _tools.InitHotkeys(_hotkeys);
-        _tools.CurrentTool.Layer = layer == TileLayer.Fg ? EditorLayers.Fg : EditorLayers.Bg;
-
         _hotkeys.AddHistoryHotkeys(Undo, Redo, Save);
 
         _hotkeys.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
@@ -184,6 +180,14 @@ internal sealed class EditTileDataWindow : Window {
 
         _history.OnApply += () => Edited = true;
         _history.OnUndo += () => Edited = true;
+    }
+
+    protected internal override void Added(Scene scene) {
+        base.Added(scene);
+        
+        _tools = new ToolHandler(scene.GetRequired<EditorState>(), _history, _input, scene.Components).UsePersistence(false);
+        _tools.InitHotkeys(_hotkeys);
+        _tools.CurrentTool.Layer = _layer == TileLayer.Fg ? EditorLayers.Fg : EditorLayers.Bg;
     }
 
     public override void RemoveSelf() {

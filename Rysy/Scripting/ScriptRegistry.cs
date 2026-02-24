@@ -1,41 +1,29 @@
-﻿using Rysy.Mods;
+﻿using Rysy.Components;
+using Rysy.Mods;
+using Rysy.Signals;
 using System.Reflection;
 
 namespace Rysy.Scripting;
 
-public static class ScriptRegistry {
-    private static List<Script>? ScriptsMutable;
+public sealed class ScriptRegistry : ISignalEmitter, ISignalListener<ModAssemblyReloaded> {
+    private List<Script>? _scriptsMutable;
 
-    private static Dictionary<string, List<Script>> ModScripts = new();
+    private readonly Dictionary<string, List<Script>> _modScripts = new();
 
-    /// <summary>
-    /// Called whenever any script gets (re)loaded
-    /// </summary>
-    public static event Action OnScriptReloaded;
+    public IReadOnlyList<Script> Scripts => _scriptsMutable ??= LoadAll();
 
-    public static IReadOnlyList<Script> Scripts => ScriptsMutable ??= LoadAll();
-
-    private static List<Script> LoadAll() {
-        ScriptsMutable = new();
+    private List<Script> LoadAll() {
+        _scriptsMutable = new();
 
         foreach (var mod in ModRegistry.Mods.Values) {
-            mod.OnAssemblyReloaded += (asm) => {
-                foreach (var oldScript in ModScripts[mod.Name]) {
-                    ScriptsMutable.Remove(oldScript);
-                }
-
-                LoadFromAsm(mod.Name, asm);
-            };
-
-
             LoadFromAsm(mod.Name, mod.PluginAssembly);
         }
 
-        return ScriptsMutable;
+        return _scriptsMutable;
     }
 
-    private static void LoadFromAsm(string modName, Assembly? asm) {
-        ModScripts[modName] = new();
+    private void LoadFromAsm(string modName, Assembly? asm) {
+        _modScripts[modName] = new();
 
         if (asm is null)
             return;
@@ -43,13 +31,26 @@ public static class ScriptRegistry {
         foreach (var scriptType in asm.GetTypes().Where(t => t.IsSubclassOf(typeof(Script)))) {
             var script = (Script?)Activator.CreateInstance(scriptType) ?? throw new Exception("Huh?");
             
-            lock (ScriptsMutable!) {
-                ScriptsMutable.Add(script);
-                ModScripts[modName].Add(script);
+            lock (_scriptsMutable!) {
+                _scriptsMutable.Add(script);
+                _modScripts[modName].Add(script);
             }
+
+            this.Emit(new ScriptReloaded(script));
+        }
+    }
+
+    public void OnSignal(ModAssemblyReloaded signal) {
+        var mod = signal.Mod;
+        
+        foreach (var oldScript in _modScripts[mod.Name]) {
+            _scriptsMutable?.Remove(oldScript);
         }
 
-
-        OnScriptReloaded();
+        LoadFromAsm(mod.Name, signal.NewAssembly);
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
+
+public record struct ScriptReloaded(Script NewScript) : ISignal;
