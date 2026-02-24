@@ -186,7 +186,7 @@ public static class ModRegistry {
     private static ModMeta CreateRysyMod() => RysyMod = new() {
         EverestYaml = [
             new() {
-                Name = "Rysy", Version = new(1, 0, 0, 0), // todo: auto-fill
+                Name = "Rysy", Version = RysyEngine.Version
             }
         ],
         PluginAssembly = typeof(RysyEngine).Assembly,

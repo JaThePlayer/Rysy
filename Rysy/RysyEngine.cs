@@ -1,17 +1,15 @@
 ﻿using Rysy.Graphics;
 using Rysy.Gui;
-using Rysy.Gui.Windows;
-using Rysy.Helpers;
 using Rysy.Loading;
-using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
-using Rysy.Selections;
 
 namespace Rysy;
 
 public sealed class RysyEngine : Game {
     public static RysyEngine Instance { get; private set; } = null!;
+
+    public static Version Version { get; } = typeof(RysyEngine).Assembly.GetName().Version ?? new Version(0, 0);
 
     public static Scene Scene {
         get => RysyState.Scene;
@@ -85,6 +83,8 @@ public sealed class RysyEngine : Game {
 
     protected override void Initialize() {
         base.Initialize();
+        
+        Logger.Write("Rysy", LogLevel.Info, $"Starting Rysy {Version}");
 
         RysyPlatform.Current.Init();
 
@@ -105,7 +105,7 @@ public sealed class RysyEngine : Game {
                 try {
                     await Instance.ReloadAsync();
                 } catch (Exception e) {
-                    Logger.Error(e, $"Unhandled exception during (re)load!");
+                    Logger.Error("Reload", e, $"Unhandled exception during (re)load!");
                     Scene = new CrashScene(Scene, e);
                 }
             });

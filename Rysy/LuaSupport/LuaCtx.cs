@@ -177,14 +177,14 @@ public class LuaCtx {
 
         SeleneLoaded = true;
 
-        lua.PCallStringThrowIfError("""
+        lua.PCallStringThrowIfError($$"""
         RYSY = {} -- Set up a global RYSY variable, so that plugins know they're running in Rysy if needed.
         _RYSY_entities = {}
         _RYSY_styles = {}
 
         _MAP_VIEWER = {
             name = "rysy",
-            version = "0.0.0" -- todo: provide this automatically
+            version = "{{RysyEngine.Version}}"
         }
 
         _RYSY_unimplemented = function()
@@ -193,13 +193,12 @@ public class LuaCtx {
             local src = info.short_src
 
             local traceback = debug.traceback(string.format("The method '%s->%s' is not implemented in Rysy", src, caller), 3)
-            --print(traceback)
 
             error(traceback)
         end
 
         math.atan2 = math.atan
-        """u8, "setup_globals");
+        """, "setup_globals");
 
         lua.PCallStringThrowIfError("""
         -- Required to make LuaRef work, allows holding strong references to lua objects from C#.
