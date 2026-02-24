@@ -19,8 +19,8 @@ public class CrashScene : Scene {
             _lastBackupDate = BackupHandler.GetMostRecentBackupDate();
     }
 
-    public override void OnBegin(IComponentRegistry globalComponents) {
-        base.OnBegin(globalComponents);
+    public override void OnBegin() {
+        base.OnBegin();
 
         AddWindow(new CrashWindow("Caught an unknown exception:", _exception, RenderButtons));
     }

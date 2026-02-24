@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Input;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
@@ -9,12 +10,13 @@ using Rysy.Loading;
 using Rysy.MapAnalyzers;
 using Rysy.Mods;
 using Rysy.Scenes.Components;
+using Rysy.Signals;
 using Rysy.Stylegrounds;
 using Rysy.Tools;
 
 namespace Rysy.Scenes;
 
-public sealed class EditorScene : Scene {
+public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalListener<ThemeChanged> {
     public ToolHandler ToolHandler;
 
     public EditorState EditorState { get; set; } = new();
@@ -29,8 +31,9 @@ public sealed class EditorScene : Scene {
         set => EditorState.Map = value;
     }
 
-    private void OnMapChanged() {
-        var map = EditorState.Map;
+    private void OnMapChanged(Map? oldMap, Map? map) {
+        Remove(oldMap);
+        Add(map);
 
         SwapMapPreserveState(map);
 
@@ -42,7 +45,7 @@ public sealed class EditorScene : Scene {
         if (map is { })
             Persistence.Instance.PushRecentMap(map);
 
-        RysyState.OnEndOfThisFrame += GcHelper.VeryAggressiveGc;
+        Emit(new RunAtEndOfThisFrame(GcHelper.VeryAggressiveGc));
     }
 
     private void OnThemeChanged(Theme theme) {
@@ -464,18 +467,22 @@ public sealed class EditorScene : Scene {
 
         ToolHandler.Unload();
         Remove(ToolHandler);
-        EditorState.OnMapChanged -= OnMapChanged;
-        Themes.ThemeChanged -= OnThemeChanged;
     }
 
-    public override void OnBegin(IComponentRegistry globalComponents) {
+    public override void OnBegin() {
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, LoggerFactory).UsePersistence(true);
         Add(ToolHandler);
-        EditorState.OnMapChanged += OnMapChanged;
-        Themes.ThemeChanged += OnThemeChanged;
 
-        OnMapChanged();
+        OnMapChanged(null, EditorState.Map);
+        base.OnBegin();
+    }
 
-        base.OnBegin(globalComponents);
+    public void OnSignal(MapSwapped signal) {
+        if (signal.State == EditorState)
+            OnMapChanged(signal.OldMap, signal.NewMap);
+    }
+
+    public void OnSignal(ThemeChanged signal) {
+        OnThemeChanged(signal.NewTheme);
     }
 }

@@ -35,11 +35,14 @@ public abstract class Scene : ISignalListener {
 
     public float TimeActive { get; private set; }
 
+    internal void SetGlobalComponentRegistry(IComponentRegistry globalComponents) {
+        Components.GlobalRegistry = globalComponents;
+    }
+    
     /// <summary>
     /// Called when this scene is set to <see cref="RysyEngine.Scene"/>
     /// </summary>
-    public virtual void OnBegin(IComponentRegistry globalComponents) {
-        Components.GlobalRegistry = globalComponents;
+    public virtual void OnBegin() {
         SetupHotkeys();
         
         foreach (var c in GetAll<SceneComponent>()) {
@@ -172,12 +175,14 @@ public abstract class Scene : ISignalListener {
         return time % interval < Time.Delta;
     }
 
-    public void Add(object sceneComponent) {
-        Components.Add(sceneComponent);
+    public void Add(object? sceneComponent) {
+        if (sceneComponent is { })
+            Components.Add(sceneComponent);
     }
     
-    public void Remove(object sceneComponent) {
-        Components.Remove(sceneComponent);
+    public void Remove(object? sceneComponent) {
+        if (sceneComponent is { })
+            Components.Remove(sceneComponent);
     }
     
     public T AddIfMissing<T>() where T : class, new() {
@@ -200,7 +205,11 @@ public abstract class Scene : ISignalListener {
         return Components.GetAll<T>();
     }
 
-    public void OnSignal<T>(T signal) where T : ISignal {
+    public virtual void OnSignal<T>(T signal) where T : ISignal {
+        Components.TransmitSignalToSceneSpecificListener(signal);
+    }
+    
+    public void Emit<T>(T signal) where T : ISignal {
         Components.OnSignal(signal);
     }
 }
@@ -239,5 +248,15 @@ internal sealed class SceneComponentRegistry : IComponentRegistry {
             return globalRegistry.GetAll<T>().Concat(_sceneSpecific.GetAll<T>());
         }
         return _sceneSpecific.GetAll<T>();
+    }
+
+    public void TransmitSignalToSceneSpecificListener<T>(T signal) where T : ISignal {
+        foreach (var listener in _sceneSpecific.GetAll<ISignalListener>()) {
+            listener.OnSignal(signal);
+        }
+            
+        foreach (var listener in _sceneSpecific.GetAll<ISignalListener<T>>()) {
+            listener.OnSignal(signal);
+        }
     }
 }

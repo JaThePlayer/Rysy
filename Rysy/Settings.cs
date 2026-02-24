@@ -1,14 +1,11 @@
 ﻿//#define DOT_TRACE
 
-using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
-using Rysy.Scenes;
 using Rysy.Signals;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
@@ -131,6 +128,13 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
     /// Current profile, taking into accound command line arguments before the actual value stored in the settings file.
     /// </summary>
     public string CurrentProfile => RysyState.CmdArguments.Profile ?? Profile;
+
+    private void Change<T>([ConstantExpected] string name, ref T field, T newValue) {
+        var old = field;
+        field = newValue;
+        this.Emit(new SettingsChanged(this, name));
+        this.Emit(new SettingsChanged<T>(this, name, old, newValue));
+    }
     
     #region Serialized
     public string Profile { get; set; } = "Default";
@@ -149,46 +153,27 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
 
     public string Theme {
         get;
-        set {
-            var old = field;
-            field = value;
-            this.Emit(new SettingsChanged<string>(this, nameof(Theme), old, value));
-        }
+        set => Change(nameof(Theme), ref field, value);
     } = "dark";
 
     public string Font {
         get;
-        set {
-            var old = field;
-            field = value;
-            this.Emit(new SettingsChanged<string>(this, nameof(Font), old, value));
-        }
+        set => Change(nameof(Font), ref field, value);
     } = "RobotoMono";
 
     public bool UseBoldFontByDefault {
         get;
-        set {
-            var old = field;
-            field = value;
-            this.Emit(new SettingsChanged<bool>(this, nameof(UseBoldFontByDefault), old, value));
-        }
+        set => Change(nameof(UseBoldFontByDefault), ref field, value);
     } = true;
 
     public int FontSize {
         get;
-        set {
-            var old = field;
-            field = value;
-            this.Emit(new SettingsChanged<int>(this, nameof(FontSize), old, value));
-        }
+        set => Change(nameof(FontSize), ref field, value);
     } = 16;
 
     public float TriggerFontScale {
         get;
-        set {
-            field = value;
-            EditorState.Current?.Map?.ClearRenderCache();
-        }
+        set => Change(nameof(TriggerFontScale), ref field, value);
     } = 0.5f;
 
     public Dictionary<string, string> Hotkeys { get; set; } = new();
@@ -197,34 +182,22 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
 
     public float HiddenLayerAlpha {
         get;
-        set {
-            field = value;
-            EditorState.Current?.Map?.ClearRenderCache();
-        }
+        set => Change(nameof(HiddenLayerAlpha), ref field, value);
     } = 0.3f;
 
     public int TargetFps {
         get;
-        set {
-            field = value;
-            RysyEngine.SetTargetFps(value);
-        }
+        set => Change(nameof(TargetFps), ref field, value);
     } = 60;
 
     public bool VSync {
         get;
-        set {
-            field = value;
-            RysyEngine.ToggleVSync(value);
-        }
+        set => Change(nameof(VSync), ref field, value);
     } = true;
 
     public bool SmartFramerate {
         get;
-        set {
-            field = value;
-            SmartFpsHandler.OnToggle();
-        }
+        set => Change(nameof(SmartFramerate), ref field, value);
     } = false;
 
     public bool MinifyClipboard { get; set; } = false;
@@ -233,11 +206,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
     // has issues with mouse positions
     public bool BorderlessFullscreen {
         get;
-        set {
-            field = value;
-
-            RysyEngine.ToggleBorderlessFullscreen(value);
-        }
+        set => Change(nameof(BorderlessFullscreen), ref field, value);
     } = false;
 
     public bool ReadBlacklist { get; set; } = true;

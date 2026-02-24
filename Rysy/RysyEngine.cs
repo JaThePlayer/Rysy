@@ -1,12 +1,14 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Components;
+using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Loading;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using Rysy.Signals;
 
 namespace Rysy;
 
-public sealed class RysyEngine : Game {
+public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, ISignalListener<SettingsChanged<bool>> {
     public RysyState State { get; }
     
     public static RysyEngine Instance { get; private set; } = null!;
@@ -219,6 +221,25 @@ public sealed class RysyEngine : Game {
         //IsActive || ForceActiveTimer > 0f
         if (true) {
             State.DispatchRender((float) gameTime.ElapsedGameTime.TotalSeconds);
+        }
+    }
+
+    public void OnSignal(SettingsChanged<int> signal) {
+        switch (signal.SettingName) {
+            case nameof(Settings.TargetFps):
+                SetTargetFps(signal.Value);
+                break;
+        }
+    }
+
+    public void OnSignal(SettingsChanged<bool> signal) {
+        switch (signal.SettingName) {
+            case nameof(Settings.VSync):
+                ToggleVSync(signal.Value);
+                break;
+            case nameof(Settings.BorderlessFullscreen):
+                ToggleBorderlessFullscreen(signal.Value);
+                break;
         }
     }
 }

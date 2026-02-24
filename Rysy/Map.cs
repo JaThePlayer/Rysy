@@ -1,17 +1,19 @@
 ﻿using KeraLua;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
+using Rysy.Signals;
 using Rysy.Stylegrounds;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Map : IPackable, ILuaWrapper, IDisposable {
+public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalListener<SettingsChanged> {
     private static Map _dummyMap;
     
     /// <summary>
@@ -518,6 +520,15 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable {
         _bgTilesWatcher = null;
         _fgTilesWatcher = null;
         _spritesWatcher = null;
+    }
+
+    public void OnSignal(SettingsChanged signal) {
+        switch (signal.SettingName) {
+            case nameof(Settings.TriggerFontScale):
+            case nameof(Settings.HiddenLayerAlpha):
+                ClearRenderCache();
+                break;
+        }
     }
 
     ~Map() {

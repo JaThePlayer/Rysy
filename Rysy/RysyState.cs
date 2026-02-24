@@ -41,12 +41,14 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
             lock (_sceneChangeLock) {
                 var persistedWindows = field.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
                 field.OnEnd();
+                _GlobalServices.Remove(field);
                 foreach (var w in persistedWindows) {
                     value.AddWindow(w);
                 }
 
-                value.AddIfMissing(LoggerFactory);
-                value.OnBegin(_GlobalServices);
+                _GlobalServices.Add(value);
+                value.SetGlobalComponentRegistry(_GlobalServices);
+                value.OnBegin();
                 field = value;
             }
         }
@@ -148,9 +150,13 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
                     _hideUi = !_hideUi; 
                 }
 
-                SmartFpsHandler.Update();
-
-                _Scene.Update();
+                if (_sceneChangeLock.TryEnter()) {
+                    try {
+                        _Scene.Update();
+                    } finally {
+                        _sceneChangeLock.Exit();
+                    }
+                }
 
                 if (_Scene is not CrashScene)
                     OnUpdate?.Invoke();
@@ -199,7 +205,13 @@ public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
         }
 
         try {
-            _Scene.Render();
+            if (_sceneChangeLock.TryEnter()) {
+                try {
+                    _Scene.Render();
+                } finally {
+                    _sceneChangeLock.Exit();
+                }
+            }
 
             if (_Scene is not CrashScene)
                 OnRender?.Invoke();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Rysy;
+using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Platforms;
 
@@ -9,6 +10,7 @@ globalComponents.Add(new RysyState());
 globalComponents.Add(RysyPlatform.Current);
 globalComponents.Add(loggerFactory);
 globalComponents.Add(RysyState.CmdArguments = new CommandlineArguments(args, loggerFactory.CreateLogger<CommandlineArguments>()));
+globalComponents.Add(new SmartFpsHandler());
 
 if (RysyState.CmdArguments.HelpDisplayed)
     return;
@@ -41,4 +43,5 @@ if (RysyState.CmdArguments.Headless) {
 }
 
 using var engine = new RysyEngine(globalComponents);
+globalComponents.Add(engine);
 engine.Run();

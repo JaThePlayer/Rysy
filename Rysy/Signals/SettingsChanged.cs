@@ -9,3 +9,5 @@
 /// <param name="Value">New value of the setting.</param>
 /// <typeparam name="T">The type of the field that got changed.</typeparam>
 public record struct SettingsChanged<T>(Settings Settings, string SettingName, T? OldValue, T Value) : ISignal;
+
+public record struct SettingsChanged(Settings Settings, string SettingName) : ISignal;

@@ -1,12 +1,17 @@
 ﻿using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Signals;
 
 namespace Rysy;
 
 /// <summary>
 /// An object containing information about the current state of the editor.
 /// </summary>
-public class EditorState {
+public class EditorState : ISignalEmitter {
+    public EditorState() {
+        
+    }
+    
     /// <summary>
     /// Shortcut to get the editor state associated with the current scene.
     /// </summary>
@@ -44,13 +49,15 @@ public class EditorState {
     public Map? Map {
         get;
         set {
-            if (field == value)
+            var old = field;
+            if (old == value)
                 return;
-            field?.Dispose();
+            old?.Dispose();
             field = value;
 
             CurrentRoom = null;
 
+            this.Emit(new MapSwapped(this, old, value));
             OnMapChanged?.Invoke();
         }
     } = null;
@@ -79,4 +86,6 @@ public class EditorState {
             return Colorgrade.None;
         }
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
