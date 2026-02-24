@@ -1,10 +1,12 @@
 ﻿using Rysy.Helpers;
+using Rysy.Signals;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Rysy;
 
-public class Persistence : IHasJsonCtx<Persistence> {
+public class Persistence : ISignalEmitter, IHasJsonCtx<Persistence> {
     #region Helpers
 
     public static Persistence Instance { get; set; } = null!;
@@ -58,6 +60,9 @@ public class Persistence : IHasJsonCtx<Persistence> {
 
     public void Set<T>(string key, T value) {
         Values[key] = value!;
+        ref var prev = ref CollectionsMarshal.GetValueRefOrAddDefault(Values, key, out var exists);
+        
+        Change(key, ref prev, value);
 
         Save(this);
     }
@@ -83,80 +88,60 @@ public class Persistence : IHasJsonCtx<Persistence> {
 
     public string? LastEditedMap => RecentMaps.FirstOrDefault(default(RecentMap)).Filename;
 
+    private void Change<T>(string name, ref T field, T newValue) {
+        if (field?.Equals(newValue) ?? newValue == null)
+            return;
+        var old = field;
+        field = newValue;
+        this.Emit(new PersistenceChanged(this, name));
+        this.Emit(new PersistenceChanged<T>(this, name, old, newValue));
+
+        Save(this);
+    }
+    
+    private void Change<T>(string name, ref object? field, T newValue) {
+        if (field?.Equals(newValue) ?? newValue == null)
+            return;
+        var old = field is T t ? t : default;
+        field = newValue;
+        this.Emit(new PersistenceChanged(this, name));
+        this.Emit(new PersistenceChanged<T>(this, name, old, newValue));
+
+        Save(this);
+    }
+    
     #region Serialized
     public List<RecentMap> RecentMaps { get; set; } = new();
     public Dictionary<string, object> Values { get; set; } = new();
 
     public bool FgTilesVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearFgTilesRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(FgTilesVisible), ref field, value);
     } = true;
 
     public bool BgTilesVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearBgTilesRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(BgTilesVisible), ref field, value);
     } = true;
 
     public bool FgDecalsVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(FgDecalsVisible), ref field, value);
     } = true;
 
     public bool BgDecalsVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(BgDecalsVisible), ref field, value);
     } = true;
 
     public bool EntitiesVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearEntityRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(EntitiesVisible), ref field, value);
     } = true;
 
     public bool TriggersVisible {
         get;
-        set {
-            if (field != value) {
-                field = value;
-
-                EditorState.Current?.Map?.Rooms.ForEach(r => r.ClearTriggerRenderCache());
-                Save(this);
-            }
-        }
+        set => Change(nameof(TriggersVisible), ref field, value);
     } = true;
 
     public bool HistoryWindowOpen = false;
@@ -172,4 +157,5 @@ public class Persistence : IHasJsonCtx<Persistence> {
     }
 
     public static JsonTypeInfo<Persistence> JsonCtx => DefaultJsonContext.Default.Persistence;
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }

@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalListener<SettingsChanged> {
+public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalListener<SettingsChanged>, ISignalListener<PersistenceChanged> {
     private static Map _dummyMap;
     
     /// <summary>
@@ -527,6 +527,29 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalLi
             case nameof(Settings.TriggerFontScale):
             case nameof(Settings.HiddenLayerAlpha):
                 ClearRenderCache();
+                break;
+        }
+    }
+
+    public void OnSignal(PersistenceChanged signal) {
+        switch (signal.SettingName) {
+            case nameof(Persistence.BgDecalsVisible):
+                Rooms.ForEach(r => r.ClearBgDecalsRenderCache());
+                break;
+            case nameof(Persistence.FgDecalsVisible):
+                Rooms.ForEach(r => r.ClearFgDecalsRenderCache());
+                break;
+            case nameof(Persistence.BgTilesVisible):
+                Rooms.ForEach(r => r.ClearBgTilesRenderCache());
+                break;
+            case nameof(Persistence.FgTilesVisible):
+                Rooms.ForEach(r => r.ClearFgTilesRenderCache());
+                break;
+            case nameof(Persistence.EntitiesVisible):
+                Rooms.ForEach(r => r.ClearEntityRenderCache());
+                break;
+            case nameof(Persistence.TriggersVisible):
+                Rooms.ForEach(r => r.ClearTriggerRenderCache());
                 break;
         }
     }

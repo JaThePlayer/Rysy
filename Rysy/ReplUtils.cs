@@ -23,7 +23,9 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
         Settings.Load(uiEnabled: false);
         componentRegistry.Add(Settings.Instance);
         Profile.Instance = Profile.Load();
+        componentRegistry.Add(Profile.Instance);
         Persistence.Instance = Persistence.Load();
+        componentRegistry.Add(Persistence.Instance);
 
         if (Profile.Instance.CelesteDirectory is null or "") {
             Console.WriteLine("Celeste directory is missing, Rysy cannot run");

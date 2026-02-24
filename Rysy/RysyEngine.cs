@@ -166,6 +166,7 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
         } catch {
             Profile.Instance = new Profile().Save();
         }
+        globalComponents.Add(Profile.Instance);
 
         try {
             Persistence.Instance = Persistence.Load();
@@ -173,6 +174,7 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
             // persistence will be `new()`'d up. Oh well.
             Persistence.Instance = Persistence.Save(new());
         }
+        globalComponents.Add(Persistence.Instance);
         
         // Initialize Imgui now that we have settings
         if (RysyPlatform.Current.SupportImGui && !RysyState.ImGuiAvailable)
