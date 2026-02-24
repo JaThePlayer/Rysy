@@ -3,7 +3,7 @@
 namespace Rysy.Layers; 
 
 public class FakeLayer : EditorLayer {
-    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) {
+    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) : base(name) {
         Name = name;
         SelectionLayer = layer;
     }

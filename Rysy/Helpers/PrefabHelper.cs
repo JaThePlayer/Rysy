@@ -1,6 +1,6 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
 using System.Diagnostics;
@@ -8,13 +8,15 @@ using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
 
-public static class PrefabHelper {
-    private static ListenableDictionary<string, Prefab>? CurrentPrefabsMutable;
-    
-    public static ListenableDictionary<string, Prefab> CurrentPrefabs => (CurrentPrefabsMutable ??= Load());
+public sealed class PrefabHelper {
+    private ListenableDictionary<string, Prefab>? _currentPrefabsMutable;
 
-    private static ListenableDictionary<string, Prefab> Load() {
-        CurrentPrefabsMutable = new(StringComparer.Ordinal);
+    public PrefabLayer EditorLayer => field ??= new PrefabLayer(this);
+    
+    public ListenableDictionary<string, Prefab> CurrentPrefabs => _currentPrefabsMutable ??= Load();
+
+    private ListenableDictionary<string, Prefab> Load() {
+        _currentPrefabsMutable = new(StringComparer.Ordinal);
 
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
@@ -22,12 +24,10 @@ public static class PrefabHelper {
             LoadFromFile(file);
         }
 
-        RysyState.OnNextReload += () => CurrentPrefabsMutable = null;
-
-        return CurrentPrefabsMutable;
+        return _currentPrefabsMutable;
     }
 
-    internal static Prefab? LoadFromFile(string path) {
+    private Prefab? LoadFromFile(string path) {
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
         if (fs.OpenFile(path, stream => { 
@@ -39,7 +39,7 @@ public static class PrefabHelper {
 
             return prefab;
         }) is {} prefab) {
-            CurrentPrefabsMutable![prefab.Name] = prefab;
+            _currentPrefabsMutable![prefab.Name] = prefab;
             return prefab;
         }
 
@@ -49,10 +49,10 @@ public static class PrefabHelper {
     public static bool SelectionsLegal(List<CopypasteHelper.CopiedSelection> selections) 
         => selections.All(s => s.Layer != SelectionLayer.Rooms);
 
-    public static void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
+    public void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
         if (!SelectionsLegal(selections))
             return;
-        if (CurrentPrefabsMutable is null)
+        if (_currentPrefabsMutable is null)
             return;
 
         var prefab = new Prefab {
@@ -60,8 +60,8 @@ public static class PrefabHelper {
             Objects = selections,
         };
 
-        lock (CurrentPrefabsMutable) {
-            CurrentPrefabsMutable[prefab.Name] = prefab;
+        lock (_currentPrefabsMutable) {
+            _currentPrefabsMutable[prefab.Name] = prefab;
         }
 
         var path = GetPrefabPath(prefab);
@@ -71,8 +71,8 @@ public static class PrefabHelper {
         fs.TryWriteToFile(path, prefab.ToJsonUtf8());
     }
 
-    public static void Remove(string name) {
-        var prefabs = CurrentPrefabsMutable;
+    public void Remove(string name) {
+        var prefabs = _currentPrefabsMutable;
         if (prefabs is null)
             return;
         
@@ -84,7 +84,7 @@ public static class PrefabHelper {
         fs.TryDeleteFile(path);
     }
 
-    public static Placement? PlacementFromName(string name) {
+    public Placement? PlacementFromName(string name) {
         if (!CurrentPrefabs.TryGetValue(name, out var prefab)) {
             return null;
         }

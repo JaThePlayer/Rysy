@@ -4,6 +4,12 @@ namespace Rysy.Layers;
 
 public abstract class EditorLayer {
     protected EditorLayer() {
+        EditorLayers.KnownLayers.RemoveAll(x => x.Name == Name);
+        EditorLayers.KnownLayers.Add(this);
+    }
+    
+    protected EditorLayer(string name) {
+        EditorLayers.KnownLayers.RemoveAll(x => x.Name == name);
         EditorLayers.KnownLayers.Add(this);
     }
     

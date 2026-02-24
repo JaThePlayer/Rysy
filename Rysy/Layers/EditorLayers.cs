@@ -19,7 +19,6 @@ public static class EditorLayers {
 
     public static EditorLayer CustomLayer { get; } = new FakeLayer("Custom");
     public static EditorLayer All { get; } = new FakeLayer("All", SelectionLayer.All);
-    public static EditorLayer Prefabs { get; } = new PrefabLayer();
 
     public static bool IsDecalLayer(EditorLayer layer) => layer == FgDecals || layer == BgDecals;
 

@@ -41,6 +41,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private Point? _rotationGestureStart;
     private float? _rotationGestureLastAngle;
 
+    private PrefabHelper PrefabHelper => field ??= ToolHandler.ComponentRegistry.AddIfMissing<PrefabHelper>();
+
     public SelectionTool() {
     }
 

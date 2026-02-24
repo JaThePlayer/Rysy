@@ -15,6 +15,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     public SelectRectangleGesture RectangleGesture;
 
+    private PrefabHelper PrefabHelper => ToolHandler.ComponentRegistry.AddIfMissing<PrefabHelper>();
+
+    private PrefabLayer PrefabLayer => PrefabHelper.EditorLayer;
+
     private bool _pickNextFrame;
 
     /// <summary>
@@ -39,17 +43,15 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override string Name => "placement";
 
     public override string PersistenceGroup => "placement";
-
-    private static List<EditorLayer> _validLayers = new() {
+    
+    public override List<EditorLayer> ValidLayers => field ??= [
         EditorLayers.Entities,
         EditorLayers.Triggers,
         EditorLayers.FgDecals,
         EditorLayers.BgDecals,
         EditorLayers.Room,
-        EditorLayers.Prefabs,
-    };
-    
-    public override List<EditorLayer> ValidLayers => _validLayers;
+        PrefabLayer
+    ];
     
     public override IEnumerable<object> GetMaterials(EditorLayer layer) {
         return layer.GetMaterials();
@@ -57,7 +59,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     public override string GetMaterialDisplayName(EditorLayer layer, object material) {
         if (material is Placement pl) {
-            if (layer == EditorLayers.Prefabs) {
+            if (layer == PrefabLayer) {
                 return pl.Name;
             }
 
@@ -589,7 +591,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     protected override bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {
         var ret = base.RenderMaterialListElement(layer, material, searchable);
 
-        if (Layer == EditorLayers.Prefabs) {
+        if (Layer == PrefabLayer) {
             if (ImGui.BeginPopupContextItem(searchable.TextWithMods, ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGui.MenuItem("Remove")) {
                     PrefabHelper.Remove(searchable.Text);
@@ -603,7 +605,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
-        if (Layer == EditorLayers.Prefabs && !(GetMaterials(Layer)?.Any() ?? true)) {
+        if (Layer == PrefabLayer && !(GetMaterials(Layer)?.Any() ?? true)) {
             ImGui.TextWrapped("rysy.tools.placement.noPrefabs".TranslateFormatted(Settings.Instance.GetHotkey(SelectionTool.CreatePrefabKeybindName)));
             showSearchBar = true;
         } else {
