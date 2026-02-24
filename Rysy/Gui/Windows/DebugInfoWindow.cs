@@ -6,8 +6,6 @@ using Rysy.LuaSupport;
 using Rysy.Scenes;
 using Rysy.Stylegrounds;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace Rysy.Gui.Windows;
 
@@ -22,7 +20,7 @@ public class DebugInfoWindow : Window {
 
     private static string HistoryFromText = "";
 
-    protected override unsafe void Render() {
+    protected override void Render() {
         ImGui.Text($"FPS: {RysyState.CurrentFps}");
 
         if (ImGui.CollapsingHeader("Memory")) {
@@ -177,7 +175,7 @@ public class DebugInfoWindow : Window {
                 }
                 var elapsed = Stopwatch.GetElapsedTime(watch);
                 
-                Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Map.Package ?? room.Map.Filepath}: {elapsed}");
+                Logger.Info($"Benchmark: {room.Map.Package ?? room.Map.Filepath}: {elapsed}");
             }
         }
         
@@ -185,12 +183,14 @@ public class DebugInfoWindow : Window {
         if (_imguiDemo)
             ImGui.ShowDemoWindow();
 
-        if (ImGui.Button("Save style to clipboard")) {
-            Input.Clipboard.Set(Theme.CreateFromCurrent().ToJson());
-        }
+        if (Scene.Get<Themes>() is { } themes) {
+            if (ImGui.Button("Save style to clipboard")) {
+                Input.Clipboard.Set(Theme.CreateFromCurrent(themes.Current).ToJson());
+            }
         
-        if (ImGui.Button("Apply v2 style from clipboard")) {
-            Themes.LoadThemeFromJson(Input.Clipboard.Get());
+            if (ImGui.Button("Apply v2 style from clipboard")) {
+                themes.LoadThemeFromJson(Input.Clipboard.Get());
+            }
         }
     }
 
@@ -206,7 +206,7 @@ public class DebugInfoWindow : Window {
         }
 
         var elapsed = Stopwatch.GetElapsedTime(watch);
-        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}: {(elapsed / times).TotalMilliseconds}ms");
+        Logger.Info($"Benchmark: {room.Name}: {(elapsed / times).TotalMilliseconds}ms");
     }
 
     private void BenchmarkEntities(Room room, bool aggressive, int howManyTimes) {
@@ -234,7 +234,7 @@ public class DebugInfoWindow : Window {
         var summary = string.Join('\n', times
             .OrderByDescending(t => t.Value)
             .Select(t => $"{t.Key}: {(t.Value / howManyTimes).TotalMilliseconds}ms"));
-        Logger.Write("Benchmark", LogLevel.Info, $"Benchmark: {room.Name}:\n{summary}");
+        Logger.Info($"Benchmark: {room.Name}:\n{summary}");
     }
 
     private bool _imguiDemo;

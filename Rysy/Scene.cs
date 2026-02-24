@@ -26,7 +26,10 @@ public abstract class Scene : ISignalListener {
     protected Scene() {
         Components = new SceneComponentRegistry();
         _removeWindow = (w) => {
-            RysyState.OnEndOfThisFrame += () => _windows.Remove(w);
+            RysyState.OnEndOfThisFrame += () => {
+                w.Removed();
+                _windows.Remove(w);
+            };
         };
     }
 
@@ -112,6 +115,7 @@ public abstract class Scene : ISignalListener {
     /// </summary>
     public void AddWindow(Window wind) {
         wind.SetRemoveAction(_removeWindow);
+        wind.Added(this);
         _windows.Add(wind);
     }
 

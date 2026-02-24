@@ -98,10 +98,18 @@ public sealed class ComponentRegistry : IComponentRegistry {
     
     public void Add(object component) {
         Components.Add(component);
+
+        if (component is ISignalEmitter emitter) {
+            emitter.SignalTarget = SignalTarget.From(this);
+        }
     }
 
     public void Remove(object component) {
         Components.Add(component);
+        
+        if (component is ISignalEmitter emitter) {
+            emitter.SignalTarget = SignalTarget.Null;
+        }
     }
 
     public T? Get<T>() where T : class {

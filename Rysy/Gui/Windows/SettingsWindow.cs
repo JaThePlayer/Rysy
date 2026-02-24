@@ -183,6 +183,9 @@ public sealed class SettingsWindow : Window {
     private PathField? _fontDropdown;
 
     private void ThemeBar() {
+        if (Scene.Get<Themes>() is not { } themes)
+            return;
+        
         var windowData = _data;
 
         if (!ImGui.BeginTabItem("Themes")) {
@@ -200,8 +203,6 @@ public sealed class SettingsWindow : Window {
                 ref windowData.ThemeListSearch, default, windowData.ThemeListCache)) {
             Settings.Instance.Theme = theme.Filename;
             Settings.Instance.Save();
-
-            Themes.LoadThemeFromFile(theme.Filename);
         }
 
         ImGui.Separator();

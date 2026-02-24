@@ -13,7 +13,7 @@ public class Trigger : Entity {
             if (!string.IsNullOrWhiteSpace(stored) && ColorHelper.TryGet(stored, ColorFormat.Rgba, out var storedColor))
                 return storedColor;
             
-            if (Themes.Current.TriggerCategoryColors.TryGetValue(Category, out var categoryColor))
+            if (ImGuiManager.Themes.Current.TriggerCategoryColors.TryGetValue(Category, out var categoryColor))
                 return categoryColor;
             
             return Color.LightSkyBlue;
@@ -88,7 +88,7 @@ public class Trigger : Entity {
         yield return ISprite.OutlinedRect(new Rectangle(X, Y, Width, Height), FillColor, Color) with {
             Depth = Depth
         };
-        yield return GetTextSprite(Themes.Current.ImGuiStyle.TextColor, default, 1f) with {
+        yield return GetTextSprite(ThemeColors.TextColor.Get(ImGuiManager.Themes.Current), default, 1f) with {
             Depth = Depth - 1
         };
     }

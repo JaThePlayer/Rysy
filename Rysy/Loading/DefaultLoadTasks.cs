@@ -38,9 +38,10 @@ public static class DefaultLoadTasks {
         return LoadTaskResult.Success();
     }
     
-    public static Task<LoadTaskResult> LoadTheme(SimpleLoadTask task) {
+    public static Task<LoadTaskResult> LoadTheme(IComponentRegistry components, SimpleLoadTask task) {
         RysyState.OnEndOfThisFrame += () => {
-            Themes.LoadThemeFromFile(Settings.Instance.Theme);
+            var themes = components.GetRequired<Themes>();
+            themes.LoadThemeFromFile(Settings.Instance.Theme);
             Themes.SetFontSize(Settings.Instance.FontSize);
         };
 

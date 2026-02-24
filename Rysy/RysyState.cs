@@ -1,5 +1,6 @@
 ﻿//#define NO_CATCH_RENDER_EXCEPTIONS
 
+using Rysy.Components;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
@@ -16,7 +17,7 @@ namespace Rysy;
 /// <summary>
 /// Contains XNA state such as the current Game instance or GraphicsDevice.
 /// </summary>
-public class RysyState {
+public class RysyState : ISignalListener<RunAtEndOfThisFrame> {
     public static RysyState Instance {
         get => field ?? throw new Exception($"{nameof(RysyState)} isn't initialized!");
         private set => field = value;
@@ -330,6 +331,10 @@ public class RysyState {
             _currentFrametimes /= _weight;
             _currentFrametimes += timeSinceLastFrame;
         }
+    }
+
+    public void OnSignal(RunAtEndOfThisFrame signal) {
+        OnEndOfThisFrame += signal.Action;
     }
 }
 

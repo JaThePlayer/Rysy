@@ -169,7 +169,7 @@ public class Searchable {
             var wrapX = ImGui.GetCursorPosX();
             foreach (var (tag, isLast) in tags.CheckedIfLast()) {
                 ImGui.SameLine();
-                ImGui.PushStyleColor(ImGuiCol.Text, Themes.Current.ImGuiStyle.TagColor.ToNumVec4());
+                ImGuiManager.PushStyleColor(ImGuiCol.Text, ThemeColors.TagColor);
                 ImGuiManager.RenderTextWrapped(
                     isLast ? Interpolator.TempU8($"#{tag}") : Interpolator.TempU8($"#{tag},"),
                     wrapX
@@ -381,7 +381,7 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8($"@{txt}").ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(Themes.Current.ImGuiStyle.ModNameColor.ToNumVec4(), _txtU8);
+            ImGuiManager.TextColored(ThemeColors.ModNameColor, _txtU8);
         }
 
         public override bool Matches(Searchable search) => search.Mods.Any(x => 
@@ -401,7 +401,7 @@ public static class SearchHelper {
         private readonly byte[] _txtU8 = Interpolator.TempU8(txt).ToArray();
         
         protected override void RenderImGuiInner() {
-            ImGui.TextColored(Themes.Current.ImGuiStyle.TagColor.ToNumVec4(), Interpolator.TempU8($"#{_txtU8}"));
+            ImGuiManager.TextColored(ThemeColors.TagColor, Interpolator.TempU8($"#{_txtU8}"));
         }
         
         public override bool Matches(Searchable search) => search.Tags.Any(x => x.Contains(_tagName, StringComparison.OrdinalIgnoreCase));

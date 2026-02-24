@@ -4,6 +4,12 @@ using Rysy.Helpers;
 namespace Rysy.Gui.Windows;
 
 public class Window {
+    public Scene Scene { get; private set; }
+
+    public Theme Theme => Scene.GetRequired<Themes>().Current;
+
+    public IRysyLogger Logger => field ??= Scene.LoggerFactory.CreateLogger(GetType());
+    
     private Action<Window> _removeSelfImpl;
 
     public readonly string Name;
@@ -105,6 +111,14 @@ public class Window {
         ImGuiManager.PopWindowStyle();
     }
 
+    protected internal virtual void Added(Scene scene) {
+        Scene = scene;
+    }
+
+    protected internal virtual void Removed() {
+        Scene = null!;
+    }
+    
     protected virtual ImGuiWindowFlags EditWindowFlags(ImGuiWindowFlags prev) => prev;
 
     protected virtual void Render() {

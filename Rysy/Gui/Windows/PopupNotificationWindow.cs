@@ -8,7 +8,7 @@ public class PopupNotificationWindow : Window {
     private readonly Exception? _exception;
     private readonly string? _exceptionString;
 
-    public Color MessageColor { get; set; } = Themes.Current.ImGuiStyle.TextColor;
+    public IThemeColor MessageColor { get; set; } = ThemeColors.TextColor;
 
     public override bool PersistBetweenScenes => true;
 
@@ -29,7 +29,7 @@ public class PopupNotificationWindow : Window {
     protected override void Render() {
         base.Render();
 
-        ImGui.TextColored(MessageColor.ToNumVec4(), MessageId.ToString());
+        ImGui.TextColored(MessageColor.ToNumVec4(Theme), MessageId.ToString());
 
         if (_exceptionString != null) {
             ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, ImGui.GetContentRegionAvail());
@@ -62,9 +62,9 @@ public class PopupNotificationWindow : Window {
             return false;
         } catch (Exception ex) {
             var popup = new PopupNotificationWindow(titleId, exception: ex) {
-                MessageColor = Themes.Current.ImGuiStyle.FormInvalidColor
+                MessageColor = ThemeColors.FormInvalidColor
             };
-            Logger.Error(ex, popup.MessageId.ToString());
+            Rysy.Logger.Error(ex, popup.MessageId.ToString());
             RysyEngine.Scene.AddWindow(popup);
             return true;
         }

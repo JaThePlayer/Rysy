@@ -21,6 +21,7 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
         new RysyState().Initialize(null!, null!, componentRegistry);
         RysyPlatform.Current.Init();
         Settings.Load(uiEnabled: false);
+        componentRegistry.Add(Settings.Instance);
         Profile.Instance = Profile.Load();
         Persistence.Instance = Persistence.Load();
 

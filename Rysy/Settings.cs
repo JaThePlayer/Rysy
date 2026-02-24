@@ -5,6 +5,7 @@ using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using Rysy.Signals;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -55,7 +56,7 @@ public static class SettingsHelper {
     }
 }
 
-public sealed partial class Settings : IHasJsonCtx<Settings> {
+public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
     public static bool UiEnabled { get; set; }
     
     public static string SettingsFileLocation { get; } = $"settings.json";
@@ -146,50 +147,41 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
     public bool LogMissingFieldTypes { get; set; }
 
 
-    private string _theme = "dark";
     public string Theme {
-        get => _theme;
+        get;
         set {
-            _theme = value;
-            if (RysyState.ImGuiAvailable && UiEnabled)
-                LoadTheme(value);
+            var old = field;
+            field = value;
+            this.Emit(new SettingsChanged<string>(this, nameof(Theme), old, value));
         }
-    }
-    
-    private string _font = "RobotoMono";
+    } = "dark";
+
     public string Font {
-        get => _font;
+        get;
         set {
-            _font = value;
-            if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(FontSize);
+            var old = field;
+            field = value;
+            this.Emit(new SettingsChanged<string>(this, nameof(Font), old, value));
         }
-    }
-    
-    private bool _useBoldFontByDefault = true;
+    } = "RobotoMono";
+
     public bool UseBoldFontByDefault {
-        get => _useBoldFontByDefault;
+        get;
         set {
-            _useBoldFontByDefault = value;
-            if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(FontSize);
+            var old = field;
+            field = value;
+            this.Emit(new SettingsChanged<bool>(this, nameof(UseBoldFontByDefault), old, value));
         }
-    }
+    } = true;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void LoadTheme(string val) {
-        Themes.LoadThemeFromFile(val);
-    }
-
-    private int _fontSize = 16;
     public int FontSize {
-        get => _fontSize;
+        get;
         set {
-            _fontSize = value;
-            if (RysyState.ImGuiAvailable && UiEnabled)
-                RysyState.OnEndOfThisFrame += () => Themes.SetFontSize(value);
+            var old = field;
+            field = value;
+            this.Emit(new SettingsChanged<int>(this, nameof(FontSize), old, value));
         }
-    }
+    } = 16;
 
     public float TriggerFontScale {
         get;
@@ -296,5 +288,6 @@ public sealed partial class Settings : IHasJsonCtx<Settings> {
     #endregion
 
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;
-    
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }

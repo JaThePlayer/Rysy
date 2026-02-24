@@ -1,24 +1,24 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
-using System.Runtime.CompilerServices;
+using Rysy.Signals;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Rysy.Gui;
 
-public static class Themes {
-    private static Theme _current = new();
-
-    public static Theme Current {
-        get => _current;
+public sealed class Themes : ISignalEmitter, ISignalListener<SettingsChanged<string>>, ISignalListener<SettingsChanged<int>>, ISignalListener<SettingsChanged<bool>> {
+    public Theme Current {
+        get;
         private set {
-            if (_current == value) return;
-            _current = value;
+            if (field == value) return;
+            field = value;
+            ((ISignalEmitter)this).SignalTarget.Send(new ThemeChanged(value));
             ThemeChanged?.Invoke(value);
         }
-    }
+    } = new();
 
     public static event Action<Theme>? ThemeChanged;
 
@@ -41,7 +41,7 @@ public static class Themes {
         Converters = { new ColorJsonConverter(), new JsonStringEnumConverter(), }
     };
 
-    public static void LoadThemeFromJson(string themeJson) {
+    public void LoadThemeFromJson(string themeJson) {
         if (JsonExtensions.TryDeserialize<Theme>(themeJson, out var theme, JsonOptions) &&
             theme.ImGuiStyle.Colors.Count > 0) {
             theme.Apply();
@@ -57,7 +57,7 @@ public static class Themes {
             .ToList();
     }
     
-    public static void LoadThemeFromFile(string filename) {
+    public void LoadThemeFromFile(string filename) {
         if (!ModRegistry.IsLoaded)
             return;
         
@@ -181,6 +181,41 @@ public static class Themes {
     public static ImFontPtr ItalicBoldFont { get; private set; }
     public static ImFontPtr HeaderFont { get; private set; }
     public static ImFontPtr Header2Font { get; private set; }
+    
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
+    
+    public void OnSignal(SettingsChanged<string> signal) {
+        this.Emit(new RunAtEndOfThisFrame(() => {
+            switch (signal.SettingName) {
+                case nameof(Settings.Theme):
+                    LoadThemeFromFile(signal.Value);
+                    break;
+                case nameof(Settings.Font):
+                    SetFontSize(signal.Settings.FontSize);
+                    break;
+            }
+        }));
+    }
+    
+    public void OnSignal(SettingsChanged<int> signal) {
+        this.Emit(new RunAtEndOfThisFrame(() => {
+            switch (signal.SettingName) {
+                case nameof(Settings.FontSize):
+                    SetFontSize(signal.Value);
+                    break;
+            }
+        }));
+    }
+
+    public void OnSignal(SettingsChanged<bool> signal) {
+        this.Emit(new RunAtEndOfThisFrame(() => {
+            switch (signal.SettingName) {
+                case nameof(Settings.UseBoldFontByDefault):
+                    SetFontSize(signal.Settings.FontSize);
+                    break;
+            }
+        }));
+    }
 }
 
 public sealed class Theme {
@@ -200,10 +235,10 @@ public sealed class Theme {
 
     public string ToJson() => this.ToJson(Themes.JsonOptions);
 
-    public static Theme CreateFromCurrent() {
+    public static Theme CreateFromCurrent(Theme current) {
         var theme = new Theme {
-            ImGuiStyle = ImGuiStyleData.CreateFromCurrent(),
-            TriggerCategoryColors = Themes.Current.TriggerCategoryColors.ToDictionary()
+            ImGuiStyle = ImGuiStyleData.CreateFromCurrent(current),
+            TriggerCategoryColors = current.TriggerCategoryColors.ToDictionary()
         };
 
         return theme;
@@ -211,31 +246,6 @@ public sealed class Theme {
 
     public sealed class ImGuiStyleData {
         public Dictionary<string, Color> Colors { get; set; } = [];
-
-        #region Custom Colors
-
-        [JsonIgnore]
-        public Color ModNameColor => Colors.GetOrSetDefault("Search:ModName", Color.LightSkyBlue);
-
-        [JsonIgnore]
-        public Color TagColor => Colors.GetOrSetDefault("Search:Tag", Color.Gold);
-
-        [JsonIgnore]
-        public Color FormEditedColor => Colors.GetOrSetDefault("Form:Edited", Color.LimeGreen);
-
-        [JsonIgnore]
-        public Color FormWarningColor => Colors.GetOrSetDefault("Form:Warning", new Color(230, 179, 0, 255));
-
-        [JsonIgnore]
-        public Color FormInvalidColor => Colors.GetOrSetDefault("Form:Invalid", Color.Red);
-
-        [JsonIgnore]
-        public Color FormNullColor => Colors.GetOrSetDefault("TextDisabled", Color.Gray);
-
-        [JsonIgnore]
-        public Color TextColor => Colors.GetOrSetDefault("Text", Color.White);
-
-        #endregion
 
         public float Alpha { get; set; }
 
@@ -404,7 +414,7 @@ public sealed class Theme {
         }
 
         // ReSharper disable once MemberHidesStaticFromOuterClass
-        public static unsafe ImGuiStyleData CreateFromCurrent() {
+        public static unsafe ImGuiStyleData CreateFromCurrent(Theme theme) {
             var data = new ImGuiStyleData();
 
             var style = ImGui.GetStyle();
@@ -461,7 +471,7 @@ public sealed class Theme {
             data.DockingNodeHasCloseButton = style.DockingNodeHasCloseButton;
             data.DockingSeparatorSize = style.DockingSeparatorSize;
 
-            data.Colors = Themes.Current.ImGuiStyle.Colors.ToDictionary();
+            data.Colors = theme.ImGuiStyle.Colors.ToDictionary();
             for (ImGuiCol i = 0; i < ImGuiCol.Count; i++) {
                 var name = ImGui.GetStyleColorNameS(i);
                 var color = new Color((*ImGui.GetStyleColorVec4(i)).ToXna());
@@ -472,4 +482,46 @@ public sealed class Theme {
             return data;
         }
     }
+}
+
+public interface IThemeColor {
+    public Color Get(Theme theme);
+
+    public NumVector4 ToNumVec4(Theme theme);
+}
+
+public static class ThemeColors {
+    public static CustomColor ModNameColor { get; } = new("Search:ModName", Color.LightSkyBlue);
+
+    public static CustomColor TagColor { get; } = new("Search:Tag", Color.Gold);
+
+    public static CustomColor FormEditedColor { get; } = new("Form:Edited", Color.LimeGreen);
+
+    public static CustomColor FormWarningColor { get; } = new("Form:Warning", new Color(230, 179, 0, 255));
+
+    public static CustomColor FormInvalidColor { get; } = new("Form:Invalid", Color.Red);
+
+    public static CustomColor FormNullColor { get; } = new("TextDisabled", Color.Gray);
+
+    public static CustomColor TextColor { get; } = new("Text", Color.White);
+}
+
+public sealed class ImGuiColor(ImGuiCol col) : IThemeColor {
+    public Color Get(Theme theme) {
+        unsafe {
+            return new Color((*ImGui.GetStyleColorVec4(col)).ToXna());
+        }
+    }
+
+    public NumVector4 ToNumVec4(Theme theme) {
+        unsafe {
+            return *ImGui.GetStyleColorVec4(col);
+        }
+    }
+}
+
+public sealed class CustomColor(string id, Color def) : IThemeColor {
+    public Color Get(Theme theme) => theme.ImGuiStyle.Colors.GetOrSetDefault(id, def);
+
+    public NumVector4 ToNumVec4(Theme theme) => Get(theme).ToNumVec4();
 }

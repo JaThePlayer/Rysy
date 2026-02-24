@@ -1,10 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
 using Rysy;
 using Rysy.Helpers;
+using Rysy.Platforms;
 
 IRysyLoggerFactory loggerFactory = new LoggerFactory();
 var globalComponents = new ComponentRegistry();
 globalComponents.Add(new RysyState());
+globalComponents.Add(RysyPlatform.Current);
 globalComponents.Add(loggerFactory);
 globalComponents.Add(RysyState.CmdArguments = new CommandlineArguments(args, loggerFactory.CreateLogger<CommandlineArguments>()));
 

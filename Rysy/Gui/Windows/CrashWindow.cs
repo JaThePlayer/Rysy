@@ -29,7 +29,7 @@ public class CrashWindow : Window {
     protected override void Render() {
         base.Render();
 
-        ImGui.TextColored(Themes.Current.ImGuiStyle.FormInvalidColor.ToNumVec4(), Message);
+        ImGuiManager.TextColored(ThemeColors.FormInvalidColor, Message);
 
         ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, ImGui.GetContentRegionAvail());
 

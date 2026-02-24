@@ -121,9 +121,9 @@ public sealed class RysyEngine : Game {
 #pragma warning restore CA2000
         
         var loadTasks = new LoadTaskManager([
-            new SimpleLoadTask("Load Settings", LoadSettingsTask),
+            new SimpleLoadTask("Load Settings", t => LoadSettingsTask(State.GlobalComponents, t)),
             new SimpleLoadTask("Load Mods", t => DefaultLoadTasks.LoadMods(State.GlobalComponents, t)),
-            new SimpleLoadTask("Load Theme", DefaultLoadTasks.LoadTheme),
+            new SimpleLoadTask("Load Theme", t => DefaultLoadTasks.LoadTheme(State.GlobalComponents, t)),
             new ParallelLoadTask("Load Assets", [
                 new SimpleLoadTask("Load GFX", DefaultLoadTasks.LoadGfx),
                 new SimpleLoadTask("Load Entities", t => DefaultLoadTasks.LoadEntities(t)),
@@ -148,13 +148,14 @@ public sealed class RysyEngine : Game {
         }
     }
 
-    private async Task<LoadTaskResult> LoadSettingsTask(SimpleLoadTask task) {
+    private async Task<LoadTaskResult> LoadSettingsTask(IComponentRegistry globalComponents, SimpleLoadTask task) {
         task.SetMessage("Loading settings");
         try {
             Settings.Instance = Settings.Load();
         } catch (Exception ex) {
             return LoadTaskResult.Error(ex); // No point in loading any further. Error is already logged by .Load()
         }
+        globalComponents.Add(Settings.Instance);
 
         ResizeWindowUsingSettings();
 
@@ -173,7 +174,7 @@ public sealed class RysyEngine : Game {
         
         // Initialize Imgui now that we have settings
         if (RysyPlatform.Current.SupportImGui && !RysyState.ImGuiAvailable)
-            ImGuiManager.Load();
+            ImGuiManager.Load(globalComponents);
 
         var celesteDir = Profile.Instance.CelesteDirectory;
         if (!string.IsNullOrWhiteSpace(celesteDir) && !Path.Exists(celesteDir)) {

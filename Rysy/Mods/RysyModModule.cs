@@ -1,5 +1,10 @@
-﻿namespace Rysy.Mods;
+﻿using Rysy.Components;
+using Rysy.Signals;
 
-internal sealed class RysyModModule : ModModule {
-        
+namespace Rysy.Mods;
+
+internal sealed class RysyModModule : ModModule, ISignalListener<ViewportChanged> {
+    public void OnSignal(ViewportChanged signal) {
+        Logger.Info($"ViewportChanged: {signal}");
+    }
 }
