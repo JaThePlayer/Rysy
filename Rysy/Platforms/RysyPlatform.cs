@@ -78,7 +78,7 @@ public abstract class RysyPlatform {
     /// Initializes some things needed to properly run Rysy on this platform.
     /// </summary>
     public virtual void Init() {
-        
+        Logger.Write("Platform", LogLevel.Info, $"Initializing platform: {GetType().Name}");
     }
 
     public virtual void ResizeWindow(int x, int y, int w, int h) {
