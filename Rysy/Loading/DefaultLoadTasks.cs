@@ -8,8 +8,8 @@ using Rysy.Selections;
 namespace Rysy.Loading;
 
 public static class DefaultLoadTasks {
-    public static async Task<LoadTaskResult> LoadMods(SimpleLoadTask task, bool cSharpPlugins = true) {
-        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, task, cSharpPlugins);
+    public static async Task<LoadTaskResult> LoadMods(IComponentRegistry components, SimpleLoadTask task, bool cSharpPlugins = true) {
+        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, components, task, cSharpPlugins);
         
         return LoadTaskResult.Success();
     }
@@ -50,7 +50,7 @@ public static class DefaultLoadTasks {
     
     public static Task<LoadTaskResult> CallOnNextReload(SimpleLoadTask task) {
         task.SetMessage("Calling OnReload");
-        RysyState.DispatchOnNextReload();
+        RysyState.Instance.DispatchOnNextReload();
 
         return Task.FromResult(LoadTaskResult.Success());
     }

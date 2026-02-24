@@ -17,7 +17,8 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
     /// <summary>
     /// Loads everything needed for a headless run of Rysy.
     /// </summary>
-    public static async Task LoadHeadless(bool cSharpPlugins, bool luaPlugins) {
+    public static async Task LoadHeadless(IComponentRegistry componentRegistry, bool cSharpPlugins, bool luaPlugins) {
+        new RysyState().Initialize(null!, null!, componentRegistry);
         RysyPlatform.Current.Init();
         Settings.Load(uiEnabled: false);
         Profile.Instance = Profile.Load();
@@ -28,7 +29,7 @@ await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
             return;
         }
 
-        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, null, cSharpPlugins);
+        await ModRegistry.LoadAllAsync(Profile.Instance.ModsDirectory, componentRegistry, null, cSharpPlugins);
         await EntityRegistry.RegisterAsync(task: null, loadLuaPlugins: luaPlugins);
         Gfx.HeadlessSetup();
     }

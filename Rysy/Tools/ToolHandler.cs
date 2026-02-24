@@ -14,6 +14,7 @@ public class ToolHandler {
     public readonly HistoryHandler History;
 
     public readonly Input Input;
+    private readonly IRysyLoggerFactory _loggerFactory;
 
     public readonly ToolRegistry Registry;
 
@@ -44,6 +45,7 @@ public class ToolHandler {
         var t = (Tool) Activator.CreateInstance(type)!;
 
         t.ToolHandler = this;
+        t.Logger = _loggerFactory.CreateLogger(type);
         t.History = history;
         t.Input = input;
         t.Init();
@@ -56,10 +58,11 @@ public class ToolHandler {
 
     private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
-    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, ToolRegistry? registry = null) {
+    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, IRysyLoggerFactory loggerFactory, ToolRegistry? registry = null) {
         EditorState = editorState;
         History = history;
         Input = input;
+        _loggerFactory = loggerFactory;
         Registry = registry ?? ToolRegistry.Global;
 
         CreateTools();

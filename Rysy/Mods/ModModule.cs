@@ -3,6 +3,10 @@
 public class ModModule {
     public ModMeta Meta { get; internal set; }
 
+    internal ComponentRegistryScope ComponentRegistryScope { get; set; }
+
+    public IComponentRegistry ComponentRegistry => ComponentRegistryScope;
+
     public virtual void Load() {
 
     }

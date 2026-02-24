@@ -2,7 +2,10 @@
 using Rysy;
 using Rysy.Helpers;
 
-RysyState.CmdArguments = new(args);
+IRysyLoggerFactory loggerFactory = new LoggerFactory();
+var globalComponents = new ComponentRegistry();
+globalComponents.Add(new RysyState());
+globalComponents.Add(RysyState.CmdArguments = new CommandlineArguments(args, loggerFactory.CreateLogger<CommandlineArguments>()));
 
 if (RysyState.CmdArguments.HelpDisplayed)
     return;
@@ -10,7 +13,7 @@ if (RysyState.CmdArguments.HelpDisplayed)
 Environment.CurrentDirectory = Path.GetDirectoryName(typeof(RysyEngine).Assembly.Location) ?? Environment.CurrentDirectory;
 
 if (RysyState.CmdArguments.Headless) {
-    await ReplUtils.LoadHeadless(cSharpPlugins: true, luaPlugins: true);
+    await ReplUtils.LoadHeadless(globalComponents, cSharpPlugins: true, luaPlugins: true);
 
     if (RysyState.CmdArguments.HeadlessScriptFile is { } file) {
         var contents = await File.ReadAllTextAsync(file);
@@ -18,7 +21,7 @@ if (RysyState.CmdArguments.Headless) {
             OutputKind.ConsoleApplication);
     
         if (emitResult is { Success: false }) {
-            Logger.Write("Run Code Script", LogLevel.Error, $"Failed to compile cmd script:\n{emitResult.Diagnostics.FormatDiagnostics()}");
+            Logger.Write("CommandlineScript", LogLevel.Error, $"Failed to compile cmd script:\n{emitResult.Diagnostics.FormatDiagnostics()}");
             return;
         }
 
@@ -34,5 +37,5 @@ if (RysyState.CmdArguments.Headless) {
     return;
 }
 
-using var engine = new RysyEngine();
+using var engine = new RysyEngine(globalComponents);
 engine.Run();

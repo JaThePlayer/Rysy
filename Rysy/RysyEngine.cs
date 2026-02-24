@@ -7,6 +7,8 @@ using Rysy.Scenes;
 namespace Rysy;
 
 public sealed class RysyEngine : Game {
+    public RysyState State { get; }
+    
     public static RysyEngine Instance { get; private set; } = null!;
 
     public static Version Version { get; } = typeof(RysyEngine).Assembly.GetName().Version ?? new Version(0, 0);
@@ -16,12 +18,13 @@ public sealed class RysyEngine : Game {
         set => RysyState.Scene = value;
     }
 
-    public RysyEngine() {
+    public RysyEngine(ComponentRegistry globalComponents) {
+        State = globalComponents.GetRequired<RysyState>();
         Instance = this;
         Window.AllowUserResizing = true;
 
         var gdm = new GraphicsDeviceManager(this);
-        RysyState.Initialize(this, gdm);
+        State.Initialize(this, gdm, globalComponents);
         
         IsMouseVisible = true;
 
@@ -119,7 +122,7 @@ public sealed class RysyEngine : Game {
         
         var loadTasks = new LoadTaskManager([
             new SimpleLoadTask("Load Settings", LoadSettingsTask),
-            new SimpleLoadTask("Load Mods", t => DefaultLoadTasks.LoadMods(t)),
+            new SimpleLoadTask("Load Mods", t => DefaultLoadTasks.LoadMods(State.GlobalComponents, t)),
             new SimpleLoadTask("Load Theme", DefaultLoadTasks.LoadTheme),
             new ParallelLoadTask("Load Assets", [
                 new SimpleLoadTask("Load GFX", DefaultLoadTasks.LoadGfx),
@@ -186,8 +189,6 @@ public sealed class RysyEngine : Game {
         return LoadTaskResult.Success();
     }
 
-
-
     private void ResizeWindowUsingSettings() {
         if (Settings.Instance is not { } settings)
             return;
@@ -203,20 +204,20 @@ public sealed class RysyEngine : Game {
     private void ResizeWindow(int w, int h, int x, int y) {
         RysyState.OnEndOfThisFrame += () => {
             RysyPlatform.Current.ResizeWindow(x, y, w, h);
-            RysyState.Window_ClientSizeChanged(null, null!);
+            State.Window_ClientSizeChanged(null, null!);
         };
     }
 
     protected override void Update(GameTime gameTime) {
         base.Update(gameTime);
-        RysyState.DispatchUpdate((float) gameTime.ElapsedGameTime.TotalSeconds);
+        State.DispatchUpdate((float) gameTime.ElapsedGameTime.TotalSeconds);
     }
 
-    protected override unsafe void Draw(GameTime gameTime) {
+    protected override void Draw(GameTime gameTime) {
         base.Draw(gameTime);
         //IsActive || ForceActiveTimer > 0f
         if (true) {
-            RysyState.DispatchRender((float) gameTime.ElapsedGameTime.TotalSeconds);
+            State.DispatchRender((float) gameTime.ElapsedGameTime.TotalSeconds);
         }
     }
 }

@@ -4,7 +4,7 @@ namespace Rysy.Helpers;
 public interface IModDatabase {
     public Task<Dictionary<string, DatabaseModInfo>> GetKnownModsAsync();
 
-    public static IModDatabase DefaultDatabase { get; } = new MaddieModDatabase();
+    public static IModDatabase DefaultDatabase { get; } = new MaddieModDatabase(RysyState.LoggerFactory.CreateLogger<MaddieModDatabase>());
 }
 
 public sealed class DatabaseModInfo {
@@ -26,11 +26,13 @@ public sealed class DatabaseModInfo {
 }
 
 sealed class MaddieModDatabase : IModDatabase {
+    private readonly IRysyLogger _logger;
     private static readonly Uri Uri = new(@"https://maddie480.ovh/celeste/everest_update.yaml");
 
     private readonly Lazy<Task<Dictionary<string, DatabaseModInfo>>> _mods;
 
-    public MaddieModDatabase() {
+    public MaddieModDatabase(IRysyLogger logger) {
+        _logger = logger;
         _mods = new(GetKnownModsAsyncImpl, LazyThreadSafetyMode.ExecutionAndPublication) {};
     }
     
@@ -40,7 +42,7 @@ sealed class MaddieModDatabase : IModDatabase {
     
     private async Task<Dictionary<string, DatabaseModInfo>> GetKnownModsAsyncImpl() {
         try {
-            Logger.Write("MaddieModDatabase", LogLevel.Info, $"Getting mod list from {Uri}");
+            _logger.Info($"Getting mod list from {Uri}");
             using var client = new HttpClient();
 
             await using var stream = await client.GetStreamAsync(Uri);
@@ -48,10 +50,10 @@ sealed class MaddieModDatabase : IModDatabase {
 
             var mods = YamlHelper.Deserializer.Deserialize<Dictionary<string, DatabaseModInfo>>(reader);
         
-            Logger.Write("MaddieModDatabase", LogLevel.Info, $"Successfully got mod list from {Uri}. Received {mods.Count} mods.");
+            _logger.Info($"Successfully got mod list from {Uri}. Received {mods.Count} mods.");
             return mods;
         } catch (Exception e) {
-            Logger.Write("MaddieModDatabase", LogLevel.Error, $"Failed to get everest_update.yaml from {Uri}: {e}");
+            _logger.Info($"Failed to get everest_update.yaml from {Uri}: {e}");
             return [];
         }
     }

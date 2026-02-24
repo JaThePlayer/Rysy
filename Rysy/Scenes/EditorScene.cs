@@ -191,7 +191,7 @@ public sealed class EditorScene : Scene {
             
             Map = map;
         } catch (Exception e) {
-            Logger.Write("LoadMapFromBin", LogLevel.Error, $"Failed to load map: {e}");
+            Logger.Error(e, "Failed to load map");
 
             if (fromPersistence) {
                 AddWindow(new PersistenceMapLoadErrorWindow(e, "fromPersistence"));
@@ -470,14 +470,14 @@ public sealed class EditorScene : Scene {
         Themes.ThemeChanged -= OnThemeChanged;
     }
 
-    public override void OnBegin() {
-        ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global).UsePersistence(true);
+    public override void OnBegin(IComponentRegistry globalComponents) {
+        ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, LoggerFactory).UsePersistence(true);
         Add(ToolHandler);
         EditorState.OnMapChanged += OnMapChanged;
         Themes.ThemeChanged += OnThemeChanged;
 
         OnMapChanged();
 
-        base.OnBegin();
+        base.OnBegin(globalComponents);
     }
 }

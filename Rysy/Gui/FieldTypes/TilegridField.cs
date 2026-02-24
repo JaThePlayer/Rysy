@@ -40,9 +40,9 @@ public record class TilegridField : Field {
 
         var xPadding = ImGui.GetStyle().FramePadding.X;
 
-        if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Current.Map is { } map) {
+        if (ImGui.Button($"Edit##{fieldName}").WithTooltip(Tooltip) && EditorState.Current?.Map is { } map) {
             if (_window is not { }) {
-                _window = new(EditorState.Current, val, TileEntity.GetAutotiler(map, _layer) ?? new(), Context, _layer, this);
+                _window = new(EditorState.Current, val, TileEntity.GetAutotiler(map, _layer) ?? new(), Context, _layer, this, RysyState.Scene.GetRequired<IRysyLoggerFactory>());
                 _window.SetRemoveAction((w) => _window = null);
                 RysyEngine.Scene.AddWindow(_window);
             }
@@ -123,7 +123,7 @@ internal sealed class EditTileDataWindow : Window {
         set => _formCtx.SetValue("height", value);
     }
 
-    public EditTileDataWindow(EditorState editorState, string val, Autotiler autotiler, FormContext formCtx, TileLayer layer, TilegridField field) : base("Edit Tile Data") {
+    public EditTileDataWindow(EditorState editorState, string val, Autotiler autotiler, FormContext formCtx, TileLayer layer, TilegridField field, IRysyLoggerFactory loggerFactory) : base("Edit Tile Data") {
         _layer = layer;
         _formCtx = formCtx;
         _autotiler = autotiler;
@@ -140,7 +140,7 @@ internal sealed class EditTileDataWindow : Window {
 
         _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 
-        _tools = new ToolHandler(editorState, _history, _input).UsePersistence(false);
+        _tools = new ToolHandler(editorState, _history, _input, loggerFactory).UsePersistence(false);
         _tools.InitHotkeys(_hotkeys);
         _tools.CurrentTool.Layer = layer == TileLayer.Fg ? EditorLayers.Fg : EditorLayers.Bg;
 

@@ -1,7 +1,7 @@
 ﻿namespace Rysy;
 
 public sealed class CommandlineArguments {
-    private const string LogTag = "CommandlineArguments";
+    private readonly IRysyLogger _logger;
     
     public string? LoadIntoMap { get; set; }
     
@@ -17,7 +17,8 @@ public sealed class CommandlineArguments {
     
     public bool HelpDisplayed { get; private set; }
     
-    public CommandlineArguments(string[] args) {
+    public CommandlineArguments(string[] args, IRysyLogger<CommandlineArguments> logger) {
+        _logger = logger;
         for (int i = 0; i < args.Length; i++) {
             var option = args[i];
             var isLast = i == args.Length - 1;
@@ -45,7 +46,7 @@ public sealed class CommandlineArguments {
                         LoadIntoMap = args[i + 1];
                         i++;
                     } else {
-                        Logger.Write(LogTag, LogLevel.Error, $"Missing map path for argument: {option}");
+                        _logger.Error($"Missing map path for argument: {option}");
                     }
                     break;
                 case "--profile" or "-p":
@@ -53,7 +54,7 @@ public sealed class CommandlineArguments {
                         Profile = args[i + 1];
                         i++;
                     } else {
-                        Logger.Write(LogTag, LogLevel.Error, $"Missing profile name for argument: {option}");
+                        _logger.Error($"Missing profile name for argument: {option}");
                     }
                     break;
                 case "--celeste-exe":
@@ -61,7 +62,7 @@ public sealed class CommandlineArguments {
                         CelesteDir = Path.GetDirectoryName(args[i + 1]);
                         i++;
                     } else {
-                        Logger.Write(LogTag, LogLevel.Error, $"Missing Celeste.exe path for argument: {option}");
+                        _logger.Error($"Missing Celeste.exe path for argument: {option}");
                     }
                     break;
                 case "--portable":
@@ -73,7 +74,7 @@ public sealed class CommandlineArguments {
                         HeadlessScriptFile = args[i + 1];
                         i++;
                     } else {
-                        Logger.Write(LogTag, LogLevel.Error, $"Missing script path for argument: {option}");
+                        _logger.Error($"Missing script path for argument: {option}");
                     }
                     break;
                 default:
@@ -89,7 +90,7 @@ public sealed class CommandlineArguments {
                         break;
                     }
                     
-                    Logger.Write(LogTag, LogLevel.Error, $"Unknown cmd option option: {option}");
+                    _logger.Error($"Unknown cmd option option: {option}");
                     break;
             }
         }

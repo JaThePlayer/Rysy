@@ -26,6 +26,8 @@ public abstract class Tool {
     public ToolHandler ToolHandler { get; internal set; }
 
     public EditorState EditorState => ToolHandler.EditorState;
+    
+    public IRysyLogger Logger { get; internal set; }
 
     public abstract string Name { get; }
 

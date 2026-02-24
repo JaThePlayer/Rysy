@@ -816,7 +816,7 @@ public static class ImGuiManager {
             } catch (Exception ex) {
                 if (!widgetData.CrashLogged) {
                     widgetData.CrashLogged = true;
-                    Logger.Error(ex, "Failed to render XnaWidget");
+                    Logger.Error("XnaWidget", ex, "Failed to render XnaWidget");
                 }
             }
 

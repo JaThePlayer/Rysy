@@ -15,28 +15,36 @@ namespace Rysy;
 /// <summary>
 /// Contains XNA state such as the current Game instance or GraphicsDevice.
 /// </summary>
-public static class RysyState {
-    public static GraphicsDeviceManager GraphicsDeviceManager { get; private set; } = null!;
+public class RysyState {
+    public static RysyState Instance {
+        get => field ?? throw new Exception($"{nameof(RysyState)} isn't initialized!");
+        private set => field = value;
+    }
     
-    public static Game Game { get; private set; }
+    public GraphicsDeviceManager _GraphicsDeviceManager { get; private set; } = null!;
+    
+    public Game _Game { get; private set; }
 
-    public static GraphicsDevice GraphicsDevice => GraphicsDeviceManager.GraphicsDevice;
+    public GraphicsDevice _GraphicsDevice => _GraphicsDeviceManager.GraphicsDevice;
 
-    public static GameWindow Window => Game.Window;
+    public GameWindow _Window => _Game.Window;
+    
+    public IComponentRegistry _GlobalServices { get; private set; }
 
-    private static readonly Lock SceneChangeLock = new();
+    private readonly Lock _sceneChangeLock = new();
 
-    public static Scene Scene {
+    public Scene _Scene {
         get;
         set {
-            lock (SceneChangeLock) {
+            lock (_sceneChangeLock) {
                 var persistedWindows = field.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
                 field.OnEnd();
                 foreach (var w in persistedWindows) {
                     value.AddWindow(w);
                 }
 
-                value.OnBegin();
+                value.AddIfMissing(LoggerFactory);
+                value.OnBegin(_GlobalServices);
                 field = value;
             }
         }
@@ -91,43 +99,48 @@ public static class RysyState {
 
     public static bool ImGuiAvailable { get; internal set; }
 
-    public static CommandlineArguments CmdArguments { get; internal set; } = new([]);
+    public static IRysyLoggerFactory LoggerFactory { get; set; } = new LoggerFactory();
+    
+    public static CommandlineArguments CmdArguments { get; internal set; } = new([], LoggerFactory.CreateLogger<CommandlineArguments>());
     
     private static bool _hideUi;
     private static bool _lastActive;
-    private static SmartFramerate _smartFramerate = new(5);
+    private static readonly SmartFramerate _smartFramerate = new(5);
     
-    public static void Initialize(Game game, GraphicsDeviceManager gdm) {
-        Game = game;
-        GraphicsDeviceManager = gdm;
+    public void Initialize(Game game, GraphicsDeviceManager gdm, IComponentRegistry globalServices) {
+        Instance = this;
+        
+        _GlobalServices = globalServices;
+        _Game = game;
+        _GraphicsDeviceManager = gdm;
 
         EnableEventListeners();
 
-        Window.ClientSizeChanged += Window_ClientSizeChanged;
+        _Window.ClientSizeChanged += Window_ClientSizeChanged;
     }
     
-    internal static void Window_ClientSizeChanged(object? sender, EventArgs e) {
-        OnViewportChanged?.Invoke(GraphicsDevice.Viewport);
+    internal void Window_ClientSizeChanged(object? sender, EventArgs e) {
+        OnViewportChanged?.Invoke(_GraphicsDevice.Viewport);
 
-        if (Settings.Instance is { } settings && !Window.IsBorderlessShared()) {
-            settings.StartingWindowWidth = GraphicsDevice.Viewport.Width;
-            settings.StartingWindowHeight = GraphicsDevice.Viewport.Height;
-            settings.StartingWindowX = Window.GetPosition().X;
-            settings.StartingWindowY = Window.GetPosition().Y;
+        if (Settings.Instance is { } settings && !_Window.IsBorderlessShared()) {
+            settings.StartingWindowWidth = _GraphicsDevice.Viewport.Width;
+            settings.StartingWindowHeight = _GraphicsDevice.Viewport.Height;
+            settings.StartingWindowX = _Window.GetPosition().X;
+            settings.StartingWindowY = _Window.GetPosition().Y;
             settings.Save();
         }
     }
     
-    public static void DispatchUpdate(float elapsed) {
+    public void DispatchUpdate(float elapsed) {
         try {
-            if (_lastActive != Game.IsActive) {
+            if (_lastActive != _Game.IsActive) {
                 OnLoseFocus?.Invoke();
             }
 
             if (true) {
                 Time.Update(elapsed);
 
-                if (Game.IsActive)
+                if (_Game.IsActive)
                     Input.Global.Update(elapsed);
 
                 // todo: refactor into proper keybind
@@ -137,9 +150,9 @@ public static class RysyState {
 
                 SmartFpsHandler.Update();
 
-                Scene.Update();
+                _Scene.Update();
 
-                if (Scene is not CrashScene)
+                if (_Scene is not CrashScene)
                     OnUpdate?.Invoke();
             }
 
@@ -152,16 +165,16 @@ public static class RysyState {
             }
         } catch (Exception e) {
             Logger.Error(e, $"Unhandled exception during update!");
-            Scene = new CrashScene(Scene, e);
+            _Scene = new CrashScene(_Scene, e);
         }
 
-        _lastActive = Game.IsActive;
+        _lastActive = _Game.IsActive;
     }
 
-    public static void DispatchRender(float elapsed) {
+    public void DispatchRender(float elapsed) {
         ForceActiveTimer -= Time.Delta;
 
-        GraphicsDevice.Clear(Color.Black);
+        _GraphicsDevice.Clear(Color.Black);
 
         var renderUi = !_hideUi;
         var uiRenderingSuccessful = false;
@@ -172,7 +185,7 @@ public static class RysyState {
 #endif
                 ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
                 if (renderUi)
-                    Scene.RenderImGui();
+                    _Scene.RenderImGui();
                 if (DebugInfoWindow.Enabled)
                     DebugInfoWindow.Instance.RenderGui();
 
@@ -180,19 +193,19 @@ public static class RysyState {
 #if !NO_CATCH_RENDER_EXCEPTIONS
             } catch (Exception e) {
                 Logger.Error(e, $"Unhandled exception during ImGui rendering!");
-                Scene = new CrashScene(Scene, e);
+                _Scene = new CrashScene(_Scene, e);
             }
 #endif
         }
 
         try {
-            Scene.Render();
+            _Scene.Render();
 
-            if (Scene is not CrashScene)
+            if (_Scene is not CrashScene)
                 OnRender?.Invoke();
         } catch (Exception e) {
             Logger.Error(e, $"Unhandled exception during render!");
-            Scene = new CrashScene(Scene, e);
+            _Scene = new CrashScene(_Scene, e);
         }
         
         if (ImGuiAvailable)
@@ -203,7 +216,7 @@ public static class RysyState {
         CurrentFps = _smartFramerate.Framerate;
     }
 
-    public static void DispatchOnNextReload() {
+    public void DispatchOnNextReload() {
         if (OnNextReload is { } onNextReload) {
             OnNextReload = null;
             onNextReload.Invoke();
@@ -239,7 +252,7 @@ public static class RysyState {
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
                         Sdl2Ext.SDL_free(droppedFileDir);
 
-                        Scene?.OnFileDrop(pathString);
+                        Instance.Scene?.OnFileDrop(pathString);
                         break;
                     }
                     case SDL.SDL_EventType.SDL_MOUSEWHEEL: {
@@ -317,6 +330,44 @@ public static class RysyState {
         public void Update(double timeSinceLastFrame) {
             _currentFrametimes /= _weight;
             _currentFrametimes += timeSinceLastFrame;
+        }
+    }
+}
+
+public static class RysyStateStaticExt {
+    extension(RysyState) {
+        public static GraphicsDeviceManager GraphicsDeviceManager => RysyState.Instance.GraphicsDeviceManager;
+    
+        public static Game Game => RysyState.Instance.Game;
+
+        public static GraphicsDevice GraphicsDevice => RysyState.Instance.GraphicsDevice;
+
+        public static GameWindow Window => RysyState.Instance.Window;
+    
+        public static IComponentRegistry GlobalServices => RysyState.Instance.GlobalComponents;
+
+        public static Scene Scene {
+            get => RysyState.Instance.Scene;
+            set => RysyState.Instance.Scene = value;
+        }
+    }
+}
+
+public static class RysyStateNonStaticExt {
+    extension(RysyState st) {
+        public GraphicsDeviceManager GraphicsDeviceManager => st._GraphicsDeviceManager;
+    
+        public Game Game => st._Game;
+
+        public GraphicsDevice GraphicsDevice => st._GraphicsDevice;
+
+        public GameWindow Window => st._Window;
+    
+        public IComponentRegistry GlobalComponents => st._GlobalServices;
+
+        public Scene Scene {
+            get => st._Scene;
+            set => st._Scene = value;
         }
     }
 }

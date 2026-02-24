@@ -1,7 +1,8 @@
 ﻿using Rysy.Mods;
 using Rysy.Platforms;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.Text;
+using LogLevel = Rysy.Shared.LogLevel;
 
 namespace Rysy;
 
@@ -179,6 +180,23 @@ public sealed class Logger(string tag) : IRysyLogger {
         WriteImpl(txt);
     }
     
+    public static void Error(string tag, Exception exception, string message,
+        [CallerMemberName] string callerMethod = "",
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int lineNumber = 0
+    ) {
+        if (!ValidLogLevel(LogLevel.Error))
+            return;
+
+        var txt = $"[{FancyTextHelper.GetColoredString(tag, 0)}] [{LogLevel.Error.ToColoredString()}] {message}: {ExceptionToString(exception)}\n";
+
+#if DEBUG
+        txt = PrependLocation(txt, callerMethod, callerFile, lineNumber);
+#endif
+
+        WriteImpl(txt);
+    }
+    
     public static void Error(string tag, Exception exception, FancyInterpolatedStringHandler message,
         [CallerMemberName] string callerMethod = "",
         [CallerFilePath] string callerFile = "",
@@ -220,6 +238,24 @@ public sealed class Logger(string tag) : IRysyLogger {
 
     public void Log(LogLevel logLevel, string message) {
         Write(tag, logLevel, message);
+    }
+    
+    public void Log(LogLevel logLevel, FancyInterpolatedStringHandler message) {
+        Write(tag, logLevel, message);
+    }
+
+    public void Error(Exception ex, string message) {
+        Error(tag, ex, message);
+    }
+
+    public void Error(Exception ex, FancyInterpolatedStringHandler message) {
+        Error(tag, ex, message);
+    }
+}
+
+public sealed class LoggerFactory : IRysyLoggerFactory {
+    public IRysyLogger CreateLogger(string name) {
+        return new Logger(name);
     }
 }
 
@@ -277,65 +313,4 @@ public static class LogLevelExtensions {
         LogLevel.Error => Color.Red,
         _ => Color.White,
     }).ToNumVec4();
-}
-
-internal static class FancyTextHelper {
-    public const string ResetColor = "\e[0m";
-
-    private static readonly string[] Colors = [
-        "\e[96m", // bright cyan
-        "\e[92m", // bright green
-        "\e[95m", // bright magenta
-        //"\e[94m", // bright blue
-        "\e[93m", // bright yellow
-        "\e[91m", // bright Red
-        "\e[31m", // red
-        "\e[32m", // green
-        "\e[33m", // yellow
-        "\e[34m", // blue
-        "\e[35m", // magenta
-        "\e[36m" // cyan
-    ];
-
-    public const string Gray = "\e[90m";
-
-    public static string GetColorCode(int i) => Colors[i % Colors.Length];
-
-    public static string GetColoredString(string from, int colorId) {
-        return $"{GetColorCode(colorId)}{from}{ResetColor}";
-    }
-
-    public static void AppendFancyText(StringBuilder builder, string? text, int colorId) {
-        builder.Append(GetColorCode(colorId));
-        builder.Append(text ?? "null");
-        builder.Append(ResetColor);
-    }
-}
-
-[InterpolatedStringHandler]
-public ref partial struct FancyInterpolatedStringHandler {
-    private readonly StringBuilder _builder;
-    private int _colorId = 0;
-
-    public FancyInterpolatedStringHandler(int literalLength, int formattedCount)
-        => _builder = new(literalLength);
-
-    public void AppendLiteral(string s) => _builder.Append(s);
-
-    public void AppendFormatted<T>(T t) {
-        FancyTextHelper.AppendFancyText(_builder, t?.ToString(), _colorId++);
-    }
-
-    public void AppendFormatted<T>(T t, string? format) {
-        string? text;
-        if (t is IFormattable) {
-            text = ((IFormattable) t).ToString(format, /*_provider*/ null); // constrained call to avoid boxing value types
-        } else {
-            text = t?.ToString();
-        }
-        FancyTextHelper.AppendFancyText(_builder, text, _colorId++);
-    }
-
-    internal string GetFormattedText() => _builder.ToString();
-
 }

@@ -93,7 +93,7 @@ public static class ModRegistry {
         }
     }
 
-    public static async Task LoadAllAsync(string modDir, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
+    public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
@@ -119,9 +119,9 @@ public static class ModRegistry {
             .Where(f => !blacklisted.Contains(f))
             .Select(f => {
                 if (f.EndsWith(".zip", StringComparison.Ordinal))
-                    return CreateModAsync(f, zip: true, loadCSharpPlugins);
+                    return CreateModAsync(f, componentRegistry, zip: true, loadCSharpPlugins);
 
-                return CreateModAsync(f, zip: false, loadCSharpPlugins);
+                return CreateModAsync(f, componentRegistry, zip: false, loadCSharpPlugins);
             })!
             .Append(Task.FromResult(CreateRysyMod()))!;
 
@@ -191,6 +191,7 @@ public static class ModRegistry {
         ],
         PluginAssembly = typeof(RysyEngine).Assembly,
         Filesystem = RysyPlatform.Current.GetRysyFilesystem(),
+        Module = new RysyModModule(),
     };
 
     private static void UnloadAllMods() {
@@ -198,11 +199,13 @@ public static class ModRegistry {
 
         foreach (var (_, mod) in ModsMutable) {
             mod.Module?.Unload();
+            mod.Module?.ComponentRegistryScope.Dispose();
+            mod.Module = null;
             mod.PluginAssembly = null;
         }
     }
 
-    private static async Task<ModMeta?> CreateModAsync(string dir, bool zip, bool loadCSharp) {
+    private static async Task<ModMeta?> CreateModAsync(string dir, IComponentRegistry componentRegistry, bool zip, bool loadCSharp) {
         IModFilesystem? filesystem;
         try {
             filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
@@ -220,7 +223,7 @@ public static class ModRegistry {
         
         try {
             if (loadCSharp)
-                LoadModRysySourceCodePlugins(mod);
+                LoadModRysySourceCodePlugins(mod, componentRegistry);
         } catch (Exception e) {
             Logger.Error(LogTag, e, $"Error loading mod: {dir}");
         }
@@ -257,10 +260,11 @@ public static class ModRegistry {
         }
     }
 
-    private static void LoadModule(ModMeta mod) {
+    private static void LoadModule(ModMeta mod, IComponentRegistry componentRegistry) {
         if (mod.Module is { } oldMod) {
             // if we're hot-reloading, .Module will point to the old module type, let's unload it.
             oldMod.Unload();
+            oldMod.ComponentRegistryScope.Dispose();
         }
 
         if (mod.PluginAssembly is not { } asm) {
@@ -275,10 +279,11 @@ public static class ModRegistry {
 
         mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
         mod.Module.Meta = mod;
+        mod.Module.ComponentRegistryScope = new ComponentRegistryScope(componentRegistry);
         mod.Module.Load();
     }
 
-    private static void LoadModRysySourceCodePlugins(ModMeta mod, bool registerFilewatch = true) {
+    private static void LoadModRysySourceCodePlugins(ModMeta mod, IComponentRegistry componentRegistry, bool registerFilewatch = true) {
         #if SourceCodePlugins
         var files = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "cs")
             .Where(f => !f.StartsWith("Rysy/obj", StringComparison.Ordinal)
@@ -303,7 +308,7 @@ public static class ModRegistry {
                     if (!reloading && name.EndsWith(".cs", StringComparison.Ordinal)) {
                         reloading = true;
                         RysyState.OnEndOfThisFrame += () => {
-                            LoadModRysySourceCodePlugins(mod, registerFilewatch: false);
+                            LoadModRysySourceCodePlugins(mod, componentRegistry, registerFilewatch: false);
                             reloading = false;
                         };
                     }
@@ -338,7 +343,7 @@ public static class ModRegistry {
 
         mod.PluginAssembly = modAsm;
 
-        LoadModule(mod);
+        LoadModule(mod, componentRegistry);
         #endif
     }
 

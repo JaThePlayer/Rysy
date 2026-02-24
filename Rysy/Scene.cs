@@ -13,12 +13,16 @@ public abstract class Scene {
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
-    private TypeTrackedList<object> Components { get; } = [];
+    private SceneComponentRegistry Components { get; }
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
 
+    public IRysyLoggerFactory LoggerFactory => GetRequired<IRysyLoggerFactory>();
+    public IRysyLogger Logger => this.AddIfMissing(self => self.LoggerFactory.CreateLogger(self.GetType()));
+
     protected Scene() {
+        Components = new SceneComponentRegistry();
         _removeWindow = (w) => {
             RysyState.OnEndOfThisFrame += () => _windows.Remove(w);
         };
@@ -29,10 +33,12 @@ public abstract class Scene {
     /// <summary>
     /// Called when this scene is set to <see cref="RysyEngine.Scene"/>
     /// </summary>
-    public virtual void OnBegin() {
+    public virtual void OnBegin(IComponentRegistry globalComponents) {
+        Components.GlobalRegistry = globalComponents;
         SetupHotkeys();
         
         foreach (var c in GetAll<SceneComponent>()) {
+            c.Scene = this;
             c.OnBegin();
         }
     }
@@ -43,6 +49,7 @@ public abstract class Scene {
     public virtual void OnEnd() {
         foreach (var c in GetAll<SceneComponent>()) {
             c.OnEnd();
+            c.Scene = null!;
         }
     }
 
@@ -161,23 +168,66 @@ public abstract class Scene {
 
     public void Add(object sceneComponent) {
         Components.Add(sceneComponent);
-        if (sceneComponent is SceneComponent c) {
-            c.Scene = this;
-        }
     }
     
     public void Remove(object sceneComponent) {
-        Components.Add(sceneComponent);
-        if (sceneComponent is SceneComponent c) {
-            c.Scene = null!;
-        }
+        Components.Remove(sceneComponent);
+    }
+    
+    public T AddIfMissing<T>() where T : class, new() {
+        return Components.AddIfMissing<T>();
+    }
+    
+    public T AddIfMissing<T>(T newValue) where T : class {
+        return Components.AddIfMissing(newValue);
     }
     
     public T? Get<T>() where T : class {
-        return Components[typeof(T)].FirstOrDefault() as T;
+        return Components.Get<T>();
+    }
+    
+    public T GetRequired<T>() where T : class {
+        return Components.GetRequired<T>();
     }
     
     public IEnumerable<T> GetAll<T>() where T : class {
-        return Components[typeof(T)].Cast<T>();
+        return Components.GetAll<T>();
+    }
+}
+
+public static class SceneExt {
+    extension<T>(T scene) where T : Scene {
+        public TComponent AddIfMissing<TComponent>(Func<T, TComponent> newValue) where TComponent : class {
+            if (scene.Get<TComponent>() is not { } ret) {
+                scene.Add(ret = newValue.Invoke(scene));
+            }
+        
+            return ret;
+        }
+    }
+}
+
+internal sealed class SceneComponentRegistry : IComponentRegistry {
+    private readonly ComponentRegistry _sceneSpecific = new();
+    
+    public IComponentRegistry? GlobalRegistry { get; set; }
+    
+    public void Add(object component) {
+        _sceneSpecific.Add(component);
+    }
+
+    public void Remove(object component) {
+        _sceneSpecific.Remove(component);
+    }
+
+    public T? Get<T>() where T : class {
+        return _sceneSpecific.Get<T>() ?? GlobalRegistry?.Get<T>();
+    }
+
+    public IEnumerable<T> GetAll<T>() where T : class {
+        if (GlobalRegistry is { } globalRegistry) {
+            return globalRegistry.GetAll<T>().Concat(_sceneSpecific.GetAll<T>());
+        }
+        return _sceneSpecific.GetAll<T>();
     }
 }

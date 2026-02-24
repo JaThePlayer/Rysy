@@ -12,6 +12,18 @@ internal sealed class CelesteRysyLogger(string tag) : IRysyLogger {
     public void Log(RysyLogLevel logLevel, string message) {
         Logger.Log(ToCelesteLevel(logLevel), tag, message);
     }
+    
+    public void Log(RysyLogLevel logLevel, FancyInterpolatedStringHandler message) {
+        Logger.Log(ToCelesteLevel(logLevel), tag, message.GetFormattedText());
+    }
+
+    public void Error(Exception ex, string message) {
+        Logger.Error(tag, $"{message}: {ex}");
+    }
+    
+    public void Error(Exception ex, FancyInterpolatedStringHandler message) {
+        Logger.Error(tag, $"{message.GetFormattedText()}: {ex}");
+    }
 
     private static LogLevel ToCelesteLevel(RysyLogLevel level) =>
         level switch {
