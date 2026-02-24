@@ -974,7 +974,7 @@ public static class ImGuiManager {
     }
 
     public static void PushStyleColor(ImGuiCol col, IThemeColor color) {
-        ImGui.PushStyleColor(col, ThemeColors.TagColor.ToNumVec4(Themes.Current));
+        ImGui.PushStyleColor(col, color.ToNumVec4(Themes.Current));
     }
 
     public static unsafe int? IndexDragDrop(string payloadName, ref int index) {
