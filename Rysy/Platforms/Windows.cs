@@ -1,13 +1,15 @@
 ﻿using Microsoft.Win32;
+using Rysy.Components;
 using Rysy.Gui;
 using Rysy.Mods;
+using Rysy.Signals;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace Rysy.Platforms;
 
 [SupportedOSPlatform("windows")]
-public partial class Windows : RysyPlatform {
+public partial class Windows : RysyPlatform, ISignalListener<ThemeChanged> {
     private ReadonlyModFilesystem? _systemFontsFs;
     private IReadOnlyDictionary<string, string>? _fontFilenameToDisplayName;
 
@@ -34,11 +36,9 @@ public partial class Windows : RysyPlatform {
         base.Init();
 
         EnableAnsi();
-        
-        Themes.ThemeChanged += ThemesOnThemeChanged;
     }
 
-    private void ThemesOnThemeChanged(Theme theme) {
+    private void OnThemeChanged(Theme theme) {
         // Enable dark theme on the window depending on the menubar color
         var window = GetActiveWindow().ToInt32();
         if (window != 0) {
@@ -241,5 +241,9 @@ public partial class Windows : RysyPlatform {
             DWMWA_SYSTEMBACKDROP_TYPE,
             DWMWA_LAST
         }
+    }
+
+    void ISignalListener<ThemeChanged>.OnSignal(ThemeChanged signal) {
+        OnThemeChanged(signal.NewTheme);
     }
 }

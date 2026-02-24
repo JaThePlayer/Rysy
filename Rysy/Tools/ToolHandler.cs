@@ -1,14 +1,16 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
+using Rysy.Signals;
 using System.Diagnostics;
 
 namespace Rysy.Tools;
 
-public class ToolHandler {
+public class ToolHandler : ISignalListener<ThemeChanged> {
     public const float DefaultMaterialListWidth = 360f;
 
     public readonly HistoryHandler History;
@@ -69,7 +71,6 @@ public class ToolHandler {
         Registry.Tools.OnChanged += CreateTools;
         EditorState.OnCurrentRoomChanged += CancelInteraction;
         History.OnUndo += CancelInteraction;
-        Themes.ThemeChanged += OnThemeChanged;
     }
 
     private void OnThemeChanged(Theme theme) {
@@ -83,7 +84,10 @@ public class ToolHandler {
         Registry.Tools.OnChanged -= CreateTools;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
         History.OnUndo -= CancelInteraction;
-        Themes.ThemeChanged -= OnThemeChanged;
+    }
+
+    void ISignalListener<ThemeChanged>.OnSignal(ThemeChanged signal) {
+        OnThemeChanged(signal.NewTheme);
     }
 
     ~ToolHandler() {

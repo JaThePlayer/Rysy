@@ -16,11 +16,8 @@ public sealed class Themes : ISignalEmitter, ISignalListener<SettingsChanged<str
             if (field == value) return;
             field = value;
             ((ISignalEmitter)this).SignalTarget.Send(new ThemeChanged(value));
-            ThemeChanged?.Invoke(value);
         }
     } = new();
-
-    public static event Action<Theme>? ThemeChanged;
 
     private sealed class ColorJsonConverter : JsonConverter<Color> {
         public override Color Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
