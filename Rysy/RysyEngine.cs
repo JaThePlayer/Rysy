@@ -8,7 +8,7 @@ using Rysy.Signals;
 
 namespace Rysy;
 
-public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, ISignalListener<SettingsChanged<bool>> {
+public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, ISignalListener<SettingsChanged<bool>>, ISignalListener<ComponentAdded<Settings>> {
     public RysyState State { get; }
     
     public static RysyEngine Instance { get; private set; } = null!;
@@ -159,8 +159,6 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
         }
         globalComponents.Add(Settings.Instance);
 
-        ResizeWindowUsingSettings();
-
         try {
             Profile.Instance = Profile.Load();
         } catch {
@@ -194,10 +192,7 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
         return LoadTaskResult.Success();
     }
 
-    private void ResizeWindowUsingSettings() {
-        if (Settings.Instance is not { } settings)
-            return;
-
+    private void ResizeWindowUsingSettings(Settings settings) {
         ResizeWindow(
             settings.StartingWindowWidth ?? 800,
             settings.StartingWindowHeight ?? 480,
@@ -243,5 +238,9 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
                 ToggleBorderlessFullscreen(signal.Value);
                 break;
         }
+    }
+
+    public void OnSignal(ComponentAdded<Settings> signal) {
+        ResizeWindowUsingSettings(signal.Component);
     }
 }

@@ -1,13 +1,14 @@
 ﻿using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Signals;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy;
 
 public interface IComponentRegistry : ISignalListener
 {
-    void Add(object component);
-    void Remove(object component);
+    void Add<T>(T component) where T : notnull;
+    void Remove<T>(T component) where T : notnull;
     T? Get<T>() where T : class;
     IEnumerable<T> GetAll<T>() where T : class;
 
@@ -27,7 +28,6 @@ public static class ComponentRegistryExt {
         public T GetRequired<T>() where T : class {
             return registry.Get<T>() ?? throw new RequiredComponentMissingException(typeof(T));;
         }
-        
         
         public T AddIfMissing<T>() where T : class, new() {
             if (registry.Get<T>() is not { } ret) {
@@ -62,12 +62,12 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
         _newComponents.Clear();
     }
 
-    public void Add(object component) {
+    public void Add<T>(T component) where T : notnull {
         _newComponents.Add(component);
         parent.Add(component);
     }
 
-    public void Remove(object component) {
+    public void Remove<T>(T component) where T : notnull {
         _newComponents.Remove(component);
         parent.Remove(component);
     }
@@ -96,15 +96,17 @@ public sealed class ComponentRegistry : IComponentRegistry {
         _parentRegistry = parentRegistry;
     }
     
-    public void Add(object component) {
+    public void Add<T>(T component) where T : notnull {
         Components.Add(component);
 
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.From(this);
         }
+        
+        this.OnSignal(new ComponentAdded<T>(component));
     }
 
-    public void Remove(object component) {
+    public void Remove<T>(T component) where T : notnull {
         Components.Add(component);
         
         if (component is ISignalEmitter emitter) {

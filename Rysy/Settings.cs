@@ -1,5 +1,6 @@
 ﻿//#define DOT_TRACE
 
+using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
@@ -53,7 +54,7 @@ public static class SettingsHelper {
     }
 }
 
-public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
+public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, ISignalListener<ComponentAdded<Settings>> {
     public static bool UiEnabled { get; set; }
     
     public static string SettingsFileLocation { get; } = $"settings.json";
@@ -252,4 +253,22 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter {
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
+
+    public void OnSignal(ComponentAdded<Settings> signal) {
+        if (signal.Component == this) {
+            // Resend signals when we get added to a component registry
+#pragma warning disable CA2245
+            Theme = Theme;
+            FontFile = FontFile;
+            UseBoldFontByDefault = UseBoldFontByDefault;
+            FontSize = FontSize;
+            TriggerFontScale = TriggerFontScale;
+            VSync = VSync;
+            MinifyClipboard = MinifyClipboard;
+            BorderlessFullscreen = BorderlessFullscreen;
+            TargetFps = TargetFps;
+            SmartFramerate = SmartFramerate;
+#pragma warning restore CA2245
+        }
+    }
 }

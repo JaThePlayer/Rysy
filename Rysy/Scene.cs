@@ -177,14 +177,14 @@ public abstract class Scene : ISignalListener {
         return time % interval < Time.Delta;
     }
 
-    public void Add(object? sceneComponent) {
-        if (sceneComponent is { })
-            _components.Add(sceneComponent);
+    public void Add<T>(T component) {
+        if (component is not null)
+            _components.Add(component);
     }
     
-    public void Remove(object? sceneComponent) {
-        if (sceneComponent is { })
-            _components.Remove(sceneComponent);
+    public void Remove<T>(T component) {
+        if (component is not null)
+            _components.Remove(component);
     }
     
     public T AddIfMissing<T>() where T : class, new() {
@@ -233,11 +233,11 @@ internal sealed class SceneComponentRegistry : IComponentRegistry {
     
     public IComponentRegistry? GlobalRegistry { get; set; }
     
-    public void Add(object component) {
+    public void Add<T>(T component) where T : notnull {
         _sceneSpecific.Add(component);
     }
 
-    public void Remove(object component) {
+    public void Remove<T>(T component) where T : notnull {
         _sceneSpecific.Remove(component);
     }
 
