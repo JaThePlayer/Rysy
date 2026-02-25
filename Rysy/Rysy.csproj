@@ -10,7 +10,7 @@
     <!--<DebugSymbols>true</DebugSymbols>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Version>0.0.0</Version>
-    <Version Condition="'$(_IsPublishing)' == 'true'">0.0.11</Version>
+    <Version Condition="'$(_IsPublishing)' == 'true'">0.0.11.2</Version>
 
     <FNA Condition="'$(FNA)' == ''">FNA</FNA>
     <SourceCodePlugins Condition="'$(SourceCodePlugins)' == ''">SourceCodePlugins</SourceCodePlugins>
