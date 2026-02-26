@@ -1,9 +1,10 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Helpers;
+using Rysy.Signals;
 
 namespace Rysy.Gui.Windows;
 
-public class Window {
+public class Window : ISignalEmitter {
     public Scene Scene { get; private set; }
 
     public Theme Theme => Scene.GetRequired<Themes>().Current;
@@ -136,6 +137,8 @@ public class Window {
     public virtual void RemoveSelf() {
         _removeSelfImpl?.Invoke(this);
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
 
 public class ScriptedWindow : Window {

@@ -1,6 +1,8 @@
-﻿namespace Rysy.Scenes;
+﻿using Rysy.Signals;
 
-public abstract class SceneComponent {
+namespace Rysy.Scenes;
+
+public abstract class SceneComponent : ISignalEmitter {
     public Scene Scene { get; internal set; }
 
     public virtual void Update() {
@@ -22,4 +24,6 @@ public abstract class SceneComponent {
     public virtual void OnEnd() {
         
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
