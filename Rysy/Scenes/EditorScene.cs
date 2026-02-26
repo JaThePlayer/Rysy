@@ -75,7 +75,6 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         if (Settings.Instance.NotificationWindowOpen)
             AddWindowIfNeeded<NotificationsWindow>();
         
-        Add(new PlayerTrailRenderer());
         Add(EditorState);
         Add(HistoryHandler);
         Add(new Menubar());

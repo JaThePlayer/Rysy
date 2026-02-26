@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Rysy.Shared\Rysy.Shared.csproj" Private="false" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Rysy\Rysy.csproj" Private="false" />
+    </ItemGroup>
+    <ItemGroup>
+      <Reference Include="FNA" Private="false" PrivateAssets="all" ExcludeAssets="runtime">
+        <HintPath>..\..\Rysy\lib\FNA.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <Target Name="CopyFiles" AfterTargets="Build" Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" Outputs="bin\$(AssemblyName).dll;bin\$(AssemblyName).pdb">
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin"/>
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin"/>
+    </Target>
+
+</Project>

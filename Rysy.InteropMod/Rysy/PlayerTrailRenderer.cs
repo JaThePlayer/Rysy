@@ -1,15 +1,18 @@
-﻿using Rysy.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Rysy.Extensions;
+using Rysy.Graphics;
+using Rysy.Scenes;
 using Rysy.Shared.InteropMod;
 using Rysy.Shared.Networking;
 
-namespace Rysy.Scenes.Components;
+namespace Rysy.InteropMod.InRysy;
 
 internal sealed class PlayerTrailRenderer : SceneComponent {
     private InPipeServer<PlaybackTrailData>? _server;
 
     private PlaybackTrailData? _playbackTrailData;
 
-    private float Opacity => Settings.Instance?.PlaytestTrailOpacity ?? 0.45f;
+    private float Opacity => Scene.GetRequired<InteropModSettings>().PlaybackTrailOpacity;
 
     private readonly List<(float, ISprite)> _sprites = [];
     private readonly Lock _spriteLock = new();
@@ -38,7 +41,7 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
         Gfx.EndBatch();
     }
 
-    public override void OnBegin() {
+    public override void OnAdded() {
         _server?.Dispose();
         
         _server = new InPipeServer<PlaybackTrailData>(new Logger("Rysy.Pipes.PlayerTrailData")) {
@@ -84,7 +87,7 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
         };
     }
 
-    public override void OnEnd() {
+    public override void OnRemoved() {
         _server?.Dispose();
         _server = null;
     }
