@@ -32,12 +32,12 @@ public class RoomAttributeChangeAction : IHistoryAction {
             switch ((_orig.Checkpoint, _changed.Checkpoint)) {
                 case (true, false):
                     // Remove checkpoint
-                    _removedCheckpoint = _room.Entities[typeof(Checkpoint)].First();
+                    _removedCheckpoint = _room.Entities.OfType<Checkpoint>().First();
                     _room.Entities.Remove(_removedCheckpoint);
                     break;
                 case (false, true):
                     // Add checkpoint
-                    var firstSpawnPoint = _room.Entities[typeof(Player)].FirstOrDefault()?.Pos ?? new Vector2();
+                    var firstSpawnPoint = _room.Entities.OfType<Player>().FirstOrDefault()?.Pos ?? new Vector2();
 
                     _addedCheckpoint = EntityRegistry.Create(new("checkpoint") {
                         Attributes = new() {
@@ -74,7 +74,7 @@ public class RoomAttributeChangeAction : IHistoryAction {
             _room.Entities.Add(removedCp);
         }
         if (_addedCheckpoint is { } addedCp) {
-            _room.Entities.Remove(_room.Entities[typeof(Checkpoint)].First());
+            _room.Entities.Remove(_room.Entities.OfType<Checkpoint>().First());
         }
         if (_newRoom) {
             _room.Map.Rooms.Remove(_room);

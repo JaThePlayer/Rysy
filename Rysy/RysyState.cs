@@ -39,7 +39,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
         get;
         set {
             lock (_sceneChangeLock) {
-                var persistedWindows = field.ActiveWindows.Where(w => w.PersistBetweenScenes).ToList();
+                var persistedWindows = field.GetAll<Window>().Where(w => w.PersistBetweenScenes).ToList();
                 field.OnEnd();
                 _GlobalServices.Remove(field);
                 foreach (var w in persistedWindows) {

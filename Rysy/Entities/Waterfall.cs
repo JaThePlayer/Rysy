@@ -53,10 +53,8 @@ public class Waterfall : Entity, IPlaceable {
 
         var rect = new Rectangle((int) pos.X, (int) pos.Y, 8, h);
 
-        foreach (var e in room.Entities[typeof(IWaterfallBlocker)]) {
-            if (e is IWaterfallBlocker { BlockWaterfalls: true }) {
-                Rectangle bRect = e.Rectangle;
-
+        foreach (var blocker in room.Entities.OfType<IWaterfallBlocker>()) {
+            if (blocker is { BlockWaterfalls: true } and Entity { Rectangle: var bRect } e) {
                 if (bRect.Intersects(rect)) {
                     h = (int) (e.Y - pos.Y);
                     rect.Height = h;

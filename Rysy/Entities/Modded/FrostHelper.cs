@@ -141,7 +141,7 @@ internal sealed class CustomSpinner : LonnEntity {
 
         var s = cache.ConnectionDistance;
 
-        foreach (CustomSpinner spinner in Room.Entities[typeof(CustomSpinner)]) {
+        foreach (var spinner in Room.Entities.OfType<CustomSpinner>()) {
             if (spinner.Id <= Id)
                 continue;
 

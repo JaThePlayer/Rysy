@@ -91,7 +91,7 @@ public static class RoomList {
                     var cam = new Camera();
                     // find first spawn point and center the camera on it (while taking into account room boundaries)
                     Vector2 spawn;
-                    if (room.Entities[typeof(Player)].FirstOrDefault() is { } firstSpawn) {
+                    if (room.Entities.OfType<Player>().FirstOrDefault() is { } firstSpawn) {
                         spawn = firstSpawn.Pos.Add(room.X, room.Y).Add(-w / 2f, -h / 2f);
                         spawn = new(
                             spawn.X.Clamp(room.Bounds.Left, room.Bounds.Right - w), 

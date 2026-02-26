@@ -46,7 +46,9 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
 
     public override IEnumerable<ISprite> GetSprites() {
         var index = Index;
-        return ConnectedEntityHelper.GetSprites(this, Room.Entities[typeof(CassetteBlock)].Where(e => e is CassetteBlock b && b.Index == index), GetSprite, handleInnerCorners: true);
+        return ConnectedEntityHelper.GetSprites(this, Room.Entities
+            .OfType<CassetteBlock>()
+            .Where(e => e.Index == index), GetSprite, handleInnerCorners: true);
     }
 
     public override bool ResizableX => true;

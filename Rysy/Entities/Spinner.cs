@@ -160,7 +160,7 @@ public sealed class Spinner : Entity, IPlaceable {
         _cachedConnectedSpinners = new();
         bool createSprites = true;
 #endif
-        foreach (Spinner spinner in Room.Entities[typeof(Spinner)]) {
+        foreach (var spinner in Room.Entities.OfType<Spinner>()) {
             if (spinner == this) {
 #if FAILED_CACHE
                 createSprites = false;

@@ -10,7 +10,7 @@ public interface IComponentRegistry : ISignalListener
     void Add<T>(T component) where T : notnull;
     void Remove<T>(T component) where T : notnull;
     T? Get<T>() where T : class;
-    IEnumerable<T> GetAll<T>() where T : class;
+    IReadOnlyList<T> GetAll<T>() where T : class;
 
     void ISignalListener.OnSignal<T>(T signal) {
         foreach (var listener in GetAll<ISignalListener>()) {
@@ -76,7 +76,7 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
         return parent.Get<T>();
     }
 
-    public IEnumerable<T> GetAll<T>() where T : class {
+    public IReadOnlyList<T> GetAll<T>() where T : class {
         return parent.GetAll<T>();
     }
 }
@@ -107,7 +107,7 @@ public sealed class ComponentRegistry : IComponentRegistry {
     }
 
     public void Remove<T>(T component) where T : notnull {
-        Components.Add(component);
+        Components.Remove(component);
         
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.Null;
@@ -115,14 +115,24 @@ public sealed class ComponentRegistry : IComponentRegistry {
     }
 
     public T? Get<T>() where T : class {
-        return Components[typeof(T)].FirstOrDefault() as T ?? _parentRegistry?.Get<T>();
+        return Components.OfType<T>().FirstOrDefault() ?? _parentRegistry?.Get<T>();
     }
 
-    public IEnumerable<T> GetAll<T>() where T : class {
+    public IReadOnlyList<T> GetAll<T>() where T : class {
         if (_parentRegistry is { } parentRegistry) {
-            return parentRegistry.GetAll<T>().Concat(Components[typeof(T)].Cast<T>());
+            var left = parentRegistry.GetAll<T>();
+            var right = Components.OfType<T>();
+
+            if (right.Count == 0)
+                return left;
+
+            if (left.Count == 0)
+                return right;
+            
+            return new ConcatList<T>(left, right);
         }
-        return Components[typeof(T)].Cast<T>();
+
+        return Components.OfType<T>();
     }
 }
 

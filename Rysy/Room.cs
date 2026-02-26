@@ -252,7 +252,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             }
         }
 
-        Attributes.Checkpoint = Entities[typeof(Checkpoint)].Count > 0;
+        Attributes.Checkpoint = Entities.OfType<Checkpoint>().Count > 0;
 
         // It should be noted that there are two additional child elements - bgtiles and fgtiles.
         // These appear to follow the same format as the objtiles element and likely have a similar function.
@@ -344,7 +344,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public IEnumerable<char> GetRainbowTilesets(TileLayer layer) {
-        foreach (RainbowTilesetController c in Entities[typeof(RainbowTilesetController)]) {
+        foreach (RainbowTilesetController c in Entities.OfType<RainbowTilesetController>()) {
             if (c.TileLayer != layer)
                 continue;
             
@@ -703,7 +703,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (IsTileAt(roomPos))
             return true;
 
-        foreach (var e in Entities[typeof(ISolid)]) {
+        foreach (var (e, solid) in Entities.Implementing<ISolid>()) {
             Rectangle bRect = e.Rectangle;
 
             if (bRect.Contains(roomPos)) {
@@ -742,7 +742,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     internal Color? GetOverridenRainbowColor(Vector2 pos, float time) {
         Color? ret = null;
         
-        foreach (IRainbowSpinnerController controller in Entities[typeof(IRainbowSpinnerController)]) {
+        foreach (IRainbowSpinnerController controller in Entities.OfType<IRainbowSpinnerController>()) {
             var local = controller.IsLocal;
             var success = controller.TryGetRainbowColor(pos, time, out var color);
             

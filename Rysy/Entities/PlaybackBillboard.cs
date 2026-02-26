@@ -53,7 +53,7 @@ public sealed class PlaybackBillboard : Entity, IPlaceable {
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        var rects = Room.Entities[typeof(PlaybackBillboard)].Select(e => e.Rectangle).ToList();
+        var rects = Room.Entities.OfType<PlaybackBillboard>().Select(e => e.Rectangle).ToList();
 
         int w = (int) (Width / 8f);
         int h = (int) (Height / 8f);

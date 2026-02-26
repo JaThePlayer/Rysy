@@ -8,10 +8,6 @@ using Rysy.Signals;
 namespace Rysy;
 
 public abstract class Scene : ISignalListener {
-    private readonly List<Window> _windows = [];
-    
-    internal IReadOnlyList<Window> ActiveWindows => _windows;
-    
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
@@ -30,7 +26,7 @@ public abstract class Scene : ISignalListener {
         _removeWindow = (w) => {
             RysyState.OnEndOfThisFrame += () => {
                 w.Removed();
-                _windows.Remove(w);
+                Remove(w);
             };
         };
     }
@@ -90,8 +86,9 @@ public abstract class Scene : ISignalListener {
             c.RenderImGui();
         }
         
-        for (int i = 0; i < _windows.Count; i++) {
-            _windows[i].RenderGui();
+        foreach (var t in GetAll<Window>())
+        {
+            t.RenderGui();
         }
 
         while (_newPopupQueue.TryDequeue(out var id)) {
@@ -121,14 +118,14 @@ public abstract class Scene : ISignalListener {
     public void AddWindow(Window wind) {
         wind.SetRemoveAction(_removeWindow);
         wind.Added(this);
-        _windows.Add(wind);
+        Add(wind);
     }
 
     /// <summary>
     /// Adds a new window of type <typeparamref name="T"/> if there's no window of that type in the scene.
     /// </summary>
     public T AddWindowIfNeeded<T>() where T : Window, new() {
-        var window = _windows.OfType<T>().FirstOrDefault();
+        var window = GetAll<Window>().OfType<T>().FirstOrDefault();
 
         if (window is { })
             return window;
@@ -141,7 +138,7 @@ public abstract class Scene : ISignalListener {
     /// Toggles the window of type <typeparamref name="T"/>
     /// </summary>
     public void ToggleWindow<T>() where T : Window, new() {
-        var existing = _windows.FirstOrDefault(w => w is T);
+        var existing = GetAll<Window>().FirstOrDefault(w => w is T);
 
         if (existing is { })
             _removeWindow(existing);
@@ -154,7 +151,7 @@ public abstract class Scene : ISignalListener {
     /// Creates the instance by calling <paramref name="factory"/>
     /// </summary>
     public void AddWindowIfNeeded<T>(Func<T> factory) where T : Window {
-        if (!_windows.Any(w => w is T))
+        if (!GetAll<Window>().Any(w => w is T))
             AddWindow(factory());
     }
 
@@ -203,7 +200,7 @@ public abstract class Scene : ISignalListener {
         return _components.GetRequired<T>();
     }
     
-    public IEnumerable<T> GetAll<T>() where T : class {
+    public IReadOnlyList<T> GetAll<T>() where T : class {
         return _components.GetAll<T>();
     }
 
@@ -245,9 +242,18 @@ internal sealed class SceneComponentRegistry : IComponentRegistry {
         return _sceneSpecific.Get<T>() ?? GlobalRegistry?.Get<T>();
     }
 
-    public IEnumerable<T> GetAll<T>() where T : class {
+    public IReadOnlyList<T> GetAll<T>() where T : class {
         if (GlobalRegistry is { } globalRegistry) {
-            return globalRegistry.GetAll<T>().Concat(_sceneSpecific.GetAll<T>());
+            var left = globalRegistry.GetAll<T>();
+            var right = _sceneSpecific.GetAll<T>();
+
+            if (right.Count == 0)
+                return left;
+
+            if (left.Count == 0)
+                return right;
+            
+            return new ConcatList<T>(left, right);
         }
         return _sceneSpecific.GetAll<T>();
     }

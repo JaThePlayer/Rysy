@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Rysy.Helpers;
 
@@ -9,7 +10,7 @@ namespace Rysy.Helpers;
 public class TypeTrackedList<T> : IListenableList<T> {
     protected readonly List<T> Inner = [];
 
-    private readonly Dictionary<Type, List<T>> _byType = [];
+    private readonly Dictionary<Type, IList> _byType = [];
 
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
@@ -37,8 +38,28 @@ public class TypeTrackedList<T> : IListenableList<T> {
         }
     }
 
-    public List<T> this[Type type] {
-        get => _byType.GetValueOrDefault(type) ?? (_byType[type] = []);
+    /// <summary>
+    /// Quickly retrieves all elements castable to the given type.
+    /// </summary>
+    /// <typeparam name="TTarget">The target type, can also be an interface.</typeparam>
+    /// <returns>List of all elements castable to the target type.</returns>
+    public IReadOnlyList<TTarget> OfType<TTarget>() {
+        if (_byType.TryGetValue(typeof(TTarget), out var list)) {
+            return (IReadOnlyList<TTarget>) list;
+        }
+
+        return [];
+    }
+    
+    /// <summary>
+    /// Quickly retrieves all elements implementing the given interface type.
+    /// </summary>
+    /// <typeparam name="TInterface">The target type, should be an interface.</typeparam>
+    /// <returns>List of all elements implementing the interface.</returns>
+    public IEnumerable<(T Item, TInterface Casted)> Implementing<TInterface>() {
+        var src = OfType<TInterface>();
+
+        return src.Select(x => ((T)(object)x!, x));
     }
 
     public int Count => Inner.Count;
@@ -49,27 +70,27 @@ public class TypeTrackedList<T> : IListenableList<T> {
         if (_byType.TryGetValue(t, out var l))
             l.Add(item);
         else
-            _byType.Add(t, [item]);
+            _byType.Add(t, TrackerHelper.CreateListOfType(t, item));
     }
 
     private void TrackNewItem(T item) {
-        var t = item!.GetType();
+        if (item is null)
+            return;
 
-        var nextType = t;
-        while (nextType != null && nextType != typeof(object)) {
-            TrackAsType(item, nextType);
-            nextType = nextType.BaseType;
+        foreach (var trackedAsType in TrackerHelper.GetTrackedAsTypes(item.GetType())) {
+            TrackAsType(item, trackedAsType);
         }
-        foreach (var inter in t.GetInterfaces())
-            TrackAsType(item, inter);
     }
 
     private void UntrackItem(T item) {
-        var t = item!.GetType();
+        if (item is null)
+            return;
 
-        _byType[t].Remove(item);
-        foreach (var inter in t.GetInterfaces())
-            _byType[inter].Remove(item);
+        foreach (var trackedAsType in TrackerHelper.GetTrackedAsTypes(item.GetType())) {
+            if (_byType.TryGetValue(trackedAsType, out var list)) {
+                list.Remove(item);
+            }
+        }
     }
 
     public void Add(T item) {
@@ -77,7 +98,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        CallOnChanged();;
+        CallOnChanged();
     }
 
 
@@ -85,7 +106,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
         Inner.Clear();
         _byType.Clear();
 
-        CallOnChanged();;
+        CallOnChanged();
     }
 
     public bool Contains(T item) {
@@ -113,14 +134,14 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        CallOnChanged();;
+        CallOnChanged();
     }
 
     public bool Remove(T item) {
         UntrackItem(item);
         var ret = Inner.Remove(item);
         if (ret)
-            CallOnChanged();;
+            CallOnChanged();
         return ret;
     }
 
@@ -128,10 +149,45 @@ public class TypeTrackedList<T> : IListenableList<T> {
         UntrackItem(Inner[index]);
         Inner.RemoveAt(index);
 
-        CallOnChanged();;
+        CallOnChanged();
     }
 
     IEnumerator IEnumerable.GetEnumerator() {
         return Inner.GetEnumerator();
+    }
+}
+
+file static class TrackerHelper {
+    private static readonly ConditionalWeakTable<Type, IReadOnlyList<Type>> Cache = [];
+    private static readonly ConditionalWeakTable<Type, Type> ListTypes = [];
+    
+    public static IList CreateListOfType(Type type) {
+        var listType = ListTypes.GetOrAdd(type, static type => typeof(List<>).MakeGenericType(type));
+        return (Activator.CreateInstance(listType) as IList)!;
+    }
+    
+    public static IList CreateListOfType(Type type, object item) {
+        var list = CreateListOfType(type);
+        list.Add(item);
+
+        return list;
+    }
+    
+    public static IReadOnlyList<Type> GetTrackedAsTypes(Type type) {
+        return Cache.GetOrAdd(type, FindAllTrackedAsTypes);
+    }
+
+    private static List<Type> FindAllTrackedAsTypes(Type t) {
+        List<Type> types = [ t ];
+        
+        var nextType = t;
+        while (nextType != null && nextType != typeof(object)) {
+            types.Add(nextType);
+            nextType = nextType.BaseType;
+        }
+
+        types.AddRange(t.GetInterfaces());
+
+        return types;
     }
 }
