@@ -50,6 +50,8 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                 value.SetGlobalComponentRegistry(_GlobalServices);
                 value.OnBegin();
                 field = value;
+                
+                this.Emit(new SceneChanged(value));
             }
         }
     } = new BlankScene();

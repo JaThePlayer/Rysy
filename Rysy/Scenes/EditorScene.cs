@@ -9,7 +9,6 @@ using Rysy.History;
 using Rysy.Loading;
 using Rysy.MapAnalyzers;
 using Rysy.Mods;
-using Rysy.Scenes.Components;
 using Rysy.Signals;
 using Rysy.Stylegrounds;
 using Rysy.Tools;

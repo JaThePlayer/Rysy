@@ -1,9 +1,10 @@
-﻿using Rysy.Signals;
+﻿using Rysy.Components;
+using Rysy.Signals;
 
 namespace Rysy.Scenes;
 
-public abstract class SceneComponent : ISignalEmitter {
-    public Scene Scene { get; internal set; }
+public abstract class SceneComponent : ISignalEmitter, ISignalListener<ComponentAdded<Scene>>, ISignalListener<SelfAdded>, ISignalListener<SelfRemoved> {
+    public Scene? Scene { get; internal set; }
 
     public virtual void Update() {
         
@@ -17,13 +18,33 @@ public abstract class SceneComponent : ISignalEmitter {
         
     }
 
-    public virtual void OnBegin() {
+    public virtual void OnAdded() {
         
     }
 
-    public virtual void OnEnd() {
+    public virtual void OnRemoved() {
         
     }
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
+    
+    public void OnSignal(SelfAdded signal) {
+        Scene = signal.Registry.Get<Scene>();
+        if (Scene is {})
+            OnAdded();
+    }
+
+    public void OnSignal(SelfRemoved signal) {
+        if (Scene is {})
+            OnRemoved();
+        Scene = null!;
+    }
+
+    public void OnSignal(ComponentAdded<Scene> signal) {
+        if (Scene is {})
+            OnRemoved();
+        Scene = signal.Component;
+        if (Scene is {})
+            OnAdded();
+    }
 }

@@ -85,6 +85,8 @@ public sealed class ComponentRegistry : IComponentRegistry {
     private TypeTrackedList<object> Components { get; } = [];
 
     private readonly IComponentRegistry? _parentRegistry;
+    
+    internal IComponentRegistry? SendSignalsAs { get; set; }
 
     public ComponentRegistry() {
         
@@ -102,7 +104,11 @@ public sealed class ComponentRegistry : IComponentRegistry {
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.From(this);
         }
-        
+
+        if (component is ISignalListener<SelfAdded> listener) {
+            listener.OnSignal(new SelfAdded(SendSignalsAs ?? this));
+        }
+
         this.OnSignal(new ComponentAdded<T>(component));
     }
 
@@ -111,6 +117,14 @@ public sealed class ComponentRegistry : IComponentRegistry {
         
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.Null;
+        }
+        
+        if (component is ISignalListener<SelfRemoved> listener) {
+            listener.OnSignal(new SelfRemoved());
+        }
+
+        if (component is IDisposable disposable) {
+            disposable.Dispose();
         }
     }
 

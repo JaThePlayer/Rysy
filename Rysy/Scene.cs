@@ -44,8 +44,7 @@ public abstract class Scene : ISignalListener {
         SetupHotkeys();
         
         foreach (var c in GetAll<SceneComponent>()) {
-            c.Scene = this;
-            c.OnBegin();
+            c.OnAdded();
         }
     }
 
@@ -54,8 +53,7 @@ public abstract class Scene : ISignalListener {
     /// </summary>
     public virtual void OnEnd() {
         foreach (var c in GetAll<SceneComponent>()) {
-            c.OnEnd();
-            c.Scene = null!;
+            c.OnRemoved();
         }
     }
 
@@ -226,7 +224,11 @@ public static class SceneExt {
 }
 
 internal sealed class SceneComponentRegistry : IComponentRegistry {
-    private readonly ComponentRegistry _sceneSpecific = new();
+    private readonly ComponentRegistry _sceneSpecific;
+
+    public SceneComponentRegistry() {
+        _sceneSpecific = new ComponentRegistry { SendSignalsAs = this };
+    }
     
     public IComponentRegistry? GlobalRegistry { get; set; }
     
