@@ -153,8 +153,6 @@ public static class ModRegistry {
         ModsMutable[meta.Name] = meta;
 
         if (meta.Module is { } module) {
-            module.ComponentRegistryScope = new ComponentRegistryScope(componentRegistry);
-            module.ComponentRegistryScope.Add(module);
             module.Load();
         }
     }
@@ -267,89 +265,54 @@ public static class ModRegistry {
         }
     }
 
-    private static void LoadModule(ModMeta mod, IComponentRegistry componentRegistry) {
+    private static void LoadModule(ModMeta mod, Assembly asm, IComponentRegistry componentRegistry) {
         if (mod.Module is { } oldMod) {
             // if we're hot-reloading, .Module will point to the old module type, let's unload it.
             oldMod.Unload();
             oldMod.ComponentRegistryScope.Dispose();
         }
 
-        if (mod.PluginAssembly is not { } asm) {
-            mod.Module = new();
-            return;
-        }
-
         if (asm.GetTypes().FirstOrDefault(t => t.IsSubclassOf(typeof(ModModule))) is not { } moduleType) {
-            mod.Module = new();
+            mod.Module = null;
             return;
         }
 
-        mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
+        try {
+            mod.Module = (ModModule) Activator.CreateInstance(moduleType)!;
+        } catch (Exception ex) {
+            mod.Module = null;
+            Logger.Error(LogTag, ex, $"Failed to instantiate mod module {moduleType} for mod {mod.Name}.");
+            return;
+        }
+
+        var scope = new ComponentRegistryScope(componentRegistry);
+        mod.Module.ComponentRegistryScope = scope;
         mod.Module.Meta = mod;
+        mod.PluginAssembly = asm;
+        
+        scope.Add(mod.Module);
     }
 
     private static void LoadModRysySourceCodePlugins(ModMeta mod, IComponentRegistry componentRegistry, bool registerFilewatch = true) {
-        #if SourceCodePlugins
-        var files = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "cs")
-            .Where(f => !f.StartsWith("Rysy/obj", StringComparison.Ordinal)
-                     && !f.StartsWith("Rysy/.vs", StringComparison.Ordinal)
-                     && !f.StartsWith("Rysy/bin", StringComparison.Ordinal))
+        var fs = mod.Filesystem;
+        // Only find dlls in Rysy/bin, not in subfolders - makes sure we don't load both the Debug and Release variants at once.
+        var dlls = mod.Filesystem.FindFilesInDirectory("Rysy/bin", "dll")
             .ToArray();
-        if (files.Length == 0)
-            return;
 
-        if (registerFilewatch) {
-            /*
-             foreach (var file in files) {
-                mod.Filesystem.RegisterFilewatch(file, new() {
-                    OnChanged = stream => RysyEngine.OnEndOfThisFrame += () => LoadModRysyPlugins(mod, registerFilewatch: false)
-                });
-            }
-             */
-            bool reloading = false;
+        var ctx = mod.AssemblyLoadContext;
 
-            mod.Filesystem.RegisterFilewatch("Rysy", new() {
-                OnChanged = name => {
-                    if (!reloading && name.EndsWith(".cs", StringComparison.Ordinal)) {
-                        reloading = true;
-                        RysyState.OnEndOfThisFrame += () => {
-                            LoadModRysySourceCodePlugins(mod, componentRegistry, registerFilewatch: false);
-                            reloading = false;
-                        };
-                    }
-                }
-            });
+        foreach (var dll in dlls) {
+            Logger.Write(LogTag, LogLevel.Info, $"Loading mod assembly for {mod.Name}: {dll}");
+            fs.TryWatchAndOpen(dll, stream => {
+                // TODO: use asmresolver to find modmodule class ahead of time, and only load those dlls (and error on multiple).
+                var modAsm = ctx.LoadFromStream(stream);
+
+                LoadModule(mod, modAsm, componentRegistry);
+            }, out var watcher);
+            
+            if (watcher is {})
+                componentRegistry.Add(watcher);
         }
-
-
-        var fileInfo = files
-            .Select(f => (mod.Filesystem.TryReadAllText(f)!, $"${mod.Filesystem.Root.FilenameNoExt()}/{f}"))
-            .Where(p => p.Item1 is not null).ToList();
-
-        var hasCsproj = mod.Filesystem.FindFilesInDirectoryRecursive("Rysy", "csproj").Any();
-        
-        var cachePath = $"CompileCache/{mod.Name.ToValidFilename()}";
-        
-        var anyFiles = CodeCompilationHelper.CompileFiles(mod.Name, fileInfo, cachePath, addGlobalUsings: !hasCsproj, out var modAsm, out var emitResult);
-
-        if (!anyFiles)
-            return;
-
-        if (emitResult is { } && !emitResult.Success) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Warning, $"Failed compiling Rysy .cs plugins for: {mod.DisplayName}:\n{emitResult.Diagnostics.FormatDiagnostics()}");
-            return;
-        }
-
-        if (emitResult is { Success: true }) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully compiled Rysy .cs plugins for: {mod.DisplayName}");
-        } else if (modAsm is { }) {
-            Logger.Write("Rysy Plugin Loader", LogLevel.Info, $"Successfully loaded cached Rysy .cs plugins for: {mod.DisplayName}");
-        }
-
-        mod.PluginAssembly = modAsm;
-
-        LoadModule(mod, componentRegistry);
-        #endif
     }
 
     private static List<EverestModuleMetadata> ReadEverestYaml(ModMeta mod, Func<string?>? guessedNameGetter) {

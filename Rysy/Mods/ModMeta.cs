@@ -2,6 +2,7 @@
 using Rysy.LuaSupport;
 using Rysy.Signals;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
@@ -30,11 +31,16 @@ public sealed class ModMeta : ISignalEmitter {
         }
     }
 
-    private ModSettings? _settings;
     public ModSettings? Settings {
-        get => _settings;
+        get;
         internal set {
-            _settings = value;
+            if (field is {})
+                Module?.ComponentRegistryScope.Remove(field);
+
+            field = value;
+
+            if (value is {})
+                Module?.ComponentRegistryScope.Add(value);
             // todo: lonn bindings
         }
     }
@@ -43,6 +49,8 @@ public sealed class ModMeta : ISignalEmitter {
     /// The filesystem for this mod, used for retrieving assets contained in the mod.
     /// </summary>
     public required IModFilesystem Filesystem { get; init; }
+
+    public AssemblyLoadContext AssemblyLoadContext => field ??= new(Name, isCollectible: true);
 
     public LayeredFilesystem GetAllDependenciesFilesystem(bool includeOptionalDeps = true) {
         var fs = new LayeredFilesystem();
