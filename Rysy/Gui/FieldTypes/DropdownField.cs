@@ -224,7 +224,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 public record class DropdownField : Field {
     private string _search = "";
     
-    public IDictionary<object, string> Values { get; set; }
+    public IReadOnlyList<object> Values { get; set; }
     
     public Func<object, Searchable, bool>? MenuItemRenderer;
     
@@ -233,7 +233,7 @@ public record class DropdownField : Field {
     public object Default { get; set; }
     
     public Func<string, object> ValueTransformer { get; set; } = x => x;
-    public Func<object?, string> DisplayTransformer { get; set; } = x => x.ToStringInvariant();
+    public Func<object?, Searchable> DisplayTransformer { get; set; } = x => new Searchable(x.ToStringInvariant());
     
     public override object GetDefault() => Default;
 
@@ -241,11 +241,11 @@ public record class DropdownField : Field {
 
     public override object? RenderGui(string fieldName, object value) {
         if (Editable) {
-            return ImGuiManager.EditableCombo(fieldName, ref value!, Values, ValueTransformer, ref _search, Tooltip,
-                menuItemRenderer: MenuItemRenderer, tToString: DisplayTransformer) ? value : null;
+            return ImGuiManager.EditableCombo(fieldName, ref value!, Values, DisplayTransformer, ValueTransformer, ref _search, Tooltip,
+                renderMenuItem: MenuItemRenderer, textInputStringGetter: x => DisplayTransformer(x).Text) ? value : null;
         } else {
-            return ImGuiManager.Combo(fieldName, ref value!, Values, ref _search, Tooltip, 
-                menuItemRenderer: MenuItemRenderer) ? value : null;
+            return ImGuiManager.Combo(fieldName, ref value!, Values, DisplayTransformer, ref _search, Tooltip, 
+                renderMenuItem: MenuItemRenderer) ? value : null;
         }
     }
 

@@ -380,20 +380,24 @@ public static partial class Fields {
                 var parsedValues = values.Select(x => (converter(x.Item1), x.Item2, x.Item1)).ToList();
                 if (parsedValues.All(p => p.Item1.Item1)) {
                     //field = Dropdown(parsedDef, parsedValues.SafeToDictionary(p => (p.Item1.Item2, p.Item2)), editable);
+                    var valueToDisplayDict = parsedValues.SafeToDictionary(p => ((object) p.Item1.Item2, new Searchable(p.Item2)));
                     field = new DropdownField() {
                         Default = parsedDef,
-                        Values = parsedValues.SafeToDictionary(p => ((object)p.Item1.Item2, p.Item2)),
+                        Values = parsedValues.Select(x => (object)x.Item1.Item2).ToList(),
                         ValueTransformer = x => converter(x).Item2,
-                        Editable = editable
+                        Editable = editable,
+                        DisplayTransformer = x => x is not null && valueToDisplayDict.TryGetValue(x, out var known) ? known : new Searchable(x?.ToStringInvariant() ?? "")
                     };
                 } else {
                     // Not all values could be parsed to the target type.
                     // This happens for tilesets for example, if the plugin is faulty and sets '3' (number) as the default value.
                     //field = Dropdown<object>(def.ToString() ?? "", parsedValues.SafeToDictionary(p => (p.Item3, p.Item2)), editable);
+                    var valueToDisplayDict = parsedValues.SafeToDictionary(p => (p.Item3, new Searchable(p.Item2)));
                     field = new DropdownField() {
                         Default = def,
-                        Values = parsedValues.SafeToDictionary(p => (p.Item3, p.Item2)),
-                        Editable = editable
+                        Values = parsedValues.Select(x => x.Item3).ToList(),
+                        Editable = editable,
+                        DisplayTransformer = x => x is not null && valueToDisplayDict.TryGetValue(x, out var known) ? known : new Searchable(x?.ToStringInvariant() ?? "")
                     };
                 }
             }
@@ -423,7 +427,7 @@ public static partial class Fields {
                     var res = lua.FastToString(lua.GetTop());
                     lua.Pop(1);
                     
-                    return res;
+                    return new Searchable(res);
                 };
             }
         }

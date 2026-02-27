@@ -414,7 +414,7 @@ public static class ImGuiManager {
     }
     
 
-    public static bool EditableCombo<T>(string name, ref T value, IList<T> values, Func<T, Searchable> toString, Func<string, T> stringToValue,
+    public static bool EditableCombo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, Func<string, T> stringToValue,
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
         ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null,
         Func<T, string>? textInputStringGetter = null) {
