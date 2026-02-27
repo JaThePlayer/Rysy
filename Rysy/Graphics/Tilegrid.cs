@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.Helpers;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections;
@@ -236,7 +237,7 @@ public class Tilegrid : ILuaWrapper {
         MarkEdited();
     }
 
-    public Selection? GetSelectionForArea(Rectangle area, SelectionLayer layer) {
+    public Selection? GetSelectionForArea(Rectangle area, IEditorLayer layer) {
         var handler = new TileSelectionHandler(this, area, layer);
 
         if (handler.AnyTileWithin())

@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Components;
+using Rysy.Graphics;
 using Rysy.History;
 using Rysy.Layers;
 using Rysy.Mods;
@@ -9,12 +10,14 @@ using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
 
-public sealed class PrefabHelper : ISignalEmitter {
+public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
     private ListenableDictionary<string, Prefab>? _currentPrefabsMutable;
 
     public PrefabLayer EditorLayer => field ??= new PrefabLayer(this);
     
     public ListenableDictionary<string, Prefab> CurrentPrefabs => _currentPrefabsMutable ??= Load();
+
+    public IReadOnlyList<IEditorLayer> ValidLayers => Registry?.GetAll<IEditorLayer>() ?? [];
 
     private ListenableDictionary<string, Prefab> Load() {
         _currentPrefabsMutable = new(StringComparer.Ordinal);
@@ -53,11 +56,11 @@ public sealed class PrefabHelper : ISignalEmitter {
         return null;
     }
 
-    public static bool SelectionsLegal(List<CopypasteHelper.CopiedSelection> selections) 
-        => selections.All(s => s.Layer != SelectionLayer.Rooms);
+    public static bool SelectionsLegal(IReadOnlyList<IEditorLayer> layers, List<CopypasteHelper.CopiedSelection> selections) 
+        => selections.All(s => s.ResolveLayer(layers) is not RoomLayer);
 
     public void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
-        if (!SelectionsLegal(selections))
+        if (!SelectionsLegal(ValidLayers, selections))
             return;
         if (_currentPrefabsMutable is null)
             return;
@@ -97,7 +100,7 @@ public sealed class PrefabHelper : ISignalEmitter {
         }
 
         var placement = new Placement(name);
-        placement.PlacementHandler = new PrefabPlacementHandler(prefab);
+        placement.PlacementHandler = new PrefabPlacementHandler(this, prefab);
 
         return placement;
     }
@@ -124,9 +127,9 @@ public sealed class PrefabHelper : ISignalEmitter {
         public string Filename { get; internal set; }
     }
 
-    private sealed record class PrefabPlacementHandler(Prefab Prefab) : IPlacementHandler {
+    private sealed record class PrefabPlacementHandler(PrefabHelper Helper, Prefab Prefab) : IPlacementHandler {
         public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room room) {
-            var selections = CopypasteHelper.PasteSelections(
+            var selections = CopypasteHelper.PasteSelections(Helper.ValidLayers,
                 EditorState.Current ?? throw new UnreachableException("EditorState.Current is null"), 
                 Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
             if (pastedRooms) {
@@ -200,7 +203,7 @@ public sealed class PrefabHelper : ISignalEmitter {
 
             public object Parent => this;
 
-            public SelectionLayer Layer => SelectionLayer.All;
+            public IEditorLayer Layer => EditorLayers.All;
 
             public Rectangle Rect => RectangleExt.Merge(Selections.Select(s => s.Handler.Rect));
 
@@ -268,4 +271,5 @@ public sealed class PrefabHelper : ISignalEmitter {
     }
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
+    public IComponentRegistry? Registry { get; set; }
 }

@@ -795,11 +795,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         if ((layer & SelectionLayer.FgTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, Fg, list, SelectionLayer.FgTiles);
+            GetSelectionsInRectForGrid(rect, Fg, list, EditorLayers.Fg);
         }
 
         if ((layer & SelectionLayer.BgTiles) != 0) {
-            GetSelectionsInRectForGrid(rect, Bg, list, SelectionLayer.BgTiles);
+            GetSelectionsInRectForGrid(rect, Bg, list, EditorLayers.Bg);
         }
 
         return list;
@@ -851,7 +851,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     private List<Selection> MakeSelectionsForAllNodesOfEntity(Entity e)
         => [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
 
-    private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, SelectionLayer layer) {
+    private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, IEditorLayer layer) {
         var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
         
         var pos = rect.Location.ToVector2().GridPosFloor(8);
@@ -1028,7 +1028,7 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
 
     public object Parent => Room;
 
-    public SelectionLayer Layer => SelectionLayer.Rooms;
+    public IEditorLayer Layer => EditorLayers.Room;
 
     public Rectangle Rect => Bounds;
 

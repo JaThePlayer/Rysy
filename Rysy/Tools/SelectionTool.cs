@@ -118,7 +118,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (CopypasteHelper.CopySelections(selections) is not { } copied)
             return;
 
-        if (!PrefabHelper.SelectionsLegal(copied))
+        if (!PrefabHelper.SelectionsLegal(ValidLayers, copied))
             return;
 
         var name = "";
@@ -154,7 +154,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (EditorState.CurrentRoom is null)
             return;
 
-        var selections = CopypasteHelper.PasteSelectionsFromClipboard(EditorState, History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
+        var selections = CopypasteHelper.PasteSelectionsFromClipboard(ValidLayers, EditorState, History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
         if (pastedRooms) {
             Layer = EditorLayers.Room;
         }
@@ -169,7 +169,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void CopySelections() {
-        CopypasteHelper.CopySelectionsToClipboard(_currentSelections);
+        CopypasteHelper.CopySelectionsToClipboard(ValidLayers, _currentSelections);
     }
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
@@ -553,6 +553,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         if (input.Mouse.Middle.Clicked() && tool.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
+            /*
             if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
                 // TODO: Create a proper helper for this!
                 if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer, placementTool.ValidLayers) is { } editorLayer) {
@@ -562,6 +563,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                     placementTool.OnMiddleClick();
                 }
 
+            }*/
+            var targetLayer = firstSelection.Handler.Layer;
+            if (placementTool.ValidLayers.Contains(targetLayer)) {
+                input.Mouse.ConsumeMiddle();
+                tool.ToolHandler.SetTool<PlacementTool>();
+                placementTool.Layer = targetLayer;
+                placementTool.OnMiddleClick();
             }
         }
     }
@@ -960,7 +968,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         ImGui.Text(room.Room.Name);
                         break;
                     case TileSelectionHandler tiles:
-                        ImGui.Text(tiles.Layer.FastToString());
+                        ImGui.Text(tiles.Layer.LocalizedName);
                         break;
                 }
                 HighlightIfHovered(_selectionsToHighlight, selection);

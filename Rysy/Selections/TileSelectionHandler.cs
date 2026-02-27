@@ -1,6 +1,6 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Layers;
 
 namespace Rysy.Selections;
 public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider, ISelectionFlipHandler {
@@ -12,19 +12,19 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     private char[,] _toMove;
     private char[,]? _orig;
 
-    private SelectionLayer _selectionLayer;
+    private IEditorLayer _selectionLayer;
 
     public bool ResizableX => false;
 
     public bool ResizableY => false;
 
-    public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, SelectionLayer layer) {
+    public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, IEditorLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
         _toMoveRects.Add((false, Rect));
         _selectionLayer = layer;
     }
 
-    internal TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, char[,] toMove, SelectionLayer layer) {
+    internal TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, char[,] toMove, IEditorLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
         _toMoveRects.Add((false, Rect));
 
@@ -250,7 +250,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         return null;
     }
 
-    public SelectionLayer Layer => _selectionLayer;
+    public IEditorLayer Layer => _selectionLayer;
 
     Rectangle ISelectionHandler.Rect => Rect;
 

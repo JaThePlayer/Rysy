@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 
 namespace Rysy.Selections;
 
@@ -34,7 +35,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
     public object Parent => Entity;
 
-    public SelectionLayer Layer => Entity.GetSelectionLayer();
+    public IEditorLayer Layer => Entity.GetSelectionLayer();
 
     private ISelectionCollider? _collider;
     private ISelectionCollider Collider => _collider ??= Entity.GetMainSelection();

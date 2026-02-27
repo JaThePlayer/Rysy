@@ -2,6 +2,7 @@
 using Rysy.Entities.Modded;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Tools;
 
 namespace Rysy.Selections;
@@ -15,23 +16,23 @@ public struct PopupCtx {
 
 public static class SelectionContextWindowRegistry {
     private sealed class PopupInfo {
-        public SelectionLayer Layer;
+        public IEditorLayer Layer;
         public string PopupId;
 
         public ISelectionHandler Main;
         public List<Selection> Selections;
     }
 
-    private static string LayerToPopupId(SelectionLayer layer)
-        => $"context_window_{layer}";
+    private static string LayerToPopupId(IEditorLayer layer)
+        => $"context_window_{layer.Name}";
 
-    private static Dictionary<SelectionLayer, ContextWindowDraw> DrawFunctions = new();
+    private static Dictionary<IEditorLayer, ContextWindowDraw> DrawFunctions = new();
 
     private static List<PopupInfo> CurrentPopups = new();
 
     private static Queue<PopupInfo> NewPopupQueue = new();
 
-    public static void AddHandler(SelectionLayer layer, ContextWindowDraw handler) {
+    public static void AddHandler(IEditorLayer layer, ContextWindowDraw handler) {
         if (DrawFunctions.TryGetValue(layer, out var existing)) {
             handler = existing + handler;
         }
@@ -39,7 +40,7 @@ public static class SelectionContextWindowRegistry {
         DrawFunctions[layer] = handler;
     }
 
-    public static void RemoveHandler(SelectionLayer layer, ContextWindowDraw handler) {
+    public static void RemoveHandler(IEditorLayer layer, ContextWindowDraw handler) {
         if (DrawFunctions.TryGetValue(layer, out var existing)) {
             var newHandler = existing - handler;
             if (newHandler != null) {
@@ -53,16 +54,16 @@ public static class SelectionContextWindowRegistry {
     internal static void Init() {
         DrawFunctions.Clear();
 
-        AddHandler(SelectionLayer.FgTiles, RemoveAll);
-        AddHandler(SelectionLayer.BgTiles, RemoveAll);
-        AddHandler(SelectionLayer.Entities, RemoveAll);
-        AddHandler(SelectionLayer.Triggers, RemoveAll);
-        AddHandler(SelectionLayer.BgDecals, RemoveAll);
-        AddHandler(SelectionLayer.FgDecals, RemoveAll);
-        AddHandler(SelectionLayer.Rooms, RemoveAll);
+        AddHandler(EditorLayers.Fg, RemoveAll);
+        AddHandler(EditorLayers.Bg, RemoveAll);
+        AddHandler(EditorLayers.Entities, RemoveAll);
+        AddHandler(EditorLayers.Triggers, RemoveAll);
+        AddHandler(EditorLayers.BgDecals, RemoveAll);
+        AddHandler(EditorLayers.FgDecals, RemoveAll);
+        AddHandler(EditorLayers.Room, RemoveAll);
 
-        AddHandler(SelectionLayer.FgTiles, ConvertTilesToEntity(TileLayer.Fg));
-        AddHandler(SelectionLayer.BgTiles, ConvertTilesToEntity(TileLayer.Bg));
+        AddHandler(EditorLayers.Fg, ConvertTilesToEntity(TileLayer.Fg));
+        AddHandler(EditorLayers.Bg, ConvertTilesToEntity(TileLayer.Bg));
     }
 
     private static Cache<List<(string, Type, TileLayer)>>? TilegridEntityTypes;

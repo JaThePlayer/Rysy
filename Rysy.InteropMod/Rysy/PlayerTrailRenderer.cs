@@ -53,6 +53,7 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
     private void OnMessageReceived(PlaybackTrailData obj) {
         _playbackTrailData?.Dispose();
         _playbackTrailData = obj;
+        var opacity = Opacity;
 
         lock (_spriteLock) {
             _sprites.Clear();
@@ -62,7 +63,7 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
             
                 _sprites.Add((f.TimeStamp, sprite));
                 _sprites.Add((f.TimeStamp, ISprite.FromTexture(f.Hair.ToXna(), "characters/player/bangs00").Centered() with {
-                    Color =  new Color{PackedValue = f.HairColor} * Opacity
+                    Color =  new Color{PackedValue = f.HairColor} * opacity
                 }));
             }
 

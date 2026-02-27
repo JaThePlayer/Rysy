@@ -1,5 +1,6 @@
 ﻿using KeraLua;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
 
@@ -70,7 +71,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
 
     public object Parent => Node;
 
-    public SelectionLayer Layer => Entity.GetSelectionLayer(); 
+    public IEditorLayer Layer => Entity.GetSelectionLayer(); 
 
     private ISelectionCollider? _collider;
     private ISelectionCollider Collider {

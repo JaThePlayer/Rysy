@@ -1,8 +1,8 @@
 ﻿using KeraLua;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
-using Rysy.Selections;
+using Rysy.Layers;
+using System.CodeDom.Compiler;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,7 +11,7 @@ namespace Rysy.LuaSupport;
 public static partial class LuaSerializer {
     private static Lua GetSandboxedLua() => Lua.CreateNew(openLibs: false);
 
-    private static string CorrectDecalPathForLonn(string rysyPath) {
+    public static string CorrectDecalPathForLonn(string rysyPath) {
         // lonn fails to access the decal sprite for animated decals if the texture path does not end with 00...
         if (Gfx.Atlas.TryGet($"decals/{rysyPath}00", out _))
             return $"{rysyPath}00";
@@ -19,80 +19,51 @@ public static partial class LuaSerializer {
         return rysyPath;
     }
 
-    public static string? ConvertSelectionsToLonnString(List<CopypasteHelper.CopiedSelection> copied) {
+    private static void WriteSerializedToLua(IndentedTextWriter writer, BinaryPacker.Element element) {
+        writer.WriteLine("{");
+        writer.Indent++;
+
+        foreach (var (k, v) in element.Attributes) {
+            writer.WriteLine($"{TableKeyString(k)} = {ToLuaString(v)},");
+        }
+        
+        if (element.Children is { Length: > 0 } nodes) {
+            writer.WriteLine("nodes = {");
+            writer.Indent++;
+            foreach (var n in nodes) {
+                var x = n.Int("x");
+                var y = n.Int("y");
+                
+                writer.WriteLine($"{{ x={x}, y={y} }},");
+            }
+
+            writer.Indent--;
+            writer.WriteLine("},");
+        }
+        
+        writer.Indent--;
+        writer.WriteLine("},");
+    }
+
+    public static string? ConvertSelectionsToLonnString(IReadOnlyList<IEditorLayer> layers, List<CopypasteHelper.CopiedSelection> copied) {
         if (copied is not { Count: > 0 })
             return null;
 
-        var builder = new StringBuilder();
-        builder.AppendLine("{");
-        foreach (var item in copied)
-            switch (item.Layer) {
-                case SelectionLayer.FgDecals:
-                case SelectionLayer.BgDecals:
-                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                            {
-                                _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
-                                texture = "decals/{{CorrectDecalPathForLonn(item.Data.Attr("texture").TrimStart("decals/"))}}",
-                                scaleX = {{ToLuaString(item.Data.Float("scaleX", 1))}},
-                                scaleY = {{ToLuaString(item.Data.Float("scaleY", 1))}},
-                                rotation = {{ToLuaString(item.Data.Float("rotation", 0))}},
-                                x = {{ToLuaString(item.Data.Float("x", 0))}},
-                                y = {{ToLuaString(item.Data.Float("y", 0))}},
-                                color = {{ToLuaString(item.Data.Attr("color", "ffffff"))}},
-                        """);
-                    AppendData(builder, item, blacklistedKeys: new() { "texture", "scaleX", "scaleY", "rotation", "x", "y", "color" });
-                    builder.AppendLine("""
-                            },
-                        """);
-                    break;
-                case SelectionLayer.Entities:
-                case SelectionLayer.Triggers:
-                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                            {
-                                _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
-                                _name = "{{item.Data.Name}}",
-                                _id = {{item.Data.Int("id", 0)}},
-                        """);
-                    if (SelectionLayerToLonnType(item.Layer) is { } type)
-                        builder.AppendLine(CultureInfo.InvariantCulture, $"""
-                                    _type = "{type}",
-                            """);
+        var writer = new StringWriter();
+        var indentedWriter = new IndentedTextWriter(writer);
 
-                    if (item.Data.Children is { Length: > 0 } nodes) {
-                        const string sep = ",\n            ";
-                        var nodesString = string.Join(sep, nodes.Select(n => {
-                            var x = n.Int("x");
-                            var y = n.Int("y");
-                            return $"{{ x={x}, y={y} }}";
-                        }));
-                        builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                                nodes = {
-                                    {{nodesString}}
-                                },
-                        """);
-                    }
-                    AppendData(builder, item, blacklistedKeys: new() { "id" });
-                    builder.AppendLine("    },");
-                    break;
-                case SelectionLayer.FgTiles:
-                case SelectionLayer.BgTiles:
-                    builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                        {
-                            _fromLayer = "{{SelectionLayerToLonnLayer(item.Layer)}}",
-                            tiles = {{ToLuaString(item.Data.Attr("text", ""))}},
-                            height = {{ToLuaString(item.Data.Int("h", 0))}},
-                            width = {{ToLuaString(item.Data.Int("w", 0))}},
-                            x = {{ToLuaString(item.Data.Int("x") / 8 + 1)}},
-                            y = {{ToLuaString(item.Data.Int("y") / 8 + 1)}},
-                        },
-                    """);
-                    break;
-                case SelectionLayer.Rooms:
-                    return null;
-            }
+        indentedWriter.WriteLine("{");
+        indentedWriter.Indent++;
+        foreach (var item in copied) {
+            var layer = item.ResolveLayer(layers);
 
-        builder.Append('}');
-        return builder.ToString();
+            if (layer is ILonnSerializableLayer serializableLayer)
+                WriteSerializedToLua(indentedWriter, serializableLayer.ConvertToLonnFormat(item));
+        }
+
+        indentedWriter.Indent--;
+        indentedWriter.Write('}');
+        return writer.ToString();
 
         static void AppendData(StringBuilder builder, CopypasteHelper.CopiedSelection item, HashSet<string> blacklistedKeys) {
             foreach (var (k, v) in item.Data.Attributes) {
@@ -126,7 +97,7 @@ public static partial class LuaSerializer {
         "repeat", "return", "then", "true", "until", "while"
     };
 
-    private static string ToLuaString(object obj) => obj switch {
+    public static string ToLuaString(object obj) => obj switch {
         string s => $"""
         "{SanitizeString(s)}"
         """,
@@ -177,7 +148,7 @@ public static partial class LuaSerializer {
     /// <summary>
     /// Tries to convert lonn-copied placements into Rysy placements.
     /// </summary>
-    public static List<CopypasteHelper.CopiedSelection>? TryGetSelectionsFromLuaString(string selectionString) {
+    public static List<CopypasteHelper.CopiedSelection>? TryGetSelectionsFromLuaString(IReadOnlyList<IEditorLayer> layers, string selectionString) {
         if (DeserializeToList(selectionString) is { } luaSelections) {
             List<CopypasteHelper.CopiedSelection> copied = new();
 
@@ -185,17 +156,17 @@ public static partial class LuaSerializer {
                 if (obj is not Dictionary<string, object> selection)
                     continue;
 
-                var layer = LonnLayerToSelectionLayer(selection.GetValueOrDefault("_fromLayer") as string);
+                var layer = LonnLayerToSelectionLayer(layers, selection.GetValueOrDefault("_fromLayer") as string);
 
                 var name = selection.GetValueOrDefault("_name") as string;
                 // bg and fg decals don't have _name set, let's grab the hardcoded SID instead
                 name ??= DefaultSidForLayer(layer);
 
                 var tiles = selection.GetValueOrDefault("tiles") as string;
-                if (layer is SelectionLayer.FgTiles or SelectionLayer.BgTiles && tiles is null)
+                if (layer is TileEditorLayer && tiles is null)
                     continue;
 
-                if (layer == SelectionLayer.None || name is not { })
+                if (layer is null || name is not { })
                     continue;
 
                 var nodes = (selection.GetValueOrDefault("nodes") as List<object>)?
@@ -208,7 +179,7 @@ public static partial class LuaSerializer {
                 var data = new BinaryPacker.Element() {
                     Name = name,
                     Attributes = layer switch {
-                        SelectionLayer.FgTiles or SelectionLayer.BgTiles => new() {
+                        TileEditorLayer => new() {
                             ["text"] = tiles!,
                             ["x"] = Convert.ToInt32(selection["x"], CultureInfo.InvariantCulture) * 8 - 8,
                             ["y"] = Convert.ToInt32(selection["y"], CultureInfo.InvariantCulture) * 8 - 8,
@@ -222,7 +193,7 @@ public static partial class LuaSerializer {
 
                 copied.Add(new() {
                     Data = data,
-                    Layer = layer,
+                    Layer = layer.Name,
                 });
             }
 
@@ -233,38 +204,17 @@ public static partial class LuaSerializer {
         return null;
     }
 
-    public static SelectionLayer LonnLayerToSelectionLayer(string? typeStr) => typeStr switch {
-        "entities" => SelectionLayer.Entities,
-        "triggers" => SelectionLayer.Triggers,
-        "decalsBg" => SelectionLayer.BgDecals,
-        "decalsFg" => SelectionLayer.FgDecals,
-        "tilesFg" => SelectionLayer.FgTiles,
-        "tilesBg" => SelectionLayer.BgTiles,
-        _ => SelectionLayer.None,
-    };
+    public static IEditorLayer? LonnLayerToSelectionLayer(IReadOnlyList<IEditorLayer> layers, string? typeStr) 
+        => layers.FirstOrDefault(l => l is ILonnSerializableLayer { LonnLayerName: {} name } && name == typeStr);
 
-    public static string? SelectionLayerToLonnLayer(SelectionLayer layer) => layer switch {
-        SelectionLayer.Entities => "entities",
-        SelectionLayer.Triggers => "triggers",
-        SelectionLayer.BgDecals => "decalsBg",
-        SelectionLayer.FgDecals => "decalsFg",
-        SelectionLayer.FgTiles => "tilesFg",
-        SelectionLayer.BgTiles => "tilesBg",
-        _ => null,
-    };
+    public static string? SelectionLayerToLonnLayer(IEditorLayer layer) =>
+        (layer as ILonnSerializableLayer)?.LonnLayerName;
 
-    public static string? SelectionLayerToLonnType(SelectionLayer layer) => layer switch {
-        SelectionLayer.Entities => "entity",
-        SelectionLayer.Triggers => "trigger",
-        _ => null,
-    };
+    public static string? SelectionLayerToLonnType(IEditorLayer layer) =>
+        (layer as ILonnSerializableLayer)?.LoennInstanceTypeName;
 
-    public static string? DefaultSidForLayer(SelectionLayer layer) => layer switch {
-        SelectionLayer.BgDecals => EntityRegistry.BgDecalSid,
-        SelectionLayer.FgDecals => EntityRegistry.FgDecalSid,
-        SelectionLayer.FgTiles or SelectionLayer.BgTiles => "tiles",
-        _ => null,
-    };
+    public static string? DefaultSidForLayer(IEditorLayer? layer) =>
+        (layer as ILonnSerializableLayer)?.DefaultSid;
 
     /// <summary>
     /// Tries to convert a lua string representation of a table to a c# dictionary.

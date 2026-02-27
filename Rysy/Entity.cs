@@ -725,10 +725,10 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
     public Decal? AsDecal() => this as Decal;
     public Trigger? AsTrigger() => this as Trigger;
 
-    public SelectionLayer GetSelectionLayer() => this switch {
-        Trigger => SelectionLayer.Triggers,
-        Decal d => d.Fg ? SelectionLayer.FgDecals : SelectionLayer.BgDecals,
-        _ => SelectionLayer.Entities,
+    public IEditorLayer GetSelectionLayer() => this switch {
+        Trigger => EditorLayers.Triggers,
+        Decal d => d.Fg ? EditorLayers.FgDecals : EditorLayers.BgDecals,
+        _ => EditorLayers.Entities,
     };
 
     internal EntitySelectionHandler? SelectionHandler;

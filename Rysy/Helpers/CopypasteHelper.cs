@@ -1,9 +1,8 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
-using System.Linq;
 
 namespace Rysy.Helpers;
 
@@ -12,25 +11,29 @@ public static class CopypasteHelper {
         public CopiedSelection() { }
 
         public BinaryPacker.Element Data;
-        public SelectionLayer Layer;
+        public string Layer;
+
+        public IEditorLayer? ResolveLayer(IReadOnlyList<IEditorLayer> layers) {
+            return EditorLayers.EditorLayerFromName(Layer, layers);
+        }
     }
 
-    public static List<CopiedSelection>? GetSelectionsFromString(string selectionString) {
+    public static List<CopiedSelection>? GetSelectionsFromString(IReadOnlyList<IEditorLayer> layers, string selectionString) {
         if (JsonExtensions.TryDeserialize<List<CopiedSelection>>(selectionString, out var jsonSelections))
             return jsonSelections;
 
-        if (LuaSerializer.TryGetSelectionsFromLuaString(selectionString) is { } luaSelections)
+        if (LuaSerializer.TryGetSelectionsFromLuaString(layers, selectionString) is { } luaSelections)
             return luaSelections;
 
         return null;
     }
 
-    public static List<CopiedSelection>? GetSelectionsFromClipboard() => GetSelectionsFromString(Input.Clipboard.Get());
+    public static List<CopiedSelection>? GetSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers) => GetSelectionsFromString(layers, Input.Clipboard.Get());
 
-    public static List<Selection>? PasteSelectionsFromClipboard(EditorState editorState, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
-        => PasteSelections(editorState, GetSelectionsFromClipboard(), history, map, room, pos, out pastedRooms);
+    public static List<Selection>? PasteSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers, EditorState editorState, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
+        => PasteSelections(layers, editorState, GetSelectionsFromClipboard(layers), history, map, room, pos, out pastedRooms);
 
-    public static List<Selection>? PasteSelections(EditorState editorState, List<CopiedSelection>? selections, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
+    public static List<Selection>? PasteSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, List<CopiedSelection>? selections, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
         pastedRooms = false;
 
         var pasted = selections;
@@ -38,22 +41,22 @@ public static class CopypasteHelper {
             return null;
         }
 
-        if (pasted.Any(p => p.Layer == SelectionLayer.Rooms)) {
+        if (pasted.Any(p => p.ResolveLayer(layers) == EditorLayers.Room)) {
             pastedRooms = true;
             if (map is { })
-                return PasteRoomSelections(editorState, history, map, pasted, pos);
+                return PasteRoomSelections(layers, editorState, history, map, pasted, pos);
             else
                 return null;
         }
 
-        var entitySelections = CreateSelectionsFromCopied(room, pasted, out var entities);
+        var entitySelections = CreateSelectionsFromCopied(layers, room, pasted, out var entities);
 
-        var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(pasted)).ToList());
+        var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(layers, pasted)).ToList());
 
         var actions = new List<IHistoryAction?>();
         
         var entityPlaceAction = PasteEntitylikeSelections(history, room, entitySelections, entities, offset);
-        var tileSelections = PasteTileSelections(room, pasted, offset);
+        var tileSelections = PasteTileSelections(layers, room, pasted, offset);
 
         actions.Add(entityPlaceAction);
         foreach (var s in tileSelections) {
@@ -65,15 +68,15 @@ public static class CopypasteHelper {
         return entitySelections.Concat(tileSelections).ToList();
     }
 
-    public static void CopySelectionsToClipboard(List<Selection>? selections) {
-        if (CopySelectionsToString(selections) is { } copied) {
+    public static void CopySelectionsToClipboard(IReadOnlyList<IEditorLayer> layers, List<Selection>? selections) {
+        if (CopySelectionsToString(layers, selections) is { } copied) {
             Input.Clipboard.Set(copied);
         }
     }
 
-    public static string? CopySelectionsToString(List<Selection>? selections) {
+    public static string? CopySelectionsToString(IReadOnlyList<IEditorLayer> layers, List<Selection>? selections) {
         if (CopySelections(selections) is { } copied) {
-            if (LuaSerializer.ConvertSelectionsToLonnString(copied) is { } lonnString)
+            if (LuaSerializer.ConvertSelectionsToLonnString(layers, copied) is { } lonnString)
                 return lonnString;
             return copied.ToJson(minified: true);
         }
@@ -108,7 +111,7 @@ static string Compress(byte[] input) {
             .DistinctBy(s => s.Handler is NodeSelectionHandler n ? n.Entity : s.Handler.Parent)
             .Select(s => new CopiedSelection() {
                 Data = s.Handler.PackParent()!,
-                Layer = s.Handler.Layer,
+                Layer = s.Handler.Layer.Name,
             })
             .Where(s => s.Data is { })
             .ToList();
@@ -116,8 +119,8 @@ static string Compress(byte[] input) {
         return copied;
     }
 
-    private static List<Selection> PasteRoomSelections(EditorState editorState, HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
-        var rooms = pasted.Where(s => s.Layer == SelectionLayer.Rooms).Select(s => {
+    private static List<Selection> PasteRoomSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
+        var rooms = pasted.Where(s => s.ResolveLayer(layers) == EditorLayers.Room).Select(s => {
             var room = new Room();
             room.Map = map;
             room.Unpack(s.Data);
@@ -181,8 +184,8 @@ static string Compress(byte[] input) {
         return null;
     }
 
-    private static List<Rectangle> GetTileRectangles(List<CopiedSelection> pasted) {
-        return pasted.Where(pasted => pasted.Layer is SelectionLayer.BgTiles or SelectionLayer.FgTiles).Select(s => {
+    private static List<Rectangle> GetTileRectangles(IReadOnlyList<IEditorLayer> layers, List<CopiedSelection> pasted) {
+        return pasted.Where(pasted => pasted.ResolveLayer(layers) is TileEditorLayer).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
 
@@ -192,35 +195,33 @@ static string Compress(byte[] input) {
         }).ToList();
     }
 
-    private static List<Selection> PasteTileSelections(Room room, List<CopiedSelection> pasted, Vector2 offset) {
-        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.BgTiles or SelectionLayer.FgTiles).Select(s => {
+    private static List<Selection> PasteTileSelections(IReadOnlyList<IEditorLayer> layers, Room room, List<CopiedSelection> pasted, Vector2 offset) {
+        var newSelections = pasted.Where(pasted => pasted.ResolveLayer(layers) is TileEditorLayer).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
-
-            var dest = s.Layer switch {
-                SelectionLayer.FgTiles => room.Fg,
-                _ => room.Bg,
-            };
+            var layer = (TileEditorLayer)s.ResolveLayer(layers)!;
+            var dest = layer.GetGrid(room);
             var tilegrid = Tilegrid.FromString(w * 8, h * 8, s.Data.Attr("text"));
             var rPos = (new Vector2(x, y) + offset).GridPosFloor(8);
 
-            var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, s.Layer);
+            var handler = new TileSelectionHandler(dest, new(rPos.X * 8, rPos.Y * 8, w * 8, h * 8), tilegrid.Tiles, layer);
             return new Selection(handler);
         }).ToList();
 
         return newSelections;
     }
 
-    private static List<Selection> CreateSelectionsFromCopied(Room room, List<CopiedSelection> pasted, out List<Entity> entities) {
+    private static List<Selection> CreateSelectionsFromCopied(IReadOnlyList<IEditorLayer> layers, Room room, List<CopiedSelection> pasted, out List<Entity> entities) {
         entities = new();
         var entitiesNotRef = entities;
 
-        var newSelections = pasted.Where(pasted => pasted.Layer is SelectionLayer.Entities or SelectionLayer.Triggers or SelectionLayer.FgDecals or SelectionLayer.BgDecals).SelectMany(s => {
-            var e = EntityRegistry.Create(s.Data, room, s.Layer == SelectionLayer.Triggers);
+        var newSelections = pasted.Where(pasted => pasted.ResolveLayer(layers) is EntityLayer).SelectMany(s => {
+            var layer = (EntityLayer)s.ResolveLayer(layers)!;
+            var e = EntityRegistry.Create(s.Data, room, layer.SelectionLayer == SelectionLayer.Triggers);
             e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
             entitiesNotRef.Add(e);
             var handler = e.CreateSelection().Handler as EntitySelectionHandler;
-            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? Array.Empty<ISelectionHandler>();
+            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? [];
 
             return selections.Append(handler);
         }).Select(h => new Selection() { Handler = h }).ToList();

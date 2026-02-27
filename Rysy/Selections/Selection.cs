@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 
 namespace Rysy.Selections;
 
@@ -116,7 +117,7 @@ public interface ISelectionHandler {
     /// </summary>
     public object Parent { get; }
 
-    public SelectionLayer Layer { get; }
+    public IEditorLayer Layer { get; }
 
     /// <summary>
     /// Places the entity 

@@ -1,11 +1,12 @@
 ﻿using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.LuaSupport;
 using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer {
+public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializableLayer {
     public TileLayer TileLayer { get; init; }
     
     public int Depth { get; init; }
@@ -77,4 +78,40 @@ public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer {
     public override bool SupportsPreciseMoveMode => false;
 
     public override int? ForcedGridSize => 8;
+
+    public string? LonnLayerName => SelectionLayer switch {
+        SelectionLayer.FgTiles => "tilesFg",
+        SelectionLayer.BgTiles => "tilesBg",
+        _ => null,
+    };
+
+    public string? LoennInstanceTypeName => null;
+
+    public string DefaultSid => "tiles";
+    
+    public void ConvertToLonnFormat(TextWriter indentedWriter, CopypasteHelper.CopiedSelection item) {
+        indentedWriter.WriteLine($$"""
+        {
+            _fromLayer = "{{LonnLayerName}}",
+            tiles = {{LuaSerializer.ToLuaString(item.Data.Attr("text", ""))}},
+            height = {{LuaSerializer.ToLuaString(item.Data.Int("h", 0))}},
+            width = {{LuaSerializer.ToLuaString(item.Data.Int("w", 0))}},
+            x = {{LuaSerializer.ToLuaString(item.Data.Int("x") / 8 + 1)}},
+            y = {{LuaSerializer.ToLuaString(item.Data.Int("y") / 8 + 1)}},
+        },
+        """);
+    }
+
+    public BinaryPacker.Element ConvertToLonnFormat(CopypasteHelper.CopiedSelection item) {
+        return new BinaryPacker.Element() {
+            Attributes = new Dictionary<string, object>() {
+                ["_fromLayer"] = LonnLayerName!,
+                ["tiles"] = item.Data.Attr("text", ""),
+                ["height"] = item.Data.Int("h"),
+                ["width"] = item.Data.Int("w"),
+                ["x"] = item.Data.Int("x") / 8 + 1,
+                ["y"] = item.Data.Int("y") / 8 + 1,
+            }
+        };
+    }
 }

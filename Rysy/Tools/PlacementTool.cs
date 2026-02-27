@@ -309,7 +309,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         base.CancelInteraction();
 
         if (CurrentPlacement is { } pl && 
-            (pl.Layer != Layer.SelectionLayer || _currentPlacementSourceMaterial != Material)) {
+            (pl.Layer != Layer || _currentPlacementSourceMaterial != Material)) {
             CurrentPlacement = null;
             _currentPlacementSourceMaterial = null;
         }
