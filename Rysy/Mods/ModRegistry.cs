@@ -126,7 +126,7 @@ public static class ModRegistry {
 
                 return CreateModAsync(f, componentRegistry, zip: false, loadCSharpPlugins);
             })!
-            .Append(Task.FromResult(CreateRysyMod()))!;
+            .Append(Task.FromResult(CreateRysyMod(componentRegistry)))!;
 
         if (CreateVanillaMod() is { } vanilla) {
             allMods = allMods!.Append(Task.FromResult(vanilla))!;
@@ -190,16 +190,22 @@ public static class ModRegistry {
         Filesystem = new ReadonlyModFilesystem(new FolderModFilesystem($"{Profile.Instance.CelesteDirectory}/Content")),
     };
 
-    private static ModMeta CreateRysyMod() => RysyMod = new() {
-        EverestYaml = [
-            new() {
-                Name = "Rysy", Version = RysyEngine.Version
-            }
-        ],
-        PluginAssembly = typeof(RysyEngine).Assembly,
-        Filesystem = RysyPlatform.Current.GetRysyFilesystem(),
-        Module = new RysyModModule(),
-    };
+    private static ModMeta CreateRysyMod(IComponentRegistry registry) {
+        RysyMod = new() {
+            EverestYaml = [
+                new() {
+                    Name = "Rysy", Version = RysyEngine.Version
+                }
+            ],
+            PluginAssembly = typeof(RysyEngine).Assembly,
+            Filesystem = RysyPlatform.Current.GetRysyFilesystem(),
+            Module = new RysyModModule(),
+        };
+
+        CreateScopeAndRegisterModuleForMod(RysyMod, registry);
+        
+        return RysyMod;
+    }
 
     private static void UnloadAllMods() {
         IsLoaded = false;
@@ -285,11 +291,18 @@ public static class ModRegistry {
             return;
         }
 
-        var scope = new ComponentRegistryScope(componentRegistry);
-        mod.Module.ComponentRegistryScope = scope;
+        CreateScopeAndRegisterModuleForMod(mod, componentRegistry);
+
         mod.Module.Meta = mod;
         mod.PluginAssembly = asm;
-        
+    }
+
+    private static void CreateScopeAndRegisterModuleForMod(ModMeta mod, IComponentRegistry componentRegistry)
+    {
+        if (mod.Module is null)
+            throw new ArgumentException($"The mod {mod.Name} doesn't have a module to attach a scope to.", nameof(mod));
+        var scope = new ComponentRegistryScope(componentRegistry);
+        mod.Module.ComponentRegistryScope = scope;
         scope.Add(mod.Module);
     }
 
