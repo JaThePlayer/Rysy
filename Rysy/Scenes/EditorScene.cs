@@ -68,17 +68,6 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
     public Camera Camera => EditorState.Camera;
 
     public EditorScene() {
-        //HistoryHandler = new();
-
-        //EditorState.OnMapChanged += OnMapChanged;
-
-        if (Settings.Instance.NotificationWindowOpen)
-            AddWindowIfNeeded<NotificationsWindow>();
-        
-        Add(EditorState);
-        Add(HistoryHandler);
-        Add(new Menubar());
-        Add(Camera);
     }
 
     public EditorScene(Map map) : this() {
@@ -461,13 +450,21 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
     }
 
     public override void OnEnd() {
-        base.OnEnd();
-
         ToolHandler.Unload();
         Remove(ToolHandler);
+
+        base.OnEnd();
     }
 
     public override void OnBegin() {
+        if (Settings.Instance.NotificationWindowOpen)
+            AddWindowIfNeeded<NotificationsWindow>();
+        
+        Add(EditorState);
+        Add(HistoryHandler);
+        Add(new Menubar());
+        Add(Camera);
+        
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);
 

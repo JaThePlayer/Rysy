@@ -1,19 +1,17 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Components;
 using Rysy.Gui.Windows;
-using Rysy.Helpers;
 using Rysy.Scenes;
 using Rysy.Signals;
 
 namespace Rysy;
 
-public abstract class Scene : ISignalListener {
+public abstract class Scene {
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
-    private readonly SceneComponentRegistry _components;
+    private ComponentRegistryScope? _components;
 
-    public IComponentRegistry Components => _components;
+    public IComponentRegistry Components => _components ?? throw new Exception("Components are not initialised yet. They may not be added until OnBegin.");
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -22,7 +20,7 @@ public abstract class Scene : ISignalListener {
     public IRysyLogger Logger => this.AddIfMissing(self => self.LoggerFactory.CreateLogger(self.GetType()));
 
     protected Scene() {
-        _components = new SceneComponentRegistry();
+        //_components = new SceneComponentRegistry();
         _removeWindow = (w) => {
             RysyState.OnEndOfThisFrame += () => {
                 w.Removed();
@@ -34,7 +32,7 @@ public abstract class Scene : ISignalListener {
     public float TimeActive { get; private set; }
 
     internal void SetGlobalComponentRegistry(IComponentRegistry globalComponents) {
-        _components.GlobalRegistry = globalComponents;
+       _components = new ComponentRegistryScope(globalComponents);
     }
     
     /// <summary>
@@ -55,6 +53,9 @@ public abstract class Scene : ISignalListener {
         foreach (var c in GetAll<SceneComponent>()) {
             c.OnRemoved();
         }
+        
+        _components?.Dispose();
+        _components = null;
     }
 
     public virtual void SetupHotkeys() {
@@ -174,40 +175,36 @@ public abstract class Scene : ISignalListener {
 
     public void Add<T>(T component) {
         if (component is not null)
-            _components.Add(component);
+            Components.Add(component);
     }
     
     public void Remove<T>(T component) {
         if (component is not null)
-            _components.Remove(component);
+            Components.Remove(component);
     }
     
     public T AddIfMissing<T>() where T : class, new() {
-        return _components.AddIfMissing<T>();
+        return Components.AddIfMissing<T>();
     }
     
     public T AddIfMissing<T>(T newValue) where T : class {
-        return _components.AddIfMissing(newValue);
+        return Components.AddIfMissing(newValue);
     }
     
     public T? Get<T>() where T : class {
-        return _components.Get<T>();
+        return Components.Get<T>();
     }
     
     public T GetRequired<T>() where T : class {
-        return _components.GetRequired<T>();
+        return Components.GetRequired<T>();
     }
     
     public IReadOnlyList<T> GetAll<T>() where T : class {
-        return _components.GetAll<T>();
-    }
-
-    public virtual void OnSignal<T>(T signal) where T : ISignal {
-        _components.TransmitSignalToSceneSpecificListener(signal);
+        return _components is null ? [] : Components.GetAll<T>();
     }
     
     public void Emit<T>(T signal) where T : ISignal {
-        _components.OnSignal(signal);
+        Components.OnSignal(signal);
     }
 }
 
@@ -219,54 +216,6 @@ public static class SceneExt {
             }
         
             return ret;
-        }
-    }
-}
-
-internal sealed class SceneComponentRegistry : IComponentRegistry {
-    private readonly ComponentRegistry _sceneSpecific;
-
-    public SceneComponentRegistry() {
-        _sceneSpecific = new ComponentRegistry { SendSignalsAs = this };
-    }
-    
-    public IComponentRegistry? GlobalRegistry { get; set; }
-    
-    public void Add<T>(T component) where T : notnull {
-        _sceneSpecific.Add(component);
-    }
-
-    public void Remove<T>(T component) where T : notnull {
-        _sceneSpecific.Remove(component);
-    }
-
-    public T? Get<T>() where T : class {
-        return _sceneSpecific.Get<T>() ?? GlobalRegistry?.Get<T>();
-    }
-
-    public IReadOnlyList<T> GetAll<T>() where T : class {
-        if (GlobalRegistry is { } globalRegistry) {
-            var left = globalRegistry.GetAll<T>();
-            var right = _sceneSpecific.GetAll<T>();
-
-            if (right.Count == 0)
-                return left;
-
-            if (left.Count == 0)
-                return right;
-            
-            return new ConcatList<T>(left, right);
-        }
-        return _sceneSpecific.GetAll<T>();
-    }
-
-    public void TransmitSignalToSceneSpecificListener<T>(T signal) where T : ISignal {
-        foreach (var listener in _sceneSpecific.GetAll<ISignalListener>()) {
-            listener.OnSignal(signal);
-        }
-            
-        foreach (var listener in _sceneSpecific.GetAll<ISignalListener<T>>()) {
-            listener.OnSignal(signal);
         }
     }
 }

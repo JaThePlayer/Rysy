@@ -42,12 +42,13 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                 var persistedWindows = field.GetAll<Window>().Where(w => w.PersistBetweenScenes).ToList();
                 field.OnEnd();
                 _GlobalServices.Remove(field);
+                
+                _GlobalServices.Add(value);
+                value.SetGlobalComponentRegistry(_GlobalServices);
                 foreach (var w in persistedWindows) {
                     value.AddWindow(w);
                 }
 
-                _GlobalServices.Add(value);
-                value.SetGlobalComponentRegistry(_GlobalServices);
                 value.OnBegin();
                 field = value;
                 
@@ -119,7 +120,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
     }
     
     internal void Window_ClientSizeChanged(object? sender, EventArgs e) {
-        _Scene.OnSignal(new ViewportChanged(_GraphicsDevice.Viewport));
+        this.Emit(new ViewportChanged(_GraphicsDevice.Viewport));
 
         if (Settings.Instance is { } settings && !_Window.IsBorderlessShared()) {
             settings.StartingWindowWidth = _GraphicsDevice.Viewport.Width;
@@ -187,8 +188,15 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
             try {
 #endif
                 ImGuiManager.GuiRenderer.BeforeLayout(elapsed);
-                if (renderUi)
-                    _Scene.RenderImGui();
+                if (renderUi) {
+                    if (_sceneChangeLock.TryEnter()) {
+                        try {
+                            _Scene.RenderImGui();
+                        } finally {
+                            _sceneChangeLock.Exit();
+                        }
+                    }
+                }
                 if (DebugInfoWindow.Enabled)
                     DebugInfoWindow.Instance.RenderGui();
 

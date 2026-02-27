@@ -12,6 +12,8 @@ public interface IComponentRegistry : ISignalListener
     T? Get<T>() where T : class;
     IReadOnlyList<T> GetAll<T>() where T : class;
 
+    IEnumerable<object> GetAll();
+
     void ISignalListener.OnSignal<T>(T signal) {
         foreach (var listener in GetAll<ISignalListener>()) {
             listener.OnSignal(signal);
@@ -78,6 +80,10 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
 
     public IReadOnlyList<T> GetAll<T>() where T : class {
         return parent.GetAll<T>();
+    }
+
+    public IEnumerable<object> GetAll() {
+        return parent.GetAll();
     }
 }
 
@@ -147,6 +153,10 @@ public sealed class ComponentRegistry : IComponentRegistry {
         }
 
         return Components.OfType<T>();
+    }
+
+    public IEnumerable<object> GetAll() {
+        return Components;
     }
 }
 
