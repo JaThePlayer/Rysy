@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Entities;
 using Rysy.Graphics;
 using Rysy.Helpers;
@@ -109,7 +110,7 @@ public static class RoomList {
                     if (renderStylegrounds)
                         StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Bg, filter: StylegroundRenderer.NotMasked);
                     
-                    room.Render(cam, Room.RenderConfig.Preview, Colorgrade.None);
+                    room.Render(cam, Room.RenderConfig.Preview, Colorgrade.None, editor.GetAll<IRoomSpriteProvider>());
                     
                     if (renderStylegrounds && fgInFront)
                         StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Fg, filter: StylegroundRenderer.NotMasked);

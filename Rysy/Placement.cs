@@ -1,4 +1,5 @@
-﻿using Rysy.Graphics;
+﻿using Rysy.Components;
+using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
@@ -477,7 +478,7 @@ public record class RoomPlacementHandler : IPlacementHandler {
         room.Pos = pos;
         room.ClearEntityRenderCache();
         
-        return room.GetInteriorSprites()
+        return room.GetInteriorSprites(RysyState.Instance.GlobalComponents.GetAll<IRoomSpriteProvider>())
             .Concat(room.GetBorderSprite(editorState.Camera.Scale) with {
                 Depth = int.MinValue,
                 Pos = new(0, 0, room.Width, room.Height)

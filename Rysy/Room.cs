@@ -1,4 +1,5 @@
 ﻿using KeraLua;
+using Rysy.Components;
 using Rysy.Entities;
 using Rysy.Entities.Modded;
 using Rysy.Graphics;
@@ -372,8 +373,8 @@ public sealed class Room : IPackable, ILuaWrapper {
     public RectangleSprite GetBorderSprite(float cameraScale) 
         => ISprite.OutlinedRect(Bounds, Color.Transparent, Color, outlineWidth: (int) (1f / cameraScale).AtLeast(1));
 
-    public IEnumerable<ISprite> GetInteriorSprites() {
-        CacheSpritesIfNeeded();
+    public IEnumerable<ISprite> GetInteriorSprites(IReadOnlyList<IRoomSpriteProvider> providers) {
+        CacheSpritesIfNeeded(providers);
         
         return _cachedSprites!;
     }
@@ -384,7 +385,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         Preview
     }
     
-    public void Render(Camera camera, RenderConfig cfg, Colorgrade colorgrade) {
+    public void Render(Camera camera, RenderConfig cfg, Colorgrade colorgrade, IReadOnlyList<IRoomSpriteProvider> providers) {
         if (cfg == RenderConfig.Unselected && !camera.IsRectVisible(Bounds)) {
             if (_cachedSprites is {} || _fullRenderCanvas is {})
                 ClearRenderCacheIfWanted();
@@ -418,7 +419,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             ISprite.Rect(new(0, 0, Width, Height), new Color(25, 25, 25, 255)).Render();
 
         if (interiorVisible)
-            DrawRoomInterior(camera, cfg != RenderConfig.Unselected, canvasReady);
+            DrawRoomInterior(providers, camera, cfg != RenderConfig.Unselected, canvasReady);
         
         if (cfg == RenderConfig.Unselected)
             ISprite.Rect(new(0, 0, Width, Height), Color.Black * .75f).Render();
@@ -431,11 +432,11 @@ public sealed class Room : IPackable, ILuaWrapper {
         Map.BgAutotiler.SetRainbowTiles(GetRainbowTilesets(TileLayer.Bg));
     }
 
-    private void DrawRoomInterior(Camera camera, bool selected, bool canvasReady) {
+    private void DrawRoomInterior(IReadOnlyList<IRoomSpriteProvider> providers, Camera camera, bool selected, bool canvasReady) {
         if (!selected && canvasReady) {
             DrawFromCanvas(camera);
         } else {
-            CacheSpritesIfNeeded();
+            CacheSpritesIfNeeded(providers);
 
             if (!selected && _cachedSprites!.TrueForAll(s => s.IsLoaded)) {
                 RysyState.RegisterOnEndOfThisFrame(camera, CacheIntoCanvas);
@@ -452,7 +453,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
-    internal void CacheSpritesIfNeeded() {
+    internal void CacheSpritesIfNeeded(IReadOnlyList<IRoomSpriteProvider> providers) {
         if (_cachedSprites is null) {
             using var w = Settings.Instance.LogSpriteCachingTimes ? new ScopedStopwatch($"Generating sprites for {Name}") : null;
 
@@ -556,6 +557,12 @@ public sealed class Room : IPackable, ILuaWrapper {
                 BgDecalsRenderCacheToken.Reset();
 
                 sprites = sprites.Concat(_cachedBgDecalSprites);
+            }
+
+            foreach (var spriteProvider in providers) {
+                var providedSprites = spriteProvider.GetSprites(this);
+                if (providedSprites.Count > 0)
+                    sprites = sprites.Concat(providedSprites);
             }
 
             _cachedSprites = sprites.OrderByDescending(x => x.Depth).ToList();

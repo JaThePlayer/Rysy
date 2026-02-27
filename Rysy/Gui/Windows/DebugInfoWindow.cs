@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Markdig.Syntax;
+using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.LuaSupport;
@@ -195,6 +196,7 @@ public class DebugInfoWindow : Window {
     }
 
     private void Benchmark(Room room, bool aggressive, int times) {
+        var providers = Scene.GetAll<IRoomSpriteProvider>();
         var watch = Stopwatch.GetTimestamp();
         for (int i = 0; i < times; i++) {
             if (aggressive)
@@ -202,7 +204,7 @@ public class DebugInfoWindow : Window {
             else
                 room.ClearRenderCache();
             
-            room.CacheSpritesIfNeeded();
+            room.CacheSpritesIfNeeded(providers);
         }
 
         var elapsed = Stopwatch.GetElapsedTime(watch);
