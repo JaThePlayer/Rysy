@@ -5,7 +5,7 @@ using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public sealed class TileEditorLayer : EditorLayer {
+public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer {
     public TileLayer TileLayer { get; init; }
     
     public TileEditorLayer(TileLayer layer) {
@@ -45,6 +45,13 @@ public sealed class TileEditorLayer : EditorLayer {
             Id: {c}
             Source: {GetAutotiler(map)?.GetTilesetData(c)?.Filename}
             """);
+    }
+
+    public List<Selection> GetSelectionsInRect(Map map, Room? room, Rectangle? rect) {
+        if (room is null)
+            return [];
+
+        return room.GetSelectionsInRect(rect, SelectionLayer);
     }
 
     public Tilegrid GetGrid(Room room) => TileLayer switch {

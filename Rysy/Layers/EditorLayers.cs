@@ -4,19 +4,19 @@ using Rysy.Selections;
 namespace Rysy.Layers;
 
 public static class EditorLayers {
-    public static EditorLayer Fg { get; } = new TileEditorLayer(TileLayer.Fg);
-    public static EditorLayer Bg { get; } = new TileEditorLayer(TileLayer.Bg);
+    public static TileEditorLayer Fg { get; } = new TileEditorLayer(TileLayer.Fg);
+    public static TileEditorLayer Bg { get; } = new TileEditorLayer(TileLayer.Bg);
     public static EditorLayer BothTilegrids { get; } = new FakeLayer("Both");
     
-    public static EditorLayer Entities { get; } = new EntityLayer(SelectionLayer.Entities);
-    public static EditorLayer Triggers { get; } = new EntityLayer(SelectionLayer.Triggers);
-    public static EditorLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FgDecals);
-    public static EditorLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BgDecals);
+    public static EntityLayer Entities { get; } = new EntityLayer(SelectionLayer.Entities);
+    public static EntityLayer Triggers { get; } = new EntityLayer(SelectionLayer.Triggers);
+    public static EntityLayer FgDecals { get; } = new EntityLayer(SelectionLayer.FgDecals);
+    public static EntityLayer BgDecals { get; } = new EntityLayer(SelectionLayer.BgDecals);
 
-    public static EditorLayer Room { get; } = new RoomLayer();
+    public static RoomLayer Room { get; } = new RoomLayer();
 
-    public static EditorLayer CustomLayer { get; } = new FakeLayer("Custom");
-    public static EditorLayer All { get; } = new FakeLayer("All", SelectionLayer.All);
+    public static CustomSelectionLayer CustomLayer { get; } = new CustomSelectionLayer();
+    public static AllLayer All { get; } = new AllLayer();
 
     public static EditorLayer Missing { get; } = new FakeLayer("Missing");
 
@@ -48,16 +48,16 @@ public static class EditorLayers {
     }
 
     public static void RegisterVanillaLayers(IComponentRegistry registry) {
-        registry.Add(Fg);
-        registry.Add(Bg);
-        registry.Add(BothTilegrids);
         registry.Add(Entities);
         registry.Add(Triggers);
         registry.Add(FgDecals);
         registry.Add(BgDecals);
+        registry.Add(Fg);
+        registry.Add(Bg);
+        registry.Add(BothTilegrids);
         registry.Add(Room);
-        registry.Add(CustomLayer);
         registry.Add(All);
+        registry.Add(CustomLayer);
         registry.Add(new PrefabLayer(registry.GetRequired<PrefabHelper>()));
     }
 }

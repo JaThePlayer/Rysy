@@ -3,7 +3,7 @@ using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public class EntityLayer : EditorLayer, IPlacementEditorLayer {
+public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorLayer {
     public EntityLayer(SelectionLayer layer) {
         SelectionLayer = layer;
     }
@@ -26,7 +26,14 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer {
             _ => throw new NotImplementedException(SelectionLayer.FastToString())
         };
     }
-    
+
+    public List<Selection> GetSelectionsInRect(Map map, Room? room, Rectangle? rect) {
+        if (room is null)
+            return [];
+
+        return room.GetSelectionsInRect(rect, SelectionLayer);
+    }
+
     private static Cache<List<Placement>> FgDecalPlacements { get; }
         = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, SelectionLayer.FgDecals)!).ToList());
     private static Cache<List<Placement>> BgDecalPlacements { get; }

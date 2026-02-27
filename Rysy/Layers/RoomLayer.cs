@@ -2,7 +2,7 @@
 
 namespace Rysy.Layers;
 
-public class RoomLayer : EditorLayer, IPlacementEditorLayer {
+public class RoomLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorLayer {
     public override string Name => "Rooms";
     public override SelectionLayer SelectionLayer => SelectionLayer.Rooms;
 
@@ -31,6 +31,19 @@ public class RoomLayer : EditorLayer, IPlacementEditorLayer {
                 Name = "filler",
             }
         ];
+    }
+
+    public List<Selection> GetSelectionsInRect(Map map, Room? unused, Rectangle? rect) {
+        var list = new List<Selection>();
+        foreach (var room in map.Rooms) {
+            var handler = room.GetSelectionHandler();
+
+            if (rect is null || handler.IsWithinRectangle(rect.Value)) {
+                list.Add(new Selection(handler));
+            }
+        }
+
+        return list;
     }
 
     public override bool SupportsPreciseMoveMode => false;

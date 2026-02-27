@@ -34,14 +34,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private List<Selection>? _currentSelections;
     private List<Selection> _selectionsToHighlight = new();
 
-    private SelectionLayer _customLayer;
-
     private static int ClickInPlaceIdx;
     
     private Point? _rotationGestureStart;
     private float? _rotationGestureLastAngle;
 
     private PrefabHelper PrefabHelper => field ??= ToolHandler.ComponentRegistry.AddIfMissing<PrefabHelper>();
+
+    public new ISelectionEditorLayer? Layer {
+        get => base.Layer as ISelectionEditorLayer;
+        set => base.Layer = value ?? throw new ArgumentNullException(nameof(value));
+    }
 
     public SelectionTool() {
     }
@@ -91,10 +94,9 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void SelectAll() {
-        if (EditorState.CurrentRoom is { } room) {
+        if (EditorState.CurrentRoom is { } room && EditorState.Map is { } map) {
             Deselect();
-            _currentSelections = room.GetSelectionsInRect(null, 
-                EditorLayers.ToolLayerToEnum(Layer, _customLayer));
+            _currentSelections = Layer?.GetSelectionsInRect(map, room, null);
         }
     }
     
@@ -320,13 +322,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    public override IReadOnlyList<EditorLayer> ValidLayers { get; } = [
+    public override IReadOnlyList<IEditorLayer> ValidLayers /*{ get; } = [
         EditorLayers.Entities, EditorLayers.Triggers,
         EditorLayers.FgDecals, EditorLayers.BgDecals,
         EditorLayers.Fg, EditorLayers.Bg,
         EditorLayers.Room,
         EditorLayers.All, EditorLayers.CustomLayer
-    ];
+    ];*/ => ToolHandler.ComponentRegistry.GetAll<ISelectionEditorLayer>();
+
 
     public override IEnumerable<object>? GetMaterials(IEditorLayer layer) => [];
 
@@ -339,7 +342,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void Render(Camera camera, Room room) {
-        if (Layer == EditorLayers.Room)
+        if (Layer is RoomLayer)
             return;
 
         DoRender(camera, room);
@@ -355,7 +358,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         Gfx.BeginBatch(EditorState.Camera!);
 
         var room = EditorState.CurrentRoom;
-        if (Layer == EditorLayers.Room)
+        if (Layer is RoomLayer)
             room ??= EditorState.Map?.Rooms.FirstOrDefault();
         
         DoRender(EditorState.Camera, room);
@@ -432,10 +435,12 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private void DoRender(Camera camera, Room? room) {
+        if (EditorState.Map is not { } map)
+            return;
         if (_currentSelections is not { Count: > 0 }) {
             // If we're in room selection mode, always select the current room if there are no other selections
             // We do this here instead of Update, as Update is not called when hovering over imgui elements
-            if (Layer == EditorLayers.Room && EditorState.CurrentRoom is { } currentRoom) {
+            if (Layer is RoomLayer && EditorState.CurrentRoom is { } currentRoom) {
                 AddSelection(new(currentRoom.GetSelectionHandler()));
             }
         }
@@ -448,8 +453,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
         var selectionsUnderCursor = 
-            room?.GetSelectionsInRect(_selectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1), 
-                EditorLayers.ToolLayerToEnum(Layer, _customLayer)) ?? [];
+            Layer?.GetSelectionsInRect(map, room, _selectionGestureHandler.CurrentRectangle ?? new(mousePos.X, mousePos.Y, 1, 1)
+                /*,EditorLayers.ToolLayerToEnum(Layer, _customLayer)*/) ?? [];
 
         selectionsUnderCursor = GetSortedSelections(selectionsUnderCursor.Where(s => s.Handler is not TileSelectionHandler));
 
@@ -575,7 +580,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void Update(Camera camera, Room? room) {
-        if (Layer == EditorLayers.Room)
+        if (Layer is RoomLayer)
             room ??= EditorState.Map?.Rooms.FirstOrDefault();
         
         if (_currentSelections is { } selections) {
@@ -815,7 +820,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .ToList();
 
     private void SelectWithin(Room? room, Rectangle rect) {
-        var selections = room?.GetSelectionsInRect(rect, EditorLayers.ToolLayerToEnum(Layer, _customLayer)) ?? [];
+        if (EditorState.Map is null)
+            return;
+
+        var selections = Layer?.GetSelectionsInRect(EditorState.Map, room, rect) ?? [];
         selections = GetSortedSelections(selections);
         
         List<Selection>? finalSelections = null;
@@ -918,19 +926,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
         showSearchBar = false;
 
-        if (Layer == EditorLayers.CustomLayer) {
-            var c = (int) _customLayer;
-            ImGui.CheckboxFlags(EditorLayers.Entities.LocalizedName, ref c, (int) SelectionLayer.Entities);
-            ImGui.CheckboxFlags(EditorLayers.Triggers.LocalizedName, ref c, (int) SelectionLayer.Triggers);
-            ImGui.CheckboxFlags(EditorLayers.FgDecals.LocalizedName, ref c, (int) SelectionLayer.FgDecals);
-            ImGui.CheckboxFlags(EditorLayers.BgDecals.LocalizedName, ref c, (int) SelectionLayer.BgDecals);
-            ImGui.CheckboxFlags(EditorLayers.Bg.LocalizedName, ref c, (int) SelectionLayer.BgTiles);
-            ImGui.CheckboxFlags(EditorLayers.Fg.LocalizedName, ref c, (int) SelectionLayer.FgTiles);
-
-            _customLayer = (SelectionLayer) c;
-
-            ImGui.Separator();
-        }
+        Layer?.RenderCustomMaterialListStart();
 
         ImGui.Text("Selections");
         if (_currentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
