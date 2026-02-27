@@ -53,6 +53,8 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
 
     public override bool ResizableX => true;
     public override bool ResizableY => true;
+    
+    public override Point RecommendedMinimumSize => new(16, 16);
 
     public static FieldList GetFields() => new(new {
         index = Fields.Dropdown(0, Indexes),

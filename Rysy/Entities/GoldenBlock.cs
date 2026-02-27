@@ -4,6 +4,8 @@ namespace Rysy.Entities;
 
 [CustomEntity("goldenBlock")]
 public sealed class GoldenBlock : NineSliceEntity, IPlaceable {
+    public override Point RecommendedMinimumSize => new(16, 16);
+    
     public override int Depth => 0;
 
     public override string TexturePath => "objects/goldblock";

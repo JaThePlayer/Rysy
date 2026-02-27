@@ -10,6 +10,8 @@ public sealed class Kevin : Entity, IPlaceable {
     public override bool ResizableX => true;
     public override bool ResizableY => true;
 
+    public override Point RecommendedMinimumSize => new(16, 16);
+
     public override IEnumerable<ISprite> GetSprites() {
         var pos = Pos;
         var (w, h) = (Width, Height);
