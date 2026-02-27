@@ -116,7 +116,7 @@ public static class CodeCompilationHelper {
         }
 
 
-        var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp11);
+        var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14);
 
         IEnumerable<(string SourceCode, string Filename)> allfiles = files;
         if (addGlobalUsings && !files.Any(f => f.Filename.EndsWith("GlobalUsings.cs", StringComparison.Ordinal))) {
