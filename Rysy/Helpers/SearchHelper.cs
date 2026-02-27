@@ -212,7 +212,6 @@ public static class SearchHelper {
             var parsed = ParseSearch(search);
             filter = filter
                 .Where(e => parsed.Matches(e.Data))
-                .OrderOrThenBy(e => e.Data.AlternativeNames.Any(x => parsed.StartsWith(e.Data, x, out _)))
                 .OrderOrThenByDescending(e => parsed.StartsWith(e.Data, e.Data.Text, out _));
         }
 
@@ -306,6 +305,8 @@ public static class SearchHelper {
         }
         
         public abstract bool Matches(Searchable search);
+
+        public abstract bool Matches(Searchable search, string name);
         
         public abstract bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining);
     }
@@ -320,6 +321,8 @@ public static class SearchHelper {
         }
 
         public override bool Matches(Searchable search) => left.Matches(search) && right.Matches(search);
+        public override bool Matches(Searchable search, string name) 
+            => left.Matches(search, name) && right.Matches(search, name);
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             if (!left.StartsWith(search, curr, out remaining))
@@ -339,6 +342,8 @@ public static class SearchHelper {
         }
         
         public override bool Matches(Searchable search) => left.Matches(search) || right.Matches(search);
+        public override bool Matches(Searchable search, string name) 
+            => left.Matches(search, name) || right.Matches(search, name);
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             return left.StartsWith(search, curr, out remaining) 
@@ -366,6 +371,10 @@ public static class SearchHelper {
             return false;
         }
 
+        public override bool Matches(Searchable search, string name) {
+            return name.Contains(_term, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
             if (curr.StartsWith(_term, StringComparison.OrdinalIgnoreCase)) {
@@ -384,7 +393,9 @@ public static class SearchHelper {
             ImGuiManager.TextColored(ThemeColors.ModNameColor, _txtU8);
         }
 
-        public override bool Matches(Searchable search) => search.Mods.Any(x => 
+        public override bool Matches(Searchable search) => Matches(search, search.Text);
+
+        public override bool Matches(Searchable search, string name) => search.Mods.Any(x => 
             x.Contains(_modName, StringComparison.OrdinalIgnoreCase)
             || (ModRegistry.GetModByName(x) is {} mod && mod.DisplayName.Contains(_modName, StringComparison.OrdinalIgnoreCase)));
 
@@ -404,7 +415,9 @@ public static class SearchHelper {
             ImGuiManager.TextColored(ThemeColors.TagColor, Interpolator.TempU8($"#{_txtU8}"));
         }
         
-        public override bool Matches(Searchable search) => search.Tags.Any(x => x.Contains(_tagName, StringComparison.OrdinalIgnoreCase));
+        public override bool Matches(Searchable search) => Matches(search, search.Text);
+
+        public override bool Matches(Searchable search, string name) => search.Tags.Any(x => x.Contains(_tagName, StringComparison.OrdinalIgnoreCase));
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
@@ -423,6 +436,7 @@ public static class SearchHelper {
         }
 
         public override bool Matches(Searchable search) => true;
+        public override bool Matches(Searchable search, string name) => true;
 
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
