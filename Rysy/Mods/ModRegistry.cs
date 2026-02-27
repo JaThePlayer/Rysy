@@ -25,7 +25,7 @@ public static class ModRegistry {
     
     public static bool IsLoaded { get; private set; }
     
-    private static IComponentRegistry LastUsedComponentRegistry { get; set; }
+    internal static IComponentRegistry LastUsedComponentRegistry { get; set; }
 
     /// <summary>
     /// Tries to get a <see cref="ModMeta"/> for a mod using its everest.yaml name.
@@ -151,10 +151,6 @@ public static class ModRegistry {
             Logger.Write(LogTag, LogLevel.Warning, $"Duplicate mod found: {prevMod.ToString()} [{prevMod.Filesystem.Root}] vs {meta.ToString()} [{meta.Filesystem.Root}]");
         }
         ModsMutable[meta.Name] = meta;
-
-        if (meta.Module is { } module) {
-            module.Load();
-        }
     }
 
     public static ModMeta CreateNewMod(string id) {
@@ -197,12 +193,10 @@ public static class ModRegistry {
                     Name = "Rysy", Version = RysyEngine.Version
                 }
             ],
-            PluginAssembly = typeof(RysyEngine).Assembly,
             Filesystem = RysyPlatform.Current.GetRysyFilesystem(),
-            Module = new RysyModModule(),
         };
 
-        CreateScopeAndRegisterModuleForMod(RysyMod, registry);
+        LoadModule(RysyMod, typeof(RysyEngine).Assembly, registry);
         
         return RysyMod;
     }
@@ -271,7 +265,7 @@ public static class ModRegistry {
         }
     }
 
-    private static void LoadModule(ModMeta mod, Assembly asm, IComponentRegistry componentRegistry) {
+    internal static void LoadModule(ModMeta mod, Assembly asm, IComponentRegistry componentRegistry) {
         if (mod.Module is { } oldMod) {
             // if we're hot-reloading, .Module will point to the old module type, let's unload it.
             oldMod.Unload();
@@ -295,6 +289,8 @@ public static class ModRegistry {
 
         mod.Module.Meta = mod;
         mod.PluginAssembly = asm;
+
+        mod.Module.Load();
     }
 
     private static void CreateScopeAndRegisterModuleForMod(ModMeta mod, IComponentRegistry componentRegistry)

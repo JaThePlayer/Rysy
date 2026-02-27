@@ -17,7 +17,8 @@ public static class HotReloadHandler {
     public static void UpdateApplication(Type[]? types) {
         types?.Select(t => t.Assembly.FullName).LogAsJson();
 
-        if (ModRegistry.GetModByName("Rysy") is { } rysyMod)
-            rysyMod.PluginAssembly = typeof(RysyEngine).Assembly;
+        if (ModRegistry.RysyMod is { } rysyMod) {
+            ModRegistry.LoadModule(rysyMod, typeof(RysyEngine).Assembly, ModRegistry.LastUsedComponentRegistry);
+        }
     }
 }
