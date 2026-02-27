@@ -33,9 +33,11 @@ public sealed class Kevin : Entity, IPlaceable {
         chillout = false
     });
 
-    public static PlacementList GetPlacements() => PlacementList.FromEnum<Axes>(axis => new(axis.ToLowerInvariant(), new {
+    public static PlacementList GetPlacements() => PlacementList.FromEnum<Axes>(axis => new Placement(axis.ToLowerInvariant(), new {
         axes = axis.ToLowerInvariant()
-    }));
+    }) {
+        AlternativeNames = [ $"{axis.ToLowerInvariant()}_crushBlock"]
+    });
 
     enum Axes {
         Both,

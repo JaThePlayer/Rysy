@@ -3,3 +3,7 @@
 
 entities.darkChaserEnd.placements.name.barrier=Badeline Chaser Barrier
 entities.darkChaserEnd.placements.description.barrier=When the player enters this barrier, all Badeline Chasers vanish.
+
+entities.crushBlock.placements.name.both_crushBlock=Crush Block (Both)
+entities.crushBlock.placements.name.vertical_crushBlock=Crush Block (Vertical)
+entities.crushBlock.placements.name.horizontal_crushBlock=Crush Block (Horizontal)
