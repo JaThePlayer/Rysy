@@ -51,13 +51,9 @@ public class TileBrushMode : TileMode {
                 return;
 
             var grid = Tool.GetGrid(room);
-            var altGrid = Tool.GetSecondGrid(room);
             var tile = StrokeTile;
 
-            Tool.History.ApplyNewAction(new MergedAction(
-                new TileBulkChangeAction(tile, stroke, grid),
-                altGrid is { } ? new TileBulkChangeAction(tile, stroke, altGrid) : null
-            ));
+            Tool.History.ApplyNewAction(new TileBulkChangeAction(tile, stroke, grid));
         
             ClearStrokeData(room, clearSpriteCache: false);
         }

@@ -4,9 +4,8 @@ using Rysy.Selections;
 namespace Rysy.Layers;
 
 public static class EditorLayers {
-    public static TileEditorLayer Fg { get; } = new TileEditorLayer(TileLayer.Fg);
-    public static TileEditorLayer Bg { get; } = new TileEditorLayer(TileLayer.Bg);
-    public static EditorLayer BothTilegrids { get; } = new FakeLayer("Both");
+    public static TileEditorLayer Fg { get; } = new TileEditorLayer(TileLayer.Fg, Depths.FGTerrain);
+    public static TileEditorLayer Bg { get; } = new TileEditorLayer(TileLayer.Bg, Depths.BGTerrain);
     
     public static EntityLayer Entities { get; } = new EntityLayer(SelectionLayer.Entities);
     public static EntityLayer Triggers { get; } = new EntityLayer(SelectionLayer.Triggers);
@@ -54,7 +53,6 @@ public static class EditorLayers {
         registry.Add(BgDecals);
         registry.Add(Fg);
         registry.Add(Bg);
-        registry.Add(BothTilegrids);
         registry.Add(Room);
         registry.Add(All);
         registry.Add(CustomLayer);

@@ -64,10 +64,7 @@ public abstract class TileShapeMode : TileMode {
             var startPos = data!.StartPos!.Value;
             var tile = Tool.TileOrAlt(_dragGesture.Shift);
             
-            Tool.History.ApplyNewAction(new MergedAction(
-                CreateAction(tile, startPos, endPos, Tool.GetGrid(room)),
-                Tool.GetSecondGrid(room) is {} second ? CreateAction(tile, startPos, endPos, second) : null
-            ));
+            Tool.History.ApplyNewAction(CreateAction(tile, startPos, endPos, Tool.GetGrid(room)));
         }
     }
 

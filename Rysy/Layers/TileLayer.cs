@@ -8,8 +8,11 @@ namespace Rysy.Layers;
 public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer {
     public TileLayer TileLayer { get; init; }
     
-    public TileEditorLayer(TileLayer layer) {
+    public int Depth { get; init; }
+    
+    public TileEditorLayer(TileLayer layer, int depth) {
         TileLayer = layer;
+        Depth = depth;
     }
 
     public override string Name => TileLayer.FastToString();

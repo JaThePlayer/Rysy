@@ -1,15 +1,14 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Helpers;
-using Rysy.Scenes;
-using System.Runtime.CompilerServices;
 using Rysy.Gui;
 using Rysy.Layers;
+using Rysy.Signals;
 
 namespace Rysy.Tools;
 
-public class TileTool : Tool {
+public class TileTool : Tool, ISignalListener<MapSwapped> {
     public Color DefaultColor = ColorHelper.HsvToColor(0f, 1f, 1f);
 
     private readonly List<ToolMode> _tileModes;
@@ -27,13 +26,13 @@ public class TileTool : Tool {
             new TileEllipseMode(this, hollow: true)
         ];
     }
+
+    public new TileEditorLayer? Layer {
+        get => base.Layer as TileEditorLayer;
+        set => base.Layer = value ?? throw new ArgumentNullException(nameof(value));
+    }
     
-    /*
-    public override IReadOnlyList<EditorLayer> ValidLayers { get; } = [
-        EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
-    ];
-    */
-    public override IReadOnlyList<EditorLayer> ValidLayers => ToolHandler.ComponentRegistry.GetAll<TileEditorLayer>();
+    public override IReadOnlyList<TileEditorLayer> ValidLayers => ToolHandler.ComponentRegistry.GetAll<TileEditorLayer>();
 
     public override List<ToolMode> ValidModes => _tileModes;
 
@@ -43,8 +42,6 @@ public class TileTool : Tool {
 
     public override void Init() {
         base.Init();
-
-        EditorState.OnMapChanged += ClearMaterialListCache;
 
         foreach (var m in _tileModes) {
             if (m is TileMode mode)
@@ -84,27 +81,8 @@ public class TileTool : Tool {
     /// <returns></returns>
     public char TileOrAlt(bool? shiftHeld = null) => (shiftHeld ?? Input.Keyboard.Shift()) ? '0' : Tile;
 
-    protected TileLayer EditorLayerToTileLayer(IEditorLayer? layer) {
-        layer ??= Layer;
-        
-        if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
-            return tileLayer;
-        }
-
-        return TileLayer.Fg;
-    }
-
-    public Autotiler? GetAutotiler(IEditorLayer layer) {
-        if (EditorState.Map is { } map) {
-            if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
-                return tileLayer switch {
-                    TileLayer.Fg => map.FgAutotiler,
-                    TileLayer.Bg => map.BgAutotiler,
-                    _ => null,
-                };
-            }
-        }
-        return null;
+    private Autotiler? GetAutotiler(IEditorLayer? layer) {
+        return (layer as TileEditorLayer)?.GetAutotiler(EditorState.Map);
     }
 
     public void RenderTileRectangle(Vector2 loc, int w, int h, bool hollow) {
@@ -160,14 +138,8 @@ public class TileTool : Tool {
         if (layer is TileEditorLayer tileEditorLayer)
             return tileEditorLayer.GetGrid(room);
 
-        if (layer == EditorLayers.BothTilegrids)
-            return room.Fg;
-
         throw new ArgumentException("Provided layer is not a tile layer", nameof(layer));
     }
-
-    public Tilegrid? GetSecondGrid(Room room) 
-        => Layer == EditorLayers.BothTilegrids ? room.Bg : null;
 
     public Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
         var pos = room.WorldToRoomPos(camera, (fakeMousePos ?? Input.Mouse.Pos).ToVector2());
@@ -179,19 +151,25 @@ public class TileTool : Tool {
     }
 
     protected void HandleMiddleClick(Room currentRoom, int tx, int ty) {
-        if (Input.Mouse.Middle.Clicked()) {
-            Input.Mouse.ConsumeMiddle();
-            var fg = currentRoom.Fg.SafeTileAt(tx, ty);
-            var bg = currentRoom.Bg.SafeTileAt(tx, ty);
+        if (!Input.Mouse.Middle.Clicked())
+            return;
+        Input.Mouse.ConsumeMiddle();
 
-            (Layer, Tile) = (fg, bg) switch {
-                ('0', '0') => (EditorLayers.BothTilegrids, bg), // if both tiles are air, switch to the "Both" layer.
-                ('0', not '0') => (EditorLayers.Bg, bg), // fg is air, but bg isn't. Switch to BG.
-                (not '0', _) => (EditorLayers.Fg, fg), // fg tile exists, swap to that.
-            };
-            
-            ToolHandler.PushRecentMaterial(Tile);
+        var layers = ValidLayers.OrderBy(x => x.Depth);
+
+        foreach (var layer in layers) {
+            var tile = layer.GetGrid(currentRoom).SafeTileAt(tx, ty);
+            if (tile != '0') {
+                Layer = layer;
+                Tile = tile;
+                ToolHandler.PushRecentMaterial(Tile);
+                return;
+            }
         }
+            
+        // All tiles on all layers are air, so just switch to air in this layer.
+        Tile = '0';
+        ToolHandler.PushRecentMaterial(Tile);
     }
 
     public override float MaterialListElementHeight() 
@@ -210,5 +188,9 @@ public class TileTool : Tool {
 
     protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
         return materialPreview;
+    }
+
+    public void OnSignal(MapSwapped signal) {
+        ClearMaterialListCache();
     }
 }

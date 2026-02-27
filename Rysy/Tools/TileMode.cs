@@ -25,6 +25,5 @@ public abstract class TileMode : ToolMode {
             return;
         
         Tool.GetGrid(room)?.ClearSpriteCache();
-        Tool.GetSecondGrid(room)?.ClearSpriteCache();
     }
 }
