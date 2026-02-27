@@ -26,4 +26,8 @@ public sealed class TileEditorLayer : EditorLayer {
         TileLayer.Bg => room.Bg,
         _ => room.Fg
     };
+
+    public override bool SupportsPreciseMoveMode => false;
+
+    public override int? ForcedGridSize => 8;
 }

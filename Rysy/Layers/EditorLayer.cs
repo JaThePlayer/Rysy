@@ -27,4 +27,6 @@ public abstract class EditorLayer {
     public virtual string? MaterialLangPrefix => null;
     
     public virtual bool SupportsPreciseMoveMode => true;
+
+    public virtual int? ForcedGridSize => null;
 }

@@ -180,6 +180,8 @@ public abstract class Tool {
 
     public int GridSize {
         get {
+            if (Layer.ForcedGridSize is { } forcedGridSize)
+                return forcedGridSize;
             if (Settings.Instance is { } settings)
                 return settings.GridSize;
             return 8;

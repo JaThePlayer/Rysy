@@ -34,4 +34,6 @@ public class RoomLayer : EditorLayer {
     }
 
     public override bool SupportsPreciseMoveMode => false;
+
+    public override int? ForcedGridSize => 8;
 }
