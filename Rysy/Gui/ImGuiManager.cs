@@ -397,7 +397,11 @@ public static class ImGuiManager {
 
         ImGui.BeginChild($"comboInner{name}");
 
-        var filtered = cache.GetValue(values, toString, search);
+        // Preserve order if we're currently not searching.
+        // When searching, the order is dictated by relevancy anyway, so preserving order doesn't make sense.
+        var filtered = search.IsNullOrWhitespace() 
+            ? values.Select(x => (x, toString(x))) 
+            : cache.GetValue(values, toString, search);
 
         foreach (var (item, searchable) in filtered) {
             if (renderMenuItem(item, searchable)) {
