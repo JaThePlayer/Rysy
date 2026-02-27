@@ -178,7 +178,7 @@ file static class TrackerHelper {
     }
 
     private static List<Type> FindAllTrackedAsTypes(Type t) {
-        List<Type> types = [ t ];
+        List<Type> types = [ ];
         
         var nextType = t;
         while (nextType != null && nextType != typeof(object)) {
