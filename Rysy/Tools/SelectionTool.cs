@@ -320,7 +320,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
-    public override List<EditorLayer> ValidLayers { get; } = [
+    public override IReadOnlyList<EditorLayer> ValidLayers { get; } = [
         EditorLayers.Entities, EditorLayers.Triggers,
         EditorLayers.FgDecals, EditorLayers.BgDecals,
         EditorLayers.Fg, EditorLayers.Bg,
@@ -328,22 +328,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         EditorLayers.All, EditorLayers.CustomLayer
     ];
 
-    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
-        throw new NotImplementedException();
-    }
+    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) => [];
 
-    public override IEnumerable<object> GetMaterials(EditorLayer layer) => [];
-
-    public override string? SerializeMaterial(EditorLayer layer, object? material) {
+    public override string? SerializeMaterial(IEditorLayer layer, object? material) {
         return null;
     }
 
-    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+    public override object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         return null;
-    }
-
-    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
-        throw new NotImplementedException();
     }
 
     public override void Render(Camera camera, Room room) {
@@ -558,7 +550,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (input.Mouse.Middle.Clicked() && tool.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
             if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
                 // TODO: Create a proper helper for this!
-                if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer) is { } editorLayer) {
+                if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer, placementTool.ValidLayers) is { } editorLayer) {
                     input.Mouse.ConsumeMiddle();
                     tool.ToolHandler.SetTool<PlacementTool>();
                     placementTool.Layer = editorLayer;

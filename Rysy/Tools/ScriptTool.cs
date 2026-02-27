@@ -5,6 +5,7 @@ using Rysy.Scripting;
 using Hexa.NET.ImGui;
 using Rysy.Components;
 using Rysy.Extensions;
+using Rysy.Gui;
 using Rysy.Layers;
 
 namespace Rysy.Tools;
@@ -20,14 +21,6 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
     public override string PersistenceGroup => "Scripts";
 
     public override List<EditorLayer> ValidLayers => [CurrentRoomLayer, AllRoomsLayer];
-
-    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
-        if (material is Script s) {
-            return s.Name;
-        }
-
-        return material.ToString() ?? "";
-    }
 
     public override object? MaterialToPersistenceObj(object? material) {
         if (material is Script scr) {
@@ -45,22 +38,22 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
         return null;
     }
 
-    public override IEnumerable<object> GetMaterials(EditorLayer layer) 
+    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) 
         => Registry.Scripts;
 
-    public override string? SerializeMaterial(EditorLayer layer, object? material) => material switch {
+    public override string? SerializeMaterial(IEditorLayer layer, object? material) => material switch {
         Script scr => scr.Name,
         string str => str,
         _ => null,
     };
 
-    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+    public override object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         return Registry.Scripts.FirstOrDefault(s => s.Name == serializableMaterial);
     }
 
-    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
+    public override ITooltip? GetMaterialTooltip(IEditorLayer layer, object material) {
         if (material is Script s) {
-            return s.Tooltip;
+            return new Tooltip(s.Tooltip);
         }
 
         return null;

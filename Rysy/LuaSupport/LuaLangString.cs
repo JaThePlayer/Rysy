@@ -34,6 +34,10 @@ public sealed class LuaTooltip : ILuaWrapper, ITooltip {
         Tooltip?.RenderImGui();
     }
 
+    public void RenderImGuiWrapped() {
+        Tooltip?.RenderImGuiWrapped();
+    }
+
     public bool IsEmpty => Tooltip?.IsEmpty ?? true;
     
     public string? GetRawText() {

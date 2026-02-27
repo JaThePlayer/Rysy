@@ -28,9 +28,12 @@ public class TileTool : Tool {
         ];
     }
     
-    public override List<EditorLayer> ValidLayers { get; } = [
+    /*
+    public override IReadOnlyList<EditorLayer> ValidLayers { get; } = [
         EditorLayers.Fg, EditorLayers.Bg, EditorLayers.BothTilegrids
     ];
+    */
+    public override IReadOnlyList<EditorLayer> ValidLayers => ToolHandler.ComponentRegistry.GetAll<TileEditorLayer>();
 
     public override List<ToolMode> ValidModes => _tileModes;
 
@@ -49,7 +52,7 @@ public class TileTool : Tool {
         }
     }
 
-    public override IEnumerable<object>? GetMaterials(EditorLayer layer) {
+    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) {
         var autotiler = GetAutotiler(layer);
         if (autotiler is not { })
             return null;
@@ -62,33 +65,12 @@ public class TileTool : Tool {
             .Select(k => (object) k);
     }
 
-    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
-        if (material is not char c)
-            return material.ToString()!;
-        
-        if (c is '0') {
-            return "Air";
-        }
-
-        return GetAutotiler(layer)?.GetTilesetDisplayName(c) ?? c.ToString();
-    }
-
-    public override string SerializeMaterial(EditorLayer layer, object? material) {
+    public override string SerializeMaterial(IEditorLayer layer, object? material) {
         return material?.ToString() ?? "";
     }
 
-    public override object DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+    public override object DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         return serializableMaterial[0];
-    }
-
-    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
-        if (material is not char c)
-            return null;
-
-        return $"""
-            Id: {c}
-            Source: {GetAutotiler(layer)?.GetTilesetData(c)?.Filename}
-            """;
     }
 
     public char Tile {
@@ -102,7 +84,7 @@ public class TileTool : Tool {
     /// <returns></returns>
     public char TileOrAlt(bool? shiftHeld = null) => (shiftHeld ?? Input.Keyboard.Shift()) ? '0' : Tile;
 
-    protected TileLayer EditorLayerToTileLayer(EditorLayer? layer) {
+    protected TileLayer EditorLayerToTileLayer(IEditorLayer? layer) {
         layer ??= Layer;
         
         if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
@@ -112,7 +94,7 @@ public class TileTool : Tool {
         return TileLayer.Fg;
     }
 
-    public Autotiler? GetAutotiler(EditorLayer layer) {
+    public Autotiler? GetAutotiler(IEditorLayer layer) {
         if (EditorState.Map is { } map) {
             if (layer is TileEditorLayer { TileLayer: { } tileLayer }) {
                 return tileLayer switch {
@@ -172,7 +154,7 @@ public class TileTool : Tool {
     public override void RenderOverlay() {
     }
 
-    public Tilegrid GetGrid(Room room, EditorLayer? layer = null) {
+    public Tilegrid GetGrid(Room room, IEditorLayer? layer = null) {
         layer ??= Layer;
 
         if (layer is TileEditorLayer tileEditorLayer)
@@ -215,7 +197,7 @@ public class TileTool : Tool {
     public override float MaterialListElementHeight() 
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
-    internal override XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
+    internal override XnaWidgetDef? GetMaterialPreview(IEditorLayer layer, object material) {
         var autotiler = GetAutotiler(layer);
         if (autotiler is { } && material is char c) {
             var tileset = autotiler.GetTilesetData(c) ?? autotiler.MissingTileset;

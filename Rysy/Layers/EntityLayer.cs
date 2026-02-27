@@ -3,7 +3,7 @@ using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public class EntityLayer : EditorLayer {
+public class EntityLayer : EditorLayer, IPlacementEditorLayer {
     public EntityLayer(SelectionLayer layer) {
         SelectionLayer = layer;
     }

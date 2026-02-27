@@ -30,7 +30,14 @@ public readonly struct Tooltip : ITooltip {
     }
     
     public bool IsNull => _text == null && _tooltip is null;
-    
+
+    public void RenderImGuiWrapped() {
+        if (_text is {} text)
+            ImGui.TextWrapped(text);
+        if (_tooltip is {} tooltip)
+            tooltip.RenderImGuiWrapped();
+    }
+
     public bool IsEmpty => _text == null && (_tooltip is null || _tooltip.IsEmpty);
     
     public string? GetRawText() => _text ?? _tooltip?.GetRawText();
@@ -78,6 +85,8 @@ public readonly struct Tooltip : ITooltip {
 public interface ITooltip {
     public void RenderImGui();
     
+    public void RenderImGuiWrapped();
+    
     public bool IsEmpty { get; }
 
     public string? GetRawText();
@@ -89,6 +98,10 @@ public interface ITooltip {
 
 public sealed class CustomTooltip(Action render) : ITooltip {
     public void RenderImGui() {
+        render();
+    }
+
+    public void RenderImGuiWrapped() {
         render();
     }
 
@@ -106,6 +119,14 @@ public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITo
         }
     }
 
+    public void RenderImGuiWrapped() {
+        var text = GetRawText();
+
+        if (text is { }) {
+            ImGui.TextWrapped(text);
+        }
+    }
+
     public bool IsEmpty => (id.TranslateOrNull() ?? fallbackId?.TranslateOrNull()) is null;
     
     public string? GetRawText() => id.TranslateOrNull() ?? fallbackId?.TranslateOrNull();
@@ -120,6 +141,14 @@ public sealed class TranslatedFormattedTooltip(string id, object[] args) : ITool
         }
     }
 
+    public void RenderImGuiWrapped() {
+        var text = GetRawText();
+
+        if (text is { }) {
+            ImGui.TextWrapped(text);
+        }
+    }
+
     public bool IsEmpty => id.TranslateOrNull() is null;
     
     public string? GetRawText() => id.TranslateFormatted(args);
@@ -129,6 +158,11 @@ sealed class MergedTooltip(ITooltip first, ITooltip second) : ITooltip {
     public void RenderImGui() {
         first.RenderImGui();
         second.RenderImGui();
+    }
+
+    public void RenderImGuiWrapped() {
+        first.RenderImGuiWrapped();
+        second.RenderImGuiWrapped();
     }
 
     public bool IsEmpty => first.IsEmpty && second.IsEmpty;
@@ -145,6 +179,10 @@ sealed class MarkdownTooltip(Func<(string raw, MarkdownDocument doc, GuiSize siz
             ImGuiMarkdown.RenderMarkdown(data.doc);
             ImGui.EndChild();
         }
+    }
+
+    public void RenderImGuiWrapped() {
+        RenderImGui();
     }
 
     public bool IsEmpty => dataGetter().doc.Count == 0;

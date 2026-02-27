@@ -1,9 +1,10 @@
-﻿using Rysy.Selections;
+﻿using Rysy.Helpers;
+using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
 public class FakeLayer : EditorLayer {
-    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) : base(name) {
+    public FakeLayer(string name, SelectionLayer layer = SelectionLayer.None) {
         Name = name;
         SelectionLayer = layer;
     }

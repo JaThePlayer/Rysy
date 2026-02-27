@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
@@ -6,18 +7,15 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
+using Rysy.Signals;
 using System.Diagnostics;
 
 namespace Rysy.Tools;
-public class PlacementTool : Tool, ISelectionHotkeyTool {
+public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<PrefabsChanged> {
     public ISelectionHandler? CurrentPlacement { get; private set; }
     private object? _currentPlacementSourceMaterial;
 
     public SelectRectangleGesture RectangleGesture;
-
-    private PrefabHelper PrefabHelper => ToolHandler.ComponentRegistry.AddIfMissing<PrefabHelper>();
-
-    private PrefabLayer PrefabLayer => PrefabHelper.EditorLayer;
 
     private bool _pickNextFrame;
 
@@ -43,56 +41,26 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override string Name => "placement";
 
     public override string PersistenceGroup => "placement";
-    
-    public override List<EditorLayer> ValidLayers => field ??= [
+
+    public override IReadOnlyList<IEditorLayer> ValidLayers =>
+        ToolHandler.ComponentRegistry.GetAll<IPlacementEditorLayer>();
+        /*field ??= [
         EditorLayers.Entities,
         EditorLayers.Triggers,
         EditorLayers.FgDecals,
         EditorLayers.BgDecals,
         EditorLayers.Room,
         PrefabLayer
-    ];
-    
-    public override IEnumerable<object> GetMaterials(EditorLayer layer) {
-        return layer.GetMaterials();
-    }
+    ];*/
 
-    public override string GetMaterialDisplayName(EditorLayer layer, object material) {
-        if (material is Placement pl) {
-            if (layer == PrefabLayer) {
-                return pl.Name;
-            }
-
-            var prefix = layer.MaterialLangPrefix;
-            var name = prefix is null 
-                ? pl.Name 
-                : pl.Name.TranslateOrHumanize(Interpolator.Temp($"{prefix}.{pl.Sid ?? ""}.placements.name"));
-            
-            return name;
-        }
-
-        return material switch {
-            string s => s,
-            _ => material?.ToString() ?? "null",
-        };
-    }
-
-    public override IReadOnlyList<string> GetMaterialAlternativeNames(EditorLayer layer, object material) {
-        if (material is not Placement pl)
-            return [];
-        
-        var prefix = layer.MaterialLangPrefix;
-        return new TranslatedList<string>(pl.AlternativeNames, x => x, $"{prefix}.{pl.Sid ?? ""}.placements.name");
-    }
-
-    public override string? SerializeMaterial(EditorLayer layer, object? material) {
+    public override string? SerializeMaterial(IEditorLayer layer, object? material) {
         return material switch {
             Placement pl => pl.ToJson(),
             _ => null
         };
     }
 
-    public override object? DeserializeMaterial(EditorLayer layer, string serializableMaterial) {
+    public override object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         if (JsonExtensions.TryDeserialize(serializableMaterial, out Placement? res)) {
             var mats = GetMaterials(layer);
             return mats.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
@@ -101,21 +69,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return null;
     }
 
-    public override string? GetMaterialTooltip(EditorLayer layer, object material) {
-        if (material is not Placement pl)
-            return null;
-
-        if (pl.Tooltip is { } tooltip)
-            return tooltip;
-        
-        var prefix = layer.MaterialLangPrefix;
-        if (prefix is null)
-            return null;
-        
-        return pl.Name.TranslateOrNull($"{prefix}.{pl.Sid}.placements.description");
-    }
-
-    private static Placement? PlacementFromString(string str, EditorLayer layer) {
+    private static Placement? PlacementFromString(string str, IEditorLayer layer) {
         Console.WriteLine($"PlacementFromString: {str} [{layer}]");
         /*
         return layer switch {
@@ -367,15 +321,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     public override void Init() {
         base.Init();
 
-        PrefabHelper.CurrentPrefabs.OnChanged += ClearMaterialListCache;
-
         ScopedComponentRegistry.Add(RectangleGesture = new SelectRectangleGesture(Input));
-    }
-
-    public override void Unload() {
-        base.Unload();
-
-        PrefabHelper.CurrentPrefabs.OnChanged -= ClearMaterialListCache;
     }
     
     void ISelectionHotkeyTool.Flip(bool vertical) {
@@ -435,7 +381,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
 
     private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
 
-    internal override XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
+    internal override XnaWidgetDef? GetMaterialPreview(IEditorLayer layer, object material) {
         if (material is string)
             return null;
 
@@ -588,13 +534,13 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
         return base.GetGroupKeyForMaterial(material);
     }
 
-    protected override bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {
+    protected override bool RenderMaterialListElement(IEditorLayer layer, object material, Searchable searchable) {
         var ret = base.RenderMaterialListElement(layer, material, searchable);
 
-        if (Layer == PrefabLayer) {
+        if (Layer is PrefabLayer prefabLayer) {
             if (ImGui.BeginPopupContextItem(searchable.TextWithMods, ImGuiPopupFlags.MouseButtonRight)) {
                 if (ImGui.MenuItem("Remove")) {
-                    PrefabHelper.Remove(searchable.Text);
+                    prefabLayer.PrefabHelper.Remove(searchable.Text);
                 }
 
                 ImGui.EndPopup();
@@ -605,7 +551,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
-        if (Layer == PrefabLayer && !(GetMaterials(Layer)?.Any() ?? true)) {
+        if (Layer is PrefabLayer && !(GetMaterials(Layer)?.Any() ?? true)) {
             ImGui.TextWrapped("rysy.tools.placement.noPrefabs".TranslateFormatted(Settings.Instance.GetHotkey(SelectionTool.CreatePrefabKeybindName)));
             showSearchBar = true;
         } else {
@@ -614,4 +560,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool {
     }
 
     #endregion
+
+    public void OnSignal(PrefabsChanged signal) {
+        ClearMaterialListCache();
+    }
 }

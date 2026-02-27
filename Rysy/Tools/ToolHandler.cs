@@ -66,7 +66,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         EditorState = editorState;
         History = history;
         Input = input;
-        ComponentRegistry = componentRegistry;
+        ComponentRegistry = new ComponentRegistryScope(componentRegistry);
         _loggerFactory = componentRegistry.GetRequired<IRysyLoggerFactory>();
         Registry = registry ?? ToolRegistry.Global;
 
@@ -84,6 +84,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
 
     public void Unload() {
         UnloadAllTools();
+        (ComponentRegistry as IDisposable)?.Dispose();
         Registry.Tools.OnChanged -= CreateTools;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
         History.OnUndo -= CancelInteraction;
@@ -207,11 +208,13 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
             return;
 
         var layers = tool.ValidLayers;
-        var i = layers.IndexOf(tool.Layer);
-        if (i == -1)
-            return;
-
-        tool.Layer = layers[(i + idOffset).MathMod(layers.Count)];
+        var layer = tool.Layer;
+        for (int i = 0; i < layers.Count; i++) {
+            if (layers[i] == layer) {
+                tool.Layer = layers[(i + idOffset).MathMod(layers.Count)];
+                return;
+            }
+        }
     }
 
     private void CleanupQuickActions() {
@@ -406,7 +409,9 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
             var tool = GetToolByName(action.ToolName);
             if (tool is null)
                 continue;
-            var layer = EditorLayers.EditorLayerFromName(action.Layer);
+            var layer = EditorLayers.EditorLayerFromName(action.Layer, tool.ValidLayers);
+            if (layer is null)
+                continue;
 
             if (i % visibleActionsPerRow == 0 && i > 0) {
                 ImGui.NewLine();

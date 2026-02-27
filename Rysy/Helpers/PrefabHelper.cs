@@ -3,12 +3,13 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Selections;
+using Rysy.Signals;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
 
-public sealed class PrefabHelper {
+public sealed class PrefabHelper : ISignalEmitter {
     private ListenableDictionary<string, Prefab>? _currentPrefabsMutable;
 
     public PrefabLayer EditorLayer => field ??= new PrefabLayer(this);
@@ -23,8 +24,14 @@ public sealed class PrefabHelper {
         foreach (var file in fs.FindFilesInDirectoryRecursive("prefabs", "json")) {
             LoadFromFile(file);
         }
+        
+        _currentPrefabsMutable.OnChanged += OnChanged;
 
         return _currentPrefabsMutable;
+    }
+
+    private void OnChanged() {
+        this.Emit(new PrefabsChanged(this));
     }
 
     private Prefab? LoadFromFile(string path) {
@@ -259,4 +266,6 @@ public sealed class PrefabHelper {
             public bool ResizableY => false;
         }
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }

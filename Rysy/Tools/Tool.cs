@@ -44,7 +44,7 @@ public abstract class Tool {
     /// <summary>
     /// A list of possible layers this tool could use, used in the UI for generating the layer list.
     /// </summary>
-    public abstract List<EditorLayer> ValidLayers { get; }
+    public abstract IReadOnlyList<IEditorLayer> ValidLayers { get; }
 
     /// <summary>
     /// A list of possible modes this tool could use, used in the UI for generating the mode list.
@@ -79,27 +79,26 @@ public abstract class Tool {
         }
     }
     
-    private EditorLayer? _layer;
+    private IEditorLayer? _layer;
     private string? _layerPersistenceKey;
     
     /// <summary>
     /// Gets or sets the currently used layer.
     /// </summary>
-    public EditorLayer Layer {
+    public IEditorLayer Layer {
         get {
             if (UsePersistence) {
                 _layerPersistenceKey ??= $"{PersistenceGroup}.Layer";
                 var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null);
-                if (string.IsNullOrWhiteSpace(name)) {
-                    name = ValidLayers.FirstOrDefault()?.Name ?? "";
-                    Persistence.Instance.Set(_layerPersistenceKey, name);
-                }
-
-                return _layer = EditorLayers.EditorLayerFromName(name);
+                var layers = ValidLayers;
+                if (EditorLayers.EditorLayerFromName(name, layers) is { } knownLayer)
+                    return _layer = knownLayer;
+                
+                //name = layers.FirstOrDefault()?.Name ?? "";
+                //Persistence.Instance.Set(_layerPersistenceKey, name);
             }
 
-            return _layer ??= ValidLayers.FirstOrDefault() 
-                              ?? throw new NotImplementedException($"No valid layers for tool {GetType().Name}");
+            return _layer ??= ValidLayers.FirstOrDefault() ?? EditorLayers.Missing;
         }
         set {
             if (_layer == value)
@@ -252,47 +251,22 @@ public abstract class Tool {
     /// </summary>
     public virtual void InitHotkeys(HotkeyHandler handler) { }
 
-    public abstract IEnumerable<object>? GetMaterials(EditorLayer layer);
+    public virtual IEnumerable<object>? GetMaterials(IEditorLayer layer)
+        => layer.GetMaterials();
 
-    public abstract string GetMaterialDisplayName(EditorLayer layer, object material);
-
-    public virtual IReadOnlyList<string> GetMaterialMods(EditorLayer layer, object material) => material switch {
-        Placement pl => pl.GetAssociatedMods(),
-        _ => [],
-    };
-    
-    public virtual string? GetMaterialDefiningMod(EditorLayer layer, object material) => material switch {
-        Placement pl => pl.GetDefiningMod()?.Name,
-        _ => null,
-    };
-    
-    public virtual IReadOnlyList<string> GetMaterialTags(EditorLayer layer, object material) => material switch {
-        Placement pl => pl.GetTags(),
-        _ => [],
-    };
-    
-    public virtual IReadOnlyList<string> GetMaterialAlternativeNames(EditorLayer layer, object material) => material switch {
-        _ => [],
-    };
-
-    public virtual Searchable GetMaterialSearchable(EditorLayer layer, object material) {
-        var name = GetMaterialDisplayName(layer, material);
-        return new Searchable(
-            name,
-            GetMaterialMods(layer, material),
-            GetMaterialTags(layer, material),
-            GetMaterialDefiningMod(layer, material)
-        ) {
-            IsFavourite = Favorites?.Contains(name) ?? false,
-            AlternativeNames = GetMaterialAlternativeNames(layer, material)
-        };
+    public virtual Searchable GetMaterialSearchable(IEditorLayer layer, object material) {
+        var searchable = layer.GetMaterialSearchable(material);
+        searchable.IsFavourite = Favorites?.Contains(searchable.Text) ?? false;
+        return searchable;
     }
 
-    public abstract string? SerializeMaterial(EditorLayer layer, object? material);
+    public abstract string? SerializeMaterial(IEditorLayer layer, object? material);
 
-    public abstract object? DeserializeMaterial(EditorLayer layer, string serializableMaterial);
+    public abstract object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial);
 
-    public abstract string? GetMaterialTooltip(EditorLayer layer, object material);
+    public virtual ITooltip? GetMaterialTooltip(IEditorLayer layer, object material) {
+        return layer.GetMaterialTooltip(material);
+    }
 
     public (Color outline, Color fill) GetSelectionColor(Rectangle rect) 
         => GetSelectionColorCore(rect.Size().ToVector2().Length());
@@ -307,8 +281,8 @@ public abstract class Tool {
         ISprite.OutlinedRect(rect, c.fill, c.outline, outlineWidth: (int) (1f / camera.Scale).AtLeast(1)).Render();
     }
 
-    protected bool IsEqual(EditorLayer layer, object? currentMaterial, string name) {
-        return currentMaterial is { } && GetMaterialDisplayName(layer, currentMaterial) == name;
+    protected bool IsEqual(IEditorLayer layer, object? currentMaterial, string name) {
+        return currentMaterial is { } && GetMaterialSearchable(layer, currentMaterial).Text == name;
     }
     
     public Point GetMouseRoomPos(Camera camera, Room? room, Point? pos = default) {
@@ -470,7 +444,7 @@ public abstract class Tool {
 
     public virtual bool AllowSwappingRooms => true;
 
-    private EditorLayer? _cachedLayer;
+    private IEditorLayer? _cachedLayer;
     private List<List<(object material, Searchable displayName)>>? _cachedSearch;
 
     public virtual void ClearMaterialListCache() {
@@ -512,7 +486,7 @@ public abstract class Tool {
     /// <summary>
     /// Creates a widget that renders a preview for the given material
     /// </summary>
-    internal virtual XnaWidgetDef? GetMaterialPreview(EditorLayer layer, object material) {
+    internal virtual XnaWidgetDef? GetMaterialPreview(IEditorLayer layer, object material) {
         return null;
     }
 
@@ -537,11 +511,11 @@ public abstract class Tool {
     /// <summary>
     /// Renders additional ImGui elements below the tooltip for the given material
     /// </summary>
-    protected virtual void RenderMaterialTooltipExtraInfo(EditorLayer layer, object material, Searchable searchable) {
+    protected virtual void RenderMaterialTooltipExtraInfo(IEditorLayer layer, object material, Searchable searchable) {
         searchable.RenderImGuiInfo(EditorState);
     }
 
-    internal void RenderMaterialTooltip(EditorLayer layer, object material, Searchable searchable) {
+    internal void RenderMaterialTooltip(IEditorLayer layer, object material, Searchable searchable) {
         var displayName = searchable.TextWithMods;
         var prevStyles = ImGuiManager.PopAllStyles();
 
@@ -556,7 +530,7 @@ public abstract class Tool {
         ImGui.Separator();
 
         if (GetMaterialTooltip(layer, material) is { } tooltip)
-            ImGui.TextWrapped(tooltip);
+            tooltip.RenderImGuiWrapped();
 
         if (tooltipPreview is { }) {
             ImGuiManager.XnaWidget(tooltipPreview.Value);
@@ -572,7 +546,7 @@ public abstract class Tool {
     /// Renders the gui for a given material inside the material list.
     /// Returns whether the element got clicked this frame.
     /// </summary>
-    protected virtual bool RenderMaterialListElement(EditorLayer layer, object material, Searchable searchable) {
+    protected virtual bool RenderMaterialListElement(IEditorLayer layer, object material, Searchable searchable) {
         bool ret = false;
         var currentMaterial = Material;
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;

@@ -3,7 +3,9 @@ using Rysy.Selections;
 
 namespace Rysy.Layers;
 
-public sealed class PrefabLayer(PrefabHelper prefabs) : EditorLayer {
+public sealed class PrefabLayer(PrefabHelper prefabs) : EditorLayer, IPlacementEditorLayer {
+    public PrefabHelper PrefabHelper => prefabs;
+    
     public override string Name => "Prefabs";
 
     public override SelectionLayer SelectionLayer => SelectionLayer.All;

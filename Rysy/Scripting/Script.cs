@@ -1,8 +1,9 @@
-﻿using Rysy.History;
+﻿using Rysy.Helpers;
+using Rysy.History;
 
 namespace Rysy.Scripting;
 
-public abstract class Script {
+public abstract class Script : IName {
     public abstract string Name { get; }
 
     public virtual string? Tooltip => null;

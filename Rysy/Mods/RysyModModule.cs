@@ -1,10 +1,13 @@
-﻿using Rysy.Components;
-using Rysy.Signals;
+﻿using Rysy.Helpers;
+using Rysy.Layers;
 
 namespace Rysy.Mods;
 
-internal sealed class RysyModModule : ModModule, ISignalListener<ViewportChanged> {
-    public void OnSignal(ViewportChanged signal) {
-        Logger.Info($"ViewportChanged: {signal}");
+internal sealed class RysyModModule : ModModule {
+    public override void Load() {
+        base.Load();
+
+        ComponentRegistry.AddIfMissing<PrefabHelper>();
+        EditorLayers.RegisterVanillaLayers(ComponentRegistry);
     }
 }

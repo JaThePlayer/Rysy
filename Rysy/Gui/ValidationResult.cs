@@ -81,7 +81,7 @@ public sealed class ValidationResult : ITooltip {
     public bool HasErrors => _errors.Count > 0;
     
     public bool HasWarnings => _warns.Count > 0;
-    
+
     bool ITooltip.IsEmpty => !HasErrors && !HasWarnings;
 
     public string GetRawText() {
@@ -157,6 +157,26 @@ public sealed class ValidationResult : ITooltip {
             foreach (var warn in _warns) {
                 ImGuiManager.Icon(ImGuiIcons.AlarmExclamation);
                 warn.Tooltip.RenderImGui();
+            }
+            ImGuiManager.PopWarningStyle();
+        }
+    }
+    
+    public void RenderImGuiWrapped() {
+        if (_errors.Count > 0) {
+            ImGuiManager.PushInvalidStyle();
+            foreach (var err in _errors) {
+                ImGuiManager.Icon(ImGuiIcons.AlarmExclamation);
+                err.Tooltip.RenderImGuiWrapped();
+            }
+            ImGuiManager.PopInvalidStyle();
+        }
+        
+        if (_warns.Count > 0) {
+            ImGuiManager.PushWarningStyle();
+            foreach (var warn in _warns) {
+                ImGuiManager.Icon(ImGuiIcons.AlarmExclamation);
+                warn.Tooltip.RenderImGuiWrapped();
             }
             ImGuiManager.PopWarningStyle();
         }

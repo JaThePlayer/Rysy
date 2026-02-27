@@ -88,11 +88,10 @@ public class QuickActionInfo {
             return src;
         }
         
-        if (handler.SetToolByName(ToolName) is { } tool && MaterialString is not null) {
-            return SourceMaterial = tool.DeserializeMaterial(
-                EditorLayers.EditorLayerFromName(Layer), 
-                MaterialString
-            );
+        if (handler.SetToolByName(ToolName) is { } tool
+            && EditorLayers.EditorLayerFromName(Layer, tool.ValidLayers) is { } layer
+            && MaterialString is not null) {
+            return SourceMaterial = tool.DeserializeMaterial(layer, MaterialString);
         }
 
         return null;
@@ -110,8 +109,8 @@ public class QuickActionInfo {
     }
 
     public void Apply(ToolHandler handler) {
-        if (handler.SetToolByName(ToolName) is { } tool) {
-            tool.Layer = EditorLayers.EditorLayerFromName(Layer);
+        if (handler.SetToolByName(ToolName) is { } tool && EditorLayers.EditorLayerFromName(Layer, tool.ValidLayers) is { } layer) {
+            tool.Layer = layer;
             tool.Material = GetMaterial(handler);
         }
     }
