@@ -1,12 +1,11 @@
 ﻿using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
-using Rysy.LuaSupport;
 using Rysy.Selections;
 
 namespace Rysy.Layers; 
 
-public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializableLayer {
+public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializableLayer {
     public TileLayer TileLayer { get; init; }
     
     public int Depth { get; init; }
@@ -51,19 +50,28 @@ public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnS
             """);
     }
 
-    public List<Selection> GetSelectionsInRect(Map map, Room? room, Rectangle? rect) {
+    public List<Selection> GetSelectionsInRect(Map map, Room? room, Rectangle? rectNullable) {
         if (room is null)
             return [];
 
-        return room.GetSelectionsInRect(rect, SelectionLayer);
+        var grid = GetGrid(room);
+        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
+        
+        var pos = rect.Location.ToVector2().GridPosFloor(8);
+        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
+
+        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), this) is { } s)
+            return [s];
+
+        return [];
     }
 
-    public Tilegrid GetGrid(Room room) => TileLayer switch {
+    public virtual Tilegrid GetGrid(Room room) => TileLayer switch {
         TileLayer.Bg => room.Bg,
         _ => room.Fg
     };
     
-    public Autotiler? GetAutotiler(Map? map) {
+    public virtual Autotiler? GetAutotiler(Map? map) {
         if (map is { }) {
             return TileLayer switch {
                 TileLayer.Fg => map.FgAutotiler,
@@ -88,19 +96,6 @@ public sealed class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnS
     public string? LoennInstanceTypeName => null;
 
     public string DefaultSid => "tiles";
-    
-    public void ConvertToLonnFormat(TextWriter indentedWriter, CopypasteHelper.CopiedSelection item) {
-        indentedWriter.WriteLine($$"""
-        {
-            _fromLayer = "{{LonnLayerName}}",
-            tiles = {{LuaSerializer.ToLuaString(item.Data.Attr("text", ""))}},
-            height = {{LuaSerializer.ToLuaString(item.Data.Int("h", 0))}},
-            width = {{LuaSerializer.ToLuaString(item.Data.Int("w", 0))}},
-            x = {{LuaSerializer.ToLuaString(item.Data.Int("x") / 8 + 1)}},
-            y = {{LuaSerializer.ToLuaString(item.Data.Int("y") / 8 + 1)}},
-        },
-        """);
-    }
 
     public BinaryPacker.Element ConvertToLonnFormat(CopypasteHelper.CopiedSelection item) {
         return new BinaryPacker.Element() {

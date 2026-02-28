@@ -20,6 +20,9 @@ public class Tilegrid : ILuaWrapper {
         Tiles.Fill('0');
     }
 
+    /// <summary>
+    /// (In tiles)
+    /// </summary>
     public int Width, Height;
 
     private char[,] _tiles = null!;
@@ -36,16 +39,15 @@ public class Tilegrid : ILuaWrapper {
 
     public int? Depth { get; set; }
 
-    private Autotiler? _autotiler;
     public Autotiler? Autotiler {
-        get => _autotiler;
+        get;
         set {
-            _autotiler = value;
+            if (field == value)
+                return;
+            field = value;
 
             // Make sure to clear the render cache whenever the autotiler data changes
-            _autotiler!.TilesetDataCacheToken.OnInvalidate += () => {
-                MarkEdited();
-            };
+            field!.TilesetDataCacheToken.OnInvalidate += MarkEdited;
 
             MarkEdited();
         }
@@ -198,6 +200,9 @@ public class Tilegrid : ILuaWrapper {
     }
 
     public void Resize(int widthPixels, int heightPixels) {
+        if (Width == widthPixels / 8 && Height == heightPixels / 8)
+            return;
+            
         Tiles = Tiles.CreateResized(widthPixels / 8, heightPixels / 8, '0');
         MarkEdited();
         CachedSprites = null;

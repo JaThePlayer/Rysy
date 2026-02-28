@@ -693,7 +693,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     /// Clears the full list of cached sprite (without clearing the cache for individual layers),
     /// and the render target if it exists.
     /// </summary>
-    private void ClearFullRenderCache() {
+    public void ClearFullRenderCache() {
         _fullRenderCanvas?.Dispose();
         _fullRenderCanvas = null;
         _cachedSprites = null;

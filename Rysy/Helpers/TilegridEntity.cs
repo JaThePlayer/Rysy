@@ -16,6 +16,8 @@ public abstract class TilegridEntity : Entity {
         _ => 0,
     };
 
+    public string GetTileData() => Attr("tileData", "");
+
     public virtual char[,] ParseTilegrid(string gridString, int widthTiles, int heightTiles)
         => Tilegrid.TileArrayFromString(widthTiles * 8, heightTiles * 8, gridString);
 
@@ -23,7 +25,7 @@ public abstract class TilegridEntity : Entity {
         if (_cachedSprites is { })
             return _cachedSprites;
 
-        var tileData = Attr("tileData", "");
+        var tileData = GetTileData();
         if (string.IsNullOrWhiteSpace(tileData)) {
             return ISprite.OutlinedRect(Rectangle, Color.OrangeRed * 0.3f, Color.OrangeRed);
         }
