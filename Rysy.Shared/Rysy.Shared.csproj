@@ -8,6 +8,24 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <!-- Nuget package -->
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <PackageId>Rysy.Shared</PackageId>
+        <PackageDescription>Shared code utilities for Rysy, which can run in both Rysy and Celeste.</PackageDescription>
+        <Version>0.0.11.2</Version>
+        <Authors>JaThePlayer</Authors>
+        <Copyright>Copyright $([System.DateTime]::Now.ToString(yyyy)) $(Authors)</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>Celeste;CelesteRysy</PackageTags>
+        <PackageProjectUrl>https://github.com/JaThePlayer/Rysy</PackageProjectUrl>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Include="$(SolutionDir)/README.md" PackagePath="README.md" Visible="false" />
+    </ItemGroup>
+
     <Target Name="CopyFiles" AfterTargets="Build" 
             Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" 
             Outputs="$(OutputPath)\..\..\$(AssemblyName).dll;$(OutputPath)\..\..\$(AssemblyName).pdb">

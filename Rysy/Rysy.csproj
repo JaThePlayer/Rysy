@@ -9,16 +9,28 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!--<DebugSymbols>true</DebugSymbols>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>0.0.0</Version>
-    <Version Condition="'$(_IsPublishing)' == 'true'">0.0.11.2</Version>
-
     <FNA Condition="'$(FNA)' == ''">FNA</FNA>
     <SourceCodePlugins Condition="'$(SourceCodePlugins)' == ''">SourceCodePlugins</SourceCodePlugins>
     <DefineConstants Condition="'$(FNA)' != ''">$(DefineConstants);FNA</DefineConstants>
     <DefineConstants Condition="'$(SourceCodePlugins)' != ''">$(DefineConstants);SourceCodePlugins</DefineConstants>
-
-    <!--<IsTrimmable>true</IsTrimmable>-->
   </PropertyGroup>
+    
+    <!-- Nuget package -->
+    <PropertyGroup>
+        <PackageId>Rysy</PackageId>
+        <PackageDescription>A map editor for Celeste.</PackageDescription>
+        <Version>0.0.11.2</Version>
+        <Authors>JaThePlayer</Authors>
+        <Copyright>Copyright $([System.DateTime]::Now.ToString(yyyy)) $(Authors)</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>Celeste;CelesteRysy</PackageTags>
+        <PackageProjectUrl>https://github.com/JaThePlayer/Rysy</PackageProjectUrl>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Include="$(SolutionDir)/README.md" PackagePath="README.md" Visible="false" />
+    </ItemGroup>
 
   <PropertyGroup>
   <!--
@@ -54,29 +66,39 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(FNA)' != ''">
-    <Reference Include="FNA">
-      <HintPath>lib\FNA.dll</HintPath> <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
-    </Reference>
+      <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
+      <Reference Include="FNA.dll">
+          <HintPath>lib\FNA.dll</HintPath>
+      </Reference>
+      <!-- Include FNA in the nuget package for easier usage in mod plugins. -->
+      <Content Include="lib\FNA.dll">
+          <Pack>true</Pack>
+          <PackagePath>lib\$(TargetFramework)</PackagePath>
+      </Content>
     
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\SDL2.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FAudio.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FNA3D.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
     <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\libtheorafile.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
     
     <!-- 
@@ -86,11 +108,13 @@
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
     <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
+      <Pack>false</Pack>
     </Content>
   </ItemGroup>
   <ItemGroup Condition="'$(FNA)' == ''">
