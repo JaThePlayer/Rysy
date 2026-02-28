@@ -27,6 +27,7 @@ jobs:
         dotnet publish Rysy -c "Release" -f net10.0 -r linux-x64 --no-self-contained
         dotnet publish Rysy -c "Release" -f net10.0 -r osx-x64 --no-self-contained
         dotnet publish Rysy.InteropMod -c Release
+        dotnet pack
       
     - name: Create release folders
       working-directory: ./Rysy/bin/Release/net10.0
@@ -83,3 +84,11 @@ jobs:
         path: |
           Rysy.InteropMod/everest.yaml
           Rysy.InteropMod/bin
+
+    - name: Upload nupkg artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Rysy.nupkg
+        path: |
+          Rysy/bin/Release/Rysy.*.nupkg
+          Rysy.Shared/bin/Release/Rysy.Shared.*.nupkg
