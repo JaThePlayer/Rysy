@@ -307,9 +307,9 @@ public class Menubar : SceneComponent {
         }
 #endif*/
 
-        bool b = DebugInfoWindow.Enabled;
-        if (ImGui.Checkbox("Debug Info Window", ref b))
-            DebugInfoWindow.Enabled = b;
+        if (ImGui.MenuItem("Debug Info Window")) {
+            scene.AddWindowIfNeeded<DebugInfoWindow>();
+        }
     }
     /*
     #if WINDOWS

@@ -11,12 +11,8 @@ using System.Diagnostics;
 namespace Rysy.Gui.Windows;
 
 public class DebugInfoWindow : Window {
-    public static DebugInfoWindow Instance { get; } = new();
-
-    public static bool Enabled { get; set; } = false;
 
     public DebugInfoWindow() : base("Debug", new(480, 480)) {
-        SetRemoveAction((w) => Enabled = false);
     }
 
     private static string HistoryFromText = "";

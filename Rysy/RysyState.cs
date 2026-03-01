@@ -45,12 +45,11 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                 
                 _GlobalServices.Add(value);
                 value.SetGlobalComponentRegistry(_GlobalServices);
+                field = value;
+                value.OnBegin();
                 foreach (var w in persistedWindows) {
                     value.AddWindow(w);
                 }
-
-                value.OnBegin();
-                field = value;
                 
                 this.Emit(new SceneChanged(value));
             }
@@ -197,8 +196,6 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         }
                     }
                 }
-                if (DebugInfoWindow.Enabled)
-                    DebugInfoWindow.Instance.RenderGui();
 
                 uiRenderingSuccessful = true;
 #if !NO_CATCH_RENDER_EXCEPTIONS
