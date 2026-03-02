@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
 using Rysy.Signals;
@@ -111,12 +112,29 @@ public abstract class Scene {
 
     private readonly Action<Window> _removeWindow;
 
+    internal void ConfigureNewWindow(Window window) {
+        var managers = GetAll<INewWindowManager>();
+        WindowStartConfig? maybeConfig = null;
+        foreach (var manager in managers) {
+            if (manager.Layout(this, window, RysyState.GraphicsDevice.Viewport.Bounds) is { } cfg) {
+                maybeConfig = cfg;
+                break;
+            }
+        }
+
+        if (maybeConfig is not {} config)
+            return;
+        
+        window.OnFirstRender += () => ImGui.SetNextWindowPos(config.Position, ImGuiCond.Always, pivot: new(0f));
+    }
+    
     /// <summary>
     /// Adds a window to this scene.
     /// </summary>
     public void AddWindow(Window wind) {
         wind.SetRemoveAction(_removeWindow);
         wind.Added(this);
+        ConfigureNewWindow(wind);
         Add(wind);
     }
 

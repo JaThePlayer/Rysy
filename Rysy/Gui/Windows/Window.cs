@@ -19,6 +19,8 @@ public class Window : ISignalEmitter {
 
     private bool _forceResize = false;
 
+    private bool _firstRender = true;
+
     public void ForceSetSize(NumVector2 size) {
         Size = size;
         _forceResize = true;
@@ -27,7 +29,7 @@ public class Window : ISignalEmitter {
     /// <summary>
     /// The ID used for ImGui.Begin, which guarantees that multiple windows with the same name with pop up seperately.
     /// </summary>
-    private string _windowId;
+    public string WindowId;
 
     private bool _noSaveData = true;
     /// <summary>
@@ -53,12 +55,24 @@ public class Window : ISignalEmitter {
     public bool Closeable { get; set; } = true;
 
     public virtual bool PersistBetweenScenes => false;
+    
+    public NumVector2 LastPosition { get; private set; }
+    
+    public NumVector2 LastSize { get; private set; }
+    
+    public uint LastDockId { get; private set; }
+    
+    public bool LastWasDocked { get; private set; }
+    
+    public Rectangle LastBounds => new Rectangle((int)LastPosition.X, (int)LastPosition.Y, (int)LastSize.X, (int)LastSize.Y);
+
+    internal Action? OnFirstRender { get; set; }
 
     private void GenerateId() {
         if (NoSaveData)
-            _windowId = $"{Name}##{Guid.NewGuid()}";
+            WindowId = $"{Name}##{Guid.NewGuid()}";
         else
-            _windowId = Name;
+            WindowId = Name;
     }
 
     public Window(string name, NumVector2? size = null) {
@@ -76,6 +90,10 @@ public class Window : ISignalEmitter {
 
         if (Size is { } size)
             ImGui.SetNextWindowSize(size, _forceResize ? ImGuiCond.Always : ImGuiCond.Once);
+        if (_firstRender) {
+            _firstRender = false;
+            OnFirstRender?.Invoke();
+        }
 
         ImGuiManager.PushWindowStyle();
         var open = true;
@@ -90,18 +108,23 @@ public class Window : ISignalEmitter {
             flags |= ImGuiWindowFlags.NoMove;
 
         var isOpen = Closeable
-            ? ImGui.Begin(_windowId, ref open, EditWindowFlags(flags))
-            : ImGui.Begin(_windowId, EditWindowFlags(flags));
+            ? ImGui.Begin(WindowId, ref open, EditWindowFlags(flags))
+            : ImGui.Begin(WindowId, EditWindowFlags(flags));
         
         try {
             if (isOpen) {
                 if (HasBottomBar) {
-                    ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{_windowId}.child"), StringComparison.Ordinal));
+                    ImGuiManager.WithBottomBar(Render, RenderBottomBar, (uint)string.GetHashCode(Interpolator.Temp($"{WindowId}.child"), StringComparison.Ordinal));
                 } else {
                     Render();
                 }
             }
         } finally {
+            LastPosition = ImGui.GetWindowPos();
+            LastSize = ImGui.GetWindowSize();
+            LastDockId = ImGui.GetWindowDockID();
+            LastWasDocked = ImGui.IsWindowDocked();
+            ImGui.GetWindowViewport();
             ImGui.End();
         }
 
