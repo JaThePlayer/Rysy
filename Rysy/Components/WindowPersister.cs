@@ -1,13 +1,20 @@
-﻿using Rysy.Gui.Windows;
+﻿using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Scenes;
 using Rysy.Signals;
 
 namespace Rysy.Components;
 
+internal interface IWindowPersister {
+    public void RenderImGuiToggle(Scene scene);
+}
+
 /// <summary>
 /// Persists the given window, even between reloads.
 /// </summary>
-public sealed class WindowPersister<T>(Func<T> factory, Settings settings, bool defaultState) : SceneComponent, ISignalListener<SettingsChanged<bool>> where T : Window {
+public sealed class WindowPersister<T>(Func<T> factory, string langKey, Settings settings, bool defaultState) : SceneComponent, IWindowPersister,
+    ISignalListener<SettingsChanged<bool>> where T : Window {
+    
     public void OnSignal(SettingsChanged<bool> signal) {
         Toggle(Scene);
     }
@@ -39,6 +46,14 @@ public sealed class WindowPersister<T>(Func<T> factory, Settings settings, bool 
             foreach (var window in scene.GetAll<T>()) {
                 window.RemoveSelf();
             }
+        }
+    }
+
+    public void RenderImGuiToggle(Scene scene) {
+        var enabled = settings.IsWindowPersisted<T>(defaultState);
+        if (ImGuiManager.TranslatedCheckbox(langKey, ref enabled)) {
+            settings.TogglePersistedWindow<T>(enabled);
+            Toggle(scene);
         }
     }
 }

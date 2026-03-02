@@ -467,3 +467,6 @@ rysy.validate.modFolderNameUsedAlready=A directory with this name exists in your
 rysy.validate.invalidEnglishDialogName=Name can't contain newlines and special Dialog characters: = [ ]
 
 rysy.validate.overlappingRoomWarning=Room overlaps a different room, which can cause weird in-game behavior.
+
+rysy.windows.rooms=Rooms
+rysy.windows.recentList=Recent

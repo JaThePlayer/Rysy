@@ -6,11 +6,13 @@ using Rysy.Tools;
 namespace Rysy.Gui.Windows;
 
 public sealed class RecentListWindow : Window {
+    public const string LangKey = "rysy.recent_list";
+    
     private readonly ToolHandler _toolHandler;
     private readonly QuickActionRegistry _quickActionRegistry;
     private readonly Input _input;
 
-    public RecentListWindow(ToolHandler toolHandler, QuickActionRegistry quickActionRegistry, Input input) : base("rysy.recent_list".Translate()) {
+    public RecentListWindow(ToolHandler toolHandler, QuickActionRegistry quickActionRegistry, Input input) : base(LangKey.Translate()) {
         _toolHandler = toolHandler;
         _quickActionRegistry = quickActionRegistry;
         _input = input;

@@ -1,5 +1,5 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
@@ -112,7 +112,7 @@ public class Menubar : SceneComponent {
         if (RysyEngine.Scene is not EditorScene editor)
             return;
 
-        ViewWindowsMenu();
+        ViewWindowsMenu(scene);
         ViewVisibilityMenu();
 
         var settings = Settings.Instance;
@@ -243,7 +243,7 @@ public class Menubar : SceneComponent {
         }
     }
 
-    private static void ViewWindowsMenu() {
+    private static void ViewWindowsMenu(Scene scene) {
         if (!ImGui.BeginMenu("Windows")) {
             return;
         }
@@ -258,6 +258,10 @@ public class Menubar : SceneComponent {
         
         if (ImGuiManager.TranslatedButton(NotificationsWindow.TitleId)) {
             RysyEngine.Scene.ToggleWindow<NotificationsWindow>();
+        }
+
+        foreach (var persister in scene.GetAll<IWindowPersister>()) {
+            persister.RenderImGuiToggle(scene);
         }
 
         ImGui.EndMenu();

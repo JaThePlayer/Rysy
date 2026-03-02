@@ -191,7 +191,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     }
 
     public void AddWindows(Settings settings) {
-        ComponentRegistry.Add(new WindowPersister<RecentListWindow>(() => new RecentListWindow(this, QuickActionRegistry, Input), settings, defaultState: true));
+        ComponentRegistry.Add(new WindowPersister<RecentListWindow>(
+            () => new RecentListWindow(this, QuickActionRegistry, Input), RecentListWindow.LangKey, settings, defaultState: true));
     }
 
     private void SwapToNextTool(int idOffset) {
