@@ -2,6 +2,7 @@
 using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
@@ -19,6 +20,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     public IComponentRegistry ComponentRegistry { get; }
     private readonly IRysyLoggerFactory _loggerFactory;
 
+    private Action? _onUnload;
+
     public readonly ToolRegistry Registry;
 
     private readonly Lock _toolLock = new();
@@ -29,6 +32,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     
     public IReadOnlyList<Tool> Tools => _tools;
 
+    public QuickActionRegistry QuickActionRegistry { get; }
+
     public Tool CurrentTool {
         get => field ??= _tools.FirstOrDefault() ?? throw new UnreachableException("No tools registered?");
         set {
@@ -38,11 +43,6 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
             }
         }
     }
-
-    private readonly List<QuickActionInfo> _quickActions = [];
-    private int _maxQuickActions = 3;
-
-    public IReadOnlyList<QuickActionInfo> QuickActions => _quickActions;
 
     private Tool Create(Type type, HistoryHandler history, Input input) {
         var t = (Tool) Activator.CreateInstance(type)!;
@@ -74,6 +74,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         Registry.Tools.OnChanged += CreateTools;
         EditorState.OnCurrentRoomChanged += CancelInteraction;
         History.OnUndo += CancelInteraction;
+
+        QuickActionRegistry = new QuickActionRegistry(this);
     }
 
     private void OnThemeChanged(Theme theme) {
@@ -88,6 +90,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         Registry.Tools.OnChanged -= CreateTools;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
         History.OnUndo -= CancelInteraction;
+        _onUnload?.Invoke();
+        _onUnload = null;
     }
 
     void ISignalListener<ThemeChanged>.OnSignal(ThemeChanged signal) {
@@ -186,6 +190,10 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         handler.AddHotkeyFromSettings("tools.prevLayer", "alt+scrollup", () => SwapToNextLayer(-1), HotkeyModes.OnHoldSmoothInterval);
     }
 
+    public void AddWindows(Settings settings) {
+        ComponentRegistry.Add(new WindowPersister<RecentListWindow>(() => new RecentListWindow(this, QuickActionRegistry, Input), settings, defaultState: true));
+    }
+
     private void SwapToNextTool(int idOffset) {
         var i = _tools.IndexOf(CurrentTool);
         CurrentTool = _tools[(i + idOffset).MathMod(_tools.Count)];
@@ -215,38 +223,6 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
                 return;
             }
         }
-    }
-
-    private void CleanupQuickActions() {
-        _quickActions.Sort((a, b) => a.IsFavourite == b.IsFavourite 
-            ? b.CreatedAt.CompareTo(a.CreatedAt) 
-            : b.IsFavourite.CompareTo(a.IsFavourite));
-        while (_quickActions.Count > _maxQuickActions) {
-            _quickActions.RemoveAt(_quickActions.Count - 1);
-        }
-    }
-    
-    internal void PushRecentMaterial(object material) {
-        QuickActionInfo quickAction;
-
-        // TODO: ignore x,y,width,height fields for placements.
-        var duplicateIdx = _quickActions.FindIndex(x => ISimilar.Check(material, x.GetMaterial(this)));
-        if (duplicateIdx >= 0) {
-            quickAction = _quickActions[duplicateIdx];
-            // Don't move favourites around.
-            if (quickAction.IsFavourite) {
-                quickAction.CreatedAt = DateTimeOffset.Now;
-                return;
-            }
-            _quickActions.RemoveAt(duplicateIdx);
-        } else {
-            quickAction = QuickActionInfo.CreateFrom(CurrentTool);
-        }
-
-        quickAction.CreatedAt = DateTimeOffset.Now;
-        _quickActions.Insert(0, quickAction);
-        
-        CleanupQuickActions();
     }
 
     public void Update(Camera camera, Room? currentRoom) {
@@ -295,7 +271,6 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         RenderToolList(_firstGui, out float toolHeight);
         RenderLayerList(_firstGui, toolHeight);
         RenderModeList();
-        RenderRecentList();
 
         if (CurrentTool.BeginMaterialListWindow(_firstGui) is { } size) {
             CurrentTool.RenderGui(size);
@@ -391,72 +366,5 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         ImGui.End();
     }
 
-    private void RenderRecentList() {
-        ImGuiManager.PushWindowStyle();
-        ImGui.Begin(RecentWindowName, ImGuiManager.WindowFlagsResizable);
-        ImGuiManager.PopWindowStyle();
-
-        var windowSize = ImGui.GetContentRegionAvail();
-        var actionWidth = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.X;
-        var actionHeight = Tool.PreviewSize + ImGui.GetStyle().ItemSpacing.Y;
-        var visibleActionsPerRow = (int)(ImGui.GetWindowWidth() / actionWidth);
-        var visibleRows = (int)(windowSize.Y / actionHeight);
-        _maxQuickActions = visibleActionsPerRow * visibleRows;
-        
-        var actions = _quickActions;
-        var i = 0;
-        foreach (var action in actions.Take(_maxQuickActions)) {
-            var tool = GetToolByName(action.ToolName);
-            if (tool is null)
-                continue;
-            var layer = EditorLayers.EditorLayerFromName(action.Layer, tool.ValidLayers);
-            if (layer is null)
-                continue;
-
-            if (i % visibleActionsPerRow == 0 && i > 0) {
-                ImGui.NewLine();
-            }
-            ImGui.PushID($"quick-action-{i++}-{action.MaterialString}");
-            
-            var size = new NumVector2(0, 0);
-            
-            if (action.GetMaterial(this) is { } material && tool.GetMaterialPreview(layer, material) is {} preview) {
-                var cursorStart = ImGui.GetCursorPos();
-                size.X = preview.W;
-                size.Y = preview.H;
-                
-                if (ImGui.Selectable("##selectable"u8, CurrentTool == tool && ISimilar.Check(material, tool.Material), ImGuiSelectableFlags.AllowOverlap, size)) {
-                    action.Apply(this);
-                }
-
-                if (ImGui.IsItemHovered()) {
-                    if (ImGui.IsItemActive() && Input.Mouse.LeftDoubleClicked()) {
-                        Input.Mouse.ConsumeLeft();
-                        action.IsFavourite = !action.IsFavourite;
-                        CleanupQuickActions();
-                    }
-                    
-                    tool.RenderMaterialTooltip(layer, material, tool.GetMaterialSearchable(layer, material));
-                }
-
-                ImGui.SetCursorPos(cursorStart);
-                ImGuiManager.XnaWidget(preview);
-                ImGui.SameLine();
-                
-                if (action.IsFavourite) {
-                    ImGui.SetCursorPos(cursorStart);
-                    ImGuiManager.FavoriteIcon();
-                    ImGui.SameLine();
-                    // Avoid imgui assertions for using SetCursorPos to move forward
-                    ImGui.SetCursorPos(cursorStart);
-                    ImGui.Dummy(size);
-                    ImGui.SameLine();
-                }
-            }
-            
-            ImGui.PopID();
-        }
-
-        ImGui.End();
-    }
+    public void PushRecentMaterial(object material) => QuickActionRegistry.PushRecentMaterial(material);
 }

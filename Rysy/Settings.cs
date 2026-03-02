@@ -248,6 +248,23 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
     public bool AllowMultithreadedTextureCreation { get; set; }
 
     public float PlaytestTrailOpacity { get; set; } = 0.45f;
+
+    public Dictionary<string, bool> OpenedWindows { get; set; } = [];
+
+    public bool IsWindowPersisted<T>(bool defaultEnabled) {
+        return OpenedWindows.GetValueOrDefault(typeof(T).FullName ?? typeof(T).Name, defaultEnabled);
+    }
+    
+    public void TogglePersistedWindow<T>(bool toggle) {
+        OpenedWindows.TryGetValue(typeof(T).FullName ?? typeof(T).Name, out var oldValue);
+        OpenedWindows[typeof(T).FullName ?? typeof(T).Name] = toggle;
+
+        if (toggle != oldValue) {
+            this.Emit(new SettingsChanged<bool>(this, nameof(OpenedWindows), oldValue, toggle));
+            this.Emit(new SettingsChanged(this, nameof(OpenedWindows)));
+            Save(this);
+        }
+    }
     #endregion
 
     public static JsonTypeInfo<Settings> JsonCtx => DefaultJsonContext.Default.Settings;

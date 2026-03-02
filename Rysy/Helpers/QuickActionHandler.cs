@@ -115,3 +115,42 @@ public class QuickActionInfo {
         }
     }
 }
+
+public sealed class QuickActionRegistry(ToolHandler toolHandler) {
+    private readonly List<QuickActionInfo> _quickActions = [];
+    public int MaxQuickActions { get; set; } = 3;
+    
+    public void CleanupQuickActions() {
+        _quickActions.Sort((a, b) => a.IsFavourite == b.IsFavourite 
+            ? b.CreatedAt.CompareTo(a.CreatedAt) 
+            : b.IsFavourite.CompareTo(a.IsFavourite));
+        while (_quickActions.Count > MaxQuickActions) {
+            _quickActions.RemoveAt(_quickActions.Count - 1);
+        }
+    }
+    
+    public void PushRecentMaterial(object material) {
+        QuickActionInfo quickAction;
+
+        // TODO: ignore x,y,width,height fields for placements.
+        var duplicateIdx = _quickActions.FindIndex(x => ISimilar.Check(material, x.GetMaterial(toolHandler)));
+        if (duplicateIdx >= 0) {
+            quickAction = _quickActions[duplicateIdx];
+            // Don't move favourites around.
+            if (quickAction.IsFavourite) {
+                quickAction.CreatedAt = DateTimeOffset.Now;
+                return;
+            }
+            _quickActions.RemoveAt(duplicateIdx);
+        } else {
+            quickAction = QuickActionInfo.CreateFrom(toolHandler.CurrentTool);
+        }
+
+        quickAction.CreatedAt = DateTimeOffset.Now;
+        _quickActions.Insert(0, quickAction);
+        
+        CleanupQuickActions();
+    }
+    
+    public IReadOnlyList<QuickActionInfo> QuickActions => _quickActions;
+}

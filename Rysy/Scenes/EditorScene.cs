@@ -467,7 +467,8 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);
-        AddWindow(new RoomList(Input.Global));
+        Add(new WindowPersister<RoomList>(() => new RoomList(Input.Global), Settings.Instance, defaultState: true));
+        ToolHandler.AddWindows(Settings.Instance);
 
         OnMapChanged(null, EditorState.Map);
         base.OnBegin();
