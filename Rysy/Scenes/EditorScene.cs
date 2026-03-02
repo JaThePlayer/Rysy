@@ -442,8 +442,6 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
 
     public override void RenderImGui() {
         base.RenderImGui();
-
-        RoomList.Render(this, Input.Global);
         ToolHandler?.RenderGui();
     }
 
@@ -469,6 +467,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);
+        AddWindow(new RoomList(Input.Global));
 
         OnMapChanged(null, EditorState.Map);
         base.OnBegin();

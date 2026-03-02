@@ -11,33 +11,29 @@ using Rysy.Tools;
 
 namespace Rysy.Gui.Windows;
 
-public static class RoomList {
-    private static bool _firstGui = true;
+public sealed class RoomList : Window {
+    private readonly Input _input;
 
-    internal static string Search = "";
+    private string _search = "";
 
-    public static void Render(EditorScene editor, Input input) {
-        if (editor is not { Map: { } map }) {
+    public RoomList(Input input) : base("Rooms") {
+        _input = input;
+        NoSaveData = false;
+    }
+
+
+    protected override void Render() {
+        if (Scene is not EditorScene { Map: { } map } editor) {
             return;
         }
 
-        if (_firstGui) {
-            var menubarHeight = ImGuiManager.MenubarHeight;
-            ImGui.SetNextWindowPos(new NumVector2(0f, menubarHeight));
-            ImGui.SetNextWindowSize(new NumVector2(150f, RysyState.GraphicsDevice.Viewport.Height - menubarHeight));
-
-            _firstGui = false;
-        }
-
-        ImGuiManager.PushWindowStyle();
-        ImGui.Begin("Rooms", ImGuiManager.WindowFlagsResizable);
-        ImGuiManager.PopWindowStyle();
+        var input = _input;
 
         var size = ImGui.GetContentRegionAvail();
 
         ImGui.BeginChild("##RoomListBox", new(size.X, size.Y - ImGui.GetTextLineHeightWithSpacing() * 3), ImGuiChildFlags.None);
         
-        var rooms = map.Rooms.SearchFilter(r => r.Searchable, Search);
+        var rooms = map.Rooms.SearchFilter(r => r.Searchable, _search);
         foreach (var room in rooms) {
             var name = room.Name;
 
@@ -144,8 +140,6 @@ public static class RoomList {
             editor.AddNewRoom();
         }
 
-        ImGuiManager.RenderSearchBarInDropdown(ref Search, "RoomListSearch");
-        
-        ImGui.End();
+        ImGuiManager.RenderSearchBarInDropdown(ref _search, "RoomListSearch");
     }
 }

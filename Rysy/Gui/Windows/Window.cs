@@ -31,21 +31,20 @@ public class Window : ISignalEmitter {
     /// </summary>
     public string WindowId;
 
-    private bool _noSaveData = true;
     /// <summary>
     /// Tells imgui not to store any data about this window to its ini file.
     /// Use for auto-generated windows.
     /// </summary>
     public bool NoSaveData {
-        get => _noSaveData;
+        get;
         set {
-            if (value != _noSaveData) {
-                _noSaveData = value;
+            if (value != field) {
+                field = value;
 
                 GenerateId();
             }
         }
-    }
+    } = true;
 
     /// <summary>
     /// Controls whether this window can be moved or not.
