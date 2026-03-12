@@ -196,8 +196,6 @@ public class LuaCtx {
 
             error(traceback)
         end
-
-        math.atan2 = math.atan
         """, "setup_globals");
 
         lua.PCallStringThrowIfError("""
