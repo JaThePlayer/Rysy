@@ -779,6 +779,12 @@ public sealed class LonnEntityPlugin {
 }
 public class LonnPlacement {
     public string Name { get; }
+    
+    /// <summary>
+    /// `ext_group`, not defined by Lonn's spec.
+    /// </summary>
+    public string? Group { get; }
+    
     public Dictionary<string, object> Data { get; } = new();
     public List<string>? AssociatedMods { get; }
     public IReadOnlyList<string> AlternativeNames { get; } = [];
@@ -791,7 +797,7 @@ public class LonnPlacement {
         var start = loc ?? lua.GetTop();
 
         Name = lua.PeekTableStringValue(start, "name"u8) ?? "default";
-
+        Group = lua.PeekTableStringValue(start, "ext_group"u8);
 
         if (lua.GetTable(start, "data"u8) is LuaType.Table)
             Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist, makeLuaFuncRefs: true);

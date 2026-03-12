@@ -523,17 +523,6 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         return def;
     }
 
-    public override string GetGroupKeyForMaterial(object material) {
-        if (material is Placement pl) {
-            if (pl.Sid is { } sid && sid != EntityRegistry.FgDecalSid && sid != EntityRegistry.BgDecalSid)
-                return sid;
-
-            return pl.Name;
-        }
-
-        return base.GetGroupKeyForMaterial(material);
-    }
-
     protected override bool RenderMaterialListElement(IEditorLayer layer, object material, Searchable searchable) {
         var ret = base.RenderMaterialListElement(layer, material, searchable);
 

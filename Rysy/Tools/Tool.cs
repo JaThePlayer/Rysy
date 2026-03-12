@@ -317,9 +317,11 @@ public abstract class Tool {
     public virtual float MaterialListElementHeight() => ImGui.GetTextLineHeightWithSpacing();
 
     public virtual int MaterialListColumnCount() => UsePersistence ? Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.ColumnCount", 1) : 1;
-    
 
-    public virtual string GetGroupKeyForMaterial(object material) => material.ToStringInvariant();
+    public virtual string GetGroupKeyForMaterial(object material) => material switch {
+        Placement p => p.Group,
+        _ => material.ToStringInvariant()
+    };
 
 
     private Dictionary<string, string> GroupKeyToMainPlacementName => field ??= UsePersistence 

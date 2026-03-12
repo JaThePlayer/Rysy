@@ -482,6 +482,7 @@ public static class EntityRegistry {
                     RegisteredEntityType = trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity,
                     AlternativeNames = lonnPlacement.AlternativeNames,
                     FromLonn = true,
+                    Group = lonnPlacement.Group
                 };
 
                 into.MainPlacement ??= csPlacement;

@@ -97,6 +97,15 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     }
 
     internal bool FromLonn;
+
+    /// <summary>
+    /// The group this placement belongs to, used to create a dropdown in tools.
+    /// </summary>
+    [AllowNull]
+    public string Group {
+        get => field ?? (Sid is not (EntityRegistry.FgDecalSid or EntityRegistry.BgDecalSid) ? Sid : null) ?? Name;
+        set;
+    }
     
     private List<string>? _associatedMods;
     private IReadOnlyList<string>? _associatedTags;
