@@ -5,7 +5,7 @@ using Rysy.Tools;
 
 namespace Rysy.Gui.Windows;
 
-public sealed class RecentListWindow : Window {
+public sealed class RecentListWindow : LongStandingWindow {
     public const string LangKey = "rysy.recent_list";
     
     private readonly ToolHandler _toolHandler;

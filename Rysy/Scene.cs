@@ -3,6 +3,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Scenes;
 using Rysy.Signals;
+using Rysy.Signals.Hotkeys;
 
 namespace Rysy;
 
@@ -60,6 +61,11 @@ public abstract class Scene {
     public virtual void SetupHotkeys() {
         Hotkeys = new(Input.Global, HotkeyHandler.ImGuiModes.Never);
         HotkeysIgnoreImGui = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
+        Add(Hotkeys);
+        Add(HotkeysIgnoreImGui);
+        
+        HotkeysIgnoreImGui.AddSignalHotkeyFromSettings<HotkeyCloseWindow>();
+        HotkeysIgnoreImGui.AddSignalHotkeyFromSettings<HotkeyCloseWindowAndSave>();
     }
 
     public virtual void Update() {

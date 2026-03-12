@@ -1,12 +1,12 @@
-﻿using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework.Input;
-using Rysy.Extensions;
+﻿using Microsoft.Xna.Framework.Input;
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.Signals;
+using Rysy.Signals.Hotkeys;
 
 namespace Rysy;
 
-public class HotkeyHandler {
+public class HotkeyHandler : ISignalEmitter {
     private List<Hotkey> _hotkeys = new();
 
     /// <summary>
@@ -50,7 +50,22 @@ public class HotkeyHandler {
     /// Adds a new hotkey, loading it from settings using <paramref name="name"/>, saving the hotkey to the settings file using <paramref name="defaultKeybind"/> if it doesn't exist.
     /// </summary>
     public HotkeyHandler AddHotkeyFromSettings(string name, string defaultKeybind, Action onPress, HotkeyModes mode = HotkeyModes.OnClick, ImGuiModes imguiMode = ImGuiModes.Ignore) {
+        if (Settings.Instance is null)
+            return this;
+        
         return AddHotkey(Settings.Instance.GetOrCreateHotkey(name, defaultKeybind), onPress, mode, imguiMode);
+    }
+
+    /// <summary>
+    /// Adds a new hotkey, the hotkey emits the provided signal on click.
+    /// </summary>
+    public HotkeyHandler AddSignalHotkeyFromSettings<TSignal>(ImGuiModes imguiMode = ImGuiModes.Ignore) 
+        where TSignal : ISignalHotkey, new() {
+        if (Settings.Instance is null)
+            return this;
+        
+        return AddHotkey(Settings.Instance.GetOrCreateHotkey(TSignal.Name, TSignal.DefaultKeybind), 
+            () => this.Emit(new TSignal()), HotkeyModes.OnClick, imguiMode);
     }
 
     /// <summary>
@@ -202,7 +217,7 @@ public class HotkeyHandler {
         foreach (var hotkey in hotkeyString.Split('|')) {
             foreach (var item in hotkey.Replace(" ", "", StringComparison.Ordinal).Split('+')) {
                 var lower = item.ToLowerInvariant();
-                if (lower is not ("shift" or "ctrl" or "alt" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or (['m', 'o', 'u', 's', 'e', _]))) {
+                if (lower is not ("shift" or "ctrl" or "alt" or "esc" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or ['m', 'o', 'u', 's', 'e', _])) {
                     if (!Enum.TryParse<Keys>(lower, true, out var key))
                         return ValidationResult.GenericError;
                 }
@@ -211,6 +226,8 @@ public class HotkeyHandler {
 
         return ValidationResult.Ok;
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
 
 public enum HotkeyModes {
@@ -270,6 +287,9 @@ public class Hotkey {
                     break;
                 case ['m', 'o', 'u', 's', 'e', var button]:
                     MouseButton = int.Parse(button.ToString(), CultureInfo.InvariantCulture);
+                    break;
+                case "esc":
+                    Key = Keys.Escape;
                     break;
                 default:
                     if (!Enum.TryParse<Keys>(lower, true, out var key)) {

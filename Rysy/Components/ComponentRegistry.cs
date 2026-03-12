@@ -29,11 +29,11 @@ public interface IComponentRegistry : ISignalListener
     IDisposable LockChanges();
 
     void ISignalListener.OnSignal<T>(T signal) {
-        foreach (var listener in GetAll<ISignalListener>()) {
+        foreach (var listener in this.EnumerateAllLocked<ISignalListener>()) {
             listener.OnSignal(signal);
         }
             
-        foreach (var listener in GetAll<ISignalListener<T>>()) {
+        foreach (var listener in this.EnumerateAllLocked<ISignalListener<T>>()) {
             listener.OnSignal(signal);
         }
     }

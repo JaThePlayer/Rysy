@@ -40,6 +40,17 @@ public class FormWindow : Window {
         return base.EditWindowFlags(prev);
     }
 
+    protected override bool Save() {
+        if (!_allFieldsValid)
+            return false;
+
+        OnChanged?.Invoke(EditedValues);
+
+        EditedValues = new();
+
+        return true;
+    }
+
     public string SaveChangesButtonName = "Save Changes";
 
     public Func<string, bool> Exists;
@@ -185,9 +196,7 @@ public class FormWindow : Window {
         ImGui.BeginDisabled(!_allFieldsValid);
 
         if (ImGui.Button(SaveChangesButtonName)) {
-            OnChanged?.Invoke(EditedValues);
-
-            EditedValues = new();
+            Save();
         }
 
         ImGui.EndDisabled();

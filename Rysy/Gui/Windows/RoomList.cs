@@ -11,7 +11,7 @@ using Rysy.Tools;
 
 namespace Rysy.Gui.Windows;
 
-public sealed class RoomList : Window {
+public sealed class RoomList : LongStandingWindow {
     private readonly Input _input;
 
     private string _search = "";

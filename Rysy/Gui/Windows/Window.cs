@@ -1,10 +1,12 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Signals;
+using Rysy.Signals.Hotkeys;
 
 namespace Rysy.Gui.Windows;
 
-public class Window : ISignalEmitter {
+public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>, ISignalListener<HotkeyCloseWindow> {
     public Scene Scene { get; private set; }
 
     public Theme Theme => Scene.GetRequired<Themes>().Current;
@@ -54,6 +56,8 @@ public class Window : ISignalEmitter {
     public bool Closeable { get; set; } = true;
 
     public virtual bool PersistBetweenScenes => false;
+
+    public virtual bool CloseableByHotkey => true;
     
     public NumVector2 LastPosition { get; private set; }
     
@@ -64,6 +68,8 @@ public class Window : ISignalEmitter {
     public bool LastWasDocked { get; private set; }
     
     public Rectangle LastBounds => new Rectangle((int)LastPosition.X, (int)LastPosition.Y, (int)LastSize.X, (int)LastSize.Y);
+    
+    public bool LastWasFocused { get; private set; }
 
     internal Action? OnFirstRender { get; set; }
 
@@ -109,6 +115,8 @@ public class Window : ISignalEmitter {
         var isOpen = Closeable
             ? ImGui.Begin(WindowId, ref open, EditWindowFlags(flags))
             : ImGui.Begin(WindowId, EditWindowFlags(flags));
+
+        LastWasFocused = ImGui.IsWindowFocused(ImGuiFocusedFlags.ChildWindows | ImGuiFocusedFlags.NoPopupHierarchy);
         
         try {
             if (isOpen) {
@@ -141,6 +149,14 @@ public class Window : ISignalEmitter {
     protected internal virtual void Removed() {
         Scene = null!;
     }
+
+    /// <summary>
+    /// Tries to save changes done via this window.
+    /// </summary>
+    /// <returns>Whether saving succeeded.</returns>
+    protected virtual bool Save() {
+        return true;
+    }
     
     protected virtual ImGuiWindowFlags EditWindowFlags(ImGuiWindowFlags prev) => prev;
 
@@ -161,6 +177,27 @@ public class Window : ISignalEmitter {
     }
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
+    
+    public virtual void OnSignal(HotkeyCloseWindowAndSave signal) {
+        if (CloseableByHotkey && LastWasFocused && Save()) {
+            RemoveSelf();
+        }
+    }
+    
+    public virtual void OnSignal(HotkeyCloseWindow signal) {
+        if (CloseableByHotkey && LastWasFocused) {
+            RemoveSelf();
+        }
+    }
+}
+
+
+/// <summary>
+/// A window which is expected to be a constant part of the layout, and as such should be harder to close by accident.
+/// Does not provide any actually new functionality, simply provides different defaults.
+/// </summary>
+public abstract class LongStandingWindow(string name, NumVector2? size = null) : Window(name, size) {
+    public override bool CloseableByHotkey => false;
 }
 
 public class ScriptedWindow : Window {
