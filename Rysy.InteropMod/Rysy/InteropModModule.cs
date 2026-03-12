@@ -1,6 +1,4 @@
 ﻿using Rysy.Components;
-using Rysy.Helpers;
-using Rysy.Layers;
 using Rysy.Mods;
 using Rysy.Scenes;
 using Rysy.Signals;
@@ -11,8 +9,6 @@ public sealed class InteropModModule : ModModule, ISignalListener<SceneChanged>
 {
     public override void Load() {
         base.Load();
-        
-        //ComponentRegistry.Add(new TileEditorLayer(TileLayer.Bg, Depths.Above));
     }
 
     public override void Unload() {

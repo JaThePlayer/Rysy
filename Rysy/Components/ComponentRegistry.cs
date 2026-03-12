@@ -11,6 +11,12 @@ public interface IComponentRegistry : ISignalListener
     void Remove<T>(T component) where T : notnull;
     T? Get<T>() where T : class;
     IReadOnlyList<T> GetAll<T>() where T : class;
+    
+    /// <summary>
+    /// Gets all components castable to the <paramref name="targetType"/> argument, cast to the generic type.<br/>
+    /// <paramref name="targetType"/> should extend from <typeparamref name="T"/>.
+    /// </summary>
+    IReadOnlyList<T> GetAll<T>(Type targetType) where T : class;
 
     IEnumerable<object> GetAll();
 
@@ -80,6 +86,10 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
 
     public IReadOnlyList<T> GetAll<T>() where T : class {
         return parent.GetAll<T>();
+    }
+    
+    public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
+        return parent.GetAll<T>(targetType);
     }
 
     public IEnumerable<object> GetAll() {
@@ -153,6 +163,24 @@ public sealed class ComponentRegistry : IComponentRegistry {
         }
 
         return Components.OfType<T>();
+    }
+
+    public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class
+    {
+        if (_parentRegistry is { } parentRegistry) {
+            var left = parentRegistry.GetAll<T>(targetType);
+            var right = Components.OfType<T>(targetType);
+
+            if (right.Count == 0)
+                return left;
+
+            if (left.Count == 0)
+                return right;
+            
+            return new ConcatList<T>(left, right);
+        }
+
+        return Components.OfType<T>(targetType);
     }
 
     public IEnumerable<object> GetAll() {

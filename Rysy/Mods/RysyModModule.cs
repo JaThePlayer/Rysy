@@ -12,5 +12,6 @@ internal sealed class RysyModModule : ModModule {
         EditorLayers.RegisterVanillaLayers(ComponentRegistry);
 
         ComponentRegistry.AddIfMissing<TilingWindowManager>();
+        ComponentRegistry.AddIfMissing<OffsetFromExistingManager>();
     }
 }

@@ -221,6 +221,10 @@ public abstract class Scene {
         return _components is null ? [] : Components.GetAll<T>();
     }
     
+    public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
+        return _components is null ? [] : Components.GetAll<T>(targetType);
+    }
+    
     public void Emit<T>(T signal) where T : ISignal {
         Components.OnSignal(signal);
     }

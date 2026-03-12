@@ -52,6 +52,19 @@ public class TypeTrackedList<T> : IListenableList<T> {
     }
     
     /// <summary>
+    /// Quickly retrieves all elements castable to the given type.
+    /// </summary>
+    /// <typeparam name="TTarget">The target type, can also be an interface.</typeparam>
+    /// <returns>List of all elements castable to the target type.</returns>
+    public IReadOnlyList<TTarget> OfType<TTarget>(Type targetType) {
+        if (_byType.TryGetValue(targetType, out var list)) {
+            return (IReadOnlyList<TTarget>) list;
+        }
+
+        return [];
+    }
+    
+    /// <summary>
     /// Quickly retrieves all elements implementing the given interface type.
     /// </summary>
     /// <typeparam name="TInterface">The target type, should be an interface.</typeparam>

@@ -23,8 +23,9 @@ public sealed class TilingWindowManager : INewWindowManager {
         return null;
     }
 
-    private bool TryTile(NumVector2 newSize, Window basedOn, IReadOnlyList<Window> allForms, Rectangle bounds, out WindowStartConfig cfg) {
-        var newFormRect = new Rectangle(0, 0, (int)newSize.X, (int)newSize.Y);
+    private bool TryTile(NumVector2 newSize, Window basedOn, IReadOnlyList<Window> allForms, Rectangle bounds, out WindowStartConfig cfg)
+    {
+        var newFormSize = new Point((int)newSize.X, (int)newSize.Y);
         var startPos = basedOn.LastPosition;
         
         var rightStart = startPos + new NumVector2(basedOn.LastSize.X, 0f);
@@ -33,7 +34,7 @@ public sealed class TilingWindowManager : INewWindowManager {
             return true;
         }
         
-        var leftStart = startPos - new NumVector2(newFormRect.Width, 0f);
+        var leftStart = startPos - new NumVector2(newFormSize.X, 0f);
         if (TryTileTo(leftStart)) {
             cfg = new WindowStartConfig(leftStart);
             return true;
@@ -45,7 +46,7 @@ public sealed class TilingWindowManager : INewWindowManager {
             return true;
         }
         
-        var topStart = startPos - new NumVector2(0f, newFormRect.Height);
+        var topStart = startPos - new NumVector2(0f, newFormSize.Y);
         if (TryTileTo(topStart)) {
             cfg = new WindowStartConfig(topStart);
             return true;
@@ -56,14 +57,7 @@ public sealed class TilingWindowManager : INewWindowManager {
 
         bool TryTileTo(NumVector2 pos)
         {
-            var newBounds = newFormRect.MovedTo(pos);
-
-            if (bounds.Contains(newBounds) &&
-                allForms.All(f => f == basedOn || !f.LastBounds.Intersects(newBounds))) {
-                return true;
-            }
-
-            return false;
+            return !WindowManagerUtils.WillOverlapAt(newFormSize, pos, bounds, allForms, basedOn);
         }
     }
 }
