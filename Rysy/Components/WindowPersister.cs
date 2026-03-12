@@ -25,8 +25,10 @@ public sealed class WindowPersister<T>(Func<T> factory, string langKey, Settings
     }
 
     public override void OnRemoved() {
-        foreach (var window in Scene?.GetAll<T>() ?? []) {
-            window.RemoveSelf();
+        if (Scene is not null) {
+            foreach (var window in Scene.EnumerateAllLocked<T>()) {
+                window.RemoveSelf();
+            }
         }
         base.OnRemoved();
     }
@@ -43,7 +45,7 @@ public sealed class WindowPersister<T>(Func<T> factory, string langKey, Settings
                 scene.AddWindow(w);
             }
         } else {
-            foreach (var window in scene.GetAll<T>()) {
+            foreach (var window in scene.EnumerateAllLocked<T>()) {
                 window.RemoveSelf();
             }
         }

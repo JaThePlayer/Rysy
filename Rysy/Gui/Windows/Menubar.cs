@@ -260,7 +260,7 @@ public class Menubar : SceneComponent {
             RysyEngine.Scene.ToggleWindow<NotificationsWindow>();
         }
 
-        foreach (var persister in scene.GetAll<IWindowPersister>()) {
+        foreach (var persister in scene.EnumerateAllLocked<IWindowPersister>()) {
             persister.RenderImGuiToggle(scene);
         }
 

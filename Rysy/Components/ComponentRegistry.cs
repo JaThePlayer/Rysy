@@ -1,7 +1,7 @@
 ﻿using Rysy.Components;
 using Rysy.Helpers;
 using Rysy.Signals;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections;
 
 namespace Rysy;
 
@@ -19,6 +19,14 @@ public interface IComponentRegistry : ISignalListener
     IReadOnlyList<T> GetAll<T>(Type targetType) where T : class;
 
     IEnumerable<object> GetAll();
+
+    /// <summary>
+    /// Locks all changes to the registry until the returned <see cref="IDisposable"/> is disposed.
+    /// Changes done during that time will get queued until the registry is unlocked.<br/>
+    ///
+    /// Nesting locks is supported, but they have to be disposed in reverse order.
+    /// </summary>
+    IDisposable LockChanges();
 
     void ISignalListener.OnSignal<T>(T signal) {
         foreach (var listener in GetAll<ISignalListener>()) {
@@ -56,6 +64,55 @@ public static class ComponentRegistryExt {
         public void OnSignal<T>(T signal) where T : ISignal {
             registry.OnSignal(signal);
         }
+
+        /// <summary>
+        /// Enumerate through all results of <see cref="IComponentRegistry.GetAll{T}()"/>,
+        /// while locking the registry until the enumerator is disposed.
+        /// </summary>
+        public EnumerateAllLockedEnumerable<T> EnumerateAllLocked<T>() where T : class {
+            return new EnumerateAllLockedEnumerable<T>(registry);
+        }
+    }
+
+    public struct EnumerateAllLockedEnumerable<T>(IComponentRegistry registry) : IEnumerable<T>, IEnumerator<T> where T : class {
+        public EnumerateAllLockedEnumerable<T> GetEnumerator() {
+            if (_inner is null) {
+                Init();
+                return this;
+            }
+
+            var other = new EnumerateAllLockedEnumerable<T>(registry);
+            other.Init();
+            return other;
+        }
+        
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        
+        private IEnumerator<T> _inner;
+        private IDisposable _lock;
+
+        private void Init() {
+            _inner = registry.GetAll<T>().GetEnumerator();
+            _lock = registry.LockChanges();
+        }
+        
+        public void Dispose() {
+            _lock.Dispose();
+        }
+
+        public bool MoveNext() {
+            return _inner.MoveNext();
+        }
+
+        public void Reset() {
+            throw new InvalidOperationException();
+        }
+
+        public T Current => _inner.Current;
+
+        object IEnumerator.Current => _inner.Current;
     }
 }
 
@@ -95,6 +152,10 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
     public IEnumerable<object> GetAll() {
         return parent.GetAll();
     }
+
+    public IDisposable LockChanges() {
+        return parent.LockChanges();
+    }
 }
 
 public sealed class ComponentRegistry : IComponentRegistry {
@@ -115,6 +176,10 @@ public sealed class ComponentRegistry : IComponentRegistry {
     }
     
     public void Add<T>(T component) where T : notnull {
+        if (_lockers is [var firstLocker, ..]) {
+            firstLocker.Queue(() => Add(component));
+            return;
+        }
         Components.Add(component);
 
         if (component is ISignalEmitter emitter) {
@@ -129,6 +194,11 @@ public sealed class ComponentRegistry : IComponentRegistry {
     }
 
     public void Remove<T>(T component) where T : notnull {
+        if (_lockers is [var firstLocker, ..]) {
+            firstLocker.Queue(() => Remove(component));
+            return;
+        }
+        
         Components.Remove(component);
         
         if (component is ISignalEmitter emitter) {
@@ -186,8 +256,46 @@ public sealed class ComponentRegistry : IComponentRegistry {
     public IEnumerable<object> GetAll() {
         return Components;
     }
+
+    private readonly List<Locker> _lockers = [];
+    
+    public IDisposable LockChanges() {
+        var locker = new Locker();
+        _lockers.Add(locker);
+        locker.Queue(() => {
+            var popped = _lockers[^1];
+            if (popped != locker) {
+                throw new OutOfOrderComponentRegistryUnlockException();
+            }
+            _lockers.RemoveAt(_lockers.Count - 1);
+        });
+
+        return locker;
+    }
+
+    class Locker : IDisposable {
+        private List<Action>? _actions;
+
+        public void Queue(Action onDispose) {
+            _actions ??= [];
+            _actions.Add(onDispose);
+        }
+        
+        public void Dispose() {
+            if (_actions is { } actions) {
+                foreach (var action in actions) {
+                    action();
+                }
+                _actions.Clear();
+            }
+        }
+    }
 }
 
 public sealed class RequiredComponentMissingException(Type type) : Exception {
     public override string Message => $"Required component missing: {type.Name}";
+}
+
+public sealed class OutOfOrderComponentRegistryUnlockException : Exception {
+    public override string Message => "ComponentRegistry's locks got disposed in different order than expected.";
 }
