@@ -421,10 +421,20 @@ public sealed class LonnEntityPlugin {
         plugin.HasSelectionFunction = lua.PeekTableType(top, "selection"u8) is LuaType.Function;
 
         LonnPlacement? defaultPlacement = null;
+        int? maybePlacementLoc = null;
+        switch (lua.GetTable(top, "placements"u8)) {
+            case LuaType.Table:
+                maybePlacementLoc = lua.GetTop();
+                break;
+            case LuaType.Function:
+                // Lonn delays calling the function until opening the placement window, but that's incompatible with Rysy.
+                // We'll just invoke it immediately.
+                lua.PCallThrowIfError(0, 1);
+                maybePlacementLoc = lua.GetTop();
+                break;
+        }
 
-        if (lua.GetTable(top, "placements"u8) == LuaType.Table) {
-            var placement1Loc = lua.GetTop();
-
+        if (maybePlacementLoc is { } placement1Loc) {
             switch (lua.PeekTableType(placement1Loc, "name"u8)) {
                 case LuaType.String:
                     // name is provided, so there's 1 placement
