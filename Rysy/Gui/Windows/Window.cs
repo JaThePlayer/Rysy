@@ -81,7 +81,7 @@ public class Window : ISignalEmitter {
         GenerateId();
     }
 
-    public void SetRemoveAction(Action<Window> removeSelf) => _removeSelfImpl += removeSelf;
+    public void SetRemoveAction(Action<Window> removeSelf) => _removeSelfImpl = removeSelf;
 
     public void RenderGui() {
         if (!Visible)

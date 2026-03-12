@@ -23,10 +23,8 @@ public abstract class Scene {
     protected Scene() {
         //_components = new SceneComponentRegistry();
         _removeWindow = (w) => {
-            RysyState.OnEndOfThisFrame += () => {
-                w.Removed();
-                Remove(w);
-            };
+            w.Removed();
+            Remove(w);
         };
     }
 
@@ -70,25 +68,26 @@ public abstract class Scene {
 
         TimeActive += Time.Delta;
         
-        foreach (var c in GetAll<SceneComponent>()) {
+        foreach (var c in EnumerateAllLocked<SceneComponent>()) {
             c.Update();
         }
     }
 
     public virtual void Render() {
-        foreach (var c in GetAll<SceneComponent>()) {
+        foreach (var c in EnumerateAllLocked<SceneComponent>()) {
             c.Render();
         }
     }
 
     public virtual void RenderImGui() {
-        foreach (var c in GetAll<SceneComponent>()) {
-            c.RenderImGui();
-        }
+        if (_components is { } registry) {
+            foreach (var c in registry.EnumerateAllLocked<SceneComponent>()) {
+                c.RenderImGui();
+            }
         
-        foreach (var t in GetAll<Window>())
-        {
-            t.RenderGui();
+            foreach (var t in registry.EnumerateAllLocked<Window>()) {
+                t.RenderGui();
+            }
         }
 
         while (_newPopupQueue.TryDequeue(out var id)) {
@@ -223,6 +222,10 @@ public abstract class Scene {
     
     public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
         return _components is null ? [] : Components.GetAll<T>(targetType);
+    }
+    
+    public ComponentRegistryExt.EnumerateAllLockedEnumerable<T> EnumerateAllLocked<T>() where T : class {
+        return Components.EnumerateAllLocked<T>();
     }
     
     public void Emit<T>(T signal) where T : ISignal {
