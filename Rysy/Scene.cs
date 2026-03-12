@@ -225,6 +225,8 @@ public abstract class Scene {
     }
     
     public ComponentRegistryExt.EnumerateAllLockedEnumerable<T> EnumerateAllLocked<T>() where T : class {
+        if (_components is null)
+            return default;
         return Components.EnumerateAllLocked<T>();
     }
     

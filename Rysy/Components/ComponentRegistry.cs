@@ -74,9 +74,9 @@ public static class ComponentRegistryExt {
         }
     }
 
-    public struct EnumerateAllLockedEnumerable<T>(IComponentRegistry registry) : IEnumerable<T>, IEnumerator<T> where T : class {
+    public struct EnumerateAllLockedEnumerable<T>(IComponentRegistry? registry) : IEnumerable<T>, IEnumerator<T> where T : class {
         public EnumerateAllLockedEnumerable<T> GetEnumerator() {
-            if (_inner is null) {
+            if (_inner is null || registry is null) {
                 Init();
                 return this;
             }
@@ -90,29 +90,31 @@ public static class ComponentRegistryExt {
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         
-        private IEnumerator<T> _inner;
-        private IDisposable _lock;
+        private IEnumerator<T>? _inner;
+        private IDisposable? _lock;
 
         private void Init() {
-            _inner = registry.GetAll<T>().GetEnumerator();
-            _lock = registry.LockChanges();
+            if (registry is not null) {
+                _inner = registry.GetAll<T>().GetEnumerator();
+                _lock = registry.LockChanges();
+            }
         }
         
         public void Dispose() {
-            _lock.Dispose();
+            _lock?.Dispose();
         }
 
         public bool MoveNext() {
-            return _inner.MoveNext();
+            return _inner?.MoveNext() ?? false;
         }
 
         public void Reset() {
             throw new InvalidOperationException();
         }
 
-        public T Current => _inner.Current;
+        public T Current => _inner?.Current ?? throw new InvalidOperationException();
 
-        object IEnumerator.Current => _inner.Current;
+        object IEnumerator.Current => Current;
     }
 }
 
