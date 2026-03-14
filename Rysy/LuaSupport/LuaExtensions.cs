@@ -88,6 +88,12 @@ public static partial class LuaExt {
         lua.PushString(buffer.Slice(2 - written));
     }
 
+    public static string GetChunkName(string? chunkName) {
+        if (chunkName is null)
+            return "[string]";
+        return $"@{chunkName}";
+    }
+
     public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
         string code;
         if (LuaCtx.SeleneLoaded) {
@@ -105,7 +111,7 @@ public static partial class LuaExt {
             code = str;
         }
 
-        var st = lua.LoadString(code, chunkName ?? str);
+        var st = lua.LoadString(code, GetChunkName(chunkName ?? str.TrimBeyondLength(64)));
         if (st != LuaStatus.OK) {
             throw new LuaException(lua);
         }
@@ -133,7 +139,7 @@ public static partial class LuaExt {
         }
 
         fixed (byte* strFirstChar = &code[0]) {
-            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)code.Length, chunkName, null);
+            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)code.Length, GetChunkName(chunkName), null);
             if (st != LuaStatus.OK) {
                 throw new LuaException(lua);
             }

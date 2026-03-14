@@ -276,6 +276,9 @@ public static class EntityRegistry {
         }
     }
 
+    private static string GetChunkName(ModMeta mod, string pluginPath)
+        => $"${mod.DisplayName}$.{pluginPath.TrimPrefix("Loenn/").TrimPostfix(".lua").Replace('/', '.')}";
+
     private static void LoadPluginsFromMod(ModMeta mod, bool loadLuaPlugins, bool loadCSharpPlugins, SimpleLoadTask? task) {
         if (!loadLuaPlugins)
             return;
@@ -305,7 +308,7 @@ public static class EntityRegistry {
             var plugin = stream.ReadAllText();
 
             WithLuaHotReloadInfo(pluginPath, "field", () => {
-                RegisterFieldFromLua(plugin, pluginPath, mod);
+                RegisterFieldFromLua(plugin, GetChunkName(mod, pluginPath), mod);
             });
         }, out var watcher);
 
@@ -331,7 +334,7 @@ public static class EntityRegistry {
             var plugin = stream.ReadAllText();
 
             WithLuaHotReloadInfo(pluginPath, "style", () => {
-                RegisterStyleFromLua(plugin, pluginPath, mod);
+                RegisterStyleFromLua(plugin, GetChunkName(mod, pluginPath), mod);
             });
         }, out var watcher);
         
@@ -396,7 +399,7 @@ public static class EntityRegistry {
             var plugin = stream.ReadAllText();
 
             WithLuaHotReloadInfo(pluginPath, trigger ? "trigger" : "entity", () => {
-                RegisterFromLua(plugin, pluginPath, trigger, mod);
+                RegisterFromLua(plugin, GetChunkName(mod, pluginPath), trigger, mod);
             });
         }, out var watcher);
 

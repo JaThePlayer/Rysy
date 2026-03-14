@@ -56,7 +56,7 @@ public class LuaCtx {
                 return 2;
             }
 
-            var st = lua.LoadString(lua.FastToString(-1), moduleName);
+            var st = lua.LoadString(lua.FastToString(-1), LuaExt.GetChunkName(moduleName));
             if (st != LuaStatus.OK) {
                 var errMsgPos = lua.GetTop();
                 
@@ -100,7 +100,7 @@ public class LuaCtx {
 
             lua.Pop(2);
             if (ModRegistry.RysyMod.Filesystem.TryReadAllText(path) is { } txt) {
-                lua.PCallStringThrowIfError(txt, path, results: 1);
+                lua.PCallStringThrowIfError(txt, moduleName, results: 1);
             } else {
                 Logger.Write("Lua", LogLevel.Error, $"Failed to require file from Rysy: {path}");
                 //throw new FileNotFoundException(path);

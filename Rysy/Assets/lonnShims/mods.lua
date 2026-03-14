@@ -173,7 +173,7 @@ local function _handleRequire(lib, modName, registerWatcher)
 	end
 
     if type(required) == "string" then
-        local r, err = loadstring(required, string.format("%s [%s]", lib, modName))
+        local r, err = loadstring(required, string.format("$%s$.%s", modName, lib))
         if r then
             required = r()
         else
