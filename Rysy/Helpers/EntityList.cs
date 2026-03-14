@@ -2,12 +2,13 @@
 
 namespace Rysy.Helpers;
 
-public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
+public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper, ILuaTableBound {
     private Dictionary<string, List<Entity>> _sidToEntities = new(StringComparer.Ordinal);
 
     public EntityList() {
         OnChanged += () => {
             _sidToEntities.Clear();
+            _boundTable = null;
         };
     }
 
@@ -55,11 +56,30 @@ public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper {
 
         if (i < inner.Count) {
             lua.PushInteger(key);
-            lua.Push(inner[i]);
+            lua.PushWrapper(inner[i]);
             return 2;
         }
         
         lua.PushNil();
         return 1;
+    }
+
+    private LuaTableRef ReinitBoundTable(Lua luaState) {
+        _boundTable ??= LuaTableRef.CreateNewTable(luaState, Count, 0);
+
+        _boundTable.PushToStack();
+        var t = luaState.GetTop();
+        for (int i = 0; i < Count; i++) {
+            luaState.PushInteger(i + 1);
+            luaState.PushWrapper(Inner[i]);
+            luaState.SetTable(t);
+        }
+        
+        return _boundTable;
+    }
+    
+    private LuaTableRef? _boundTable;
+    public LuaTableRef OnBind(Lua luaState) {
+        return _boundTable ??= ReinitBoundTable(luaState);
     }
 }

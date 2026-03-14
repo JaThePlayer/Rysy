@@ -904,6 +904,12 @@ where TArg1 : class, ILuaWrapper {
     /// Pushes a Wrapper object, which implements various metamethods on the C# side to communicate between Lua and C# easily.
     /// </summary>
     public static unsafe void PushWrapper(this Lua state, ILuaWrapper wrapper) {
+        if (wrapper is ILuaTableBound bound) {
+            var t = bound.OnBind(state);
+            t.PushToStack(state);
+            return;
+        }
+        
         lock (NeoWrapperLock) {
             var wrapperCacheRef = GetWrapperCacheRef(state);
             

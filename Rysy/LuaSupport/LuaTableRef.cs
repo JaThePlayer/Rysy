@@ -8,6 +8,18 @@ public sealed class LuaTableRef : LuaRef, IUntypedData {
     internal LuaTableRef(Lua lua, long id) : base(lua, id)
     {
     }
+
+    /// <summary>
+    /// Creates a new lua table, then makes a reference to it.
+    /// </summary>
+    /// <param name="narr">Number of sequential keys.</param>
+    /// <param name="nrec">Number of hash keys.</param>
+    public static LuaTableRef CreateNewTable(Lua lua, int narr, int nrec) {
+        lua.CreateTable(narr, nrec);
+        var r = LuaRef.MakeFrom(lua, lua.GetTop());
+        lua.Pop(1);
+        return (LuaTableRef)r;
+    }
     
     public new static LuaTableRef MakeFrom(Lua lua, int loc) {
         var r = LuaRef.MakeFrom(lua, loc);

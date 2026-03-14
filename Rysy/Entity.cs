@@ -16,7 +16,7 @@ using LuaException = Rysy.LuaSupport.LuaException;
 namespace Rysy;
 
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData, ISimilar<Entity> {
+public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData, ISimilar<Entity> {
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -619,6 +619,9 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
 
         if (!changed.OnlyPositionChanged) {
             BindAttribute.GetBindContext<Entity>(this).UpdateBoundFields(this, changed);
+            ReinitializeBoundTable();
+        } else {
+            UpdateBoundTablePos();
         }
         
         if ((changed.AllChanged || changed.ChangedFieldName == EditorGroupEntityDataKey) && Room is {} room) {
@@ -906,6 +909,67 @@ public abstract class Entity : ILuaWrapper, IConvertibleToPlacement, IDepth, INa
         }
     }
     #endregion
+
+    private LuaTableRef? BoundLuaTable { get; set; }
+
+    private void UpdateBoundTablePos() {
+        if (BoundLuaTable is not {} t)
+            return;
+        var lua = t.Lua;
+        t.PushToStack(lua);
+        var tPos = lua.GetTop();
+        
+        lua.Push(X);
+        lua.SetField(tPos, "x");
+        lua.Push(Y);
+        lua.SetField(tPos, "y");
+        lua.Pop(1);
+    }
+    
+    private void ReinitializeBoundTable() {
+        if (BoundLuaTable is not {} t)
+            return;
+        
+        var lua = t.Lua;
+        t.PushToStack(lua);
+        var tPos = lua.GetTop();
+
+        lua.Push(Id);
+        lua.SetField(tPos, "_id");
+        lua.Push(Name);
+        lua.SetField(tPos, "_name");
+        
+        UpdateBoundTablePos();
+        foreach (var (k, v) in EntityData) {
+            if (k is "id")
+                continue;
+            
+            lua.Push(v);
+            lua.SetField(tPos, k);
+        }
+
+        lua.CreateTable(Nodes.Count, 0);
+        var nodesPos = lua.GetTop();
+        var i = 1;
+        foreach (var n in Nodes) {
+            lua.PushInteger(i);
+            lua.Push(n);
+            lua.SetTable(nodesPos);
+            i++;
+        }
+        lua.SetField(tPos, "nodes");
+        
+        lua.Pop(1);
+    }
+    
+    LuaTableRef ILuaTableBound.OnBind(Lua luaState) {
+        if (BoundLuaTable is null) {
+            BoundLuaTable ??= LuaTableRef.CreateNewTable(luaState, 0, EntityData.Count);
+            ReinitializeBoundTable();
+        }
+
+        return BoundLuaTable;
+    }
 }
 
 public readonly struct EntityDataChangeCtx {

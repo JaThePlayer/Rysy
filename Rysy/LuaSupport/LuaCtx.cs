@@ -119,6 +119,7 @@ public class LuaCtx {
             ["ffi"] = true,
             ["string.buffer"] = true,
             ["jit.profile"] = true,
+            ["table.new"] = true,
         }
         
         function require(modname)
