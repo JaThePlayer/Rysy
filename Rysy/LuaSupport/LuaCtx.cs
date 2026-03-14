@@ -118,6 +118,7 @@ public class LuaCtx {
             ["bit"] = true,
             ["ffi"] = true,
             ["string.buffer"] = true,
+            ["jit.profile"] = true,
         }
         
         function require(modname)

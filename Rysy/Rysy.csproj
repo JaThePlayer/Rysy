@@ -100,6 +100,18 @@
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\lua51.$(_NativeLibExt)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+      <Pack>false</Pack>
+    </Content>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\lua51.$(_NativeLibExt)">
+      <Link>runtimes\$(_NativeRuntime)\native\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+      <Pack>false</Pack>
+    </Content>
     
     <!-- 
     Macos, untested
