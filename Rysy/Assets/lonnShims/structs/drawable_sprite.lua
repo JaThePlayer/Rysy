@@ -150,8 +150,8 @@ function RYSY_UNPACKSPR(drawableSprite)
 		   rawget(drawableSprite, "_RYSYqX")
 end
 
-local function __create(meta, data, texture)
-    if not meta and not texture then
+local function __create(meta, data)
+    if not meta then
         return nil
     end
 
@@ -170,15 +170,9 @@ local function __create(meta, data, texture)
         renderOffsetX = data.renderOffsetX or 0,
         renderOffsetY = data.renderOffsetY or 0,
         depth = data.depth,
+        meta = meta,
+        _RYSY_INTERNAL_texture = rawget(meta, "_RYSY_INTERNAL_texture")
     }
-    
-    if texture then
-        drawableSprite._RYSY_INTERNAL_texture = texture
-        drawableSprite.meta = __newMeta(texture)
-    else
-        drawableSprite.meta = meta
-        drawableSprite._RYSY_INTERNAL_texture = rawget(meta, "_RYSY_INTERNAL_texture")
-    end
 
     if data.color then
         setColor(drawableSprite, data.color)

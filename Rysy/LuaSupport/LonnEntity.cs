@@ -79,7 +79,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             } else if (pl.GetNodeTexture?.Invoke(roomWrapper, this, node, i) is { } texturePath) {
                 var offset = pl.NodeOffset?.Invoke(roomWrapper, this, node, i);
                 sprites = [
-                    ISprite.FromTexture(node.Pos + (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
+                    ISprite.FromTexture(node.Pos + (offset ?? Vector2.Zero), texturePath) with {
                         Origin = offset is { } ? Vector2.Zero : pl.NodeJustification(roomWrapper, this, node, i), 
                         Color = pl.NodeColor(roomWrapper, this, node, i), 
                         Scale = pl.NodeScale(roomWrapper, this, node, i), 
@@ -437,7 +437,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
         if (Plugin.GetTexture is { } getTexture && getTexture(roomWrapper, this) is { } texturePath) {
             var offset = Plugin.GetOffset?.Invoke(roomWrapper, this);
             return [
-                ISprite.FromTexture(Pos - (offset ?? Vector2.Zero), LonnDrawables.SanitizeLonnTexturePath(texturePath)) with {
+                ISprite.FromTexture(Pos - (offset ?? Vector2.Zero), texturePath) with {
                     Origin = Plugin.GetJustification(roomWrapper, this),
                     Color = Plugin.GetColor(roomWrapper, this),
                     Scale = Plugin.GetScale(roomWrapper, this),

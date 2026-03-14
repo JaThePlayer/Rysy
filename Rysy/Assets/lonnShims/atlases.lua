@@ -107,8 +107,6 @@ function __metaMt.__index(self, key)
 end
 
 local function __getMeta(atlasName, texture)
-    texture = _RYSY_DRAWABLE_fixPath(texture)
-
     local atlas = atlases[atlasName]
     local cache = rawget(atlas, "_metaCache")
     

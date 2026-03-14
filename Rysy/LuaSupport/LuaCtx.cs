@@ -240,14 +240,6 @@ public class LuaCtx {
 
         Utf8Lib.Register(lua);
 
-        lua.Register("_RYSY_DRAWABLE_fixPath", (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-
-            lua.PushString(LonnDrawables.SanitizeLonnTexturePath(lua.FastToString(1)));
-            
-            return 1;
-        });
-
         if (ModRegistry.RysyMod.Filesystem.TryReadAllText("lua/funpack.lua") is {} funpack)
             lua.PCallStringThrowIfError(funpack, "funpack");
 
