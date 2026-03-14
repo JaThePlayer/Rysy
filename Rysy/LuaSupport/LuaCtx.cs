@@ -664,62 +664,6 @@ public class LuaCtx {
             return 2;
         });
         
-        // (data, texture)
-        lua.Register("_RYSY_DRAWABLE_makeFromEntity", static (nint s) => {
-            var lua = Lua.FromIntPtr(s);
-            var data = lua.GetTop() - 1;
-
-            if (!lua.IsWrapper(data) || lua.UnboxWrapper(data) is not LonnEntity entity || !entity.CanMakeLonnDrawableTemplate())
-                return 0;
-            
-            lua.CreateTable(0, 10);
-            var output = lua.GetTop();
-            
-            lua.PushString("_type"u8);
-            lua.PushString("drawableSprite"u8);
-            lua.SetTable(output);
-            
-            lua.PushString("x"u8);
-            lua.PushNumber(entity.X);
-            lua.SetTable(output);
-            lua.PushString("y"u8);
-            lua.PushNumber(entity.Y);
-            lua.SetTable(output);
-            
-            lua.PushString("justificationX"u8);
-            lua.PushNumber(0.5);
-            lua.SetTable(output);
-            lua.PushString("justificationY"u8);
-            lua.PushNumber(0.5);
-            lua.SetTable(output);
-            
-            lua.PushString("scaleX"u8);
-            lua.PushNumber(1);
-            lua.SetTable(output);
-            lua.PushString("scaleY"u8);
-            lua.PushNumber(1);
-            lua.SetTable(output);
-            
-            lua.PushString("renderOffsetX"u8);
-            lua.PushNumber(0);
-            lua.SetTable(output);
-            lua.PushString("renderOffsetY"u8);
-            lua.PushNumber(0);
-            lua.SetTable(output);
-            
-            lua.PushString("rotation"u8);
-            lua.PushNumber(0);
-            lua.SetTable(output);
-
-            if (entity.EntityData.TryGetValue("depth", out var d) && d is IConvertible) {
-                lua.PushString("depth"u8);
-                lua.PushNumber(Convert.ToDouble(d, CultureInfo.InvariantCulture));
-                lua.SetTable(output);
-            }
-
-            return 1;
-        });
-        
         lua.Register("_RYSY_lang_get", static s => {
             var lua = Lua.FromIntPtr(s);
             var name = lua.FastToString(1);

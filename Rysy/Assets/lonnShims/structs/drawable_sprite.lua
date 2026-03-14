@@ -157,24 +157,20 @@ local function __create(meta, data, texture)
 
     data = data or {}
 
-    local drawableSprite = _RYSY_DRAWABLE_makeFromEntity(data, texture) or nil
-    
-    if not drawableSprite then
-        drawableSprite = {
-            _type = "drawableSprite",
-            x = data.x or 0,
-            y = data.y or 0,
-            -- long names swapped with short ones, because most plugins use long names (if any)
-            justificationX = data.justificationX or data.jx or 0.5,
-            justificationY = data.justificationY or data.jy or 0.5,
-            scaleX = data.scaleX or data.sx or 1,
-            scaleY = data.scaleY or data.sy or 1,
-            rotation = data.rotation or data.r or 0,
-            renderOffsetX = data.renderOffsetX or 0,
-            renderOffsetY = data.renderOffsetY or 0,
-            depth = data.depth,
-        }
-    end
+    local drawableSprite = {
+        _type = "drawableSprite",
+        x = data.x or 0,
+        y = data.y or 0,
+        -- long names swapped with short ones, because most plugins use long names (if any)
+        justificationX = data.justificationX or data.jx or 0.5,
+        justificationY = data.justificationY or data.jy or 0.5,
+        scaleX = data.scaleX or data.sx or 1,
+        scaleY = data.scaleY or data.sy or 1,
+        rotation = data.rotation or data.r or 0,
+        renderOffsetX = data.renderOffsetX or 0,
+        renderOffsetY = data.renderOffsetY or 0,
+        depth = data.depth,
+    }
     
     if texture then
         drawableSprite._RYSY_INTERNAL_texture = texture
