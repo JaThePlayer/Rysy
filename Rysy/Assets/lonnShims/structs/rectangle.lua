@@ -1,20 +1,15 @@
 ﻿local rectangles = {}
 
-local rectangleMt = {}
-rectangleMt.__index = {}
-
 function rectangles.create(x, y, width, height)
     local rectangle = {
-        _type = "rectangle"
+        _type = "rectangle",
+        x = width < 0 and x + width or x,
+        y = height < 0 and y + height or y,
+        width = math.abs(width),
+        height = math.abs(height)
     }
 
-    rectangle.x = width < 0 and x + width or x
-    rectangle.y = height < 0 and y + height or y
-
-    rectangle.width = math.abs(width)
-    rectangle.height = math.abs(height)
-
-    return setmetatable(rectangle, rectangleMt)
+    return rectangle
 end
 
 return rectangles
