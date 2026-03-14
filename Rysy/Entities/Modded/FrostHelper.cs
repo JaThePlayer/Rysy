@@ -31,6 +31,8 @@ internal sealed class CustomSpinner : LonnEntity {
     [Bind("imageScale")]
     public float ImageScale;
 
+    public override int Depth => Int("depth", -8500);
+
     public Color BorderColor => Rgba("borderColor", Color.Black);
 
     private SpinnerPathCache? _cache;
