@@ -193,6 +193,7 @@ public class DebugInfoWindow : Window {
 
     private void Benchmark(Room room, bool aggressive, int times) {
         var providers = Scene.GetAll<IRoomSpriteProvider>();
+        EntityRegistry.LuaCtx.Lua.PCallStringThrowIfError("require(\"jit.p\").start(\"20Fpli0.1m0.1\", \"luajit-output.txt\")"u8);
         var watch = Stopwatch.GetTimestamp();
         for (int i = 0; i < times; i++) {
             if (aggressive)
@@ -205,6 +206,7 @@ public class DebugInfoWindow : Window {
 
         var elapsed = Stopwatch.GetElapsedTime(watch);
         Logger.Info($"Benchmark: {room.Name}: {(elapsed / times).TotalMilliseconds}ms");
+        EntityRegistry.LuaCtx.Lua.PCallStringThrowIfError("require(\"jit.p\").stop()"u8);
     }
 
     private void BenchmarkEntities(Room room, bool aggressive, int howManyTimes) {
