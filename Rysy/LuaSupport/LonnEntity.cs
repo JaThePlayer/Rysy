@@ -183,8 +183,9 @@ public class LonnEntity : Entity, IHasLonnPlugin {
                 
                     if (lua.Type(top) == LuaType.Table) {
                         lua.IPairs((lua, index, valueLocation) => {
-                            var rect = lua.ToRectangle(valueLocation);
-                            nodes[index - 1] = ISelectionCollider.FromRect(rect);
+                            if (index - 1 < nodes.Length) {
+                                nodes[index - 1] = ISelectionCollider.FromRect(lua.ToRectangle(valueLocation));
+                            }
                         }, top);
                     }
 
