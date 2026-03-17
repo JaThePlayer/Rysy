@@ -263,7 +263,7 @@ public static class SearchHelper {
             term = txt switch {
                 ['@', .. var modName] => new ModSearchTerm(modName),
                 ['#', .. var tagName] => new TagSearchTerm(tagName),
-                _ => new TextSearchTerm(txt)
+                _ => new TextSearchTerm(txt.ToString())
             };
         } else {
             var leftSpan = txt[..termEnd];
@@ -351,10 +351,11 @@ public static class SearchHelper {
         }
     }
 
-    private sealed class TextSearchTerm(ReadOnlySpan<char> txt) : SearchTerm {
-        private readonly string _term = ToStringUnderscoresAreSpaces(txt);
-        private readonly byte[] _termU8 = Interpolator.TempU8(txt).ToArray();
-        
+    private sealed class TextSearchTerm(string termWithUnderscores) : SearchTerm {
+        private readonly string _term = ToStringUnderscoresAreSpaces(termWithUnderscores);
+        private readonly byte[] _termU8 = Interpolator.TempU8(termWithUnderscores).ToArray();
+        private readonly bool _hasUnderscores = termWithUnderscores.Contains('_');
+
         protected override void RenderImGuiInner() {
             ImGui.Text(_termU8);
         }
@@ -362,9 +363,13 @@ public static class SearchHelper {
         public override bool Matches(Searchable search) {
             if (search.Text.Contains(_term, StringComparison.OrdinalIgnoreCase))
                 return true;
+            if (_hasUnderscores && search.Text.Contains(termWithUnderscores, StringComparison.OrdinalIgnoreCase))
+                return true;
 
             foreach (var altName in search.AlternativeNames) {
                 if (altName.Contains(_term, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (_hasUnderscores && altName.Contains(termWithUnderscores, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
@@ -378,6 +383,10 @@ public static class SearchHelper {
         public override bool StartsWith(Searchable search, ReadOnlySpan<char> curr, out ReadOnlySpan<char> remaining) {
             remaining = curr;
             if (curr.StartsWith(_term, StringComparison.OrdinalIgnoreCase)) {
+                remaining = curr[_term.Length..];
+                return true;
+            }
+            if (_hasUnderscores && curr.StartsWith(termWithUnderscores, StringComparison.OrdinalIgnoreCase)) {
                 remaining = curr[_term.Length..];
                 return true;
             }
