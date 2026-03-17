@@ -296,6 +296,22 @@ public class LuaCtx {
             lua.PushNumber(Entities.Waterfall.GetHeight(room, new((float) x, (float) y)));
             return 1;
         });
+        
+        lua.Register("_RYSY_utils_readAll", s => {
+            var lua = Lua.FromIntPtr(s);
+            
+            var path = lua.FastToString(1);
+            var mode = lua.FastToString(2);
+            var @internal = lua.ToBoolean(3);
+
+            if (ModRegistry.Filesystem.TryReadAllText(path) is {} text) {
+                lua.PushString(text);
+                return 1;
+            }
+            
+            lua.PushNil();
+            return 1;
+        });
 
         lua.Register("_RYSY_INTERNAL_requireFromPlugin", (nint s) => {
             var lua = Lua.FromIntPtr(s);

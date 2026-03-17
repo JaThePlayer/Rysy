@@ -158,12 +158,8 @@ function utils.getFileHandle(path, mode, internal)
     _RYSY_unimplemented()
 end
 
-local function readAll(path, mode, internal)
-    _RYSY_unimplemented()
-end
-
 function utils.readAll(path, mode, internal)
-    _RYSY_unimplemented()
+    return _RYSY_utils_readAll(path, mode or "rb", internal)
 end
 
 function utils.newImage(path, internal)

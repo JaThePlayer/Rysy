@@ -267,9 +267,21 @@ function modHandler.requireFromPlugin(lib, modName)
 	
 end
 
+function modHandler.filenameFromPlugin(filename, modName)
+    modName = modName or _RYSY_CURRENT_MOD
+    
+    return modName .. ":Loenn/" .. filename
+end
+
 -- Defaults to current mod directory
 function modHandler.readFromPlugin(filename, modName)
-    _RYSY_unimplemented()
+    local filenameFromPlugin = modHandler.filenameFromPlugin(filename, modName)
+
+    if filenameFromPlugin then
+        local content = utils.readAll(filenameFromPlugin)
+
+        return content
+    end
 end
 
 local function createModSettingDirectory(modName)
