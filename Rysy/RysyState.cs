@@ -38,6 +38,11 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
     public Scene _Scene {
         get;
         set {
+            if (field is { Components.Locked: true }) {
+                RegisterOnEndOfThisFrame((@this: this, value), static state => state.@this.Scene = state.value);
+                return;
+            }
+            
             lock (_sceneChangeLock) {
                 var persistedWindows = field.GetAll<Window>().Where(w => w.PersistBetweenScenes).ToList();
                 field.OnEnd();
@@ -276,7 +281,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
 
                         // XNA does not expose horizontal mouse wheel.
                         // We'll use this event instead to store precise wheel state for later use
-                        // in detecting touch pad panning, which Windows exposes as mouse wheel movement.
+                        // in detecting touchpad panning, which Windows exposes as mouse wheel movement.
                         if (!float.IsInteger(wheel.preciseX)) {
                             TouchpadPan.X = wheel.preciseX;
                         }

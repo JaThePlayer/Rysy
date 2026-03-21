@@ -64,6 +64,11 @@ public static class MiscExtensions {
     /// </summary>
     public static BitArray2dMatchEnumerator EnumerateTrue2dLocations(this BitArray s, int gridWidth, Point offset = default) =>
         new(s, gridWidth, offset);
+
+    public static void DisposeIfDisposable(this object x) {
+        if (x is IDisposable d)
+            d.Dispose();
+    }
 }
 
 public struct BitArray2dMatchEnumerator : IEnumerator<Point>, IEnumerable<Point> {

@@ -11,9 +11,7 @@ public abstract class Scene {
     private readonly List<(string Id, Action Render)> _popups = [];
     private readonly Queue<string> _newPopupQueue = [];
 
-    private ComponentRegistryScope? _components;
-
-    public IComponentRegistry Components => _components ?? throw new Exception("Components are not initialised yet. They may not be added until OnBegin.");
+    public IComponentRegistry Components { get; private set; } = new UninitializedComponentRegistry();
 
     public HotkeyHandler Hotkeys { get; private set; }
     public HotkeyHandler HotkeysIgnoreImGui { get; private set; }
@@ -22,7 +20,6 @@ public abstract class Scene {
     public IRysyLogger Logger => this.AddIfMissing(self => self.LoggerFactory.CreateLogger(self.GetType()));
 
     protected Scene() {
-        //_components = new SceneComponentRegistry();
         _removeWindow = (w) => {
             w.Removed();
             Remove(w);
@@ -32,7 +29,7 @@ public abstract class Scene {
     public float TimeActive { get; private set; }
 
     internal void SetGlobalComponentRegistry(IComponentRegistry globalComponents) {
-       _components = new ComponentRegistryScope(globalComponents);
+       Components = new ComponentRegistryScope(globalComponents);
     }
     
     /// <summary>
@@ -54,8 +51,8 @@ public abstract class Scene {
             c.OnRemoved();
         }
         
-        _components?.Dispose();
-        _components = null;
+        Components.DisposeIfDisposable();
+        Components = new UninitializedComponentRegistry();
     }
 
     public virtual void SetupHotkeys() {
@@ -86,7 +83,7 @@ public abstract class Scene {
     }
 
     public virtual void RenderImGui() {
-        if (_components is { } registry) {
+        if (Components is { } registry) {
             foreach (var c in registry.EnumerateAllLocked<SceneComponent>()) {
                 c.RenderImGui();
             }
@@ -196,6 +193,7 @@ public abstract class Scene {
         return time % interval < Time.Delta;
     }
 
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
     public void Add<T>(T component) {
         if (component is not null)
             Components.Add(component);
@@ -205,6 +203,7 @@ public abstract class Scene {
         if (component is not null)
             Components.Remove(component);
     }
+#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
     
     public T AddIfMissing<T>() where T : class, new() {
         return Components.AddIfMissing<T>();
@@ -223,21 +222,59 @@ public abstract class Scene {
     }
     
     public IReadOnlyList<T> GetAll<T>() where T : class {
-        return _components is null ? [] : Components.GetAll<T>();
+        return Components.GetAll<T>();
     }
     
     public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
-        return _components is null ? [] : Components.GetAll<T>(targetType);
+        return Components.GetAll<T>(targetType);
     }
     
     public ComponentRegistryExt.EnumerateAllLockedEnumerable<T> EnumerateAllLocked<T>() where T : class {
-        if (_components is null)
-            return default;
         return Components.EnumerateAllLocked<T>();
     }
     
     public void Emit<T>(T signal) where T : ISignal {
         Components.OnSignal(signal);
+    }
+
+    private sealed class UninitializedComponentRegistry : IComponentRegistry {
+        private void ThrowException() {
+            throw new Exception("Components are not initialised yet. They may not be added until OnBegin.");
+        }
+        
+        public void Add<T>(T component) where T : notnull {
+            ThrowException();
+        }
+
+        public void Remove<T>(T component) where T : notnull {
+        }
+
+        public T? Get<T>() where T : class {
+            return null;
+        }
+
+        public IReadOnlyList<T> GetAll<T>() where T : class {
+            return [];
+        }
+
+        public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
+            return [];
+        }
+
+        public IEnumerable<object> GetAll() {
+            return [];
+        }
+
+        public bool Locked => false;
+        
+        public IDisposable LockChanges() {
+            return new EmptyDisposable();
+        }
+
+        private class EmptyDisposable : IDisposable {
+            public void Dispose() {
+            }
+        }
     }
 }
 

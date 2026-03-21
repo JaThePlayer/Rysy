@@ -20,6 +20,8 @@ public interface IComponentRegistry : ISignalListener
 
     IEnumerable<object> GetAll();
 
+    public bool Locked { get; }
+
     /// <summary>
     /// Locks all changes to the registry until the returned <see cref="IDisposable"/> is disposed.
     /// Changes done during that time will get queued until the registry is unlocked.<br/>
@@ -155,6 +157,8 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
         return parent.GetAll();
     }
 
+    public bool Locked => parent.Locked;
+
     public IDisposable LockChanges() {
         return parent.LockChanges();
     }
@@ -258,6 +262,8 @@ public sealed class ComponentRegistry : IComponentRegistry {
     public IEnumerable<object> GetAll() {
         return Components;
     }
+
+    public bool Locked => _lockers.Count > 0;
 
     private readonly List<Locker> _lockers = [];
     
