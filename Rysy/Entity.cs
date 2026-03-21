@@ -487,6 +487,14 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
             clone.Y = Convert.ToInt32(y, CultureInfo.CurrentCulture);
         }
 
+        // If the manipulator didn't change width/height, copy our current size.
+        if (!placement.ValueOverrides.ContainsKey("width") && EntityData.ContainsKey("width")) {
+            clone.Width = Width;
+        }
+        if (!placement.ValueOverrides.ContainsKey("height") && EntityData.ContainsKey("height")) {
+            clone.Height = Height;
+        }
+
         return clone;
     }
 

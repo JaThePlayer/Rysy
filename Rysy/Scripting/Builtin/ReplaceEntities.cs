@@ -27,6 +27,11 @@ public sealed class ReplaceEntities : Script {
         var tempEntity = EntityRegistry.Create(mainPlacement, new(), room: args.Rooms[0], assignId: false, isTrigger: false);
         var (fields, existChecker) = EntityPropertyWindow.GetFields(tempEntity);
 
+        fields.Remove("width");
+        fields.Remove("height");
+        fields.Remove("x");
+        fields.Remove("y");
+
         var formWindow = new FormWindow(fields, $"Configuring Replace Script: {origSid} -> {newSid}");
         formWindow.SaveChangesButtonName = "Run Script";
 
@@ -37,7 +42,10 @@ public sealed class ReplaceEntities : Script {
 
             IHistoryAction? action = args.Rooms
                 .SelectMany(r => r.Entities[origSid])
-                .Select(e => new SwapEntityAction(e, EntityRegistry.Create(placement, e.Pos, e.Room, assignId: false, isTrigger: e is Trigger)))
+                .Select(e => new SwapEntityAction(e, e.CloneWith(pl => {
+                    pl.Sid = newSid;
+                    pl.ValueOverrides = placement.ValueOverrides;
+                })))
                 .MergeActions();
 
             // generally, your scripts should return a history action in Prerun instead of adding actions manually,
