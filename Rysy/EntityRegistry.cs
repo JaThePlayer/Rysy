@@ -62,6 +62,7 @@ public enum RegisteredEntityType {
     Trigger = 2,
     Style = 4,
     DecalRegistryProperty = 8,
+    Decal = 16,
 }
 
 public static class EntityRegistry {
@@ -415,7 +416,7 @@ public static class EntityRegistry {
         Register(CreateDecalInfo(FgDecalSid));
         Register(CreateDecalInfo(BgDecalSid));
 
-        RegisteredEntity CreateDecalInfo(string sid) => new(sid, RegisteredEntityType.Entity) {
+        RegisteredEntity CreateDecalInfo(string sid) => new(sid, RegisteredEntityType.Decal) {
             CSharpType = typeof(Decal),
             Fields = _ => decalFields,
         };

@@ -731,7 +731,9 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     }
 
     public RegisteredEntityType RegistryType =>
-        this is Trigger ? RegisteredEntityType.Trigger : RegisteredEntityType.Entity;
+        this is Trigger ? RegisteredEntityType.Trigger
+        : this is Decal ? RegisteredEntityType.Decal
+        : RegisteredEntityType.Entity;
     
     public Decal? AsDecal() => this as Decal;
     public Trigger? AsTrigger() => this as Trigger;
