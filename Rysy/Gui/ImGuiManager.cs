@@ -321,6 +321,31 @@ public static class ImGuiManager {
 
         return changed;
     }
+    
+    public static bool Combo<T>(string name, ref T? value, IDictionary<T, Searchable> values, 
+        ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
+        Func<T, Searchable, bool>? menuItemRenderer = null) where T : notnull {
+
+        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
+        
+        if (value is null || !values.TryGetValue(value, out var valueName)) {
+            valueName = new Searchable(value?.ToString() ?? "");
+        }
+        
+        cache ??= new();
+        bool changed = false;
+        var size = cache.GetSize(values.Select(x => x.Value));
+        var dropdownSize = GetDropdownWindowSize(size, values.Count);
+        ImGui.SetNextWindowSize(dropdownSize);
+        
+        if (ImGui.BeginCombo(name, valueName.TextWithMods).WithTooltip(tooltip)) {
+            RenderListContents(name, ref value, ref search, ref changed, cache, values.Select(x => x.Key), 
+                t => values[t], menuItemRenderer);
+            ImGui.EndCombo();
+        }
+
+        return changed;
+    }
 
     public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, Tooltip tooltip = default) where T : notnull {
         string? search = null;
@@ -456,7 +481,7 @@ public static class ImGuiManager {
         return changed;
     }
 
-    public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, string> values, Func<string, T> stringToValue, 
+    public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, Searchable> values, Func<string, T> stringToValue, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
         Func<T, Searchable, bool>? menuItemRenderer = null, Func<T?, string>? tToString = null)
         where T : notnull {

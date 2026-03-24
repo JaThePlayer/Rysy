@@ -18,7 +18,7 @@ internal sealed record FrostHelperAttachGroup : DropdownField<int>, ILonnField {
             ? room.Entities.Concat(room.Triggers)
                 .Where(e => e.Has("attachGroup"))
                 .Select(e => e.Int("attachGroup"))
-                .SafeToDictionary(e => (e, e.ToString(CultureInfo.InvariantCulture)))
+                .SafeToDictionary(e => (e, new Searchable(e.ToString(CultureInfo.InvariantCulture))))
             : [];
     }
     

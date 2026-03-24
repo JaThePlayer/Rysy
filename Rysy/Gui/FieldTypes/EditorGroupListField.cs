@@ -1,4 +1,5 @@
 ﻿using Rysy.Extensions;
+using Rysy.Helpers;
 using Rysy.Layers;
 
 namespace Rysy.Gui.FieldTypes; 
@@ -29,7 +30,7 @@ public record EditorGroupField : DropdownField<EditorGroup> {
         _registry = reg;
         Values = ctx => ctx.EditorState?.Map?.EditorGroups
             .Where(gr => !gr.IsAutoAssigned && gr != EditorGroup.Default)
-            .ToDictionary(gr => gr, gr => gr.Name) ?? new();
+            .ToDictionary(gr => gr, gr => new Searchable(gr.Name)) ?? new();
     }
 
     public override ValidationResult IsValid(object? value) {

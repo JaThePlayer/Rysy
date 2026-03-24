@@ -31,7 +31,7 @@ public static partial class Fields {
     public static DropdownField<string> EnumNamesDropdown<T>(T def, Func<string, string>? keySelector = null) where T : struct, Enum
     => new DropdownField<string>() {
         Default = def.ToString(),
-    }.SetValues(Enum.GetNames<T>().ToDictionary(k => keySelector?.Invoke(k) ?? k, v => v));
+    }.SetValues(Enum.GetNames<T>().ToDictionary(k => keySelector?.Invoke(k) ?? k, v => new Searchable(v)));
 
     public static DropdownField<string> EnumNamesDropdown(object def, Type enumType) {
         if (!enumType.IsEnum) {
@@ -40,58 +40,46 @@ public static partial class Fields {
 
         return new DropdownField<string>() {
             Default = def.ToString()!,
-        }.SetValues(Enum.GetNames(enumType).ToDictionary(k => k, v => v, StringComparer.OrdinalIgnoreCase));
+        }.SetValues(Enum.GetNames(enumType).ToDictionary(k => k, v => new Searchable(v), StringComparer.OrdinalIgnoreCase));
     }
 
     public static DropdownField<string> EnumNamesDropdown<T>(string def) where T : struct, Enum
     => new DropdownField<string>() {
         Default = def,
-    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => v, StringComparer.OrdinalIgnoreCase));
+    }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => new Searchable(v), StringComparer.OrdinalIgnoreCase));
 
     public static DropdownField<T> Dropdown<T>(T def, IDictionary<T, string> values, bool editable = false) where T : notnull
     => new DropdownField<T>() {
         Default = def,
         Editable = editable,
-    }.SetValues(values);
-
-    public static DropdownField<T> Dropdown<T>(T def, Func<IDictionary<T, string>> values, bool editable = false) where T : notnull
-    => new DropdownField<T>() {
-        Default = def,
-        Editable = editable,
-    }.SetValues(values);
-
-    public static DropdownField<T> Dropdown<T>(T def, Func<List<T>> values, Func<T, string>? toString = null, bool editable = false) 
-        where T : notnull
-    => new DropdownField<T>() {
-        Default = def,
-        Editable = editable,
-    }.SetValues(() => values().ToDictionary(k => k, k => toString is { } ? toString(k) : k.ToString()!));
+    }.SetValues(values.SafeToDictionary(kv => kv.Key, kv => new Searchable(kv.Value)));
 
     public static DropdownField<T> Dropdown<T>(T def, List<T> values, Func<T, string>? toString = null, bool editable = false)
         where T : notnull 
     => new DropdownField<T>() {
         Default = def,
         Editable = editable,
-    }.SetValues(values.ToDictionary(k => k, k => toString is { } ? toString(k) : k.ToString()!));
+    }.SetValues(values.ToDictionary(k => k, k => new Searchable(toString is { } ? toString(k) : k.ToString() ?? "")));
 
     public static DropdownField<string> TileDropdown(char def, bool bg, bool addDontCopyOption = false, bool addWildcardOption = false) => new DropdownField<string>() {
         Default = def.ToString(),
     }.SetValues(ctx => {
         if (ctx.EditorState?.Map is not { } map) {
-            return new Dictionary<string, string>();
+            return new Dictionary<string, Searchable>();
         }
 
         var autotiler = bg ? map.BgAutotiler : map.FgAutotiler;
 
         var dict = autotiler.Tilesets
-            .ToDictionary(t => t.Key.ToString(), t => $"[{t.Key}] {autotiler.GetTilesetDisplayName(t.Key)}");
+            .ToDictionary(t => t.Key.ToString(), 
+                t => new Searchable($"[{t.Key}] {autotiler.GetTilesetDisplayName(t.Key)}"));
 
         if (addDontCopyOption) {
-            dict["\0"] = "rysy.tilesetImport.dontCopy".Translate();
+            dict["\0"] = new Searchable("rysy.tilesetImport.dontCopy".Translate());
         }
 
         if (addWildcardOption) {
-            dict["*"] = "rysy.tilesetImport.wildcard".Translate();
+            dict["*"] = new Searchable("rysy.tilesetImport.wildcard".Translate());
         }
         
         return dict;
@@ -109,12 +97,12 @@ public static partial class Fields {
         Default = def,
     }.SetValues(ctx => {
         if (ctx.EditorState?.Map is not { } map) {
-            return new Dictionary<char, string>();
+            return new Dictionary<char, Searchable>();
         }
 
         var autotiler = bg(ctx) ? map.BgAutotiler : map.FgAutotiler;
 
-        return autotiler.Tilesets.ToDictionary(t => t.Key, t => autotiler.GetTilesetDisplayName(t.Key));
+        return autotiler.Tilesets.ToDictionary(t => t.Key, t => new Searchable(autotiler.GetTilesetDisplayName(t.Key)));
     });
 
     /// <summary>

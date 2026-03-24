@@ -22,7 +22,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     
     public bool EmptyIsNull { get; set; }
     
-    public Func<FormContext, IDictionary<T, string>> Values;
+    public Func<FormContext, IDictionary<T, Searchable>> Values { get; set; }
 
     public Func<string?, T> StringToT;
 
@@ -44,14 +44,14 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         StringToT = stringToT;
     }
 
-    private IDictionary<T, string> GetValues() {
+    private IDictionary<T, Searchable> GetValues() {
         if (typeof(T) == typeof(object)) {
             var values = Values(Context);
             if (values.Keys.All(k => k is string))
                 return values;
             // the value we get might be an int, but dropdown values might be floats etc.
             // to avoid issues with finding the dropdown values in those cases, we'll compare the string representations...
-            return new Dictionary<T, string>(values, new ToStringEqualityComparer());
+            return new Dictionary<T, Searchable>(values, new ToStringEqualityComparer());
         }
 
         return Values(Context);
@@ -107,25 +107,25 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         }
     }
 
-    public DropdownField<T> SetValues(Cache<IDictionary<T, string>> cache) {
+    public DropdownField<T> SetValues(Cache<IDictionary<T, Searchable>> cache) {
         Values = _ => cache.Value;
 
         return this;
     }
 
-    public DropdownField<T> SetValues(IDictionary<T, string> values) {
+    public DropdownField<T> SetValues(IDictionary<T, Searchable> values) {
         Values = _ => values;
 
         return this;
     }
 
-    public DropdownField<T> SetValues(Func<IDictionary<T, string>> values) {
+    public DropdownField<T> SetValues(Func<IDictionary<T, Searchable>> values) {
         Values = _ => values();
 
         return this;
     }
     
-    public DropdownField<T> SetValues(Func<FormContext, IDictionary<T, string>> values) {
+    public DropdownField<T> SetValues(Func<FormContext, IDictionary<T, Searchable>> values) {
         Values = values;
 
         return this;
