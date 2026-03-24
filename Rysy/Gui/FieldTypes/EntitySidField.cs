@@ -7,7 +7,7 @@ public record EntitySidField : DropdownField<string> {
         return EntityRegistry.Registered.CreateCache(x =>
             x.Where(y => (y.Value.Type & types) != 0)
             .ToDictionary(y => y.Key, 
-                y => new Searchable(y.Key, y.Value.Mod)));
+                y => new Searchable(y.Key, y.Value.AssociatedModNames, y.Value.Tags)));
     }
 
     private static readonly Dictionary<RegisteredEntityType, Cache<Dictionary<string, Searchable>>> Caches = new();

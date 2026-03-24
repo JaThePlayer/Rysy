@@ -27,8 +27,9 @@ public sealed class RegisteredEntity {
 
     public List<ModMeta> AssociatedMods { get; internal set; } = [];
 
-    private List<string>? _associatedModNames;
-    public List<string> AssociatedModNames => _associatedModNames ??= AssociatedMods.Select(m => m.Name).ToList();
+    public List<string> AssociatedModNames => field ??= AssociatedMods.Select(m => m.Name).ToList();
+
+    public IReadOnlyList<string> Tags => field ??= Placements.SelectMany(p => p.GetTags()).Distinct().ToList();
     
     public Type? CSharpType { get; internal set; }
     
@@ -38,12 +39,10 @@ public sealed class RegisteredEntity {
 
     public Func<object, FieldList> Fields { get; internal set; } = (_) => new();
 
-    private Placement? _mainPlacement;
-
     public Placement? MainPlacement {
-        get => _mainPlacement;
+        get;
         internal set {
-            _mainPlacement = value;
+            field = value;
             CachedMainPlacementValues = null;
         }
     }
