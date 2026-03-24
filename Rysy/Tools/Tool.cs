@@ -392,13 +392,14 @@ public abstract class Tool {
         if (columns > 1)
             ImGui.Columns(columns);
 
+        var id = 0;
         foreach (var group in cachedSearch) {
             if (rendered < elementsVisible && skip <= 0) {
                 rendered++;
 
                 var groupKey = GetGroupKeyForMaterial(group[0].material);
                 var first = GetMainPlacementForGroupKey(groupKey, group);
-                ImGui.PushID(first.searchable.TextWithMods);
+                ImGui.PushID(id++);
                 
                 // draw dropdown for alternate placements
                 if (group.Count > 1) {
