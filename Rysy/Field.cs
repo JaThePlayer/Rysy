@@ -9,7 +9,7 @@ public abstract record class Field {
     public Tooltip Tooltip { get; set; }
     public string? NameOverride { get; set; }
 
-    public FormContext Context { get; internal set; }
+    public FormContext Context { get; internal set; } = new();
 
     /// <summary>
     /// An arbitrary function that checks whether a value is valid. Called by <see cref="IsValid(object)"/>

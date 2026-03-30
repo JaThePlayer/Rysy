@@ -267,11 +267,14 @@ public class FormWindow : Window {
 }
 
 public class FormContext : ILuaWrapper, IUntypedData {
-    private FormWindow _window;
+    private readonly FormWindow? _window;
 
     public FormContext(FormWindow window) => _window = window;
 
-    private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => _window.FieldList.FirstOrDefault(f => f.Name == fieldName);
+    public FormContext() {
+    }
+
+    private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => _window?.FieldList.FirstOrDefault(f => f.Name == fieldName);
 
     public EditorState? EditorState => EditorState.Current;
     
@@ -300,7 +303,7 @@ public class FormContext : ILuaWrapper, IUntypedData {
     /// </summary>
     public void SetValue(string fieldName, object newValue) {
         if (GetPropByNameOrNull(fieldName) is { } prop)
-            _window.Set(prop, newValue);
+            _window?.Set(prop, newValue);
     }
 
     public int LuaIndex(Lua lua, long key) {
