@@ -48,6 +48,8 @@ public static partial class LuaSerializer {
     public static string? ConvertSelectionsToLonnString(IReadOnlyList<IEditorLayer> layers, List<CopypasteHelper.CopiedSelection> copied) {
         if (copied is not { Count: > 0 })
             return null;
+        if (copied.Any(x => x.ResolveLayer(layers) is not ILonnSerializableLayer))
+            return null;
 
         var writer = new StringWriter();
         var indentedWriter = new IndentedTextWriter(writer);
