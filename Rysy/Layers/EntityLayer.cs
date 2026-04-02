@@ -75,24 +75,21 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorL
         switch (SelectionLayer) {
             case SelectionLayer.FgDecals:
             case SelectionLayer.BgDecals:
-                return AppendMissing(new BinaryPacker.Element() {
-                    Attributes = new() {
+                return AppendMissing(new BinaryPacker.Element {
+                    Attributes = new Dictionary<string, object> {
                         ["_fromLayer"] = LonnLayerName!,
-                        ["texture"] = $"decals/{LuaSerializer.CorrectDecalPathForLonn(item.Data.Attr("texture").TrimStart("decals/"))}",
+                        ["texture"] =
+                            $"decals/{LuaSerializer.CorrectDecalPathForLonn(item.Data.Attr("texture").TrimStart("decals/"))}",
                         ["scaleX"] = item.Data.Float("scaleX", 1),
                         ["scaleY"] = item.Data.Float("scaleY", 1),
-                        ["rotation"] = item.Data.Float("rotation", 0),
                         ["x"] = item.Data.Float("x", 0),
                         ["y"] = item.Data.Float("y", 0),
-                        ["color"] = item.Data.Attr("color", "ffffff"),
-                        ["parallax"] = item.Data.Float("parallax", 0),
-                        ["depth"] = item.Data.Int("depth", 0),
-                    }
-                }, item.Data, blacklist: ["texture", "scaleX", "scaleY", "rotation", "x", "y", "color"]);
+                    },
+                }, item.Data, blacklist: ["texture", "scaleX", "scaleY", "x", "y"]);
                 break;
             case SelectionLayer.Entities:
             case SelectionLayer.Triggers:
-                return AppendMissing(new BinaryPacker.Element() {
+                return AppendMissing(new BinaryPacker.Element {
                     Attributes = new() {
                         ["_fromLayer"] = LonnLayerName!,
                         ["_name"] = item.Data.Name ?? "",
