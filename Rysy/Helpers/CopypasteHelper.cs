@@ -16,6 +16,24 @@ public static class CopypasteHelper {
         public IEditorLayer? ResolveLayer(IReadOnlyList<IEditorLayer> layers) {
             return EditorLayers.EditorLayerFromName(Layer, layers);
         }
+
+        public Entity? TryCreateEntity(Room room, IReadOnlyList<IEditorLayer> layers) {
+            var layer = ResolveLayer(layers);
+            if (layer is not EntityLayer)
+                return null;
+            
+            var e = EntityRegistry.Create(Data, room, layer.SelectionLayer == SelectionLayer.Triggers);
+            e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
+
+            return e;
+        }
+
+        public Placement CreatePlacement() {
+            return new Placement(Data.Name ?? "?") {
+                Sid = Data.Name, 
+                ValueOverrides = Data.Attributes,
+            };
+        }
     }
 
     public static List<CopiedSelection>? GetSelectionsFromString(IReadOnlyList<IEditorLayer> layers, string selectionString) {
@@ -215,10 +233,7 @@ static string Compress(byte[] input) {
         entities = new();
         var entitiesNotRef = entities;
 
-        var newSelections = pasted.Where(pasted => pasted.ResolveLayer(layers) is EntityLayer).SelectMany(s => {
-            var layer = (EntityLayer)s.ResolveLayer(layers)!;
-            var e = EntityRegistry.Create(s.Data, room, layer.SelectionLayer == SelectionLayer.Triggers);
-            e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
+        var newSelections = pasted.SelectWhereNotNull(x => x.TryCreateEntity(room, layers)).SelectMany(e => {
             entitiesNotRef.Add(e);
             var handler = e.CreateSelection().Handler as EntitySelectionHandler;
             var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? [];
