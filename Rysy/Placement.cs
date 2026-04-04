@@ -168,7 +168,10 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     /// </summary>
     /// <returns>this</returns>
     public Placement WithOverrides(Dictionary<string, object> newOverrides) {
-        ValueOverrides = new(ValueOverrides.Concat(newOverrides));
+        ValueOverrides = new(ValueOverrides);
+        foreach (var (k, v) in newOverrides) {
+            ValueOverrides[k] = v;
+        }
 
         return this;
     }

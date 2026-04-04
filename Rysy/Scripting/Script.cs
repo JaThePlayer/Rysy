@@ -37,7 +37,7 @@ public abstract class Script : IName {
 public record class ScriptArgs {
     public IReadOnlyList<Room> Rooms { get; internal set; }
 
-    public IReadOnlyDictionary<string, object> Args { get; internal set; }
+    public IUntypedData Args { get; internal set; }
 
     /// <summary>
     /// The location in the room in which the script got ran
@@ -51,5 +51,5 @@ public record class ScriptArgs {
     /// Note that values returned by this function will always be values saveable to .bins, meaning that complex types
     /// like lists or editor groups will be converted to strings, and need to be retrieved as such.
     /// </summary>
-    public T Get<T>(string name) => (T)Args[name];
+    public T Get<T>(string name) => (T)(Args.TryGetValue(name, out var value) ? value : null!);
 }

@@ -4,8 +4,8 @@ using Rysy.History;
 using Rysy.Scripting;
 using Hexa.NET.ImGui;
 using Rysy.Components;
-using Rysy.Extensions;
 using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.Layers;
 
 namespace Rysy.Tools;
@@ -68,7 +68,7 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
     private void RunScript(Script script, Dictionary<string, object>? fieldValues, Vector2 roomPos) {
         var args = new ScriptArgs();
 
-        args.Args = fieldValues ?? new();
+        args.Args = new DictionaryUntypedData(fieldValues ?? new());
         args.RoomPos = roomPos;
 
         var layer = Layer;
