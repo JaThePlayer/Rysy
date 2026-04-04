@@ -15,7 +15,7 @@ public sealed class ModTexture : VirtTexture, IModAsset {
 
     public ModTexture(ModMeta mod, string virtPath) {
         Mod = mod;
-        VirtPath = virtPath;
+        VirtPath = virtPath.Unbackslash();
     }
 
     public string? SourceModName => Mod.Name;

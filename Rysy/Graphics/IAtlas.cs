@@ -201,8 +201,12 @@ public static class IAtlasExt {
         
         foreach (var tex in doc.Root.Nodes().OfType<XElement>())
         {
+            if (tex.Attribute("n") is not { Value: { } n }) {
+                Logger.Write("Atlas.Crunch", LogLevel.Info, $"Crunch file element doesn't have 'n' attribute: '{tex}'");
+                continue;
+            }
             #pragma warning disable CA2000
-            var virtualTexture = new ModTexture(mod, Path.Combine(Path.GetDirectoryName(path)!, tex.Attribute("n")!.Value + ".png"));
+            var virtualTexture = new ModTexture(mod, Path.Combine(Path.GetDirectoryName(path) ?? "", n + ".png"));
             self.AddTexture($"_src_crunch_{path}", virtualTexture);
             
             foreach (var img in tex.Nodes().OfType<XElement>()) {
