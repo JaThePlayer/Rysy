@@ -54,6 +54,14 @@ public static class ComponentRegistryExt {
 
             return ret;
         }
+        
+        public T AddIfMissing<T>(Func<T> newValue) where T : class {
+            if (registry.Get<T>() is not { } ret) {
+                registry.Add(ret = newValue());
+            }
+
+            return ret;
+        }
 
         public T AddIfMissing<T>(T newValue) where T : class {
             if (registry.Get<T>() is not { } ret) {
@@ -74,6 +82,8 @@ public static class ComponentRegistryExt {
         public EnumerateAllLockedEnumerable<T> EnumerateAllLocked<T>() where T : class {
             return new EnumerateAllLockedEnumerable<T>(registry);
         }
+
+        public IRysyLogger<T> GetLogger<T>() => registry.GetRequired<IRysyLoggerFactory>().CreateLogger<T>();
     }
 
     public struct EnumerateAllLockedEnumerable<T>(IComponentRegistry? registry) : IEnumerable<T>, IEnumerator<T> where T : class {
@@ -271,10 +281,6 @@ public sealed class ComponentRegistry : IComponentRegistry {
         var locker = new Locker();
         _lockers.Add(locker);
         locker.Queue(() => {
-            var popped = _lockers[^1];
-            if (popped != locker) {
-                throw new OutOfOrderComponentRegistryUnlockException();
-            }
             _lockers.RemoveAt(_lockers.Count - 1);
         });
 

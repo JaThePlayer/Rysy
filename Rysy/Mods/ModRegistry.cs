@@ -1,4 +1,5 @@
-﻿using Rysy.Helpers;
+﻿using Rysy.Components;
+using Rysy.Helpers;
 using Rysy.Loading;
 using Rysy.Platforms;
 using System.Reflection;
@@ -96,12 +97,24 @@ public static class ModRegistry {
     }
 
     public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
+        LastUsedComponentRegistry?.DisposeIfDisposable();
+        componentRegistry = new ComponentRegistryScope(componentRegistry);
         LastUsedComponentRegistry = componentRegistry;
         task?.SetMessage("Registering Mods");
 
         UnloadAllMods();
         ModsMutable.Clear();
 
+        componentRegistry.AddIfMissing(() => new CelesteSettingsProvider(
+            new ReadonlyModFilesystem(new FolderModFilesystem(Profile.Instance.CelesteDirectory)), 
+            componentRegistry.GetLogger<CelesteSettingsProvider>())
+        );
+
+        componentRegistry.AddIfMissing(() => new DebugRcClient(
+            componentRegistry.GetRequired<HttpClient>(),
+            port: componentRegistry.GetRequired<ICelesteSettingsProvider>().ReadEverestSettings().DebugRcPort    
+        ));
+        
         Filesystem = new();
 
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");

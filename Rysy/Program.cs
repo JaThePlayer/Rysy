@@ -11,6 +11,7 @@ globalComponents.Add(RysyPlatform.Current);
 globalComponents.Add(loggerFactory);
 globalComponents.Add(RysyState.CmdArguments = new CommandlineArguments(args, loggerFactory.CreateLogger<CommandlineArguments>()));
 globalComponents.Add(new SmartFpsHandler());
+globalComponents.Add(new HttpClient());
 
 if (RysyState.CmdArguments.HelpDisplayed)
     return;
