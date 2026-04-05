@@ -5,6 +5,7 @@ using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
+using Rysy.Helpers.Repl;
 using Rysy.History;
 using Rysy.Loading;
 using Rysy.MapAnalyzers;
@@ -468,6 +469,9 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);
         Add(new WindowPersister<RoomList>(() => new RoomList(Input.Global), "rysy.windows.rooms", Settings.Instance, defaultState: true));
+        
+        Add(new WindowPersister<ReplWindow>(() => new ReplWindow("rysy.windows.csharprepl", 
+            new CSharpRepl(CSharpRepl.DefaultBootCode, Components.GetLogger<CSharpRepl>())), "rysy.windows.csharprepl", Settings.Instance, false));
         ToolHandler.AddWindows(Settings.Instance);
 
         OnMapChanged(null, EditorState.Map);

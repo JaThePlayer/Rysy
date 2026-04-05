@@ -470,3 +470,7 @@ rysy.validate.overlappingRoomWarning=Room overlaps a different room, which can c
 
 rysy.windows.rooms=Rooms
 rysy.windows.recentList=Recent
+rysy.windows.csharprepl=C# Repl
+rysy.windows.csharprepl.code=Code
+rysy.windows.csharprepl.run=Run Code
+rysy.windows.csharprepl.history=History
