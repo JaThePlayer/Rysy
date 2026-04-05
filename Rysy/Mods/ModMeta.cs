@@ -196,8 +196,7 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     // ReSharper disable once InconsistentNaming
     //
     // This formatting disable is to avoid someone accidentally changing it to "Dll"
-    // Yaml Serialization / Deserialization is case sensitive!
-    // 
+    // The Yaml Deserializer is case-sensitive by default!
     
     /// <summary>
     /// The path to the dll of the mod.
