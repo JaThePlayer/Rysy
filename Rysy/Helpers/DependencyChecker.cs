@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Rysy.Helpers;
 
-public static class DependencyCheker {
+public static class DependencyChecker {
     public const string UnknownModName = "Unknown";
 
     public class Ctx {
@@ -19,7 +19,8 @@ public static class DependencyCheker {
         public IDictionary<string, IList<object>> ModRequirementSources { get; internal set; } = new Dictionary<string, IList<object>>();
 
         public IEnumerable<string> FindMissingDependencies(ModMeta targetMod) {
-            var deps = targetMod.GetAllDependenciesRecursive().ToListIfNotList();
+            var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
+            var deps = targetMod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
 
             foreach (var modName in Mods) {
                 if (targetMod.Name == modName) {

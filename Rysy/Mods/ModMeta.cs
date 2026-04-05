@@ -192,12 +192,12 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     /// The name of the mod.
     /// </summary>
     public string Name { get; set; }
-
+    
     /// <summary>
     /// The path to the dll of the mod.
     /// Unused by Rysy, but still read to not break the yaml upon saving.
     /// </summary>
-    [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
+    [YamlMember(Alias = "DLL", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
     public string? Dll { get; set; }
 
     /// <summary>

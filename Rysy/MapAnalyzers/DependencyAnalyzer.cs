@@ -16,7 +16,7 @@ public class DependencyAnalyzer : MapAnalyzer {
             return;
         }
 
-        var depCtx = DependencyCheker.GetDependencies(ctx.Map);
+        var depCtx = DependencyChecker.GetDependencies(ctx.Map);
 
         var missing = depCtx.FindMissingDependencies(mod).ToListIfNotList();
 
@@ -31,8 +31,8 @@ public class DependencyAnalyzer : MapAnalyzer {
         return source switch {
             Style s => $"style:{s.Name}",
             Decal d => $"{d.Name}:{d.Texture}",
-            DependencyCheker.MetadataDependency d => $"metadata:{d.FieldName}",
-            DependencyCheker.TilesetDependency t => $"{t.Layer}Tileset:{t.Texture}",
+            DependencyChecker.MetadataDependency d => $"metadata:{d.FieldName}",
+            DependencyChecker.TilesetDependency t => $"{t.Layer}Tileset:{t.Texture}",
             IName name => name.Name,
             _ => source.ToString()!,
         };
@@ -55,7 +55,7 @@ public class DependencyAnalyzer : MapAnalyzer {
     }
 
     sealed record class MissingDepResult(ModMeta BaseMod, string DepModName, ModMeta? DepModMeta, List<IGrouping<(Type Type, string Name), object>> Sources) : IAnalyzerResult {
-        private bool IsUnknown => DepModName == DependencyCheker.UnknownModName;
+        private bool IsUnknown => DepModName == DependencyChecker.UnknownModName;
 
         public LogLevel Level => IsUnknown ? LogLevel.Warning : LogLevel.Error;
 
@@ -113,8 +113,8 @@ public class DependencyAnalyzer : MapAnalyzer {
                     if (group.Key.Type.IsSubclassOf(typeof(Entity))) {
                         RenderEntityList(group);
                     }
-                    if (group.Key.Type == typeof(DependencyCheker.MetadataDependency)) {
-                        ImGui.Text((group.First() as DependencyCheker.MetadataDependency)?.Value.ToString());
+                    if (group.Key.Type == typeof(DependencyChecker.MetadataDependency)) {
+                        ImGui.Text((group.First() as DependencyChecker.MetadataDependency)?.Value.ToString());
                     }
 
                     ImGui.TreePop();
