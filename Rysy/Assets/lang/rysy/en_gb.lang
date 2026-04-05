@@ -153,6 +153,8 @@ rysy.metadata.field.name.mode_audiostate_Ambience=Ambience
 rysy.metadata.field.description.mode_audiostate_Ambience=The ambience of the level.
 
 # Settings window
+rysy.settings.mods.countOptionalDependencies=Count optional dependencies as dependencies
+rysy.settings.mods.countOptionalDependencies.tooltip=Whether Rysy should treat optional dependencies as dependencies when scanning for missing dependencies.
 rysy.settings.mods.editSettings=Edit Mod Settings
 rysy.settings.mods.editSettings.tooltip=Opens a window to edit the settings for this mod.
 rysy.settings.perf.clearRenderCacheForOffScreenRooms=Clear Render Cache For Off-Screen Rooms

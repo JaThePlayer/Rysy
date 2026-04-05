@@ -262,7 +262,7 @@ public sealed class SettingsWindow : Window {
         }
         
         var countOptionalDependencies = Settings.Instance.CountOptionalDependenciesAsDependencies;
-        if (ImGui.Checkbox("Count optional dependencies as dependencies", ref countOptionalDependencies).WithTooltip("Whether Rysy should treat optional dependencies as dependencies when scanning for missing dependencies.")) {
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.mods.countOptionalDependencies", ref countOptionalDependencies)) {
             Settings.Instance.CountOptionalDependenciesAsDependencies = countOptionalDependencies;
             Settings.Instance.Save();
         }
