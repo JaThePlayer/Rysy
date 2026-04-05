@@ -55,7 +55,6 @@ public sealed class WindowPersister<T>(Func<T> factory, string langKey, Settings
         var enabled = settings.IsWindowPersisted<T>(defaultState);
         if (ImGuiManager.TranslatedCheckbox(langKey, ref enabled)) {
             settings.TogglePersistedWindow<T>(enabled);
-            Toggle(scene);
         }
     }
 }

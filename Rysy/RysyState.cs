@@ -56,7 +56,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                     value.AddWindow(w);
                 }
                 
-                this.Emit(new SceneChanged(value));
+                value.Emit(new SceneChanged(value));
             }
         }
     } = new BlankScene();

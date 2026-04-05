@@ -81,7 +81,7 @@ public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>,
     }
 
     public Window(string name, NumVector2? size = null) {
-        Name = name;
+        Name = name.Translate();
         Size = size;
 
         GenerateId();
