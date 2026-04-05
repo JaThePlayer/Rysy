@@ -204,6 +204,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
     } = false;
 
     public bool ReadBlacklist { get; set; } = true;
+    public bool CountOptionalDependenciesAsDependencies { get; set; } = false;
 
     public int? StartingWindowWidth { get; set; } = null;
     public int? StartingWindowHeight { get; set; } = null;

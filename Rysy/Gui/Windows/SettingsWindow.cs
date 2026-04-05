@@ -260,6 +260,12 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.ReadBlacklist = readBlacklist;
             Settings.Instance.Save();
         }
+        
+        var countOptionalDependencies = Settings.Instance.CountOptionalDependenciesAsDependencies;
+        if (ImGui.Checkbox("Count optional dependencies as dependencies", ref countOptionalDependencies).WithTooltip("Whether Rysy should treat optional dependencies as dependencies when scanning for missing dependencies.")) {
+            Settings.Instance.CountOptionalDependenciesAsDependencies = countOptionalDependencies;
+            Settings.Instance.Save();
+        }
 
         ImGui.Separator();
         ImGui.TextDisabled("Mod Settings");
