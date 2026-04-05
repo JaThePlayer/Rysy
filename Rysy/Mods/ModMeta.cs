@@ -193,12 +193,18 @@ public sealed class EverestModuleMetadata : ILuaWrapper {
     /// </summary>
     public string Name { get; set; }
 
+    // ReSharper disable once InconsistentNaming
+    //
+    // This formatting disable is to avoid someone accidentally changing it to "Dll"
+    // Yaml Serialization / Deserialization is case sensitive!
+    // 
+    
     /// <summary>
     /// The path to the dll of the mod.
     /// Unused by Rysy, but still read to not break the yaml upon saving.
     /// </summary>
     [YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)]
-    public string? Dll { get; set; }
+    public string? DLL { get; set; }
 
     /// <summary>
     /// The mod version.
