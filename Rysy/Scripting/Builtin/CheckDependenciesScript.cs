@@ -11,7 +11,7 @@ internal sealed class CheckDependenciesScript : Script {
         if (map is null)
             return null;
 
-        var ctx = DependencyCheker.GetDependencies(map);
+        var ctx = DependencyChecker.GetDependencies(map);
 
         ctx.Mods.LogAsJson();
         ctx.ModRequirementSources.Select(kv => new {

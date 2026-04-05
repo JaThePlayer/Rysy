@@ -198,7 +198,7 @@ public static class EntityRegistry {
         }
         
         return ret ?? GetInfo(entity)?.AssociatedModNames
-                   ?? [DependencyCheker.UnknownModName];
+                   ?? [DependencyChecker.UnknownModName];
     }
 
     public static List<string> GetAssociatedMods(Style style) {
@@ -212,7 +212,7 @@ public static class EntityRegistry {
         }
         
         return ret ?? GetInfo(style.Name, RegisteredEntityType.Style)?.AssociatedModNames
-                   ?? [DependencyCheker.UnknownModName];
+                   ?? [DependencyChecker.UnknownModName];
     }
 
     public static async ValueTask RegisterAsync(bool loadLuaPlugins = true, bool loadCSharpPlugins = true, SimpleLoadTask? task = null) {

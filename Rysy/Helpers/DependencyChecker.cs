@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Rysy.Helpers;
 
-public static class DependencyCheker {
+public static class DependencyChecker {
     public const string UnknownModName = "Unknown";
 
     public class Ctx {
