@@ -173,13 +173,13 @@ static struct luaL_Reg funcs[] = {
             pushutfchar(L, 1);
         else {
             int i;
-            LuaNET.LuaLBuffer b = default;
-            LuaNET.LuaNative.luaL_buffinit(L, b);
+            LuaLBuffer b = default;
+            LuaImports.luaL_buffinit(L, b);
             for (i = 1; i <= n; i++) {
                 pushutfchar(L, i);
-                LuaNET.LuaNative.luaL_addvalue(b);
+                LuaImports.luaL_addvalue(b);
             }
-            LuaNET.LuaNative.luaL_pushresult(b);
+            LuaImports.luaL_pushresult(b);
         }
         return 1;
     }

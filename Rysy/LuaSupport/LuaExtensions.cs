@@ -49,9 +49,10 @@ public static partial class LuaExt {
     /// The returned span is valid as long as that string remains on the lua execution stack.
     /// </summary>
     public static unsafe Span<byte> DangerousToStringIntoUtf8InLuaMemory(this Lua state, int index, bool callMetamethod = true) {
-        IntPtr source = state.ToLString(index, out ulong num);
+        long num = 0;
+        var source = LuaImports.lua_tolstring(state, index, ref num);
 
-        if (source == IntPtr.Zero)
+        if (source == (void*)0)
             return Span<byte>.Empty;
 
         // todo: check if all these casts are needed?
@@ -62,7 +63,7 @@ public static partial class LuaExt {
 
         // This is safe as long as there's something pinning the string on lua's side
         // (like the string being on the lua execution stack)
-        return new Span<byte>((void*) source, length);
+        return new Span<byte>(source, length);
     }
 
     /// <summary>
@@ -1077,7 +1078,7 @@ where TArg1 : class, ILuaWrapper {
 
     private static LuaTableRef GetWrapperCacheRef(Lua state)
     {
-        if (_wrapperCacheRef is null || _wrapperCacheRef.Lua.pointer != state.pointer) {
+        if (_wrapperCacheRef is null || _wrapperCacheRef.Lua.Handle != state.Handle) {
             state.NewTable();
             var wrapperCacheLoc = state.GetTop();
             _wrapperCacheRef = LuaTableRef.MakeFrom(state, wrapperCacheLoc);

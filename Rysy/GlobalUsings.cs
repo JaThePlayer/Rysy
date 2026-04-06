@@ -18,6 +18,4 @@ global using XnaVector2 = Microsoft.Xna.Framework.Vector2;
 global using SpriteBatch = Rysy.Graphics.FnaSpriteBatch;
 #endif
 
-global using Lua = LuaNET.LuaState;
-global using LuaFunction = LuaNET.LuaFunction;
 global using Rysy.LuaSupport.KeraLuaPolyfill;
