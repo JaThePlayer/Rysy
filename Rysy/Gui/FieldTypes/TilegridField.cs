@@ -140,7 +140,7 @@ internal sealed class EditTileDataWindow : Window {
 
         _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 
-        _hotkeys.AddHistoryHotkeys(Undo, Redo, Save);
+        _hotkeys.AddHistoryHotkeys(Undo, Redo, () => Save());
 
         _hotkeys.AddHotkeyFromSettings("selection.upsizeLeft", "a", CreateUpsizeHandler(new(8, 0), new(-8, 0)), HotkeyModes.OnHoldSmoothInterval);
         _hotkeys.AddHotkeyFromSettings("selection.upsizeRight", "d", CreateUpsizeHandler(new(8, 0), new()), HotkeyModes.OnHoldSmoothInterval);
@@ -278,9 +278,11 @@ internal sealed class EditTileDataWindow : Window {
         }
     }
 
-    private void Save() {
+    protected override bool Save() {
         Edited = true;
         ShouldClose = true;
+
+        return true;
     }
 }
 

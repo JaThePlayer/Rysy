@@ -15,7 +15,7 @@ public class AnimatedTileChangedAction(string name, Dictionary<string, object> v
         foreach (var (k, v) in values) {
             tile.FakeData[k] = v;
         }
-        _added = tile.UpdateData(values);
+        _added = tile.UpdateData(values!);
         
         map.SaveAnimatedTilesXml();
 

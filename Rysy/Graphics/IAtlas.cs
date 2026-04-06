@@ -240,8 +240,7 @@ public static class IAtlasExt {
         var fullPath = $"{Path.GetDirectoryName(path)}/{textureIndex}.data";
         if (!File.Exists(fullPath)) {
             texture = new Texture2D(RysyState.GraphicsDevice, 1, 1);
-            texture.SetData(new Color[] { Color.White });
-            Console.WriteLine(fullPath);
+            texture.SetData([ Color.White ]);
             return texture;
         }
 
@@ -251,7 +250,7 @@ public static class IAtlasExt {
         using var stream = File.OpenRead(fullPath);
         using var dataReader = new BinaryReader(stream);
 
-        stream.Read(readDataBytes, 0, bytesSize);
+        _ = stream.Read(readDataBytes, 0, bytesSize);
 
         int pos = 0;
 
@@ -307,7 +306,7 @@ public static class IAtlasExt {
                     for (int l = 0; l < reset; l++) {
                         readDataBytes[l] = readDataBytes[pos + l];
                     }
-                    stream.Read(readDataBytes, reset, bytesSize - reset);
+                    _ = stream.Read(readDataBytes, reset, bytesSize - reset);
                     pos = 0;
                 }
             }

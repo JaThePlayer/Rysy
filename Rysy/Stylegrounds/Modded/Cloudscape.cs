@@ -252,6 +252,7 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
         {
             Cloudscape.ZoomBehaviors.Adjust => translate / zoom,
             Cloudscape.ZoomBehaviors.StaySame => translate,
+            _ => throw new ArgumentOutOfRangeException(nameof(Scape.ZoomBehavior))
         });
         parameters["inner_rotation"].SetValue(Scape.InnerRotation);
         parameters["outer_rotation"].SetValue(Scape.OuterRotation);

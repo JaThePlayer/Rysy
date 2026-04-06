@@ -807,7 +807,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     private Vector2 SnapToGridIfNeeded(Vector2 pos) {
-        if (!Input.Keyboard.Ctrl() || !Layer.SupportsPreciseMoveMode) {
+        if (!Input.Keyboard.Ctrl() || !(Layer?.SupportsPreciseMoveMode ?? false)) {
             var gridSize = GridSize;
             pos = pos.GridPosRound(gridSize).ToVector2() * gridSize;
         }

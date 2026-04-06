@@ -12,7 +12,7 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
 
     private PlaybackTrailData? _playbackTrailData;
 
-    private float Opacity => Scene.GetRequired<InteropModSettings>().PlaybackTrailOpacity;
+    private float Opacity => Scene?.GetRequired<InteropModSettings>().PlaybackTrailOpacity ?? 0f;
 
     private readonly List<(float, ISprite)> _sprites = [];
     private readonly Lock _spriteLock = new();
@@ -22,6 +22,9 @@ internal sealed class PlayerTrailRenderer : SceneComponent {
     }
 
     public override void Render() {
+        if (Scene is null)
+            return;
+
         var editorState = Scene.Get<EditorState>();
         if (_playbackTrailData is null || editorState?.Map is null) {
             return;

@@ -185,7 +185,6 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
         _GraphicsDevice.Clear(Color.Black);
 
         var renderUi = !_hideUi;
-        var uiRenderingSuccessful = false;
         
         if (ImGuiAvailable) {
 #if !NO_CATCH_RENDER_EXCEPTIONS
@@ -201,8 +200,6 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         }
                     }
                 }
-
-                uiRenderingSuccessful = true;
 #if !NO_CATCH_RENDER_EXCEPTIONS
             } catch (Exception e) {
                 Logger.Error(e, $"Unhandled exception during ImGui rendering!");

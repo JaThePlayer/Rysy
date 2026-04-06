@@ -80,7 +80,7 @@ public static class EntityRegistry {
             .Where(kv => kv.Value.Type == RegisteredEntityType.Trigger)
             .SelectMany(kv => kv.Value.Placements);
 
-    private static readonly Lazy<Cache<List<Placement>>> StylegroundPlacementsCache = new(() => RegisteredStyles.CreateCache(d => d
+    private static readonly Lazy<Cache<List<Placement>>> StylegroundPlacementsCache = new(() => RegisteredStyles!.CreateCache(d => d
         .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
         .SelectMany(kv => kv.Value.Placements)
         .ToList()), LazyThreadSafetyMode.ExecutionAndPublication);

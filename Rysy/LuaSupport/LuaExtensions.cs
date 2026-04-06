@@ -1022,7 +1022,7 @@ where TArg1 : class, ILuaWrapper {
                 var lua = Lua.FromIntPtr(s);
                 var wrapper = lua.UnboxWrapper(1);
                 
-                lua.PushString(wrapper.ToString());
+                lua.PushString(wrapper.ToStringInvariant());
                 return 1;
             });
             state.SetTable(metatableStackLoc);

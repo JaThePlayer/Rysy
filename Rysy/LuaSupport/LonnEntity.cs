@@ -205,8 +205,8 @@ public class LonnEntity : Entity, IHasLonnPlugin {
                 return base.GetMainSelection();
             
             //selection(room, entity):rectangle, table of rectangles
-            if (GetSelectionHandlersFromSelectionFunc() is {} selection) {
-                return selection.Main;
+            if (GetSelectionHandlersFromSelectionFunc() is { Main: { } main }) {
+                return main;
             }
 
             if (Plugin?.GetRectangle is { } rectFunc) {

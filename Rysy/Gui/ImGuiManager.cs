@@ -366,7 +366,7 @@ public static class ImGuiManager {
         var dropdownSize = GetDropdownWindowSize(size, values.Count);
         ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo(name, valueName.TextWithMods, ImGuiComboFlags.None).WithTooltip(tooltip)) {
-            RenderListContents(name, ref value, ref search, ref changed, cache, values, toString, renderMenuItem);
+            RenderListContents(name, ref value!, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
         }
 
@@ -471,7 +471,7 @@ public static class ImGuiManager {
         ImGui.SetNextWindowSize(dropdownSize);
         if (ImGui.BeginCombo($"##combo{name}", valueToString.TextWithMods, ImGuiComboFlags.NoPreview).WithTooltip(tooltip)) {
             search ??= "";
-            RenderListContents(name, ref value, ref search, ref changed, cache, values, toString, renderMenuItem);
+            RenderListContents(name, ref value!, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
         }
         ImGui.SameLine(0f, xPadding);

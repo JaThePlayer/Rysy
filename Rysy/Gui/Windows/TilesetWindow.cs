@@ -73,7 +73,7 @@ public sealed class TilesetWindow : Window {
        // HotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
        // HotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
        
-       _hotkeyHandler.AddHistoryHotkeys(() => _history?.Undo(), () => _history?.Redo(), Save);
+       _hotkeyHandler.AddHistoryHotkeys(() => _history?.Undo(), () => _history?.Redo(), () => Save());
     }
 
     private void HistoryHook() {
@@ -210,15 +210,17 @@ public sealed class TilesetWindow : Window {
         }
     }
 
-    private void Save() {
+    protected override bool Save() {
         switch (_tab) {
             case Tabs.Fg or Tabs.Bg:
                 Map?.SaveTilesetXml(Bg);
-                break;
+                return true;
             case Tabs.AnimatedTiles:
                 Map?.SaveAnimatedTilesXml();
-                break;
+                return true;
         }
+
+        return false;
     }
 
     private void ChangeTab(Tabs newTab) {
@@ -230,16 +232,16 @@ public sealed class TilesetWindow : Window {
     }
     
     protected override void Render() {
-        if (Map is not { Mod: not null }) {
+        if (Map is not { Mod: not null } map) {
             ImGuiManager.TranslatedText("rysy.tilesetWindow.needToBeInMap");
             return;
         }
 
-        if (_history?.Map != Map) {
+        if (_history?.Map != map) {
             _history = null;
         }
         
-        _history ??= new HistoryHandler(Map) {
+        _history ??= new HistoryHandler(map) {
             OnApply = HistoryHook,
             OnUndo = HistoryHook
         };
@@ -328,7 +330,7 @@ public sealed class TilesetWindow : Window {
                             ImGui.InputTextMultiline("##", ref xml, 8192, size);
                         }, new(700, 700), (w) => {
                             if (ImGuiManager.TranslatedButton("rysy.save")) {
-                                if (GetAutotiler(bg).GetTilesetData(editedTileId) is { Xml: {} } tileset) {
+                                if (GetAutotiler(map, bg).GetTilesetData(editedTileId) is { Xml: {} } tileset) {
                                     tileset.Xml.InnerXml = xml;
                                     w.RemoveSelf();
                                 }
@@ -351,9 +353,7 @@ public sealed class TilesetWindow : Window {
         onEntry?.Invoke(entry);
     }
 
-    private bool CanRemove(char id) {
-        var autotiler = GetAutotiler(Bg);
-
+    private static bool CanRemove(Autotiler autotiler, char id) {
         return autotiler.Tilesets.All(x => x.Value.CopyFrom != id);
     }
 
@@ -364,9 +364,12 @@ public sealed class TilesetWindow : Window {
     }
     
     private void RemoveEntry(char entryId, bool bg) {
-        var autotiler = GetAutotiler(Bg);
+        if (Map is not { } map)
+            return;
+        
+        var autotiler = GetAutotiler(map, bg);
 
-        if (!CanRemove(entryId))
+        if (!CanRemove(autotiler, entryId))
             return;
         
         if (autotiler?.GetTilesetData(entryId) is { Texture: ModTexture { Mod: { } textureMod } } tilesetData
@@ -415,6 +418,8 @@ public sealed class TilesetWindow : Window {
     }
     
     private void RenderEntry(TilesetData entry) {
+        if (Map is not { } map)
+            return;
         var id = ImGuiManager.PerFrameInterpolator.Utf8($"[{entry.Id.ToImguiEscapedString()}] {entry.GetDisplayName()}");
 
         ImGui.TableNextRow();
@@ -433,7 +438,7 @@ public sealed class TilesetWindow : Window {
         var sid = ImGuiManager.PerFrameInterpolator.Utf8($"d_ctx_{id}");
         ImGui.OpenPopupOnItemClick(sid, ImGuiPopupFlags.MouseButtonRight);
         if (ImGui.BeginPopupContextWindow(sid, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
-            var autotiler = GetAutotiler(Bg);
+            var autotiler = GetAutotiler(map, Bg);
             var tileset = autotiler.GetTilesetData(tileid);
             if (tileset is { Xml: not null } && ImGuiManager.TranslatedButton("rysy.tilesetWindow.clone")) {
                 RysyState.Scene.AddWindow(new CreateTilesetWindow(EditorState.Current, new ImportedTileset {
@@ -448,7 +453,7 @@ public sealed class TilesetWindow : Window {
                 }));
             }
             
-            if (CanRemove(tileid) && ImGuiManager.TranslatedButton("rysy.delete")) {
+            if (CanRemove(autotiler, tileid) && ImGuiManager.TranslatedButton("rysy.delete")) {
                 RemoveEntry(tileid, bg);
                 ImGui.CloseCurrentPopup();
             }
@@ -499,13 +504,14 @@ public sealed class TilesetWindow : Window {
     }
     
     public void RenderList() {
-        if (Map is null)
+        if (Map is not { } map)
             return;
 
         var xmlPath = _tab switch {
             Tabs.Bg => Map.Meta.BackgroundTiles,
             Tabs.Fg => Map.Meta.ForegroundTiles,
             Tabs.AnimatedTiles => Map.Meta.AnimatedTiles,
+            _ => throw new ArgumentOutOfRangeException(nameof(_tab))
         };
         
         if (string.IsNullOrWhiteSpace(xmlPath)) {
@@ -525,7 +531,7 @@ public sealed class TilesetWindow : Window {
         ImGui.BeginChild("list", new NumVector2(ImGui.GetContentRegionAvail().X, ImGui.GetContentRegionAvail().Y));
         
         var entries = _tab switch {
-            Tabs.Bg or Tabs.Fg => GetAutotiler(Bg).Tilesets.Values.AsEnumerable<object>(),
+            Tabs.Bg or Tabs.Fg => GetAutotiler(map, Bg).Tilesets.Values.AsEnumerable<object>(),
             Tabs.AnimatedTiles => Map.AnimatedTiles.Tiles.Values.Where(v => v.Xml is {}).AsEnumerable<object>(),
             _ => throw new UnreachableException()
         };
@@ -583,10 +589,7 @@ public sealed class TilesetWindow : Window {
         ImGui.EndChild();
     }
 
-    private Autotiler GetAutotiler(bool bg)
-    {
-        return bg ? Map.BgAutotiler : Map.FgAutotiler;
-    }
+    private static Autotiler GetAutotiler(Map map, bool bg) => bg ? map.BgAutotiler : map.FgAutotiler;
 
     private void AddContextWindow(string id, Action? render = null) {
         var sid = $"d_ctx_{id}";
@@ -794,6 +797,7 @@ internal sealed class CreateDefaultXmlWindow(EditorState editorState, TilesetWin
             TilesetWindow.Tabs.Bg => NewModWindow.BackgroundTilesXmlContents,
             TilesetWindow.Tabs.Fg => NewModWindow.ForegroundTilesXmlContents,
             TilesetWindow.Tabs.AnimatedTiles => NewModWindow.AnimatedTilesXmlContents,
+            _ => throw new ArgumentOutOfRangeException(nameof(tab), tab, null)
         };
         
         if (fs.TryWriteToFile(realPath, xmlContents.Value)) {

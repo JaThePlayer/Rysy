@@ -48,7 +48,7 @@ public sealed class DecalRegistryWindow : Window {
         _hotkeyHandler.AddHotkeyFromSettings("paste", "ctrl+v", PasteSelections);
         _hotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
         
-        _hotkeyHandler.AddHistoryHotkeys(_history.Undo, _history.Redo, Save);
+        _hotkeyHandler.AddHistoryHotkeys(_history.Undo, _history.Redo, () => Save());
     }
 
     private void HistoryHook() {
@@ -166,8 +166,9 @@ public sealed class DecalRegistryWindow : Window {
         _form = form;
     }
 
-    private void Save() {
+    protected override bool Save() {
         Gfx.DecalRegistry.SaveMod(Mod);
+        return true;
     }
     
     protected override void Render() {

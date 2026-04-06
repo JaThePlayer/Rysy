@@ -35,7 +35,9 @@ public sealed class PooledMemoryStream : Stream {
     private readonly ArrayPool<byte> _pool;
     private byte[] _buffer;
 
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private readonly int _origin; // For user-provided arrays, start at this origin
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
     private int _position; // read/write head.
     private int _length; // Number of bytes within the memory stream
     private int _capacity; // length of usable portion of buffer for stream
@@ -43,7 +45,9 @@ public sealed class PooledMemoryStream : Stream {
 
     private bool _expandable; // User-provided buffers aren't expandable.
     private bool _writable; // Can user write to this stream?
+#pragma warning disable CS0414 // Field is assigned but its value is never used
     private readonly bool _exposable; // Whether the array can be returned to the user.
+#pragma warning restore CS0414 // Field is assigned but its value is never used
     private bool _isOpen; // Is this stream open or closed?
 
     private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync

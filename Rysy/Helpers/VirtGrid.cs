@@ -81,7 +81,7 @@ public sealed class VirtGrid<T> : IEnumerable<T?> where T : IEquatable<T> {
     }
 
     public T this[int x, int y] {
-        get => SafeGet(x, y, FillValue);
+        get => SafeGet(x, y, FillValue!);
         set => SafeSet(x, y, value);
     }
 
@@ -95,7 +95,7 @@ public sealed class VirtGrid<T> : IEnumerable<T?> where T : IEquatable<T> {
             return def;
         }
 
-        return chunk.Get(x, y);
+        return chunk.Get(x, y)!;
     }
     
     public bool SafeSet(int x, int y, T? val) {

@@ -488,7 +488,7 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalLi
     public int LuaIndex(Lua lua, ReadOnlySpan<char> key) {
         switch (key) {
             case "package":
-                lua.PushString(Package);
+                lua.PushString(Package ?? "");
                 return 1;
             case "rooms":
                 lua.PushWrapper(new WrapperListWrapper<Room>(Rooms));

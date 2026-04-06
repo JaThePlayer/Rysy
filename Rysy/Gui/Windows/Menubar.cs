@@ -61,6 +61,9 @@ public class Menubar : SceneComponent {
     }
 
     public override void RenderImGui() {
+        if (Scene is null)
+            return;
+        
         ImGuiManager.PushWindowStyle();
         if (!ImGui.BeginMainMenuBar())
             return;

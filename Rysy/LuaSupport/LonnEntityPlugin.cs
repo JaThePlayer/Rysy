@@ -832,6 +832,5 @@ public class LonnPlacement {
         lua.Pop(1);
     }
 
-#warning Remove, once placements support nodes and TableToDictionary supports tables in tables...
     private static readonly HashSet<string> DataKeyBlacklist = ["nodes"];
 }

@@ -9,7 +9,7 @@ internal sealed class MapAnalyzerWindow : Window {
     private AnalyzerCtx? _ctx;
     private List<IAnalyzerResult>? _results;
 
-    public Action? SaveAnyway;
+    public Action? SaveAnyway { get; set; } = null;
 
     public new static string Name => "rysy.analyzers.window.name".Translate();
 

@@ -86,7 +86,6 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorL
                         ["y"] = item.Data.Float("y", 0),
                     },
                 }, item.Data, blacklist: ["texture", "scaleX", "scaleY", "x", "y"]);
-                break;
             case SelectionLayer.Entities:
             case SelectionLayer.Triggers:
                 return AppendMissing(new BinaryPacker.Element {

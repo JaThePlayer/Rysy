@@ -44,14 +44,6 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
 
     public override IReadOnlyList<IEditorLayer> ValidLayers =>
         ToolHandler.ComponentRegistry.GetAll<IPlacementEditorLayer>();
-        /*field ??= [
-        EditorLayers.Entities,
-        EditorLayers.Triggers,
-        EditorLayers.FgDecals,
-        EditorLayers.BgDecals,
-        EditorLayers.Room,
-        PrefabLayer
-    ];*/
 
     public override string? SerializeMaterial(IEditorLayer layer, object? material) {
         return material switch {
@@ -63,7 +55,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
     public override object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         if (JsonExtensions.TryDeserialize(serializableMaterial, out Placement? res)) {
             var mats = GetMaterials(layer);
-            return mats.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
+            return mats?.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
         }
 
         return null;

@@ -58,7 +58,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         // history has to be cleared, as it might contain references to specific entity instances
         HistoryHandler.Clear();
 
-        HistoryHandler.Map = map;
+        HistoryHandler.Map = map ?? Map.DummyMap;
     }
 
     public Room? CurrentRoom {

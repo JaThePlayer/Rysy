@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Rysy.Helpers;
@@ -79,7 +80,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
     public bool IsReadOnly => false;
 
-    private void TrackAsType(T item, Type t) {
+    private void TrackAsType([DisallowNull] T item, Type t) {
         if (_byType.TryGetValue(t, out var l))
             l.Add(item);
         else

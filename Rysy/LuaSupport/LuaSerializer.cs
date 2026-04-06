@@ -66,15 +66,6 @@ public static partial class LuaSerializer {
         indentedWriter.Indent--;
         indentedWriter.Write('}');
         return writer.ToString();
-
-        static void AppendData(StringBuilder builder, CopypasteHelper.CopiedSelection item, HashSet<string> blacklistedKeys) {
-            foreach (var (k, v) in item.Data.Attributes) {
-                if (blacklistedKeys.Contains(k))
-                    continue;
-
-                builder.AppendLine(CultureInfo.InvariantCulture, $"        {TableKeyString(k)} = {ToLuaString(v)},");
-            }
-        }
     }
 
     private static string TableKeyString(string key) {

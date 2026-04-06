@@ -235,11 +235,11 @@ static string Compress(byte[] input) {
 
         var newSelections = pasted.SelectWhereNotNull(x => x.TryCreateEntity(room, layers)).SelectMany(e => {
             entitiesNotRef.Add(e);
-            var handler = e.CreateSelection().Handler as EntitySelectionHandler;
-            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler!, n)) ?? [];
+            var handler = (EntitySelectionHandler)e.CreateSelection().Handler;
+            var selections = e.Nodes?.Select<Node, ISelectionHandler>(n => new NodeSelectionHandler(handler, n)) ?? [];
 
             return selections.Append(handler);
-        }).Select(h => new Selection() { Handler = h }).ToList();
+        }).Select(h => new Selection { Handler = h }).ToList();
 
         return newSelections;
     }

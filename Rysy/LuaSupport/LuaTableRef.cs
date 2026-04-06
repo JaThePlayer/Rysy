@@ -12,6 +12,7 @@ public sealed class LuaTableRef : LuaRef, IUntypedData {
     /// <summary>
     /// Creates a new lua table, then makes a reference to it.
     /// </summary>
+    /// <param name="lua"></param>
     /// <param name="narr">Number of sequential keys.</param>
     /// <param name="nrec">Number of hash keys.</param>
     public static LuaTableRef CreateNewTable(Lua lua, int narr, int nrec) {
