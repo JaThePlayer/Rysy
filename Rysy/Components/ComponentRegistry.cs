@@ -177,46 +177,38 @@ public sealed class ComponentRegistryScope(IComponentRegistry parent) : ICompone
 public sealed class ComponentRegistry : IComponentRegistry {
     private TypeTrackedList<object> Components { get; } = [];
 
-    private readonly IComponentRegistry? _parentRegistry;
-    
-    internal IComponentRegistry? SendSignalsAs { get; set; }
-
-    public ComponentRegistry() {
-        
-    }
-
-    public ComponentRegistry(IComponentRegistry parentRegistry) {
-        ArgumentNullException.ThrowIfNull(parentRegistry);
-        
-        _parentRegistry = parentRegistry;
-    }
+    private readonly Lock _lock = new();
     
     public void Add<T>(T component) where T : notnull {
-        if (_lockers is [var firstLocker, ..]) {
-            firstLocker.Queue(() => Add(component));
-            return;
+        lock (_lock) {
+            if (_lockers is [var firstLocker, ..]) {
+                firstLocker.Queue(() => Add(component));
+                return;
+            }
+            Components.Add(component);
         }
-        Components.Add(component);
 
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.From(this);
         }
 
         if (component is ISignalListener<SelfAdded> listener) {
-            listener.OnSignal(new SelfAdded(SendSignalsAs ?? this));
+            listener.OnSignal(new SelfAdded(this));
         }
 
         this.OnSignal(new ComponentAdded<T>(component));
     }
 
     public void Remove<T>(T component) where T : notnull {
-        if (_lockers is [var firstLocker, ..]) {
-            firstLocker.Queue(() => Remove(component));
-            return;
+        lock (_lock) {
+            if (_lockers is [var firstLocker, ..]) {
+                firstLocker.Queue(() => Remove(component));
+                return;
+            }
+        
+            Components.Remove(component);   
         }
-        
-        Components.Remove(component);
-        
+
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.Null;
         }
@@ -231,41 +223,14 @@ public sealed class ComponentRegistry : IComponentRegistry {
     }
 
     public T? Get<T>() where T : class {
-        return Components.OfType<T>().FirstOrDefault() ?? _parentRegistry?.Get<T>();
+        return Components.OfType<T>().FirstOrDefault();
     }
 
     public IReadOnlyList<T> GetAll<T>() where T : class {
-        if (_parentRegistry is { } parentRegistry) {
-            var left = parentRegistry.GetAll<T>();
-            var right = Components.OfType<T>();
-
-            if (right.Count == 0)
-                return left;
-
-            if (left.Count == 0)
-                return right;
-            
-            return new ConcatList<T>(left, right);
-        }
-
         return Components.OfType<T>();
     }
 
-    public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class
-    {
-        if (_parentRegistry is { } parentRegistry) {
-            var left = parentRegistry.GetAll<T>(targetType);
-            var right = Components.OfType<T>(targetType);
-
-            if (right.Count == 0)
-                return left;
-
-            if (left.Count == 0)
-                return right;
-            
-            return new ConcatList<T>(left, right);
-        }
-
+    public IReadOnlyList<T> GetAll<T>(Type targetType) where T : class {
         return Components.OfType<T>(targetType);
     }
 
@@ -278,13 +243,17 @@ public sealed class ComponentRegistry : IComponentRegistry {
     private readonly List<Locker> _lockers = [];
     
     public IDisposable LockChanges() {
-        var locker = new Locker();
-        _lockers.Add(locker);
-        locker.Queue(() => {
-            _lockers.RemoveAt(_lockers.Count - 1);
-        });
+        lock (_lock) {
+            var locker = new Locker();
+            _lockers.Add(locker);
+            locker.Queue(() => {
+                lock (_lock) {
+                    _lockers.RemoveAt(_lockers.Count - 1);
+                }
+            });
 
-        return locker;
+            return locker;  
+        }
     }
 
     class Locker : IDisposable {
