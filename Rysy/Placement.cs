@@ -176,6 +176,19 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
         return this;
     }
 
+    /// <summary>
+    /// Sets the size of the placement.
+    /// </summary>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <returns>This</returns>
+    public Placement SetSize(int width, int height) {
+        ValueOverrides["width"] = width;
+        ValueOverrides["height"] = height;
+
+        return this;
+    }
+
     public Placement CreateClone() {
         var pl = new Placement(this) {
             ValueOverrides = new(ValueOverrides),
@@ -407,8 +420,8 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
     private static void ResetEntitySize(Entity? entity) {
         if (entity is { }) {
             var min = entity.RecommendedMinimumSize;
-            entity.Width = min.X;
-            entity.Height = min.Y;
+            entity.Width = int.Max(entity.Width, min.X);
+            entity.Height = int.Max(entity.Height, min.Y);
         }
     }
 
