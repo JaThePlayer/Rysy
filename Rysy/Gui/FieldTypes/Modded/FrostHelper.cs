@@ -328,18 +328,12 @@ internal sealed record FrostHelperTexturePath : ILonnField {
     }
 }
 
-internal sealed record FrostHelperComplexField : ComplexTypeField<string[]>, ILonnField {
-    public required char Separator { get; init; }
-    
-    public required IReadOnlyList<InnerField> InnerFields { get; init; }
-
-    private object _default;
-    
+internal sealed record FrostHelperComplexField : ILonnField {
     public static string Name => "FrostHelper.complexField";
     
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
         var sep = fieldInfoEntry.Char("separator", ',');
-        List<InnerField> fields = [];
+        List<ComplexField.InnerField> fields = [];
         
         if (fieldInfoEntry.TryGetValue("innerFields", out var innerFieldsObj) &&
             innerFieldsObj is IEnumerable enumerable) {
@@ -355,57 +349,17 @@ internal sealed record FrostHelperComplexField : ComplexTypeField<string[]>, ILo
                 var fieldType = (string?) innerFieldInfo!.GetValueOrDefault("fieldType", null);
             
                 if (Fields.CreateFromLonn(defaultValue, fieldType, innerFieldInfo, name) is { } field) {
-                    fields.Add(new InnerField(name, name + ".tooltip", defaultValue, field));
+                    fields.Add(new ComplexField.InnerField(name, name + ".tooltip", defaultValue, field));
                 }
             }
         }
 
-        return new FrostHelperComplexField {
+        var fld = new ComplexField {
             Separator = sep,
-            InnerFields = fields,
-            _default = def ?? ""
+            InnerFields = fields
         };
-    }
+        fld.SetDefault(def!);
 
-    public record InnerField(string Name, string Tooltip, object? Default, Field Field);
-
-    public override string[] Parse(string data) {
-        return data.Split(Separator);
-    }
-
-    public override string ConvertToString(string[] data) {
-        return string.Join(Separator, data);
-    }
-
-    public override bool RenderDetailedWindow(ref string[] data) {
-        var edited = false;
-
-        foreach (var (idx, (name, tooltip, def, field)) in InnerFields.Index()) {
-            ImGui.PushID(name);
-
-            var val = data[idx];
-            var valid = field.IsValid(val);
-
-            field.Tooltip = Tooltip.CreateTranslatedOrNull(tooltip);
-            var newVal = field.RenderGuiWithValidation(name.Translate(), val, valid);
-            if (newVal is { }) {
-                data[idx] = newVal.ToStringInvariant();
-                edited = true;
-            }
-            
-            ImGui.PopID();
-        }
-
-        return edited;
-    }
-
-    public override object GetDefault() => _default;
-
-    public override void SetDefault(object newDefault) {
-        _default = newDefault;
-    }
-
-    public override Field CreateClone() {
-        return new FrostHelperComplexField { Separator = Separator, InnerFields = InnerFields, _default = _default };
+        return fld;
     }
 }

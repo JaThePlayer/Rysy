@@ -1,6 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Graphics;
-using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
@@ -63,4 +61,67 @@ public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
     public override Field CreateClone() => this with { };
     
     public T ConvertMapDataValue(object value) => Parse(value?.ToString() ?? "");
+}
+
+/// <summary>
+/// Field which combines several other fields and stores their value as a single string.
+/// </summary>
+internal sealed record ComplexField : ComplexTypeField<string[]> {
+    public required char Separator { get; init; }
+    
+    public required IReadOnlyList<InnerField> InnerFields { get; init; }
+
+    private object _default;
+
+    public record InnerField(string Name, string Tooltip, object? Default, Field Field) {
+        public static InnerField Create(string langKey, Field field) {
+            return new InnerField(langKey, $"{langKey}.tooltip", field.GetDefault(), field);
+        }
+    }
+
+    public override string[] Parse(string data) {
+        return data.Split(Separator);
+    }
+
+    public override string ConvertToString(string[] data) {
+        return string.Join(Separator, data);
+    }
+
+    public override bool RenderDetailedWindow(ref string[] data) {
+        var edited = false;
+
+        foreach (var (idx, (name, tooltip, def, field)) in InnerFields.Index()) {
+            ImGui.PushID(name);
+
+            var val = data.ElementAtOrDefault(idx) ?? def ?? "";
+            var valid = field.IsValid(val);
+
+            field.Tooltip = Tooltip.CreateTranslatedOrNull(tooltip);
+            field.Context = Context;
+            
+            try {
+                var newVal = field.RenderGuiWithValidation(name.Translate(), val, valid);
+                if (newVal is { }) {
+                    if (data.Length <= idx)
+                        Array.Resize(ref data, idx + 1);
+                    data[idx] = newVal.ToStringInvariant();
+                    edited = true;
+                }
+            } finally {
+                ImGui.PopID();
+            }
+        }
+
+        return edited;
+    }
+
+    public override object GetDefault() => _default;
+
+    public override void SetDefault(object newDefault) {
+        _default = newDefault;
+    }
+
+    public override Field CreateClone() {
+        return new ComplexField { Separator = Separator, InnerFields = InnerFields, _default = _default };
+    }
 }
