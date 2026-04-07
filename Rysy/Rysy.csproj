@@ -19,7 +19,7 @@
     <PropertyGroup>
         <PackageId>Rysy</PackageId>
         <PackageDescription>A map editor for Celeste.</PackageDescription>
-        <Version>0.0.11.2</Version>
+        <Version>0.0.12</Version>
         <Authors>JaThePlayer</Authors>
         <Copyright>Copyright $([System.DateTime]::Now.ToString(yyyy)) $(Authors)</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

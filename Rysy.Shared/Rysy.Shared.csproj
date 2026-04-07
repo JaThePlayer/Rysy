@@ -13,7 +13,7 @@
         <IsPackable>true</IsPackable>
         <PackageId>Rysy.Shared</PackageId>
         <PackageDescription>Shared code utilities for Rysy, which can run in both Rysy and Celeste.</PackageDescription>
-        <Version>0.0.11.2</Version>
+        <Version>0.0.12</Version>
         <Authors>JaThePlayer</Authors>
         <Copyright>Copyright $([System.DateTime]::Now.ToString(yyyy)) $(Authors)</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

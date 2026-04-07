@@ -1,13 +1,13 @@
 # Rysy
 
-A WIP map viewer for Celeste written in C# using Monogame.
+A WIP map viewer for Celeste written in C# using FNA.
 
 If you wish to make maps, just use [Lönn](https://github.com/CelestialCartographers/Loenn) instead.
 
 ![image](https://user-images.githubusercontent.com/50085307/192340246-a6ba1e1f-c86e-452c-be2f-bd6d780113aa.png)
 
 # Setup
-Clone the repo, get .NET 8, and build. If you're on Windows, pick the net7.0-windows runtime to make Rysy use DirectX, giving *much* better texture load performance.
+Clone the repo, get .NET 10, and build.
 
 Run the program, and it'll ask you to select a Celeste install, then a map .bin to load. You can drop both of these files onto Rysy's window.
 
