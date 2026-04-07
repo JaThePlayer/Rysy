@@ -470,12 +470,22 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                     else
                         _selectionsToHighlight.Add(selection);
 
-                    if (_state == States.Idle) {
-                        var r = selection.Handler.Rect;
-                        var cursorType =
-                            AdjustGrabLocBasedOnResizable(r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle, selection.Handler)
-                            .ToMouseCursor();
-                        ImGui.SetMouseCursor(cursorType);
+                    switch (_state)
+                    {
+                        case States.Idle:
+                        {
+                            var r = selection.Handler.Rect;
+                            var cursorType =
+                                AdjustGrabLocBasedOnResizable(r.GetLocationInRect(mousePos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle, selection.Handler)
+                                    .ToMouseCursor();
+                            ImGui.SetMouseCursor(cursorType);
+                            break;
+                        }
+                        case States.MoveOrResizeGesture:
+                        {
+                            ImGui.SetMouseCursor(_moveGestureGrabbedLocation.ToMouseCursor());
+                            break;
+                        }
                     }
                 } else {
                     selection.Render(Color.Red);
@@ -788,7 +798,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                     }
 
                     var cursorType = _moveGestureGrabbedLocation.ToMouseCursor();
-                    ImGui.SetMouseCursor(cursorType);
+                   // ImGui.SetMouseCursor(cursorType);
                 }
                 break;
             }

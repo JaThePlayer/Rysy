@@ -144,6 +144,45 @@ public static class RectangleExt {
 
         return null;
     }
+    
+    public static NineSliceLocation GetLocationRelativeToRect(this Rectangle r, Point pos) {
+        if (r.Contains(pos))
+            return NineSliceLocation.Middle;
+
+        if (r.Y > pos.Y) {
+            // Point is above rectangle:
+
+            if (r.X.IsInRange(r.Left, r.Right)) {
+                return NineSliceLocation.TopMiddle;
+            }
+            if (r.Left > pos.X) {
+                return NineSliceLocation.TopLeft;
+            }
+            
+            return NineSliceLocation.TopRight;
+        }
+
+        if (r.Bottom < pos.Y) {
+            // Point is below rectangle
+            if (r.X.IsInRange(r.Left, r.Right)) {
+                return NineSliceLocation.BottomMiddle;
+            }
+            if (r.Left > pos.X) {
+                return NineSliceLocation.BottomLeft;
+            }
+            
+            return NineSliceLocation.BottomRight;
+        }
+        
+        if (r.X.IsInRange(r.Left, r.Right)) {
+            return NineSliceLocation.Middle;
+        }
+        if (r.Left > pos.X) {
+            return NineSliceLocation.Left;
+        }
+            
+        return NineSliceLocation.Right;
+    }
 
     /// <summary>
     /// Returns an enumerator which returns all grid locations that are within the given rectangle.
