@@ -476,3 +476,8 @@ rysy.windows.csharprepl=C# Repl
 rysy.windows.csharprepl.code=Code
 rysy.windows.csharprepl.run=Run Code
 rysy.windows.csharprepl.history=History
+
+rysy.fields.entityId.level=Room Name
+rysy.fields.entityId.level.tooltip=Name of the room the entity comes from.
+rysy.fields.entityId.id=Id
+rysy.fields.entityId.id.tooltip=The ID of the entity.

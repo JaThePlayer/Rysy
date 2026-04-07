@@ -214,6 +214,38 @@ public static partial class Fields {
     public static EntitySidField Sid(string def, RegisteredEntityType allowedTypes) {
         return new(def, allowedTypes);
     }
+
+    public static Field RoomName(string def) {
+        var field = new DropdownField<string>().AllowEdits().SetValues(ctx => {
+            if (ctx.EditorState is not { Map: { } map })
+                return new Dictionary<string, Searchable>();
+
+            return map.Rooms.SafeToDictionary(x => (x.Name, new Searchable(x.Name)));
+        });
+        field.SetDefault(def);
+        
+        return field;
+    }
+
+    /// <summary>
+    /// A field which stores an entity's integer id.
+    /// </summary>
+    public static Field EntityId(int def) {
+        return Int(def);
+    }
+    
+    /// <summary>
+    /// A field which stores EntityID values as 'level:id' strings.
+    /// </summary>
+    public static Field EntityIdWithRoom() {
+        return new ComplexField {
+            Separator = ':',
+            InnerFields = [
+                ComplexField.InnerField.Create("rysy.fields.entityId.level", RoomName("")),
+                ComplexField.InnerField.Create("rysy.fields.entityId.id", EntityId(0))
+            ]
+        };
+    }
     
     internal static StringField TilesetDisplayName(string def, Func<bool> bg, bool selfIsTileset) => String(def).WithValidator((ctx, x) => {
         var map = ctx.EditorState?.Map;
