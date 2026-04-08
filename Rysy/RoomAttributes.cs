@@ -23,6 +23,7 @@ public record class RoomAttributes {
 
     public CelesteEnums.WindPatterns WindPattern;
     public bool Space;
+    public string Ambience = "";
     public string AmbienceProgress = "";
     public bool DisableDownTransition;
     public bool Dark;
@@ -59,7 +60,7 @@ public record class RoomAttributes {
             "checkpoint" => Checkpoint,
             "space" => Space,
             "music" => Music,
-            "alt_music" => AltMusic,
+            "ambience" => Ambience,
             "musicProgress" => MusicProgress,
             "ambienceProgress" => AmbienceProgress,
             "musicLayer1" => MusicLayer1,
@@ -67,7 +68,6 @@ public record class RoomAttributes {
             "musicLayer3" => MusicLayer3,
             "musicLayer4" => MusicLayer4,
             "whisper" => Whisper,
-            "delayAltMusicFade" => DelayAltMusicFade,
             _ => throw new NotImplementedException(key)
         };
     }

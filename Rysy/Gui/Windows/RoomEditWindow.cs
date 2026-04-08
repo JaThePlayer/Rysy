@@ -3,6 +3,7 @@ using Rysy.Extensions;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -55,7 +56,7 @@ public sealed partial class RoomEditWindow : Window {
             __musicSep = new PaddingField("Music"),
 
             music = Fields.Dropdown(attrs.Music, CelesteEnums.Music, editable: true),
-            alt_music = Fields.Dropdown(attrs.AltMusic, CelesteEnums.Music, editable: true),
+            ambience = Fields.Dropdown(attrs.Ambience, CelesteEnums.Ambience, editable: true),
             musicProgress = attrs.MusicProgress,
             ambienceProgress = attrs.AmbienceProgress,
             musicLayer1 = attrs.MusicLayer1,
@@ -63,7 +64,6 @@ public sealed partial class RoomEditWindow : Window {
             musicLayer3 = attrs.MusicLayer3,
             musicLayer4 = attrs.MusicLayer4,
             whisper = attrs.Whisper,
-            delayAltMusicFade = attrs.DelayAltMusicFade,
         });
         
         var tooltipKeyPrefix = "room.description";
