@@ -180,13 +180,12 @@ public sealed class Room : IPackable, ILuaWrapper {
         Width = from.Int("width");
         Height = from.Int("height");
 
-        Attributes.AltMusic = from.Attr("altMusic", "");
+        Attributes.Ambience = from.Attr("ambience", "");
         Attributes.AmbienceProgress = from.Attr("ambienceProgress", "");
         Attributes.C = from.Int("c", 0);
         Attributes.CameraOffsetX = from.Int("cameraOffsetX", 0);
         Attributes.CameraOffsetY = from.Int("cameraOffsetY", 0);
         Attributes.Dark = from.Bool("dark", false);
-        Attributes.DelayAltMusicFade = from.Bool("delayAltMusicFade", false);
         Attributes.DisableDownTransition = from.Bool("disableDownTransition", false);
         Attributes.Music = from.Attr("music", "");
         Attributes.MusicLayer1 = from.Bool("musicLayer1", false);
@@ -281,13 +280,12 @@ public sealed class Room : IPackable, ILuaWrapper {
             ["width"] = Width,
             ["height"] = Height,
             ["name"] = Name,
-            ["altMusic"] = attr.AltMusic,
+            ["ambience"] = attr.Ambience,
             ["ambienceProgress"] = attr.AmbienceProgress,
             ["c"] = attr.C,
             ["cameraOffsetX"] = attr.CameraOffsetX,
             ["cameraOffsetY"] = attr.CameraOffsetY,
             ["dark"] = attr.Dark,
-            ["delayAltMusicFade"] = attr.DelayAltMusicFade,
             ["disableDownTransition"] = attr.DisableDownTransition,
             ["music"] = attr.Music,
             ["musicLayer1"] = attr.MusicLayer1,

@@ -11,8 +11,6 @@ public record class RoomAttributes {
     public int Width;
     public int Height;
 
-    public bool DelayAltMusicFade;
-
     public float CameraOffsetX;
     public float CameraOffsetY;
 
@@ -36,7 +34,6 @@ public record class RoomAttributes {
     public bool MusicLayer2 = true;
     public bool MusicLayer3 = true;
     public bool MusicLayer4 = true;
-    public string AltMusic = "";
 
     /// <summary>
     /// Not a real attribute, as it's actually determined by the existence of a checkpoint entity.
@@ -119,8 +116,8 @@ public record class RoomAttributes {
             case "music":
                 Music = v.ToString() ?? "";
                 break;
-            case "alt_music":
-                AltMusic = v.ToString() ?? "";
+            case "ambience":
+                Ambience = v.ToString() ?? "";
                 break;
             case "musicProgress":
                 MusicProgress = v.ToString() ?? "";
@@ -142,9 +139,6 @@ public record class RoomAttributes {
                 break;
             case "whisper":
                 Whisper = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "delayAltMusicFade":
-                DelayAltMusicFade = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
                 break;
         }
     }
