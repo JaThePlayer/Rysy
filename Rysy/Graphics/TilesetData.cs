@@ -415,6 +415,13 @@ public sealed class TilesetData : IXmlBackedEntityData {
 
 public interface ITileChecker {
     /// <summary>
+    /// Called when beginning to get the tile sprite at (x,y). Until the next SetCurrentPosition is called, all
+    /// further tile checks are being used to resolve the tile at (x,y)'s neighborhood to determine which palette
+    /// to sample from.
+    /// </summary>
+    void SetCurrentPosition(int x, int y){}
+
+    /// <summary>
     /// Returns whether the given location is within the bounds of the tilegrid
     /// </summary>
     bool IsInBounds(int x, int y);

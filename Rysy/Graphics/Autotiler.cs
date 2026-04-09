@@ -300,6 +300,7 @@ public sealed class Autotiler {
     
     public AutotiledSprite? GetSprite<T>(T tileChecker, int x, int y, ref List<char>? unknownTilesetsUsed)
     where T : struct, ITileChecker {
+        tileChecker.SetCurrentPosition(x,y);
         var tilesetId = tileChecker.GetTileAt(x, y, '0');
         if (tilesetId == '0') {
             return null;
