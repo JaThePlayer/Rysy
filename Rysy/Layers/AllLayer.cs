@@ -6,7 +6,9 @@ public sealed class AllLayer : EditorLayer, ISelectionEditorLayer {
     public override string Name => "All";
 
     public override SelectionLayer SelectionLayer => SelectionLayer.All;
-    
+
+    public override IReadOnlyList<object> GetContents(Room room) => [];
+
     public override IEnumerable<Placement> GetMaterials() {
         return [];
     }

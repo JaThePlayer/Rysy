@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 
 namespace Rysy;
 
-public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalListener<SettingsChanged>, ISignalListener<PersistenceChanged> {
+public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEmitter, ISignalListener<SettingsChanged>, ISignalListener<PersistenceChanged> {
     private static Map _dummyMap;
     
     /// <summary>
@@ -557,6 +557,8 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalLi
     ~Map() {
         Dispose();
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
 
 public sealed record MapMetadata {

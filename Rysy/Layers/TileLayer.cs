@@ -23,6 +23,10 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
         _ => throw new ArgumentOutOfRangeException()
     };
 
+    public override IReadOnlyList<Tilegrid> GetContents(Room room) {
+        return [ GetGrid(room) ];
+    }
+
     public override IEnumerable<Placement> GetMaterials()
         => Array.Empty<Placement>();
 

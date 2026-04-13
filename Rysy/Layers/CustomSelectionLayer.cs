@@ -9,7 +9,9 @@ public sealed class CustomSelectionLayer : EditorLayer, ISelectionEditorLayer {
     private SelectionLayer _currentLayer = SelectionLayer.None;
     
     public override SelectionLayer SelectionLayer => _currentLayer;
-    
+
+    public override IReadOnlyList<object> GetContents(Room room) => [];
+
     public override IEnumerable<Placement> GetMaterials() {
         return [];
     }

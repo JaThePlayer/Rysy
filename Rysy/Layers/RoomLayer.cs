@@ -7,7 +7,9 @@ public class RoomLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorLay
     public override SelectionLayer SelectionLayer => SelectionLayer.Rooms;
 
     public override string MaterialLangPrefix => "rysy.roomPlacements";
-    
+
+    public override IReadOnlyList<object> GetContents(Room room) => [];
+
     public override IEnumerable<Placement> GetMaterials() {
         return [ 
             new Placement() {

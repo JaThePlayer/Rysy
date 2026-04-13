@@ -9,6 +9,7 @@ using Rysy.History;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Selections;
+using Rysy.Signals;
 using System.Text.Json.Serialization;
 
 namespace Rysy;
@@ -21,10 +22,6 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public Room() {
         RenderCacheToken = new(ClearRenderCache);
-        EntityRenderCacheToken = new(ClearEntityRenderCache);
-        TriggerRenderCacheToken = new(ClearTriggerRenderCache);
-        FgDecalsRenderCacheToken = new(ClearFgDecalsRenderCache);
-        BgDecalsRenderCacheToken = new(ClearBgDecalsRenderCache);
         FgTilesRenderCacheToken = new(ClearFgTilesRenderCache);
         BgTilesRenderCacheToken = new(ClearBgTilesRenderCache);
 
@@ -49,10 +46,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public CacheToken RenderCacheToken;
-    public CacheToken EntityRenderCacheToken;
-    public CacheToken TriggerRenderCacheToken;
-    public CacheToken FgDecalsRenderCacheToken;
-    public CacheToken BgDecalsRenderCacheToken;
     public CacheToken FgTilesRenderCacheToken;
     public CacheToken BgTilesRenderCacheToken;
 
@@ -152,12 +145,6 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     private List<ISprite>? _cachedSprites;
-    private List<ISprite>? _cachedEntitySprites;
-    private List<ISprite>? _cachedTriggerSprites;
-    private List<ISprite>? _cachedBgDecalSprites;
-    private List<ISprite>? _cachedFgDecalSprites;
-    private List<ISprite>? _cachedBgTileSprites;
-    private List<ISprite>? _cachedFgTileSprites;
 
     /// <summary>
     /// Gets an entity ID that's not yet used in this room.
@@ -457,107 +444,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (_cachedSprites is null) {
             using var w = Settings.Instance.LogSpriteCachingTimes ? new ScopedStopwatch($"Generating sprites for {Name}") : null;
 
-            IEnumerable<ISprite> sprites = Array.Empty<ISprite>();
-            var p = Persistence.Instance;
-
-            if (p.EntitiesVisible) {
-                if (_cachedEntitySprites is null) {
-#if LOG_PER_ENTITY_PERF
-                    Dictionary<string, TimeSpan> TimePerType = new(StringComparer.Ordinal);
-#endif
-
-                    _cachedEntitySprites = Entities.Select(e => {
-                        var spr = e.GetSpritesWithNodes();
-                        if (!e.EditorGroups.Enabled)
-                            spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
-
-#if LOG_PER_ENTITY_PERF
-                        return spr.Timed((elapsed) => {
-                            var t = e.Name;
-                            if (!TimePerType.TryGetValue(t, out TimeSpan time)) {
-                                time = TimeSpan.Zero;
-                            }
-
-                            TimePerType[t] = time + elapsed;
-                        });
-#else
-                        return spr;
-#endif
-                    }).SelectMany(x => x).ToList();
-
-#if LOG_PER_ENTITY_PERF
-                    TimePerType.OrderByDescending(kv => kv.Value).LogAsJson();
-#endif
-
-                    EntityRenderCacheToken.Reset();
-                }
-
-
-                sprites = sprites.Concat(_cachedEntitySprites);
-            }
-
-            if (p.TriggersVisible) {
-                _cachedTriggerSprites ??= Triggers.Select(e => {
-                    var spr = e.GetSpritesWithNodes();
-                    if (!e.EditorGroups.Enabled)
-                        spr = spr.Select(s => s.WithMultipliedAlpha(Settings.Instance.HiddenLayerAlpha));
-
-                    return spr;
-                }).SelectMany(x => x).ToList();
-                TriggerRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(_cachedTriggerSprites);
-            }
-
-            if (p.FgTilesVisible) {
-                if (_cachedFgTileSprites is null) {
-                    var fgsprites = Fg.GetSprites();
-                    //fgsprites.UseRenderTarget(true);
-                    
-                    _cachedFgTileSprites ??= fgsprites.ToList();
-                }
-                FgTilesRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(_cachedFgTileSprites);
-            }
-
-            if (p.BgTilesVisible) {
-                if (_cachedBgTileSprites is null) {
-                    var bgsprites = Bg.GetSprites();
-                    //bgsprites.UseRenderTarget(true);
-                    
-                    _cachedBgTileSprites ??= bgsprites.ToList();
-                }
-                //CachedBgTileSprites ??= BG.GetSprites().ToList();
-                BgTilesRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(_cachedBgTileSprites);
-            }
-
-            if (p.FgDecalsVisible) {
-                _cachedFgDecalSprites ??= FgDecals.Select<Entity, ISprite>(d => {
-                    var spr = d.AsDecal()!.GetSprite();
-                    if (!d.EditorGroups.Enabled)
-                        spr.Color *= Settings.Instance.HiddenLayerAlpha;
-
-                    return spr;
-                }).ToList();
-                FgDecalsRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(_cachedFgDecalSprites);
-            }
-            if (p.BgDecalsVisible) {
-                _cachedBgDecalSprites ??= BgDecals.Select<Entity, ISprite>(d => {
-                    var spr = d.AsDecal()!.GetSprite();
-                    if (!d.EditorGroups.Enabled)
-                        spr.Color *= Settings.Instance.HiddenLayerAlpha;
-
-                    return spr;
-                }).ToList();
-                BgDecalsRenderCacheToken.Reset();
-
-                sprites = sprites.Concat(_cachedBgDecalSprites);
-            }
+            IEnumerable<ISprite> sprites = [];
 
             foreach (var spriteProvider in providers) {
                 var providedSprites = spriteProvider.GetSprites(this);
@@ -660,32 +547,32 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
     public void ClearEntityRenderCache() {
-        _cachedEntitySprites?.Clear();
-        _cachedEntitySprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.Entities));
         ClearFullRenderCache();
     }
 
     public void ClearTriggerRenderCache() {
-        _cachedTriggerSprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.Triggers));
         ClearFullRenderCache();
     }
 
     public void ClearFgDecalsRenderCache() {
-        _cachedFgDecalSprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.FgDecals));
         ClearFullRenderCache();
     }
 
     public void ClearBgDecalsRenderCache() {
-        _cachedBgDecalSprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.BgDecals));
         ClearFullRenderCache();
     }
 
     public void ClearFgTilesRenderCache() {
-        _cachedFgTileSprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.Fg));
         ClearFullRenderCache();
     }
+
     public void ClearBgTilesRenderCache() {
-        _cachedBgTileSprites = null;
+        Map.Emit(new RoomLayerChanged(this, EditorLayers.Bg));
         ClearFullRenderCache();
     }
 

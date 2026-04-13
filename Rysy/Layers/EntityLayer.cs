@@ -28,6 +28,16 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorL
         };
     }
 
+    public override IReadOnlyList<Entity> GetContents(Room room) {
+        return SelectionLayer switch {
+            SelectionLayer.Entities => room.Entities,
+            SelectionLayer.Triggers => room.Triggers,
+            SelectionLayer.FgDecals => room.FgDecals,
+            SelectionLayer.BgDecals => room.BgDecals,
+            _ => throw new ArgumentOutOfRangeException(nameof(SelectionLayer))
+        };
+    }
+
     public List<Selection> GetSelectionsInRect(Map map, Room? room, Rectangle? rect) {
         if (room is null)
             return [];

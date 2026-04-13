@@ -10,6 +10,8 @@ public sealed class PrefabLayer(PrefabHelper prefabs) : EditorLayer, IPlacementE
 
     public override SelectionLayer SelectionLayer => SelectionLayer.All;
 
+    public override IReadOnlyList<object> GetContents(Room room) => [];
+
     public override IEnumerable<Placement> GetMaterials() =>
         prefabs.CurrentPrefabs.Select(s => prefabs.PlacementFromName(s.Key)!);
 }

@@ -1,6 +1,7 @@
 ﻿using Rysy.Components;
 using Rysy.Mods;
 using Rysy.Scenes;
+using Rysy.Shared;
 using Rysy.Signals;
 
 namespace Rysy.InteropMod.InRysy;

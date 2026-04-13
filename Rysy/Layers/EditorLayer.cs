@@ -33,6 +33,8 @@ public abstract class EditorLayer : IHasComponentRegistry, IEditorLayer {
     
     public abstract SelectionLayer SelectionLayer { get; }
 
+    public abstract IReadOnlyList<object> GetContents(Room room);
+
     public abstract IEnumerable<Placement> GetMaterials();
 
     public virtual Searchable GetMaterialSearchable(object material) {

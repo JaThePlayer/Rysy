@@ -2,7 +2,7 @@
 
 namespace Rysy.Helpers;
 
-public interface IListenableList<T> : IList<T> {
+public interface IListenableList<T> : IList<T>, IReadOnlyList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
