@@ -64,12 +64,9 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     // TODO: make Map IDisposable?
     private IDisposable? _animatedTilesWatcher, _bgTilesWatcher, _fgTilesWatcher, _spritesWatcher;
 
-    public MapStylegrounds Style;
+    public MapStylegrounds Style { get; private set; }
 
-    /// <summary>
-    /// Filler rooms. Currently unparsed :(
-    /// </summary>
-    public BinaryPacker.Element Filler;
+    public IListenableList<FillerRoom> Fillers { get; } = new ListenableList<FillerRoom>();
 
     /// <summary>
     /// Top-level elements from the map binary file which were not recognized.
@@ -157,8 +154,11 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
 
         var levels = new BinaryPacker.Element("levels");
         levels.Children = Rooms.Select(r => r.Pack()).ToArray();
+        var filler = new BinaryPacker.Element("Filler") {
+            Children = Fillers.Select(x => x.Pack()).ToArray()
+        };
         
-        el.Children = [ levels, Meta.Pack(), Style.Pack(), Filler, EditorGroups.Pack(), .. UnknownTopLevelElements.Select(x => x.Value) ];
+        el.Children = [ levels, Meta.Pack(), Style.Pack(), filler, EditorGroups.Pack(), .. UnknownTopLevelElements.Select(x => x.Value) ];
 
         return el;
     }
@@ -271,7 +271,11 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
 
                     break;
                 case "Filler":
-                    Filler = child;
+                    foreach (var filler in child.Children) {
+                        var fillerObj = new FillerRoom();
+                        fillerObj.Unpack(filler);
+                        Fillers.Add(fillerObj);
+                    }
                     break;
                 case "Style":
                     Style = new MapStylegrounds();
@@ -302,7 +306,6 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     
     private void InitStyleAndFillerIfNeeded() {
         Style ??= new();
-        Filler ??= new("Filler");
     }
 
     private void UseVanillaTilesetsIfNeeded() {
@@ -500,10 +503,9 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
             case "rooms":
                 lua.PushWrapper(new WrapperListWrapper<Room>(Rooms));
                 return 1;
-            // todo: impl when rysy parses fillers.
-            //case "fillers":
-            //    lua.Push(new WrapperListWrapper<Filler>(Filler));
-            //    return 1;
+            case "fillers":
+                lua.Push(new WrapperListWrapper<FillerRoom>(Fillers));
+                return 1;
             case "stylesFg":
                 lua.PushWrapper(new WrapperListWrapper<Style>(Style.Foregrounds));
                 return 1;

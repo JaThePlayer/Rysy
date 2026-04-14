@@ -404,6 +404,9 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
             // draw the colored border around the room
             room.GetBorderSprite(Camera.Scale).Render();
         }
+        foreach (var filler in Map.Fillers) {
+            ISprite.OutlinedRect(filler.Bounds, Color.Aquamarine * 0.2f, Color.Aquamarine, outlineWidth: (int) (1f / Camera.Scale).AtLeast(1)).Render();
+        }
         Gfx.EndBatch();
 
         base.Render();
