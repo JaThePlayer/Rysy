@@ -10,8 +10,7 @@ public sealed class Colorgrade {
     
     public static Effect? Effect { get; private set; }
 
-    private static Colorgrade? _none;
-    public static Colorgrade None => _none ??= new(new ModTexture(ModRegistry.VanillaMod, $"Graphics/ColorGrading/none.png")) {
+    public static Colorgrade None => field ??= new(new ModTexture(ModRegistry.VanillaMod, $"Graphics/ColorGrading/none.png")) {
         IsNone = true,
     };
 

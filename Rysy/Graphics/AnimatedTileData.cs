@@ -8,13 +8,11 @@ using System.Xml;
 namespace Rysy.Graphics;
 
 public sealed class AnimatedTileBank {
-    private static AnimatedTileData? _missingTile;
-    
     private Dictionary<string, AnimatedTileData> _tiles;
     
     public XmlDocument Xml { get; private set; }
     
-    public static AnimatedTileData MissingTile => _missingTile ??= new() {
+    public static AnimatedTileData MissingTile => field ??= new() {
         Name = "Missing",
         Delay = 1f,
         Frames = [ Gfx.Atlas["Rysy:tilesets/missingAnimatedTile"] ],

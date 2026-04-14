@@ -15,19 +15,17 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public void OnDeselected() {
     }
 
-    private Entity _entity;
-
     public Entity Entity {
-        get => _entity;
+        get;
         internal set {
-            if (_entity != value) {
-                if (_entity is { }) {
+            if (field != value) {
+                if (field is { }) {
                     // transfer the handler to the new entity, to make node selections aware of this change
                     //_Entity._SelectionHandler = null;
                     value.SelectionHandler = this;
                 }
 
-                _entity = value;
+                field = value;
                 ClearCollideCache();
             }
         }

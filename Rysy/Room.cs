@@ -53,15 +53,13 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     private bool CanUseCanvas => Width < 4098 && Height < 4098;
 
-    private Map _map = null!;
-
     [JsonIgnore]
     public Map Map {
-        get => _map;
+        get;
         internal set {
-            _map = value;
+            field = value;
         }
-    }
+    } = null!;
 
     public int X {
         get => Attributes.X;
@@ -89,16 +87,14 @@ public sealed class Room : IPackable, ILuaWrapper {
         private set => Attributes.Height = value;
     }
 
-    private RoomAttributes _attributes = new();
-
     public RoomAttributes Attributes {
-        get => _attributes;
+        get;
         internal set {
-            _attributes = value;
+            field = value;
             ClearRenderCache();
         }
-    }
-    
+    } = new();
+
     public Color Color => CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White);
 
     public Rectangle Bounds => new(X, Y, Width, Height);
@@ -134,13 +130,12 @@ public sealed class Room : IPackable, ILuaWrapper {
     }
 
 
-    private Searchable? _searchable;
     public Searchable Searchable {
         get {
-            if (_searchable is { Text: var text } && text != Name)
-                _searchable = null;
+            if (field is { Text: var text } && text != Name)
+                field = null;
 
-            return _searchable ??= new Searchable(Name);
+            return field ??= new Searchable(Name);
         }
     }
 

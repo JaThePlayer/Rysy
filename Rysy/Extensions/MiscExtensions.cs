@@ -75,12 +75,11 @@ public struct BitArray2dMatchEnumerator : IEnumerator<Point>, IEnumerable<Point>
     private int _i;
     private int _w;
     private BitArray _arr;
-    private Point _offset;
-    
+
     public BitArray2dMatchEnumerator(BitArray s, int gridWidth, Point offset) {
         _i = -1;
         _w = gridWidth;
-        _offset = offset;
+        Current = offset;
         _arr = s;
     }
 
@@ -105,7 +104,7 @@ public struct BitArray2dMatchEnumerator : IEnumerator<Point>, IEnumerable<Point>
 
     object IEnumerator.Current => Current;
 
-    public Point Current => _arr.Get2dLoc(_i, _w) + _offset;
+    public Point Current => _arr.Get2dLoc(_i, _w) + field;
 
     public BitArray2dMatchEnumerator GetEnumerator() => this;
     

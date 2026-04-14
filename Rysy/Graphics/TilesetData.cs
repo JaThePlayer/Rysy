@@ -194,10 +194,9 @@ public sealed class TilesetData : IXmlBackedEntityData {
     private AutotiledSpriteList? _preview;
     private XnaWidgetDef? _xnaWidgetDef;
     private char[]? _tileDataSharedBuffer;
-    private EntityData? _fakeData;
     private readonly Dictionary<string, AutotiledSprite[]?> _fastTileDataToTiles = new();
     
-    public EntityData FakeData => _fakeData ??= this.CreateFakeData();
+    public EntityData FakeData => field ??= this.CreateFakeData();
 
     public FieldList GetFields(bool bg) {
         var fields = new FieldList(new {

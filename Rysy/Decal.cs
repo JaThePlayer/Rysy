@@ -257,14 +257,12 @@ public sealed partial class Decal : Entity, IPlaceable {
             _texture = null;
     }
 
-    private static Cache<List<string>> _validDecalPaths;
-    
     /// <summary>
     /// Stores all paths that can be used by decals.
     /// </summary>
     public static Cache<List<string>> ValidDecalPaths {
         get {
-            if (_validDecalPaths is { } v)
+            if (field is { } v)
                 return v;
 
             var cacheToken = new CacheToken();
@@ -282,7 +280,7 @@ public sealed partial class Decal : Entity, IPlaceable {
                     
                     return p.virtPath["decals/".Length..];
                 }).ToList());
-            _validDecalPaths = cache;
+            field = cache;
 
             Gfx.Atlas.OnTextureLoad += path => {
                 if (path.StartsWith("decals/", StringComparison.Ordinal)) {

@@ -22,20 +22,17 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
 
     public string Name { get; set; }
 
-    private EntityData _data;
-
     public EntityData Data {
-        get => _data;
+        get;
         set {
-            if (_data is not null) {
-                _data.OnChanged -= OnChanged;
+            if (field is not null) {
+                field.OnChanged -= OnChanged;
             }
-            _data = value;
-            _data.OnChanged += OnChanged;
 
-            OnChanged(new() {
-                AllChanged = true
-            });
+            field = value;
+            field.OnChanged += OnChanged;
+
+            OnChanged(new() { AllChanged = true });
         }
     }
 
@@ -65,15 +62,12 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
         return false;
     }
 
-    private StyleFolder? _parent;
     [JsonIgnore]
     public StyleFolder? Parent {
-        get => _parent;
+        get;
         internal set {
-            _parent = value;
-            OnChanged(new() {
-                AllChanged = true
-            });
+            field = value;
+            OnChanged(new() { AllChanged = true });
         }
     }
 

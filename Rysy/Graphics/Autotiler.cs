@@ -489,20 +489,16 @@ public sealed class AutotiledSprite {
         }
     }
 
-    private static AutotiledSprite? _missing;
-        
     /// <summary>
     /// Represents a missing tile
     /// </summary>
-    public static AutotiledSprite Missing => _missing 
+    public static AutotiledSprite Missing => field 
         ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
-        
-    private static AutotiledSprite? _invalid;
-        
+
     /// <summary>
     /// Represents an invalid tile
     /// </summary>
-    public static AutotiledSprite Invalid => _invalid 
+    public static AutotiledSprite Invalid => field 
         ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
 }
 

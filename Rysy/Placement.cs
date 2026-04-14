@@ -53,16 +53,13 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     [JsonIgnore]
     public Action<Entity>? Finalizer;
 
-    [JsonIgnore]
-    // set in entity registry
-    private IPlacementHandler? _placementHandler;
-
     public RegisteredEntityType RegisteredEntityType { get; set; }
-    
+
     [JsonIgnore]
+    [field: JsonIgnore]
     public IPlacementHandler PlacementHandler {
-        get => _placementHandler ??= GuessHandler()!;
-        internal set => _placementHandler = value;
+        get => field ??= GuessHandler()!;
+        internal set;
     }
 
     private IPlacementHandler? GuessHandler() {

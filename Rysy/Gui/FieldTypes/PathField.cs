@@ -50,22 +50,19 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     }
 
 
-    private Func<FoundPath, bool> _filter = (t) => true;
     public Func<FoundPath, bool> Filter {
-        get => _filter;
+        get;
         set {
-            _filter = value;
+            field = value;
             _knownPaths?.Clear();
             _knownPaths = null;
         }
-    }
+    } = (t) => true;
 
-    private Func<FoundPath, ModMeta?> _modResolver;
-    
     public Func<FoundPath, ModMeta?> ModResolver {
-        get => _modResolver;
+        get;
         set {
-            _modResolver = value;
+            field = value;
             _knownPaths?.Clear();
             _knownPaths = null;
         }
@@ -73,28 +70,25 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
     private readonly Regex _regex;
 
-    private Func<FoundPath, string, string?>? _displayNameGetter;
-
     public Func<FoundPath, string, string?>? DisplayNameGetter {
-        get => _displayNameGetter;
+        get;
         set {
-            _displayNameGetter = value;
+            field = value;
             _knownPaths?.Clear();
             _knownPaths = null;
         }
     }
-    
+
     public Func<FoundPath, ISprite?>? PreviewSpriteGetter { get; set; } = static path => ISprite.FromTexture(path.Path);
 
-    private IEnumerable<FoundPath> _additionalEntries = [];
     public IEnumerable<FoundPath> AdditionalEntries {
-        get => _additionalEntries;
+        get;
         set {
-            _additionalEntries = value;
+            field = value;
             _knownPaths?.Clear();
             _knownPaths = null;
         }
-    }
+    } = [];
 
     public PathField WithPreviewSprites(Func<FoundPath, ISprite?> getter) {
         PreviewSpriteGetter = getter;

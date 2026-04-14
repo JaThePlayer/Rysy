@@ -7,14 +7,13 @@ public class Camera : ISignalListener<ViewportChanged> {
     private XnaVector2 _pos;
     public XnaVector2 Pos => _pos;
 
-    private float _scale = 1f;
     public float Scale {
-        get => _scale;
+        get;
         set {
-            _scale = value;
+            field = value;
             RecalculateMatrix();
         }
-    }
+    } = 1f;
 
     private Viewport _viewport = RysyState.GraphicsDevice?.Viewport ?? new Viewport();
     public Viewport Viewport {

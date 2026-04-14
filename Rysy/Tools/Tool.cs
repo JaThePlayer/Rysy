@@ -50,9 +50,7 @@ public abstract class Tool {
     /// A list of possible modes this tool could use, used in the UI for generating the mode list.
     /// </summary>
     public virtual List<ToolMode> ValidModes => ToolMode.DefaultList;
-    
-    private ToolMode? _mode;
-    
+
     /// <summary>
     /// Gets or sets the currently used layer.
     /// </summary>
@@ -62,14 +60,14 @@ public abstract class Tool {
                 var name = Persistence.Instance.Get($"{PersistenceGroup}.Mode", ValidModes.FirstOrDefault()?.Name ?? "");
 
                 if (ValidModes.FirstOrDefault(m => m.Name == name) is {} mode)
-                    return _mode = mode;
+                    return field = mode;
             }
 
-            return _mode ??= ValidModes.FirstOrDefault() 
+            return field ??= ValidModes.FirstOrDefault() 
                              ?? throw new NotImplementedException($"No valid modes for tool {GetType().Name}");
         }
         set {
-            _mode = value;
+            field = value;
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.Mode", value.Name);
             }
@@ -78,8 +76,7 @@ public abstract class Tool {
             OnLayerChanged();
         }
     }
-    
-    private IEditorLayer? _layer;
+
     private string? _layerPersistenceKey;
     
     /// <summary>
@@ -92,18 +89,18 @@ public abstract class Tool {
                 var name = Persistence.Instance.Get(_layerPersistenceKey, (string?)null);
                 var layers = ValidLayers;
                 if (EditorLayers.EditorLayerFromName(name, layers) is { } knownLayer)
-                    return _layer = knownLayer;
+                    return field = knownLayer;
                 
                 //name = layers.FirstOrDefault()?.Name ?? "";
                 //Persistence.Instance.Set(_layerPersistenceKey, name);
             }
 
-            return _layer ??= ValidLayers.FirstOrDefault() ?? EditorLayers.Missing;
+            return field ??= ValidLayers.FirstOrDefault() ?? EditorLayers.Missing;
         }
         set {
-            if (_layer == value)
+            if (field == value)
                 return;
-            _layer = value;
+            field = value;
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.Layer", value.Name);
             }
@@ -117,21 +114,20 @@ public abstract class Tool {
 
     }
 
-    private string _search = "";
     private string SearchPersistenceKey => $"{PersistenceGroup}.{Layer.Name}.Search";
     /// <summary>
     /// Gets or sets the current search filter.
     /// </summary>
     public string Search {
-        get => UsePersistence ? Persistence.Instance.Get(SearchPersistenceKey, "") : _search;
+        get => UsePersistence ? Persistence.Instance.Get(SearchPersistenceKey, "") : field;
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set(SearchPersistenceKey, value);
             } else {
-                _search = value;
+                field = value;
             }
         }
-    }
+    } = "";
 
     private object? _material;
     private string PersistenceMaterialKey => GetPersistenceMaterialKeyForLayer(Layer.Name);
@@ -166,14 +162,13 @@ public abstract class Tool {
         }
     }
 
-    private HashSet<string>? _favorites;
     public HashSet<string>? Favorites {
-        get => UsePersistence ? _favorites ??= Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : _favorites;
+        get => UsePersistence ? field ??= Persistence.Instance.Get($"{PersistenceGroup}.{Layer.Name}.Favorites", (HashSet<string>) null!) : field;
         set {
             if (UsePersistence) {
                 Persistence.Instance.Set($"{PersistenceGroup}.{Layer.Name}.Favorites", value);
             }
-            _favorites = value;
+            field = value;
         }
     }
 

@@ -76,12 +76,11 @@ public class ComboCache<T> {
         return _cachedValue;
     }
 
-    private string _search = "";
     internal string Search {
-        get => _search ?? "";
+        get => field ?? "";
         set {
             Clear();
-            _search = value;
+            field = value;
         }
-    }
+    } = "";
 }

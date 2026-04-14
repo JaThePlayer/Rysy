@@ -120,12 +120,11 @@ public readonly struct WrappedBitArray {
         private int _i;
         private int _w;
         private WrappedBitArray _arr;
-        private Point _offset;
-    
+
         public TwoDimMatchEnumerator(WrappedBitArray s, int gridWidth, Point offset) {
             _i = -1;
             _w = gridWidth;
-            _offset = offset;
+            Current = offset;
             _arr = s;
         }
 
@@ -150,7 +149,7 @@ public readonly struct WrappedBitArray {
 
         object IEnumerator.Current => Current;
 
-        public Point Current => _arr.Get2dLoc(_i, _w) + _offset;
+        public Point Current => _arr.Get2dLoc(_i, _w) + field;
 
         public TwoDimMatchEnumerator GetEnumerator() => this;
     

@@ -7,15 +7,14 @@ public static class Time {
     /// Time delta, unscaled by TimeScale
     /// </summary>
     public static float RawDelta { get; private set; }
+
     public static float TimeScale {
-        get => _timeScale;
+        get;
         set {
             Delta = RawDelta * value;
-            _timeScale = value;
+            field = value;
         }
-    }
-
-    private static float _timeScale = 1f;
+    } = 1f;
 
     /// <summary>
     /// How much time has elapsed since the start of the game

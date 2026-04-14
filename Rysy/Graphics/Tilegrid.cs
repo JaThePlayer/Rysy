@@ -25,17 +25,16 @@ public class Tilegrid : ILuaWrapper {
     /// </summary>
     public int Width, Height;
 
-    private char[,] _tiles = null!;
     public char[,] Tiles {
-        get => _tiles;
+        get;
         set {
-            _tiles = value;
+            field = value;
             Width = value.GetLength(0);
             Height = value.GetLength(1);
             MarkEdited();
             CachedSprites = null;
         }
-    }
+    } = null!;
 
     public int? Depth { get; set; }
 
@@ -209,16 +208,14 @@ public class Tilegrid : ILuaWrapper {
     }
 
 
-    private AutotiledSpriteList? _cachedSprites;
-
     internal AutotiledSpriteList? CachedSprites {
-        get => _cachedSprites;
+        get;
         set {
-            var renderTargetEnabled = _cachedSprites?.IsRenderTargetEnabled();
-            _cachedSprites?.UseRenderTarget(false);
-            _cachedSprites = value;
+            var renderTargetEnabled = field?.IsRenderTargetEnabled();
+            field?.UseRenderTarget(false);
+            field = value;
             if (renderTargetEnabled is true)
-                _cachedSprites?.UseRenderTarget(true);
+                field?.UseRenderTarget(true);
         }
     }
 

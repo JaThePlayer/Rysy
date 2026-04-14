@@ -14,12 +14,10 @@ using System.Text.RegularExpressions;
 namespace Rysy;
 
 public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEmitter, ISignalListener<SettingsChanged>, ISignalListener<PersistenceChanged> {
-    private static Map _dummyMap;
-    
     /// <summary>
     /// An empty map that can be used for mocking
     /// </summary>
-    public static Map DummyMap => _dummyMap ??= NewMap("DUMMY");
+    public static Map DummyMap => field ??= NewMap("DUMMY");
 
     /// <summary>
     /// The package name of the map.
@@ -74,7 +72,6 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
 
     public Dictionary<string, BinaryPacker.Element> UnknownTopLevelElements = [];
 
-    private ModMeta? _mod;
     private bool _modChecked;
 
     /// <summary>
@@ -84,11 +81,11 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     public ModMeta? Mod {
         get {
             if (_modChecked)
-                return _mod;
+                return field;
 
-            _mod = ModRegistry.GetModContainingRealPath(Filepath);
+            field = ModRegistry.GetModContainingRealPath(Filepath);
             _modChecked = true;
-            return _mod;
+            return field;
         }
     }
 

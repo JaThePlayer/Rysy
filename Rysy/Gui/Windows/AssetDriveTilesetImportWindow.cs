@@ -399,17 +399,13 @@ internal sealed record AssetDriveTileset {
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
 
-    private Uri? _imageUri;
-
     [JsonIgnore]
-    public Uri ImageUri => _imageUri ??= new($"https://maddie480.ovh/celeste/asset-drive/files/{Id}");
+    public Uri ImageUri => field ??= new($"https://maddie480.ovh/celeste/asset-drive/files/{Id}");
 
 
-    private Task<string>? _readmeTask;
-    
     [JsonIgnore]
     public Task<string> Readme
-        => _readmeTask ??= ReadmeId is {} 
+        => field ??= ReadmeId is {} 
             ? MaddieAssetDriveTilesetApi.Descriptions.GetResource(ReadmeId).GetResourceAsync()
             : Task.FromResult("(No Readme provided)");
 }

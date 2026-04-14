@@ -72,26 +72,24 @@ public sealed record SpriteTemplate {
     public int Depth { get; init; }
     public VirtTexture Texture { get; private init; }
     public Rectangle? ClipRect { get; internal set; }
-    
-    private Vector2 _originBacking;
+
     public Vector2 Origin {
-        get => _originBacking;
+        get;
         set {
-            _originBacking = value;
+            field = value;
             MarkChanged();
         }
     }
-    
+
     public float Rotation { get; set; } = 0f;
-    
-    private Vector2 _scaleBacking = Vector2.One;
+
     public Vector2 Scale {
-        get => _scaleBacking;
+        get;
         set {
-            _scaleBacking = value;
+            field = value;
             MarkChanged();
         }
-    }
+    } = Vector2.One;
 
     public bool IsLoaded => Texture.Texture is { };
     

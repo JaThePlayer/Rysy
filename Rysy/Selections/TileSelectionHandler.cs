@@ -12,8 +12,6 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     private char[,] _toMove;
     private char[,]? _orig;
 
-    private IEditorLayer _selectionLayer;
-
     public bool ResizableX => false;
 
     public bool ResizableY => false;
@@ -21,7 +19,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, IEditorLayer layer) {
         (Grid, Rect) = (grid, rectPixels);
         _toMoveRects.Add((false, Rect));
-        _selectionLayer = layer;
+        Layer = layer;
     }
 
     internal TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, char[,] toMove, IEditorLayer layer) {
@@ -30,7 +28,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         _toMove = toMove;
         _orig = (char[,]) Grid.Tiles.Clone();
-        _selectionLayer = layer;
+        Layer = layer;
     }
 
     public bool AnyTileWithin() {
@@ -250,7 +248,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         return null;
     }
 
-    public IEditorLayer Layer => _selectionLayer;
+    public IEditorLayer Layer { get; }
 
     Rectangle ISelectionHandler.Rect => Rect;
 
