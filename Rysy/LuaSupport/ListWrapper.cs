@@ -43,7 +43,7 @@ public record class ListWrapper<T>(List<T> Inner) : ILuaWrapper {
     }
 }
 
-public record class WrapperListWrapper<T>(List<T> Inner) : ILuaWrapper
+public record class WrapperListWrapper<T>(IList<T> Inner) : ILuaWrapper
     where T : ILuaWrapper {
     public int LuaIndex(Lua lua, long key) {
         var intI = (int) key - 1;

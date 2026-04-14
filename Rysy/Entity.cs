@@ -110,8 +110,7 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         }
     }
 
-    private void EditorGroupsListChanged() {
-        var p = string.Join(",", _editorGroupList!);
+    private void EditorGroupsListChanged(ListenableListChanged<EditorGroup> changed) {
         EntityData[EditorGroupEntityDataKey] = string.Join(",", _editorGroupList!);
     }
 
@@ -1059,7 +1058,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
         Sid = sid;
 
         Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
-        Nodes.OnChanged = () => OnChanged?.Invoke(new EntityDataChangeCtx {
+        Nodes.OnChanged = _ => OnChanged?.Invoke(new EntityDataChangeCtx {
             NodesChanged = true,
             NodeCountChanged = true,
         });

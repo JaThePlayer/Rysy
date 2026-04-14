@@ -163,6 +163,12 @@ public static class LinqExt {
 
     public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self, Action onChange) {
         return new(self) {
+            OnChanged = _ => onChange(),
+        };
+    }
+    
+    public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self, Action<ListenableListChanged<T>> onChange) {
+        return new(self) {
             OnChanged = onChange,
         };
     }
@@ -226,6 +232,12 @@ public static class LinqExt {
         }
         
         yield return (next, true);
+    }
+
+    public static void ForEach<T>(this IEnumerable<T> self, Action<T> onElement) {
+        foreach (var x in self) {
+            onElement(x);
+        }
     }
 
     public static ListTakeEnumerable<T, T> FastTake<T>(this List<T> list, int amt)

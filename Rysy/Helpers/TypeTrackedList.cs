@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -16,26 +17,27 @@ public class TypeTrackedList<T> : IListenableList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
-    public Action? OnChanged { get; set; }
+    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
 
     public long Version { get; private set; }
 
-    private void CallOnChanged() {
+    private void CallOnChanged(ListenableListChanged<T> changed) {
         Version++;
-        OnChanged?.Invoke();
+        OnChanged?.Invoke(changed);
     }
 
     public T this[int index] {
         get => Inner[index];
         set {
             var prev = Inner.ElementAtOrDefault(index);
-            if (prev != null)
+            if (prev != null) {
                 UntrackItem(prev);
+                CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, prev));
+            }
 
             Inner[index] = value;
             TrackNewItem(value);
-
-            CallOnChanged();
+            CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Add, value));
         }
     }
 
@@ -112,7 +114,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Add, item));
     }
 
 
@@ -120,7 +122,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
         Inner.Clear();
         _byType.Clear();
 
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Refresh, default));
     }
 
     public bool Contains(T item) {
@@ -148,22 +150,23 @@ public class TypeTrackedList<T> : IListenableList<T> {
 
         TrackNewItem(item);
 
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, item));
     }
 
     public bool Remove(T item) {
         UntrackItem(item);
         var ret = Inner.Remove(item);
         if (ret)
-            CallOnChanged();
+            CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, item));
         return ret;
     }
 
     public void RemoveAt(int index) {
-        UntrackItem(Inner[index]);
+        var item = Inner[index];
+        UntrackItem(item);
         Inner.RemoveAt(index);
 
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, item));
     }
 
     IEnumerator IEnumerable.GetEnumerator() {

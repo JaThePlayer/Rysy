@@ -1,24 +1,34 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 
 namespace Rysy.Helpers;
 
-public interface IListenableList<T> : IList<T>, IReadOnlyList<T> {
-    /// <summary>
-    /// Will be called whenever the contents of the list get changed (Elements get added/removed)
-    /// </summary>
-    public Action? OnChanged { get; set; }
+/// <summary>
+/// Data for the <see cref="IReadOnlyListenableList{T}.OnChanged"/> event.
+/// </summary>
+/// <param name="Action">An action that specifies how the collection changed.</param>
+/// <param name="Item">The item that was added/removed. Null if the collection was refreshed.</param>
+/// <typeparam name="T">The type of the collection changed.</typeparam>
+public record struct ListenableListChanged<T>(CollectionChangeAction Action, T? Item);
+
+public interface IListenableList<T> : IList<T>, IReadOnlyListenableList<T> {
+    // These are to resolve conflicts between IList<T> and IReadOnlyList<T>
+
+    /// <inheritdoc cref="IList{T}.Count" />
+    public new int Count { get; }
     
-    /// <summary>
-    /// Current version of the list, incremented each time OnChanged is called.
-    /// </summary>
-    public long Version { get; }
+    /// <inheritdoc cref="IList{T}.this" />
+    public new T this[int v] {
+        get;
+        set;
+    }
 }
 
 public interface IReadOnlyListenableList<T> : IReadOnlyList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
-    public Action? OnChanged { get; set; }
+    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
     
     /// <summary>
     /// Current version of the list, incremented each time OnChanged is called.
@@ -30,9 +40,9 @@ public interface IReadOnlyListenableList<T> : IReadOnlyList<T> {
 /// Acts like a <see cref="List{T}"/>, but implements <see cref="IListenableList{T}"/>
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> {
+public class ListenableList<T> : IListenableList<T> {
     private List<T> _inner;
-    public Action? OnChanged { get; set; }
+    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
     
     public long Version { get; private set; }
 
@@ -46,25 +56,37 @@ public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> 
         _suppressed = false;
     }
     
-    protected void CallOnChanged() {
+    protected void CallOnChanged(ListenableListChanged<T> changed) {
         if (!_suppressed) {
             Version++;
-            OnChanged?.Invoke();
+            OnChanged?.Invoke(changed);
         }
     }
 
     public ListenableList() {
-        _inner = new();
+        _inner = [];
     }
 
     public ListenableList(Action onChanged) {
-        _inner = new();
+        _inner = [];
+
+        OnChanged = _ => onChanged();
+    }
+
+    public ListenableList(Action onChanged, int capacity) {
+        _inner = new List<T>(capacity);
+
+        OnChanged = _ => onChanged();
+    }
+    
+    public ListenableList(Action<ListenableListChanged<T>> onChanged) {
+        _inner = [];
 
         OnChanged = onChanged;
     }
 
-    public ListenableList(Action onChanged, int capacity) {
-        _inner = new(capacity);
+    public ListenableList(Action<ListenableListChanged<T>> onChanged, int capacity) {
+        _inner = new List<T>(capacity);
 
         OnChanged = onChanged;
     }
@@ -80,8 +102,10 @@ public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> 
     public T this[int index] {
         get => _inner[index];
         set {
+            var old = _inner[index];
             _inner[index] = value;
-            CallOnChanged();
+            CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, old));
+            CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Add, value));
         }
     }
 
@@ -92,24 +116,18 @@ public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> 
 
     public void Add(T item) {
         _inner.Add(item);
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Add, item));
     }
 
     public void AddAll(IEnumerable<T> items) {
-        bool any = false;
-
         foreach (var item in items) {
-            _inner.Add(item);
-            any = true;
+            Add(item);
         }
-
-        if (any)
-            CallOnChanged();
     }
 
     public void Clear() {
         _inner.Clear();
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Refresh, default));
     }
 
     public bool Contains(T? item) => _inner.Contains(item!);
@@ -122,36 +140,31 @@ public class ListenableList<T> : IListenableList<T>, IReadOnlyListenableList<T> 
 
     public void Insert(int index, T item) {
         _inner.Insert(index, item);
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Add, item));
     }
 
     public void RemoveAll(Func<T, bool> predicate) {
-        bool changed = false;
-
         for (int i = Count - 1; i >= 0; i--) {
             var item = _inner[i];
 
             if (predicate(item)) {
-                changed = true;
-                _inner.RemoveAt(i);
+                RemoveAt(i);
             }
         }
-
-        if (changed)
-            CallOnChanged();
     }
 
     public bool Remove(T item) {
         if (_inner.Remove(item)) {
-            CallOnChanged();
+            CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, item));
             return true;
         }
         return false;
     }
 
     public void RemoveAt(int index) {
+        var item = _inner[index];
         _inner.RemoveAt(index);
-        CallOnChanged();
+        CallOnChanged(new ListenableListChanged<T>(CollectionChangeAction.Remove, item));
     }
 
     public List<T>.Enumerator GetEnumerator() => _inner.GetEnumerator();

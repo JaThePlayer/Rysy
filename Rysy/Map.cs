@@ -35,7 +35,7 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
         }
     }
 
-    public List<Room> Rooms { get; set; } = new();
+    public IListenableList<Room> Rooms { get; } = new ListenableList<Room>();
 
     public void SortRooms() {
         Rooms.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));

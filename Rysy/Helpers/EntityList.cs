@@ -6,7 +6,7 @@ public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper, ILuaTable
     private Dictionary<string, List<Entity>> _sidToEntities = new(StringComparer.Ordinal);
 
     public EntityList() {
-        OnChanged += () => {
+        OnChanged += _ => {
             _sidToEntities.Clear();
             _boundTable = null;
         };

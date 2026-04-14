@@ -25,8 +25,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         FgTilesRenderCacheToken = new(ClearFgTilesRenderCache);
         BgTilesRenderCacheToken = new(ClearBgTilesRenderCache);
 
-        Entities.OnChanged += ClearEntityRenderCache;
-        Triggers.OnChanged += ClearTriggerRenderCache;
+        Entities.OnChanged += _ => ClearEntityRenderCache();
+        Triggers.OnChanged += _ => ClearTriggerRenderCache();
 
         BgDecals = new(ClearBgDecalsRenderCache);
         FgDecals = new(ClearFgDecalsRenderCache);

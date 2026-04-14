@@ -63,7 +63,7 @@ public class StylegroundWindow : Window {
         _hotkeyHandler.AddHotkeyFromSettings("cut", "ctrl+x", CutSelections);
 
         _selections = new();
-        _selections.OnChanged += () => {
+        _selections.OnChanged += _ => {
             if (_selections is [var main]) {
                 CreateForm(main);
             } else {

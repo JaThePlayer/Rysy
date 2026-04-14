@@ -72,7 +72,7 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
         args.RoomPos = roomPos;
 
         var layer = Layer;
-        List<Room>? rooms;
+        IReadOnlyList<Room>? rooms;
         if (layer.Name == CurrentRoomLayer.Name)
             rooms = EditorState.CurrentRoom is { } ? new List<Room>() { EditorState.CurrentRoom } : null;
         else if (layer.Name == AllRoomsLayer.Name) {

@@ -71,7 +71,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         Registry = registry ?? ToolRegistry.Global;
 
         CreateTools();
-        Registry.Tools.OnChanged += CreateTools;
+        Registry.Tools.OnChanged += RegistryToolListChanged;
         EditorState.OnCurrentRoomChanged += CancelInteraction;
         History.OnUndo += CancelInteraction;
 
@@ -87,7 +87,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     public void Unload() {
         UnloadAllTools();
         (ComponentRegistry as IDisposable)?.Dispose();
-        Registry.Tools.OnChanged -= CreateTools;
+        Registry.Tools.OnChanged -= RegistryToolListChanged;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
         History.OnUndo -= CancelInteraction;
         _onUnload?.Invoke();
@@ -102,6 +102,10 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         UnloadAllTools();
     }
 
+    private void RegistryToolListChanged(ListenableListChanged<Type> changed) {
+        CreateTools();
+    }
+    
     private void CreateTools() {
         UnloadAllTools();
 
