@@ -1,16 +1,17 @@
 ﻿using Rysy.Extensions;
 using Rysy.Scenes;
+using Rysy.Signals;
 using System.Text.Json;
 
 namespace Rysy.History;
 
-public class HistoryHandler {
+public class HistoryHandler : ISignalEmitter {
     internal List<IHistoryAction> Actions { get; set; } = new();
     internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
     internal List<IHistoryAction> SimulatedActions { get; set; } = new();
     
-    internal Map Map { get; set; }
+    public Map Map { get; set; }
 
     public Action? OnUndo { get; set; }
     public Action? OnApply { get; set; }
@@ -21,7 +22,10 @@ public class HistoryHandler {
 
     public void UndoSimulations() {
         foreach (var item in SimulatedActions.AsEnumerable().Reverse()) {
-            item?.Undo(Map);
+            if (item is { }) {
+                item.Undo(Map);
+                this.Emit(new HistoryActionSimulationUndone(this, item));
+            }
         }
         SimulatedActions.Clear();
     }
@@ -32,6 +36,7 @@ public class HistoryHandler {
         if (action is { }) {
             action.Apply(Map);
             SimulatedActions.Add(action);
+            this.Emit(new HistoryActionSimulationApplied(this, action));
         }
     }
 
@@ -69,6 +74,7 @@ public class HistoryHandler {
         Actions.Add(action);
         UndoneActions.Clear();
         OnApply?.Invoke();
+        this.Emit(new HistoryActionApplied(this, action));
     }
 
     public void Undo() {
@@ -79,6 +85,7 @@ public class HistoryHandler {
             action.Undo(Map);
             UndoneActions.Add(action);
             OnUndo?.Invoke();
+            this.Emit(new HistoryActionUndone(this, action));
         }
     }
 
@@ -90,6 +97,7 @@ public class HistoryHandler {
             action.Apply(Map);
             Actions.Add(action);
             OnApply?.Invoke();
+            this.Emit(new HistoryActionApplied(this, action));
         }
     }
 
@@ -142,4 +150,6 @@ public class HistoryHandler {
             return act;
         }
     }
+
+    SignalTarget ISignalEmitter.SignalTarget { get; set; }
 }
