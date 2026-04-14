@@ -65,12 +65,18 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     private IDisposable? _animatedTilesWatcher, _bgTilesWatcher, _fgTilesWatcher, _spritesWatcher;
 
     public MapStylegrounds Style;
+
     /// <summary>
     /// Filler rooms. Currently unparsed :(
     /// </summary>
     public BinaryPacker.Element Filler;
 
-    public Dictionary<string, BinaryPacker.Element> UnknownTopLevelElements = [];
+    /// <summary>
+    /// Top-level elements from the map binary file which were not recognized.
+    /// Will be preserved upon saving the map.
+    /// </summary>
+    public IDictionary<string, BinaryPacker.Element> UnknownTopLevelElements { get; } =
+        new Dictionary<string, BinaryPacker.Element>();
 
     private bool _modChecked;
 
@@ -94,6 +100,10 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     private Map() {
         OnMetaChanged += (old, @new) => {
             LoadAutotiler(old, @new);
+        };
+
+        Rooms.OnChanged += changed => {
+            this.Emit(new MapRoomListChanged(this, changed));
         };
     }
 
