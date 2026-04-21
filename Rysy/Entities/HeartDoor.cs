@@ -6,7 +6,7 @@ namespace Rysy.Entities;
 
 [CustomEntity("heartGemDoor")]
 public sealed class HeartDoor : Entity, IPlaceable {
-    private static Color WallColor = "18668f".FromRgb();
+    private static readonly Color WallColor = "18668f".FromRgb();
 
     public override int Depth => 0;
 
@@ -19,7 +19,7 @@ public sealed class HeartDoor : Entity, IPlaceable {
         var w = Width;
         var rh = Room.Height;
 
-        var edgeTexture = Gfx.Atlas["objects/heartdoor/edge"]!;
+        var edgeTexture = Gfx.Atlas["objects/heartdoor/edge"];
         var (edgeWidth, edgeHeight) = (edgeTexture.Width, edgeTexture.Height);
 
         yield return ISprite.Rect(new((int)x, 0, w, rh), WallColor);
@@ -39,15 +39,18 @@ public sealed class HeartDoor : Entity, IPlaceable {
         if (hearts <= 0)
             yield break;
 
-        var heartTexture = Gfx.Atlas["objects/heartdoor/icon00"]!;
+        var heartTexture = Gfx.Atlas["objects/heartdoor/icon00"];
         var heartWidth = heartTexture.Width + 4;
 
         int maxHeartsPerRow = (w - 8) / heartWidth;
-        int rows = (int) MathF.Ceiling(hearts / (float)maxHeartsPerRow);
+        if (maxHeartsPerRow <= 0)
+            yield break;
+
+        int rows = (int) float.Ceiling(hearts / (float)maxHeartsPerRow);
 
         int heartsLeft = hearts;
         for (int row = 0; row < rows; row++) {
-            int heartsThisRow = Math.Min(heartsLeft, maxHeartsPerRow);
+            int heartsThisRow = int.Min(heartsLeft, maxHeartsPerRow);
             var yOffset = (-rows / 2f + row + 0.5f) * heartWidth;
 
             for (int i = 1; i <= heartsThisRow; i++) {
