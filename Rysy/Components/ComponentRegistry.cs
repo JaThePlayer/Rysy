@@ -265,11 +265,12 @@ public sealed class ComponentRegistry : IComponentRegistry {
         }
         
         public void Dispose() {
-            if (_actions is { } actions) {
+            while (_actions is { } actions) {
+                _actions = null;
                 foreach (var action in actions) {
                     action();
                 }
-                _actions.Clear();
+                actions.Clear();
             }
         }
     }
