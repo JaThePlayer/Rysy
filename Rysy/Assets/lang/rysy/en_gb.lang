@@ -185,6 +185,8 @@ rysy.settings.debug.logPreloadTimes=Log Texture Preloading
 rysy.settings.debug.logPreloadTimes.tooltip=Logs whenever a sprite has to be preloaded due to requesting its size before it finished lazily loading.
 rysy.settings.debug.logMissingFieldTypes=Log Missing Field Types
 rysy.settings.debug.logMissingFieldTypes.tooltip=Logs whenever a lonn plugin uses a field type that doesn't exist.
+rysy.settings.debug.allocateConsole=Allocate Console
+rysy.settings.debug.allocateConsole.tooltip=Whether a console window displaying the log should be allocated to the app.\nOnly works on Windows.
 
 rysy.fonts.name.RobotoMono.ttf=* Roboto Mono (Default)
 rysy.fonts.name.RobotoMonob.ttf=* Roboto Mono (Bold) (Default)

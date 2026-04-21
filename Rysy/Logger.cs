@@ -222,10 +222,12 @@ public sealed class Logger(string tag) : IRysyLogger {
         lock (FileLock) {
             if (UseColorsInConsole) {
                 Console.Write(str.Censor());
+                Console.Out.Flush();
                 fs.AppendAllText(LogFile, unformatted.Censor());
             } else {
                 var censored = unformatted.Censor();
                 Console.Write(censored);
+                Console.Out.Flush();
                 fs.AppendAllText(LogFile, censored);
             }
         }

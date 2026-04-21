@@ -13,6 +13,7 @@
     <SourceCodePlugins Condition="'$(SourceCodePlugins)' == ''">SourceCodePlugins</SourceCodePlugins>
     <DefineConstants Condition="'$(FNA)' != ''">$(DefineConstants);FNA</DefineConstants>
     <DefineConstants Condition="'$(SourceCodePlugins)' != ''">$(DefineConstants);SourceCodePlugins</DefineConstants>
+    <ApplicationManifest>Rysy.manifest</ApplicationManifest>
   </PropertyGroup>
     
     <!-- Nuget package -->
@@ -162,7 +163,7 @@
                        AppHostDestinationPath="$(OutputPath)\Rysy$(_NativeExeExt)"
                        AppBinaryName="$(AssemblyName)$(TargetExt)" 
                        IntermediateAssembly="@(IntermediateAssembly->'%(FullPath)')"
-                       WindowsGraphicalUserInterface="$(_IsWindows)"
+                       WindowsGraphicalUserInterface="false"
         />
   </Target>
   <!-- The executable generated via CreateAppHost does not get auto-copied to the publish/ directory, we need to do this manually -->

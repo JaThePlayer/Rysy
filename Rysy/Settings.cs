@@ -252,6 +252,11 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
 
     public Dictionary<string, bool> OpenedWindows { get; set; } = [];
 
+    public bool AllocateConsole  {
+        get;
+        set => Change(nameof(AllocateConsole), ref field, value);
+    } = false;
+
     public bool IsWindowPersisted<T>(bool defaultEnabled) {
         return OpenedWindows.GetValueOrDefault(typeof(T).FullName ?? typeof(T).Name, defaultEnabled);
     }

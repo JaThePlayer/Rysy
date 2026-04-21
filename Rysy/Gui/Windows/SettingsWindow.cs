@@ -332,6 +332,11 @@ public sealed class SettingsWindow : Window {
                 Settings.Instance.Save();
             }
 
+            m = Settings.Instance.AllocateConsole;
+            if (ImGuiManager.TranslatedCheckbox("rysy.settings.debug.allocateConsole", ref m)) {
+                Settings.Instance.AllocateConsole = m;
+                Settings.Instance.Save();
+            }
 
             ImGui.EndTabItem();
         }
