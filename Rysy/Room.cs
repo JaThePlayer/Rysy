@@ -230,32 +230,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public BinaryPacker.Element Pack() {
         BinaryPacker.Element el = new("level");
-        var attr = Attributes;
-        el.Attributes = new() {
-            ["x"] = X,
-            ["y"] = Y,
-            ["width"] = Width,
-            ["height"] = Height,
-            ["name"] = Name,
-            ["altMusic"] = attr.AltMusic,
-            ["ambienceProgress"] = attr.AmbienceProgress,
-            ["c"] = attr.C,
-            ["cameraOffsetX"] = attr.CameraOffsetX,
-            ["cameraOffsetY"] = attr.CameraOffsetY,
-            ["dark"] = attr.Dark,
-            ["delayAltMusicFade"] = attr.DelayAltMusicFade,
-            ["disableDownTransition"] = attr.DisableDownTransition,
-            ["music"] = attr.Music,
-            ["musicLayer1"] = attr.MusicLayer1,
-            ["musicLayer2"] = attr.MusicLayer2,
-            ["musicLayer3"] = attr.MusicLayer3,
-            ["musicLayer4"] = attr.MusicLayer4,
-            ["musicProgress"] = attr.MusicProgress,
-            ["space"] = attr.Space,
-            ["underwater"] = attr.Underwater,
-            ["whisper"] = attr.Whisper,
-            ["windPattern"] = attr.WindPattern,
-        };
+        el.Attributes = new Dictionary<string, object>(Attributes.Data.Attributes);
 
         var trimEntities = Settings.Instance.TrimEntities;
         

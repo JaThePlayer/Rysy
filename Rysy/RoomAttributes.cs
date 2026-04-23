@@ -70,7 +70,7 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     
     public bool MusicLayer4 => Data.Bool("musicLayer4", false);
     
-    public string AltMusic => Data.Attr("altMusic", "");
+    public string AltMusic => Data.Attr("alt_music", "");
 
     /// <summary>
     /// Not a real attribute, as it's actually determined by the existence of a checkpoint entity.

@@ -1329,7 +1329,7 @@ room.attribute.music=Music
 room.attribute.musicAlternative=Alternative Music
 room.attribute.ambience=Ambience
 room.attribute.windPattern=Wind Pattern
-room.attribute.color=Colour
+room.attribute.c=Colour
 room.attribute.cameraOffsetX=Camera Offset X
 room.attribute.cameraOffsetY=Camera Offset Y
 
@@ -1355,6 +1355,6 @@ room.description.music=Which song should be playing in the room. Uses previous i
 room.description.alt_music=Which alternative song should be playing.
 room.description.ambience=Which ambience should be playing in the room. Uses previous if left empty.
 room.description.windPattern=The type of wind in the room.
-room.description.color=The colour of the room border. Can also be seen in the game's debug map viewer.\n0 - White\n1 - Red\n2 - Green\n3 - Light Blue\n4 - Dark Blue\n5 - Purple\n6 - Pink
+room.description.c=The colour of the room border. Can also be seen in the game's debug map viewer.\n0 - White\n1 - Red\n2 - Green\n3 - Light Blue\n4 - Dark Blue\n5 - Purple\n6 - Pink
 room.description.cameraOffsetX=Global horizontal offset of camera in room.
 room.description.cameraOffsetY=Global vertical offset of camera in room.
