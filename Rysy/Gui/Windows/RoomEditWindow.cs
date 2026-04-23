@@ -89,7 +89,6 @@ public sealed partial class RoomEditWindow : Window {
     }
     
     public RoomEditWindow(EditorState editorState, Room room, bool newRoom) : base($"Room Edit - {room.Name}") {
-        Room room1 = room;
         var attrs = room.Attributes.Copy();
 
         if (newRoom) {
@@ -105,16 +104,21 @@ public sealed partial class RoomEditWindow : Window {
         Size = _generalTab.Size;
         
         _generalTab.OnChanged += edited => {
+            room.Attributes.Data.SetOverlay(null);
             _newRoom = false;
             
             foreach (var (k, v) in edited) {
-                attrs.Data.Attributes[k] = v;
+                attrs.Data[k] = v;
             }
             
-            editorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room1, attrs));
+            editorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room, attrs));
             if (newRoom) {
-                editorState.CurrentRoom = room1;
+                editorState.CurrentRoom = room;
             }
+        };
+
+        _generalTab.OnLiveUpdate += edited => {
+            room.Attributes.Data.SetOverlay(edited);
         };
 
         var history = editorState.History!;
@@ -126,7 +130,12 @@ public sealed partial class RoomEditWindow : Window {
             history.OnUndo -= _historyHook;
         });
     }
-    
+
+    protected internal override void Removed() {
+        _room.Attributes.Data.SetOverlay(null);
+        base.Removed();
+    }
+
     private void ReevaluateEditedValues() {
         _generalTab.EditedValues.Clear();
 
@@ -135,7 +144,7 @@ public sealed partial class RoomEditWindow : Window {
                 continue;
             
             var name = prop.Name;
-            var current = _room.Attributes.Data.Attributes.GetValueOrDefault(prop.Name);
+            var current = _room.Attributes.Data.TryGetValue(prop.Name, out var curr) ? curr : null;
             var propValue = prop.ValueOrDefault();
             
             var equal = (current, propValue) switch {

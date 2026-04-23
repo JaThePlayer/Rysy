@@ -3,33 +3,33 @@
 namespace Rysy;
 
 public sealed class RoomAttributes(BinaryPacker.Element data) {
-    public BinaryPacker.Element Data { get; } = data.Clone();
+    public EntityData Data { get; } = new(data.Name ?? "room", data);
 
-    public RoomAttributes Copy() => new(Data);
+    public RoomAttributes Copy() => new(new BinaryPacker.Element { Attributes = Data.Inner });
 
     public string Name {
         get => Data.Attr("name");
-        set => Data.Attributes["name"] = value;
+        set => Data["name"] = value;
     }
 
     public int X {
         get => Data.Int("x");
-        set => Data.Attributes["x"] = value;
+        set => Data["x"] = value;
     }
     
     public int Y {
         get => Data.Int("y");
-        set => Data.Attributes["y"] = value;
+        set => Data["y"] = value;
     }
     
     public int Width {
         get => Data.Int("width");
-        set => Data.Attributes["width"] = value;
+        set => Data["width"] = value;
     }
     
     public int Height {
         get => Data.Int("height");
-        set => Data.Attributes["height"] = value;
+        set => Data["height"] = value;
     }
 
     public bool DelayAltMusicFade => Data.Bool("delayAltMusicFade", false);

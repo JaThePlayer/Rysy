@@ -230,7 +230,7 @@ public sealed class Room : IPackable, ILuaWrapper {
 
     public BinaryPacker.Element Pack() {
         BinaryPacker.Element el = new("level");
-        el.Attributes = new Dictionary<string, object>(Attributes.Data.Attributes);
+        el.Attributes = new Dictionary<string, object>(Attributes.Data.Inner);
 
         var trimEntities = Settings.Instance.TrimEntities;
         
