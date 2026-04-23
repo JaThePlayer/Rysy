@@ -244,8 +244,16 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction? TryRotate(RotationDirection dir) {
-        // TODO: Tile Rotations
-        return null;
+        ConsumeTilesIfNeeded();
+
+        var newToMove = dir == RotationDirection.Left ? _toMove.CreateRotatedLeft() : _toMove.CreateRotatedRight();
+        var r = Rect.Div(8);
+        r = RectangleExt.Merge(r, new Rectangle(r.X, r.Y, r.Height, r.Width));
+
+        var action = new TileSwapAction(Grid, r, _orig!, newToMove);
+        _toMove = newToMove;
+
+        return action;
     }
 
     public IEditorLayer Layer { get; }

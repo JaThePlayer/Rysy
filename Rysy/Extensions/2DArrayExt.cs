@@ -119,6 +119,34 @@ public static class TwoDimensionalArrayExt {
 
         return flipped;
     }
+    
+    public static T[,] CreateRotatedRight<T>(this T[,] arr) {
+        var w = arr.GetLength(0);
+        var h = arr.GetLength(1);
+        var flipped = new T[h, w];
+
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                flipped[h - y - 1, x] = arr[x, y];
+            }
+        }
+
+        return flipped;
+    }
+    
+    public static T[,] CreateRotatedLeft<T>(this T[,] arr) {
+        var w = arr.GetLength(0);
+        var h = arr.GetLength(1);
+        var flipped = new T[h, w];
+
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                flipped[y, w - x - 1] = arr[x, y];
+            }
+        }
+
+        return flipped;
+    }
 
     public static T[,] CreateTrimmed<T>(this T[,] arr, T emptyValue, out int offX, out int offY) where T : IEquatable<T> {
         var (minX, minY, maxX, maxY) = (int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
