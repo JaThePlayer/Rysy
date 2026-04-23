@@ -2,150 +2,76 @@
 
 namespace Rysy;
 
-public record class RoomAttributes {
-    public RoomAttributes Copy() => new(this);
+public sealed class RoomAttributes(BinaryPacker.Element data) {
+    public BinaryPacker.Element Data { get; } = data.Clone();
 
-    public string Name { get; set; } = "";
-    public int X;
-    public int Y;
-    public int Width;
-    public int Height;
+    public RoomAttributes Copy() => new(Data);
 
-    public bool DelayAltMusicFade;
+    public string Name {
+        get => Data.Attr("name");
+        set => Data.Attributes["name"] = value;
+    }
 
-    public float CameraOffsetX;
-    public float CameraOffsetY;
+    public int X {
+        get => Data.Int("x");
+        set => Data.Attributes["x"] = value;
+    }
+    
+    public int Y {
+        get => Data.Int("y");
+        set => Data.Attributes["y"] = value;
+    }
+    
+    public int Width {
+        get => Data.Int("width");
+        set => Data.Attributes["width"] = value;
+    }
+    
+    public int Height {
+        get => Data.Int("height");
+        set => Data.Attributes["height"] = value;
+    }
+
+    public bool DelayAltMusicFade => Data.Bool("delayAltMusicFade", false);
+
+    public float CameraOffsetX => Data.Int("cameraOffsetX", 0);
+    public float CameraOffsetY => Data.Int("cameraOffsetY", 0);
 
     /// <summary>
     /// Debug color
     /// </summary>
-    public int C;
+    public int C => Data.Int("c", 0);
 
-    public CelesteEnums.WindPatterns WindPattern;
-    public bool Space;
-    public string AmbienceProgress = "";
-    public bool DisableDownTransition;
-    public bool Dark;
-    public bool Whisper;
-    public bool Underwater;
+    public CelesteEnums.WindPatterns WindPattern => Data.Enum("windPattern", CelesteEnums.WindPatterns.None);
+    
+    public bool Space => Data.Bool("space", false);
+    
+    public string AmbienceProgress => Data.Attr("ambienceProgress", "");
+    
+    public bool DisableDownTransition => Data.Bool("disableDownTransition", false);
+    
+    public bool Dark => Data.Bool("dark", false);
+    
+    public bool Whisper => Data.Bool("whisper", false);
+    
+    public bool Underwater => Data.Bool("underwater", false);
 
-    public string Music = "";
-    public string MusicProgress = "";
-    public bool MusicLayer1 = true;
-    public bool MusicLayer2 = true;
-    public bool MusicLayer3 = true;
-    public bool MusicLayer4 = true;
-    public string AltMusic = "";
+    public string Music => Data.Attr("music", "");
+    
+    public string MusicProgress => Data.Attr("musicProgress", "");
+    
+    public bool MusicLayer1 => Data.Bool("musicLayer1", false);
+    
+    public bool MusicLayer2 => Data.Bool("musicLayer2", false);
+    
+    public bool MusicLayer3 => Data.Bool("musicLayer3", false);
+    
+    public bool MusicLayer4 => Data.Bool("musicLayer4", false);
+    
+    public string AltMusic => Data.Attr("altMusic", "");
 
     /// <summary>
     /// Not a real attribute, as it's actually determined by the existence of a checkpoint entity.
     /// </summary>
     public bool Checkpoint;
-
-    internal object GetValueByName(string key) {
-        return key switch {
-            "name" => Name,
-            "color" => C,
-            "x" => X,
-            "y" => Y,
-            "width" => Width,
-            "height" => Height,
-            "cameraOffsetX" => CameraOffsetX,
-            "cameraOffsetY" => CameraOffsetY,
-            "windPattern" => WindPattern,
-            "dark" => Dark,
-            "disableDownTransition" => DisableDownTransition,
-            "underwater" => Underwater,
-            "checkpoint" => Checkpoint,
-            "space" => Space,
-            "music" => Music,
-            "alt_music" => AltMusic,
-            "musicProgress" => MusicProgress,
-            "ambienceProgress" => AmbienceProgress,
-            "musicLayer1" => MusicLayer1,
-            "musicLayer2" => MusicLayer2,
-            "musicLayer3" => MusicLayer3,
-            "musicLayer4" => MusicLayer4,
-            "whisper" => Whisper,
-            "delayAltMusicFade" => DelayAltMusicFade,
-            _ => throw new NotImplementedException(key)
-        };
-    }
-    
-    internal void SetValueByName(string k, object v) {
-        switch (k) {
-            case "name":
-                Name = v.ToString() ?? "";
-                break;
-            case "color":
-                C = Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                break;
-            case "x":
-                X = Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                break;
-            case "y":
-                Y = Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                break;
-            case "width":
-                Width = Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                break;
-            case "height":
-                Height = Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                break;
-            case "cameraOffsetX":
-                CameraOffsetX = Convert.ToSingle(v, CultureInfo.InvariantCulture);
-                break;
-            case "cameraOffsetY":
-                CameraOffsetY = Convert.ToSingle(v, CultureInfo.InvariantCulture);
-                break;
-            case "windPattern":
-                WindPattern = Enum.Parse<CelesteEnums.WindPatterns>(v.ToString()!);
-                break;
-            case "dark":
-                Dark = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "disableDownTransition":
-                DisableDownTransition = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "underwater":
-                Underwater = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "checkpoint":
-                Checkpoint = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "space":
-                Space = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "music":
-                Music = v.ToString() ?? "";
-                break;
-            case "alt_music":
-                AltMusic = v.ToString() ?? "";
-                break;
-            case "musicProgress":
-                MusicProgress = v.ToString() ?? "";
-                break;
-            case "ambienceProgress":
-                AmbienceProgress = v.ToString() ?? "";
-                break;
-            case "musicLayer1":
-                MusicLayer1 = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "musicLayer2":
-                MusicLayer2 = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "musicLayer3":
-                MusicLayer3 = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "musicLayer4":
-                MusicLayer4 = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "whisper":
-                Whisper = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-            case "delayAltMusicFade":
-                DelayAltMusicFade = Convert.ToBoolean(v, CultureInfo.InvariantCulture);
-                break;
-        }
-    }
 }

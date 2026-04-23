@@ -107,7 +107,7 @@ public sealed partial class RoomEditWindow : Window {
             _newRoom = false;
             
             foreach (var (k, v) in edited) {
-                attrs.SetValueByName(k, v);
+                attrs.Data.Attributes[k] = v;
             }
             
             editorState.History?.ApplyNewAction(new RoomAttributeChangeAction(room1, attrs));
@@ -134,13 +134,13 @@ public sealed partial class RoomEditWindow : Window {
                 continue;
             
             var name = prop.Name;
-            var current = _room.Attributes.GetValueByName(prop.Name);
+            var current = _room.Attributes.Data.Attributes.GetValueOrDefault(prop.Name);
             var propValue = prop.ValueOrDefault();
             
             var equal = (current, propValue) switch {
                 (int c, float val) => val == c,
                 (float c, int val) => val == c,
-                _ => current.ToString() == propValue.ToString(),
+                _ => current.ToStringInvariant() == propValue.ToStringInvariant(),
             };
 
             if (!equal) {

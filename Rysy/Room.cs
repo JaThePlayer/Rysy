@@ -93,7 +93,7 @@ public sealed class Room : IPackable, ILuaWrapper {
             field = value;
             ClearRenderCache();
         }
-    } = new();
+    } = new(new BinaryPacker.Element { Attributes = [] });
 
     public Color Color => CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White);
 
@@ -155,31 +155,7 @@ public sealed class Room : IPackable, ILuaWrapper {
     public Entity? TryGetEntityById(int id) => Entities.FirstOrDefault(e => e.Id == id);
 
     public void Unpack(BinaryPacker.Element from) {
-        Attributes = new();
-        Name = from.Attr("name");
-        X = from.Int("x");
-        Y = from.Int("y");
-        Width = from.Int("width");
-        Height = from.Int("height");
-
-        Attributes.AltMusic = from.Attr("altMusic", "");
-        Attributes.AmbienceProgress = from.Attr("ambienceProgress", "");
-        Attributes.C = from.Int("c", 0);
-        Attributes.CameraOffsetX = from.Int("cameraOffsetX", 0);
-        Attributes.CameraOffsetY = from.Int("cameraOffsetY", 0);
-        Attributes.Dark = from.Bool("dark", false);
-        Attributes.DelayAltMusicFade = from.Bool("delayAltMusicFade", false);
-        Attributes.DisableDownTransition = from.Bool("disableDownTransition", false);
-        Attributes.Music = from.Attr("music", "");
-        Attributes.MusicLayer1 = from.Bool("musicLayer1", false);
-        Attributes.MusicLayer2 = from.Bool("musicLayer2", false);
-        Attributes.MusicLayer3 = from.Bool("musicLayer3", false);
-        Attributes.MusicLayer4 = from.Bool("musicLayer4", false);
-        Attributes.MusicProgress = from.Attr("musicProgress", "");
-        Attributes.Space = from.Bool("space", false);
-        Attributes.Underwater = from.Bool("underwater", false);
-        Attributes.Whisper = from.Bool("whisper", false);
-        Attributes.WindPattern = from.Enum("windPattern", CelesteEnums.WindPatterns.None);
+        Attributes = new(from);
 
         // Normalize room size to be an increment of a whole tile.
         if (Width % 8 != 0) {
@@ -189,8 +165,6 @@ public sealed class Room : IPackable, ILuaWrapper {
         if (Height % 8 != 0) {
             Height += 8 - Height % 8;
         }
-
-        Rectangle bounds = new(0, 0, Width, Height);
 
         foreach (var child in from.Children) {
             switch (child.Name) {
