@@ -418,7 +418,8 @@ public interface ITileChecker {
     /// further tile checks are being used to resolve the tile at (x,y)'s neighborhood to determine which palette
     /// to sample from.
     /// </summary>
-    void SetCurrentPosition(int x, int y){}
+    void SetCurrentPosition(int x, int y) {
+    }
 
     /// <summary>
     /// Returns whether the given location is within the bounds of the tilegrid
@@ -448,9 +449,10 @@ public readonly struct HollowRectTileChecker(int w, int h, char id) : ITileCheck
     public bool IsConnectedTileAt(int x, int y, TilesetData data) => x == 0 || x == w - 1 || y == h - 1 || y == 0;
 
     public char GetTileAt(int x, int y, char def) => IsConnectedTileAt(x, y, null!) ? id : def;
+
+    public bool ExtendOutOfBounds() => false;
     
-    public bool ExtendOutOfBounds() {
-        return false;
+    public void SetCurrentPosition(int x, int y) {
     }
 }
         
@@ -460,9 +462,10 @@ public readonly struct FilledRectTileChecker(int w, int h, char id) : ITileCheck
     public bool IsConnectedTileAt(int x, int y, TilesetData data) => IsInBounds(x, y);
     
     public char GetTileAt(int x, int y, char def) => id;
+
+    public bool ExtendOutOfBounds() => false;
     
-    public bool ExtendOutOfBounds() {
-        return false;
+    public void SetCurrentPosition(int x, int y) {
     }
 }
         
@@ -490,6 +493,8 @@ public readonly struct TilegridTileChecker(char[,] t, bool tilesOob)
         return def;
     }
 
-    public bool ExtendOutOfBounds()
-        => tilesOob;
+    public bool ExtendOutOfBounds() => tilesOob;
+    
+    public void SetCurrentPosition(int x, int y) {
+    }
 }
