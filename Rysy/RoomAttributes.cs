@@ -46,8 +46,6 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     
     public bool Space => Data.Bool("space", false);
     
-    public string AmbienceProgress => Data.Attr("ambienceProgress", "");
-    
     public bool DisableDownTransition => Data.Bool("disableDownTransition", false);
     
     public bool Dark => Data.Bool("dark", false);
@@ -57,8 +55,12 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     public bool Underwater => Data.Bool("underwater", false);
 
     public string Music => Data.Attr("music", "");
+
+    public string Ambience => Data.Attr("ambience");
     
-    public string MusicProgress => Data.Attr("musicProgress", "");
+    public int AmbienceProgress => Data.Int("ambienceProgress", -1);
+    
+    public int MusicProgress => Data.Int("musicProgress", -1);
     
     public bool MusicLayer1 => Data.Bool("musicLayer1", false);
     

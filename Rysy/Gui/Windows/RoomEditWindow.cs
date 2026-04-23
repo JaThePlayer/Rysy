@@ -55,15 +55,16 @@ public sealed partial class RoomEditWindow : Window {
             __musicSep = new PaddingField("Music"),
 
             music = Fields.Dropdown(attrs.Music, CelesteEnums.Music, editable: true),
+            musicProgress = Fields.Int(attrs.MusicProgress).WithMin(-1),
+            ambience = Fields.Dropdown(attrs.Ambience, CelesteEnums.Ambience, editable: true),
+            ambienceProgress = Fields.Int(attrs.AmbienceProgress).WithMin(-1),
             alt_music = Fields.Dropdown(attrs.AltMusic, CelesteEnums.Music, editable: true),
-            musicProgress = attrs.MusicProgress,
-            ambienceProgress = attrs.AmbienceProgress,
+            delayAltMusicFade = attrs.DelayAltMusicFade,
             musicLayer1 = attrs.MusicLayer1,
             musicLayer2 = attrs.MusicLayer2,
             musicLayer3 = attrs.MusicLayer3,
             musicLayer4 = attrs.MusicLayer4,
             whisper = attrs.Whisper,
-            delayAltMusicFade = attrs.DelayAltMusicFade,
         });
         
         var tooltipKeyPrefix = "room.description";
