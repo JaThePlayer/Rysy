@@ -226,7 +226,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var newToMove = _toMove.CreateFlippedHorizontally();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove);
+        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove, NewTileOffset: default);
         _toMove = newToMove;
 
         return action;
@@ -237,7 +237,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var newToMove = _toMove.CreateFlippedVertically();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove);
+        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove, NewTileOffset: default);
         _toMove = newToMove;
 
         return action;
@@ -248,9 +248,15 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var newToMove = dir == RotationDirection.Left ? _toMove.CreateRotatedLeft() : _toMove.CreateRotatedRight();
         var r = Rect.Div(8);
-        r = RectangleExt.Merge(r, new Rectangle(r.X, r.Y, r.Height, r.Width));
+        var pivot = r.Center;
+        var postRotateRect = new Rectangle(pivot.X - r.Height / 2, pivot.Y - r.Width / 2, r.Height, r.Width);
+        var bounds = RectangleExt.Merge(r, postRotateRect);
 
-        var action = new TileSwapAction(Grid, r, _orig!, newToMove);
+        var action = new TileSwapAction(Grid, bounds, _orig!, newToMove,
+            NewTileOffset: new Point(bounds.X - postRotateRect.X, bounds.Y - postRotateRect.Y)
+        );
+
+        Rect = postRotateRect.Mult(8);
         _toMove = newToMove;
 
         return action;

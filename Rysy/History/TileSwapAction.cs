@@ -1,9 +1,8 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 
 namespace Rysy.History;
 
-public record class TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTiles, char[,] NewTiles) : IHistoryAction {
+public record TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTiles, char[,] NewTiles, Point NewTileOffset) : IHistoryAction {
     char[,] _oldTiles;
 
     public bool Apply(Map map) {
@@ -14,7 +13,7 @@ public record class TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTi
 
         for (int x = Rect.X; x < Rect.Right; x++)
             for (int y = Rect.Y; y < Rect.Bottom; y++) {
-                var c = NewTiles.GetOrDefault(x - Rect.X, y - Rect.Y, '0');
+                var c = NewTiles.GetOrDefault(x - Rect.X + NewTileOffset.X, y - Rect.Y + NewTileOffset.Y, '0');
                 if (c == '0') {
                     // instead of replacing with air, bring back the old value to not replace tiles with air when not needed
                     Grid.SafeReplaceTile(OrigTiles.GetOrDefault(x, y, '0'), x, y, out _oldTiles[x - Rect.X, y - Rect.Y]);
@@ -32,8 +31,6 @@ public record class TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTi
         for (int x = Rect.X; x < Rect.Right; x++)
             for (int y = Rect.Y; y < Rect.Bottom; y++) {
                 var c = _oldTiles[x - Rect.X, y - Rect.Y];
-                //if (c == '0')
-                //    continue;
                 Grid.SafeSetTile(c, x, y);
             }
     }
