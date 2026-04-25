@@ -122,7 +122,8 @@ public abstract class RysyPlatform {
         }
 
         try {
-            Process.Start(new ProcessStartInfo(fs.Root) {
+            var path = fs.Root.CorrectSlashes().AddPostfixIfNeeded(Path.DirectorySeparatorChar.ToString());
+            Process.Start(new ProcessStartInfo(path) {
                 UseShellExecute = true,
                 Verb = "open"
             });
