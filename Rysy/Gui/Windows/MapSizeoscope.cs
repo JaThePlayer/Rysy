@@ -7,7 +7,7 @@ namespace Rysy.Gui.Windows;
 
 public sealed class MapSizeoscopeWindow : Window {
     private readonly Map _map;
-    private readonly HistoryHandler _history;
+    private readonly IHistoryHandler _history;
     
     private BinaryPacker.Package _package;
     private long _fullSize;
@@ -16,7 +16,7 @@ public sealed class MapSizeoscopeWindow : Window {
 
     private bool _group;
     
-    public MapSizeoscopeWindow(Map map, HistoryHandler history) : base("rysy.menubar.tab.map.sizeoscope_window".TranslateFormatted(map.Package ?? map.Filepath ?? ""), new(500, 500)) {
+    public MapSizeoscopeWindow(Map map, IHistoryHandler history) : base("rysy.menubar.tab.map.sizeoscope_window".TranslateFormatted(map.Package ?? map.Filepath ?? ""), new(500, 500)) {
         _map = map;
         _history = history;
         

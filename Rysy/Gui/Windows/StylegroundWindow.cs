@@ -8,7 +8,7 @@ using Rysy.Stylegrounds;
 namespace Rysy.Gui.Windows;
 
 public class StylegroundWindow : Window {
-    private HistoryHandler _history;
+    private IHistoryHandler _history;
     private Map _map;
 
     private bool _firstRender = true;
@@ -27,7 +27,7 @@ public class StylegroundWindow : Window {
     
     private IEnumerable<ISprite>? _previewSprites;
 
-    public StylegroundWindow(EditorState editorState, HistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
+    public StylegroundWindow(EditorState editorState, IHistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
         _history = history;
 
         _map = editorState.Map!;

@@ -1,11 +1,9 @@
-﻿using Rysy.Extensions;
-using Rysy.Scenes;
-using Rysy.Signals;
+﻿using Rysy.Signals;
 using System.Text.Json;
 
 namespace Rysy.History;
 
-public class HistoryHandler : ISignalEmitter {
+public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
     internal List<IHistoryAction> Actions { get; set; } = new();
     internal List<IHistoryAction> UndoneActions { get; set; } = new();
 
@@ -13,8 +11,9 @@ public class HistoryHandler : ISignalEmitter {
     
     public Map Map { get; set; }
 
-    public Action? OnUndo { get; set; }
-    public Action? OnApply { get; set; }
+    public event Action? OnUndo;
+
+    public event Action? OnApply;
 
     public HistoryHandler(Map map) {
         Map = map;
@@ -152,4 +151,29 @@ public class HistoryHandler : ISignalEmitter {
     }
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
+}
+
+public interface IHistoryHandler {
+    Map Map { get; set; }
+    
+    event Action? OnUndo;
+
+    event Action? OnApply;
+
+    void UndoSimulations();
+
+    void ApplyNewSimulation(IHistoryAction? action);
+
+    void ApplyNewAction(IEnumerable<IHistoryAction?> actions);
+    
+    void ApplyNewAction(MergedAction action)
+        => ApplyNewAction((IHistoryAction) action);
+
+    void ApplyNewAction(IHistoryAction? action);
+
+    void Undo();
+
+    void Redo();
+
+    void Clear();
 }

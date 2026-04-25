@@ -83,7 +83,7 @@ public class Menubar : SceneComponent {
 
     private static void MapMenu(Scene scene) {
         var editorState = scene.Get<EditorState>();
-        var history = scene.Get<HistoryHandler>();
+        var history = scene.Get<IHistoryHandler>();
         var map = editorState?.Map;
 
         ImGui.BeginDisabled(history is null || map is null);
@@ -345,7 +345,7 @@ public class Menubar : SceneComponent {
             SettingsWindow.Add(scene);
         }
 
-        if (scene.Get<HistoryHandler>() is { } history) {
+        if (scene.Get<IHistoryHandler>() is { } history) {
             if (ImGui.MenuItem("Undo", Settings.Instance.GetOrCreateHotkey("undo")))
                 history.Undo();
 

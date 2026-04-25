@@ -21,7 +21,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
 
     public EditorState EditorState { get; set; } = new();
 
-    public HistoryHandler HistoryHandler {
+    public IHistoryHandler HistoryHandler {
         get => EditorState.History ??= new HistoryHandler(Map);
         set => EditorState.History = value;
     }

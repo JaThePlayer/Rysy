@@ -14,7 +14,7 @@ namespace Rysy.Tools;
 public class ToolHandler : ISignalListener<ThemeChanged> {
     public const float DefaultMaterialListWidth = 360f;
 
-    public readonly HistoryHandler History;
+    public IHistoryHandler History { get; }
 
     public readonly Input Input;
     public IComponentRegistry ComponentRegistry { get; }
@@ -44,7 +44,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         }
     }
 
-    private Tool Create(Type type, HistoryHandler history, Input input) {
+    private Tool Create(Type type, IHistoryHandler history, Input input) {
         var t = (Tool) Activator.CreateInstance(type)!;
 
         t.ToolHandler = this;
@@ -62,7 +62,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
 
     private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
-    public ToolHandler(EditorState editorState, HistoryHandler history, Input input, IComponentRegistry componentRegistry, ToolRegistry? registry = null) {
+    public ToolHandler(EditorState editorState, IHistoryHandler history, Input input, IComponentRegistry componentRegistry, ToolRegistry? registry = null) {
         EditorState = editorState;
         History = history;
         Input = input;

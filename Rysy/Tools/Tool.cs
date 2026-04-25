@@ -17,7 +17,7 @@ public abstract class Tool {
     
     public bool UsePersistence { get; set; }
 
-    public HistoryHandler History { get; internal set; }
+    public IHistoryHandler History { get; internal set; }
 
     public HotkeyHandler HotkeyHandler { get; internal set; }
 

@@ -26,17 +26,16 @@ public sealed class DecalRegistryWindow : Window {
     private DecalRegistryProperty? _formProp;
 
     private readonly HotkeyHandler _hotkeyHandler;
-    private readonly HistoryHandler _history;
+    private readonly IHistoryHandler _history;
 
     internal List<DecalRegistryEntry> Entries => Gfx.DecalRegistry.GetEntriesForMod(_map.Mod!);
 
     public DecalRegistryWindow(Map map) : base("Decal Registry", new(1200, 800)) {
         _map = map;
 
-        _history = new(map) {
-            OnApply = HistoryHook,
-            OnUndo = HistoryHook
-        };
+        _history = new HistoryHandler(map);
+        _history.OnApply += HistoryHook;
+        _history.OnUndo += HistoryHook;
         
         _hotkeyHandler = new(Input.Global, HotkeyHandler.ImGuiModes.Ignore);
         _hotkeyHandler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);

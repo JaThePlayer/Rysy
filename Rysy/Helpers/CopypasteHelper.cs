@@ -48,10 +48,10 @@ public static class CopypasteHelper {
 
     public static List<CopiedSelection>? GetSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers) => GetSelectionsFromString(layers, Input.Clipboard.Get());
 
-    public static List<Selection>? PasteSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers, EditorState editorState, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
+    public static List<Selection>? PasteSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
         => PasteSelections(layers, editorState, GetSelectionsFromClipboard(layers), history, map, room, pos, out pastedRooms);
 
-    public static List<Selection>? PasteSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, List<CopiedSelection>? selections, HistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
+    public static List<Selection>? PasteSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, List<CopiedSelection>? selections, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
         pastedRooms = false;
 
         var pasted = selections;
@@ -137,7 +137,7 @@ static string Compress(byte[] input) {
         return copied;
     }
 
-    private static List<Selection> PasteRoomSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, HistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
+    private static List<Selection> PasteRoomSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
         var rooms = pasted.Where(s => s.ResolveLayer(layers) == EditorLayers.Room).Select(s => {
             var room = new Room();
             room.Map = map;
@@ -183,7 +183,7 @@ static string Compress(byte[] input) {
         return offset;
     }
 
-    private static IHistoryAction? PasteEntitylikeSelections(HistoryHandler? history, Room room, List<Selection> selections, List<Entity> entities, Vector2 centeringOffset) {
+    private static IHistoryAction? PasteEntitylikeSelections(IHistoryHandler? history, Room room, List<Selection> selections, List<Entity> entities, Vector2 centeringOffset) {
         if (entities.Count > 0) {
             var offset = centeringOffset;
 

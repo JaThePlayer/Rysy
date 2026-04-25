@@ -133,7 +133,7 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
         CreateEntityPropertyWindow(Entity, selections, editorState.History);
     }
 
-    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections, HistoryHandler? history) {
+    public static void CreateEntityPropertyWindow(Entity main, IEnumerable<Selection> selections, IHistoryHandler? history) {
         if (history is { }) {
             var allEntities = selections.SelectWhereNotNull(s => {
                 switch (s.Handler) {

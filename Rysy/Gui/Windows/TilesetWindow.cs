@@ -57,7 +57,7 @@ public sealed class TilesetWindow : Window {
     }
 
     private readonly HotkeyHandler _hotkeyHandler;
-    private HistoryHandler? _history;
+    private IHistoryHandler? _history;
 
     private bool Bg
         => _tab == Tabs.Bg;
@@ -240,11 +240,10 @@ public sealed class TilesetWindow : Window {
         if (_history?.Map != map) {
             _history = null;
         }
-        
-        _history ??= new HistoryHandler(map) {
-            OnApply = HistoryHook,
-            OnUndo = HistoryHook
-        };
+
+        _history ??= new HistoryHandler(map);
+        _history.OnApply += HistoryHook;
+        _history.OnUndo += HistoryHook;
         
         base.Render();
         
@@ -605,12 +604,12 @@ public sealed class TilesetWindow : Window {
 
 internal sealed class ExistingSpriteAnimatedTileImportWindow : Window {
     private readonly Field _nameField;
-    private readonly HistoryHandler _history;
+    private readonly IHistoryHandler _history;
     
     private string _name = "";
     private bool _wasInvalid = false;
     
-    public ExistingSpriteAnimatedTileImportWindow(HistoryHandler history, Map? map) : base("rysy.animTileImport.new.windowName".Translate(),
+    public ExistingSpriteAnimatedTileImportWindow(IHistoryHandler history, Map? map) : base("rysy.animTileImport.new.windowName".Translate(),
         new(400, ImGui.GetTextLineHeightWithSpacing() * 6)) {
         _history = history;
 
@@ -661,12 +660,12 @@ internal sealed class ExistingSpriteAnimatedTileImportWindow : Window {
 }
 
 internal sealed class XmlSnippetAnimatedTileImportWindow : Window {
-    private readonly HistoryHandler _history;
+    private readonly IHistoryHandler _history;
     
     private string _xml = "";
     private bool _wasInvalid = false;
     
-    public XmlSnippetAnimatedTileImportWindow(HistoryHandler history) : base("rysy.animTileImport.importFromXml.windowName".Translate(),
+    public XmlSnippetAnimatedTileImportWindow(IHistoryHandler history) : base("rysy.animTileImport.importFromXml.windowName".Translate(),
         new(400, ImGui.GetTextLineHeightWithSpacing() * 18)) {
         _history = history;
     }

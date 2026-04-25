@@ -19,8 +19,7 @@ public class HistoryWindow : Window {
     protected override bool Visible => Persistence.Instance.HistoryWindowOpen;
 
     protected override void Render() {
-        var history = EditorState.Current?.History;
-        if (history is null)
+        if (EditorState.Current?.History is not HistoryHandler history)
             return;
 
         if (ImGui.BeginListBox("Actions")) {

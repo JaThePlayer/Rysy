@@ -13,7 +13,7 @@ public class EntityPropertyWindow : FormWindow {
     public Entity Main { get; }
     public List<Entity> All { get; }
 
-    private HistoryHandler _history;
+    private IHistoryHandler _history;
     private Action _historyHook;
 
     public static (FieldList, Func<string, bool> exists) GetFields(Entity main) {
@@ -103,7 +103,7 @@ public class EntityPropertyWindow : FormWindow {
         bool IsValidKey(string key) => !BlacklistedKeys.Contains(key);
     }
 
-    public EntityPropertyWindow(HistoryHandler history, Entity main, List<Entity> all) 
+    public EntityPropertyWindow(IHistoryHandler history, Entity main, List<Entity> all) 
         : base($"Edit: {main.EntityData.Sid}:{string.Join(',', all.Select(e => e.Id))}") {
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(main);

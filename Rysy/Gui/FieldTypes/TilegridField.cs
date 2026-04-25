@@ -96,7 +96,7 @@ internal sealed class EditTileDataWindow : Window {
 
     private readonly Input _input;
 
-    private readonly HistoryHandler _history;
+    private readonly IHistoryHandler _history;
 
     private ToolHandler _tools;
 
@@ -136,7 +136,7 @@ internal sealed class EditTileDataWindow : Window {
 
         _input.Update(Time.Delta);
 
-        _history = new(editorState.Map ?? throw new Exception("Not in a map?"));
+        _history = new HistoryHandler(editorState.Map ?? throw new Exception("Not in a map?"));
 
         _hotkeys = new(_input, HotkeyHandler.ImGuiModes.Ignore);
 

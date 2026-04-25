@@ -243,17 +243,17 @@ public class DebugInfoWindow : Window {
     Markdig.Syntax.MarkdownDocument _doc;
 
     private static void HistoryTab() {
-        if (RysyEngine.Scene is EditorScene editor && ImGui.CollapsingHeader("History")) {
-            ImGui.Text($"Count: {editor.HistoryHandler.Actions.Count}");
+        if (RysyEngine.Scene is EditorScene editor && editor.HistoryHandler is HistoryHandler handler && ImGui.CollapsingHeader("History")) {
+            ImGui.Text($"Count: {handler.Actions.Count}");
             if (ImGui.BeginListBox("##")) {
-                ImGui.TextWrapped(string.Join('\n', editor.HistoryHandler.Actions.Select(act => act.ToString())));
-                //ImGui.TextWrapped(editor.HistoryHandler.Serialize());
+                ImGui.TextWrapped(string.Join('\n', handler.Actions.Select(act => act.ToString())));
+                //ImGui.TextWrapped(handler.Serialize());
                 ImGui.EndListBox();
             }
 
             if (ImGui.InputText("From Text", ref HistoryFromText, 10_000, ImGuiInputTextFlags.EnterReturnsTrue)) {
                 foreach (var item in HistoryHandler.Deserialize(HistoryFromText)) {
-                    editor.HistoryHandler.ApplyNewAction(item);
+                    handler.ApplyNewAction(item);
                 }
             }
         }
