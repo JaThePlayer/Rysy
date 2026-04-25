@@ -52,5 +52,12 @@ public class CrashScene : Scene {
         if (ImGui.Button("Ignore").WithTooltip("Ignores the exception, and tries to resume the editor as if nothing happened.\nCan cause further crashes!")) {
             RysyEngine.Scene = _prevScene;
         }
+
+        if (RysyPlatform.Current.CanOpenLogDirectory) {
+            ImGui.SameLine();
+            if (ImGuiManager.TranslatedButton("rysy.menubar.debug.openLog")) {
+                RysyPlatform.Current.OpenLogDirectory();
+            }
+        }
     }
 }

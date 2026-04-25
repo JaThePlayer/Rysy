@@ -120,7 +120,7 @@ public class Menubar : SceneComponent {
 
         var settings = Settings.Instance;
 
-        if (settings is { } && ImGui.BeginMenu("Stylegrounds")) {
+        if (settings is { } && ImGui.BeginMenu("rysy.menubar.view.stylegrounds".Translate())) {
             bool b;
 
             ImGuiManager.TranslatedText("rysy.menubar.view.stylegrounds.warning");
@@ -198,7 +198,7 @@ public class Menubar : SceneComponent {
     }
 
     private static void ViewVisibilityMenu() {
-        if (ImGui.BeginMenu("Visibility")) {
+        if (ImGui.BeginMenu("rysy.menubar.view.visibility".Translate())) {
             var p = Persistence.Instance;
             bool b;
 
@@ -232,22 +232,12 @@ public class Menubar : SceneComponent {
                 p.BgDecalsVisible = b;
             }
 
-            /*
-            var currLayer = p.EditorLayer ?? 0;
-            var allLayers = p.EditorLayer is null;
-            if (ImGui.InputInt("Layer", ref currLayer)) {
-                p.EditorLayer = currLayer;
-            }
-            if (ImGui.Checkbox("All layers", ref allLayers)) {
-                p.EditorLayer = allLayers ? null : 0;
-            }*/
-
             ImGui.EndMenu();
         }
     }
 
     private static void ViewWindowsMenu(Scene scene) {
-        if (!ImGui.BeginMenu("Windows")) {
+        if (!ImGui.BeginMenu("rysy.menubar.view.windows")) {
             return;
         }
 
@@ -316,6 +306,10 @@ public class Menubar : SceneComponent {
 
         if (ImGui.MenuItem("Debug Info Window")) {
             scene.AddWindowIfNeeded<DebugInfoWindow>();
+        }
+
+        if (RysyPlatform.Current.CanOpenLogDirectory && ImGuiManager.TranslatedButton("rysy.menubar.debug.openLog")) {
+            RysyPlatform.Current.OpenLogDirectory();
         }
     }
     /*

@@ -59,6 +59,8 @@ rysy.menubar.tab.map.sizeoscope_window=Sizeoscope - {0}
 rysy.menubar.tab.map.importTilesets=Import Tilesets
 
 rysy.menubar.tab.view=View
+
+rysy.menubar.view.stylegrounds=Stylegrounds
 rysy.menubar.view.stylegrounds.showPreview=Render Preview
 rysy.menubar.view.stylegrounds.showPreview.tooltip=Whether stylegrounds should be rendered in-editor.
 rysy.menubar.view.stylegrounds.animate=Animate
@@ -80,7 +82,13 @@ rysy.menubar.view.colorgrade.mapDefault=* From Map Metadata
 rysy.menubar.view.gridSize=Grid Size
 rysy.menubar.view.gridSize.tooltip=The size of the grid entities will be snapped to by default.\nDefaults to 8.\nHold 'ctrl' to bypass the grid.
 
+rysy.menubar.view.visibility=Visibility
+
+rysy.menubar.view.windows=Windows
+
 rysy.menubar.tab.debug=Debug
+rysy.menubar.debug.openLog=Open Log Directory
+rysy.menubar.debug.openLog.tooltip=Opens the directory containing Rysy's log files in your OS's file explorer.
 
 # Fields
 rysy.fields.fade.pos=Position

@@ -1,4 +1,5 @@
 ﻿using Rysy.Mods;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Platforms;
@@ -109,5 +110,24 @@ public abstract class RysyPlatform {
             inst.Exit();
         else
             Environment.Exit(-1);
+    }
+
+    public virtual bool CanOpenLogDirectory => true;
+    
+    public virtual void OpenLogDirectory() {
+        var fs = GetRysyAppDataFilesystem(profile: null);
+
+        if (!Directory.Exists(fs.Root)) {
+            return;
+        }
+
+        try {
+            Process.Start(new ProcessStartInfo(fs.Root) {
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        } catch (Exception ex) {
+            Logger.Error("RysyPlatform", ex, "Failed to open log directory");
+        }
     }
 }
