@@ -77,11 +77,8 @@ public sealed partial class RoomEditWindow : Window {
     private static ValidationResult RoomNameValid(RoomEditWindow window, string? name) {
         if (string.IsNullOrWhiteSpace(name))
             return ValidationResult.CantBeNull;
-        
-        if (!window._newRoom && name == window._room.Name) // if we haven't changed the name, then it must be correct
-            return ValidationResult.Ok;
 
-        if (window._room.Map.Rooms.Any(r => r.Name == name)) {
+        if (window._room.Map.Rooms.Any(r => r != window._room && r.Name == name)) {
             return ValidationResult.DuplicateRoomName;
         }
         
