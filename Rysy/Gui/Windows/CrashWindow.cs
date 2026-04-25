@@ -26,15 +26,18 @@ public class CrashWindow : Window {
         }
     }
 
+    public override bool HasBottomBar => true;
+
     protected override void Render() {
         base.Render();
 
         ImGuiManager.TextColored(ThemeColors.FormInvalidColor, Message);
 
         ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, ImGui.GetContentRegionAvail());
+    }
 
-        ImGui.NewLine();
-
+    public override void RenderBottomBar() {
+        base.RenderBottomBar();
         ButtonGenerator(this);
     }
 }

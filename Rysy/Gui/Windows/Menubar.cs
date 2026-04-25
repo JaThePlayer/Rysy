@@ -237,7 +237,7 @@ public class Menubar : SceneComponent {
     }
 
     private static void ViewWindowsMenu(Scene scene) {
-        if (!ImGui.BeginMenu("rysy.menubar.view.windows")) {
+        if (!ImGui.BeginMenu("rysy.menubar.view.windows".Translate())) {
             return;
         }
 
