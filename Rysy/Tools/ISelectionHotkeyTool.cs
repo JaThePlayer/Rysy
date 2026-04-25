@@ -10,6 +10,8 @@ internal interface ISelectionHotkeyTool {
     public void Rotate(RotationDirection direction);
 
     public void AddNode(Vector2? at);
+
+    public void SwapDecalLayer();
 }
 
 internal static class SelectionHotkeysExt {
@@ -23,5 +25,7 @@ internal static class SelectionHotkeysExt {
         handler.AddHotkeyFromSettings("selection.addNode", "shift+n", () => tool.AddNode(at: null));
         handler.AddHotkeyFromSettings("selection.addNodeAtMouse", "n", 
             () => tool.AddNode(at: tool.GetMouseRoomPos(tool.EditorState.Camera, tool.EditorState.CurrentRoom).ToVector2().Snap(8)));
+        
+        handler.AddHotkeyFromSettings("selection.swapDecalLayer", "ctrl+d", tool.SwapDecalLayer);
     }
 }

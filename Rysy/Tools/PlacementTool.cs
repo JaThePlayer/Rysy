@@ -367,6 +367,15 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         }
     }
 
+    void ISelectionHotkeyTool.SwapDecalLayer() {
+        if (CurrentPlacement is not EntitySelectionHandler { Entity: Decal decal } placement) {
+            return;
+        }
+
+        Layer = decal.Fg ? EditorLayers.BgDecals : EditorLayers.FgDecals;
+        Material = decal.ToPlacement().WithSid(decal.Fg ? EntityRegistry.BgDecalSid : EntityRegistry.FgDecalSid);
+    }
+
     #region Imgui
     public override float MaterialListElementHeight()
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();

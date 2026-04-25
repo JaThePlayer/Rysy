@@ -212,6 +212,23 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
+    void ISelectionHotkeyTool.SwapDecalLayer() {
+        if (_currentSelections is not { } selections) {
+            return;
+        }
+        
+        FinalizeStates();
+        
+        var action = selections
+            .Select(s => s.Handler is EntitySelectionHandler { Entity: Decal } handler ? new SwapDecalLayerAction(handler.Entity) : null)
+            .MergeActions();
+        
+        if (action.Any())
+            ClearColliderCachesInSelections();
+
+        History.ApplyNewAction(action);
+    }
+
     void ISelectionHotkeyTool.Flip(bool vertical) {
         if (_currentSelections is not { } selections) {
             return;
