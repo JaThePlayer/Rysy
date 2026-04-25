@@ -105,6 +105,10 @@ public sealed class Interpolator {
         return h.Result[..^1];
     }
     
+    public ReadOnlySpan<byte> Utf8(ReadOnlySpan<char> utf16) {
+        return Utf8($"{utf16}");
+    }
+    
     public Span<char> Clone(ReadOnlySpan<char> str) {
         if (str.Length == 0)
             return [];

@@ -1134,6 +1134,11 @@ public static class ImGuiManager {
         ManualClear = true,
     };
     
+    /// <summary>
+    /// String interpolator which gets cleared immediately, used for marshaling utf-16 to utf-8 directly before calling into ImGui methods.
+    /// </summary>
+    public static Interpolator Interpolator { get; } = new Interpolator();
+    
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public unsafe class ImGuiRenderer : IImGuiResourceManager {
         private RasterizerState _rasterizerState;

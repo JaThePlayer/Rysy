@@ -34,8 +34,10 @@ public sealed class RoomList : LongStandingWindow {
         ImGui.BeginChild("##RoomListBox", new(size.X, size.Y - ImGui.GetTextLineHeightWithSpacing() * 3), ImGuiChildFlags.None);
         
         var rooms = map.Rooms.SearchFilter(r => r.Searchable, _search);
+        var id = 0;
         foreach (var room in rooms) {
-            var name = room.Name;
+            var name = room.Name.ToImguiEscaped();
+            using var _ = ScopedImGuiId.Push(id++);
 
             // Draw the room color marker:
             var drawList = ImGui.GetWindowDrawList();
