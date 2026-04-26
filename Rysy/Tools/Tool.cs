@@ -244,7 +244,55 @@ public abstract class Tool {
     /// <summary>
     /// Initializes hotkeys for this tool
     /// </summary>
-    public virtual void InitHotkeys(HotkeyHandler handler) { }
+    public virtual void InitHotkeys(HotkeyHandler handler) {
+        handler.AddHotkeyFromSettings("tool.nextPlacement", "shift+scrolldown", () => CyclePlacement(1));
+        handler.AddHotkeyFromSettings("tool.prevPlacement", "shift+scrollup", () => CyclePlacement(-1));
+    }
+
+    private void CyclePlacement(int by) {
+        var search = GetCachedSearch();
+
+        var currMaterial = Material;
+        if (currMaterial is null) {
+            if (search.Count > 0 && search[0].Count > 0)
+                Material = search[0][0];
+            return;
+        }
+
+        for (int i = 0; i < search.Count; i++) {
+            var group = search[i];
+
+            for (int j = 0; j < group.Count; j++) {
+                var item = group[j];
+                if (currMaterial.Equals(item.material) || (currMaterial is Placement pl && item.material is Placement other && pl.Name == other.Name && pl.Sid == other.Sid)) {
+                    // Next in this group
+                    if (j + by >= 0 && j + by < group.Count) {
+                        Material = group[j + by].material;
+                        return;
+                    }
+                    
+                    // Next in list
+                    if (i + by >= 0 && i + by < search.Count && search[i + by].Count > 0) {
+                        Material = search[i + by][0].material;
+                        return;
+                    }
+                    
+                    if (by > 0) {
+                        // Wrap around to start of list
+                        var targetI = by - 1;
+                        if (search.Count > targetI && search[targetI].Count > 0)
+                            Material = search[targetI][0].material;
+                    } else {
+                        // Wrap around to end of list
+                        if (search.Count > 0 && search[0].Count > 0)
+                            Material = search[^1][^1].material;
+                    }
+                    
+                    return;
+                }
+            }
+        }
+    }
 
     public virtual IEnumerable<object>? GetMaterials(IEditorLayer layer)
         => layer.GetMaterials();
@@ -349,19 +397,7 @@ public abstract class Tool {
         showSearchBar = true;
 
         var currentLayer = Layer ??= ValidLayers.FirstOrDefault()!;
-
-        if (currentLayer != _cachedLayer) {
-            _cachedSearch = null;
-            _cachedLayer = currentLayer;
-        }
-
-        var cachedSearch = _cachedSearch ??=
-            (GetMaterials(currentLayer) ?? [])
-            .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
-            .SearchFilter(kv => kv.Item2, Search)
-            .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
-            .Select(gr => gr.ToList())
-            .ToList();
+        var cachedSearch = GetCachedSearch();
         var rendered = 0;
 
         var columns = MaterialListColumnCount();
@@ -438,6 +474,24 @@ public abstract class Tool {
         if (columns > 1)
             ImGui.Columns();
         ImGui.EndChild();
+    }
+
+    private List<List<(object material, Searchable displayName)>> GetCachedSearch()
+    {
+        var currentLayer = Layer ??= ValidLayers.FirstOrDefault()!;
+
+        if (currentLayer != _cachedLayer) {
+            _cachedSearch = null;
+            _cachedLayer = currentLayer;
+        }
+        
+        return _cachedSearch ??=
+            (GetMaterials(currentLayer) ?? [])
+            .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
+            .SearchFilter(kv => kv.Item2, Search)
+            .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
+            .Select(gr => gr.ToList())
+            .ToList();
     }
 
     public virtual bool AllowSwappingRooms => true;

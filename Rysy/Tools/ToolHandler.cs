@@ -187,8 +187,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         handler.AddHotkeyFromSettings("tools.nextTool", "", () => SwapToNextTool(1), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("tools.prevTool", "", () => SwapToNextTool(-1), HotkeyModes.OnHoldSmoothInterval);
         
-        handler.AddHotkeyFromSettings("tools.nextMode", "shift+scrolldown", () => SwapToNextMode(1), HotkeyModes.OnHoldSmoothInterval);
-        handler.AddHotkeyFromSettings("tools.prevMode", "shift+scrollup", () => SwapToNextMode(-1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.nextMode", "shift+ctrl+scrolldown", () => SwapToNextMode(1), HotkeyModes.OnHoldSmoothInterval);
+        handler.AddHotkeyFromSettings("tools.prevMode", "shift+ctrl+scrollup", () => SwapToNextMode(-1), HotkeyModes.OnHoldSmoothInterval);
         
         handler.AddHotkeyFromSettings("tools.nextLayer", "alt+scrolldown", () => SwapToNextLayer(1), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("tools.prevLayer", "alt+scrollup", () => SwapToNextLayer(-1), HotkeyModes.OnHoldSmoothInterval);
