@@ -122,23 +122,33 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             return;
 
         var name = "";
-        RysyEngine.Scene.AddWindow(new ScriptedWindow("Create Prefab", (w) => {
-            bool invalid = string.IsNullOrWhiteSpace(name) || PrefabHelper.CurrentPrefabs.ContainsKey(name);
+        var nameField = Fields.String("")
+            .WithNameTranslated("rysy.createPrefab.name")
+            .WithTooltipTranslated("rysy.createPrefab.name.tooltip")
+            .WithValidator((ctx, newName) => {
+                if (string.IsNullOrWhiteSpace(name))
+                    return ValidationResult.CantBeNull;
+                if (PrefabHelper.CurrentPrefabs.ContainsKey(name))
+                    return ValidationResult.PrefabNameNotUnique;
+                
+                return ValidationResult.Ok;
+            });
+        var tags = "";
+        var tagsField = Fields.List("", Fields.String(""))
+            .WithNameTranslated("rysy.createPrefab.tags")
+            .WithTooltipTranslated("rysy.createPrefab.tags.tooltip")
+            .WithMinElements(0);
+        RysyEngine.Scene.AddWindow(new ScriptedWindow("rysy.createPrefab".Translate(), (w) => {
+            name = nameField.RenderGuiWithValidation(name, out ValidationResult nameValidationResult)?.ToString() ?? name;
+            tags = tagsField.RenderGui(tags)?.ToString() ?? tags;
 
-            ImGuiManager.PushInvalidStyleIf(invalid);
-            if (ImGui.InputText("Name", ref name, 64, ImGuiInputTextFlags.EnterReturnsTrue)) {
-                PrefabHelper.RegisterPrefab(name, copied);
-                w.RemoveSelf();
-            }
-            ImGuiManager.PopInvalidStyle();
-
-            ImGui.BeginDisabled(invalid);
+            ImGui.BeginDisabled(!nameValidationResult.IsOk);
             if (ImGui.Button("Create")) {
-                PrefabHelper.RegisterPrefab(name, copied);
+                PrefabHelper.RegisterPrefab(new Searchable(name, [], tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()), copied);
                 w.RemoveSelf();
             }
             ImGui.EndDisabled();
-        }, size: new(300, ImGui.GetTextLineHeightWithSpacing() * 3f + ImGui.GetFrameHeightWithSpacing())));
+        }, size: new(300, ImGui.GetTextLineHeightWithSpacing() * 5f + ImGui.GetFrameHeightWithSpacing())));
     }
 
     private void CutSelections() {

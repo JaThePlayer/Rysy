@@ -52,6 +52,9 @@ public sealed class ValidationResult : ITooltip {
     
     public static ValidationResult PathNotUnique { get; } = new(ValidationMessage.PathNotUnique);
     
+    public static ValidationResult PrefabNameNotUnique { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.prefabNameNotUnique")));
+    
     public static ValidationResult AnimTileNameNotUnique { get; } 
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.pathInvalid.mustBeUniqueAnimTileName")));
     

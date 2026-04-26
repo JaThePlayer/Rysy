@@ -917,8 +917,8 @@ public static class ImGuiManager {
         return ImGui.Checkbox(id.Translate(), ref v).WithTranslatedTooltip($"{id}.tooltip");
     }
 
-    public static bool TranslatedInputText(string id, ref string v, uint maxLen) {
-        return ImGui.InputText(id.Translate(), ref v, maxLen).WithTranslatedTooltip($"{id}.tooltip");
+    public static bool TranslatedInputText(string id, ref string v, uint maxLen, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
+        return ImGui.InputText(id.Translate(), ref v, maxLen, flags).WithTranslatedTooltip($"{id}.tooltip");
     }
     
     public static bool TranslatedInputInt(string id, ref int v) {

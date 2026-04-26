@@ -2,6 +2,7 @@
 using Rysy.Gui;
 using Rysy.Mods;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
 
@@ -10,13 +11,13 @@ public class Searchable {
 
     public string TextWithMods { get; private init; }
 
-    public string Text { get; }
+    public string Text { get; init; }
 
-    public IReadOnlyList<string> Mods { get; }
+    public IReadOnlyList<string> Mods { get; init; }
     
-    public string? DefiningMod { get; }
+    public string? DefiningMod { get; init; }
         
-    public IReadOnlyList<string> Tags { get; }
+    public IReadOnlyList<string> Tags { get; init; }
 
     public IReadOnlyList<string> AlternativeNames { get; init; } = [];
 
@@ -24,6 +25,12 @@ public class Searchable {
 
     private static IReadOnlyList<string>? _onlyVanillaModList;
 
+    [JsonConstructor]
+    [Obsolete("Used only for serialization.")]
+    public Searchable() {
+        
+    }
+    
     public Searchable(string text) : this(text, [], []) {
         
     }

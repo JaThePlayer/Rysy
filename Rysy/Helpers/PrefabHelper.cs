@@ -59,14 +59,14 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
     public static bool SelectionsLegal(IReadOnlyList<IEditorLayer> layers, List<CopypasteHelper.CopiedSelection> selections) 
         => selections.All(s => s.ResolveLayer(layers) is not RoomLayer);
 
-    public void RegisterPrefab(string name, List<CopypasteHelper.CopiedSelection> selections) {
+    public void RegisterPrefab(Searchable name, List<CopypasteHelper.CopiedSelection> selections) {
         if (!SelectionsLegal(ValidLayers, selections))
             return;
         if (_currentPrefabsMutable is null)
             return;
 
         var prefab = new Prefab {
-            Name = name,
+            Searchable = name,
             Objects = selections,
         };
 
@@ -99,7 +99,7 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
             return null;
         }
 
-        var placement = new Placement(name);
+        var placement = new Placement(prefab.Searchable);
         placement.PlacementHandler = new PrefabPlacementHandler(this, prefab);
 
         return placement;
@@ -119,7 +119,16 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
     public class Prefab {
         public Prefab() { }
 
-        public string Name { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
+        public string Name {
+            get => Searchable.Text;
+            set => Searchable = new Searchable(value);
+        }
+
+        public Searchable Searchable {
+            get;
+            set;
+        } = new Searchable("");
 
         public List<CopypasteHelper.CopiedSelection> Objects { get; set; }
 

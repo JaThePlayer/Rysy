@@ -265,6 +265,11 @@ rysy.editor_group_window.autoAssignToDecalType.StartsWith.tooltip=Decals whose t
 
 rysy.createPrefab=Create Prefab
 rysy.createPrefab.tooltip=Creates a prefab from the current selections, available from the Placement tool.
+rysy.createPrefab.name=Name
+rysy.createPrefab.name.tooltip=Name of this prefab.
+rysy.createPrefab.tags=Tags
+rysy.createPrefab.tags.tooltip=Tags of this prefab, searchable via `#tag` syntax.
+rysy.validate.prefabNameNotUnique=Prefab name must be unique among all prefabs.
 
 rysy.animationFrameEntryKind=Kind
 rysy.animationFrameEntryKind.SingleFrame=Single Frame

@@ -37,6 +37,12 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     public Placement() {
         Name = "";
     }
+    
+    public Placement(Searchable searchable) {
+        Name = searchable.Text;
+        _associatedTags = searchable.Tags;
+        _associatedMods = searchable.Mods.ToList();
+    }
 
     public string Name { get; set; }
     
@@ -253,7 +259,7 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     }
     
     /// <summary>
-    /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
+    /// Gets all tags that are associated with this placement.
     /// </summary>
     public IReadOnlyList<string> GetTags() {
         if (_associatedTags is { } cached)
