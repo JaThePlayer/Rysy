@@ -223,7 +223,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .Select(s => s.Handler is EntitySelectionHandler { Entity: Decal } handler ? new SwapDecalLayerAction(handler.Entity) : null)
             .MergeActions();
         
-        if (action.Any())
+        if (action.Actions.Count != 0)
             ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
@@ -240,7 +240,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             .Select(s => s.Handler is ISelectionFlipHandler flip ? vertical ? flip.TryFlipVertical() : flip.TryFlipHorizontal()  : null)
             .MergeActions();
         
-        if (action.Any())
+        if (action.Actions.Count != 0)
             ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
@@ -253,7 +253,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         FinalizeStates();
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryRotate(dir) : null).MergeActions();
-        if (action.Any())
+        if (action.Actions.Any())
             ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
@@ -276,7 +276,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         var merged = actions.MergeActions();
 
-        if (merged.Any()) {
+        if (merged.Actions.Count != 0) {
             ClearColliderCachesInSelections();
         }
 

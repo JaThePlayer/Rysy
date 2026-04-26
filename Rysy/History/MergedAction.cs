@@ -1,16 +1,16 @@
-﻿using Rysy.Extensions;
-using System.Collections;
+﻿using System.Text.Json.Serialization;
 
 namespace Rysy.History;
 
-public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, ISerializableAction {
+public record class MergedAction : IHistoryAction, ISerializableAction {
     public List<IHistoryAction> Actions { get; set; }
 
-    public MergedAction(IEnumerable<IHistoryAction?> actions) {
-        Actions = new(actions.Where(act => act is not null)!);
+    [JsonConstructor]
+    public MergedAction() {
+        
     }
-
-    public MergedAction(params IHistoryAction?[] actions) {
+    
+    public MergedAction(params IEnumerable<IHistoryAction?> actions) {
         Actions = new(actions.Where(act => act is not null)!);
     }
 
@@ -52,14 +52,6 @@ public record class MergedAction : IHistoryAction, IEnumerable<IHistoryAction>, 
 
     public override string ToString() {
         return $"{{\n{string.Join("\n    ", Actions.Select(a => a.ToString()))}\n}}";
-    }
-
-    public IEnumerator<IHistoryAction> GetEnumerator() {
-        return ((IEnumerable<IHistoryAction>) Actions).GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() {
-        return ((IEnumerable) Actions).GetEnumerator();
     }
 
     public Dictionary<string, object> GetSerializableData() {

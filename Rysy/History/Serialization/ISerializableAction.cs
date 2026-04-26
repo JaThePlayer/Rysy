@@ -22,6 +22,12 @@ public sealed record EntityRef(int Id, string RoomName) {
     [JsonIgnore]
     private Entity? _entity;
     
+    [JsonConstructor]
+    [Obsolete("Only used for deserialization!")]
+    public EntityRef() : this(0, "???") {
+        
+    }
+    
     public EntityRef(Entity entity) : this(entity.Id, entity.RoomName) {
         _entity = entity;
     }
@@ -52,6 +58,12 @@ public sealed record EntityRef(int Id, string RoomName) {
 public sealed record RoomRef(string Name) {
     [JsonIgnore]
     private Room? _room;
+
+    [JsonConstructor]
+    [Obsolete("Only used for deserialization!")]
+    public RoomRef() : this("???") {
+        
+    }
     
     public RoomRef(Room room) : this(room.Name) {
         _room = room;

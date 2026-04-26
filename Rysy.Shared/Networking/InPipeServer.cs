@@ -4,6 +4,10 @@ using System.Text.Json;
 namespace Rysy.Shared.Networking;
 
 public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
+    public string? Name { get; set; }
+
+    public JsonSerializerOptions JsonSerializerOptions { get; set; } = NetworkingJsonOptions.IncludeFields;
+    
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private NamedPipeClientStream? _pipe;
     
@@ -32,11 +36,11 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
             
             try {
                 logger.Info($"Received: {line}");
-                var d = JsonSerializer.Deserialize<T>(line, NetworkingJsonOptions.IncludeFields);
+                var d = JsonSerializer.Deserialize<T>(line, JsonSerializerOptions);
                 if (d is {})
                     OnMessageReceived(d);
             } catch (Exception e) {
-                logger.Error($"Error while parsing {typeof(T).FullName} from pipe.\n{e}");
+                logger.Error($"Error while parsing '{Name}' from pipe.\n{e}");
                 break;
             }
         }
@@ -47,11 +51,11 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
         async Task Restart() {
             _pipe?.Close();
             _pipe = CreatePipe();
-            logger.Info($"Awaiting for a {typeof(T).FullName} pipe.");
+            logger.Info($"Awaiting for a '{Name}' pipe.");
         
             await _pipe.ConnectAsync(ct);
         
-            logger.Info($"Connected to {typeof(T).FullName} pipe.");
+            logger.Info($"Connected to '{Name}' pipe.");
             _writer = new StreamReader(_pipe);
         }
     }
@@ -60,17 +64,17 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
         Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
-    private static NamedPipeClientStream CreatePipe()
+    private NamedPipeClientStream CreatePipe()
     {
         return new NamedPipeClientStream(".",
-            $"Celeste-Rysy-Pipe-Server-{typeof(T).FullName}",
+            Name ??= $"Celeste-Rysy-Pipe-Server-{typeof(T).FullName}",
             PipeDirection.In,
             PipeOptions.Asynchronous);
     }
 
     public void Dispose() {
         if (_pipe is { IsConnected: true })
-            logger.Info($"Disposing a {typeof(T).FullName} pipe.");
+            logger.Info($"Disposing a '{Name}' pipe.");
         _cancellationTokenSource.Dispose();
         _pipe?.Dispose();
         _writer?.Dispose();

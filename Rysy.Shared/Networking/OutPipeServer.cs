@@ -9,6 +9,10 @@ namespace Rysy.Shared.Networking;
 /// </summary>
 /// <typeparam name="T">The type to be sent.</typeparam>
 public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
+    public string? Name { get; set; }
+
+    public JsonSerializerOptions JsonSerializerOptions { get; set; } = NetworkingJsonOptions.IncludeFields;
+    
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private NamedPipeServerStream? _pipe;
     
@@ -21,8 +25,16 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
 
         while (!ct.IsCancellationRequested) {
             if (_messageQueue.TryTake(out var message, TimeSpan.FromSeconds(1))) {
+                string? serialized;
                 try {
-                    await _writer.WriteLineAsync(JsonSerializer.Serialize(message, NetworkingJsonOptions.IncludeFields));
+                    serialized = JsonSerializer.Serialize(message, JsonSerializerOptions);
+                } catch (Exception ex) {
+                    logger.Error($"Error while serializing message to stream: {ex}");
+                    continue;
+                }
+                
+                try {
+                    await _writer.WriteLineAsync(serialized);
 
                     if (message is IDisposable d) {
                         d.Dispose();
@@ -39,7 +51,7 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
                 await _pipe.DisposeAsync();
             
             _pipe = CreatePipe();
-            logger.Warn($"Awaiting for a {typeof(T).FullName} pipe connection.");
+            logger.Warn($"Awaiting for a '{Name}' pipe connection.");
             await _pipe.WaitForConnectionAsync(ct);
             _writer = new StreamWriter(_pipe) { AutoFlush = true };
             logger.Info("Connected!");
@@ -56,10 +68,10 @@ public sealed class OutPipeServer<T>(IRysyLogger logger) : IDisposable {
         Task.Run(() => RunServerAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
-    private static NamedPipeServerStream CreatePipe()
+    private NamedPipeServerStream CreatePipe()
     {
         return new NamedPipeServerStream(
-            $"Celeste-Rysy-Pipe-Server-{typeof(T).FullName}",
+            Name ??= $"Celeste-Rysy-Pipe-Server-{typeof(T).FullName}",
             PipeDirection.Out,
             maxNumberOfServerInstances: 2,
             PipeTransmissionMode.Byte,
