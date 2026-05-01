@@ -19,11 +19,12 @@ public static class IListExtensions {
         }
         
         var buffer = ArrayPool<T>.Shared.Rent(list.Count);
+        var bufferSpan = buffer.AsSpan(0, list.Count);
         list.CopyTo(buffer, 0);
-        buffer.AsSpan().Sort(comparer);
+        bufferSpan.Sort(comparer);
 
-        for (int i = 0; i < buffer.Length; i++) {
-            list[i] = buffer[i];
+        for (int i = 0; i < bufferSpan.Length; i++) {
+            list[i] = bufferSpan[i];
         }
         ArrayPool<T>.Shared.Return(buffer);
     }
