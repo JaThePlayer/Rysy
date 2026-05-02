@@ -43,24 +43,6 @@ public sealed class Autotiler {
     
     public XmlDocument Xml { get; private set; }
 
-    public char? FindTemplate(string templateName) {
-        
-        var toRet = templateName switch {
-            "vanilla" or "default" => 'z',
-            "better" => Tilesets
-                .FirstOrDefault(x => x.Value.Filename.Contains("betterTemplate", StringComparison.Ordinal))
-                .Key,
-            "alternate" => Tilesets
-                .FirstOrDefault(x => x.Value.Filename.Contains("alternateTemplate", StringComparison.Ordinal))
-                .Key,
-            _ => (char?)null
-        };
-
-        if (toRet is '\0')
-            return null;
-        return toRet;
-    }
-
     public void ReadFromXml(Stream stream) {
         //Tilesets.Clear();
 

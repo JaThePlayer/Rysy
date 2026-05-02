@@ -365,18 +365,13 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
     internal IEnumerable<Entity> GetEntitiesInGroup(EditorGroup group) => 
         GetAllEntities().Where(e => e.EditorGroups.Contains(group));
 
-    public ModMeta? GetModContainingTilesetXml(bool bg) {
-        var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
-        var xmlMod = ModRegistry.Filesystem.FindFirstModContaining(path);
-
-        return xmlMod;
-    }
+    public void SaveTilesetXml(bool bg) => SaveTilesetXml(bg ? EditorLayers.Bg : EditorLayers.Fg);
     
-    public void SaveTilesetXml(bool bg) {
-        var autotiler = bg ? BgAutotiler : FgAutotiler;
-        var path = bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
+    public void SaveTilesetXml(TileEditorLayer layer) {
+        var autotiler = layer.GetAutotiler(this);
+        var path = layer.TileLayer is TileLayer.Bg ? Meta.BackgroundTiles : Meta.ForegroundTiles;
         
-        if (path is null || GetModContainingTilesetXml(bg) is not { Filesystem: IWriteableModFilesystem fs })
+        if (autotiler is null || path is null || ModRegistry.Filesystem.FindFirstModContaining(path) is not { Filesystem: IWriteableModFilesystem fs })
             return;
         
         using var mem = new MemoryStream();

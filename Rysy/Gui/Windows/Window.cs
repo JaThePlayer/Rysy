@@ -6,7 +6,7 @@ using Rysy.Signals.Hotkeys;
 
 namespace Rysy.Gui.Windows;
 
-public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>, ISignalListener<HotkeyCloseWindow> {
+public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>, ISignalListener<HotkeyCloseWindow>, IHasComponentRegistry {
     public Scene Scene { get; private set; }
 
     public Theme Theme => Scene.GetRequired<Themes>().Current;
@@ -189,6 +189,8 @@ public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>,
             RemoveSelf();
         }
     }
+
+    public IComponentRegistry? Registry { get; set; }
 }
 
 

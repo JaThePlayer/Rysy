@@ -1,4 +1,5 @@
 ﻿using Rysy.Components;
+using Rysy.Graphics;
 using Rysy.Gui.WindowManagers;
 using Rysy.Helpers;
 using Rysy.Layers;
@@ -21,5 +22,7 @@ internal sealed class RysyModModule : ModModule {
         ComponentRegistry.Add(new EntityListSpriteProvider(EditorLayers.FgDecals, p => p.FgDecalsVisible));
         ComponentRegistry.Add(new TileGridSpriteProvider(EditorLayers.Bg, p => p.BgTilesVisible));
         ComponentRegistry.Add(new TileGridSpriteProvider(EditorLayers.Fg, p => p.FgTilesVisible));
+        
+        TilesetTemplates.RegisterDefaultTemplates(ModRegistry.Filesystem, ComponentRegistry);
     }
 }

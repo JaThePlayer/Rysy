@@ -197,7 +197,6 @@
 
   <ItemGroup>
     <Folder Include="Assets\Graphics\tilesets\subfolder\" />
-    <Folder Include="Assets\Rysy\" />
   </ItemGroup>
 
     <ItemGroup>

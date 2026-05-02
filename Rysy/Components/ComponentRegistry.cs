@@ -181,6 +181,14 @@ public sealed class ComponentRegistry : IComponentRegistry {
     
     public void Add<T>(T component) where T : notnull {
         lock (_lock) {
+            if (component is ISignalEmitter emitter) {
+                emitter.SignalTarget = SignalTarget.From(this);
+            }
+
+            if (component is IHasComponentRegistry hasComponentRegistry) {
+                hasComponentRegistry.Registry = this;
+            }
+
             if (_lockers is [var firstLocker, ..]) {
                 firstLocker.Queue(() => Add(component));
                 return;
@@ -188,15 +196,12 @@ public sealed class ComponentRegistry : IComponentRegistry {
             Components.Add(component);
         }
 
-        if (component is ISignalEmitter emitter) {
-            emitter.SignalTarget = SignalTarget.From(this);
-        }
-
         if (component is ISignalListener<SelfAdded> listener) {
             listener.OnSignal(new SelfAdded(this));
         }
 
         this.OnSignal(new ComponentAdded<T>(component));
+        this.OnSignal(new ComponentAdded(component));
     }
 
     public void Remove<T>(T component) where T : notnull {
@@ -208,7 +213,9 @@ public sealed class ComponentRegistry : IComponentRegistry {
         
             Components.Remove(component);   
         }
-
+        
+        this.OnSignal(new ComponentRemoved(component));
+        
         if (component is ISignalEmitter emitter) {
             emitter.SignalTarget = SignalTarget.Null;
         }

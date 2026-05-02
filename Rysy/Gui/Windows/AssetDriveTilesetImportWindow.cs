@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Rysy.Layers;
 
 namespace Rysy.Gui.Windows;
 
@@ -18,7 +19,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     private Task<List<AssetDriveTileset>> _fg;
 
     private readonly EditorState _editorState;
-    private bool _isBg;
+    private readonly TileEditorLayer _layer;
     
     private string _searchText = "";
     private ComboCache<AssetDriveTileset> _comboCache = new();
@@ -26,14 +27,14 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     private AssetDriveTileset? _selected;
     private readonly MarkdownDocument _tip;
 
-    public AssetDriveTilesetImportWindow(EditorState editorState, bool bg) : base("rysy.tilesetImport.fromAssetDrive".Translate(), new(640, 450))
+    public AssetDriveTilesetImportWindow(EditorState editorState, TileEditorLayer layer) : base("rysy.tilesetImport.fromAssetDrive".Translate(), new(640, 450))
     {
         _bg = MaddieAssetDriveTilesetApi.Bg.GetResourceAsync();
         _fg = MaddieAssetDriveTilesetApi.Fg.GetResourceAsync();
         
         _tip = Markdown.Parse("rysy.tilesetImport.browserTip".Translate(), ImGuiMarkdown.MarkdownPipeline);
         _editorState = editorState;
-        _isBg = bg;
+        _layer = layer;
     }
 
     private void TabChanged() {
@@ -63,7 +64,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     }
 
     private void RenderTab() {
-        var tilesetsTask = _isBg ? _bg : _fg;
+        var tilesetsTask = _layer.TileLayer is TileLayer.Bg ? _bg : _fg;
         if (!tilesetsTask.IsCompleted) {
             ImGui.Text("Loading...");
             return;
@@ -119,21 +120,21 @@ public sealed class AssetDriveTilesetImportWindow : Window {
     public override void RenderBottomBar() {
         var previewTask = _selected is not null ? Gfx.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None) : null;
         var valid = _selected is not null && previewTask is { IsCompletedSuccessfully: true };
+
+        using var _ = new ScopedImGuiDisabled(!valid);
         
-        ImGui.BeginDisabled(!valid);
-        
-        if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && valid) {
-            RysyState.Scene.AddWindow(new CreateTilesetWindow(_editorState, new() {
+        if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && valid)
+        {
+            var templates = Registry!.GetRequired<TilesetTemplates>();
+            RysyState.Scene.AddWindow(new CreateTilesetWindow(templates, _editorState, new ImportedTileset {
                 Name = _selected!.Name,
-                Template = _selected.Template,
-                IsBg = _isBg,
+                Template = templates.FindTemplateByAssetDriveName(_selected.Template) ?? new CustomTilesetTemplate(_selected.Template),
+                Layer = _layer,
                 CreateTextureClone = true,
                 Texture = previewTask!.Result,
             }));
             RemoveSelf();
         }
-        
-        ImGui.EndDisabled();
     }
 }
 
@@ -144,7 +145,7 @@ internal sealed partial class CreateTilesetWindow : Window {
     private char _id;
     private char _copyFromId;
 
-    private readonly bool _isBg;
+    private readonly TileEditorLayer _layer;
 
     private bool _wasInvalid;
 
@@ -163,8 +164,8 @@ internal sealed partial class CreateTilesetWindow : Window {
     private readonly Field _displayNameField;
     private readonly Field _pathField;
     
-    public CreateTilesetWindow(EditorState? editorState, ImportedTileset tileset) : base("rysy.tilesetImport.createWindow".Translate(), new(620, 400)) {
-        _isBg = tileset.IsBg;
+    public CreateTilesetWindow(TilesetTemplates templates, EditorState? editorState, ImportedTileset tileset) : base("rysy.tilesetImport.createWindow".Translate(), new(620, 400)) {
+        _layer = tileset.Layer;
         _editorState = editorState;
         _tileset = tileset;
 
@@ -180,31 +181,39 @@ internal sealed partial class CreateTilesetWindow : Window {
             }
 
             var autotiler = GetAutotiler(map);
+            if (autotiler is null)
+                return;
+            
             if (tileset.CopyFrom is { } knownCopyFrom) {
                 _copyFromId = knownCopyFrom;
-            } else if (autotiler.FindTemplate(tileset.Template) is { } template) {
-                _copyFromId = template;
-            } else if (tileset.Template.Contains('<', StringComparison.Ordinal)) {
-                
+            } else if (templates.FindTilesetImplementingTemplate(autotiler, tileset.Template) is { } template) {
+                _copyFromId = template.Id;
+            } else if (tileset.Template is CustomTilesetTemplate) {
+                // The asset has provided a custom xml.
             } else {
+                // The asset uses a named template which hasn't been imported into the map yet, import it.
                 var newId = autotiler.GetNextFreeTilesetId();
-                var templateString =
-                    TilesetTemplates.CreateTemplate(newId, tileset.Template);
+                var templateString = tileset.Template.CreateXmlStringForId(newId);
                 if (templateString is not null) {
                     using var memStream = new MemoryStream();
                     memStream.Write(Encoding.UTF8.GetBytes(templateString));
                     memStream.Seek(0, SeekOrigin.Begin);
+
+                    try {
+                        using var reader = XmlReader.Create(memStream);
+                        var node = autotiler.Xml.ReadNode(reader)!;
+
+                        autotiler.ReadTilesetNode(node, addToXml: true);
+                    } catch (Exception ex) {
+                        Rysy.Logger.Error(nameof(CreateTilesetWindow), ex, $"Failed to read template {tileset.Template.Name}");
+                    }
                     
-                    using var reader = XmlReader.Create(memStream);
-                    var node = autotiler.Xml.ReadNode(reader)!;
-                    
-                    autotiler.ReadTilesetNode(node, addToXml: true);
                     _copyFromId = newId;
                 }
             }
         }
 
-        _copyFromField = Fields.TileDropdown(_copyFromId, _isBg, addDontCopyOption: true);
+        _copyFromField = Fields.TileDropdown(_copyFromId, _layer, addDontCopyOption: true);
         _copyFromField.WithTooltipTranslated("rysy.tilesetImport.copyFromId.tooltip");
 
         _idField = Fields.Char(_id).WithValidator((x) => {
@@ -222,10 +231,10 @@ internal sealed partial class CreateTilesetWindow : Window {
                 return ValidationResult.MustBeFreeTilesetId;
             
             return ValidationResult.Ok;
-        });
+        }).WithTooltipTranslated("rysy.tilesetImport.id.tooltip");
 
-        _displayNameField = Fields.TilesetDisplayName(_displayName, () => _isBg, selfIsTileset: false);
-        _pathField = Fields.NewAtlasPath("", "tilesets/");
+        _displayNameField = Fields.TilesetDisplayName(_displayName, () => _layer, selfIsTileset: false).WithTooltipTranslated("rysy.tilesetImport.displayName.tooltip");
+        _pathField = Fields.NewAtlasPath("", "tilesets/").WithTooltipTranslated("rysy.tilesetImport.path.tooltip");
     }
 
     protected override void Render() {
@@ -236,8 +245,10 @@ internal sealed partial class CreateTilesetWindow : Window {
         }
         var map = _editorState.Map;
         var autotiler = GetAutotiler(map);
+        if (autotiler is null)
+            return;
         
-        if (_id == default) {
+        if (_id == 0) {
             _id = autotiler.GetNextFreeTilesetId();
         }
 
@@ -280,14 +291,15 @@ internal sealed partial class CreateTilesetWindow : Window {
         base.Render();
     }
 
-    private Autotiler GetAutotiler(Map map) => _isBg ? map.BgAutotiler : map.FgAutotiler;
+    private Autotiler? GetAutotiler(Map map) => _layer.GetAutotiler(map);
 
-    private string? GetXmlPath(Map map) => _isBg ? map.Meta.BackgroundTiles : map.Meta.ForegroundTiles;
+    private string? GetXmlPath(Map map) => _layer.TileLayer is TileLayer.Bg ? map.Meta.BackgroundTiles : map.Meta.ForegroundTiles;
 
     public override bool HasBottomBar => true;
 
-    public override void RenderBottomBar() {
-        ImGui.BeginDisabled(_wasInvalid || _tileset.Texture.Texture is null);
+    public override void RenderBottomBar()
+    {
+        using var _ = new ScopedImGuiDisabled(_wasInvalid || _tileset.Texture.Texture is null);
 
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import")) {
             if (_editorState?.Map?.Mod is not { Filesystem: IWriteableModFilesystem fs } mod) {
@@ -303,6 +315,8 @@ internal sealed partial class CreateTilesetWindow : Window {
             
             var map = _editorState.Map;
             var autotiler = GetAutotiler(map);
+            if (autotiler is null)
+                return;
 
             var newEl = autotiler.Xml.CreateElement("Tileset");
             newEl.SetAttribute("id", _id.ToString());
@@ -314,8 +328,7 @@ internal sealed partial class CreateTilesetWindow : Window {
                 newEl.SetAttribute("displayName", _displayName);
             }
 
-            if (_tileset.Template.Contains('<', StringComparison.Ordinal)) {
-                var template = _tileset.Template;
+            if (_tileset.Template is CustomTilesetTemplate { Contents: { } template }) {
                 if (RedundantTilesetTagRegex().Match(template) is { Success: true } m) {
                     var sourceXml = new XmlDocument();
                     sourceXml.LoadXml(template);
@@ -343,21 +356,19 @@ internal sealed partial class CreateTilesetWindow : Window {
             
             autotiler.ReadTilesetNode(newEl, clearCache: true, addToXml: true);
             
-            map.SaveTilesetXml(_isBg);
+            map.SaveTilesetXml(_layer);
 
             RemoveSelf();
         }
-        
-        ImGui.EndDisabled();
     }
 }
 
 internal sealed record ImportedTileset {
-    public required string Template { get; init; }
+    public required ITilesetTemplate Template { get; init; }
     
     public required string Name { get; init; }
     
-    public required bool IsBg { get; init; }
+    public required TileEditorLayer Layer { get; init; }
     
     public required VirtTexture Texture { get; init; }
     
@@ -368,9 +379,8 @@ internal sealed record ImportedTileset {
     public string? TexturePath { get; init; }
     
     public string? DefaultDisplayName { get; init; }
-    
-    public string TemplateName =>
-        Template.Contains('<', StringComparison.Ordinal) ? "(custom)" : Template;
+
+    public string TemplateName => Template.Name;
 }
 
 internal sealed record AssetDriveTileset {

@@ -1,222 +1,195 @@
-﻿namespace Rysy.Graphics;
+﻿using Rysy.Components;
+using Rysy.Helpers;
+using Rysy.Mods;
+using System.Xml.Linq;
+using Rysy.Layers;
 
-public static class TilesetTemplates {
-    public enum Templates {
-        Vanilla,
-        PixelatorAlternate,
-        JadeBetter,
-        Custom,
+namespace Rysy.Graphics;
+
+public interface ITilesetTemplate {
+    /// <summary>
+    /// The internal name of this template.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    /// Name used when displaying this template in UI.
+    /// </summary>
+    public string DisplayName => Name.TranslateOrNull("rysy.template.name")
+                                 ?? Name.TrimPrefix("Rysy/tileset_templates/").TrimPostfix(".xml").Humanize();
+    
+    /// <summary>
+    /// The names of this template on the Community Asset Drive
+    /// </summary>
+    public IReadOnlySet<string> AssetDriveNames { get; }
+    
+    /// <summary>
+    /// Whether this template is applicable to the given layer.
+    /// </summary>
+    public bool CanApplyToLayer(TileEditorLayer layer);
+
+    /// <summary>
+    /// Creates the XML contents for this template, which should contain a `Tileset` XML element.
+    /// </summary>
+    /// <param name="tilesetId">The id of the tileset which will define this template.</param>
+    public string? CreateXmlStringForId(char tilesetId);
+
+    /// <summary>
+    /// Searches for an existing tileset which defines this template, or null if the template is not yet defined.
+    /// </summary>
+    public TilesetData? FindTilesetDefiningThisTemplate(IEnumerable<TilesetData> tilesets);
+}
+
+public sealed class CustomTilesetTemplate(string contents) : ITilesetTemplate
+{
+    public string Name => "(custom)";
+
+    public IReadOnlySet<string> AssetDriveNames { get; } = (HashSet<string>)[];
+
+    public string Contents { get; set; } = contents;
+    
+    public bool CanApplyToLayer(TileEditorLayer layer)
+    {
+        return true;
     }
+
+    public string CreateXmlStringForId(char tilesetId)
+    {
+        return Contents.Replace("{id}", tilesetId.ToString());
+    }
+
+    public TilesetData? FindTilesetDefiningThisTemplate(IEnumerable<TilesetData> tilesets)
+    {
+        return null;
+    }
+}
+
+public sealed class XmlFileTilesetTemplate : ITilesetTemplate, IDisposable {
+    private IDisposable? _watcher;
     
-    public const string PixelatorAlternateName = "alternate";
-    public const string JadeBetterName = "better";
-    
-    public static string? CreateTemplate(char id, string name) {
-        switch (name) {
-            case JadeBetterName:
-                return JadeBetterTemplate(id);
-            case PixelatorAlternateName:
-                return PixelatorAlternateTemplate(id);
+    public string Name { get; }
+
+    public IReadOnlySet<string> AssetDriveNames { get; private set; } = (HashSet<string>)[];
+
+    private string? TilesetDefinition { get; set; }
+
+    private string? TilesetDefinitionTexturePath { get; set; }
+
+    private TileLayer? TileLayer { get; set; }
+
+    public XmlFileTilesetTemplate(IModFilesystem fs, string path) {
+        Name = path;
+        fs.TryWatchAndOpen(path, ReadTemplateXml, out _watcher);
+    }
+
+    private void ReadTemplateXml(Stream stream) {
+        try
+        {
+            var doc = XDocument.Load(stream);
+            var root = doc.Root;
+            if (root is null || root.Element("Tileset") is not { } tilesetElement)
+            {
+                return;
+            }
+
+            AssetDriveNames = root.Element("AssetDriveNames")?.Value
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet() ?? [];
+            TilesetDefinition = tilesetElement.ToString();
+            TilesetDefinitionTexturePath = tilesetElement.Attribute("path")?.Value ??
+                                           throw new Exception("Tileset Template definition texture path is missing");
+
+            TileLayer = root.Element("TileLayer")?.Value is { } tileLayerStr &&
+                        Enum.TryParse(tileLayerStr, out TileLayer parsedTileLayer)
+                ? parsedTileLayer
+                : null;
         }
+        catch (Exception ex)
+        {
+            Logger.Error("XmlFileTilesetTemplate", ex, $"Failed to read tileset template '{Name}'");
+            TilesetDefinition = null;
+            TilesetDefinitionTexturePath = null;
+        }
+    }
+
+    public bool CanApplyToLayer(TileEditorLayer layer)
+    {
+        return TileLayer is null || layer.TileLayer == TileLayer;
+    }
+
+    public string? CreateXmlStringForId(char tilesetId) {
+        return TilesetDefinition?.Replace("{id}", tilesetId.ToString());
+    }
+
+    public TilesetData? FindTilesetDefiningThisTemplate(IEnumerable<TilesetData> tilesets) {
+        return tilesets.FirstOrDefault(t => t.Filename == TilesetDefinitionTexturePath);
+    }
+
+    public void Dispose() {
+        _watcher?.Dispose();
+        _watcher = null;
+    }
+}
+
+public sealed class XmlTilesetTemplateDirectory : IItemProvider<ITilesetTemplate>, IDisposable {
+    private readonly IModFilesystem _filesystem;
+    private readonly string _path;
+    private IDisposable? _fileWatcher;
+    
+    public Cache<IReadOnlyList<ITilesetTemplate>> ElementCache { get; }
+
+    public XmlTilesetTemplateDirectory(IModFilesystem filesystem, string path) {
+        _filesystem = filesystem;
+        _path = path;
+        ElementCache = new Cache<IReadOnlyList<ITilesetTemplate>>(new CacheToken(), Generator);
+        
+        _fileWatcher = filesystem.RegisterFilewatch(path, new WatchedAsset {
+            OnChanged = FileWatcherCallback,
+            OnCreated = FileWatcherCallback,
+            OnRemoved = FileWatcherCallback,
+        });
+    }
+
+    private IReadOnlyList<ITilesetTemplate> Generator() {
+        return _filesystem.FindFilesInDirectoryRecursive(_path, "xml")
+            .Select(xmlFilePath => new XmlFileTilesetTemplate(_filesystem, xmlFilePath))
+            .ToList();
+    }
+
+    private void FileWatcherCallback(string path) {
+        ElementCache.Token.InvalidateThenReset();
+    }
+
+    public void Dispose() {
+        _fileWatcher?.Dispose();
+        _fileWatcher = null;
+    }
+}
+
+public sealed class TilesetTemplates : IHasComponentRegistry {
+    public static void RegisterDefaultTemplates(IModFilesystem fs, IComponentRegistry registry) {
+        registry.AddIfMissing<TilesetTemplates>();
+        registry.Add(new XmlTilesetTemplateDirectory(fs, "Rysy/tileset_templates/"));
+    }
+
+    public IReadOnlyList<ITilesetTemplate> GetTemplates() {
+        return Registry?.GetAllIncludingProvidersCache<ITilesetTemplate>().Value ?? [];
+    }
+
+    public TilesetData? FindTilesetImplementingTemplate(Autotiler autotiler, ITilesetTemplate template) {
+        if (template.FindTilesetDefiningThisTemplate(autotiler.Tilesets.Select(kv => kv.Value)) is { } tileset)
+            return tileset;
 
         return null;
     }
     
-    public static string? CreateTemplate(char id, Templates name) {
-        switch (name) {
-            case Templates.JadeBetter:
-                return JadeBetterTemplate(id);
-            case Templates.PixelatorAlternate:
-                return PixelatorAlternateTemplate(id);
+    public ITilesetTemplate? FindTemplateByAssetDriveName(string name) {
+        foreach (var template in GetTemplates()) {
+            if (template.AssetDriveNames.Contains(name))
+                return template;
         }
 
         return null;
     }
-    
-    public static string PixelatorAlternateTemplate(char id) => $"""
-    <Tileset id="{id}" path="alternateTemplate">
-        <!-- edges -->
-        <!-- top -->
-        <set mask="x0x-111-x1x" tiles="6,5; 7,5; 8,5; 9,5"/>
-        <!-- bottom -->
-        <set mask="x1x-111-x0x" tiles="6,10; 7,10; 8,10; 9,10"/>
-        <!-- left -->
-        <set mask="x1x-011-x1x" tiles="5,6; 5,7; 5,8; 5,9"/>
-        <!-- right -->
-        <set mask="x1x-110-x1x" tiles="10,6; 10,7; 10,8; 10,9"/>
-    
-        <!-- h pillar == -->
-        <set mask="x0x-111-x0x" tiles="2,6; 2,7; 2,8; 2,9"/>
-        <!-- v pillar left -->
-        <set mask="x0x-011-x0x" tiles="1,6; 1,7; 1,8; 1,9"/>
-        <!-- v pillar right -->
-        <set mask="x0x-110-x0x" tiles="3,6; 3,7; 3,8; 3,9"/>
-    
-        <!-- v pillar || -->
-        <set mask="x1x-010-x1x" tiles="6,2; 7,2; 8,2; 9,2"/>
-        <!-- v pillar top -->
-        <set mask="x0x-010-x1x" tiles="6,1; 7,1; 8,1; 9,1"/>
-        <!-- v pillar bottom -->
-        <set mask="x1x-010-x0x" tiles="6,3; 7,3; 8,3; 9,3"/>
-    
-        <!-- single tiles -->
-        <set mask="x0x-010-x0x" tiles="1,1; 2,1; 1,2; 2,2"/>
-    
-        <!-- corner top left -->
-        <set mask="x0x-011-x1x" tiles="4,4; 5,4; 4,5; 5,5"/>
-        <!-- corner top right -->
-        <set mask="x0x-110-x1x" tiles="10,4; 11,4; 10,5; 11,5"/>
-        <!-- corner bottom left -->
-        <set mask="x1x-011-x0x" tiles="4,10; 5,10; 4,11; 5,11"/>
-        <!-- corner bottom right -->
-        <set mask="x1x-110-x0x" tiles="10,10; 11,10; 10,11; 11,11"/>
-    
-        <!-- inside corner top left -->
-        <set mask="111-111-110" tiles="1,3"/>
-        <!-- inside corner bottom left -->
-        <set mask="110-111-111" tiles="1,4"/>
-        <!-- inside corner top right -->
-        <set mask="111-111-011" tiles="2,3"/>
-        <!-- inside corner bottom right -->
-        <set mask="011-111-111" tiles="2,4"/>
-    
-        <!-- |== -->
-        <set mask="110-111-110" tiles="11,7"/>
-        <!-- _||_ -->
-        <set mask="010-111-111" tiles="7,4"/>
-        <!-- ==| -->
-        <set mask="011-111-011" tiles="4,7"/>
-        <!-- T||T -->
-        <set mask="111-111-010" tiles="7,11"/>
-    
-        <!-- ???? -->
-        <set mask="010-111-110" tiles="3,2"/>
-        <!-- ???? -->
-        <set mask="010-111-011" tiles="4,2"/>
-        <!-- ???? -->
-        <set mask="011-111-010" tiles="4,1"/>
-        <!-- ???? -->
-        <set mask="110-111-010" tiles="3,1"/>
-        <!-- ???? -->
-        <set mask="010-111-010" tiles="3,3"/>
-        <!-- ???? -->
-        <set mask="110-111-011" tiles="3,4"/>
-        <!-- ???? -->
-        <set mask="011-111-110" tiles="4,3"/>
-    
-        <!-- ???? -->
-        <set mask="x0x-111-011" tiles="2,10"/>
-        <!-- ???? -->
-        <set mask="x0x-111-110" tiles="1,10"/>
-        <!-- ???? -->
-        <set mask="011-111-x0x" tiles="2,11"/>
-        <!-- ???? -->
-        <set mask="110-111-x0x" tiles="1,11"/>
-        <!-- ???? -->
-        <set mask="x11-011-x10" tiles="10,1"/>
-        <!-- ???? -->
-        <set mask="11x-110-01x" tiles="11,1"/>
-        <!-- ???? -->
-        <set mask="x10-011-x11" tiles="10,2"/>
-        <!-- ???? -->
-        <set mask="01x-110-11x" tiles="11,2"/>
-    
-        <!-- ???? -->
-        <set mask="x0x-111-010" tiles="8,11"/>
-        <!-- ???? -->
-        <set mask="010-111-x0x" tiles="8,4"/>
-        <!-- ???? -->
-        <set mask="01x-110-01x" tiles="4,8"/>
-        <!-- ???? -->
-        <set mask="x10-011-x10" tiles="11,8"/>
-    
-        <!-- ???? -->
-        <set mask="x0x-011-x10" tiles="6,4"/>
-        <!-- ???? -->
-        <set mask="x0x-110-01x" tiles="9,4"/>
-        <!-- ???? -->
-        <set mask="x10-011-x0x" tiles="6,11"/>
-        <!-- ???? -->
-        <set mask="01x-110-x0x" tiles="9,11"/>
-    
-        <set mask="padding" tiles="6,6; 7,6; 8,6; 9,6;  6,7; 6,8; 6,9;  9,7; 9,8; 9,9;  7,9; 8,9"/>
-        <set mask="center" tiles="7,7; 8,7; 7,8; 8,8"/>
-      </Tileset>
-    """;
-    
-    public static string JadeBetterTemplate(char id) => $"""
-    <Tileset id="{id}" path="subfolder/betterTemplate">
-        <!-- edges -->
-        <!-- top -->
-        <set mask="x0x-111-x1x" tiles="6,5; 7,5; 8,5; 9,5"/>
-        <!-- bottom -->
-        <set mask="x1x-111-x0x" tiles="6,10; 7,10; 8,10; 9,10"/>
-        <!-- left -->
-        <set mask="x1x-011-x1x" tiles="5,6; 5,7; 5,8; 5,9"/>
-        <!-- right -->
-        <set mask="x1x-110-x1x" tiles="10,6; 10,7; 10,8; 10,9"/>
-    
-        <!-- h pillar == -->
-        <set mask="x0x-111-x0x" tiles="2,6; 2,7; 2,8; 2,9"/>
-        <!-- v pillar left -->
-        <set mask="x0x-011-x0x" tiles="1,6; 1,7; 1,8; 1,9"/>
-        <!-- v pillar right -->
-        <set mask="x0x-110-x0x" tiles="3,6; 3,7; 3,8; 3,9"/>
-    
-        <!-- v pillar || -->
-        <set mask="x1x-010-x1x" tiles="6,2; 7,2; 8,2; 9,2"/>
-        <!-- v pillar top -->
-        <set mask="x0x-010-x1x" tiles="6,1; 7,1; 8,1; 9,1"/>
-        <!-- v pillar bottom -->
-        <set mask="x1x-010-x0x" tiles="6,3; 7,3; 8,3; 9,3"/>
-    
-        <!-- single tiles -->
-        <set mask="x0x-010-x0x" tiles="1,1; 2,1; 1,2; 2,2"/>
-    
-        <!-- corner top left -->
-        <set mask="x0x-011-x1x" tiles="4,4; 5,4; 4,5; 5,5"/>
-        <!-- corner top right -->
-        <set mask="x0x-110-x1x" tiles="10,4; 11,4; 10,5; 11,5"/>
-        <!-- corner bottom left -->
-        <set mask="x1x-011-x0x" tiles="4,10; 5,10; 4,11; 5,11"/>
-        <!-- corner bottom right -->
-        <set mask="x1x-110-x0x" tiles="10,10; 11,10; 10,11; 11,11"/>
-    
-        <!-- inside corner top left -->
-        <set mask="111-111-110" tiles="1,3"/>
-        <!-- inside corner bottom left -->
-        <set mask="110-111-111" tiles="1,4"/>
-        <!-- inside corner top right -->
-        <set mask="111-111-011" tiles="2,3"/>
-        <!-- inside corner bottom right -->
-        <set mask="011-111-111" tiles="2,4"/>
-    
-        <!-- |== -->
-        <set mask="110-111-110" tiles="11,7"/>
-        <!-- _||_ -->
-        <set mask="010-111-111" tiles="7,4"/>
-        <!-- ==| -->
-        <set mask="011-111-011" tiles="4,7"/>
-        <!-- T||T -->
-        <set mask="111-111-010" tiles="7,11"/>
-    
-        <!-- ???? -->
-        <set mask="010-111-110" tiles="3,2"/>
-        <!-- ???? -->
-        <set mask="010-111-011" tiles="4,2"/>
-        <!-- ???? -->
-        <set mask="011-111-010" tiles="4,1"/>
-        <!-- ???? -->
-        <set mask="110-111-010" tiles="3,1"/>
-        <!-- ???? -->
-        <set mask="010-111-010" tiles="3,3"/>
-        <!-- ???? -->
-        <set mask="110-111-011" tiles="3,4"/>
-        <!-- ???? -->
-        <set mask="011-111-110" tiles="4,3"/>
-    
-        <set mask="padding" tiles="6,6; 7,6; 8,6; 9,6;  6,7; 6,8; 6,9;  9,7; 9,8; 9,9;  7,9; 8,9"/>
-        <set mask="center" tiles="7,7; 8,7; 7,8; 8,8"/>
-      </Tileset>
-    """;
+
+    public IComponentRegistry? Registry { get; set; }
 }

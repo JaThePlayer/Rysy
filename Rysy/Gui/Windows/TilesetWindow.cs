@@ -2,13 +2,12 @@
 using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
-using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Mods;
 using System.Diagnostics;
 using System.Xml;
-using System.Xml.Linq;
+using Rysy.Layers;
 
 namespace Rysy.Gui.Windows;
 
@@ -84,6 +83,8 @@ public sealed class TilesetWindow : Window {
         Save();
     }
 
+    private TileEditorLayer GetTileEditorLayer(bool bg) => bg ? EditorLayers.Bg : EditorLayers.Fg;
+
     private void SetSelection(object? entry) {
         CreateForm(entry);
     }
@@ -101,7 +102,7 @@ public sealed class TilesetWindow : Window {
         });
 
     private FieldList GetFields(TilesetData main) {
-        FieldList fieldInfo = main.GetFields(Bg);
+        FieldList fieldInfo = main.GetFields(GetTileEditorLayer(Bg));
 
         var fields = new FieldList();
         var order = new List<string>();
@@ -213,7 +214,7 @@ public sealed class TilesetWindow : Window {
     protected override bool Save() {
         switch (_tab) {
             case Tabs.Fg or Tabs.Bg:
-                Map?.SaveTilesetXml(Bg);
+                Map?.SaveTilesetXml(GetTileEditorLayer(Bg));
                 return true;
             case Tabs.AnimatedTiles:
                 Map?.SaveAnimatedTilesXml();
@@ -440,12 +441,12 @@ public sealed class TilesetWindow : Window {
             var autotiler = GetAutotiler(map, Bg);
             var tileset = autotiler.GetTilesetData(tileid);
             if (tileset is { Xml: not null } && ImGuiManager.TranslatedButton("rysy.tilesetWindow.clone")) {
-                RysyState.Scene.AddWindow(new CreateTilesetWindow(EditorState.Current, new ImportedTileset {
+                RysyState.Scene.AddWindow(new CreateTilesetWindow(Registry!.GetRequired<TilesetTemplates>(), EditorState.Current, new ImportedTileset {
                     Texture = tileset.Texture,
                     CreateTextureClone = false,
-                    IsBg = Bg,
+                    Layer = GetTileEditorLayer(Bg),
                     Name = tileset.Filename,
-                    Template = tileset.Xml.InnerXml,
+                    Template = new CustomTilesetTemplate(tileset.Xml.InnerXml),
                     CopyFrom = tileset.CopyFrom,
                     TexturePath = tileset.Filename,
                     DefaultDisplayName = $"{tileset.GetDisplayName()} (copy)"
@@ -562,12 +563,13 @@ public sealed class TilesetWindow : Window {
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             if (_tab is Tabs.Bg or Tabs.Fg) {
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromAssetDrive")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(_editorState, Bg));
+                    RysyState.Scene.AddWindowIfNeeded(() => new AssetDriveTilesetImportWindow(_editorState, GetTileEditorLayer(Bg)));
                     ImGui.CloseCurrentPopup();
                 }
             
                 if (ImGuiManager.TranslatedButton("rysy.tilesetImport.fromExistingSprite")) {
-                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteTilesetImportWindow(Bg));
+                    RysyState.Scene.AddWindowIfNeeded(() => new ExistingSpriteTilesetImportWindow(
+                        Registry!.GetRequired<TilesetTemplates>(), GetTileEditorLayer(Bg)));
                     ImGui.CloseCurrentPopup();
                 }
             } else if (_tab is Tabs.AnimatedTiles) {
@@ -697,13 +699,14 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
     
     private bool _wasValid;
     private string _path = "";
-    private bool _bg;
+    private TileEditorLayer _layer;
     
-    private TilesetTemplates.Templates _template = TilesetTemplates.Templates.Vanilla;
+    private ITilesetTemplate _template;
     private string _xml = "rysy.tilesetImport.templatePlaceholder".Translate();
     
-    public ExistingSpriteTilesetImportWindow(bool bg) : base("rysy.tilesetImport.fromExistingSprite".Translate(), new(640, 450)) {
-        _bg = bg;
+    public ExistingSpriteTilesetImportWindow(TilesetTemplates templates, TileEditorLayer layer) : base("rysy.tilesetImport.fromExistingSprite".Translate(), new(640, 450))
+    {
+        _layer = layer;
         _pathField = Fields.AtlasPath("", @"^tilesets/(.*)$").AllowEdits(false).WithValidator(x => {
             var path = x?.ToString();
             if (string.IsNullOrWhiteSpace(path))
@@ -712,7 +715,13 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
             return ValidationResult.Ok;
         });
 
-        _templateField = Fields.EnumNamesDropdown(TilesetTemplates.Templates.Vanilla);
+        var allTemplates = templates.GetTemplates()
+            .Where(t => t.CanApplyToLayer(layer))
+            .Append(new CustomTilesetTemplate(""))
+            .ToList();
+        
+        _templateField = Fields.Dropdown(allTemplates[0], allTemplates, t => t.DisplayName);
+        _template = allTemplates[0];
     }
 
     protected override void Render() {
@@ -723,12 +732,11 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
             _path = newPath;
         }
         
-        _template = _templateField.RenderGui("rysy.tilesetImport.template".Translate(), _template.ToString())
-                        is string t ? Enum.Parse<TilesetTemplates.Templates>(t) : _template;
+        _template = _templateField.RenderGui("rysy.tilesetImport.template".Translate(), _template) as ITilesetTemplate ?? _template;
         
         var windowSize = ImGui.GetContentRegionAvail();
         
-        ImGui.BeginDisabled(_template != TilesetTemplates.Templates.Custom);
+        ImGui.BeginDisabled(_template is not CustomTilesetTemplate);
         var prevXml = _xml;
         ImGui.InputTextMultiline("##Template", ref _xml, (nuint)_xml.Length + 3, windowSize);
         var placeholderText = "rysy.tilesetImport.templatePlaceholder".Translate();
@@ -744,20 +752,14 @@ internal sealed class ExistingSpriteTilesetImportWindow : Window {
         VirtTexture? texture = null!;
         ImGui.BeginDisabled(!_wasValid || !Gfx.Atlas.TryGet($"tilesets/{_path}", out texture));
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && texture is {}) {
-            RysyState.Scene.AddWindow(new CreateTilesetWindow(EditorState.Current, new ImportedTileset {
+            RysyState.Scene.AddWindow(new CreateTilesetWindow(Registry!.GetRequired<TilesetTemplates>(), EditorState.Current, new ImportedTileset {
                 Texture = texture,
                 CopyFrom = null,
                 CreateTextureClone = false,
                 DefaultDisplayName = null,
-                IsBg = _bg,
+                Layer = _layer,
                 Name = _path,
-                Template = _template switch {
-                    TilesetTemplates.Templates.Vanilla => "vanilla",
-                    TilesetTemplates.Templates.PixelatorAlternate => "alternate",
-                    TilesetTemplates.Templates.JadeBetter => "better",
-                    TilesetTemplates.Templates.Custom => _xml,
-                    _ => throw new ArgumentOutOfRangeException()
-                },
+                Template = _template,
                 TexturePath = _path,
             }));
             

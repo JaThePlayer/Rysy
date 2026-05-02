@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Xml;
+using Rysy.Layers;
 
 namespace Rysy.Graphics;
 
@@ -198,14 +199,14 @@ public sealed class TilesetData : IXmlBackedEntityData {
     
     public EntityData FakeData => field ??= this.CreateFakeData();
 
-    public FieldList GetFields(bool bg) {
+    public FieldList GetFields(TileEditorLayer layer) {
         var fields = new FieldList(new {
-            displayName = Fields.TilesetDisplayName("", () => bg, selfIsTileset: true).AllowNull().ConvertEmptyToNull(),
+            displayName = Fields.TilesetDisplayName("", () => layer, selfIsTileset: true).AllowNull().ConvertEmptyToNull(),
             sound = Fields.Dropdown(-1, CelesteEnums.SurfaceSounds, editable: false),
             path = Fields.AtlasPath("", @"^tilesets/(.*)$"),
-            copy = Fields.TileDropdown('\0', bg, addDontCopyOption: true),
-            ignores = Fields.List("", Fields.TileDropdown('1', bg, addWildcardOption: true)).WithMinElements(0),
-            ignoreExceptions = Fields.List("", Fields.TileDropdown('1', bg)).WithMinElements(0),
+            copy = Fields.TileDropdown('\0', layer, addDontCopyOption: true),
+            ignores = Fields.List("", Fields.TileDropdown('1', layer, addWildcardOption: true)).WithMinElements(0),
+            ignoreExceptions = Fields.List("", Fields.TileDropdown('1', layer)).WithMinElements(0),
             debris = Fields.AtlasPath("", @"^debris/(.*?)(?:00)?$"),
             debrisImpactSfx = Fields.String(null!).AllowNull().ConvertEmptyToNull(),
             __sep = new PaddingField(),

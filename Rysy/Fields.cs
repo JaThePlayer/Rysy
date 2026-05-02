@@ -54,13 +54,17 @@ public static partial class Fields {
         Editable = editable,
     }.SetValues(values.SafeToDictionary(kv => kv.Key, kv => new Searchable(kv.Value)));
 
-    public static DropdownField<T> Dropdown<T>(T def, List<T> values, Func<T, string>? toString = null, bool editable = false)
+    public static DropdownField<T> Dropdown<T>(T def, IReadOnlyList<T> values, Func<T, string>? toString = null, bool editable = false)
         where T : notnull 
     => new DropdownField<T>() {
         Default = def,
         Editable = editable,
     }.SetValues(values.ToDictionary(k => k, k => new Searchable(toString is { } ? toString(k) : k.ToString() ?? "")));
 
+    public static DropdownField<string> TileDropdown(char def, TileEditorLayer layer, bool addDontCopyOption = false,
+        bool addWildcardOption = false)
+        => TileDropdown(def, layer.TileLayer is TileLayer.Bg, addDontCopyOption, addWildcardOption);
+    
     public static DropdownField<string> TileDropdown(char def, bool bg, bool addDontCopyOption = false, bool addWildcardOption = false) => new DropdownField<string>() {
         Default = def.ToString(),
     }.SetValues(ctx => {
@@ -247,12 +251,14 @@ public static partial class Fields {
         };
     }
     
-    internal static StringField TilesetDisplayName(string def, Func<bool> bg, bool selfIsTileset) => String(def).WithValidator((ctx, x) => {
+    internal static StringField TilesetDisplayName(string def, Func<TileEditorLayer> layer, bool selfIsTileset) => String(def).WithValidator((ctx, x) => {
         var map = ctx.EditorState?.Map;
         if (map is null)
             return ValidationResult.Ok;
-        
-        var autotiler = bg() ? map.BgAutotiler : map.FgAutotiler;
+
+        var autotiler = layer().GetAutotiler(map);
+        if (autotiler is null)
+            return ValidationResult.Ok;
 
         if (autotiler.Tilesets.Count(kv => kv.Value.GetDisplayName() == x) > (selfIsTileset ? 1 : 0))
             return ValidationResult.TilesetDisplayNameInUse;
