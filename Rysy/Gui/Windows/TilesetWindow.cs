@@ -1,5 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Graphics.TextureTypes;
 using Rysy.Helpers;
@@ -7,11 +6,13 @@ using Rysy.History;
 using Rysy.Mods;
 using System.Diagnostics;
 using System.Xml;
+using Rysy.Components;
 using Rysy.Layers;
+using Rysy.Signals;
 
 namespace Rysy.Gui.Windows;
 
-public sealed class TilesetWindow : Window {
+public sealed class TilesetWindow : Window, ISignalListener<HistoryActionApplied>, ISignalListener<HistoryActionUndone> {
     private readonly EditorState _editorState;
 
     internal enum Tabs {
@@ -243,8 +244,6 @@ public sealed class TilesetWindow : Window {
         }
 
         _history ??= new HistoryHandler(map);
-        _history.OnApply += HistoryHook;
-        _history.OnUndo += HistoryHook;
         
         base.Render();
         
@@ -601,6 +600,18 @@ public sealed class TilesetWindow : Window {
 
             ImGui.EndPopup();
         }
+    }
+
+    public void OnSignal(HistoryActionApplied signal)
+    {
+        HistoryHook();
+        _history = signal.Handler;
+    }
+
+    public void OnSignal(HistoryActionUndone signal)
+    {
+        HistoryHook();
+        _history = signal.Handler;
     }
 }
 
