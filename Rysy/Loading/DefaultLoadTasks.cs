@@ -64,6 +64,7 @@ public static class DefaultLoadTasks {
     
     public static async Task<LoadTaskResult> LoadMapFromPersistence(SimpleLoadTask task) {
         var editor = new EditorScene();
+        editor.SetGlobalComponentRegistry(RysyState.GlobalServices);
         await editor.LoadFromPersistence();
                 
         RysyState.Scene = editor;
