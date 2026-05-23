@@ -106,6 +106,10 @@ public class Menubar : SceneComponent {
         if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
             scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
         }
+        
+        if (ImGui.MenuItem("dependencies".TranslateOrHumanize("rysy.dependencies.tab.map"))) {
+            scene.AddWindowIfNeeded(() => new DependencyWindow(editorState!));
+        }
         ImGui.EndDisabled();
     }
 
