@@ -1,17 +1,18 @@
 using Hexa.NET.ImGui;
+using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
 
 namespace Rysy.Gui.Windows {
-    public class DependencyWindow : Window {
+    public class EverestYAMLWindow : Window {
         
-        private new static string Name => "rysy.dependencies.window.name".Translate();
+        private new static string Name => "rysy.everestyaml.window.name".Translate();
         private readonly EditorState _state;
         private readonly List<ModMeta>? _deps, _available;
         private List<string> _required;
         
         
-        public DependencyWindow(EditorState state) : base(Name, new(600, 500)) {
+        public EverestYAMLWindow(EditorState state) : base(Name, new(600, 500)) {
             _state = state;
             if (state.Map?.Mod != null) {
                 var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
@@ -38,13 +39,27 @@ namespace Rysy.Gui.Windows {
         
 
         protected override void Render() {
-            if (!ImGui.BeginTable("Dependencies", 4, ImGuiManager.TableFlags)) {
+
+            var versionInput = new StringField();
+            var yaml = _state.Map?.Mod?.EverestYaml.First();
+
+            if (yaml is null) return;
+
+            if (versionInput.RenderGui("Version", yaml.VersionString) is string newVersion && newVersion != "") {
+                if (!Version.TryParse(newVersion, out var newVersionParsed)) return;
+                yaml.Version = newVersionParsed;
+                yaml.VersionString = newVersion;
+                _state.Map?.Mod?.TrySaveEverestYaml();
+            }
+            
+            
+            if (!ImGui.BeginTable("Dependencies", 4, ImGuiManager.TableFlags | ImGuiTableFlags.ScrollY)) {
                 return;
             }
             
             var textBaseWidth = ImGui.CalcTextSize("A").X;
             
-            ImGui.TableSetupColumn("In Mod");
+            ImGui.TableSetupColumn("Dependencies");
             ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, textBaseWidth * 3f);
             
             
@@ -68,7 +83,7 @@ namespace Rysy.Gui.Windows {
                     ImGui.TableNextColumn();
 
                     if (ImGui.Button($">>##{id++}")) {
-                        RemoveDependency(i);
+                        RemoveDependency(i, yaml);
                     }
                 }
                 else
@@ -86,7 +101,7 @@ namespace Rysy.Gui.Windows {
                     
                     ImGui.TableNextColumn();
                     if (ImGui.Button($"<<##{id++}")) {
-                        AddDependency(i);
+                        AddDependency(i, yaml);
                     }
                     ImGui.TableNextColumn();
                     if (_required.Contains(availableMod.Name))
@@ -101,12 +116,12 @@ namespace Rysy.Gui.Windows {
             ImGui.EndTable();
         }
 
-        private void AddDependency(int index) {
+        private void AddDependency(int index, EverestModuleMetadata yaml) {
             if (_available == null  || _state.Map?.Mod?.Filesystem is not IWriteableModFilesystem) return;
             
             ModMeta dep = _available[index];
             
-            _state.Map?.Mod?.EverestYaml.First().Dependencies.Add(new() {
+            yaml.Dependencies.Add(new() {
                 Name = dep.Name,
                 Version = dep.Version,
             });
@@ -120,14 +135,14 @@ namespace Rysy.Gui.Windows {
             RecalculateMissingDeps();
         }
 
-        private void RemoveDependency(int index) {
+        private void RemoveDependency(int index, EverestModuleMetadata yaml) {
             if (_deps == null  || _state.Map?.Mod?.Filesystem is not IWriteableModFilesystem) return;
             
             ModMeta dep = _deps[index];
             
-            var yamlDeps = _state.Map?.Mod?.EverestYaml.First().Dependencies;
+            var yamlDeps = yaml.Dependencies;
 
-            if (yamlDeps?.Find(d => d.Name == dep.Name) is var i and not null) {
+            if (yamlDeps.Find(d => d.Name == dep.Name) is var i and not null) {
                 yamlDeps.Remove(i);
             }
             
