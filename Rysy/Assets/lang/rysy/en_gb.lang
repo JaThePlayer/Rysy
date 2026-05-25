@@ -389,6 +389,14 @@ rysy.roomPlacements.room.placements.description.default=Creates a new playable r
 rysy.roomPlacements.fillerRoom.placements.name.filler=Empty Room
 rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room without a spawn point, useful for creating fillers to place tiles outside of rooms for nicer screen transitions.
 
+# everest.yaml editor
+rysy.everestyaml.tab.map.everest.yaml=everest.yaml
+rysy.everestyaml.version.name=Version
+rysy.everestyaml.window.name=Dependencies
+
+rysy.everestyaml.add.description=Add dependency to YAML
+rysy.everestyaml.remove.description=Remove dependency from YAML
+
 rysy.luaRepl=Lua REPL
 rysy.luaRepl.run=Run
 

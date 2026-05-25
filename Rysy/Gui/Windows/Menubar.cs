@@ -107,7 +107,7 @@ public class Menubar : SceneComponent {
             scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
         }
         
-        if (ImGui.MenuItem("everestyaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
+        if (ImGui.MenuItem("everest.yaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
             scene.AddWindowIfNeeded(() => new EverestYAMLWindow(editorState!));
         }
         ImGui.EndDisabled();

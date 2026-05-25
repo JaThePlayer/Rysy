@@ -10,7 +10,7 @@ namespace Rysy.Gui.Windows {
         
         
         
-        private new static string Name => "rysy.everestyaml.window.name".Translate();
+        public new static string Name => "rysy.everestyaml.window.name".Translate();
         private readonly EditorState _state;
         private List<ModMeta>? _deps, _available;
         private List<string> _required;
