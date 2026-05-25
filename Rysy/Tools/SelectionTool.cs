@@ -461,6 +461,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         return selections[ClickInPlaceIdx % selections.Count];
     }
 
+    private bool _hadSelectionsUnderCursorLastFrame;
+
     private void DoRender(Camera camera, Room? room) {
         if (EditorState.Map is not { } map)
             return;
@@ -485,6 +487,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         selectionsUnderCursor = GetSortedSelections(selectionsUnderCursor.Where(s => s.Handler is not TileSelectionHandler));
 
+        _hadSelectionsUnderCursorLastFrame = selectionsUnderCursor.Count > 0;
+
         Selection? selectionToBeSelectedOnClick = !_selectionGestureHandler.Started && _state == States.Idle
                 ? GetSelectionToBeSelectedOnClick(selectionsUnderCursor)
                 : null;
@@ -492,6 +496,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (_currentSelections is { } selections) {
             foreach (var selection in selections) {
                 if (!imguiWantsMouse && (_state != States.Idle || selection.Check(mousePos.X, mousePos.Y))) {
+                    _hadSelectionsUnderCursorLastFrame = true;
                     if (selectionToBeSelectedOnClick is {})
                         selection.Render(Color.Red);
                     else
@@ -676,7 +681,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         Deselect();
     }
 
-    public override bool AllowSwappingRooms => Layer != EditorLayers.Room;
+    public override bool AllowSwappingRooms => Layer != EditorLayers.Room && !_hadSelectionsUnderCursorLastFrame;
 
     private IHistoryAction? GetPreciseRotationAction(float realAngle) {
         if (_currentSelections is null)
