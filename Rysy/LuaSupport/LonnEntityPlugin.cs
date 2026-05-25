@@ -244,13 +244,13 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetJustification = NullConstOrGetter(plugin, "justification"u8,
             def: new Vector2(0.5f),
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
         
         plugin.NodeJustification = NullConstOrGetter_Noded(plugin, "nodeJustification"u8,
             def: new Vector2(0.5f),
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
 
@@ -262,49 +262,49 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetMinimumSize = NullConstOrGetter(plugin, "minimumSize"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true).ToPoint(),
             funcResults: 2
         );
         
         plugin.GetWarnBelowSize = NullConstOrGetter(plugin, "warnBelowSize"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true).ToPoint(),
             funcResults: 2
         );
 
         plugin.GetMaximumSize = NullConstOrGetter(plugin, "maximumSize"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true).ToPoint(),
             funcResults: 2
         );
         
         plugin.GetWarnAboveSize = NullConstOrGetter(plugin, "warnAboveSize"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top).ToPoint(),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true).ToPoint(),
             funcResults: 2
         );
 
         plugin.GetScale = NullConstOrGetter(plugin, "scale"u8,
             def: Vector2.One,
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
         
         plugin.NodeScale = NullConstOrGetter_Noded(plugin, "nodeScale"u8,
             def: Vector2.One,
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
         
         plugin.GetOffset = NullConstOrGetter(plugin, "offset"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
         
         plugin.NodeOffset = NullConstOrGetter_Noded(plugin, "nodeOffset"u8,
             def: null,
-            funcGetter: static (lua, top) => lua.ToVector2(top),
+            funcGetter: static (lua, top) => lua.ToVector2(top, skipNilAtIndex: true),
             funcResults: 2
         );
 
@@ -366,7 +366,8 @@ public sealed class LonnEntityPlugin {
                     using (plugin.PushToStack()) {
                         var lua = plugin.LuaCtx.Lua;
                         lua.GetTable(plugin.StackLoc, "nodeLineRenderOffset"u8);
-                        return lua.PCallFunction(static (lua, pos) => lua.ToVector2(pos), results: 1, entity, node, nodeId);
+                        return lua.PCallFunction(
+                            static (lua, pos) => lua.ToVector2(pos, skipNilAtIndex: true), results: 2, entity, node, nodeId);
                     }
                 };
                 break;

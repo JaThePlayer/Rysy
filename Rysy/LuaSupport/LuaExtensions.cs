@@ -195,7 +195,7 @@ public static partial class LuaExt {
     ) {
         Logger.Write("Lua", LogLevel.Info, "Stack:", callerMethod, callerFile, lineNumber);
         for (int i = startI; i <= state.GetTop(); i++) {
-            Console.WriteLine($"[{i}]: {state.ToString(i)} [{state.Type(i)}]");
+            Logger.Write("Lua", LogLevel.Info, $"[{i}]: {state.ToString(i)} [{state.Type(i)}]");
         }
     }
 
@@ -691,7 +691,17 @@ where TArg1 : class, ILuaWrapper {
         }
     }
 
-    public static Vector2 ToVector2(this Lua lua, int index) {
+    /// <summary>
+    /// Converts the value at the given stack index to a Vector2.
+    /// Possible formats:<br/>
+    /// - A table: { x, y }<br/>
+    /// - Two numbers, where the number at <paramref name="index"/> points at y, and <paramref name="index"/>-1 is x.
+    /// </summary>
+    /// <param name="lua">Lua instance to use.</param>
+    /// <param name="index">Stack index</param>
+    /// <param name="skipNilAtIndex">If true, and the value at <paramref name="index"/> is nil, try to parse the vector at index-1 instead. Used when handling an api allowing to return either two numbers, or a table.</param>
+    /// <returns></returns>
+    public static Vector2 ToVector2(this Lua lua, int index, bool skipNilAtIndex = false) {
         switch (lua.Type(index)) {
             case LuaType.Table:
                 return new((float) lua.PeekTableNumberValue(index, 1)!, (float) lua.PeekTableNumberValue(index, 2)!);
@@ -701,7 +711,8 @@ where TArg1 : class, ILuaWrapper {
                 } else {
                     return new((float) lua.ToNumber(index));
                 }
-
+            case LuaType.Nil when skipNilAtIndex:
+                return lua.ToVector2(index - 1, skipNilAtIndex: false);
             default:
                 return default;
         };
