@@ -1,52 +1,64 @@
 using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
+using Rysy.Signals;
 
 namespace Rysy.Gui.Windows {
-    public class EverestYAMLWindow : Window {
+    public class EverestYAMLWindow : Window, ISignalListener<MapSwapped> {
+        
+        
         
         private new static string Name => "rysy.everestyaml.window.name".Translate();
         private readonly EditorState _state;
-        private readonly List<ModMeta>? _deps, _available;
+        private List<ModMeta>? _deps, _available;
         private List<string> _required;
+        private readonly StringField _versionInput;
         
         
         public EverestYAMLWindow(EditorState state) : base(Name, new(600, 500)) {
             _state = state;
-            if (state.Map?.Mod != null) {
-                var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
-                _deps = state.Map?.Mod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
-                _deps?.Sort(
-                    (a, b) =>
-                        string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-                );
-                
-                RecalculateMissingDeps();
-                
-                if (_deps != null) {
-                    _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
-                    if (_required is not null)
-                        _available.Sort(
-                            (a, b) => 
-                                _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
-                                    !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
-                                string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-                        );
-                }
-            }
+            
+            if (state.Map is not { Mod: { } mod })
+                return;
+            
+            _versionInput = new StringField().WithValidator(
+                s => Version.TryParse(s, out _) ? 
+                    ValidationResult.Ok :
+                    ValidationResult.GenericError
+                ).Translated("rysy.everestyaml.version.name");
+            
+            var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
+            _deps = mod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
+            if (_deps is null) return;
+            _deps.Sort(
+                (a, b) =>
+                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
+            );
+            
+            RecalculateMissingDeps();
+            
+            _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
+            
+            if (_required is null) return;
+            
+            _available.Sort(
+                (a, b) => 
+                    _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
+                    !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
+                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
+            );
         }
         
 
         protected override void Render() {
 
-            var versionInput = new StringField();
-            var yaml = _state.Map?.Mod?.EverestYaml.First();
 
-            if (yaml is null) return;
+            if (_state.Map?.Mod?.EverestYaml.First() is not { } yaml) return;
 
-            if (versionInput.RenderGui("Version", yaml.VersionString) is string newVersion && newVersion != "") {
-                if (!Version.TryParse(newVersion, out var newVersionParsed)) return;
+            if (_versionInput.RenderGuiWithValidation(yaml.VersionString, out var isValid) is string newVersion && newVersion != "" && isValid.IsOk) {
+                var newVersionParsed = Version.Parse(newVersion);
                 yaml.Version = newVersionParsed;
                 yaml.VersionString = newVersion;
                 _state.Map?.Mod?.TrySaveEverestYaml();
@@ -82,7 +94,7 @@ namespace Rysy.Gui.Windows {
                 
                     ImGui.TableNextColumn();
 
-                    if (ImGui.Button($">>##{id++}")) {
+                    if (ImGui.Button($">>##{id++}").WithTranslatedTooltip("rysy.everestyaml.remove.description")) {
                         RemoveDependency(i, yaml);
                     }
                 }
@@ -100,7 +112,7 @@ namespace Rysy.Gui.Windows {
                     if (availableMod.Name == _state.Map?.Mod?.Name) _available.RemoveAt(i);
                     
                     ImGui.TableNextColumn();
-                    if (ImGui.Button($"<<##{id++}")) {
+                    if (ImGui.Button($"<<##{id++}").WithTranslatedTooltip("rysy.everestyaml.add.description")) {
                         AddDependency(i, yaml);
                     }
                     ImGui.TableNextColumn();
@@ -117,7 +129,8 @@ namespace Rysy.Gui.Windows {
         }
 
         private void AddDependency(int index, EverestModuleMetadata yaml) {
-            if (_available == null  || _state.Map?.Mod?.Filesystem is not IWriteableModFilesystem) return;
+            if (_state.Map?.Mod is not { } mod) return;
+            if (_available == null || _deps == null || mod.Filesystem is not IWriteableModFilesystem) return;
             
             ModMeta dep = _available[index];
             
@@ -126,17 +139,18 @@ namespace Rysy.Gui.Windows {
                 Version = dep.Version,
             });
 
-            _state.Map?.Mod?.TrySaveEverestYaml();
+            mod.TrySaveEverestYaml();
             
-            _deps?.Add(dep);
-            _deps?.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+            _deps.Add(dep);
+            _deps.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
             
             _available.RemoveAt(index);
             RecalculateMissingDeps();
         }
 
         private void RemoveDependency(int index, EverestModuleMetadata yaml) {
-            if (_deps == null  || _state.Map?.Mod?.Filesystem is not IWriteableModFilesystem) return;
+            if (_state.Map?.Mod is not { } mod) return;
+            if (_deps == null || _available == null || mod.Filesystem is not IWriteableModFilesystem) return;
             
             ModMeta dep = _deps[index];
             
@@ -146,14 +160,14 @@ namespace Rysy.Gui.Windows {
                 yamlDeps.Remove(i);
             }
             
-            _state.Map?.Mod?.TrySaveEverestYaml();
+            mod.TrySaveEverestYaml();
             
-            _available?.Add(dep);
+            _available.Add(dep);
             
             _deps.RemoveAt(index);
             RecalculateMissingDeps();
             
-            _available?.Sort(
+            _available.Sort(
                 (a, b) => 
                     _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
                     !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
@@ -162,11 +176,36 @@ namespace Rysy.Gui.Windows {
         }
 
         private void RecalculateMissingDeps() {
-            if (_state.Map?.Mod is null) return;
+            if (_state.Map?.Mod is not {} mod) return;
             _required = DependencyChecker
                 .GetDependencies(_state.Map)
-                .FindMissingDependencies(_state.Map.Mod)
+                .FindMissingDependencies(mod)
                 .ToListIfNotList();
+        }
+
+        public void OnSignal(MapSwapped signal) {
+
+            if (signal.NewMap is not { } map) return;
+            if (map.Mod is not { } mod) return;
+                
+            var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
+            _deps = mod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
+            _deps?.Sort(
+                (a, b) =>
+                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
+            );
+            
+            RecalculateMissingDeps();
+            
+            if (_deps is null) return;
+            
+            _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
+            _available.Sort(
+                (a, b) => 
+                    _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
+                    !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
+                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
+            );
         }
     }
 }
