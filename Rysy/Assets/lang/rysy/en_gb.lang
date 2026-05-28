@@ -217,6 +217,10 @@ rysy.mapLoadError.noBackups=No backups found.
 # Styleground window
 rysy.stylegrounds.windowName=Stylegrounds
 
+# Fake Background Style
+style.effects.Rysy/FakeBackgroundStyle.name=Background Color
+style.effects.Rysy/FakeBackgroundStyle.description.color=Background color of the map, rendered before all other stylegrounds.
+
 # Entity Edit Window
 rysy.entityEdit.documentation=Documentation
 rysy.entityEdit.documentation.tooltip=Opens the documentation for this entity, provided by the mod author.

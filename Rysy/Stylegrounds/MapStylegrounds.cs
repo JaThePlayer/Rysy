@@ -1,12 +1,20 @@
-﻿using Rysy.Shared.Collections;
+﻿using Rysy.Helpers;
+using Rysy.Shared.Collections;
 
 namespace Rysy.Stylegrounds;
 
 public class MapStylegrounds : IPackable {
+    private EntityData _data;
+    
     public MapStylegrounds() { }
 
     public List<Style> Backgrounds = [];
     public List<Style> Foregrounds = [];
+
+    public Color BackgroundColor {
+        get => _data.GetColor("color", Color.Black, ColorFormat.Rgb);
+        set => _data["color"] = value.ToString(ColorFormat.Rgb);
+    }
 
     /// <summary>
     /// Finds all styles in this <see cref="MapStylegrounds"/> object, recursively crawling all <see cref="StyleFolder"/>s
@@ -60,6 +68,7 @@ public class MapStylegrounds : IPackable {
 
     public BinaryPacker.Element Pack() {
         return new("Style") {
+            Attributes = _data.Inner,
             Children = [
                 new("Foregrounds") {
                     Children = Foregrounds.Select(f => f.Pack()).ToArray(),
@@ -72,6 +81,7 @@ public class MapStylegrounds : IPackable {
     }
 
     public void Unpack(BinaryPacker.Element from) {
+        _data = new EntityData("Style", from.Attributes);
         foreach (var c in from.Children) {
             List<Style> styles = new(c.Children.Length);
 

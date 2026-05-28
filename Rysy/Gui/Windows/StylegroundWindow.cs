@@ -27,6 +27,8 @@ public class StylegroundWindow : Window {
     
     private IEnumerable<ISprite>? _previewSprites;
 
+    private readonly FakeBackgroundStyle _fakeBackgroundStyle;
+
     public StylegroundWindow(EditorState editorState, IHistoryHandler history) : base("rysy.stylegrounds.windowName".Translate(), new(1200, 800)) {
         _history = history;
 
@@ -70,7 +72,11 @@ public class StylegroundWindow : Window {
                 RemoveForm();
             }
         };
+
+        _fakeBackgroundStyle = new FakeBackgroundStyle(_map);
     }
+
+    IEnumerable<FakeStyle> GetFakeStyles(bool fg) => fg ? [] : [ _fakeBackgroundStyle ];
 
     private void RemoveForm() {
         if (_form is { }) {
@@ -138,7 +144,7 @@ public class StylegroundWindow : Window {
     }
 
     private IHistoryAction? Move(Style? toMove, int offset) {
-        if (toMove is null)
+        if (toMove is null or FakeStyle)
             return null;
 
         var styles = GetStyleListContaining(toMove);
@@ -152,7 +158,7 @@ public class StylegroundWindow : Window {
     }
 
     public IHistoryAction? MoveInOutFolder(Style? toMove, int offset) {
-        if (toMove is null)
+        if (toMove is null or FakeStyle)
             return null;
 
         var styles = GetStyleListContaining(toMove);
@@ -174,7 +180,7 @@ public class StylegroundWindow : Window {
     }
 
     private IHistoryAction? Delete(Style? toRemove) {
-        if (toRemove is null)
+        if (toRemove is null or FakeStyle)
             return null;
 
         _selections.Remove(toRemove);
@@ -185,9 +191,9 @@ public class StylegroundWindow : Window {
     public static FieldList GetFields(Style main) {
         var fieldInfo = EntityRegistry.GetFields(main.Name, RegisteredEntityType.Style);
 
-        var fields = Style.GetDefaultFields();
+        var fields = main is FakeStyle ? new FieldList() : Style.GetDefaultFields();
         fields.SetHiddenFields(fieldInfo.GetDynamicallyHiddenFields);
-        var order = new List<string>(fields.Order!(main));
+        var order = new List<string>(fields.Order?.Invoke(main) ?? []);
         
         if (main is StyleFolder) {
             fields.Add(StyleFolder.EditorNameDataKey, Fields.String(null!).AllowNull().ConvertEmptyToNull());
@@ -413,6 +419,9 @@ public class StylegroundWindow : Window {
         ImGui.TableSetupColumn("Rooms", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 12f);
         ImGui.TableHeadersRow();
 
+        foreach (var fakeStyle in GetFakeStyles(fg)) {
+            RenderStyleImgui(fakeStyle);
+        }
         foreach (var style in styles) {
             RenderStyleImgui(style);
         }
@@ -446,7 +455,7 @@ public class StylegroundWindow : Window {
             AddStyleContextWindow(style, id);
 
             ImGui.SameLine();
-            ImGui.Text(style.DisplayName);
+            ImGui.TextUnformatted(style.DisplayName);
 
             RenderOtherTabs(style);
 
@@ -479,7 +488,7 @@ public class StylegroundWindow : Window {
             AddStyleContextWindow(style, id);
 
             ImGui.SameLine();
-            ImGui.Text(style.DisplayName);
+            ImGui.TextUnformatted(style.DisplayName);
 
             RenderOtherTabs(style);
         }
@@ -489,7 +498,13 @@ public class StylegroundWindow : Window {
         var popupId = Interpolator.TempU8($"style_ctx_{id}");
         ImGui.OpenPopupOnItemClick(popupId, ImGuiPopupFlags.MouseButtonRight);
 
+        if (style is FakeStyle) {
+            return;
+        }
+
         if (ImGui.BeginPopupContextWindow(popupId, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
+            ImGui.TextUnformatted(style.DisplayName);
+            
             if (ImGui.Button("Remove")) {
                 RysyState.OnEndOfThisFrame += () => _history.ApplyNewAction(Delete(style));
                 ImGui.CloseCurrentPopup();
@@ -536,4 +551,45 @@ public class StylegroundWindow : Window {
                 break;
         }
     }
+}
+
+/// <summary>
+/// A style which doesn't exist in the map's actual styleground list, but is still displayed in the styleground list UI.
+/// </summary>
+internal abstract class FakeStyle : Style;
+
+/// <summary>
+/// A fake styleground mapped to the `Map.Style.color` property.
+/// </summary>
+[CustomEntity("Rysy/FakeBackgroundStyle")]
+internal class FakeBackgroundStyle : FakeStyle, IPlaceable {
+    private readonly Map _map;
+
+    public FakeBackgroundStyle(Map map) {
+        _map = map;
+        Name = "Rysy/FakeBackgroundStyle";
+        Data = new EntityData(Name, new Dictionary<string, object> {
+            ["color"] = map.Style.BackgroundColor.ToString(ColorFormat.Rgb),
+            ["only"] = "*",
+        });
+    }
+
+    private Color BackgroundColor => Data.GetColor("color", Color.Black, ColorFormat.Rgb);
+
+    public override void OnChanged(EntityDataChangeCtx changeCtx) {
+       _map.Style.BackgroundColor = BackgroundColor;
+    }
+
+    public override bool CanBeInBackground => true;
+    public override bool CanBeInForeground => false;
+
+    public override IEnumerable<ISprite> GetPreviewSprites() {
+        return ISprite.Rect(PreviewRectangle(), BackgroundColor);
+    }
+
+    public static FieldList GetFields() => new FieldList(new {
+        color = Fields.Rgb(Color.Black),
+    }).SetHiddenFields([ "only" ]);
+
+    public static PlacementList GetPlacements() => [];
 }
