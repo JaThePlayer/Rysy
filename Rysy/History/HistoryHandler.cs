@@ -24,6 +24,7 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
             if (item is { }) {
                 item.Undo(Map);
                 this.Emit(new HistoryActionSimulationUndone(this, item));
+                this.Emit(new HistoryChanged(this));
             }
         }
         SimulatedActions.Clear();
@@ -36,6 +37,7 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
             action.Apply(Map);
             SimulatedActions.Add(action);
             this.Emit(new HistoryActionSimulationApplied(this, action));
+            this.Emit(new HistoryChanged(this));
         }
     }
 
@@ -74,6 +76,7 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
         UndoneActions.Clear();
         OnApply?.Invoke();
         this.Emit(new HistoryActionApplied(this, action));
+        this.Emit(new HistoryChanged(this));
     }
 
     public void Undo() {
@@ -85,6 +88,7 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
             UndoneActions.Add(action);
             OnUndo?.Invoke();
             this.Emit(new HistoryActionUndone(this, action));
+            this.Emit(new HistoryChanged(this));
         }
     }
 
@@ -97,6 +101,7 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
             Actions.Add(action);
             OnApply?.Invoke();
             this.Emit(new HistoryActionApplied(this, action));
+            this.Emit(new HistoryChanged(this));
         }
     }
 
