@@ -4,7 +4,7 @@ using Rysy.Shared.Collections;
 namespace Rysy.Stylegrounds;
 
 public class MapStylegrounds : IPackable {
-    private EntityData _data;
+    private EntityData _data = new("Style", new Dictionary<string, object>());
     
     public MapStylegrounds() { }
 

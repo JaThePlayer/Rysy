@@ -137,14 +137,14 @@ public static class UntypedDataExt {
         => self.GetColor(attrName, def, ColorFormat.Argb);
     
     public static Color GetColor(this IUntypedData self, string attrName, Color def, ColorFormat format) {
-        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
             return parsed;
 
         return def;
     }
 
     public static Color GetColor(this IUntypedData self, string attrName, string def, ColorFormat format) {
-        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString()!, format, out var parsed))
+        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
             return parsed;
 
         if (ColorHelper.TryGet(def, format, out var defParsed)) {
