@@ -1,6 +1,8 @@
-﻿namespace Rysy.History;
+﻿using Rysy.Signals;
 
-internal sealed class HotswappableHistoryHandler : IHistoryHandler {
+namespace Rysy.History;
+
+internal sealed class HotswappableHistoryHandler : IHistoryHandler, ISignalEmitter {
     private IHistoryHandler _implementation;
 
     public HotswappableHistoryHandler(IHistoryHandler implementation) {
@@ -25,6 +27,16 @@ internal sealed class HotswappableHistoryHandler : IHistoryHandler {
     public Map Map {
         get => _implementation.Map;
         set => _implementation.Map = value;
+    }
+
+    SignalTarget ISignalEmitter.SignalTarget {
+        get;
+        set {
+            field = value;
+            if (_implementation is ISignalEmitter emitter) {
+                emitter.SignalTarget = value;
+            }
+        }
     }
 
     private void OnImplementationUndo() {
