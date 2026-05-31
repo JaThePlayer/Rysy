@@ -22,7 +22,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
     public EditorState EditorState { get; set; } = new();
 
     public IHistoryHandler HistoryHandler {
-        get => EditorState.History ??= new HistoryHandler(Map);
+        get => EditorState.History ??= new HotswappableHistoryHandler(new HistoryHandler(Map));
         set => EditorState.History = value;
     }
 
