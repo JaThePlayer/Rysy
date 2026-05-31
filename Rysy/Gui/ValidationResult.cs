@@ -79,6 +79,9 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult OverlappingRooms { get; } 
         = new(ValidationMessage.Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.overlappingRoomWarning")));
     
+    public static ValidationResult InvalidVersion { get; } 
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidVersion")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;

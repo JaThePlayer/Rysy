@@ -108,7 +108,7 @@ public class Menubar : SceneComponent {
         }
         
         if (ImGui.MenuItem("everest.yaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new EverestYAMLWindow(editorState!));
+            scene.AddWindowIfNeeded(() => new EverestYamlWindow(editorState!));
         }
         ImGui.EndDisabled();
     }

@@ -395,11 +395,16 @@ rysy.roomPlacements.fillerRoom.placements.description.filler=Creates a new room 
 
 # everest.yaml editor
 rysy.everestyaml.tab.map.everest.yaml=everest.yaml
-rysy.everestyaml.version.name=Version
-rysy.everestyaml.window.name=Dependencies
+rysy.everestyaml.version=Version
+rysy.everestyaml.version.tooltip=The version of your mod, should only increase between updates.\nChanging the major version (first number) is unrecommended, as it breaks existing mods depending on your mod.
+rysy.everestyaml.window.name=everest.yaml
 
 rysy.everestyaml.add.description=Add dependency to YAML
 rysy.everestyaml.remove.description=Remove dependency from YAML
+
+rysy.everestyaml.available=Available
+rysy.everestyaml.dependencies=Dependencies
+rysy.everestyaml.required=required
 
 rysy.luaRepl=Lua REPL
 rysy.luaRepl.run=Run
@@ -496,6 +501,14 @@ rysy.validate.modFolderNameUsedAlready=A directory with this name exists in your
 rysy.validate.invalidEnglishDialogName=Name can't contain newlines and special Dialog characters: = [ ]
 
 rysy.validate.overlappingRoomWarning=Room overlaps a different room, which can cause weird in-game behavior.
+
+rysy.validate.invalidVersion="""
+Version is not in valid format.
+Valid formats are (x,y,z,w are positive decimal numbers):
+x.y
+x.y.z
+x.y.z.w
+"""
 
 rysy.windows.rooms=Rooms
 rysy.windows.recentList=Recent

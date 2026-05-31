@@ -992,14 +992,33 @@ public static class ImGuiManager {
         return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
 
+    public static void TranslatedTableSetupColumn(string key) {
+        ImGui.TableSetupColumn(key.Translate());
+    }
     #endregion
 
+    public static void TextUnformatted(Interpolator.HandlerU8 text) {
+        text.AppendLiteral("\0"u8);
+        ImGui.TextUnformatted(text.Result);
+    }
+    
+    public static void TextDisabled(Interpolator.HandlerU8 text) {
+        text.AppendLiteral("\0"u8);
+        ImGui.BeginDisabled();
+        ImGui.TextUnformatted(text.Result);
+        ImGui.EndDisabled();
+    }
+
     public static void TextColored(IThemeColor color, ReadOnlySpan<byte> text) {
-        ImGui.TextColored(color.ToNumVec4(Themes.Current), text);
+        PushStyleColor(ImGuiCol.Text, color);
+        ImGui.TextUnformatted(text);
+        ImGui.PopStyleColor(1);
     }
     
     public static void TextColored(IThemeColor color, string text) {
-        ImGui.TextColored(color.ToNumVec4(Themes.Current), text);
+        PushStyleColor(ImGuiCol.Text, color);
+        ImGui.TextUnformatted(text);
+        ImGui.PopStyleColor(1);
     }
 
     public static void PushStyleColor(ImGuiCol col, IThemeColor color) {
