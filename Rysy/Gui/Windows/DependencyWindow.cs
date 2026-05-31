@@ -7,61 +7,36 @@ using Rysy.Signals;
 
 namespace Rysy.Gui.Windows {
     public class EverestYAMLWindow : Window, ISignalListener<MapSwapped> {
-        
-        
-        
-        public new static string Name => "rysy.everestyaml.window.name".Translate();
         private readonly EditorState _state;
         private List<ModMeta>? _deps, _available;
         private List<string> _required;
         private readonly StringField _versionInput;
+        private string? _versionString;
         
         
-        public EverestYAMLWindow(EditorState state) : base(Name, new(600, 500)) {
+        public EverestYAMLWindow(EditorState state) : base("rysy.everestyaml.window.name".Translate(), new(600, 500)) {
             _state = state;
-            
-            if (state.Map is not { Mod: { } mod })
-                return;
             
             _versionInput = new StringField().WithValidator(
                 s => Version.TryParse(s, out _) ? 
                     ValidationResult.Ok :
                     ValidationResult.GenericError
                 ).Translated("rysy.everestyaml.version.name");
-            
-            var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
-            _deps = mod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
-            if (_deps is null) return;
-            _deps.Sort(
-                (a, b) =>
-                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-            );
-            
-            RecalculateMissingDeps();
-            
-            _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
-            
-            if (_required is null) return;
-            
-            _available.Sort(
-                (a, b) => 
-                    _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
-                    !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
-                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-            );
+
+            OnSignal(new MapSwapped(state, null, state.Map));
         }
         
 
         protected override void Render() {
-
-
             if (_state.Map?.Mod?.EverestYaml.First() is not { } yaml) return;
 
-            if (_versionInput.RenderGuiWithValidation(yaml.VersionString, out var isValid) is string newVersion && newVersion != "" && isValid.IsOk) {
-                var newVersionParsed = Version.Parse(newVersion);
-                yaml.Version = newVersionParsed;
-                yaml.VersionString = newVersion;
-                _state.Map?.Mod?.TrySaveEverestYaml();
+            ImGui.SetNextItemWidth(FormWindow.ItemWidth);
+            if (_versionInput.RenderGuiWithValidation(_versionString ??= yaml.VersionString, out var isValid) is string newVersion) {
+                _versionString = newVersion;
+                if (isValid.IsOk) {
+                    yaml.VersionString = newVersion;
+                    _state.Map?.Mod?.TrySaveEverestYaml(); 
+                }
             }
             
             
@@ -88,7 +63,7 @@ namespace Rysy.Gui.Windows {
                     
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{dependency.DisplayName} ");
+                    ImGui.TextUnformatted($"{dependency.DisplayName} ");
                 
                     ImGui.TextDisabled($"({dependency.Name} v{dependency.Version})");
                 
@@ -117,9 +92,9 @@ namespace Rysy.Gui.Windows {
                     }
                     ImGui.TableNextColumn();
                     if (_required.Contains(availableMod.Name))
-                        ImGui.TextColored(LogLevel.Error.ToColorNumVec(), $"{availableMod.DisplayName} (required)");
+                        ImGuiManager.TextColored(ThemeColors.FormInvalidColor, $"{availableMod.DisplayName} (required)");
                     else
-                        ImGui.Text($"{availableMod.DisplayName} ");
+                        ImGui.TextUnformatted($"{availableMod.DisplayName} ");
                 
                     ImGui.TextDisabled($"({availableMod.Name} v{availableMod.Version})");
                 }
@@ -167,7 +142,12 @@ namespace Rysy.Gui.Windows {
             _deps.RemoveAt(index);
             RecalculateMissingDeps();
             
-            _available.Sort(
+            SortAvailableDependencies();
+        }
+
+        private void SortAvailableDependencies()
+        {
+            _available?.Sort(
                 (a, b) => 
                     _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
                     !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
@@ -184,7 +164,6 @@ namespace Rysy.Gui.Windows {
         }
 
         public void OnSignal(MapSwapped signal) {
-
             if (signal.NewMap is not { } map) return;
             if (map.Mod is not { } mod) return;
                 
@@ -200,12 +179,7 @@ namespace Rysy.Gui.Windows {
             if (_deps is null) return;
             
             _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
-            _available.Sort(
-                (a, b) => 
-                    _required.Contains(a.Name) && !_required.Contains(b.Name) ? -1 :
-                    !_required.Contains(a.Name) &&  _required.Contains(b.Name) ? 1 : 
-                    string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-            );
+            SortAvailableDependencies();
         }
     }
 }

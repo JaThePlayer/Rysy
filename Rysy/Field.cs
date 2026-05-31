@@ -68,7 +68,11 @@ public abstract record class Field {
 
     public object? RenderGuiWithValidation(object value, out ValidationResult validationResult) {
         validationResult = IsValid(value);
-        return RenderGuiWithValidation(NameOverride ??= "???", value, validationResult);
+        var ret = RenderGuiWithValidation(NameOverride ??= "???", value, validationResult);
+        // Refresh the validation result for the new value, so that code can rely on result.Ok meaning the value is parsable.
+        if (ret is not null)
+            validationResult = IsValid(ret);
+        return ret;
     }
 
     /// <summary>
