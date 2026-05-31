@@ -21,21 +21,8 @@ public class DependencyAnalyzer : MapAnalyzer {
         var missing = depCtx.FindMissingDependencies(mod).ToListIfNotList();
 
         foreach (var dep in missing) {
-            var sources = depCtx.ModRequirementSources[dep].GroupBy(o => (o.GetType(), GetSourceName(o))).ToList();
-
-            ctx.AddResult(new MissingDepResult(mod, dep, ModRegistry.GetModByName(dep), sources));
+            ctx.AddResult(new MissingDepResult(mod, dep, ModRegistry.GetModByName(dep), depCtx.GetDrawableDetailsFor(dep)));
         }
-    }
-
-    private string GetSourceName(object source) {
-        return source switch {
-            Style s => $"style:{s.Name}",
-            Decal d => $"{d.Name}:{d.Texture}",
-            DependencyChecker.MetadataDependency d => $"metadata:{d.FieldName}",
-            DependencyChecker.TilesetDependency t => $"{t.Layer}Tileset:{t.Texture}",
-            IName name => name.Name,
-            _ => source.ToString()!,
-        };
     }
 
     sealed record class NotInModResult() : IAnalyzerResult {
@@ -54,7 +41,7 @@ public class DependencyAnalyzer : MapAnalyzer {
         }
     }
 
-    sealed record class MissingDepResult(ModMeta BaseMod, string DepModName, ModMeta? DepModMeta, List<IGrouping<(Type Type, string Name), object>> Sources) : IAnalyzerResult {
+    sealed record class MissingDepResult(ModMeta BaseMod, string DepModName, ModMeta? DepModMeta, IImGuiDrawable DetailsDrawable) : IAnalyzerResult {
         private bool IsUnknown => DepModName == DependencyChecker.UnknownModName;
 
         public LogLevel Level => IsUnknown ? LogLevel.Warning : LogLevel.Error;
@@ -65,61 +52,8 @@ public class DependencyAnalyzer : MapAnalyzer {
 
         public bool AutoFixable => !IsUnknown && DepModMeta is { } && BaseMod.Filesystem is IWriteableModFilesystem;
 
-        private void RenderEntityList(IEnumerable<object> objs) {
-            if (!ImGui.BeginTable("Entities", 2, ImGuiManager.TableFlags)) {
-                return;
-            }
-
-            var textBaseWidth = ImGui.CalcTextSize("A").X;
-
-            ImGui.TableSetupColumn("Room", ImGuiTableColumnFlags.WidthFixed, textBaseWidth * 10f);
-            ImGui.TableSetupColumn("", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableHeadersRow();
-
-            var i = 0;
-            foreach (Entity obj in objs) {
-                ImGui.TableNextRow();
-
-                ImGui.TableNextColumn();
-                ImGui.Text(obj.Room.Name);
-                ImGui.TableNextColumn();
-
-                ImGuiManager.PushNullStyle();
-                if (RysyEngine.Scene is EditorScene editor && ImGui.Selectable($"Select...##{i++}")) {
-                    editor.CurrentRoom = obj.Room;
-                    editor.Camera.CenterOnRealPos(obj.Center + obj.Room.Pos);
-
-                    var selectionTool = editor.ToolHandler.SetTool<SelectionTool>();
-                    if (selectionTool is { }) {
-                        selectionTool.Deselect();
-                        selectionTool.AddSelection(obj.CreateSelection());
-                    }
-
-                }
-                ImGuiManager.PopNullStyle();
-            }
-
-            ImGui.EndTable();
-        }
-
         public void RenderDetailImgui() {
-            if (!IsUnknown)
-                ImGui.Text("Used by:");
-
-            foreach (var group in Sources) {
-                var open = ImGui.TreeNodeEx(group.Key.Name, ImGuiTreeNodeFlags.SpanFullWidth);
-
-                if (open) {
-                    if (group.Key.Type.IsSubclassOf(typeof(Entity))) {
-                        RenderEntityList(group);
-                    }
-                    if (group.Key.Type == typeof(DependencyChecker.MetadataDependency)) {
-                        ImGui.Text((group.First() as DependencyChecker.MetadataDependency)?.Value.ToString());
-                    }
-
-                    ImGui.TreePop();
-                }
-            }
+            DetailsDrawable.DrawImGui();
         }
 
         public void Fix() {

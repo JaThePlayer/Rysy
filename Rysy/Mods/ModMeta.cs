@@ -71,6 +71,22 @@ public sealed class ModMeta : ISignalEmitter {
         return fs;
     }
 
+    public IEnumerable<string> GetAllDependencyNames(bool includeOptionalDeps = false) {
+        var addedMods = new HashSet<string>() { Name };
+        var mods = new List<string>();
+
+        foreach (var yaml in EverestYaml) {
+            foreach (var dep in includeOptionalDeps ? yaml.Dependencies.Concat(yaml.OptionalDependencies) : yaml.Dependencies) {
+                if (addedMods.Contains(dep.Name))
+                    continue;
+                mods.Add(dep.Name);
+                addedMods.Add(dep.Name);
+            }
+        }
+
+        return mods;
+    }
+
     public IEnumerable<ModMeta> GetAllDependenciesRecursive(bool includeOptionalDeps = false) {
         var addedMods = new HashSet<string>() { Name };
         var mods = new List<ModMeta>();

@@ -7,9 +7,11 @@ using Rysy.Signals;
 
 namespace Rysy.Gui.Windows;
 
-public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
+public class EverestYamlWindow : Window, ISignalListener<MapSwapped>, ISignalListener<HistoryChanged> {
+    private DependencyChecker.Ctx? _dependencyCheckerCtx;
     private readonly EditorState _state;
-    private List<ModMeta>? _deps, _available;
+    private List<string>? _deps;
+    private List<ModMeta>? _available;
     private List<string> _required;
     private readonly StringField _versionInput;
     private string? _versionString;
@@ -23,12 +25,14 @@ public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
                 ValidationResult.InvalidVersion
         ).Translated("rysy.everestyaml.version");
 
-        OnSignal(new MapSwapped(state, null, state.Map));
+        RecalculateDependencies();
     }
         
 
     protected override void Render() {
-        if (_state.Map?.Mod?.EverestYaml.First() is not { } yaml) return;
+        if (_state.Map is not { Mod: { EverestYaml: [{ } yaml, ..] } mod } map) {
+            return;
+        }
 
         ImGui.SetNextItemWidth(FormWindow.ItemWidth);
         if (_versionInput.RenderGuiWithValidation(_versionString ??= yaml.VersionString, out var isValid) is string newVersion) {
@@ -54,18 +58,30 @@ public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
         ImGuiManager.TranslatedTableSetupColumn("rysy.everestyaml.available");
         ImGui.TableHeadersRow();
             
-        if (_deps is null || _available is null) return;
+        if (_deps is null || _available is null || _dependencyCheckerCtx is null)
+            return;
+
         var id = 0;
 
         for (int i = 0; i < Math.Max(_deps.Count, _available.Count); i++) {
             if (i < _deps.Count) {
-                var dependency = _deps[i];
-                    
+                var dependencyName = _deps[i];
+                var dependency = ModRegistry.GetModByName(dependencyName);
+
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(dependency.DisplayName);
                 
-                ImGuiManager.TextDisabled($"({dependency.Name} v{dependency.Version})");
+                var open = ImGui.TreeNodeEx(dependency?.DisplayName ?? dependencyName, ImGuiTreeNodeFlags.SpanFullWidth);
+                if (open) {
+                    _dependencyCheckerCtx.GetDrawableDetailsFor(dependencyName).DrawImGui();
+
+                    ImGui.TreePop();
+                }
+                if (dependency is not null) {
+                    ImGuiManager.TextDisabled($"({dependency.Name} v{dependency.Version})");
+                } else {
+                    ImGuiManager.TextColored(ThemeColors.FormInvalidColor, ImGuiManager.Interpolator.Utf8($"{dependencyName} ({"rysy.everestyaml.missing".Translate()})"));
+                }
                 
                 ImGui.TableNextColumn();
 
@@ -81,18 +97,26 @@ public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
             }
 
             if (i < _available.Count) {
-                    
                 var availableMod = _available[i];
 
-                if (availableMod.Name == _state.Map?.Mod?.Name) _available.RemoveAt(i);
+                if (availableMod.Name == mod.Name)
+                    _available.RemoveAt(i);
                     
                 ImGui.TableNextColumn();
                 if (ImGui.Button($"<<##{id++}").WithTranslatedTooltip("rysy.everestyaml.add.description")) {
                     AddDependency(i, yaml);
                 }
                 ImGui.TableNextColumn();
-                if (_required.Contains(availableMod.Name))
-                    ImGuiManager.TextColored(ThemeColors.FormInvalidColor, ImGuiManager.Interpolator.Utf8($"{availableMod.DisplayName} ({"rysy.everestyaml.required".Translate()})"));
+                if (_required.Contains(availableMod.Name)) {
+                    ImGuiManager.PushStyleColor(ImGuiCol.Text, ThemeColors.FormInvalidColor);
+                    var open = ImGui.TreeNodeEx(ImGuiManager.Interpolator.Utf8($"{availableMod.DisplayName} ({"rysy.everestyaml.required".Translate()})"), ImGuiTreeNodeFlags.SpanFullWidth);
+                    ImGui.PopStyleColor();
+                    if (open) {
+                        _dependencyCheckerCtx.GetDrawableDetailsFor(availableMod.Name).DrawImGui();
+
+                        ImGui.TreePop();
+                    }
+                }
                 else
                     ImGui.TextUnformatted(availableMod.DisplayName);
                 
@@ -115,33 +139,32 @@ public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
         });
 
         mod.TrySaveEverestYaml();
-            
-        _deps.Add(dep);
-        _deps.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
-            
-        _available.RemoveAt(index);
-        RecalculateMissingDeps();
+        RecalculateDependencies();
     }
 
     private void RemoveDependency(int index, EverestModuleMetadata yaml) {
         if (_state.Map?.Mod is not { } mod) return;
         if (_deps == null || _available == null || mod.Filesystem is not IWriteableModFilesystem) return;
             
-        ModMeta dep = _deps[index];
+        var dep = _deps[index];
             
-        var yamlDeps = yaml.Dependencies;
+        var yamlDeps = yaml.Dependencies.RemoveAll(x => x.Name == dep);
 
-        if (yamlDeps.Find(d => d.Name == dep.Name) is var i and not null) {
-            yamlDeps.Remove(i);
-        }
-            
         mod.TrySaveEverestYaml();
-            
-        _available.Add(dep);
-            
-        _deps.RemoveAt(index);
+        RecalculateDependencies();
+    }
+
+    private void RecalculateDependencies() {
+        if (_state.Map?.Mod is not { } mod)
+            return;
+
+        var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
+        _deps = mod.GetAllDependencyNames(includeOptionalDeps).ToListIfNotList();
+        _deps.Sort((a, b) => string.Compare(a, b, StringComparison.Ordinal));
+
         RecalculateMissingDeps();
-            
+
+        _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m.Name)).ToList();
         SortAvailableDependencies();
     }
 
@@ -156,29 +179,19 @@ public class EverestYamlWindow : Window, ISignalListener<MapSwapped> {
     }
 
     private void RecalculateMissingDeps() {
-        if (_state.Map?.Mod is not {} mod) return;
-        _required = DependencyChecker
-            .GetDependencies(_state.Map)
+        if (_state.Map?.Mod is not {} mod)
+            return;
+        _dependencyCheckerCtx = DependencyChecker.GetDependencies(_state.Map);
+        _required = _dependencyCheckerCtx
             .FindMissingDependencies(mod)
             .ToListIfNotList();
     }
 
     public void OnSignal(MapSwapped signal) {
-        if (signal.NewMap is not { } map) return;
-        if (map.Mod is not { } mod) return;
-                
-        var includeOptionalDeps = Settings.Instance.CountOptionalDependenciesAsDependencies;
-        _deps = mod.GetAllDependenciesRecursive(includeOptionalDeps).ToListIfNotList();
-        _deps?.Sort(
-            (a, b) =>
-                string.Compare(a.Name, b.Name, StringComparison.Ordinal)
-        );
-            
-        RecalculateMissingDeps();
-            
-        if (_deps is null) return;
-            
-        _available = ModRegistry.Mods.Values.Where(m => !_deps.Contains(m)).ToList();
-        SortAvailableDependencies();
+        RecalculateDependencies();
+    }
+
+    public void OnSignal(HistoryChanged signal) {
+        RecalculateDependencies();
     }
 }

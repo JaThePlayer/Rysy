@@ -47,6 +47,12 @@ rysy.analyzers.dependency.missing='{0}' missing from everest.yaml
 rysy.analyzers.dependency.missing.unknown=Unknown assets used, can't verify everest.yaml
 rysy.analyzers.dependency.not_in_mod=Map is unpackaged, dependency checks disabled
 
+rysy.dependencyChecker.usedBy=Used by:
+rysy.dependencyChecker.noSources="""
+Dependency is seemingly unused, as no sources (maps, entities, stylegrounds, etc.) are referencing it.
+However, it is possible the depencency is used in a way that Rysy can't detect, so make sure to check that before removing it from your everest.yaml.
+"""
+
 # Menubar
 rysy.menubar.tab.file=File
 
@@ -405,6 +411,7 @@ rysy.everestyaml.remove.description=Remove dependency from YAML
 rysy.everestyaml.available=Available
 rysy.everestyaml.dependencies=Dependencies
 rysy.everestyaml.required=required
+rysy.everestyaml.missing=Not loaded
 
 rysy.luaRepl=Lua REPL
 rysy.luaRepl.run=Run
