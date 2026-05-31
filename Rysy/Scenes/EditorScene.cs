@@ -367,7 +367,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         using var buffer = RenderTargetPool.Get(windowSize.X, windowSize.Y);
         var gd = Gfx.Batch.GraphicsDevice;
         gd.SetRenderTarget(buffer.Target);
-        gd.Clear(Color.Black);
+        gd.Clear(Map.Style.BackgroundColor);
         
         var renderStylegrounds = Settings.Instance?.StylegroundPreview ?? false;
         if ((Settings.Instance?.OnlyRenderStylesAtRealScale ?? false) && Camera.Scale != 6f) {
