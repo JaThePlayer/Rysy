@@ -745,7 +745,7 @@ public sealed class MetaMode {
     }
 
     public string Inventory {
-        get => Data.Attr("inventory");
+        get => Data.Attr("inventory", nameof(CelesteEnums.Inventories.Default));
         set => Data.SetNullableObj("inventory", value);
     }
 

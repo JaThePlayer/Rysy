@@ -37,7 +37,7 @@ public sealed class MetadataWindow : Window {
     public static FieldList GetModeFieldInfo(MapMetadata meta) => AddTooltips(new(new {
         OverrideASideMeta = Fields.Bool(meta.OverrideASideMeta),
         mode_HeartIsEnd = Fields.Bool(meta.Mode.HeartIsEnd ?? false),
-        mode_Inventory = Fields.EnumNamesDropdown<CelesteEnums.Inventories>(meta.Mode.Inventory).AllowNull(),
+        mode_Inventory = Fields.EnumNamesDropdown<CelesteEnums.Inventories>(meta.Mode.Inventory).AllowNull().ConvertEmptyToNull(),
         //["mode_PoemID"] = Fields.String(map.Mode.PoemID).AllowNull(),
         mode_SeekerSlowdown = Fields.Bool(meta.Mode.SeekerSlowdown ?? false),
         mode_StartLevel = Fields.String(meta.Mode.StartLevel).AllowNull(),
