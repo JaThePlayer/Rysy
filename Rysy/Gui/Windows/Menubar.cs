@@ -98,6 +98,15 @@ public class Menubar : SceneComponent {
         }
         ImGui.EndDisabled();
 
+        using (ScopedImGui.Disabled(map is null)) {
+            if (ImGui.MenuItem("saveMapToImage".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                if (FileDialogHelper.TrySave("png", out var filepath)) {
+                    PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveMapToImage.saveFailed"), 
+                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, map!));
+                }
+            }
+        }
+
         ImGui.BeginDisabled(map?.Mod is null);
         if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
             scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map!));

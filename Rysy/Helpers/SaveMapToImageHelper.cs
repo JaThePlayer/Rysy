@@ -1,0 +1,104 @@
+﻿using Hjg.Pngcs;
+using Rysy.Components;
+using Rysy.Graphics;
+
+namespace Rysy.Helpers;
+
+public static class SaveMapToImageHelper {
+    public static void RenderMapToImage(string filepath, IComponentRegistry componentRegistry, Map map) {
+        // FNA has a limit of 4098x4098 for textures, which is not sufficient even for some vanilla maps.
+        // We'll use Hjg.Pngcs to write the png one row at a time.
+        // We'll render the map into 2048x2048 chunks at a time, combine horizontal chunks until we have full rows,
+        // then move a chunk downwards.
+        // This is very slow, but works for large maps.
+        const int chunkSize = 2048;
+
+        using var watch = new ScopedStopwatch("Saving map to image...");
+
+        var mapBounds = map.GetBounds();
+        var width = mapBounds.Width;
+        var height = mapBounds.Height;
+        var gd = RysyState.GraphicsDevice;
+        
+        var info = new ImageInfo(width, height, 8, false);
+
+        using FileStream fs = File.Create(filepath);
+        var png = new PngWriter(fs, info);
+
+        using RenderTarget2D renderTarget = new(gd, chunkSize, chunkSize, false, SurfaceFormat.Color, DepthFormat.None);
+
+        Color[] chunkPixels = new Color[chunkSize * chunkSize];
+
+        // Reused for every horizontal band.
+        byte[][] bandRows = new byte[chunkSize][];
+
+        for (int i = 0; i < chunkSize; i++)
+            bandRows[i] = new byte[width * 3];
+
+        for (int bandY = 0; bandY < height; bandY += chunkSize)
+        {
+            int bandHeight = int.Min(chunkSize, height - bandY);
+
+            // Clear row cache.
+            for (int y = 0; y < bandHeight; y++)
+            {
+                bandRows[y].AsSpan().Clear();
+            }
+
+            // Render all horizontal chunks that belong to this band.
+            for (int chunkX = 0; chunkX < width; chunkX += chunkSize)
+            {
+                int chunkWidth = int.Min(chunkSize, width - chunkX);
+
+                RenderChunk(componentRegistry, map, renderTarget, mapBounds.Left + chunkX, mapBounds.Top + bandY, chunkWidth, bandHeight);
+
+                renderTarget.GetData(chunkPixels);
+
+                for (int y = 0; y < bandHeight; y++)
+                {
+                    var row = bandRows[y];
+
+                    int srcRowStart = y * chunkSize;
+
+                    for (int x = 0; x < chunkWidth; x++)
+                    {
+                        Color c = chunkPixels[srcRowStart + x];
+
+                        int dst = (chunkX + x) * 3;
+
+                        row[dst + 0] = c.R;
+                        row[dst + 1] = c.G;
+                        row[dst + 2] = c.B;
+                    }
+                }
+            }
+
+            // Write completed rows.
+            for (int y = 0; y < bandHeight; y++)
+                png.WriteRowByte(bandRows[y], -1);
+        }
+
+        png.End();
+    }
+
+    static void RenderChunk(IComponentRegistry componentRegistry, Map map, RenderTarget2D target, int x, int y, int width, int height) {
+        var gd = target.GraphicsDevice;
+        gd.SetRenderTarget(target);
+        gd.Clear(Color.Transparent);
+        
+        var spriteProviders = componentRegistry.GetAll<IRoomSpriteProvider>();
+
+        var camera = new Camera(new Viewport(0, 0, width, height));
+        camera.Move(new XnaVector2(x, y));
+        
+        foreach (var room in map.Rooms) {
+            if (!camera.IsRectVisible(room.Bounds))
+                continue;
+
+            Logger.Write("SaveMapToImage", LogLevel.Info, $"Rendering room {room.Name}");
+            room.Render(camera, Room.RenderConfig.Preview, Colorgrade.None, spriteProviders);
+        }
+        
+        gd.SetRenderTarget(null);
+    }
+}

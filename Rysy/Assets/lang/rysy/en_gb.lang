@@ -63,6 +63,8 @@ rysy.menubar.tab.map.metadata=Metadata
 rysy.menubar.tab.map.sizeoscope=Sizeoscope
 rysy.menubar.tab.map.sizeoscope_window=Sizeoscope - {0}
 rysy.menubar.tab.map.importTilesets=Import Tilesets
+rysy.menubar.tab.map.saveMapToImage=Save Map to Image
+rysy.menubar.tab.map.saveMapToImage.saveFailed=Failed to save image to file.
 
 rysy.menubar.tab.view=View
 

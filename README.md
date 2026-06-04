@@ -21,3 +21,13 @@ Run the program, and it'll ask you to select a Celeste install, then a map .bin 
 
 # Why?
 Because it's fun, and I also want to make some nice to work with rendering API for potential future projects.
+
+# Third party libraries
+
+The project uses the following third party libraries:
+- [FNA](https://github.com/FNA-XNA/FNA)
+- [Hexa.NET.ImGui](https://github.com/HexaEngine/Hexa.NET.ImGui)
+- [Hjg.Pngcs](https://github.com/leonbloy/pngcs)
+- [Markdig](https://github.com/xoofx/markdig)
+- [NativeFileDialogSharp](https://github.com/milleniumbug/NativeFileDialogSharp)
+- [YamlDotNet](https://github.com/aaubry/YamlDotNet)

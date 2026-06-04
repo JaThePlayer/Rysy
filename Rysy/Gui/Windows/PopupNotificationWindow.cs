@@ -69,4 +69,22 @@ public class PopupNotificationWindow : Window {
             return true;
         }
     }
+    
+    /// <summary>
+    /// Shows a popup if there's an exception while executing the given action.
+    /// </summary>
+    /// <returns>Whether an exception was thrown</returns>
+    public static bool ShowOnException<T>(LangKey titleId, Action action) where T : Exception {
+        try {
+            action();
+            return false;
+        } catch (T ex) {
+            var popup = new PopupNotificationWindow(titleId, exception: ex) {
+                MessageColor = ThemeColors.FormInvalidColor
+            };
+            Rysy.Logger.Error(ex, popup.MessageId.ToString());
+            RysyEngine.Scene.AddWindow(popup);
+            return true;
+        }
+    }
 }

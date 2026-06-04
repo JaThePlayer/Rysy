@@ -420,6 +420,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         var gd = RysyState.GraphicsDevice;
         RenderTarget2D canvas = new(gd, Width, Height, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
 
+        var oldTargets = gd.GetRenderTargets();
         gd.SetRenderTarget(canvas);
         gd.Clear(Color.Transparent);
 
@@ -432,7 +433,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
 
         Gfx.EndBatch();
-        gd.SetRenderTarget(null);
+        gd.SetRenderTargets(oldTargets);
 
         ClearRenderCache();
         _fullRenderCanvas = canvas;
