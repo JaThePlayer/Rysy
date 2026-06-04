@@ -13,12 +13,11 @@ public static class SaveMapToImageHelper {
         // This is very slow, but works for large maps.
         const int chunkSize = 2048;
 
-        using var watch = new ScopedStopwatch("Saving map to image...");
-
         var mapBounds = map.GetBounds();
         var width = mapBounds.Width;
         var height = mapBounds.Height;
         var gd = RysyState.GraphicsDevice;
+        using var watch = new ScopedStopwatch($"Saving map to image, {width}x{height} pixels");
         
         var info = new ImageInfo(width, height, 8, false);
 
@@ -50,25 +49,29 @@ public static class SaveMapToImageHelper {
             {
                 int chunkWidth = int.Min(chunkSize, width - chunkX);
 
-                RenderChunk(componentRegistry, map, renderTarget, mapBounds.Left + chunkX, mapBounds.Top + bandY, chunkWidth, bandHeight);
+                var anyRendered = RenderChunk(componentRegistry, map, renderTarget, mapBounds.Left + chunkX, mapBounds.Top + bandY, chunkWidth, bandHeight);
+                if (!anyRendered) {
+                    // No rooms were rendered, we can skip this chunk.
+                    continue;
+                }
 
                 renderTarget.GetData(chunkPixels);
 
                 for (int y = 0; y < bandHeight; y++)
                 {
-                    var row = bandRows[y];
-
-                    int srcRowStart = y * chunkSize;
-
-                    for (int x = 0; x < chunkWidth; x++)
-                    {
-                        Color c = chunkPixels[srcRowStart + x];
-
-                        int dst = (chunkX + x) * 3;
-
-                        row[dst + 0] = c.R;
-                        row[dst + 1] = c.G;
-                        row[dst + 2] = c.B;
+                    unsafe {
+                        fixed (byte* rowStart = &bandRows[y][chunkX * 3]) {
+                            byte* row = rowStart;
+                            int srcRowStart = y * chunkSize;
+                            fixed (Color* colorRow = &chunkPixels[srcRowStart]) {
+                                for (int x = 0; x < chunkWidth; x++) {
+                                    Color c = colorRow[x];
+                                    *row++ = c.R;
+                                    *row++ = c.G;
+                                    *row++ = c.B;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -81,7 +84,7 @@ public static class SaveMapToImageHelper {
         png.End();
     }
 
-    static void RenderChunk(IComponentRegistry componentRegistry, Map map, RenderTarget2D target, int x, int y, int width, int height) {
+    static bool RenderChunk(IComponentRegistry componentRegistry, Map map, RenderTarget2D target, int x, int y, int width, int height) {
         var gd = target.GraphicsDevice;
         gd.SetRenderTarget(target);
         gd.Clear(Color.Transparent);
@@ -90,15 +93,19 @@ public static class SaveMapToImageHelper {
 
         var camera = new Camera(new Viewport(0, 0, width, height));
         camera.Move(new XnaVector2(x, y));
+
+        bool anyRendered = false;
         
         foreach (var room in map.Rooms) {
             if (!camera.IsRectVisible(room.Bounds))
                 continue;
 
-            Logger.Write("SaveMapToImage", LogLevel.Info, $"Rendering room {room.Name}");
+            anyRendered = true;
             room.Render(camera, Room.RenderConfig.Preview, Colorgrade.None, spriteProviders);
         }
         
         gd.SetRenderTarget(null);
+
+        return anyRendered;
     }
 }
