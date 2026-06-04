@@ -132,15 +132,16 @@ public sealed class MetadataWindow : Window {
     protected override void Render() {
         base.Render();
 
-        if (ImGui.BeginTabBar("Tabbar")) {
-            foreach (var tab in _tabs) {
-                if (ImGui.BeginTabItem(tab.Name)) {
-                    tab.Window.RenderBody();
-                    ImGui.EndTabItem();
-                }
+        using var tabBar = ScopedImGui.TabBar("Tabbar"u8);
+        if (!tabBar.Opened)
+            return;
+        
+        foreach (var tab in _tabs) {
+            using var tabScope = ScopedImGui.TabItem(tab.Name);
+            
+            if (tabScope.Opened) {
+                tab.Window.RenderBody();
             }
-
-            ImGui.EndTabBar();
         }
     }
 }

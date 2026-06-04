@@ -37,7 +37,7 @@ public sealed class RoomList : LongStandingWindow {
         var id = 0;
         foreach (var room in rooms) {
             var name = room.Name.ToImguiEscaped();
-            using var _ = ScopedImGuiId.Push(id++);
+            using var _ = ScopedImGui.Id(id++);
 
             // Draw the room color marker:
             var drawList = ImGui.GetWindowDrawList();

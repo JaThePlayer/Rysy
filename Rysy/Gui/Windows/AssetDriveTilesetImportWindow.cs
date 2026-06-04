@@ -121,7 +121,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         var previewTask = _selected is not null ? Gfx.GetTextureFromWebAsync(_selected.ImageUri, CancellationToken.None) : null;
         var valid = _selected is not null && previewTask is { IsCompletedSuccessfully: true };
 
-        using var _ = new ScopedImGuiDisabled(!valid);
+        using var _ = ScopedImGui.Disabled(!valid);
         
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import") && valid)
         {
@@ -299,7 +299,7 @@ internal sealed partial class CreateTilesetWindow : Window {
 
     public override void RenderBottomBar()
     {
-        using var _ = new ScopedImGuiDisabled(_wasInvalid || _tileset.Texture.Texture is null);
+        using var _ = ScopedImGui.Disabled(_wasInvalid || _tileset.Texture.Texture is null);
 
         if (ImGuiManager.TranslatedButton("rysy.tilesetImport.import")) {
             if (_editorState?.Map?.Mod is not { Filesystem: IWriteableModFilesystem fs } mod) {

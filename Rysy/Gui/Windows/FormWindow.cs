@@ -151,7 +151,7 @@ public class FormWindow : Window {
             if (prop.Field.IsHidden(_formContext) || _dynamicallyHiddenFields.Contains(prop.Name))
                 continue;
 
-            ImGui.PushID(i++);
+            using var idScope = ScopedImGui.Id(i++);
             
             if (prop.Field is PaddingField pad) {
                 if (pad.Text is { } text) {
@@ -169,16 +169,12 @@ public class FormWindow : Window {
                     if (pad.DrawSeparator)
                         ImGui.Separator();
                 }
-                ImGui.PopID();
                 continue;
             }
-            
 
             if (!HandleProp(prop)) {
                 valid = false;
             }
-            
-            ImGui.PopID();
 
             if (hasColumns)
                 ImGui.NextColumn();
@@ -193,13 +189,11 @@ public class FormWindow : Window {
     public override bool HasBottomBar => true;
 
     public override void RenderBottomBar() {
-        ImGui.BeginDisabled(!_allFieldsValid);
+        using var _ = ScopedImGui.Disabled(!_allFieldsValid);
 
         if (ImGui.Button(SaveChangesButtonName)) {
             Save();
         }
-
-        ImGui.EndDisabled();
     }
 
     public void RenderBody() {
