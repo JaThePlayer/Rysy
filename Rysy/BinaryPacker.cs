@@ -412,6 +412,18 @@ public sealed class BinaryPacker {
             return Attributes.TryGetValue(key, out value);
         }
 
+        /// <summary>
+        /// Gets the first child element with the given name (non-recursively),
+        /// or creates a new element with that name, adding it to this element.
+        /// </summary>
+        public Element GetChildOrCreateByName(string name) {
+            if (Children.FirstOrDefault(c => c.Name == name) is { } existing) {
+                return existing;
+            }
+
+            return AddChild(new Element(name));
+        }
+
         public Element CreateWithComparer(IEqualityComparer<string> comparer) {
             var element = new Element(Name) {
                 Attributes = new(Attributes ?? [], comparer), 

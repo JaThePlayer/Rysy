@@ -117,9 +117,9 @@ public sealed class MetadataWindow : Window {
                 _ => throw new NotImplementedException()
             };
 
-            var el = child is null ? oldMetaPacked : oldMetaPacked.Children.First(c => c.Name == child);
+            var el = child is null ? oldMetaPacked : oldMetaPacked.GetChildOrCreateByName(child);
             if (innerchild is { })
-                el = el.Children.First(c => c.Name == innerchild);
+                el = el.GetChildOrCreateByName(innerchild);
 
             el.Attributes[fieldName] = val;
         }

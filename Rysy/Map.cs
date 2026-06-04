@@ -719,14 +719,8 @@ public sealed record MapMetadata {
 
     public MapMetadata Unpack(BinaryPacker.Element el) {
         _data = el.CreateWithComparer(StringComparer.OrdinalIgnoreCase);
-        if (_data.Children.FirstOrDefault(e => e.Name == "mode") is not { } mode) {
-            mode = _data.AddChild(new("mode"));
-        }
-        Mode.Data = mode;
-        if (_data.Children.FirstOrDefault(e => e.Name == "cassettemodifier") is not { } modifier) {
-            modifier = _data.AddChild(new("cassettemodifier"));
-        }
-        CassetteModifier.Data = modifier;
+        Mode.Data = _data.GetChildOrCreateByName("mode");
+        CassetteModifier.Data = _data.GetChildOrCreateByName("cassettemodifier");
 
         return this;
     }
@@ -741,11 +735,7 @@ public sealed class MetaMode {
         get;
         set {
             field = value;
-            if (field.Children.FirstOrDefault(e => e.Name == "audiostate") is not { } audioState) {
-                audioState = field.AddChild(new("audiostate"));
-            }
-
-            AudioState.Data = audioState;
+            AudioState.Data = field.GetChildOrCreateByName("audiostate");
         }
     } = new("mode");
 
