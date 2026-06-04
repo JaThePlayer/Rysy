@@ -30,7 +30,7 @@ public sealed class MetadataWindow : Window {
             IntroType = Fields.EnumNamesDropdown<CelesteEnums.IntroTypes>(meta.IntroType!).AllowNull(),
             Portraits = Fields.Path(meta.Portraits, "Graphics", "xml", fs).AllowNull().WithConverter(p => p.Path),
             PostcardSoundID = Fields.String(meta.PostcardSoundId!).AllowNull(),
-            Wipe = Fields.String(meta.Wipe!).AllowNull(), // todo: dropdown
+            Wipe = Fields.Dropdown(meta.Wipe!, CelesteEnums.Wipes).AllowEdits().AllowNull(),
         }));
     }
 

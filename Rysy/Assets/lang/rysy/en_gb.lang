@@ -530,3 +530,16 @@ rysy.fields.entityId.level=Room Name
 rysy.fields.entityId.level.tooltip=Name of the room the entity comes from.
 rysy.fields.entityId.id=Id
 rysy.fields.entityId.id.tooltip=The ID of the entity.
+
+rysy.wipes.Celeste.AngledWipe=Angled
+rysy.wipes.Celeste.CurtainWipe=Curtain
+rysy.wipes.Celeste.DreamWipe=Dream
+rysy.wipes.Celeste.DropWipe=Drop
+rysy.wipes.Celeste.FadeWipe=Fade
+rysy.wipes.Celeste.FallWipe=Fall
+rysy.wipes.Celeste.HeartWipe=Heart
+rysy.wipes.Celeste.KeyDoorWipe=KeyDoor
+rysy.wipes.Celeste.MountainWipe=Mountain
+rysy.wipes.Celeste.SpotlightWipe=Spotlight
+rysy.wipes.Celeste.StarfieldWipe=Starfield
+rysy.wipes.Celeste.WindWipe=Wind

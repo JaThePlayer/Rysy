@@ -422,6 +422,22 @@ public static class CelesteEnums {
         "SineInOut",
         "SineOut"
     ];
+
+    // TODO: in-game mod interop to get all modded wipe types.
+    public static IDictionary<string, string> Wipes { get; } = new TranslatedDictionary<string>("rysy.wipes") {
+        "Celeste.AngledWipe",
+        "Celeste.CurtainWipe",
+        "Celeste.DreamWipe",
+        "Celeste.DropWipe",
+        "Celeste.FadeWipe",
+        "Celeste.FallWipe",
+        "Celeste.HeartWipe",
+        "Celeste.KeyDoorWipe",
+        "Celeste.MountainWipe",
+        "Celeste.SpotlightWipe",
+        "Celeste.StarfieldWipe",
+        "Celeste.WindWipe",
+    };
 }
 
 public static class Depths {
