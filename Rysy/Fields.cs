@@ -219,12 +219,23 @@ public static partial class Fields {
         return new(def, allowedTypes);
     }
 
-    public static Field RoomName(string def) {
-        var field = new DropdownField<string>().AllowEdits().SetValues(ctx => {
+    public static DropdownField<string> RoomName(string def) {
+        DropdownField<string> field = new();
+        field.AllowEdits().SetValues(ctx => {
             if (ctx.EditorState is not { Map: { } map })
                 return new Dictionary<string, Searchable>();
 
             return map.Rooms.SafeToDictionary(x => (x.Name, new Searchable(x.Name)));
+        }).WithValidator((ctx, value) => {
+            if (ctx.EditorState is not { Map: { } map })
+                return ValidationResult.Ok;
+
+            var valueStr = value.ToStringInvariant();
+            if (field.NullAllowed && string.IsNullOrEmpty(valueStr) && (field.EmptyIsNull || value is null)) {
+                return ValidationResult.Ok;
+            }
+
+            return map.TryGetRoomByName(valueStr) is null ? ValidationResult.RoomNameDoesNotExist : ValidationResult.Ok;
         });
         field.SetDefault(def);
         

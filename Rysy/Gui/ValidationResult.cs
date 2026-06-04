@@ -36,6 +36,9 @@ public sealed class ValidationResult : ITooltip {
     
     public static ValidationResult DuplicateRoomName { get; } = new(ValidationMessage.DuplicateRoomName);
     
+    public static ValidationResult RoomNameDoesNotExist { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.roomNameDoesNotExist")));
+    
     public static ValidationResult TooLarge(object max) => new(ValidationMessage.TooLarge(max));
     public static ValidationResult TooSmall(object min) => new(ValidationMessage.TooSmall(min));
     

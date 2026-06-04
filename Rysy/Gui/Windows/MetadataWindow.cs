@@ -40,7 +40,7 @@ public sealed class MetadataWindow : Window {
         mode_Inventory = Fields.EnumNamesDropdown<CelesteEnums.Inventories>(meta.Mode.Inventory).AllowNull().ConvertEmptyToNull(),
         //["mode_PoemID"] = Fields.String(map.Mode.PoemID).AllowNull(),
         mode_SeekerSlowdown = Fields.Bool(meta.Mode.SeekerSlowdown ?? false),
-        mode_StartLevel = Fields.String(meta.Mode.StartLevel).AllowNull(),
+        mode_StartLevel = Fields.RoomName(meta.Mode.StartLevel).AllowNull().ConvertEmptyToNull(),
         mode_TheoInBubble = Fields.Bool(meta.Mode.TheoInBubble ?? false),
     }));
 
