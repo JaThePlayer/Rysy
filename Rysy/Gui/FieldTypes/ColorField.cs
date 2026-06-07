@@ -122,7 +122,7 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
 
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
         var format = ColorFormat.Rgb;
-        if (fieldInfoEntry.Bool("useAlpha")) {
+        if (fieldInfoEntry.Bool("useAlpha") || fieldInfoEntry.Bool("showAlpha")) {
             format = ColorFormat.Rgba;
         }
         
