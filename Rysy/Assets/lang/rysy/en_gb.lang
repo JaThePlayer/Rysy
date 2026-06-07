@@ -147,6 +147,8 @@ rysy.metadata.field.name.mode_StartLevel=Start Room
 rysy.metadata.field.description.mode_StartLevel=The room in which the level starts.
 rysy.metadata.field.name.mode_TheoInBubble=Theo In Boosters
 rysy.metadata.field.description.mode_TheoInBubble=Whether Theo can be carried into Boosters.
+rysy.metadata.field.name.mode_CoreModeIceTileOverlay=Core Mode Ice Tile Overlay
+rysy.metadata.field.description.mode_CoreModeIceTileOverlay=Whether an overlay should be rendered on top of tiles when in core mode, used in Core.
 
 rysy.metadata.field.name.cassettemodifier_TempoMult=Tempo Multiplier
 rysy.metadata.field.name.cassettemodifier_LeadBeats=Leading Beats

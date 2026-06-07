@@ -778,6 +778,11 @@ public sealed class MetaMode {
         get => Data.NullableBool("theoInBubble");
         set => Data.SetNullableStruct("theoInBubble", value);
     }
+    
+    public bool CoreModeIceTileOverlay {
+        get => Data.Bool("CoreModeIceTileOverlay");
+        set => Data.Attributes["CoreModeIceTileOverlay"] = value;
+    }
 
     public AudioState AudioState { get; set; } = new();
 }

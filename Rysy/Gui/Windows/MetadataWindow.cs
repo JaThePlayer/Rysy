@@ -42,6 +42,7 @@ public sealed class MetadataWindow : Window {
         mode_SeekerSlowdown = Fields.Bool(meta.Mode.SeekerSlowdown ?? false),
         mode_StartLevel = Fields.RoomName(meta.Mode.StartLevel).AllowNull().ConvertEmptyToNull(),
         mode_TheoInBubble = Fields.Bool(meta.Mode.TheoInBubble ?? false),
+        mode_CoreModeIceTileOverlay = Fields.Bool(meta.Mode.CoreModeIceTileOverlay),
     }));
 
     public static FieldList GetCassetteFieldInfo(MapMetadata meta) => AddTooltips(new(new {
