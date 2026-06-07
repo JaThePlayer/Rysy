@@ -5,7 +5,7 @@ using Rysy.Graphics;
 namespace Rysy.Helpers;
 
 public static class SaveMapToImageHelper {
-    public static void RenderMapToImage(string filepath, IComponentRegistry componentRegistry, Map map) {
+    public static void RenderMapToImage(string filepath, IComponentRegistry componentRegistry, IReadOnlyList<Room> rooms) {
         // FNA has a limit of 4098x4098 for textures, which is not sufficient even for some vanilla maps.
         // We'll use Hjg.Pngcs to write the png one row at a time.
         // We'll render the map into 2048x2048 chunks at a time, combine horizontal chunks until we have full rows,
@@ -13,7 +13,7 @@ public static class SaveMapToImageHelper {
         // This is very slow, but works for large maps.
         const int chunkSize = 2048;
 
-        var mapBounds = map.GetBounds();
+        var mapBounds = RectangleExt.Merge(rooms.Select(r => r.Bounds));
         var width = mapBounds.Width;
         var height = mapBounds.Height;
         var gd = RysyState.GraphicsDevice;
@@ -49,7 +49,7 @@ public static class SaveMapToImageHelper {
             {
                 int chunkWidth = int.Min(chunkSize, width - chunkX);
 
-                var anyRendered = RenderChunk(componentRegistry, map, renderTarget, mapBounds.Left + chunkX, mapBounds.Top + bandY, chunkWidth, bandHeight);
+                var anyRendered = RenderChunk(componentRegistry, rooms, renderTarget, mapBounds.Left + chunkX, mapBounds.Top + bandY, chunkWidth, bandHeight);
                 if (!anyRendered) {
                     // No rooms were rendered, we can skip this chunk.
                     continue;
@@ -84,7 +84,7 @@ public static class SaveMapToImageHelper {
         png.End();
     }
 
-    static bool RenderChunk(IComponentRegistry componentRegistry, Map map, RenderTarget2D target, int x, int y, int width, int height) {
+    static bool RenderChunk(IComponentRegistry componentRegistry, IReadOnlyList<Room> rooms, RenderTarget2D target, int x, int y, int width, int height) {
         var gd = target.GraphicsDevice;
         gd.SetRenderTarget(target);
         gd.Clear(Color.Transparent);
@@ -96,7 +96,7 @@ public static class SaveMapToImageHelper {
 
         bool anyRendered = false;
         
-        foreach (var room in map.Rooms) {
+        foreach (var room in rooms) {
             if (!camera.IsRectVisible(room.Bounds))
                 continue;
 

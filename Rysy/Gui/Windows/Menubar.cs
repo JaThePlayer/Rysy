@@ -86,40 +86,45 @@ public class Menubar : SceneComponent {
         var history = scene.Get<IHistoryHandler>();
         var map = editorState?.Map;
 
-        ImGui.BeginDisabled(history is null || map is null);
-        if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new MetadataWindow(history!, map!));
-        }
-        ImGui.EndDisabled();
+        using (ScopedImGui.Disabled(history is null || editorState is null || map is null)) {
+            if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                scene.AddWindowIfNeeded(() => new MetadataWindow(history!, map!));
+            }
+            
+            if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                scene.AddWindowIfNeeded(() => new StylegroundWindow(editorState!, history!));
+            }
 
-        ImGui.BeginDisabled(editorState is null || map is null);
-        if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new StylegroundWindow(editorState!, history!));
-        }
-        ImGui.EndDisabled();
+            using (ScopedImGui.Disabled(map?.Mod is null)) {
+                if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                    scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map!));
+                }
+            
+                if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                    scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
+                }
+        
+                if (ImGui.MenuItem("everest.yaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
+                    scene.AddWindowIfNeeded(() => new EverestYamlWindow(editorState!));
+                }
+            }
+                        
+            using (ScopedImGui.Disabled(editorState!.CurrentRoom is null)) {
+                if (ImGui.MenuItem("saveRoomToImage".TranslateOrHumanize("rysy.menubar.tab.map"))) {
+                    if (FileDialogHelper.TrySave("png", out var filepath)) {
+                        PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveRoomToImage.saveFailed"), 
+                            () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, [ editorState.CurrentRoom! ]));
+                    }
+                }
+            }
 
-        using (ScopedImGui.Disabled(map is null)) {
             if (ImGui.MenuItem("saveMapToImage".TranslateOrHumanize("rysy.menubar.tab.map"))) {
                 if (FileDialogHelper.TrySave("png", out var filepath)) {
                     PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveMapToImage.saveFailed"), 
-                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, map!));
+                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, map!.Rooms));
                 }
             }
         }
-
-        ImGui.BeginDisabled(map?.Mod is null);
-        if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map!));
-        }
-            
-        if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
-        }
-        
-        if (ImGui.MenuItem("everest.yaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
-            scene.AddWindowIfNeeded(() => new EverestYamlWindow(editorState!));
-        }
-        ImGui.EndDisabled();
     }
 
     private static PathField? ColorgradePreviewField;
