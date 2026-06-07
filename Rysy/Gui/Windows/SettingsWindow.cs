@@ -180,7 +180,7 @@ public sealed class SettingsWindow : Window {
         ImGui.EndTabItem();
     }
 
-    private PathField? _fontDropdown;
+    private Field? _fontDropdown;
 
     private void ThemeBar() {
         if (Scene.Get<Themes>() is not { } themes)
@@ -207,7 +207,7 @@ public sealed class SettingsWindow : Window {
 
         ImGui.Separator();
         
-        var font = Settings.Instance.Font;
+        var font = Settings.Instance.Fonts;
         if (_fontDropdown is null) {
             const string fontDir = "Rysy/fonts/";
             var fs = new LayeredFilesystem(ModRegistry.Filesystem);
@@ -215,14 +215,16 @@ public sealed class SettingsWindow : Window {
                 fs.AddFilesystem(new PrefixedModFilesystem(fontDir, systemFonts), "System");
             
             var fontPathToName = RysyPlatform.Current.GetFontFilenameToDisplayName();
-            _fontDropdown = Fields.Path(font, "Rysy/fonts/", "ttf", fs, filter: x => 
+            var inner = Fields.Path(font, "Rysy/fonts/", "ttf", fs, filter: x => 
                 fs.FileExists(x.Path) && x.Captured != "fa-solid-900");
-            _fontDropdown.DisplayNameGetter = (path, s) 
+            inner.DisplayNameGetter = (path, s) 
                 => path.Path.TranslateOrNull("rysy.fonts.name") ?? fontPathToName.GetValueOrDefault(path.Path)?.TrimPostfix("(TrueType)").Trim();
+
+            _fontDropdown = Fields.List("", inner).Translated("rysy.settings.fonts.fonts");
         }
         
-        if (_fontDropdown.RenderGui("Font", font) is { } newFont) {
-            Settings.Instance.Font = newFont.ToStringInvariant();
+        if (_fontDropdown.RenderGui(font) is { } newFont) {
+            Settings.Instance.Fonts = newFont.ToStringInvariant();
             Settings.Instance.Save();
         }
 

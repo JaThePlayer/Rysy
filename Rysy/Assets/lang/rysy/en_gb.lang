@@ -208,6 +208,9 @@ rysy.settings.debug.logMissingFieldTypes.tooltip=Logs whenever a lonn plugin use
 rysy.settings.debug.allocateConsole=Allocate Console
 rysy.settings.debug.allocateConsole.tooltip=Whether a console window displaying the log should be allocated to the app.\nOnly works on Windows.
 
+rysy.settings.fonts.fonts=Fonts
+rysy.settings.fonts.fonts.tooltip=Comma-separated list of fonts to use.\nFonts appearing earlier in the list will be prioritized.
+
 rysy.fonts.name.RobotoMono.ttf=* Roboto Mono (Default)
 rysy.fonts.name.RobotoMonob.ttf=* Roboto Mono (Bold) (Default)
 rysy.fonts.name.RobotoMonoi.ttf=Roboto Mono (Italic)

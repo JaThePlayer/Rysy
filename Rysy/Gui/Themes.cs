@@ -77,60 +77,53 @@ public sealed class Themes : ISignalEmitter, ISignalListener<SettingsChanged<str
         var io = ImGui.GetIO();
         io.Fonts.Clear();
 
-        ImVector<uint> ranges = new();
-
-        var builder = ImGui.ImFontGlyphRangesBuilder();
-        builder.AddRanges(io.Fonts.GetGlyphRangesDefault());
-
-        {
-            var latinExtendedRanges = (ushort*)ImGui.MemAlloc(3 * sizeof(ushort));
-            latinExtendedRanges[0] = 0x0100;
-            latinExtendedRanges[1] = 0x024F;
-            latinExtendedRanges[2] = 0x0000;
-            builder.AddRanges((uint*)latinExtendedRanges);
-            builder.BuildRanges(&ranges);
-            ImGui.MemFree(latinExtendedRanges);
-        }
-
-        var font = Settings.Instance.Font ?? "RobotoMono"; // "C:/Windows/Fonts/consola";
-        var defaultFontPath = $"{font}.ttf";
-        var boldFontPath = $"{font}b.ttf";
-        var italicFontPath = $"{font}i.ttf";
-        var boldItalicFontPath = $"{font}z.ttf";
+        string[] fonts = Settings.Instance.Fonts.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         if (Settings.Instance.UseBoldFontByDefault) {
-            BoldFont = AddFont(boldFontPath, fontSize, &ranges);
-            DefaultFont = AddFont(defaultFontPath, fontSize, &ranges);
+            BoldFont = AddFont(true, false, fontSize);
+            DefaultFont = AddFont(false, false, fontSize);
         } else {
-            DefaultFont = AddFont(defaultFontPath, fontSize, &ranges);
-            BoldFont = AddFont(boldFontPath, fontSize, &ranges);
+            DefaultFont = AddFont(false, false, fontSize);
+            BoldFont = AddFont(true, false, fontSize);
         }
 
-        ItalicFont = AddFont(italicFontPath, fontSize, &ranges);
-        ItalicBoldFont = AddFont(boldItalicFontPath, fontSize, &ranges);
+        ItalicFont = AddFont(false, true, fontSize);
+        ItalicBoldFont = AddFont(true, true, fontSize);
 
-        HeaderFont = AddFont(boldFontPath, fontSize * 2f, &ranges);
-        Header2Font = AddFont(boldFontPath, fontSize * 1.5f, &ranges);
+        HeaderFont = AddFont(true, false, fontSize * 2f);
+        Header2Font = AddFont(true, false, fontSize * 1.5f);
 
         ImGui.GetStyle().FontSizeBase = fontSize;
+        return;
 
-        ImFontPtr AddFont(string name, float size, ImVector<uint>* ranges) {
+        ImFontPtr AddFont(bool bold, bool italic, float size) {
             ImFontConfigPtr cfg = ImGui.ImFontConfig();
-            //cfg.RasterizerDensity = 1f;
-            //cfg.FontDataOwnedByAtlas = true;
-            //cfg.OversampleH = 2;
-            //cfg.OversampleV = 2;
-            cfg.GlyphMaxAdvanceX = float.MaxValue;
             cfg.RasterizerMultiply = 1.0f;
             cfg.EllipsisChar = unchecked((ushort) -1);
-            //cfg.GlyphRanges = ranges->Data;
 
-            ImFontPtr fontPtr = AddFontFromVirtPath(name, size, cfg);
+            ImFontPtr fontPtr = null;
 
-            if (fontPtr.Handle == null && name != defaultFontPath) {
-                return AddFont(defaultFontPath, size, ranges);
+            foreach (var font in fonts) {
+                var family = FontFamily.CreateFromFilename(font);
+                var actualPath = family.FindFontVariantPath(bold, italic);
+                
+                var newFont = AddFontFromVirtPath(actualPath, size, cfg);
+                
+                if (newFont.Handle == null) {
+                    newFont = AddFontFromVirtPath($"{font}.ttf", size, cfg);
+                }
+
+                if (newFont.Handle != null) {
+                    cfg.MergeMode = true;
+                    fontPtr = newFont;
+                } else {
+                    Logger.Write("Themes", LogLevel.Warning, $"Font {font} not found!");   
+                }
             }
-
+            
+            if (fontPtr.Handle == null) {
+                fontPtr = io.Fonts.AddFontDefault();
+            }
 
             if (fontPtr.Handle != null) {
                 var newCfgData = *cfg.Handle;
@@ -187,7 +180,7 @@ public sealed class Themes : ISignalEmitter, ISignalListener<SettingsChanged<str
                 case nameof(Settings.Theme):
                     LoadThemeFromFile(signal.Value);
                     break;
-                case nameof(Settings.Font):
+                case nameof(Settings.Fonts):
                     SetFontSize(signal.Settings.FontSize);
                     break;
             }

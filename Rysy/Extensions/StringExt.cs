@@ -335,8 +335,8 @@ public static partial class StringExt {
         return s;
     }
     
-    public static string TrimPostfix(this string s, ReadOnlySpan<char> prefix) {
-        if (s.AsSpan().EndsWith(prefix, StringComparison.Ordinal)) {
+    public static string TrimPostfix(this string s, ReadOnlySpan<char> prefix, StringComparison comparison = StringComparison.Ordinal) {
+        if (s.AsSpan().EndsWith(prefix, comparison)) {
             return s[..^prefix.Length];
         }
 

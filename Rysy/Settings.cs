@@ -150,10 +150,13 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
         set => Change(nameof(Theme), ref field, value);
     } = "dark";
 
-    public string Font {
+    /// <summary>
+    /// Comma-separated list of fonts to use, earlier fonts are prioritized.
+    /// </summary>
+    public string Fonts {
         get;
-        set => Change(nameof(Font), ref field, value);
-    } = "RobotoMono";
+        set => Change(nameof(Fonts), ref field, value);
+    } = "RobotoMono,NotoSans";
 
     public bool UseBoldFontByDefault {
         get;
