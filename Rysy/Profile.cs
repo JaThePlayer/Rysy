@@ -9,6 +9,11 @@ public class Profile : IHasJsonCtx<Profile> {
     public static Profile Instance { get; internal set; }
 
     /// <summary>
+    /// Last used version of rysy, used for migrating to new versions.
+    /// </summary>
+    public Version LastVersion { get; set; } = RysyEngine.Version;
+
+    /// <summary>
     /// The celeste directory saved to the profile.
     /// For most purposes, <see cref="CelesteDirectory"/> should be used instead, as it takes commandline arguments into account.
     /// </summary>

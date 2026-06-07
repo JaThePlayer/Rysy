@@ -131,6 +131,11 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
     }
     
     #region Serialized
+    /// <summary>
+    /// Last used version of rysy, used for migrating to new versions.
+    /// </summary>
+    public Version LastVersion { get; set; } = RysyEngine.Version;
+    
     public string Profile { get; set; } = "Default";
 
     public bool LogMissingEntities { get; set; } = false;
