@@ -233,7 +233,7 @@ public static class CelesteEnums {
         Random
     }
 
-    public static Dictionary<int, string> SurfaceSounds { get; } = new() {
+    public static IDictionary<int, string> SurfaceSounds { get; } = new Dictionary<int, string> {
         [-1] = "Default",
         [0] = "Null",
         [1] = "Asphalt",
@@ -284,7 +284,7 @@ public static class CelesteEnums {
         Floor
     }
 
-    public static readonly Dictionary<string, string> EnvironmentalSounds = new() {
+    public static IDictionary<string, string> EnvironmentalSounds { get; } = new Dictionary<string, string>() {
         ["event:/env/local/02_old_site/phone_lamp"] = "env_loc_02_lamp",
         ["event:/env/local/03_resort/broken_window_large"] = "env_loc_03_brokenwindow_large_loop",
         ["event:/env/local/03_resort/broken_window_small"] = "env_loc_03_brokenwindow_small_loop",
@@ -333,7 +333,7 @@ public static class CelesteEnums {
         Wild
     }
 
-    public static readonly List<string> EventTriggerEvents = new() {
+    public static IList<string> EventTriggerEvents { get; } = [
         "end_city",
         "end_oldsite_dream",
         "end_oldsite_awake",
@@ -356,8 +356,8 @@ public static class CelesteEnums {
         "ch9_end_golden",
         "ch9_final_room",
         "ch9_ding_ding_ding",
-        "ch9_golden_snapshot",
-    };
+        "ch9_golden_snapshot"
+    ];
 
     public enum CoreModes {
         None, Cold, Hot,
@@ -398,7 +398,7 @@ public static class CelesteEnums {
         Left, Right
     }
 
-    public static readonly string[] Easings = [
+    public static IList<string> Easings { get; } = [
         "BackIn",
         "BackInOut",
         "BackOut",
@@ -438,6 +438,22 @@ public static class CelesteEnums {
         "Celeste.StarfieldWipe",
         "Celeste.WindWipe",
     };
+
+    internal static void SetFromLua(string enumName, string key, object value) {
+        switch (enumName) {
+            case "tileset_sound_ids":
+                if (int.TryParse(value.ToStringInvariant(), CultureInfo.InvariantCulture, out var soundId))
+                    SurfaceSounds[soundId] = key;
+                break;
+            case "event_trigger_events":
+                EventTriggerEvents.Add(value.ToStringInvariant());
+                break;
+            case "wipe_names":
+                // Wipes in rysy are stored in TypeName->DisplayName, inversed compared to lonn.
+                Wipes[value.ToStringInvariant()] = key;
+                break;
+        }
+    }
 }
 
 public static class Depths {

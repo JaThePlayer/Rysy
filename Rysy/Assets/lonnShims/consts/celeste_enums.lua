@@ -1,5 +1,19 @@
 local celesteEnums = {}
 
+---Creates a wrapper which notifies the C# side about changes to a given table.
+local function createMutableWrapper(enumName, data)
+   local mt = {
+        __newindex = function (self, key, value)
+            _RYSY_log("INFO", string.format("Adding enum value [%s] = `%s`, to enum `%s`", key, value, enumName))
+
+            rawset(self, key, value)
+    		_RYSY_INTERNAL_addCelesteEnumValue(enumName, key, value)
+    	end,
+   }
+
+    return setmetatable(data, mt)
+end
+
 celesteEnums.cassette_songs = require("consts.cassette_songs")
 celesteEnums.environmental_sounds = require("consts.environmental_sounds")
 celesteEnums.ambient_sounds = require("consts.ambient_sounds")
@@ -7,7 +21,7 @@ celesteEnums.songs = require("consts.songs")
 
 celesteEnums.depths = require("consts.object_depths")
 
-celesteEnums.tileset_sound_ids = {
+celesteEnums.tileset_sound_ids = createMutableWrapper("tileset_sound_ids", {
     ["Default"] = -1,
     ["Null"] = 0,
     ["Asphalt"] = 1,
@@ -44,7 +58,7 @@ celesteEnums.tileset_sound_ids = {
     ["Internet Café"] = 42,
     ["Cloud"] = 43,
     ["Moon"] = 44
-}
+})
 
 celesteEnums.wind_patterns = {
     "None",
@@ -278,7 +292,7 @@ celesteEnums.trigger_position_modes = {
     "NoEffect"
 }
 
-celesteEnums.event_trigger_events = {
+celesteEnums.event_trigger_events = createMutableWrapper("event_trigger_events", {
     "end_city",
     "end_oldsite_dream",
     "end_oldsite_awake",
@@ -302,7 +316,7 @@ celesteEnums.event_trigger_events = {
     "ch9_final_room",
     "ch9_ding_ding_ding",
     "ch9_golden_snapshot"
-}
+})
 
 celesteEnums.mini_textbox_trigger_modes = {
     "OnPlayerEnter",
@@ -409,7 +423,7 @@ celesteEnums.core_modes = {
 }
 
 -- "Display Name" => "Expected Value"
-celesteEnums.wipe_names = {
+celesteEnums.wipe_names = createMutableWrapper("wipe_names", {
     Angled = "Celeste.AngledWipe", --Prologue
     Curtain = "Celeste.CurtainWipe", --Forsaken City
     Dream = "Celeste.DreamWipe", --Old Site
@@ -422,6 +436,6 @@ celesteEnums.wipe_names = {
     Spotlight = "Celeste.SpotlightWipe", --Cutscenes
     Starfield = "Celeste.StarfieldWipe", --Farewell
     Wind = "Celeste.WindWipe" --Golden Ridge
-}
+})
 
 return celesteEnums

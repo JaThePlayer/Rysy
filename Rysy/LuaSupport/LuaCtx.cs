@@ -698,6 +698,17 @@ public class LuaCtx {
             return 1;
         });
         
+        lua.Register("_RYSY_INTERNAL_addCelesteEnumValue", static s => {
+            var lua = Lua.FromIntPtr(s);
+            var enumName = lua.FastToString(1);
+            var key = lua.FastToString(2);
+            var value = lua.ToCSharp(3);
+
+            CelesteEnums.SetFromLua(enumName, key, value);
+
+            return 0;
+        });
+        
         lua.PCallStringThrowIfError("""
             local orig_table_shallowcopy = table.shallowcopy
             table.shallowcopy = function(tbl, ...)
