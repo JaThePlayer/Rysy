@@ -128,7 +128,13 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.MouseWrapping = wrap;
             Settings.Instance.Save();
         }
-        
+
+        var positionInProperties = Settings.Instance.PositionInProperties;
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.positionInProperties", ref positionInProperties)) {
+            Settings.Instance.PositionInProperties = positionInProperties;
+            Settings.Instance.Save();
+        }
+
         var panSpeed = Settings.Instance.TouchpadPanSpeed;
         if (ImGuiManager.TranslatedInputFloat("rysy.settings.general.touchpadPanSpeed", ref panSpeed, step: 25f, "%g%%")) {
             Settings.Instance.TouchpadPanSpeed = panSpeed.SnapBetween(25f, 300f);

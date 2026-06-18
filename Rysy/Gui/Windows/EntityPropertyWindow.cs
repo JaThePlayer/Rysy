@@ -31,6 +31,14 @@ public class EntityPropertyWindow : FormWindow {
         var minRecSize = main.RecommendedMinimumSize;
         var maxRecSize = main.RecommendedMaximumSize;
         
+        if (Settings.Instance.PositionInProperties) {
+            fields["x"] = Fields.Int(main.X);
+            order.Add("x");
+
+            fields["y"] = Fields.Int(main.Y);
+            order.Add("y");
+        }
+        
         if (main.Width != 0) {
             fields["width"] = Fields.Int(main.Width)
                 .WithRecommendedStep(8)
