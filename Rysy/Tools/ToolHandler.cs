@@ -11,7 +11,8 @@ using System.Diagnostics;
 
 namespace Rysy.Tools;
 
-public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<HistoryActionUndone>, IItemProvider<ICommandPaletteCommand> {
+public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<HistoryActionUndone>, IItemProvider<ICommandPaletteCommand>,
+                           ISignalListener<PrefabsChanged> {
     public const float DefaultMaterialListWidth = 360f;
 
     public IHistoryHandler History { get; }
@@ -103,6 +104,10 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         CancelInteraction();
     }
 
+    public void OnSignal(PrefabsChanged signal) {
+        _commandPaletteCache.Token.InvalidateThenReset();
+    }
+
     ~ToolHandler() {
         UnloadAllTools();
     }
@@ -132,7 +137,7 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
             SetToolByName(prevName);
         }
         
-        _commandPaletteCache.Token.Invalidate();
+        _commandPaletteCache.Token.InvalidateThenReset();
     }
 
     private void UnloadAllTools() {

@@ -28,8 +28,18 @@ public static class IItemProviderExtensions {
         : ISignalListener<ComponentAdded>, ISignalListener<ComponentRemoved>, IHasComponentRegistry
         where T : class {
         public Cache<IReadOnlyList<T>> Cache { get; }
-        
-        public IComponentRegistry? Registry { get; set; }
+
+        public IComponentRegistry? Registry {
+            get;
+            set {
+                field = value;
+                if (value is not null) {
+                    foreach (var provider in value.EnumerateAllLocked<IItemProvider<T>>()) {
+                        provider.ElementCache.Token.OnInvalidate += Cache.Token.InvalidateThenReset;
+                    }
+                }
+            }
+        }
 
         public CreateAllFromItemProvidersCacheListener() {
             Cache = new Cache<IReadOnlyList<T>>(new CacheToken(), Generator);
