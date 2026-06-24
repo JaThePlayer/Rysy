@@ -131,4 +131,22 @@ public abstract class RysyPlatform {
             Logger.Error("RysyPlatform", ex, "Failed to open log directory");
         }
     }
+    
+    public virtual bool CanOpenCeleste => true;
+    
+    public virtual void OpenCeleste() {
+        var celestePath = Path.Combine(Profile.Instance.CelesteDirectory, "Celeste.exe").CorrectSlashes();
+
+        if (!File.Exists(celestePath)) {
+            return;
+        }
+
+        try {
+            Process.Start(new ProcessStartInfo(celestePath) {
+                UseShellExecute = true,
+            });
+        } catch (Exception ex) {
+            Logger.Error("RysyPlatform", ex, "Failed to open Celeste");
+        }
+    }
 }

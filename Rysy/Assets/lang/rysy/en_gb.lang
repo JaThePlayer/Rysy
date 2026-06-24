@@ -65,6 +65,8 @@ rysy.menubar.edit.undo=Undo
 rysy.menubar.edit.undo.tooltip=Undoes the last operation.
 rysy.menubar.edit.redo=Redo
 rysy.menubar.edit.redo.tooltip=Redoes the last undone operation.
+rysy.menubar.edit.openCeleste=Open Celeste
+rysy.menubar.edit.openCeleste.tooltip=Opens Celeste in a separate window.
 
 rysy.menubar.file.newMap=New Map
 rysy.menubar.file.newMap.tooltip=Creates a new map.

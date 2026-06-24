@@ -229,6 +229,14 @@ public class Menubar : SceneComponent {
             hotkeyId: "commandPalette",
             addToCommandPalette: false
         ));
+
+        if (RysyPlatform.Current.CanOpenCeleste) {
+            Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.openCeleste",
+                () => RysyPlatform.Current.OpenCeleste(),
+                disabled: () => !RysyPlatform.Current.CanOpenCeleste,
+                addToCommandPalette: true
+            ));
+        }
         
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.undo", 
             () => Scene.Get<IHistoryHandler>()?.Undo(),
