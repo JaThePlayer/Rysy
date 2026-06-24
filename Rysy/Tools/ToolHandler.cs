@@ -5,13 +5,12 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Layers;
 using Rysy.Signals;
 using System.Diagnostics;
 
 namespace Rysy.Tools;
 
-public class ToolHandler : ISignalListener<ThemeChanged> {
+public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<HistoryActionUndone>, IItemProvider<ICommandPaletteCommand> {
     public const float DefaultMaterialListWidth = 360f;
 
     public IHistoryHandler History { get; }
@@ -40,6 +39,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
             if (field != value) {
                 CancelInteraction();
                 field = value;
+                _commandPaletteCache.Token.Invalidate();
             }
         }
     }
@@ -63,6 +63,7 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     private static readonly string[] HardcodedOrder = [ "brush", "rectangle", "placement", "selection", "script" ];
 
     public ToolHandler(EditorState editorState, IHistoryHandler history, Input input, IComponentRegistry componentRegistry, ToolRegistry? registry = null) {
+        _commandPaletteCache = new(new CacheToken(), CommandGenerator);
         EditorState = editorState;
         History = history;
         Input = input;
@@ -73,9 +74,9 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         CreateTools();
         Registry.Tools.OnChanged += RegistryToolListChanged;
         EditorState.OnCurrentRoomChanged += CancelInteraction;
-        History.OnUndo += CancelInteraction;
 
         QuickActionRegistry = new QuickActionRegistry(this);
+        
     }
 
     private void OnThemeChanged(Theme theme) {
@@ -89,13 +90,16 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         (ComponentRegistry as IDisposable)?.Dispose();
         Registry.Tools.OnChanged -= RegistryToolListChanged;
         EditorState.OnCurrentRoomChanged -= CancelInteraction;
-        History.OnUndo -= CancelInteraction;
         _onUnload?.Invoke();
         _onUnload = null;
     }
 
     void ISignalListener<ThemeChanged>.OnSignal(ThemeChanged signal) {
         OnThemeChanged(signal.NewTheme);
+    }
+
+    void ISignalListener<HistoryActionUndone>.OnSignal(HistoryActionUndone signal) {
+        CancelInteraction();
     }
 
     ~ToolHandler() {
@@ -126,6 +130,8 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
         if (CurrentTool is { Name: {} prevName }) {
             SetToolByName(prevName);
         }
+        
+        _commandPaletteCache.Token.Invalidate();
     }
 
     private void UnloadAllTools() {
@@ -372,4 +378,32 @@ public class ToolHandler : ISignalListener<ThemeChanged> {
     }
 
     public void PushRecentMaterial(object material) => QuickActionRegistry.PushRecentMaterial(material);
+
+    private readonly Cache<IReadOnlyList<ICommandPaletteCommand>> _commandPaletteCache;
+
+    Cache<IReadOnlyList<ICommandPaletteCommand>> IItemProvider<ICommandPaletteCommand>.ElementCache => _commandPaletteCache;
+
+    private IReadOnlyList<ICommandPaletteCommand> CommandGenerator() {
+        List<ICommandPaletteCommand> commands = [];
+        
+        commands.AddRange(Tools.Select(t => new ChangeToolCommand(t)));
+        
+        return commands;
+    }
+
+    private sealed class ChangeToolCommand(Tool tool) : ICommandPaletteCommand {
+        private static readonly IReadOnlyList<string> Tags = [ "tool" ];
+        
+        public Searchable Searchable => new Searchable("rysy.commands.changeTool".TranslateFormatted(tool.Name), [], Tags);
+        
+        public XnaWidgetDef? CreatePreview() {
+            return null;
+        }
+
+        public ITooltip Tooltip => Rysy.Gui.Tooltip.CreateTranslatedOrNull("rysy.commands.changeTool.tooltip");
+        
+        public void Run() {
+            tool.ToolHandler.SetToolByName(tool.Name);
+        }
+    }
 }

@@ -375,12 +375,14 @@ public static class ImGuiManager {
 
     private static readonly Tooltip SearchInputTooltip = Tooltip.CreateTranslatedMarkdown("rysy.search.tooltip");
 
-    public static bool SearchInput(ref string search, string persistenceKey = "") {
+    public static bool SearchInput(ref string search, string persistenceKey = "", bool focusKeyboard = false) {
         var searchText = "rysy.search".Translate();
         search ??= "";
         var pos = ImGui.GetCursorPos();
         
         ImGui.PushStyleColor(ImGuiCol.Text, default(int));
+        if (focusKeyboard)
+            ImGui.SetKeyboardFocusHere();
         var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() 
             ? Interpolator.TempU8($"##{searchText}") 
             : Interpolator.TempU8($"##{searchText}_{persistenceKey}"), ref search, 512);

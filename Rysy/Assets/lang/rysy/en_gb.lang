@@ -554,3 +554,9 @@ rysy.wipes.Celeste.MountainWipe=Mountain
 rysy.wipes.Celeste.SpotlightWipe=Spotlight
 rysy.wipes.Celeste.StarfieldWipe=Starfield
 rysy.wipes.Celeste.WindWipe=Wind
+
+rysy.windows.commandPalette=Command Palette
+rysy.windows.commandPalette.failedToRun=Failed to run command '{0}'
+
+rysy.commands.changeTool=Tool: '{0}'
+rysy.commands.changeTool.tooltip=Changes the current tool.

@@ -115,6 +115,8 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         Camera.CreateCameraHotkeys(Hotkeys);
 
         _ = new QuickActionHandler(Hotkeys, ToolHandler);
+
+        Hotkeys.AddHotkeyFromSettings("commandPalette", "ctrl+shift+p", () => AddWindowIfNeeded<CommandPaletteWindow>());
     }
 
     public void ClearMapRenderCache() {
