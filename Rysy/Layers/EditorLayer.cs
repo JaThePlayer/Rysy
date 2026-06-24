@@ -29,7 +29,7 @@ public interface IEditorLayer
 public abstract class EditorLayer : IHasComponentRegistry, IEditorLayer {
     public abstract string Name { get; }
 
-    public virtual string LocalizedName => Name;
+    public virtual string LocalizedName => Name.TranslateOrNull("rysy.editorLayers") ?? Name;
     
     public abstract SelectionLayer SelectionLayer { get; }
 

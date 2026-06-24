@@ -36,6 +36,8 @@ public abstract class Tool {
 
     public abstract string Name { get; }
 
+    public string LocalizedName => Name.TranslateOrHumanize("rysy.tools");
+
     /// <summary>
     /// The group used for storing persistence for this tool. Several tools can share the same group, which will make them share the current layer, search, material, etc.
     /// </summary>

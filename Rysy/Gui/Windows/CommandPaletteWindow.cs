@@ -16,6 +16,8 @@ public interface ICommandPaletteCommand {
 
     public XnaWidgetDef? CreatePreview();
     
+    public bool HasPreview { get; }
+    
     public ITooltip? Tooltip { get; }
 
     public void Run();
@@ -35,9 +37,11 @@ public sealed class CommandPaletteWindow : Window {
     private int _selectedIdx = 0;
 
     private float _downKeyInterval, _upKeyInterval;
+
+    private float? _cachedTotalHeight;
     
     public CommandPaletteWindow() : base("rysy.windows.commandPalette", 
-        new GuiSize(50, 30).CalculateWindowSize(false))
+        new GuiSize(120, 30).CalculateWindowSize(false))
     {
     }
 
@@ -50,37 +54,49 @@ public sealed class CommandPaletteWindow : Window {
 
         if (ImGuiManager.SearchInput(ref _search, focusKeyboard: _firstRender)) {
             _selectedIdx = 0;
+            _cachedTotalHeight = null;
         }
         _firstRender = false;
         ImGui.Separator();
 
         _commandsCache ??= Registry?.GetAllIncludingProvidersCache<ICommandPaletteCommand>();
 
+        if (!_commandsCache?.HasCachedValue ?? false) {
+            _cachedTotalHeight = null;
+            _selectedIdx = 0;
+        }
+
         var commands = _commandsCache is not null
             ? _comboCache.GetValue(_commandsCache.Value, cmd => cmd.Searchable, _search)
             : [];
+        
+        _cachedTotalHeight ??= commands.Sum(x => GetCommandHeight(showPlacementIcons, x.Item1));
 
         var size = ImGui.GetContentRegionAvail();
-        var elementHeight = showPlacementIcons ? ICommandPaletteCommand.PreviewSize + ImGui.GetStyle().FramePadding.Y : ImGui.GetTextLineHeightWithSpacing();
-        var elementsVisible = size.Y / elementHeight;
-        var skip = (ImGui.GetScrollY() / elementHeight) - 1;
+
+        ImGui.BeginChild("##palette_list_main");
+        var skip = ImGui.GetScrollY();
 
         var totalCount = commands.Count + 1;
+        float? scrollToSet = null;
+        
         ImGui.BeginChild(Interpolator.TempU8("##palette_list"), 
-            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), totalCount * elementHeight)), 
-            ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse);
-        // make sure columns stay consistent
-        skip = Math.Min(skip, commands.Count - elementsVisible);
+            new(0, Math.Max(GetMaterialListBoxSize(size).Y - ImGui.GetFrameHeightWithSpacing(), _cachedTotalHeight.Value)), 
+            ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar);
+
         if (skip > 0) {
-            ImGui.BeginChild("mat-list", new NumVector2(0, skip * elementHeight));
+            ImGui.BeginChild("mat-list", new NumVector2(0, skip));
             ImGui.EndChild();
         }
 
+        var wasSelectionChanged = false;
         if (Input.Global.Keyboard.HeldOrClickedSmoothInterval(Keys.Down, ref _downKeyInterval)) {
             _selectedIdx++;
+            wasSelectionChanged = true;
         }
         if (Input.Global.Keyboard.HeldOrClickedSmoothInterval(Keys.Up, ref _upKeyInterval)) {
             _selectedIdx--;
+            wasSelectionChanged = true;
         }
         if (commands.Count > 0)
             _selectedIdx = _selectedIdx.MathMod(commands.Count);
@@ -88,25 +104,47 @@ public sealed class CommandPaletteWindow : Window {
             _selectedIdx = 0;
 
         var id = 0;
-        var rendered = 0;
+        var rendered = 0f;
         var anyExecuted = false;
         foreach (var (command, searchable) in commands) {
-            if (rendered < elementsVisible && skip <= 0) {
-                rendered++;
+            var elementHeight = GetCommandHeight(showPlacementIcons, command);
+            
+            if (rendered < size.Y && skip <= 0) {
+                rendered += elementHeight;
 
-                using (_ = ScopedImGui.Id(id))
+                using (_ = ScopedImGui.Id(id)) {
                     anyExecuted |= RenderCommand(command, searchable, id);
-                id++;
+                    if (wasSelectionChanged && id == _selectedIdx) {
+                        scrollToSet = ImGui.GetCursorPosY() - ImGui.GetCursorStartPos().Y;
+                    }
+                }
+                if (!ImGui.IsItemVisible())
+                    break;
+            } else {
+                skip -= elementHeight;
             }
-            skip--;
+            
+            id++;
+        }
+        ImGui.EndChild();
+
+        if (scrollToSet is not null) {
+            ImGui.SetScrollFromPosY(ImGui.GetCursorStartPos().Y + scrollToSet.Value);
         }
         ImGui.EndChild();
         
         if (anyExecuted)
             RemoveSelf();
     }
-    
-    protected bool RenderCommand(ICommandPaletteCommand command, Searchable searchable, int id) {
+
+    private static float GetCommandHeight(bool showPlacementIcons, ICommandPaletteCommand command)
+    {
+        return showPlacementIcons && command.HasPreview 
+            ? ICommandPaletteCommand.PreviewSize + ImGui.GetStyle().FramePadding.Y
+            : ImGui.GetTextLineHeightWithSpacing();
+    }
+
+    private bool RenderCommand(ICommandPaletteCommand command, Searchable searchable, int id) {
         bool ret = false;
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
         var currentMod = EditorState.Current?.Map?.Mod;

@@ -560,3 +560,13 @@ rysy.windows.commandPalette.failedToRun=Failed to run command '{0}'
 
 rysy.commands.changeTool=Tool: '{0}'
 rysy.commands.changeTool.tooltip=Changes the current tool.
+rysy.commands.changeMaterial=Material: {0}: '{1}' - '{2}'.
+rysy.commands.changeMaterial.tooltip=Changes the current material.
+
+rysy.editorLayers.BgTiles=Bg Tiles
+rysy.editorLayers.FgTiles=Fg Tiles
+rysy.editorLayers.Entities=Entities
+rysy.editorLayers.Triggers=Triggers
+rysy.editorLayers.FgDecals=Fg Decals
+rysy.editorLayers.BgDecals=Bg Decals
+rysy.editorLayers.Rooms=Rooms

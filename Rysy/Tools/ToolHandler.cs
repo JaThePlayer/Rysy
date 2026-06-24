@@ -5,6 +5,7 @@ using Rysy.Gui;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Layers;
 using Rysy.Signals;
 using System.Diagnostics;
 
@@ -366,7 +367,7 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         lock (_toolLock) {
             if (ImGui.BeginListBox("##ToolToolsBox", GetToolListBoxSize(Tools.Count))) {
                 foreach (var item in Tools) {
-                    if (ImGui.Selectable(item.Name.TranslateOrHumanize("rysy.tools"), CurrentTool == item)) {
+                    if (ImGui.Selectable(item.LocalizedName, CurrentTool == item)) {
                         CurrentTool = item;
                     }
                 }
@@ -387,6 +388,11 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         List<ICommandPaletteCommand> commands = [];
         
         commands.AddRange(Tools.Select(t => new ChangeToolCommand(t)));
+        commands.AddRange(Tools
+            .SelectMany(t => t.ValidLayers.Select(l => (t, l)))
+            .SelectMany(tl => tl.t.GetMaterials(tl.l)?.Select(m => (tl.t, tl.l, m)) ?? [])
+            .Select(tlm => new ChangeToolMaterialCommand(tlm.t, tlm.l, tlm.m))
+        );
         
         return commands;
     }
@@ -396,6 +402,8 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         
         public Searchable Searchable => new Searchable("rysy.commands.changeTool".TranslateFormatted(tool.Name), [], Tags);
         
+        public bool HasPreview => false;
+        
         public XnaWidgetDef? CreatePreview() {
             return null;
         }
@@ -404,6 +412,29 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         
         public void Run() {
             tool.ToolHandler.SetToolByName(tool.Name);
+        }
+    }
+    
+    private sealed class ChangeToolMaterialCommand(Tool tool, IEditorLayer layer, object material) : ICommandPaletteCommand {
+        private static readonly IReadOnlyList<string> Tags = [ "material" ];
+
+        private readonly Searchable MaterialSearchable = tool.GetMaterialSearchable(layer, material);
+        
+        public Searchable Searchable => new Searchable("rysy.commands.changeMaterial"
+            .TranslateFormatted(tool.LocalizedName, layer.LocalizedName, MaterialSearchable.Text), MaterialSearchable.Mods, [layer.Name, .. Tags, .. MaterialSearchable.Tags]);
+        
+        public bool HasPreview => tool.GetMaterialPreview(layer, material) is not null;
+        
+        public XnaWidgetDef? CreatePreview() {
+            return tool.GetMaterialPreview(layer, material);
+        }
+
+        public ITooltip Tooltip => Rysy.Gui.Tooltip.CreateTranslatedOrNull("rysy.commands.changeMaterial.tooltip");
+        
+        public void Run() {
+            var t = tool.ToolHandler.SetToolByName(tool.Name) ?? tool;
+            t.Layer = layer;
+            t.Material = material;
         }
     }
 }
