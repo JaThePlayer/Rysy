@@ -57,6 +57,9 @@ However, it is possible the depencency is used in a way that Rysy can't detect, 
 rysy.menubar.tab.file=File
 
 rysy.menubar.tab.edit=Edit
+rysy.menubar.edit.commandPalette=Command Palette
+rysy.menubar.edit.undo=Undo
+rysy.menubar.edit.redo=Redo
 
 rysy.menubar.tab.map=Map
 rysy.menubar.tab.map.metadata=Metadata

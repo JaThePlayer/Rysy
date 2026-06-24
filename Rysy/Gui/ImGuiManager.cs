@@ -993,6 +993,10 @@ public static class ImGuiManager {
     public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix) {
         return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
+    
+    public static bool TranslatedMenuItemHotkey(ReadOnlySpan<char> key, ReadOnlySpan<char> hotkey) {
+        return ImGui.MenuItem(key.TranslateOrNull() ?? key.ToString(), Interpolator.Utf8(hotkey)).WithTranslatedTooltip($"{key}.tooltip");
+    }
 
     public static void TranslatedTableSetupColumn(string key) {
         ImGui.TableSetupColumn(key.Translate());

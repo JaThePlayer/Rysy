@@ -362,12 +362,15 @@ public class Menubar : SceneComponent {
         if (ImGui.MenuItem("Settings")) {
             SettingsWindow.Add(scene);
         }
+        
+        if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.commandPalette", Settings.Instance.GetOrCreateHotkey("commandPalette")))
+            scene.AddWindowIfNeeded<CommandPaletteWindow>();
 
         if (scene.Get<IHistoryHandler>() is { } history) {
-            if (ImGui.MenuItem("Undo", Settings.Instance.GetOrCreateHotkey("undo")))
+            if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.undo", Settings.Instance.GetOrCreateHotkey("undo")))
                 history.Undo();
 
-            if (ImGui.MenuItem("Redo", Settings.Instance.GetOrCreateHotkey("redo")))
+            if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.redo", Settings.Instance.GetOrCreateHotkey("redo")))
                 history.Redo();
         }
     }
