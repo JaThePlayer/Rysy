@@ -57,19 +57,50 @@ However, it is possible the depencency is used in a way that Rysy can't detect, 
 rysy.menubar.tab.file=File
 
 rysy.menubar.tab.edit=Edit
+rysy.menubar.edit.settings=Settings
+rysy.menubar.edit.settings.tooltip=Opens the Settings menu.
 rysy.menubar.edit.commandPalette=Command Palette
+rysy.menubar.edit.commandPalette.tooltip=Opens the Command Palette, for quickly executing commands.\nUse of hotkey recommended.
 rysy.menubar.edit.undo=Undo
+rysy.menubar.edit.undo.tooltip=Undoes the last operation.
 rysy.menubar.edit.redo=Redo
+rysy.menubar.edit.redo.tooltip=Redoes the last undone operation.
+
+rysy.menubar.file.newMap=New Map
+rysy.menubar.file.newMap.tooltip=Creates a new map.
+rysy.menubar.file.newMod=New Mod
+rysy.menubar.file.newMod.tooltip=Creates a new mod with a single new map inside it.
+rysy.menubar.file.openMap=Open Map
+rysy.menubar.file.openMap.tooltip=Opens an existing map for editing.
+rysy.menubar.file.save=Save
+rysy.menubar.file.save.tooltip=Saves the map.
+rysy.menubar.file.saveAs=Save As
+rysy.menubar.file.saveAs.tooltip=Saves the map at a new location.
+rysy.menubar.file.exit=Exit
+rysy.menubar.file.exit.tooltip=Exits the program without saving.
+rysy.menubar.file.openRecent=Open Recent Map
+rysy.menubar.file.openRecent.tooltip=Opens a recently edited map.
+rysy.menubar.file.loadBackup=Load Backup
+rysy.menubar.file.loadBackup.tooltip=Loads a backup of a recently edited map.
 
 rysy.menubar.tab.map=Map
-rysy.menubar.tab.map.metadata=Metadata
-rysy.menubar.tab.map.sizeoscope=Sizeoscope
-rysy.menubar.tab.map.sizeoscope_window=Sizeoscope - {0}
-rysy.menubar.tab.map.importTilesets=Import Tilesets
-rysy.menubar.tab.map.saveMapToImage=Save Map to Image
-rysy.menubar.tab.map.saveMapToImage.saveFailed=Failed to save map image to file.
-rysy.menubar.tab.map.saveRoomToImage=Save Room to Image
-rysy.menubar.tab.map.saveRoomToImage.saveFailed=Failed to save room image to file.
+rysy.menubar.map.metadata=Metadata
+rysy.menubar.map.metadata.tooltip=Opens the map metadata editor.
+rysy.menubar.map.stylegrounds=Stylegrounds
+rysy.menubar.map.stylegrounds.tooltip=Opens the styleground editor.
+rysy.menubar.map.decalRegistry=Decal Registry
+rysy.menubar.map.decalRegistry.tooltip=Opens the Decal Registry editor.
+rysy.menubar.map.tilesets=Tilesets
+rysy.menubar.map.tilesets.tooltip=Opens the tileset editor.
+rysy.menubar.map.everest.yaml=Everest.yaml
+rysy.menubar.map.everest.yaml.tooltip=Opens the everest.yaml editor, to mange dependencies.
+rysy.menubar.map.sizeoscope=Sizeoscope
+rysy.menubar.map.sizeoscope_window=Sizeoscope - {0}
+rysy.menubar.map.importTilesets=Import Tilesets
+rysy.menubar.map.saveMapToImage=Save Map to Image
+rysy.menubar.map.saveMapToImage.saveFailed=Failed to save map image to file.
+rysy.menubar.map.saveRoomToImage=Save Room to Image
+rysy.menubar.map.saveRoomToImage.saveFailed=Failed to save room image to file.
 
 rysy.menubar.tab.view=View
 

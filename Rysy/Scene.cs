@@ -39,7 +39,7 @@ public abstract class Scene {
         SetupHotkeys();
         
         foreach (var c in GetAll<SceneComponent>()) {
-            c.OnAdded();
+            c.OnSceneBegin();
         }
     }
 

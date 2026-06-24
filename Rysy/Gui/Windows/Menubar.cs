@@ -7,27 +7,122 @@ using Rysy.History;
 using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.Windows;
+
+public interface IMenubarEntry {
+    public string Tab { get; }
+    
+    public void RenderGui(Menubar menubar);
+}
+
+public class MenubarButtonEntry(string tab, string langKey, Action run, Func<bool>? disabled = null, string? hotkeyId = null, bool addToCommandPalette = true) : IMenubarEntry, ICommandPaletteCommand {
+    public string Tab => tab;
+    
+    public Searchable Searchable { get; } = new Searchable(langKey.Translate());
+    
+    public XnaWidgetDef? CreatePreview() {
+        return null;
+    }
+
+    public bool HasPreview => false;
+
+    public ITooltip? Tooltip { get; init; } = new TranslatedOrNullTooltip($"{langKey}.tooltip", null);
+    
+    public void RenderGui(Menubar menubar) {
+        using var _ = ScopedImGui.Disabled(disabled?.Invoke() ?? false);
+        
+        if (hotkeyId is not null) {
+            if (ImGuiManager.TranslatedMenuItemHotkey(langKey, Settings.Instance.GetOrCreateHotkey(hotkeyId)))
+                Run();
+        } else {
+            if (ImGuiManager.TranslatedMenuItem(langKey))
+                Run();
+        }
+    }
+    
+    public void Run() {
+        if (!(disabled?.Invoke() ?? false))
+            run();
+    }
+    
+    bool ICommandPaletteCommand.Enabled => addToCommandPalette;
+}
+
+public class MenubarDropdownEntry<T>(string tab, string langKey, Func<IEnumerable<T>> entries, Func<T, Searchable> tToString, Action<T> run,
+    Func<bool>? disabled = null, bool addToCommandPalette = true) : IMenubarEntry, ICommandPaletteCommand {
+    private readonly Func<T, Searchable> _tToString = tToString;
+    private readonly Action<T> _run = run;
+
+    public string Tab => tab;
+    
+    public ITooltip? Tooltip { get; init; } = new TranslatedOrNullTooltip($"{langKey}.tooltip", null);
+    
+    public Searchable Searchable { get; } = new Searchable(langKey.Translate());
+    
+    public void RenderGui(Menubar menubar) {
+        using var _ = ScopedImGui.Disabled(disabled?.Invoke() ?? false);
+        ImGuiManager.DropdownMenu(langKey.Translate(), entries(), t => _tToString(t).TextWithMods, _run);
+    }
+    
+    public XnaWidgetDef? CreatePreview() {
+        return null;
+    }
+
+    public bool HasPreview => false;
+    
+    public void Run() {
+        if (!(disabled?.Invoke() ?? false)) {
+            CommandPaletteWindow.ChangeCommands(RysyState.Scene, entries().Select(x => new Subcommand(this, x)));
+        }
+    }
+    
+    bool ICommandPaletteCommand.Enabled => addToCommandPalette;
+
+    private sealed class Subcommand(MenubarDropdownEntry<T> dropdown, T key) : ICommandPaletteCommand {
+        public Searchable Searchable => dropdown._tToString(key);
+        
+        public XnaWidgetDef? CreatePreview() {
+            return null;
+        }
+
+        public bool HasPreview => false;
+
+        public ITooltip? Tooltip => null;
+        
+        public void Run() {
+            dropdown._run(key);
+        }
+    }
+}
 
 public class Menubar : SceneComponent {
     private const string TabNameLangPrefix = "rysy.menubar.tab";
 
-    private sealed record class Tab {
+    private sealed class Tab {
         public string Name;
+        public string DisplayName => Name.TranslateOrHumanize(TabNameLangPrefix);
+        
         public Action<Scene> Render;
 
         public Tab(string name) {
-            Name = name.TranslateOrHumanize(TabNameLangPrefix);
+            Name = name;
         }
     }
 
+    public const string TabFile = "file";
+    public const string TabEdit = "edit";
+    public const string TabMap = "map";
+    public const string TabView = "view";
+    public const string TabDebug = "debug";
+
     private static readonly List<Tab> Tabs = [
-        new("file") { Render = FileMenu, },
-        new("edit") { Render = EditMenu, },
-        new("map") { Render = MapMenu, },
-        new("view") { Render = ViewMenu, },
-        new("debug") { Render = DebugMenu, }
+        new(TabFile) { Render = FileMenu, },
+        new(TabEdit) { Render = EditMenu, },
+        new(TabMap) { Render = MapMenu, },
+        new(TabView) { Render = ViewMenu, },
+        new(TabDebug) { Render = DebugMenu, }
     ];
     
     /// <summary>
@@ -60,6 +155,183 @@ public class Menubar : SceneComponent {
         existing.Render = newFunc;
     }
 
+    public override void OnAdded() {
+        base.OnAdded();
+        
+        #region FileTab
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.newMap", 
+            () => (Scene as EditorScene)?.LoadNewMap(),
+            disabled: () => Scene is not EditorScene,
+            hotkeyId: "newMap",
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.newMod", 
+            () => Scene.AddWindowIfNeeded<NewModWindow>(),
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.openMap", 
+            () => (Scene as EditorScene)?.Open(),
+            disabled: () => Scene is not EditorScene,
+            hotkeyId: "openMap",
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarDropdownEntry<Persistence.RecentMap>(TabFile, "rysy.menubar.file.openRecent", 
+            () => Persistence.Instance.RecentMaps,
+            tToString: p => new Searchable(Persistence.Instance.RecentMaps.Count(p2 => p2.Name == p.Name) > 1
+                    ? $"{p.Name} [{p.Filename.Censor().CorrectSlashes()}]"
+                    : p.Name),
+            run: p => (Scene as EditorScene)?.LoadMapFromBin(p.Filename),
+            disabled: () => Scene is not EditorScene,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarDropdownEntry<BackupInfo>(TabFile, "rysy.menubar.file.loadBackup", 
+            BackupHandler.GetBackups,
+            tToString: b => new Searchable($"{b.MapName} ({b.Time}) [{b.Filesize.Value.ToFilesize()}]"),
+            run: b => RysyEngine.Scene = new EditorScene(b.BackupFilepath, fromBackup: true, overrideFilepath: b.OrigFilepath),
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.save", 
+            () => (Scene as EditorScene)?.Save(),
+            disabled: () => Scene is not EditorScene,
+            hotkeyId: "saveMap",
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.saveAs", 
+            () => (Scene as EditorScene)?.Save(saveAs: true),
+            disabled: () => Scene is not EditorScene,
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.exit", 
+            () => RysyPlatform.Current.ExitProcess(),
+            hotkeyId: null,
+            addToCommandPalette: false
+        ));
+        #endregion
+        
+        #region EditTab
+        Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.settings", 
+            () => SettingsWindow.Add(Scene),
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.commandPalette", 
+            () => Scene.AddWindowIfNeeded<CommandPaletteWindow>(),
+            hotkeyId: "commandPalette",
+            addToCommandPalette: false
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.undo", 
+            () => Scene.Get<IHistoryHandler>()?.Undo(),
+            hotkeyId: "undo",
+            addToCommandPalette: false
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.redo", 
+            () => Scene.Get<IHistoryHandler>()?.Redo(),
+            disabled: () => Scene.Get<IHistoryHandler>() is null,
+            hotkeyId: "redo",
+            addToCommandPalette: false
+        ));
+        #endregion
+        
+        #region MapTab
+
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.metadata",
+            () => {
+                if (HasHistoryAndMap(Scene, out var history, out var map))
+                    Scene.AddWindowIfNeeded(() => new MetadataWindow(history, map));
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out _),
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.stylegrounds",
+            () => {
+                if (HasHistoryAndMap(Scene, out var history, out _))
+                    Scene.AddWindowIfNeeded(() => new StylegroundWindow(Scene.GetRequired<EditorState>(), history));
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out _),
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.decalRegistry",
+            () => {
+                if (HasHistoryAndMap(Scene, out _, out var map))
+                    Scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map));
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.tilesets",
+            () => {
+                if (HasHistoryAndMap(Scene, out _, out var map))
+                    Scene.AddWindowIfNeeded(() => new TilesetWindow(Scene.GetRequired<EditorState>()));
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.everest.yaml",
+            () => {
+                if (HasHistoryAndMap(Scene, out _, out var map))
+                    Scene.AddWindowIfNeeded(() => new EverestYamlWindow(Scene.GetRequired<EditorState>()));
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.saveRoomToImage",
+            () => {
+                if (Scene.Get<EditorState>() is { } editorState && FileDialogHelper.TrySave("png", out var filepath)) {
+                    PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveRoomToImage.saveFailed"), 
+                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, [ editorState.CurrentRoom! ]));
+                }
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out _) || Scene.Get<EditorState>() is null or { CurrentRoom: null },
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        
+        Scene?.Add(new MenubarButtonEntry(TabMap, "rysy.menubar.map.saveMapToImage",
+            () => {
+                if (HasHistoryAndMap(Scene, out _, out var map) && FileDialogHelper.TrySave("png", out var filepath)) {
+                    PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveMapToImage.saveFailed"), 
+                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, map.Rooms));
+                }
+            },
+            disabled: () => !HasHistoryAndMap(Scene, out _, out _),
+            hotkeyId: null,
+            addToCommandPalette: true
+        ));
+        #endregion
+
+        return;
+
+        bool HasHistoryAndMap(Scene scene, [NotNullWhen(true)] out IHistoryHandler? history, [NotNullWhen(true)] out Map? map) {
+            var editorState = scene.Get<EditorState>();
+            history = scene.Get<IHistoryHandler>();
+            map = editorState?.Map;
+
+            return history is not null && map is not null;
+        }
+    }
+
     public override void RenderImGui() {
         if (Scene is null)
             return;
@@ -70,8 +342,13 @@ public class Menubar : SceneComponent {
         ImGuiManager.PopWindowStyle();
         ImGuiManager.MenubarHeight = ImGui.GetContentRegionAvail().Y;
 
+        var entries = Scene.Components.GetAll<IMenubarEntry>();
         foreach (var tab in Tabs) {
-            if (ImGui.BeginMenu(tab.Name)) {
+            if (ImGui.BeginMenu(tab.DisplayName)) {
+                foreach (var entry in entries) {
+                    if (entry.Tab == tab.Name)
+                        entry.RenderGui(this);
+                }
                 tab.Render(Scene);
 
                 ImGui.EndMenu();
@@ -82,49 +359,6 @@ public class Menubar : SceneComponent {
     }
 
     private static void MapMenu(Scene scene) {
-        var editorState = scene.Get<EditorState>();
-        var history = scene.Get<IHistoryHandler>();
-        var map = editorState?.Map;
-
-        using (ScopedImGui.Disabled(history is null || editorState is null || map is null)) {
-            if (ImGui.MenuItem("metadata".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                scene.AddWindowIfNeeded(() => new MetadataWindow(history!, map!));
-            }
-            
-            if (ImGui.MenuItem("stylegrounds".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                scene.AddWindowIfNeeded(() => new StylegroundWindow(editorState!, history!));
-            }
-
-            using (ScopedImGui.Disabled(map?.Mod is null)) {
-                if (ImGui.MenuItem("decalRegistry".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                    scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map!));
-                }
-            
-                if (ImGui.MenuItem("tilesets".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                    scene.AddWindowIfNeeded(() => new TilesetWindow(editorState!));
-                }
-        
-                if (ImGui.MenuItem("everest.yaml".TranslateOrHumanize("rysy.everestyaml.tab.map"))) {
-                    scene.AddWindowIfNeeded(() => new EverestYamlWindow(editorState!));
-                }
-            }
-                        
-            using (ScopedImGui.Disabled(editorState!.CurrentRoom is null)) {
-                if (ImGui.MenuItem("saveRoomToImage".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                    if (FileDialogHelper.TrySave("png", out var filepath)) {
-                        PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveRoomToImage.saveFailed"), 
-                            () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, [ editorState.CurrentRoom! ]));
-                    }
-                }
-            }
-
-            if (ImGui.MenuItem("saveMapToImage".TranslateOrHumanize("rysy.menubar.tab.map"))) {
-                if (FileDialogHelper.TrySave("png", out var filepath)) {
-                    PopupNotificationWindow.ShowOnException(new LangKey("rysy.menubar.tab.map.saveMapToImage.saveFailed"), 
-                        () => SaveMapToImageHelper.RenderMapToImage(filepath, RysyState.GlobalServices, map!.Rooms));
-                }
-            }
-        }
     }
 
     private static PathField? ColorgradePreviewField;
@@ -359,58 +593,8 @@ public class Menubar : SceneComponent {
     #endif*/
 
     private static void EditMenu(Scene scene) {
-        if (ImGui.MenuItem("Settings")) {
-            SettingsWindow.Add(scene);
-        }
-        
-        if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.commandPalette", Settings.Instance.GetOrCreateHotkey("commandPalette")))
-            scene.AddWindowIfNeeded<CommandPaletteWindow>();
-
-        if (scene.Get<IHistoryHandler>() is { } history) {
-            if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.undo", Settings.Instance.GetOrCreateHotkey("undo")))
-                history.Undo();
-
-            if (ImGuiManager.TranslatedMenuItemHotkey("rysy.menubar.edit.redo", Settings.Instance.GetOrCreateHotkey("redo")))
-                history.Redo();
-        }
     }
 
     private static void FileMenu(Scene scene) {
-        if (scene is not EditorScene editor)
-            return;
-
-        if (ImGui.MenuItem("New Map", Settings.Instance.GetOrCreateHotkey("newMap"))) {
-            editor.LoadNewMap();
-        }
-        
-        if (ImGui.MenuItem("New Mod")) {
-            scene.AddWindowIfNeeded<NewModWindow>();
-        }
-
-        if (ImGui.MenuItem("Open", Settings.Instance.GetOrCreateHotkey("openMap"))) {
-            editor.Open();
-        }
-
-        ImGuiManager.DropdownMenu("Recent", Persistence.Instance.RecentMaps,
-            p => Persistence.Instance.RecentMaps.Count(p2 => p2.Name == p.Name) > 1
-                ? $"{p.Name} [{p.Filename.Censor().CorrectSlashes()}]"
-                : p.Name,
-            p => editor.LoadMapFromBin(p.Filename));
-
-        if (ImGui.MenuItem("Save", Settings.Instance.GetOrCreateHotkey("saveMap")).WithTooltip(editor.Map?.Filepath?.Censor())) {
-            editor.Save();
-        }
-        if (ImGui.MenuItem("Save as")) {
-            editor.Save(true);
-        }
-
-        ImGuiManager.DropdownMenu("Load Backup", BackupHandler.GetBackups(), 
-            (b) => $"{b.MapName} ({b.Time}) [{b.Filesize.Value.ToFilesize()}]",
-            onClick: (b) => {
-                RysyEngine.Scene = new EditorScene(b.BackupFilepath, fromBackup: true, overrideFilepath: b.OrigFilepath);
-            });
-
-        if (ImGui.MenuItem("Exit"))
-            RysyPlatform.Current.ExitProcess();
     }
 }

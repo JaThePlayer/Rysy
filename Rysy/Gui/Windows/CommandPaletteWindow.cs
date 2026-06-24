@@ -7,10 +7,11 @@ namespace Rysy.Gui.Windows;
 
 /// <summary>
 /// A command to be ran via the Command Palette.
-/// To register,
 /// </summary>
 public interface ICommandPaletteCommand {
     public const int PreviewSize = 32;
+
+    public bool Enabled => true;
     
     public Searchable Searchable { get; }
 
@@ -30,19 +31,48 @@ public sealed class CommandPaletteWindow : Window {
 
     private readonly ComboCache<ICommandPaletteCommand> _comboCache = new();
 
-    private ICommandPaletteCommand? _currentCommand;
-
     private bool _firstRender = true;
 
-    private int _selectedIdx = 0;
+    private int _selectedIdx;
 
     private float _downKeyInterval, _upKeyInterval;
 
     private float? _cachedTotalHeight;
+
+    private bool _shouldClose;
+
+    private int _version;
     
     public CommandPaletteWindow() : base("rysy.windows.commandPalette", 
         new GuiSize(120, 30).CalculateWindowSize(false))
     {
+    }
+
+    public CommandPaletteWindow(IEnumerable<ICommandPaletteCommand> commands) : this() {
+        ChangeCommands(commands);
+    }
+
+    private void ClearCaches() {
+        _selectedIdx = 0;
+        _cachedTotalHeight = null;
+    }
+    
+    private void ChangeCommands(IEnumerable<ICommandPaletteCommand> commands) {
+        _search = "";
+        _commandsCache = new Cache<IReadOnlyList<ICommandPaletteCommand>>(new CacheToken(), commands.ToList);
+        _comboCache.Clear();
+        _firstRender = true;
+        _version++;
+        ClearCaches();
+    }
+
+    public static void ChangeCommands(Scene scene, IEnumerable<ICommandPaletteCommand> commands) {
+        if (scene.Get<CommandPaletteWindow>() is { } existing) {
+            existing._shouldClose = false;
+            existing.ChangeCommands(commands);
+        } else {
+            scene.AddWindow(new CommandPaletteWindow(commands));
+        }
     }
 
     protected NumVector2 GetMaterialListBoxSize(NumVector2 windowSize) 
@@ -52,18 +82,17 @@ public sealed class CommandPaletteWindow : Window {
         base.Render();
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
 
-        if (ImGuiManager.SearchInput(ref _search, focusKeyboard: _firstRender)) {
-            _selectedIdx = 0;
-            _cachedTotalHeight = null;
+        if (ImGuiManager.SearchInput(ref _search, persistenceKey: _version.ToString(), focusKeyboard: _firstRender)) {
+            ClearCaches();
         }
         _firstRender = false;
         ImGui.Separator();
 
-        _commandsCache ??= Registry?.GetAllIncludingProvidersCache<ICommandPaletteCommand>();
+        _commandsCache ??= Registry?.GetAllIncludingProvidersCache<ICommandPaletteCommand>()
+            .Chain(IReadOnlyList<ICommandPaletteCommand> (x) => x.Where(cmd => cmd.Enabled).ToList());
 
         if (!_commandsCache?.HasCachedValue ?? false) {
-            _cachedTotalHeight = null;
-            _selectedIdx = 0;
+            ClearCaches();
         }
 
         var commands = _commandsCache is not null
@@ -133,7 +162,7 @@ public sealed class CommandPaletteWindow : Window {
         }
         ImGui.EndChild();
         
-        if (anyExecuted)
+        if (anyExecuted && _shouldClose)
             RemoveSelf();
     }
 
@@ -159,15 +188,12 @@ public sealed class CommandPaletteWindow : Window {
         }
 
         var isSelected = _selectedIdx == id;
-        if (isSelected) {
-            _currentCommand = command;
-        }
 
         var displayName = searchable.TextWithMods;
         if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), isSelected, 
                 ImGuiSelectableFlags.AllowOverlap, size) || (isSelected && Input.Global.Keyboard.IsKeyClicked(Keys.Enter))) {
+            _shouldClose = true;
             PopupNotificationWindow.ShowOnException(new LangKey("rysy.windows.commandPalette.failedToRun", command.Searchable.Text), command.Run);
-            
             ret = true;
         }
 

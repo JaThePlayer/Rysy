@@ -26,6 +26,10 @@ public abstract class SceneComponent : ISignalEmitter, ISignalListener<Component
         
     }
 
+    public virtual void OnSceneBegin() {
+        
+    }
+
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
     
     public void OnSignal(SelfAdded signal) {

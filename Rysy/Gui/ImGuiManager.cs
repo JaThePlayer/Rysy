@@ -990,6 +990,10 @@ public static class ImGuiManager {
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
 
+    public static bool TranslatedMenuItem(ReadOnlySpan<char> key) {
+        return ImGui.MenuItem(key.TranslateOrNull() ?? key.ToString()).WithTranslatedTooltip($"{key}.tooltip");
+    }
+    
     public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ReadOnlySpan<char> prefix) {
         return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
