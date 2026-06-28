@@ -8,7 +8,7 @@ public readonly struct InputWidgetHelper {
     public InputWidgetHelper(int widgetAmt) {
         float buttonWidth = ImGui.GetFrameHeight();
         
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth + _xPadding) * (widgetAmt + 1));
+        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth + _xPadding) * widgetAmt);
     }
 
     /// <summary>
