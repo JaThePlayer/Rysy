@@ -19,11 +19,9 @@ public sealed record NullableDepthField : Field {
         int? returnValue = null;
 
         bool changed = false;
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
+        var widgetHelper = new InputWidgetHelper(1, Tooltip);
 
         var valueToString = value?.ToString() ?? "";
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         if (ImGui.InputText($"##text{fieldName}", ref valueToString, 128).WithTooltip(Tooltip)) {
             if (valueToString.IsNullOrWhitespace()) {
                 returnValue = null;
@@ -35,7 +33,7 @@ public sealed record NullableDepthField : Field {
         }
 
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
         
         var size = _comboCache.GetSize(Values.Select(v => v.Name));
         ImGui.SetNextWindowSize(ImGuiManager.GetDropdownWindowSize(size, Values.Length));
@@ -59,9 +57,8 @@ public sealed record NullableDepthField : Field {
             
             ImGuiManager.PushAllStyles(oldStyles);
         }
-        ImGui.SameLine(0f, xPadding);
-        ImGui.Text(fieldName);
-        true.WithTooltip(Tooltip);
+        
+        widgetHelper.Label(fieldName);
 
         if (returnValue is not null)
             return returnValue;

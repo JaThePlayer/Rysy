@@ -9,6 +9,12 @@ namespace Rysy.Gui;
 /// </summary>
 public static class ScopedImGui {
     [MustDisposeResource]
+    public static IdScope Id(string id) {
+        ImGui.PushID(id);
+        return default;
+    }
+    
+    [MustDisposeResource]
     public static IdScope Id(ReadOnlySpan<byte> id) {
         ImGui.PushID(id);
         return default;

@@ -452,14 +452,12 @@ public static class ImGuiManager {
         ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null,
         Func<T, string>? textInputStringGetter = null) {
         bool changed = false;
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
+        var widgetHelper = new InputWidgetHelper(1, tooltip);
 
         renderMenuItem ??= static (_, name) => name.RenderImGuiMenuItem();
         
         var valueToString = textInputStringGetter is {} ? new Searchable(textInputStringGetter(value)) : toString(value);
         
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         var valueToStringText = valueToString.Text;
         if (ExpandingTextInput($"##text{name}", ref valueToStringText, 256, tooltip)) {
             value = stringToValue(valueToStringText);
@@ -468,7 +466,7 @@ public static class ImGuiManager {
 
         cache ??= new();
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
 
         var size = cache.GetSize(values.Select(x => toString(x).TextWithMods));
         var dropdownSize = GetDropdownWindowSize(size, values.Count);
@@ -478,9 +476,8 @@ public static class ImGuiManager {
             RenderListContents(name, ref value!, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
         }
-        ImGui.SameLine(0f, xPadding);
-        ImGui.Text(name);
-        true.WithTooltip(tooltip);
+
+        widgetHelper.Label(name);
 
         return changed;
     }
@@ -491,13 +488,11 @@ public static class ImGuiManager {
         where T : notnull {
 
         bool changed = false;
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
+        var widgetHelper = new InputWidgetHelper(1, tooltip);
 
         menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
 
         var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
 
         if (typeof(T) == typeof(int)) {
             if (InputInt($"##text{name}", ref valueToString, tooltip)) {
@@ -513,7 +508,7 @@ public static class ImGuiManager {
 
         cache ??= new();
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
 
         var size = cache.GetSize(values.Values);
         var dropdownSize = GetDropdownWindowSize(size, values.Count);
@@ -539,9 +534,8 @@ public static class ImGuiManager {
             
             PushAllStyles(oldStyles);
         }
-        ImGui.SameLine(0f, xPadding);
-        ImGui.Text(name);
-        true.WithTooltip(tooltip);
+        
+        widgetHelper.Label(name);
 
         return changed;
     }
@@ -569,11 +563,8 @@ public static class ImGuiManager {
     public static bool ColorEdit(string label, ref Color color, ColorFormat format, Tooltip tooltip = default, string? hexCodeOverride = null) {
         var colorHex = hexCodeOverride ?? ColorHelper.ToString(color, format);
         bool edited = false;
+        var widgetHelper = new InputWidgetHelper(1, tooltip);
 
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
-
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
         if (ImGui.InputText(Interpolator.TempU8($"##text{label}"), ref colorHex, 24).WithTooltip(tooltip)) {
             if (ColorHelper.TryGet(colorHex, format, out var newColor)) {
                 color = newColor;
@@ -581,7 +572,7 @@ public static class ImGuiManager {
             edited = true;
         }
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
 
         switch (format) {
             case ColorFormat.Rgb:
@@ -603,10 +594,7 @@ public static class ImGuiManager {
                 break;
         }
 
-
-        ImGui.SameLine(0f, xPadding);
-        ImGui.Text(label);
-        true.WithTooltip(tooltip);
+        widgetHelper.Label(label);
 
         return edited;
     }
@@ -680,16 +668,14 @@ public static class ImGuiManager {
     }
     
     public static bool InputInt(string fieldName, ref string stringVal, Tooltip tooltip = default) {
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
-
+        using var _ = ScopedImGui.Id(fieldName);
         var displayedField = GetDisplayedText(fieldName).ToString();
 
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth + xPadding)*2);
+        var widgetHelper = new InputWidgetHelper(widgetAmt: 2, tooltip);
 
         bool ret = false;
         
-        if (ImGui.InputText(Interpolator.TempU8($"##txt{fieldName}"), ref stringVal, 64)) {
+        if (ImGui.InputText("##txt"u8, ref stringVal, 64)) {
             if (stringVal.StartsWith('=')) {
                 // Evaluate expression
                 var valid = MathExpression.TryEvaluate(stringVal.AsSpan()[1..], out var result);
@@ -706,26 +692,22 @@ public static class ImGuiManager {
             true.WithTooltip(tooltip);
         }
         
-        ImGui.SameLine(0f, xPadding);
         var step = Input.Global.Keyboard.Ctrl() ? 100 : Input.Global.Keyboard.Shift() ? 10 : 1;
         
         ImGui.PushItemFlag(ImGuiItemFlags.ButtonRepeat, true);
-        if (ImGui.Button(Interpolator.TempU8($"-##-{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+        if (widgetHelper.Button("-"u8)) {
             stringVal = (stringVal.CoerceToInt(0) - step).ToStringInvariant();
             ret = true;
         }
-        
-        ImGui.SameLine(0f, xPadding);
-        if (ImGui.Button(Interpolator.TempU8($"+##+{fieldName}"), new(buttonWidth, 0f)).WithTooltip(tooltip)) {
+
+        if (widgetHelper.Button("+"u8)) {
             stringVal = (stringVal.CoerceToInt(0) + step).ToStringInvariant();
             ret = true;
         }
         ImGui.PopItemFlag();
 
         if (displayedField.Length > 0) {
-            ImGui.SameLine(0f, xPadding);
-            ImGui.Text(displayedField);
-            true.WithTooltip(tooltip);
+            widgetHelper.Label(displayedField);
         }
         
         return ret;

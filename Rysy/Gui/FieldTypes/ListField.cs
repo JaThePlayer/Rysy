@@ -120,13 +120,9 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
         string? ret = null;
         var split = Split(str);
 
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
-        const int buttonAmt = 1;
-
         var listItemWidth = ImGui.CalcItemWidth();
-
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * buttonAmt) - xPadding * buttonAmt);
+        var widgetHelper = new InputWidgetHelper(1, Tooltip);
+        
         ImGui.BeginDisabled(!AllowEdits);
         if (ImGuiManager.ExpandingTextInput($"##text{fieldName}", ref str, 1024, Tooltip)) {
             ret = str;
@@ -137,10 +133,10 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
 
         if (split.Length == 0) {
             //ImGuiManager.TranslatedText("rysy.fields.list.noElements");
-            split = new string[] { "" };
+            split = [""];
         }
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
 
         if (ImGui.BeginCombo($"##lcombo{fieldName}", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
@@ -189,9 +185,7 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
             ImGuiManager.PushAllStyles(oldStyles);
         }
 
-        ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
-        ImGui.Text(fieldName);
-        true.WithTooltip(Tooltip);
+        widgetHelper.Label(fieldName);
 
         if (anyChanged) {
             ret = string.Join(Separator, split).TrimEnd(Separator);

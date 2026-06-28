@@ -29,18 +29,15 @@ public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
 
         var data = Parse(str);
 
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
-        const int buttonAmt = 1;
+        var widgetHelper = new InputWidgetHelper(1, Tooltip);
 
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - (buttonWidth * buttonAmt) - xPadding * buttonAmt);
         ImGui.BeginDisabled(true);
         ImGui.InputText($"##text{fieldName}", ref str, (uint)str.Length).WithTooltip(Tooltip);
         ImGui.EndDisabled();
 
         bool anyChanged = false;
 
-        ImGui.SameLine(0f, xPadding);
+        widgetHelper.Next();
 
         if (ImGui.BeginCombo($"##lcombo{fieldName}", "", ImGuiComboFlags.NoPreview).WithTooltip(Tooltip)) {
             var oldStyles = ImGuiManager.PopAllStyles();
@@ -51,9 +48,7 @@ public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
             ImGuiManager.PushAllStyles(oldStyles);
         }
 
-        ImGui.SameLine(0f, ImGui.GetStyle().FramePadding.X);
-        ImGui.Text(fieldName);
-        true.WithTooltip(Tooltip);
+        widgetHelper.Label(fieldName);
 
         return anyChanged ? ConvertToString(data) : null;
     }
