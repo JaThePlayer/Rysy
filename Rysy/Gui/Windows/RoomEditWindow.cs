@@ -35,7 +35,8 @@ public sealed partial class RoomEditWindow : Window {
     private FieldList GeneralTabFields(RoomAttributes attrs) {
         var fields = new FieldList(new {
             name = Fields.String(attrs.Name).WithValidator(s => RoomNameValid(this, s)),
-            c = new RoomDebugColorField(attrs.C),
+            color = Fields.Rgb(attrs.DebugColor).WithOptions(CelesteEnums.RoomColors.Zip(CelesteEnums.RoomColorNames).Select(x => (x.First, new Searchable(x.Second)))),
+            //c = new RoomDebugColorField(attrs.C),
             
             x = Fields.Int(attrs.X).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),
             y = Fields.Int(attrs.Y).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),

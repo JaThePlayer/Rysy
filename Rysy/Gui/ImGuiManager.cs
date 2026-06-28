@@ -354,7 +354,7 @@ public static class ImGuiManager {
 
     public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, 
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null) 
+        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null, ImGuiComboFlags comboFlags = ImGuiComboFlags.None) 
         where T : notnull {
         var valueName = toString(value);
         bool changed = false;
@@ -365,7 +365,7 @@ public static class ImGuiManager {
         var size = cache.GetSize(values.Select(x => toString(x).TextWithMods));
         var dropdownSize = GetDropdownWindowSize(size, values.Count);
         ImGui.SetNextWindowSize(dropdownSize);
-        if (ImGui.BeginCombo(name, valueName.TextWithMods, ImGuiComboFlags.None).WithTooltip(tooltip)) {
+        if (ImGui.BeginCombo(name, valueName.TextWithMods, comboFlags).WithTooltip(tooltip)) {
             RenderListContents(name, ref value!, ref search, ref changed, cache, values, toString, renderMenuItem);
             ImGui.EndCombo();
         }
@@ -430,7 +430,9 @@ public static class ImGuiManager {
             ? values.Select(x => (x, toString(x))) 
             : cache.GetValue(values, toString, search);
 
+        int id = 0;
         foreach (var (item, searchable) in filtered) {
+            using var _ = ScopedImGui.Id(id++);
             if (renderMenuItem(item, searchable)) {
                 value = item;
                 changed = true;
@@ -546,6 +548,19 @@ public static class ImGuiManager {
     
     #endregion
 
+    public static bool ColorSelectable(Color color, Searchable label) {
+        bool pressed = false;
+        
+        pressed |= ImGui.ColorButton(label.TextWithMods, color.ToNumVec4());
+        ImGui.SameLine();
+        
+        ImGui.PushID(1);
+        pressed |= ImGui.Selectable(label.TextWithMods, ImGuiSelectableFlags.AllowOverlap);
+        ImGui.PopID();
+        
+        return pressed;
+    }
+    
     public static bool ColorEditTranslated(string label, ref Color color, ColorFormat format, string tooltipId,
         string? hexCodeOverride = null) {
         return ColorEdit(label.Translate(), ref color, format, new Tooltip(tooltipId.Translate()) , hexCodeOverride);
@@ -596,21 +611,29 @@ public static class ImGuiManager {
         return edited;
     }
     
-    public static bool ColorEditAllowEmpty(string label, ref string colorStr, ColorFormat format, Tooltip tooltip = default) {
+    public static bool ColorEditAllowEmpty(string label, ref string colorStr, ColorFormat format, Tooltip tooltip = default,
+        IReadOnlyList<Color>? recommendedColors = null, Func<Color, Searchable>? recommendedColorToString = null) {
         bool edited = false;
 
-        var xPadding = ImGui.GetStyle().FramePadding.X;
-        var buttonWidth = ImGui.GetFrameHeight();
-
-        ImGui.SetNextItemWidth(ImGui.CalcItemWidth() - buttonWidth - xPadding);
+        var widgetHelper = new InputWidgetHelper(widgetAmt: recommendedColors is { Count: > 0 } ? 2 : 1);
         if (ImGui.InputText(Interpolator.TempU8($"##text{label}"), ref colorStr, 24).WithTooltip(tooltip)) {
             edited = true;
         }
-
-        ImGui.SameLine(0f, xPadding);
-
         ColorHelper.TryGet(colorStr, format, out var color);
 
+        string search = "";
+        if (recommendedColors is { Count: > 0 }) {
+            widgetHelper.Next();
+            
+            if (Combo("##dropdown", ref color, recommendedColors, 
+                    recommendedColorToString ?? (t => new Searchable(t.ToString(format))), ref search, tooltip, null, 
+                    ColorSelectable, ImGuiComboFlags.NoPreview)) {
+                colorStr = color.ToString(format);
+                edited = true;
+            }
+        }
+        
+        widgetHelper.Next();
         switch (format) {
             case ColorFormat.Rgb:
                 var colorN3 = color.ToNumVec3();
@@ -627,13 +650,9 @@ public static class ImGuiManager {
                     edited = true;
                 }
                 break;
-            default:
-                break;
         }
 
-
-        ImGui.SameLine(0f, xPadding);
-        ImGui.Text(label);
+        widgetHelper.Label(label);
         true.WithTooltip(tooltip);
 
         return edited;

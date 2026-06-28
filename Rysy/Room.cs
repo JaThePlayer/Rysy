@@ -95,7 +95,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     } = new(new BinaryPacker.Element { Attributes = [] });
 
-    public Color Color => CelesteEnums.RoomColors.AtOrDefault(Attributes.C, Color.White);
+    public Color Color => Attributes.DebugColor;
 
     public Rectangle Bounds => new(X, Y, Width, Height);
 

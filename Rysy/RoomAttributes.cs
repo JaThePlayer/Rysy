@@ -42,6 +42,18 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     /// </summary>
     public int C => Data.Int("c", 0);
 
+    /// <summary>
+    /// Everest 6365+: custom hex color in the debug map. RGB format.
+    /// </summary>
+    public string? Color => Data.AttrNullable("color");
+
+    /// <summary>
+    /// Actual color to use for rendering, taking into consideration either the new `color` field, or the legacy `c` field.
+    /// Not stored in map metadata.
+    /// </summary>
+    public Color DebugColor => Color?.ToColor(ColorFormat.Rgb) 
+                                ?? CelesteEnums.RoomColors.AtOrDefault(C, Microsoft.Xna.Framework.Color.White);
+
     public CelesteEnums.WindPatterns WindPattern => Data.Enum("windPattern", CelesteEnums.WindPatterns.None);
     
     public bool Space => Data.Bool("space", false);

@@ -47,6 +47,14 @@ public readonly struct XmlNodeUntypedData(XmlNode node) : IUntypedData {
 
 
 public static class UntypedDataExt {
+    public static string? AttrNullable(this IUntypedData self, string attrName) {
+        if (self.TryGetValue(attrName, out var obj) && obj is { }) {
+            return obj.ToString();
+        }
+
+        return null;
+    }
+    
     public static string Attr(this IUntypedData self, string attrName, string def = "") {
         if (self.TryGetValue(attrName, out var obj) && obj is { }) {
             return obj.ToString()!;

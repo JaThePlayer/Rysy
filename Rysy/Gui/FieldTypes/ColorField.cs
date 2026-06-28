@@ -1,10 +1,9 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
 using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
 
-public sealed record class ColorField : Field, ILonnField, IListFieldExtender, IFieldConvertible<string>, IFieldConvertible<Color> {
+public sealed record ColorField : Field, ILonnField, IListFieldExtender, IFieldConvertible<string>, IFieldConvertible<Color> {
     public static string Name => "color";
 
     // stores the original string passed to SetDefault.
@@ -22,6 +21,10 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
     public bool NullAllowed;
 
     public bool EmptyIsNull;
+
+    public IReadOnlyList<Color> Options { get; set; } = [];
+    
+    public Func<Color, Searchable>? OptionToString { get; set; }
 
     public override object GetDefault() => Default!;
 
@@ -73,29 +76,9 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
     public override object? RenderGui(string fieldName, object? value) {
         string? hexCodeOverride = value?.ToString() ?? "";
         
-        if (ImGuiManager.ColorEditAllowEmpty(fieldName, ref hexCodeOverride, Format, Tooltip)) {
+        if (ImGuiManager.ColorEditAllowEmpty(fieldName, ref hexCodeOverride, Format, Tooltip, Options, OptionToString)) {
             return hexCodeOverride;
         }
-/*
-        if (!ValueToColor(value, out var color)) {
-            color = Color.White;
-        }
-        
-        if (value is string str)
-            ValueString = str;
-
-        if (NullAllowed && EmptyIsNull) {
-            if (ImGuiManager.ColorEditAllowEmpty(fieldName, ref hexCodeOverride, Format, Tooltip)) {
-                ValueString = hexCodeOverride;
-                return hexCodeOverride;
-            }
-        } else {
-            if (ImGuiManager.ColorEdit(fieldName, ref color, Format, Tooltip, hexCodeOverride)) {
-                ValueString = null;
-                return color.ToString(Format);
-            }
-        }
-*/
 
         return null;
     }
@@ -117,6 +100,22 @@ public sealed record class ColorField : Field, ILonnField, IListFieldExtender, I
     public ColorField TreatEmptyAsNull() {
         EmptyIsNull = true;
 
+        return this;
+    }
+
+    public ColorField WithOptions(params IEnumerable<Color> colors) {
+        Options = colors.ToList();
+        
+        return this;
+    }
+    
+    public ColorField WithOptions(params IEnumerable<(Color, Searchable)> colors) {
+        return WithOptions(colors.SafeToDictionary(x => x.Item1, x => x.Item2));
+    }
+    
+    public ColorField WithOptions(IReadOnlyDictionary<Color, Searchable> colors) {
+        Options = colors.Select(x => x.Key).ToList();
+        OptionToString = c => colors.GetValueOrDefault(c) ?? new Searchable(c.ToString(Format));
         return this;
     }
 
