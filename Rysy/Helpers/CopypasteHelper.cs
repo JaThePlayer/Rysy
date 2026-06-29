@@ -22,7 +22,7 @@ public static class CopypasteHelper {
             if (layer is not EntityLayer)
                 return null;
             
-            var e = EntityRegistry.Create(Data, room, layer.SelectionLayer == SelectionLayer.Triggers);
+            var e = EntityRegistry.Create(Data, room, layer.SelectionLayer == SelectionLayer.Triggers, fromBinary: false);
             e.Id = -1; // set the ID to -1 so that it gets auto-assigned later
 
             return e;

@@ -26,6 +26,7 @@ public sealed partial class Decal : Entity, IPlaceable {
     public string Texture {
         get => _texture ??= EntityData.Attr("texture");
         set {
+            _texture = value;
             EntityData["texture"] = value;
 
             ClearRoomRenderCache();
@@ -233,6 +234,9 @@ public sealed partial class Decal : Entity, IPlaceable {
         var parallax = Parallax;
         if (parallax != 0f)
             attr["parallax"] = parallax;
+
+        if (!EditorGroups.IsOnlyDefault)
+            attr[EditorGroupEntityDataKey] = Attr(EditorGroupEntityDataKey);
 
         el.Attributes = attr;
 

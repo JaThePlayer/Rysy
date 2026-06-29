@@ -138,7 +138,8 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
                 if (!_editorGroupList!.Contains(gr))
                     _editorGroupList.Add(gr);
             } else {
-                _editorGroupList!.Remove(gr);
+                if (gr.IsAutoAssigned)
+                    _editorGroupList!.Remove(gr);
             }
         }
     }

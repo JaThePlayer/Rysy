@@ -667,13 +667,13 @@ public static class EntityRegistry {
         return entity;
     }
 
-    public static Entity Create(BinaryPacker.Element from, Room room, bool trigger) {
+    public static Entity Create(BinaryPacker.Element from, Room room, bool trigger, bool fromBinary = true) {
         ArgumentNullException.ThrowIfNull(from);
 
         var sid = from.Name ?? throw new ArgumentException($"Entity SID is null in entity element???");
 
         return CreateCore(sid, new(from.Int("x"), from.Int("y")), from.Int("id"), new(sid, from), room, trigger,
-            fromBinary: true);
+            fromBinary);
     }
 
     public static Entity CreateFromMainPlacement(string sid, Vector2 pos, Room room, Dictionary<string, object>? overrides = null, bool isTrigger = false) {
@@ -721,16 +721,6 @@ public static class EntityRegistry {
             hasLonnPlugin.LonnPluginRef = Registered.GetReference(sid);
         }
 
-        if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is not { } gr || gr.IsNullOrWhitespace()) {
-            if (fromBinary) {
-                e.EntityData[Entity.EditorGroupEntityDataKey] = EditorGroup.Default.Name;
-            } else {
-                if (e.Room.Map?.EditorGroups is { } currentGroups) {
-                    e.EntityData[Entity.EditorGroupEntityDataKey] = currentGroups.CloneWithOnlyEnabled().ToString();
-                }
-            }
-        }
-
         e.Pos = pos;
 
         var min = e.RecommendedMinimumSize;
@@ -747,6 +737,16 @@ public static class EntityRegistry {
             d.Fg = sid == FgDecalSid;
 
             d.OnCreated();
+        }
+        
+        if (entityData.Attr(Entity.EditorGroupEntityDataKey, "") is not { } gr || gr.IsNullOrWhitespace()) {
+            if (fromBinary) {
+                e.EntityData[Entity.EditorGroupEntityDataKey] = EditorGroup.Default.Name;
+            } else {
+                if (e.Room.Map?.EditorGroups is { } currentGroups) {
+                    e.EntityData[Entity.EditorGroupEntityDataKey] = currentGroups.CloneWithOnlyEnabled().ToString();
+                }
+            }
         }
         
         e.OnChanged(new EntityDataChangeCtx { 
