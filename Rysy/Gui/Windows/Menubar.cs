@@ -11,10 +11,20 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.Windows;
 
+/// <summary>
+/// Represents a menubar entry in a specific menubar tab.
+/// </summary>
 public interface IMenubarEntry {
     public string Tab { get; }
     
     public void RenderGui(Menubar menubar);
+}
+
+/// <summary>
+/// Allows rendering additional status indicators on the menubar.
+/// </summary>
+public interface IMenubarIndicator {
+    public void RenderMenubarIndicator(Menubar menubar);
 }
 
 public class MenubarButtonEntry(string tab, string langKey, Action run, Func<bool>? disabled = null, string? hotkeyId = null, bool addToCommandPalette = true) : IMenubarEntry, ICommandPaletteCommand {
@@ -361,6 +371,12 @@ public class Menubar : SceneComponent {
 
                 ImGui.EndMenu();
             }
+        }
+
+        foreach (var indicator in Scene.EnumerateAllLocked<IMenubarIndicator>()) {
+            ImGui.SameLine();
+            ImGui.Separator();
+            indicator.RenderMenubarIndicator(this);
         }
 
         ImGui.EndMainMenuBar();

@@ -1,11 +1,44 @@
-﻿using Rysy.Signals;
+﻿using Rysy.Components;
+using Rysy.Signals;
 
 namespace Rysy.History;
 
 internal sealed class HotswappableHistoryHandler : IHistoryHandler, ISignalEmitter {
     private IHistoryHandler _implementation;
 
+    private readonly SignalWrapper _signalWrapper;
+
+    private class SignalWrapper(IHistoryHandler treatAs) : ISignalListener, ISignalEmitter {
+        public void OnSignal<T>(T signal) where T : ISignal {
+            switch (signal)
+            {
+                case HistoryChanged:
+                    SignalTarget.Send(new HistoryChanged(treatAs));
+                    return;
+                case HistoryActionApplied applied:
+                    SignalTarget.Send(applied with { Handler = treatAs });
+                    return;
+                case HistoryActionUndone undone:
+                    SignalTarget.Send(undone with { Handler = treatAs });
+                    return;
+                case HistoryActionSimulationApplied applied:
+                    SignalTarget.Send(applied with { Handler = treatAs });
+                    return;
+                case HistoryActionSimulationUndone undone:
+                    SignalTarget.Send(undone with { Handler = treatAs });
+                    return;
+                default:
+                    SignalTarget.Send(signal);
+                    break;
+            }
+        }
+
+        public SignalTarget SignalTarget { get; set; }
+    }
+
     public HotswappableHistoryHandler(IHistoryHandler implementation) {
+        _signalWrapper = new(this);
+        
         SwapTo(implementation);
     }
 
@@ -33,8 +66,9 @@ internal sealed class HotswappableHistoryHandler : IHistoryHandler, ISignalEmitt
         get;
         set {
             field = value;
+            _signalWrapper.SignalTarget = value;
             if (_implementation is ISignalEmitter emitter) {
-                emitter.SignalTarget = value;
+                emitter.SignalTarget = SignalTarget.From(_signalWrapper);
             }
         }
     }
@@ -47,6 +81,8 @@ internal sealed class HotswappableHistoryHandler : IHistoryHandler, ISignalEmitt
         OnApply?.Invoke();
     }
 
+    public IHistoryAction? MostRecentAction => _implementation.MostRecentAction;
+    
     public event Action? OnUndo;
 
     public event Action? OnApply;

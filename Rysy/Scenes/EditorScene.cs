@@ -21,10 +21,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
 
     public EditorState EditorState { get; set; } = new();
 
-    public IHistoryHandler HistoryHandler {
-        get => EditorState.History ??= new HotswappableHistoryHandler(new HistoryHandler(Map));
-        set => EditorState.History = value;
-    }
+    public IHistoryHandler HistoryHandler => EditorState.History;
 
     public Map? Map {
         get => EditorState.Map;
@@ -259,6 +256,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         Map.Filepath = pack.Filename;
         
         NotificationsWindow.AddNotification(new MapSavedNotification());
+        Emit(new MapSaved(Map));
     }
 
     public void Open() {
@@ -470,6 +468,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         Add(HistoryHandler);
         Add(new Menubar());
         Add(Camera);
+        Add(new UnsavedChangesManager(HistoryHandler, saveMap: () => Save()));
         
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);

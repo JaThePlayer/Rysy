@@ -70,7 +70,7 @@ public class EditorState : ISignalEmitter {
     /// <summary>
     /// The currently used history handler
     /// </summary>
-    public IHistoryHandler? History { get; set; }
+    public IHistoryHandler History { get; } = new HotswappableHistoryHandler(new HistoryHandler(Map.DummyMap));
 
     public Colorgrade CurrentColograde {
         get {

@@ -121,6 +121,8 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
         EnableEventListeners();
 
         _Window.ClientSizeChanged += Window_ClientSizeChanged;
+
+        game.Window.Title ??= "Rysy";
     }
     
     internal void Window_ClientSizeChanged(object? sender, EventArgs e) {

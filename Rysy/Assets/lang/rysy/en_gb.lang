@@ -606,3 +606,6 @@ rysy.editorLayers.Triggers=Triggers
 rysy.editorLayers.FgDecals=Fg Decals
 rysy.editorLayers.BgDecals=Bg Decals
 rysy.editorLayers.Rooms=Rooms
+
+rysy.saveIndicator.tooltip=Unsaved changes since{0} ago.
+rysy.saveIndicator.noUnsaved.tooltip=No unsaved changes.

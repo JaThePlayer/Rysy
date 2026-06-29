@@ -11,6 +11,8 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
     
     public Map Map { get; set; }
 
+    public IHistoryAction? MostRecentAction => Actions.LastOrDefault();
+    
     public event Action? OnUndo;
 
     public event Action? OnApply;
@@ -161,6 +163,8 @@ public sealed class HistoryHandler : ISignalEmitter, IHistoryHandler {
 public interface IHistoryHandler {
     Map Map { get; set; }
     
+    IHistoryAction? MostRecentAction { get; }
+
     event Action? OnUndo;
 
     event Action? OnApply;

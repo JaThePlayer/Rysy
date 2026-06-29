@@ -53,6 +53,17 @@ public static class ImGuiExt {
     /// <summary>
     /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
     /// </summary>
+    public static bool WithTranslatedTooltip(this bool val, LangKey tooltipKey) {
+        if (ImGui.IsItemHovered()) {
+            ImGui.SetTooltip(tooltipKey.ToString());
+        }
+
+        return val;
+    }
+    
+    /// <summary>
+    /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
+    /// </summary>
     public static bool WithTranslatedTooltip(this bool val, Interpolator.Handler tooltipKey) {
         if (ImGui.IsItemHovered() && tooltipKey.Result.TranslateOrNull() is { } translatedTooltip) {
             ImGui.SetTooltip(translatedTooltip);

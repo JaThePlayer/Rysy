@@ -364,7 +364,10 @@ public static partial class StringExt {
     }
 
     [Pure]
-    public static string AddPrefixIfNeeded(this string str, string prefix, StringComparison comparisonType = StringComparison.Ordinal) {
+    public static string AddPrefixIfNeeded(this string? str, string prefix, StringComparison comparisonType = StringComparison.Ordinal) {
+        if (str is null)
+            return prefix;
+        
         if (str.StartsWith(prefix, comparisonType))
             return str;
         return prefix + str;

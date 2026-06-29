@@ -140,7 +140,13 @@ public readonly struct LangKey {
         Key = key;
         Args = args;
     }
+    
+    public static LangKey Formatted(string key, params object[] args) => new LangKey(key, args);
 
+    /// <summary>
+    /// Gets the translated value of this lang key.
+    /// </summary>
+    /// <returns></returns>
     public override string ToString() {
         if (Args.Length == 0)
             return Key.Translate();

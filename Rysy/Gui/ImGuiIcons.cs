@@ -8,6 +8,7 @@ public enum ImGuiIcons : ushort {
     ListUl = 0xf0ca,
     Tags = 0xf02c,
     Star = 0xf005,
+    Save = 0xf0c7,
 }
 
 #pragma warning restore CA1028
