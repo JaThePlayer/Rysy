@@ -189,18 +189,13 @@ public partial record class PathField : Field, IFieldConvertible<string> {
 
 
     private bool RenderMenuItem(TextureCacheKey key, Searchable displayPath) {
-        var clicked = displayPath.RenderImGuiMenuItem();
+        var sprite = PreviewSpriteGetter?.Invoke(key.path);
 
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip)) {
-            if (PreviewSpriteGetter is not null) {
-                var sprite = PreviewSpriteGetter(key.path);
-                ImGuiManager.SpriteTooltip("path_field_preview", sprite);
-            }
-
-            if (ImGui.BeginTooltip()) {
-                displayPath.RenderImGuiInfo(EditorState.Current);
-                ImGui.EndTooltip();
-            }
+        bool clicked;
+        if (sprite is not null) {
+            clicked = ImGuiManager.SpriteSelectable(sprite, displayPath, false);
+        } else {
+            clicked = displayPath.RenderImGuiMenuItem();
         }
         
         return clicked;

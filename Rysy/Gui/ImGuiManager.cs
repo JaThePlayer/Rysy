@@ -4,6 +4,7 @@ using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -555,6 +556,51 @@ public static class ImGuiManager {
         return pressed;
     }
     
+    public static bool SpriteSelectable(ISprite sprite, Searchable label, bool selected, ITooltip? tooltip = null, ModMeta? currentMod = null) {
+        bool pressed = false;
+
+        var cursorStart = ImGui.GetCursorPos();
+        const int previewHeight = 32;
+
+        var displayName = label.TextWithMods;
+        if (ImGui.Selectable(Interpolator.TempU8($"##{displayName}"), selected, 
+                ImGuiSelectableFlags.AllowOverlap, new NumVector2(0, previewHeight))) {
+            pressed = true;
+        }
+        var nextLineCursorPos = ImGui.GetCursorPos();
+        var visible = ImGui.IsItemVisible();
+
+        if (!visible)
+            return pressed;
+        
+        if (ImGui.IsItemHovered()) {
+            SpriteTooltip("SpriteSelectable_tooltip", sprite);
+            if (ImGui.BeginTooltip()) {
+                tooltip?.RenderIfHovered();
+                label.RenderImGuiInfo(EditorState.Current, currentMod);
+                ImGui.EndTooltip();
+            }
+        }
+
+        ImGui.SameLine();
+        ImGui.SetCursorPos(cursorStart);
+        
+        XnaWidgetSprite(label.TextWithMods, sprite, new Point(previewHeight, previewHeight), center: true);
+        ImGui.SameLine();
+
+        
+        // center the text
+        var centerPos = cursorStart;
+        centerPos.Y = ImGui.GetCursorPos().Y;
+        centerPos.Y += previewHeight / 2f - ImGui.GetFontSize() / 2f;
+        ImGui.SetCursorPosY(centerPos.Y);
+        label.RenderImGuiText(EditorState.Current?.Map?.Mod);
+        ImGui.Dummy(new NumVector2(0, 0));
+        ImGui.SetCursorPos(nextLineCursorPos);
+        
+        return pressed;
+    }
+    
     public static bool ColorEditTranslated(string label, ref Color color, ColorFormat format, string tooltipId,
         string? hexCodeOverride = null) {
         return ColorEdit(label.Translate(), ref color, format, new Tooltip(tooltipId.Translate()) , hexCodeOverride);
@@ -706,9 +752,7 @@ public static class ImGuiManager {
         }
         ImGui.PopItemFlag();
 
-        if (displayedField.Length > 0) {
-            widgetHelper.Label(displayedField);
-        }
+        widgetHelper.Label(displayedField);
         
         return ret;
     }
@@ -809,7 +853,7 @@ public static class ImGuiManager {
         public bool CrashLogged;
     }
     
-    private static readonly Dictionary<string, WidgetData> Targets = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, Timestamped<WidgetData>> Targets = new(StringComparer.Ordinal);
 
     public static void XnaWidget(XnaWidgetDef def)
         => XnaWidget(def.Id, def.W, def.H, def.RenderFunc, def.Camera, def.Rerender);
@@ -820,17 +864,22 @@ public static class ImGuiManager {
 
         bool isNew = false;
 
-        ref var widgetData = ref CollectionsMarshal.GetValueRefOrAddDefault(Targets, id, out var existed);
+        ref var widgetDataTimestamped = ref CollectionsMarshal.GetValueRefOrAddDefault(Targets, id, out var existed);
+        widgetDataTimestamped ??= new Timestamped<WidgetData>(default);
+        var widgetData = widgetDataTimestamped.Value;
         
-        if (!existed || widgetData.Target.Width != w || widgetData.Target.Height != h) {
-            if (widgetData.Target != null) {
+        if (!existed || widgetData.Target.IsDisposed || widgetData.Target.Width != w || widgetData.Target.Height != h) {
+            if (widgetData.Target is { IsDisposed: false }) {
                 GuiResourceManager.UnbindTexture(widgetData.Id);
                 widgetData.Target.Dispose();
             }
 
             widgetData.Target = new(RysyState.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-            widgetData.Id = GuiResourceManager.BindTexture(widgetData.Target);
+            widgetData.Id = widgetData.Id == 0 ? GuiResourceManager.BindTexture(widgetData.Target) : GuiResourceManager.RebindTexture(widgetData.Target, widgetData.Id);
             isNew = true;
+            widgetDataTimestamped = widgetData;
+            
+            //Logger.Write("ImGuiManager.XnaWidget", LogLevel.Debug, $"New xna widget: '{id}', id={widgetData.Id}. Total: {Targets.Count}");
         }
 
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
@@ -847,7 +896,7 @@ public static class ImGuiManager {
             } catch (Exception ex) {
                 if (!widgetData.CrashLogged) {
                     widgetData.CrashLogged = true;
-                    Logger.Error("XnaWidget", ex, "Failed to render XnaWidget");
+                    Logger.Error("ImGuiManager.XnaWidget", ex, $"Failed to render XnaWidget '{id}'");
                 }
             }
 
@@ -858,28 +907,35 @@ public static class ImGuiManager {
 
     public static void DisposeXnaWidget(string id) {
         if (Targets.TryGetValue(id, out var t)) {
-            GuiResourceManager.UnbindTexture(t.Id);
-            t.Target?.Dispose();
+            GuiResourceManager.UnbindTexture(t.Value.Id);
+            t.Value.Target?.Dispose();
             Targets.Remove(id);
+            //Logger.Write("ImGuiManager.XnaWidget", LogLevel.Debug, $"Disposed xna widget: '{id}', id={t.Value.Id}. Total: {Targets.Count}");
         }
     }
 
-    public static void XnaWidgetSprite(string id, ISprite sprite, Point? size = null, bool rerender = true) {
-        if (!sprite.IsLoaded)
+    public static void DisposeWidgetsUnusedSince(long timestamp) {
+        foreach (var (key, _) in Targets.EnumerateNotAccessedSince(timestamp)) {
+            DisposeXnaWidget(key);
+        }
+    }
+
+    public static void XnaWidgetSprite(string id, ISprite sprite, Point? size = null, bool rerender = true, bool center = false) {
+        if (!sprite.IsLoaded) {
+            if (size is not null) {
+                ImGui.Dummy(size.Value.ToVector2().ToNumerics());
+            }
             return;
+        }
         
+        var c = sprite.GetCollider().Rect;
         int w, h;
         Camera? camera = null;
+        
         if (size is null) {
-            var c = sprite.GetCollider().Rect;
             w = c.Width;
             h = c.Height;
-
-            if (c.X != 0 || c.Y != 0) {
-                camera ??= new Camera();
-                camera.Move(new(c.X, c.Y));
-            }
-
+            
             while (w * h < 64 * 64) {
                 camera ??= new Camera(new Viewport(0, 0, w, h));
                 camera.Scale *= 2f;
@@ -896,6 +952,31 @@ public static class ImGuiManager {
         } else {
             w = size.Value.X;
             h = size.Value.Y;
+            var imgW = c.Width;
+            var imgH = c.Height;
+            
+            while (imgW * 2 < size.Value.X && imgH * 2 < size.Value.Y) {
+                camera ??= new Camera(new Viewport(0, 0, w, h));
+                camera.Scale *= 2f;
+                imgW *= 2;
+                imgH *= 2;
+            }
+        }
+        
+        if (c.X != 0 || c.Y != 0) {
+            camera ??= new Camera();
+            camera.Move(new(c.X, c.Y));
+        }
+        
+        var camOffset = new NumVector2(0, 0);
+        if (center) {
+            camOffset.X += -w / 2f + c.Center.X;
+            camOffset.Y += -h / 2f + c.Center.Y;
+        }
+
+        if (camOffset.X != 0 || camOffset.Y != 0) {
+            camera ??= new Camera();
+            camera.Move(new(camOffset.X / camera.Scale / camera.Scale, camOffset.Y / camera.Scale / camera.Scale));
         }
         
         XnaWidget(id, w, h, () => sprite.Render(SpriteRenderCtx.Default()), camera, rerender);
@@ -1187,6 +1268,8 @@ public static class ImGuiManager {
         private int _textureId = 1;
 
         private int _scrollWheelValue;
+
+        private long _frameStartTimestamp;
         
         sealed record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
         
@@ -1269,11 +1352,17 @@ public static class ImGuiManager {
             return id;
         }
 
+        public IntPtr RebindTexture(Texture2D tex, nint id) {
+            _textures[id] = tex;
+            return id;
+        }
+
         public void UnbindTexture(IntPtr texPtr) {
             _textures.Remove(texPtr);
         }
 
         public void BeforeLayout(float elapsedSeconds) {
+            _frameStartTimestamp = Stopwatch.GetTimestamp();
             PerFrameInterpolator.Clear();
             
             ImGui.GetIO().DeltaTime = elapsedSeconds.AtLeast(1f / 60f);
@@ -1328,6 +1417,9 @@ public static class ImGuiManager {
                     break;
             }
             #endif
+            
+            // Dispose all XnaWidgets not used for a second relative to this frame's start.
+            DisposeWidgetsUnusedSince(_frameStartTimestamp - Stopwatch.Frequency);
         }
 
         protected unsafe void SetupInput() {

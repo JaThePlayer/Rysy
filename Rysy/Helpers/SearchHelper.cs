@@ -110,6 +110,8 @@ public class Searchable {
     }
     
     public void RenderImGuiInfo(EditorState? editorState, ModMeta? currentMod = null) {
+        currentMod ??= EditorState.Current?.Map?.Mod;
+        
         RenderModList(editorState, currentMod);
         RenderTagList(Tags);
         RenderAlternativeNamesList();

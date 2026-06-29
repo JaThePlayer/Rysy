@@ -87,14 +87,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
     }
 
     private void ClearPreviewCache() {
-        var cache = MaterialPreviewCache;
         MaterialPreviewCache.Clear();
-        RysyState.OnEndOfThisFrame += () => {
-            foreach (var (k, v) in cache) {
-                ImGuiManager.DisposeXnaWidget(k);
-            }
-            cache.Clear();
-        };
     }
 
     private void ResetDragState() {
