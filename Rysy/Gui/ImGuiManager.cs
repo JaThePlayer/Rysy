@@ -298,30 +298,6 @@ public static class ImGuiManager {
 
         return ret;
     }
-
-    public static bool Combo<T>(string name, ref T? value, IDictionary<T, string> values, 
-        ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, Searchable, bool>? menuItemRenderer = null) where T : notnull {
-
-        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
-        
-        if (value is null || !values.TryGetValue(value, out var valueName)) {
-            valueName = value?.ToString() ?? "";
-        }
-        
-        cache ??= new();
-        bool changed = false;
-        var size = cache.GetSize(values.Select(x => x.Value));
-        var dropdownSize = GetDropdownWindowSize(size, values.Count);
-        ImGui.SetNextWindowSize(dropdownSize);
-        
-        if (ImGui.BeginCombo(name, valueName).WithTooltip(tooltip)) {
-            RenderListContents(name, ref value, ref search, ref changed, cache, values.Select(x => x.Key), t => new Searchable(values[t]), menuItemRenderer);
-            ImGui.EndCombo();
-        }
-
-        return changed;
-    }
     
     public static bool Combo<T>(string name, ref T? value, IDictionary<T, Searchable> values, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,

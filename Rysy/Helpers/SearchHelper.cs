@@ -108,9 +108,19 @@ public class Searchable {
         
         return ret;
     }
+
+    public bool RenderImGuiMenuItemWithTooltip(ModMeta? currentMod = null) {
+        var ret = RenderImGuiMenuItem(currentMod);
+        if (ImGui.IsItemHovered() && ImGui.BeginTooltip()) {
+            RenderImGuiInfo(EditorState.Current, currentMod);
+            ImGui.EndTooltip();
+        }
+        
+        return ret;
+    }
     
     public void RenderImGuiInfo(EditorState? editorState, ModMeta? currentMod = null) {
-        currentMod ??= EditorState.Current?.Map?.Mod;
+        currentMod ??= (editorState ?? EditorState.Current)?.Map?.Mod;
         
         RenderModList(editorState, currentMod);
         RenderTagList(Tags);

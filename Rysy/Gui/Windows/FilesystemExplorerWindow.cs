@@ -16,7 +16,7 @@ public sealed class FilesystemExplorerWindow : Window {
     private string _search = "";
 
     private List<FileRef>? _foundFiles;
-    private Dictionary<FileRef, string>? _foundFilesDict;
+    private Dictionary<FileRef, Searchable>? _foundFilesDict;
 
     public FilesystemExplorerWindow() : base("Filesystem Explorer", new(800, 800)) {
         Resizable = true;
@@ -34,9 +34,13 @@ public sealed class FilesystemExplorerWindow : Window {
         if (_foundFiles is { }) {
             _openedFile ??= new("", ModRegistry.VanillaMod);
             
-            _foundFilesDict ??= _foundFiles.ToDictionary(f => f, f => $"{f.Path} [{f.Mod.DisplayName}]");
+            _foundFilesDict ??= _foundFiles.ToDictionary(f => f, f => new Searchable(
+                text: f.Path, 
+                mods: [ f.Mod.Name ], 
+                tags: f.Path.FileExtensionNoDot() is {} ext ? [ext] : []));
 
-            if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, default, _cache)) {
+            if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, default, _cache,
+                    menuItemRenderer: (_, s) => s.RenderImGuiMenuItemWithTooltip())) {
                 if (_openedFile!.Mod.Filesystem.TryReadAllText(_openedFile.Path) is { } text) {
                     _fileText = text;
                 }
@@ -48,29 +52,38 @@ public sealed class FilesystemExplorerWindow : Window {
         if (_openedFile is { } opened) {
             var ext = opened.Path.FileExtension();
             
-            if (ext == ".bin" && ImGui.Button("Open Map")) {
-                opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
-                    EditorState.Current?.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
-                });
+            switch (ext)
+            {
+                case ".bin":
+                {
+                    shouldDisplayText = false;
+                    if (ImGui.Button("Open Map")) {
+                        opened.Mod.Filesystem.TryOpenFile(opened.Path, (stream) => {
+                            EditorState.Current?.Map = Map.FromBinaryPackage(BinaryPacker.FromBinary(stream, null!));
+                        });
+                    }
 
-                shouldDisplayText = false;
-            }
-            else if (ext == ".png") {
-                shouldDisplayText = false;
-                var w = (int) ImGui.GetContentRegionAvail().X;
-                var h = (int)(ImGui.GetContentRegionAvail().Y - ImGui.GetTextLineHeightWithSpacing() * 4f);
-                // TODO: zoom in/out???
-                ImGuiManager.XnaWidget("fsExplorerPreview", w, h,
-                    () => {
-                        if (Gfx.Atlas.TryGet(opened.Path.TrimPrefix("Graphics/Atlases/Gameplay/")
-                                    .TrimPostfix(".png"),
-                                out var t)) {
-                            var spr = ISprite.FromTexture(t).Centered();
-                            spr.Scale = new(6f);
-                            spr.Pos = new Vector2(w, h) / 2f;
-                            spr.Render(SpriteRenderCtx.Default());
-                        }
-                    });
+                    break;
+                }
+                case ".png":
+                {
+                    shouldDisplayText = false;
+                    var w = (int) ImGui.GetContentRegionAvail().X;
+                    var h = (int)(ImGui.GetContentRegionAvail().Y - ImGui.GetTextLineHeightWithSpacing() * 4f);
+                    // TODO: zoom in/out???
+                    ImGuiManager.XnaWidget("fsExplorerPreview", w, h,
+                        () => {
+                            if (Gfx.Atlas.TryGet(opened.Path.TrimPrefix("Graphics/Atlases/Gameplay/")
+                                        .TrimPostfix(".png"),
+                                    out var t)) {
+                                var spr = ISprite.FromTexture(t).Centered();
+                                spr.Scale = new(6f);
+                                spr.Pos = new Vector2(w, h) / 2f;
+                                spr.Render(SpriteRenderCtx.Default());
+                            }
+                        });
+                    break;
+                }
             }
 
             if (ImGui.Button("Save as...") && FileDialogHelper.TrySave(opened.Path.FileExtensionNoDot() ?? "", out var chosenFile)) {
