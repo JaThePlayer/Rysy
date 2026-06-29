@@ -111,6 +111,7 @@ public static class ModRegistry {
         );
 
         componentRegistry.AddIfMissing(() => new DebugRcClient(
+            componentRegistry.GetLogger<DebugRcClient>(),
             componentRegistry.GetRequired<HttpClient>(),
             port: componentRegistry.GetRequired<ICelesteSettingsProvider>().ReadEverestSettings().DebugRcPort    
         ));

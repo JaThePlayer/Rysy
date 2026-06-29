@@ -71,4 +71,15 @@ public static class ImGuiExt {
 
         return val;
     }
+    
+    public static bool WithHotkeyTooltip(this bool val, string hotkeyId, string defaultKeybind) {
+        if (ImGui.IsItemHovered() && ImGui.BeginTooltip()) {
+            var hotkey = Settings.Instance.GetOrCreateHotkey(hotkeyId, defaultKeybind);
+            
+            ImGui.TextUnformatted("rysy.hotkey".TranslateFormatted(hotkey));
+            ImGui.EndTooltip();
+        }
+
+        return val;
+    }
 }

@@ -609,3 +609,18 @@ rysy.editorLayers.Rooms=Rooms
 
 rysy.saveIndicator.tooltip=Unsaved changes since{0} ago.
 rysy.saveIndicator.noUnsaved.tooltip=No unsaved changes.
+
+rysy.notificationIndicator.tooltip={0} unread important notification(s)!
+rysy.notificationIndicator.noNotifications.tooltip=No unread notifications.
+
+rysy.debugRc.gameNotOpen=DebugRC failed
+rysy.debugRc.gameNotOpen.message=Failed to connect to Celeste via DebugRC.\nMake sure the game is running before using this feature!
+
+rysy.playtest=Playtest Room
+rysy.playtest.tooltip=Playtest the selected room in-game.\nRequires the game to be open.
+rysy.playtest.failedCelesteSide=Failed to playtest
+rysy.playtest.failedCelesteSide.message=An error was returned from Celeste's side.
+rysy.playtest.failedCelesteSideUnsuccessfulCode=Failed to playtest
+rysy.playtest.failedCelesteSideUnsuccessfulCode.message=Received an error from Celeste:\n{0} {1}\n{2}
+
+rysy.hotkey=Hotkey: {0}

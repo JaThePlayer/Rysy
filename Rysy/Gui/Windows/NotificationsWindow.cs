@@ -1,9 +1,22 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Helpers;
 
 namespace Rysy.Gui.Windows;
 
+public sealed class NotificationsIndicator : IMenubarIndicator {
+    public void RenderMenubarIndicator(Menubar menubar) {
+        var notifications =
+            NotificationsWindow.Notifications.Count(x => x.Notif.Level >= Settings.Instance.MinimumNotificationLevel);
+
+        if (ImGuiManager.SelectableIcon(ImGuiIcons.Bell, notifications > 0 ? ThemeColors.FormInvalidColor : ThemeColors.FormNullColor)
+            .WithTranslatedTooltip(notifications > 0 ? LangKey.Formatted("rysy.notificationIndicator.tooltip", notifications) : "rysy.notificationIndicator.noNotifications.tooltip")) {
+            RysyState.Scene.ToggleWindow<NotificationsWindow>();
+        }
+    }
+}
+
 public sealed class NotificationsWindow : Window {
-    private static readonly List<NotificationInfo> Notifications = [];
+    internal static readonly List<NotificationInfo> Notifications = [];
     private static Field? _minLevelField;
 
     public const string TitleId = "rysy.notifications.window.name";
@@ -80,12 +93,12 @@ public sealed class NotificationsWindow : Window {
     public static void AddNotification(INotification notification) {
         Notifications.Add(new(notification, DateTime.Now));
 
-        if (notification.Level >= Settings.Instance.MinimumNotificationLevel) {
-            RysyState.Scene.AddWindowIfNeeded<NotificationsWindow>();
-        }
+        //if (notification.Level >= Settings.Instance.MinimumNotificationLevel) {
+        //    RysyState.Scene.AddWindowIfNeeded<NotificationsWindow>();
+        //}
     }
-    
-    sealed record NotificationInfo(INotification Notif, DateTime Time);
+
+    internal sealed record NotificationInfo(INotification Notif, DateTime Time);
 }
 
 public interface INotification {

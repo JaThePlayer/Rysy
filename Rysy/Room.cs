@@ -139,6 +139,8 @@ public sealed class Room : IPackable, ILuaWrapper {
         }
     }
 
+    public bool IsPlayable => Entities.OfType<Player>().Any();
+
     private List<ISprite>? _cachedSprites;
 
     /// <summary>

@@ -35,6 +35,22 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
         }
     }
 
+    public bool TryGetSid([NotNullWhen(true)] out string? sid, out CelesteLevelSide side) {
+        if (Mod is not { } mod || Filepath is not { } filepath) {
+            sid = null;
+            side = CelesteLevelSide.A;
+            return false;
+        }
+
+        filepath = filepath.Unbackslash().TrimPrefix(mod.Filesystem.Root).TrimPrefix("/Maps/").TrimPostfix(".bin");
+        (sid, side) = filepath switch {
+            [.. var s, '-', 'B'] => (s, CelesteLevelSide.B),
+            [.. var s, '-', 'C'] => (s, CelesteLevelSide.C),
+            _ => (filepath, CelesteLevelSide.A),
+        };
+        return true;
+    }
+    
     public IListenableList<Room> Rooms { get; } = new ListenableList<Room>();
 
     public void SortRooms() {

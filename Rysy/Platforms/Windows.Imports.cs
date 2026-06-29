@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Rysy.Platforms;
 
@@ -176,6 +177,19 @@ public partial class Windows {
                     return AllocConsoleWithOptionsNative(&options, resPtr);
                 }
             }
+        }
+        
+        [LibraryImport("user32.dll")]
+        internal static partial IntPtr SetForegroundWindow(IntPtr hWnd);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        public static void FocusProcess(Process pr) {
+            var hWnd = pr.MainWindowHandle;
+            ShowWindow(hWnd, 3);
+            SetForegroundWindow(hWnd);
         }
     }
 }

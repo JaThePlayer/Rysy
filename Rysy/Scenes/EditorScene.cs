@@ -468,7 +468,10 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
         Add(HistoryHandler);
         Add(new Menubar());
         Add(Camera);
-        Add(new UnsavedChangesManager(HistoryHandler, saveMap: () => Save()));
+        var unsavedChangesManager = new UnsavedChangesManager(HistoryHandler, saveMap: () => Save());
+        Add(unsavedChangesManager);
+        Add(new NotificationsIndicator());
+        Add(new PlaytestButton(unsavedChangesManager));
         
         ToolHandler = new ToolHandler(EditorState, HistoryHandler, Input.Global, Components).UsePersistence(true);
         Add(ToolHandler);

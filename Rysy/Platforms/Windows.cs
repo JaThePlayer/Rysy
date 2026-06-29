@@ -3,6 +3,7 @@ using Rysy.Components;
 using Rysy.Gui;
 using Rysy.Mods;
 using Rysy.Signals;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace Rysy.Platforms;
@@ -74,6 +75,15 @@ public partial class Windows : RysyPlatform, ISignalListener<ThemeChanged>, ISig
             Imports.ShowWindow(window, 3);
         } else {
             base.ResizeWindow(x, y, w, h);
+        }
+    }
+
+    public override void FocusCelesteWindow() {
+        Process[] processRunning = Process.GetProcesses();
+        foreach (Process pr in processRunning) {
+            if (pr.ProcessName.Equals("Celeste", StringComparison.OrdinalIgnoreCase)) {
+                Imports.FocusProcess(pr);
+            }
         }
     }
 

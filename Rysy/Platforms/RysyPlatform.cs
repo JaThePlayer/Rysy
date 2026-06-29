@@ -149,4 +149,8 @@ public abstract class RysyPlatform {
             Logger.Error("RysyPlatform", ex, "Failed to open Celeste");
         }
     }
+
+    public virtual void FocusCelesteWindow() {
+        
+    }
 }

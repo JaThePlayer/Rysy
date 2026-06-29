@@ -6,6 +6,18 @@ using Rysy.Signals.Hotkeys;
 
 namespace Rysy;
 
+/// <summary>
+/// Allows components to register additional hotkeys.
+/// </summary>
+public interface IHotkeyProvider {
+    /// <summary>
+    /// Whether provided keybinds should be activated even while imgui is capturing input.
+    /// </summary>
+    public bool HotkeysIgnoreImGui { get; }
+    
+    public void AddHotkeysTo(HotkeyHandler handler);
+}
+
 public class HotkeyHandler : ISignalEmitter {
     private List<Hotkey> _hotkeys = new();
 

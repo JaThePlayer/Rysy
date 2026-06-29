@@ -53,6 +53,17 @@ public class PopupNotificationWindow : Window {
     }
 
     /// <summary>
+    /// Shows a popup about an exception.
+    /// </summary>
+    public static void ShowException(LangKey titleId, Exception exception) {
+        var popup = new PopupNotificationWindow(titleId, exception: exception) {
+            MessageColor = ThemeColors.FormInvalidColor
+        };
+        Rysy.Logger.Error(exception, popup.MessageId.ToString());
+        RysyEngine.Scene.AddWindow(popup);
+    }
+    
+    /// <summary>
     /// Shows a popup if there's an exception while executing the given action.
     /// </summary>
     /// <returns>Whether an exception was thrown</returns>
@@ -61,11 +72,7 @@ public class PopupNotificationWindow : Window {
             action();
             return false;
         } catch (Exception ex) {
-            var popup = new PopupNotificationWindow(titleId, exception: ex) {
-                MessageColor = ThemeColors.FormInvalidColor
-            };
-            Rysy.Logger.Error(ex, popup.MessageId.ToString());
-            RysyEngine.Scene.AddWindow(popup);
+            ShowException(titleId, ex);
             return true;
         }
     }

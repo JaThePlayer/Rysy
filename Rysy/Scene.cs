@@ -63,6 +63,10 @@ public abstract class Scene {
         
         HotkeysIgnoreImGui.AddSignalHotkeyFromSettings<HotkeyCloseWindow>();
         HotkeysIgnoreImGui.AddSignalHotkeyFromSettings<HotkeyCloseWindowAndSave>();
+
+        foreach (var hotkeyProvider in Components.EnumerateAllLocked<IHotkeyProvider>()) {
+            hotkeyProvider.AddHotkeysTo(hotkeyProvider.HotkeysIgnoreImGui ? HotkeysIgnoreImGui : Hotkeys);
+        }
     }
 
     public virtual void Update() {

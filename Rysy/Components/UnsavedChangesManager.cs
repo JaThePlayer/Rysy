@@ -66,15 +66,16 @@ public sealed class UnsavedChangesManager(IHistoryHandler historyHandler, Action
             _ => ($" {elapsed.TotalHours:N0}h {elapsed.Minutes}m",
                 ThemeColors.FormInvalidColor)
         };
-        var textWithIcon = ImGuiManager.PerFrameInterpolator.Utf8($"{(char) ImGuiIcons.Save}{text}");
 
-        ImGuiManager.PushStyleColor(ImGuiCol.Text, color);
-        var size = new NumVector2(ImGui.CalcTextSize(textWithIcon).X, 0);
         var langKey = Unsaved ? LangKey.Formatted("rysy.saveIndicator.tooltip", text) : "rysy.saveIndicator.noUnsaved.tooltip";
-        if (ImGui.Selectable(textWithIcon, size).WithTranslatedTooltip(langKey)) {
+        if (ImGuiManager.SelectableIcon(ImGuiIcons.Save, text, color).WithTranslatedTooltip(langKey)) {
             this.Emit(new RunAtEndOfThisFrame(saveMap));
         }
-        ImGui.PopStyleColor();
+    }
+
+    public void SaveIfNeeded() {
+        if (Unsaved)
+            this.Emit(new RunAtEndOfThisFrame(saveMap));
     }
 
     SignalTarget ISignalEmitter.SignalTarget { get; set; }

@@ -1153,6 +1153,42 @@ public static class ImGuiManager {
         ImGui.SameLine();
     }
 
+    public static bool SelectableIcon(ImGuiIcons icon) {
+        var txt = Interpolator.TempU8($"{(char) icon}");
+        return ImGui.Selectable(txt, false, new NumVector2(ImGui.CalcTextSize(txt).X, 0f));
+    }
+    
+    public static bool SelectableIcon(ImGuiIcons icon, ReadOnlySpan<byte> text) {
+        var txt = Interpolator.TempU8($"{(char) icon}{text}");
+        return ImGui.Selectable(txt, false, new NumVector2(ImGui.CalcTextSize(txt).X, 0f));
+    }
+    
+    public static bool SelectableIcon(ImGuiIcons icon, string text) {
+        var txt = Interpolator.TempU8($"{(char) icon}{text}");
+        return ImGui.Selectable(txt, false, new NumVector2(ImGui.CalcTextSize(txt).X, 0f));
+    }
+
+    public static bool SelectableIcon(ImGuiIcons icon, IThemeColor color) {
+        ImGui.PushStyleColor(ImGuiCol.Text, color.ToNumVec4(Themes.Current));
+        var ret = SelectableIcon(icon);
+        ImGui.PopStyleColor();
+        return ret;
+    }
+    
+    public static bool SelectableIcon(ImGuiIcons icon, ReadOnlySpan<byte> text, IThemeColor color) {
+        ImGui.PushStyleColor(ImGuiCol.Text, color.ToNumVec4(Themes.Current));
+        var ret = SelectableIcon(icon, text);
+        ImGui.PopStyleColor();
+        return ret;
+    }
+    
+    public static bool SelectableIcon(ImGuiIcons icon, string text, IThemeColor color) {
+        ImGui.PushStyleColor(ImGuiCol.Text, color.ToNumVec4(Themes.Current));
+        var ret = SelectableIcon(icon, text);
+        ImGui.PopStyleColor();
+        return ret;
+    }
+
     public static void FavoriteIcon() => Icon(ImGuiIcons.Star, Color.Gold);
 
     public static void ReadOnlyInputTextMultiline(string label, string text, NumVector2 size, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {

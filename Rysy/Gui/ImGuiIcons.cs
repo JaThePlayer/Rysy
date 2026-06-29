@@ -9,6 +9,9 @@ public enum ImGuiIcons : ushort {
     Tags = 0xf02c,
     Star = 0xf005,
     Save = 0xf0c7,
+    Bell = 0xf0f3,
+    BellSlash = 0xf1f6,
+    Play = 0xf04b,
 }
 
 #pragma warning restore CA1028
