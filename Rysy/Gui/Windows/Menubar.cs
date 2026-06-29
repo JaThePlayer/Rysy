@@ -289,7 +289,7 @@ public class Menubar : SceneComponent {
                 if (HasHistoryAndMap(Scene, out _, out var map))
                     Scene.AddWindowIfNeeded(() => new DecalRegistryWindow(map));
             },
-            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is null,
             hotkeyId: null,
             addToCommandPalette: true
         ));
@@ -299,7 +299,7 @@ public class Menubar : SceneComponent {
                 if (HasHistoryAndMap(Scene, out _, out var map))
                     Scene.AddWindowIfNeeded(() => new TilesetWindow(Scene.GetRequired<EditorState>()));
             },
-            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is null,
             hotkeyId: null,
             addToCommandPalette: true
         ));
@@ -309,7 +309,7 @@ public class Menubar : SceneComponent {
                 if (HasHistoryAndMap(Scene, out _, out var map))
                     Scene.AddWindowIfNeeded(() => new EverestYamlWindow(Scene.GetRequired<EditorState>()));
             },
-            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is not null,
+            disabled: () => !HasHistoryAndMap(Scene, out _, out var map) || map.Mod is null,
             hotkeyId: null,
             addToCommandPalette: true
         ));
