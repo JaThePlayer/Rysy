@@ -122,101 +122,107 @@ public interface ILonnField {
 }
 
 public static class FieldExtensions {
-    /// <summary>
-    /// Adds a tooltip to this <see cref="Field"/>, and returns this instance.
-    /// </summary>
-    public static T WithTooltip<T>(this T field, string? tooltip) where T : Field {
-        field.Tooltip = new Tooltip(tooltip);
+    extension<T>(T field) where T : Field
+    {
+        /// <summary>
+        /// Adds a tooltip to this <see cref="Field"/>, and returns this instance.
+        /// </summary>
+        public T WithTooltip(string? tooltip) {
+            field.Tooltip = new Tooltip(tooltip);
 
-        return field;
-    }
+            return field;
+        }
 
-    /// <summary>
-    /// Adds a tooltip to this <see cref="Field"/>, and returns this instance, translating it.
-    /// If no translation is found, the tooltip gets set to null.
-    /// </summary>
-    public static T WithTooltipTranslated<T>(this T field, string? tooltip) where T : Field {
-        field.Tooltip = tooltip is not null ? Tooltip.CreateTranslatedOrNull(tooltip) : default;
+        /// <summary>
+        /// Adds a tooltip to this <see cref="Field"/>, and returns this instance, translating it.
+        /// If no translation is found, the tooltip gets set to null.
+        /// </summary>
+        public T WithTooltipTranslated(string? tooltip) {
+            field.Tooltip = tooltip is not null ? Tooltip.CreateTranslatedOrNull(tooltip) : default;
 
-        return field;
-    }
+            return field;
+        }
 
-    /// <summary>
-    /// Overrides the name of this <see cref="Field"/>, and returns this instance.
-    /// </summary>
-    public static T WithName<T>(this T field, string? name) where T : Field {
-        field.NameOverride = name;
+        /// <summary>
+        /// Overrides the name of this <see cref="Field"/>, and returns this instance.
+        /// </summary>
+        public T WithName(string? name) {
+            field.NameOverride = name;
 
-        return field;
-    }
+            return field;
+        }
 
-    /// <summary>
-    /// Overrides the name of this <see cref="Field"/>, and returns this instance, translating it.
-    /// If no translation is found, <see cref="Field.NameOverride"/> gets set to null.
-    /// </summary>
-    public static T WithNameTranslated<T>(this T field, string? name) where T : Field {
-        field.NameOverride = name?.TranslateOrNull();
+        /// <summary>
+        /// Overrides the name of this <see cref="Field"/>, and returns this instance, translating it.
+        /// If no translation is found, <see cref="Field.NameOverride"/> gets set to null.
+        /// </summary>
+        public T WithNameTranslated(string? name) {
+            field.NameOverride = name?.TranslateOrNull();
 
-        return field;
-    }
+            return field;
+        }
 
-    /// <summary>
-    /// Makes this field use translation keys for its name and tooltips, using the standard .tooltip postfix.
-    /// </summary>
-    public static T Translated<T>(this T field, string key) where T : Field {
-        field.NameOverride = key.TranslateOrNull();
-        field.Tooltip = Tooltip.CreateTranslatedOrNull($"{key}.tooltip");
+        /// <summary>
+        /// Makes this field use translation keys for its name and tooltips, using the standard .tooltip postfix.
+        /// </summary>
+        public T Translated(string key) {
+            field.NameOverride = key.TranslateOrNull();
+            field.Tooltip = Tooltip.CreateTranslatedOrNull($"{key}.tooltip");
         
-        return field;
+            return field;
+        }
+
+        /// <summary>
+        /// Adds a validator to this field, which disallows saving the property if it returns false
+        /// </summary>
+        public T WithValidator(Func<object?, ValidationResult> validator) {
+            field.Validator += (_, val) => validator(val);
+
+            return field;
+        }
+
+        /// <summary>
+        /// Adds a validator to this field, which disallows saving the property if it returns false
+        /// </summary>
+        public T WithValidator(Func<FormContext, object?, ValidationResult> validator) {
+            field.Validator += validator;
+
+            return field;
+        }
+
+        /// <summary>
+        /// Makes this field hidden from entity edit windows.
+        /// </summary>
+        public T MakeHidden() {
+            field.IsHidden = _ => true;
+            return field;
+        }
+
+        /// <summary>
+        /// Makes this field hidden from entity edit windows based on a condition
+        /// </summary>
+        public T MakeHidden(Func<FormContext, bool> isHidden) {
+            field.IsHidden = isHidden;
+            return field;
+        }
     }
 
-    /// <summary>
-    /// Adds a validator to this field, which disallows saving the property if it returns false
-    /// </summary>
-    public static T WithValidator<T>(this T field, Func<object?, ValidationResult> validator) where T : Field {
-        field.Validator += (_, val) => validator(val);
+    extension(Field field)
+    {
+        /// <summary>
+        /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
+        /// </summary>
+        public ListField ToList(char separator = ',')
+            => ToList(field, separator.ToString());
 
-        return field;
-    }
-    
-    /// <summary>
-    /// Adds a validator to this field, which disallows saving the property if it returns false
-    /// </summary>
-    public static T WithValidator<T>(this T field, Func<FormContext, object?, ValidationResult> validator) where T : Field {
-        field.Validator += validator;
-
-        return field;
-    }
-
-    /// <summary>
-    /// Makes this field hidden from entity edit windows.
-    /// </summary>
-    public static T MakeHidden<T>(this T field) where T : Field {
-        field.IsHidden = _ => true;
-        return field;
-    }
-    
-    /// <summary>
-    /// Makes this field hidden from entity edit windows based on a condition
-    /// </summary>
-    public static T MakeHidden<T>(this T field, Func<FormContext, bool> isHidden) where T : Field {
-        field.IsHidden = isHidden;
-        return field;
-    }
-
-    /// <summary>
-    /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
-    /// </summary>
-    public static ListField ToList(this Field field, char separator = ',')
-        => ToList(field, separator.ToString());
-
-    /// <summary>
-    /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
-    /// </summary>
-    public static ListField ToList(this Field field, string separator = ",") {
-        return new(field) {
-            Separator = separator,
-        };
+        /// <summary>
+        /// Converts this field into a <see cref="ListField"/>, where each element will be an instance of <paramref name="field"/>.
+        /// </summary>
+        public ListField ToList(string separator = ",") {
+            return new(field) {
+                Separator = separator,
+            };
+        }
     }
 }
 

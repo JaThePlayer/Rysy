@@ -360,7 +360,10 @@ public enum MouseInputState {
 }
 
 public static class MouseInputStateExt {
-    public static bool Released(this MouseInputState m) => m == MouseInputState.Released;
-    public static bool Held(this MouseInputState m) => m == MouseInputState.Held;
-    public static bool Clicked(this MouseInputState m) => m == MouseInputState.Clicked;
+    extension(MouseInputState m)
+    {
+        public bool Released() => m == MouseInputState.Released;
+        public bool Held() => m == MouseInputState.Held;
+        public bool Clicked() => m == MouseInputState.Clicked;
+    }
 }

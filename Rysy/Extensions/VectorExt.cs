@@ -4,31 +4,39 @@ using System.Xml.Linq;
 namespace Rysy.Extensions;
 
 public static class VectorExt {
-    public static Vector2 Xy(this Rectangle r) => new(r.X, r.Y);
-
-    /// <summary>
-    /// Returns new <see cref="Vector2"/>(<paramref name="r"/>.Width, <paramref name="r"/>.Height)
-    /// </summary>
-    public static Vector2 Wh(this Rectangle r) => new(r.Width, r.Height);
-
-    public static Vector2 Add(this Vector2 v, float x, float y) => new(v.X + x, v.Y + y);
-    public static Vector2 AddX(this Vector2 v, float toAdd) => new(v.X + toAdd, v.Y);
-    public static Vector2 AddY(this Vector2 v, float toAdd) => new(v.X, v.Y + toAdd);
-    
-    public static float Angle(this Vector2 vector)
+    extension(Rectangle r)
     {
-        return (float)Math.Atan2(vector.Y, vector.X);
+        public Vector2 Xy() => new(r.X, r.Y);
+
+        /// <summary>
+        /// Returns new <see cref="Vector2"/>(<paramref name="r"/>.Width, <paramref name="r"/>.Height)
+        /// </summary>
+        public Vector2 Wh() => new(r.Width, r.Height);
     }
-    
+
+    extension(Vector2 v)
+    {
+        public Vector2 Add(float x, float y) => new(v.X + x, v.Y + y);
+        public Vector2 AddX(float toAdd) => new(v.X + toAdd, v.Y);
+        public Vector2 AddY(float toAdd) => new(v.X, v.Y + toAdd);
+
+        public float Angle()
+        {
+            return (float)Math.Atan2(v.Y, v.X);
+        }
+    }
+
     public static float Angle(Vector2 from, Vector2 to)
     => float.Atan2(to.Y - from.Y, to.X - from.X);
 
-    public static Vector2 AngleToVector(this float angleRadians, float length)
-        => new(float.Cos(angleRadians) * length, float.Sin(angleRadians) * length);
+    extension(float angleRadians)
+    {
+        public Vector2 AngleToVector(float length)
+            => new(float.Cos(angleRadians) * length, float.Sin(angleRadians) * length);
 
-    public static float ToRad(this float angle) => angle / 180f * MathF.PI;
-
-    public static float RadToDegrees(this float angleRadians) => angleRadians * 180f / MathF.PI;
+        public float ToRad() => angleRadians / 180f * MathF.PI;
+        public float RadToDegrees() => angleRadians * 180f / MathF.PI;
+    }
 
     public static Vector2 Floored(this Vector2 v) =>
 #if FNA
@@ -42,39 +50,40 @@ public static class VectorExt {
 #else
         Vector2.Round(v);
 #endif
-    public static Vector2 Normalized(this Vector2 v) => v == default ? default : Vector2.Normalize(v);
-
-    public static Vector2 Snap(this Vector2 v, int gridSize) => (v / gridSize).Floored() * gridSize;
-
-    public static Point GridPosFloor(this Vector2 v, int gridSize) => (v / gridSize).Floored().ToPoint();
-    public static Point GridPosRound(this Vector2 v, int gridSize) => (v / gridSize).Rounded().ToPoint();
-
-    public static Vector2 Rotate(this Vector2 v, float rad) {
-        float sin = MathF.Sin(rad);
-        float cos = MathF.Cos(rad);
-
-        float tx = v.X;
-        float ty = v.Y;
-
-        return new(cos * tx - sin * ty, sin * tx + cos * ty);
-    }
-
-    public static Vector2 FlipHorizontalAlong(this Vector2 v, Vector2 origin)
-        => new(v.X + 2 * (origin.X - v.X), v.Y);
-
-    public static Vector2 FlipVerticalAlong(this Vector2 v, Vector2 origin)
-        => new(v.X, v.Y + 2 * (origin.Y - v.Y));
-
-    public static Vector2 RotateAround(this Vector2 v, Vector2 origin, float angleRad) {
-        var diff = v - origin;
-        var diffRotated = diff.Rotate(angleRad);
-
-        return origin + diffRotated;
-    }
-    
-    public static Vector2 RotateTowards(this Vector2 vec, float targetAngleRadians, float maxMoveRadians)
+    extension(Vector2 v)
     {
-        return AngleToVector(AngleApproach(vec.Angle(), targetAngleRadians, maxMoveRadians), vec.Length());
+        public Vector2 Normalized() => v == default ? default : Vector2.Normalize(v);
+        public Vector2 Snap(int gridSize) => (v / gridSize).Floored() * gridSize;
+        public Point GridPosFloor(int gridSize) => (v / gridSize).Floored().ToPoint();
+        public Point GridPosRound(int gridSize) => (v / gridSize).Rounded().ToPoint();
+
+        public Vector2 Rotate(float rad) {
+            float sin = MathF.Sin(rad);
+            float cos = MathF.Cos(rad);
+
+            float tx = v.X;
+            float ty = v.Y;
+
+            return new(cos * tx - sin * ty, sin * tx + cos * ty);
+        }
+
+        public Vector2 FlipHorizontalAlong(Vector2 origin)
+            => new(v.X + 2 * (origin.X - v.X), v.Y);
+
+        public Vector2 FlipVerticalAlong(Vector2 origin)
+            => new(v.X, v.Y + 2 * (origin.Y - v.Y));
+
+        public Vector2 RotateAround(Vector2 origin, float angleRad) {
+            var diff = v - origin;
+            var diffRotated = diff.Rotate(angleRad);
+
+            return origin + diffRotated;
+        }
+
+        public Vector2 RotateTowards(float targetAngleRadians, float maxMoveRadians)
+        {
+            return AngleToVector(AngleApproach(v.Angle(), targetAngleRadians, maxMoveRadians), v.Length());
+        }
     }
 
     public static Vector2 ToXna(this NumVector2 v) => new(v.X, v.Y);

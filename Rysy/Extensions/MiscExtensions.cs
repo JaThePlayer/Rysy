@@ -23,47 +23,53 @@ public static class MiscExtensions {
         return Array.IndexOf(tiles, value) >= 0;
     }
 
-    /// <summary>
-    /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
-    /// </summary>
-    public static NumVector3 ToNumVec3(this Color color) => color.ToVector3().ToNumerics();
+    extension(Color color)
+    {
+        /// <summary>
+        /// Converts this color to a <see cref="NumVector3"/>[R, G, B]
+        /// </summary>
+        public NumVector3 ToNumVec3() => color.ToVector3().ToNumerics();
 
-    /// <summary>
-    /// Converts this color to a <see cref="NumVector4"/>[R, G, B, A]
-    /// </summary>
-    public static NumVector4 ToNumVec4(this Color color) => color.ToVector4().ToNumerics();
+        /// <summary>
+        /// Converts this color to a <see cref="NumVector4"/>[R, G, B, A]
+        /// </summary>
+        public NumVector4 ToNumVec4() => color.ToVector4().ToNumerics();
+    }
 
     public static T[] ShallowClone<T>(this T[] array) => (T[]) array.Clone();
 
-    public static bool Get2d(this BitArray s, int x, int y, int gridWidth) {
-        var i = s.Get1dLoc(x, y, gridWidth);
-        return i >= 0 && i < s.Length && s.Get(i);
-    }
-    
-    public static void Set2d(this BitArray s, int x, int y, int gridWidth, bool value) {
-        var i = s.Get1dLoc(x, y, gridWidth);
-        if (i >= 0 && i < s.Length)
-            s.Set(i, value);
-    }
+    extension(BitArray s)
+    {
+        public bool Get2d(int x, int y, int gridWidth) {
+            var i = s.Get1dLoc(x, y, gridWidth);
+            return i >= 0 && i < s.Length && s.Get(i);
+        }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Point Get2dLoc(this BitArray s, int index, int gridWidth) {
-        (int q, int r) = int.DivRem(index, gridWidth);
+        public void Set2d(int x, int y, int gridWidth, bool value) {
+            var i = s.Get1dLoc(x, y, gridWidth);
+            if (i >= 0 && i < s.Length)
+                s.Set(i, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Point Get2dLoc(int index, int gridWidth) {
+            (int q, int r) = int.DivRem(index, gridWidth);
         
-        return new(r, q);
+            return new(r, q);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Get1dLoc(int x, int y, int gridWidth) {
+            return x + y * gridWidth;
+        }
+
+        /// <summary>
+        /// Returns an enumerator that enumerates through all 2d points stored in the BitArray associated with a true value.
+        /// </summary>
+        public BitArray2dMatchEnumerator EnumerateTrue2dLocations(int gridWidth, Point offset = default) =>
+            new(s, gridWidth, offset);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Get1dLoc(this BitArray s, int x, int y, int gridWidth) {
-        return x + y * gridWidth;
-    }
-
-    
-    /// <summary>
-    /// Returns an enumerator that enumerates through all 2d points stored in the BitArray associated with a true value.
-    /// </summary>
-    public static BitArray2dMatchEnumerator EnumerateTrue2dLocations(this BitArray s, int gridWidth, Point offset = default) =>
-        new(s, gridWidth, offset);
 
     public static void DisposeIfDisposable(this object x) {
         if (x is IDisposable d)

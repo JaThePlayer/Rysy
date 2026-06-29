@@ -46,13 +46,16 @@ public interface IMouseInput {
 }
 
 public static class MouseInputExt {
-    /// <summary>
-    /// Gets the location of the mouse in the previous frame
-    /// </summary>
-    public static Point PrevPos(this IMouseInput mouse) => mouse.Pos - mouse.PositionDelta;
+    extension(IMouseInput mouse)
+    {
+        /// <summary>
+        /// Gets the location of the mouse in the previous frame.
+        /// </summary>
+        public Point PrevPos() => mouse.Pos - mouse.PositionDelta;
 
-    /// <summary>
-    /// Whether this mouse can wrap, taking into account both user settings and mouse input settings.
-    /// </summary>
-    public static bool CanWrap(this IMouseInput mouse) => (Settings.Instance?.MouseWrapping ?? false) && mouse.Wrap;
+        /// <summary>
+        /// Whether this mouse can wrap, taking into account both user settings and mouse input settings.
+        /// </summary>
+        public bool CanWrap() => (Settings.Instance?.MouseWrapping ?? false) && mouse.Wrap;
+    }
 }

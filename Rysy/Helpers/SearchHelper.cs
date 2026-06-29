@@ -200,46 +200,48 @@ public class Searchable {
 }
 
 public static class SearchHelper {
-    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, string> textSelector,
-        string search)
-        => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search);
+    extension<T>(IEnumerable<T> source)
+    {
+        public IEnumerable<T> SearchFilter(Func<T, string> textSelector, string search)
+            => source.SearchFilter(x => new Searchable(textSelector(x), [], []), search);
 
-    /// <summary>
-    /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
-    /// </summary>
-    public static IEnumerable<T> SearchFilter<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search)
-        => source.SearchFilterWithSearchable(textSelector, search).Select(e => e.Item1);
-    
-    /// <summary>
-    /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
-    /// </summary>
-    public static IEnumerable<(T, Searchable)> SearchFilterWithSearchable<T>(this IEnumerable<T> source, Func<T, Searchable> textSelector, string search) {
-        var hasSearch = !string.IsNullOrWhiteSpace(search);
+        /// <summary>
+        /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
+        /// </summary>
+        public IEnumerable<T> SearchFilter(Func<T, Searchable> textSelector, string search)
+            => source.SearchFilterWithSearchable(textSelector, search).Select(e => e.Item1);
 
-        var filter = source.Select(e => (e, Data: textSelector(e)));
+        /// <summary>
+        /// Filters and orders the <paramref name="source"/> using the provided search string and list of favorites, for use with search bars in UI's.
+        /// </summary>
+        public IEnumerable<(T, Searchable)> SearchFilterWithSearchable(Func<T, Searchable> textSelector, string search) {
+            var hasSearch = !string.IsNullOrWhiteSpace(search);
 
-        if (hasSearch) {
-            /*
-             * spike other - both terms need to match
-             * trigger_trigger  - _ gets replaced with spaces and treated as single search term.
-             * @frost_helper spike  - spikes from Frost Helper
-             * @maddie|@frost spike|spinner    - from either maddie's helping hand or frost helper; either spike or spinner
-             * #camera     - (triggers only) - only from "camera" tag/category
-             * @vanilla    - (includes everest)
-             * 
-             */
-            var parsed = ParseSearch(search);
-            filter = filter
-                .Where(e => parsed.Matches(e.Data))
-                .OrderOrThenByDescending(e => parsed.StartsWith(e.Data, e.Data.Text, out _));
+            var filter = source.Select(e => (e, Data: textSelector(e)));
+
+            if (hasSearch) {
+                /*
+                 * spike other - both terms need to match
+                 * trigger_trigger  - _ gets replaced with spaces and treated as single search term.
+                 * @frost_helper spike  - spikes from Frost Helper
+                 * @maddie|@frost spike|spinner    - from either maddie's helping hand or frost helper; either spike or spinner
+                 * #camera     - (triggers only) - only from "camera" tag/category
+                 * @vanilla    - (includes everest)
+                 * 
+                 */
+                var parsed = ParseSearch(search);
+                filter = filter
+                    .Where(e => parsed.Matches(e.Data))
+                    .OrderOrThenByDescending(e => parsed.StartsWith(e.Data, e.Data.Text, out _));
+            }
+
+            filter = filter.OrderOrThenByDescending(e => e.Data.IsFavourite); // put favorites in front of other options
+
+            // order alphabetically, but don't include mod name in the ordering.
+            filter = filter.OrderOrThenBy(e => e.Data.Text, new TrimModNameStringComparer());
+
+            return filter;
         }
-
-        filter = filter.OrderOrThenByDescending(e => e.Data.IsFavourite); // put favorites in front of other options
-
-        // order alphabetically, but don't include mod name in the ordering.
-        filter = filter.OrderOrThenBy(e => e.Data.Text, new TrimModNameStringComparer());
-
-        return filter;
     }
 
     private static string ToStringUnderscoresAreSpaces(ReadOnlySpan<char> txt) {
@@ -472,18 +474,21 @@ public static class SearchHelper {
         }
     }
 
-    private static IEnumerable<T> OrderOrThenBy<T, T2>(this IEnumerable<T> self, Func<T, T2> selector, IComparer<T2>? comparer = null) {
-        if (self is IOrderedEnumerable<T> ordered)
-            return ordered.ThenBy(selector, comparer);
-        return self.OrderBy(selector, comparer);
+    extension<T>(IEnumerable<T> self)
+    {
+        private IEnumerable<T> OrderOrThenBy<T2>(Func<T, T2> selector, IComparer<T2>? comparer = null) {
+            if (self is IOrderedEnumerable<T> ordered)
+                return ordered.ThenBy(selector, comparer);
+            return self.OrderBy(selector, comparer);
+        }
+
+        private IEnumerable<T> OrderOrThenByDescending<T2>(Func<T, T2> selector) {
+            if (self is IOrderedEnumerable<T> ordered)
+                return ordered.ThenByDescending(selector);
+            return self.OrderByDescending(selector);
+        }
     }
 
-    private static IEnumerable<T> OrderOrThenByDescending<T, T2>(this IEnumerable<T> self, Func<T, T2> selector) {
-        if (self is IOrderedEnumerable<T> ordered)
-            return ordered.ThenByDescending(selector);
-        return self.OrderByDescending(selector);
-    }
-    
     private struct TrimModNameStringComparer : IComparer<string> {
         public int Compare(string? x, string? y) {
             if (x is null || y is null)

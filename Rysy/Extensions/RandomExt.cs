@@ -13,46 +13,49 @@ public static class RandomExt {
         return Splitmix64(ix ^ iy << 32);
     }
 
-    /// <summary>
-    /// Creates a random value out of this Vector2
-    /// </summary>
-    public static ulong SeededRandom(this Vector2 pos) => SeededRandom(pos.X, pos.Y);
+    extension(Vector2 pos)
+    {
+        /// <summary>
+        /// Creates a random value out of this Vector2
+        /// </summary>
+        public ulong SeededRandom() => SeededRandom(pos.X, pos.Y);
 
-    /// <summary>
-    /// Creates a random bool out of this vector
-    /// </summary>
-    public static bool SeededRandomBool(this Vector2 pos) => SeededRandom(pos.X, pos.Y) >= ulong.MaxValue / 2;
+        /// <summary>
+        /// Creates a random bool out of this vector
+        /// </summary>
+        public bool SeededRandomBool() => SeededRandom(pos.X, pos.Y) >= ulong.MaxValue / 2;
 
-    /// <summary>
-    /// Creates a random int out of this Vector2
-    /// </summary>
-    public static int SeededRandomExclusive(this Vector2 pos, int max) => (int) (SeededRandom(pos.X, pos.Y) % (ulong) max);
+        /// <summary>
+        /// Creates a random int out of this Vector2
+        /// </summary>
+        public int SeededRandomExclusive(int max) => (int) (SeededRandom(pos.X, pos.Y) % (ulong) max);
 
-    /// <summary>
-    /// Creates a random int out of this Vector2, between min and max (inclusive)
-    /// </summary>
-    public static int SeededRandomInclusive(this Vector2 pos, int min, int max) => min + (int) (SeededRandom(pos.X, pos.Y) % (ulong) (max - min + 1));
+        /// <summary>
+        /// Creates a random int out of this Vector2, between min and max (inclusive)
+        /// </summary>
+        public int SeededRandomInclusive(int min, int max) => min + (int) (SeededRandom(pos.X, pos.Y) % (ulong) (max - min + 1));
 
-    /// <summary>
-    /// Creates a random int out of this Vector2, between min and max (inclusive)
-    /// </summary>
-    public static int SeededRandomInclusive(this Vector2 pos, Range range)
-        => SeededRandomInclusive(pos, range.Start.Value, range.End.Value);
+        /// <summary>
+        /// Creates a random int out of this Vector2, between min and max (inclusive)
+        /// </summary>
+        public int SeededRandomInclusive(Range range)
+            => SeededRandomInclusive(pos, range.Start.Value, range.End.Value);
 
-    /// <summary>
-    /// Creates a random float out of this Vector2, between min and max (inclusive)
-    /// </summary>
-    public static float SeededRandomInclusive(this Vector2 pos, float min, float max) {
-        var rand = (float) SeededRandom(pos.X, pos.Y);
-        var ret = rand.Map(0, ulong.MaxValue, min, max);
+        /// <summary>
+        /// Creates a random float out of this Vector2, between min and max (inclusive)
+        /// </summary>
+        public float SeededRandomInclusive(float min, float max) {
+            var rand = (float) SeededRandom(pos.X, pos.Y);
+            var ret = rand.Map(0, ulong.MaxValue, min, max);
 
-        return ret;
-    }
+            return ret;
+        }
 
-    public static T SeededRandomFrom<T>(this Vector2 pos, IReadOnlyList<T> values) {
-        var len = values.Count;
+        public T SeededRandomFrom<T>(IReadOnlyList<T> values) {
+            var len = values.Count;
 
-        return values[pos.SeededRandomInclusive(0, len - 1)];
+            return values[pos.SeededRandomInclusive(0, len - 1)];
+        }
     }
 
     //public static T SeededRandomFrom<T>(this Vector2 pos, IList<T> values) {
@@ -67,15 +70,18 @@ public static class RandomExt {
     //    return values[pos.SeededRandomInclusive(0, len - 1)];
     //}
     
-    public static float Range(this Random random, float min, float max)
+    extension(Random random)
     {
-        return min + random.NextSingle() * (max - min);
-    }
+        public float Range(float min, float max)
+        {
+            return min + random.NextSingle() * (max - min);
+        }
 
-    public static T ChooseFrom<T>(this Random random, IList<T> values) {
-        var len = values.Count;
+        public T ChooseFrom<T>(IList<T> values) {
+            var len = values.Count;
 
-        return values[random.Next(0, len - 1)];
+            return values[random.Next(0, len - 1)];
+        }
     }
 
     #region Splitmix64

@@ -5,19 +5,22 @@ using System.Runtime.CompilerServices;
 namespace Rysy.Extensions;
 
 public static class NumberExt {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T AtMost<T>(this T num, T max) where T : INumber<T> {
-        return T.Min(num, max);
-    }
+    extension<T>(T num) where T : INumber<T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T AtMost(T max) {
+            return T.Min(num, max);
+        }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T AtLeast<T>(this T num, T min) where T : INumber<T> {
-        return T.Max(num, min);
-    }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T AtLeast(T min) {
+            return T.Max(num, min);
+        }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T SnapBetween<T>(this T num, T min, T max) where T : INumber<T> {
-        return T.Max(min, T.Min(num, max));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T SnapBetween(T min, T max) {
+            return T.Max(min, T.Min(num, max));
+        }
     }
 
     public static int SnapToGrid(this int num, int gridSize) {
@@ -48,53 +51,59 @@ public static class NumberExt {
         return (a % b + b) % b;
     }
 
-    public static T Map<T>(this T num, T min, T max, T newMin, T newMax) where T : INumber<T> {
-        var slope = (newMax - newMin) / (max - min);
-        return min + slope * (num - min);
-    }
+    extension<T>(T num) where T : INumber<T>
+    {
+        public T Map(T min, T max, T newMin, T newMax) {
+            var slope = (newMax - newMin) / (max - min);
+            return min + slope * (num - min);
+        }
 
-    public static T ClampedMap<T>(this T val, T min, T max, T newMin, T newMax) where T : INumber<T> {
-        return T.Clamp((val - min) / (max - min), T.Zero, T.One) * (newMax - newMin) + newMin;
-    }
-    
-    public static T Clamp<T>(this T value, T min, T max) where T : INumber<T> {
-        return T.Clamp(value, min, max);
+        public T ClampedMap(T min, T max, T newMin, T newMax) {
+            return T.Clamp((num - min) / (max - min), T.Zero, T.One) * (newMax - newMin) + newMin;
+        }
+
+        public T Clamp(T min, T max) {
+            return T.Clamp(num, min, max);
+        }
     }
 
     public static T Floor<T>(this T num) where T : IFloatingPoint<T>
         => T.Floor(num);
 
-    /// <summary>
-    /// Snaps the angle (in degrees) to right angles (0, 90, 180, 270)
-    /// </summary>
-    public static float SnapAngleToRightAnglesDegrees(this float angleDegrees, float toleranceDegrees) {
-        return angleDegrees.ToRad().SnapAngleToRightAnglesRad(toleranceDegrees.ToRad()).RadToDegrees();
-    }
-
-    /// <summary>
-    /// Snaps the angle (in radians) to right angles (0, 90.ToRad(), 180.ToRad(), 270.ToRad())
-    /// </summary>
-    public static float SnapAngleToRightAnglesRad(this float angleRad, float toleranceRad) {
-        if (toleranceRad < 0f) {
-            toleranceRad = 0f;
+    extension(float angleDegrees)
+    {
+        /// <summary>
+        /// Snaps the angle (in degrees) to right angles (0, 90, 180, 270)
+        /// </summary>
+        public float SnapAngleToRightAnglesDegrees(float toleranceDegrees) {
+            return angleDegrees.ToRad().SnapAngleToRightAnglesRad(toleranceDegrees.ToRad()).RadToDegrees();
         }
 
-        angleRad %= 360f.ToRad();
-
-        return Check(0f.ToRad())
-            ?? Check(90f.ToRad())
-            ?? Check(180f.ToRad())
-            ?? Check(270f.ToRad())
-            ?? angleRad;
-
-        float? Check(float angleToCheck) {
-            if (Math.Abs(angleToCheck - angleRad) <= toleranceRad) {
-                return angleToCheck;
+        /// <summary>
+        /// Snaps the angle (in radians) to right angles (0, 90.ToRad(), 180.ToRad(), 270.ToRad())
+        /// </summary>
+        public float SnapAngleToRightAnglesRad(float toleranceRad) {
+            if (toleranceRad < 0f) {
+                toleranceRad = 0f;
             }
-            return null;
+
+            angleDegrees %= 360f.ToRad();
+
+            return Check(0f.ToRad())
+                   ?? Check(90f.ToRad())
+                   ?? Check(180f.ToRad())
+                   ?? Check(270f.ToRad())
+                   ?? angleDegrees;
+
+            float? Check(float angleToCheck) {
+                if (Math.Abs(angleToCheck - angleDegrees) <= toleranceRad) {
+                    return angleToCheck;
+                }
+                return null;
+            }
         }
     }
-    
+
     public static T Approach<T>(this T val, T target, T maxMove) where T : INumber<T>
     {
         if (!(val > target))
@@ -185,34 +194,37 @@ public static class NumberExt {
         return defaultValue;
     }
     
-    /// <summary>
-    /// Safely coerces this object to a float, returning the default if the conversion fails.
-    /// </summary>
-    public static int CoerceToInt(this object? v, int defaultValue = 0) {
-        if (v is int f)
-            return f;
+    extension(object? v)
+    {
+        /// <summary>
+        /// Safely coerces this object to a float, returning the default if the conversion fails.
+        /// </summary>
+        public int CoerceToInt(int defaultValue = 0) {
+            if (v is int f)
+                return f;
 
-        if (v is IConvertible convertible) {
-            try {
-                return convertible.ToInt32(CultureInfo.InvariantCulture);
-            } catch {
-                return defaultValue;
+            if (v is IConvertible convertible) {
+                try {
+                    return convertible.ToInt32(CultureInfo.InvariantCulture);
+                } catch {
+                    return defaultValue;
+                }
             }
+
+            return defaultValue;
         }
 
-        return defaultValue;
-    }
-    
-    /// <summary>
-    /// Safely coerces this object to a bool - if it's a boxed bool, returns its value. Otherwise, returns false for null, otherwise true.
-    /// </summary>
-    public static bool CoerceToBool(this object? v) {
-        if (v is bool f)
-            return f;
+        /// <summary>
+        /// Safely coerces this object to a bool - if it's a boxed bool, returns its value. Otherwise, returns false for null, otherwise true.
+        /// </summary>
+        public bool CoerceToBool() {
+            if (v is bool f)
+                return f;
 
-        if (v is null)
-            return false;
+            if (v is null)
+                return false;
 
-        return true;
+            return true;
+        }
     }
 }

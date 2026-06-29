@@ -5,20 +5,23 @@ using System.Text.Json;
 namespace Rysy.Extensions;
 
 public static class JsonExtensions {
-    /// <summary>
-    /// Returns the JSON representation of this object.
-    /// </summary>
-    public static string ToJson<T>(this T? obj, bool minified = false) {
-        return obj is { } ? JsonSerializer.Serialize(obj, Options(minified)) : "";
+    extension<T>(T? obj)
+    {
+        /// <summary>
+        /// Returns the JSON representation of this object.
+        /// </summary>
+        public string ToJson(bool minified = false) {
+            return obj is { } ? JsonSerializer.Serialize(obj, Options(minified)) : "";
+        }
+
+        /// <summary>
+        /// Returns the JSON representation of this object.
+        /// </summary>
+        public string ToJson(JsonSerializerOptions? options, bool minified = false) {
+            return obj is { } ? JsonSerializer.Serialize(obj, options ?? Options(minified)) : "";
+        }
     }
-    
-    /// <summary>
-    /// Returns the JSON representation of this object.
-    /// </summary>
-    public static string ToJson<T>(this T? obj, JsonSerializerOptions? options, bool minified = false) {
-        return obj is { } ? JsonSerializer.Serialize(obj, options ?? Options(minified)) : "";
-    }
-    
+
     /// <summary>
     /// Returns the JSON representation of this object.
     /// </summary>

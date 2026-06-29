@@ -290,29 +290,32 @@ public static class LogLevelExtensions {
 #endif
     }
     
-    public static string FastToString(this LogLevel logLevel)
-        => logLevel switch {
-            LogLevel.Debug => "Debug",
-            LogLevel.Info => "Info",
-            LogLevel.Warning => "Warning",
-            LogLevel.Error => "Error",
-            _ => "unknown",
-        };
+    extension(LogLevel logLevel)
+    {
+        public string FastToString()
+            => logLevel switch {
+                LogLevel.Debug => "Debug",
+                LogLevel.Info => "Info",
+                LogLevel.Warning => "Warning",
+                LogLevel.Error => "Error",
+                _ => "unknown",
+            };
 
-    public static string ToColoredString(this LogLevel logLevel)
-        => logLevel switch {
-            LogLevel.Debug => "Debug",
-            LogLevel.Info => "\e[96mInfo\e[0m",
-            LogLevel.Warning => "\e[93mWarning\e[0m",
-            LogLevel.Error => "\e[91mError\e[0m",
-            _ => "unknown",
-        };
+        public string ToColoredString()
+            => logLevel switch {
+                LogLevel.Debug => "Debug",
+                LogLevel.Info => "\e[96mInfo\e[0m",
+                LogLevel.Warning => "\e[93mWarning\e[0m",
+                LogLevel.Error => "\e[91mError\e[0m",
+                _ => "unknown",
+            };
 
-    public static NumVector4 ToColorNumVec(this LogLevel logLevel) => (logLevel switch {
-        LogLevel.Debug => Color.LightGray,
-        LogLevel.Info => Color.White,
-        LogLevel.Warning => Color.Yellow,
-        LogLevel.Error => Color.Red,
-        _ => Color.White,
-    }).ToNumVec4();
+        public NumVector4 ToColorNumVec() => (logLevel switch {
+            LogLevel.Debug => Color.LightGray,
+            LogLevel.Info => Color.White,
+            LogLevel.Warning => Color.Yellow,
+            LogLevel.Error => Color.Red,
+            _ => Color.White,
+        }).ToNumVec4();
+    }
 }

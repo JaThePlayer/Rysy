@@ -40,41 +40,44 @@ public static class TwoDimensionalArrayExt {
         return newArray;
     }
 
-    /// <summary>
-    /// Gets the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>], or <paramref name="def"/> if the index is out of bounds
-    /// </summary>
-    public static T GetOrDefault<T>(this T[,] arr, int x, int y, T def) {
-        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1))
-            return def;
+    extension<T>(T[,] arr)
+    {
+        /// <summary>
+        /// Gets the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>], or <paramref name="def"/> if the index is out of bounds
+        /// </summary>
+        public T GetOrDefault(int x, int y, T def) {
+            if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1))
+                return def;
 
-        return arr[x, y];
-    }
-
-    /// <summary>
-    /// Tries to get the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
-    /// </summary>
-    public static bool TryGet<T>(this T[,] arr, int x, int y, out T? val) {
-        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
-            val = default;
-            return false;
+            return arr[x, y];
         }
 
-        val = arr[x, y];
-        return true;
-    }
+        /// <summary>
+        /// Tries to get the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
+        /// </summary>
+        public bool TryGet(int x, int y, out T? val) {
+            if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
+                val = default;
+                return false;
+            }
 
-    /// <summary>
-    /// Tries to set the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
-    /// </summary>
-    public static bool TrySet<T>(this T[,] arr, int x, int y, T val) {
-        if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
-            return false;
+            val = arr[x, y];
+            return true;
         }
 
-        arr[x, y] = val;
-        return true;
+        /// <summary>
+        /// Tries to set the element at <paramref name="arr"/>[<paramref name="x"/>, <paramref name="y"/>]
+        /// </summary>
+        public bool TrySet(int x, int y, T val) {
+            if ((uint)x >= arr.GetLength(0) || (uint)y >= arr.GetLength(1)) {
+                return false;
+            }
+
+            arr[x, y] = val;
+            return true;
+        }
     }
-    
+
     public static bool TryReplace<T>(this T[,] arr, int x, int y, T val, out T? prev) where T : IEquatable<T> {
         prev = default;
         
@@ -92,60 +95,63 @@ public static class TwoDimensionalArrayExt {
         return true;
     }
 
-    public static T[,] CreateFlippedHorizontally<T>(this T[,] arr) {
-        var w = arr.GetLength(0);
-        var h = arr.GetLength(1);
-        var flipped = new T[w, h];
+    extension<T>(T[,] arr)
+    {
+        public T[,] CreateFlippedHorizontally() {
+            var w = arr.GetLength(0);
+            var h = arr.GetLength(1);
+            var flipped = new T[w, h];
 
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                flipped[x, y] = arr[w - x - 1, y];
+            for (int x = 0; x < w; x++) {
+                for (int y = 0; y < h; y++) {
+                    flipped[x, y] = arr[w - x - 1, y];
+                }
             }
+
+            return flipped;
         }
 
-        return flipped;
-    }
+        public T[,] CreateFlippedVertically() {
+            var w = arr.GetLength(0);
+            var h = arr.GetLength(1);
+            var flipped = new T[w, h];
 
-    public static T[,] CreateFlippedVertically<T>(this T[,] arr) {
-        var w = arr.GetLength(0);
-        var h = arr.GetLength(1);
-        var flipped = new T[w, h];
-
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                flipped[x, y] = arr[x, h - y - 1];
+            for (int x = 0; x < w; x++) {
+                for (int y = 0; y < h; y++) {
+                    flipped[x, y] = arr[x, h - y - 1];
+                }
             }
+
+            return flipped;
         }
 
-        return flipped;
-    }
-    
-    public static T[,] CreateRotatedRight<T>(this T[,] arr) {
-        var w = arr.GetLength(0);
-        var h = arr.GetLength(1);
-        var flipped = new T[h, w];
+        public T[,] CreateRotatedRight() {
+            var w = arr.GetLength(0);
+            var h = arr.GetLength(1);
+            var flipped = new T[h, w];
 
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                flipped[h - y - 1, x] = arr[x, y];
+            for (int x = 0; x < w; x++) {
+                for (int y = 0; y < h; y++) {
+                    flipped[h - y - 1, x] = arr[x, y];
+                }
             }
+
+            return flipped;
         }
 
-        return flipped;
-    }
-    
-    public static T[,] CreateRotatedLeft<T>(this T[,] arr) {
-        var w = arr.GetLength(0);
-        var h = arr.GetLength(1);
-        var flipped = new T[h, w];
+        public T[,] CreateRotatedLeft() {
+            var w = arr.GetLength(0);
+            var h = arr.GetLength(1);
+            var flipped = new T[h, w];
 
-        for (int x = 0; x < w; x++) {
-            for (int y = 0; y < h; y++) {
-                flipped[y, w - x - 1] = arr[x, y];
+            for (int x = 0; x < w; x++) {
+                for (int y = 0; y < h; y++) {
+                    flipped[y, w - x - 1] = arr[x, y];
+                }
             }
-        }
 
-        return flipped;
+            return flipped;
+        }
     }
 
     public static T[,] CreateTrimmed<T>(this T[,] arr, T emptyValue, out int offX, out int offY) where T : IEquatable<T> {

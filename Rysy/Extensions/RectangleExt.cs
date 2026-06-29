@@ -95,104 +95,105 @@ public static class RectangleExt {
         return new Rectangle(smallestX, smallestY, width, height);
     }
 
-    public static Rectangle MultSize(this Rectangle r, int mult) {
-        return new(r.X, r.Y, r.Width * mult, r.Height * mult);
-    }
+    extension(Rectangle r)
+    {
+        public Rectangle MultSize(int mult) {
+            return new(r.X, r.Y, r.Width * mult, r.Height * mult);
+        }
 
-    public static Rectangle Mult(this Rectangle r, int mult) {
-        return new(r.X * mult, r.Y * mult, r.Width * mult, r.Height * mult);
-    }
+        public Rectangle Mult(int mult) {
+            return new(r.X * mult, r.Y * mult, r.Width * mult, r.Height * mult);
+        }
 
-    public static Rectangle Div(this Rectangle r, int mult) {
-        return new(r.X / mult, r.Y / mult, r.Width / mult, r.Height / mult);
-    }
+        public Rectangle Div(int mult) {
+            return new(r.X / mult, r.Y / mult, r.Width / mult, r.Height / mult);
+        }
 
-    public static Rectangle AddSize(this Rectangle r, int w, int h) => new(r.X, r.Y, r.Width + w, r.Height + h);
-    public static Rectangle AddSize(this Rectangle r, Point offset) => new(r.X, r.Y, r.Width + offset.X, r.Height + +offset.Y);
+        public Rectangle AddSize(int w, int h) => new(r.X, r.Y, r.Width + w, r.Height + h);
+        public Rectangle AddSize(Point offset) => new(r.X, r.Y, r.Width + offset.X, r.Height + +offset.Y);
+        public Rectangle MovedBy(Vector2 offset) => new(r.X + (int) offset.X, r.Y + (int) offset.Y, r.Width, r.Height);
+        public Rectangle MovedBy(int x, int y) => new(r.X + x, r.Y + y, r.Width, r.Height);
+        public Rectangle MovedTo(Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
+        public Rectangle MovedTo(NumVector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
+        public Point Size() => new(r.Width, r.Height);
+        public int Area() => r.Width * r.Height;
 
-    public static Rectangle MovedBy(this Rectangle r, Vector2 offset) => new(r.X + (int) offset.X, r.Y + (int) offset.Y, r.Width, r.Height);
-    public static Rectangle MovedBy(this Rectangle r, int x, int y) => new(r.X + x, r.Y + y, r.Width, r.Height);
-    public static Rectangle MovedTo(this Rectangle r, Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
-    public static Rectangle MovedTo(this Rectangle r, NumVector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
-    public static Point Size(this Rectangle r) => new(r.Width, r.Height);
-    
-    public static int Area(this Rectangle r) => r.Width * r.Height;
+        public NineSliceLocation? GetLocationInRect(Point pos, int leniency = 1) {
+            if (!r.Contains(pos))
+                return null;
 
-    public static NineSliceLocation? GetLocationInRect(this Rectangle r, Point pos, int leniency = 1) {
-        if (!r.Contains(pos))
-            return null;
-
-        if (new Rectangle(r.X, r.Y, leniency, leniency).Contains(pos))
-            return NineSliceLocation.TopLeft;
-        if (new Rectangle(r.Right - leniency, r.Y, leniency, leniency).Contains(pos))
-            return NineSliceLocation.TopRight;
-
-        if (new Rectangle(r.X, r.Bottom - leniency, leniency, leniency).Contains(pos))
-            return NineSliceLocation.BottomLeft;
-        if (new Rectangle(r.Right - leniency, r.Bottom - leniency, leniency, leniency).Contains(pos))
-            return NineSliceLocation.BottomRight;
-
-        if (new Rectangle(r.X, r.Y, r.Width, leniency).Contains(pos))
-            return NineSliceLocation.TopMiddle;
-        if (new Rectangle(r.X, r.Bottom - leniency, r.Width, leniency).Contains(pos))
-            return NineSliceLocation.BottomMiddle;
-
-        if (new Rectangle(r.X, r.Y, leniency, r.Height).Contains(pos))
-            return NineSliceLocation.Left;
-        if (new Rectangle(r.Right - leniency, r.Y, leniency, r.Height).Contains(pos))
-            return NineSliceLocation.Right;
-
-        return null;
-    }
-    
-    public static NineSliceLocation GetLocationRelativeToRect(this Rectangle r, Point pos) {
-        if (r.Contains(pos))
-            return NineSliceLocation.Middle;
-
-        if (r.Y > pos.Y) {
-            // Point is above rectangle:
-
-            if (r.X.IsInRange(r.Left, r.Right)) {
-                return NineSliceLocation.TopMiddle;
-            }
-            if (r.Left > pos.X) {
+            if (new Rectangle(r.X, r.Y, leniency, leniency).Contains(pos))
                 return NineSliceLocation.TopLeft;
-            }
-            
-            return NineSliceLocation.TopRight;
+            if (new Rectangle(r.Right - leniency, r.Y, leniency, leniency).Contains(pos))
+                return NineSliceLocation.TopRight;
+
+            if (new Rectangle(r.X, r.Bottom - leniency, leniency, leniency).Contains(pos))
+                return NineSliceLocation.BottomLeft;
+            if (new Rectangle(r.Right - leniency, r.Bottom - leniency, leniency, leniency).Contains(pos))
+                return NineSliceLocation.BottomRight;
+
+            if (new Rectangle(r.X, r.Y, r.Width, leniency).Contains(pos))
+                return NineSliceLocation.TopMiddle;
+            if (new Rectangle(r.X, r.Bottom - leniency, r.Width, leniency).Contains(pos))
+                return NineSliceLocation.BottomMiddle;
+
+            if (new Rectangle(r.X, r.Y, leniency, r.Height).Contains(pos))
+                return NineSliceLocation.Left;
+            if (new Rectangle(r.Right - leniency, r.Y, leniency, r.Height).Contains(pos))
+                return NineSliceLocation.Right;
+
+            return null;
         }
 
-        if (r.Bottom < pos.Y) {
-            // Point is below rectangle
+        public NineSliceLocation GetLocationRelativeToRect(Point pos) {
+            if (r.Contains(pos))
+                return NineSliceLocation.Middle;
+
+            if (r.Y > pos.Y) {
+                // Point is above rectangle:
+
+                if (r.X.IsInRange(r.Left, r.Right)) {
+                    return NineSliceLocation.TopMiddle;
+                }
+                if (r.Left > pos.X) {
+                    return NineSliceLocation.TopLeft;
+                }
+            
+                return NineSliceLocation.TopRight;
+            }
+
+            if (r.Bottom < pos.Y) {
+                // Point is below rectangle
+                if (r.X.IsInRange(r.Left, r.Right)) {
+                    return NineSliceLocation.BottomMiddle;
+                }
+                if (r.Left > pos.X) {
+                    return NineSliceLocation.BottomLeft;
+                }
+            
+                return NineSliceLocation.BottomRight;
+            }
+        
             if (r.X.IsInRange(r.Left, r.Right)) {
-                return NineSliceLocation.BottomMiddle;
+                return NineSliceLocation.Middle;
             }
             if (r.Left > pos.X) {
-                return NineSliceLocation.BottomLeft;
+                return NineSliceLocation.Left;
             }
             
-            return NineSliceLocation.BottomRight;
+            return NineSliceLocation.Right;
         }
-        
-        if (r.X.IsInRange(r.Left, r.Right)) {
-            return NineSliceLocation.Middle;
-        }
-        if (r.Left > pos.X) {
-            return NineSliceLocation.Left;
-        }
-            
-        return NineSliceLocation.Right;
-    }
 
-    /// <summary>
-    /// Returns an enumerator which returns all grid locations that are within the given rectangle.
-    /// </summary>
-    public static GridLocationsEnumerator EnumerateGridLocations(this Rectangle r) => new(r);
-    
-    /// <summary>
-    /// Returns an enumerator which returns all grid locations that are on the edges of the given rectangle.
-    /// </summary>
-    public static GridEdgeLocationsEnumerator EnumerateGridEdgeLocations(this Rectangle r) => new(r);
+        /// <summary>
+        /// Returns an enumerator which returns all grid locations that are within the given rectangle.
+        /// </summary>
+        public GridLocationsEnumerator EnumerateGridLocations() => new(r);
+
+        /// <summary>
+        /// Returns an enumerator which returns all grid locations that are on the edges of the given rectangle.
+        /// </summary>
+        public GridEdgeLocationsEnumerator EnumerateGridEdgeLocations() => new(r);
+    }
 
     public struct GridLocationsEnumerator : IEnumerator<Point>, IEnumerable<Point> {
         private Rectangle _rectangle;

@@ -266,47 +266,56 @@ public enum ColorFormat {
 }
 
 public static class ColorHelperExtensions {
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Rgb"/>
-    /// </summary>
-    public static Color FromRgb(this string hexCode) => ColorHelper.Rgb(hexCode);
+    extension(string hexCode)
+    {
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Rgb"/>
+        /// </summary>
+        public Color FromRgb() => ColorHelper.Rgb(hexCode);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Rgba"/>
-    /// </summary>
-    public static Color FromRgba(this string hexCode) => ColorHelper.Rgba(hexCode);
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Rgba"/>
+        /// </summary>
+        public Color FromRgba() => ColorHelper.Rgba(hexCode);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Argb"/>
-    /// </summary>
-    public static Color FromArgb(this string hexCode) => ColorHelper.Argb(hexCode);
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Argb"/>
+        /// </summary>
+        public Color FromArgb() => ColorHelper.Argb(hexCode);
+    }
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Rgb"/>
-    /// </summary>
-    public static Color FromRgb(this ReadOnlySpan<char> hexCode) => ColorHelper.Rgb(hexCode);
+    extension(ReadOnlySpan<char> hexCode)
+    {
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Rgb"/>
+        /// </summary>
+        public Color FromRgb() => ColorHelper.Rgb(hexCode);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Rgba"/>
-    /// </summary>
-    public static Color FromRgba(this ReadOnlySpan<char> hexCode) => ColorHelper.Rgba(hexCode);
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Rgba"/>
+        /// </summary>
+        public Color FromRgba() => ColorHelper.Rgba(hexCode);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Argb"/>
-    /// </summary>
-    public static Color FromArgb(this ReadOnlySpan<char> hexCode) => ColorHelper.Argb(hexCode);
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Argb"/>
+        /// </summary>
+        public Color FromArgb() => ColorHelper.Argb(hexCode);
+    }
 
     /// <summary>
     /// <inheritdoc cref="ColorHelper.Get"/>
     /// </summary>
     public static Color ToColor(this string str, ColorFormat format = ColorFormat.Rgba) => ColorHelper.Get(str, format);
     
-    public static Color ToColorOr(this string? str, Color def, ColorFormat format = ColorFormat.Rgba) {
-        return str is {} ? ColorHelper.TryGet(str, format, out var color) ? color : def : def;
-    }
-    
-    public static Color ToColorOr(this string? str, string def, ColorFormat format = ColorFormat.Rgba) {
-        return str is {} && ColorHelper.TryGet(str, format, out var color) ? color : def.ToColorOr(Color.White);
+    extension(string? maybeColor)
+    {
+        public Color ToColorOr(Color def, ColorFormat format = ColorFormat.Rgba) {
+            return maybeColor is {} ? ColorHelper.TryGet(maybeColor, format, out var color) ? color : def : def;
+        }
+
+        public Color ToColorOr(string def, ColorFormat format = ColorFormat.Rgba) {
+            return maybeColor is {} && ColorHelper.TryGet(maybeColor, format, out var color) ? color : def.ToColorOr(Color.White);
+        }
     }
 
     /// <summary>
@@ -314,32 +323,35 @@ public static class ColorHelperExtensions {
     /// </summary>
     public static bool TryToColor(this string colorString, ColorFormat format, out Color color) => ColorHelper.TryGet(colorString, format, out color);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.ToRgbaString"/>
-    /// </summary>
-    public static string ToRgbaString(this Color color) => ColorHelper.ToRgbaString(color);
+    /// <param name="color">The color to add to</param>
+    extension(Color color)
+    {
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.ToRgbaString"/>
+        /// </summary>
+        public string ToRgbaString() => ColorHelper.ToRgbaString(color);
 
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.ToString(Color, ColorFormat)"/>
-    /// </summary>
-    public static string ToString(this Color color, ColorFormat format) => ColorHelper.ToString(color, format);
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.ToString(Color, ColorFormat)"/>
+        /// </summary>
+        public string ToString(ColorFormat format) => ColorHelper.ToString(color, format);
 
-    /// <summary>
-    /// Adds an HSV value to this color, returning a new color.
-    /// </summary>
-    /// <param name="c">The color to add to</param>
-    /// <param name="h">The hue value (0-180f)</param>
-    /// <param name="s">The saturation value (0, 100f)</param>
-    /// <param name="v">The value value (0, 100f)</param>
-    /// <returns></returns>
-    public static Color AddHsv(this Color c, float h, float s, float v) {
-        var cv = c.ToNumVec4();
-        float oh = 0f, os = 0f, ov = 0f;
+        /// <summary>
+        /// Adds an HSV value to this color, returning a new color.
+        /// </summary>
+        /// <param name="h">The hue value (0-180f)</param>
+        /// <param name="s">The saturation value (0, 100f)</param>
+        /// <param name="v">The value value (0, 100f)</param>
+        /// <returns></returns>
+        public Color AddHsv(float h, float s, float v) {
+            var cv = color.ToNumVec4();
+            float oh = 0f, os = 0f, ov = 0f;
 
-        ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, ref oh, ref os, ref ov);
-        ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), ref cv.X, ref cv.Y, ref cv.Z);
+            ImGui.ColorConvertRGBtoHSV(cv.X, cv.Y, cv.Z, ref oh, ref os, ref ov);
+            ImGui.ColorConvertHSVtoRGB(oh + h.Div(180f), os + s.Div(100f), ov + v.Div(100f), ref cv.X, ref cv.Y, ref cv.Z);
 
-        return new(cv.ToXna());
+            return new(cv.ToXna());
+        }
     }
 }
 

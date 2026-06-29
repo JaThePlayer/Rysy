@@ -47,120 +47,123 @@ public readonly struct XmlNodeUntypedData(XmlNode node) : IUntypedData {
 
 
 public static class UntypedDataExt {
-    public static string? AttrNullable(this IUntypedData self, string attrName) {
-        if (self.TryGetValue(attrName, out var obj) && obj is { }) {
-            return obj.ToString();
+    extension(IUntypedData self)
+    {
+        public string? AttrNullable(string attrName) {
+            if (self.TryGetValue(attrName, out var obj) && obj is { }) {
+                return obj.ToString();
+            }
+
+            return null;
         }
 
-        return null;
-    }
-    
-    public static string Attr(this IUntypedData self, string attrName, string def = "") {
-        if (self.TryGetValue(attrName, out var obj) && obj is { }) {
-            return obj.ToString()!;
+        public string Attr(string attrName, string def = "") {
+            if (self.TryGetValue(attrName, out var obj) && obj is { }) {
+                return obj.ToString()!;
+            }
+
+            return def;
         }
 
-        return def;
-    }
-    
-    public static int Int(this IUntypedData self, string attrName, int def = 0) {
-        if (self.TryGetValue(attrName, out var obj)) {
-            return obj switch {
-                float f => (int)f,
-                int i => i,
-                short s => s,
-                byte b => b,
-                _ => int.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var i) ? i : def
-            };
+        public int Int(string attrName, int def = 0) {
+            if (self.TryGetValue(attrName, out var obj)) {
+                return obj switch {
+                    float f => (int)f,
+                    int i => i,
+                    short s => s,
+                    byte b => b,
+                    _ => int.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var i) ? i : def
+                };
+            }
+
+            return def;
         }
 
-        return def;
-    }
+        public float Float(string attrName, float def = 0f) {
+            if (self.TryGetValue(attrName, out var obj)) {
+                return obj switch {
+                    float f => f,
+                    int i => i,
+                    short s => s,
+                    byte b => b,
+                    _ => float.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var f) ? f : def
+                };
+            }
 
-    public static float Float(this IUntypedData self, string attrName, float def = 0f) {
-        if (self.TryGetValue(attrName, out var obj)) {
-            return obj switch {
-                float f => f,
-                int i => i,
-                short s => s,
-                byte b => b,
-                _ => float.TryParse(obj?.ToString() ?? "", CultureInfo.InvariantCulture, out var f) ? f : def
-            };
+            return def;
         }
 
-        return def;
-    }
+        public bool Bool(string attrName, bool def = false) {
+            if (self.TryGetValue(attrName, out var obj))
+                return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
 
-    public static bool Bool(this IUntypedData self, string attrName, bool def = false) {
-        if (self.TryGetValue(attrName, out var obj))
-            return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
-
-        return def;
-    }
-    
-    public static bool? NullableBool(this IUntypedData self, string attrName) {
-        if (self.TryGetValue(attrName, out var obj))
-            return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
-
-        return null;
-    }
-
-    public static char Char(this IUntypedData self, string attrName, char def) {
-        if (self.TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
-            return result;
-
-        return def;
-    }
-
-    public static T Enum<T>(this IUntypedData self, string attrName, T def) where T : struct, Enum {
-        if (self.TryGetValue(attrName, out var obj) && System.Enum.TryParse<T>(obj.ToString(), true, out var result))
-            return result;
-
-        return def;
-    }
-    
-    public static T? Obj<T>(this IUntypedData self, string attrName, T? def = null) where T : class {
-        if (self.TryGetValue(attrName, out var obj) && obj is T result)
-            return result;
-
-        return def;
-    }
-
-    public static Color Rgb(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.Rgb);
-
-    public static Color Rgb(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.Rgb);
-
-    public static Color Rgba(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.Rgba);
-
-    public static Color Rgba(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.Rgba);
-
-    public static Color Argb(this IUntypedData self, string attrName, Color def)
-        => self.GetColor(attrName, def, ColorFormat.Argb);
-
-    public static Color Argb(this IUntypedData self, string attrName, string def)
-        => self.GetColor(attrName, def, ColorFormat.Argb);
-    
-    public static Color GetColor(this IUntypedData self, string attrName, Color def, ColorFormat format) {
-        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
-            return parsed;
-
-        return def;
-    }
-
-    public static Color GetColor(this IUntypedData self, string attrName, string def, ColorFormat format) {
-        if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
-            return parsed;
-
-        if (ColorHelper.TryGet(def, format, out var defParsed)) {
-            return defParsed;
+            return def;
         }
 
-        return Color.White;
-    }
+        public bool? NullableBool(string attrName) {
+            if (self.TryGetValue(attrName, out var obj))
+                return Convert.ToBoolean(obj, CultureInfo.InvariantCulture);
 
-    public static bool Has(this IUntypedData self, string attrName) => self.TryGetValue(attrName, out _);
+            return null;
+        }
+
+        public char Char(string attrName, char def) {
+            if (self.TryGetValue(attrName, out var obj) && char.TryParse(obj.ToString(), out var result))
+                return result;
+
+            return def;
+        }
+
+        public T Enum<T>(string attrName, T def) where T : struct, Enum {
+            if (self.TryGetValue(attrName, out var obj) && System.Enum.TryParse<T>(obj.ToString(), true, out var result))
+                return result;
+
+            return def;
+        }
+
+        public T? Obj<T>(string attrName, T? def = null) where T : class {
+            if (self.TryGetValue(attrName, out var obj) && obj is T result)
+                return result;
+
+            return def;
+        }
+
+        public Color Rgb(string attrName, Color def)
+            => self.GetColor(attrName, def, ColorFormat.Rgb);
+
+        public Color Rgb(string attrName, string def)
+            => self.GetColor(attrName, def, ColorFormat.Rgb);
+
+        public Color Rgba(string attrName, Color def)
+            => self.GetColor(attrName, def, ColorFormat.Rgba);
+
+        public Color Rgba(string attrName, string def)
+            => self.GetColor(attrName, def, ColorFormat.Rgba);
+
+        public Color Argb(string attrName, Color def)
+            => self.GetColor(attrName, def, ColorFormat.Argb);
+
+        public Color Argb(string attrName, string def)
+            => self.GetColor(attrName, def, ColorFormat.Argb);
+
+        public Color GetColor(string attrName, Color def, ColorFormat format) {
+            if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
+                return parsed;
+
+            return def;
+        }
+
+        public Color GetColor(string attrName, string def, ColorFormat format) {
+            if (self.TryGetValue(attrName, out var obj) && ColorHelper.TryGet(obj.ToString() ?? "", format, out var parsed))
+                return parsed;
+
+            if (ColorHelper.TryGet(def, format, out var defParsed)) {
+                return defParsed;
+            }
+
+            return Color.White;
+        }
+
+        public bool Has(string attrName) => self.TryGetValue(attrName, out _);
+    }
 }

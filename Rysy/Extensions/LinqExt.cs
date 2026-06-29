@@ -28,149 +28,152 @@ public static class LinqExt {
     }
 
 
-    /// <summary>
-    /// Creates an enumerable, which returns all elements of <paramref name="self"/>, but try-catches the MoveNext method and calls <paramref name="onError"/> if an exception occurs.
-    /// When an exception is caught, the enumeration ends.
-    /// </summary>
-    public static IEnumerable<T> WithErrorCatch<T>(this IEnumerable<T> self, Action<Exception> onError) {
-        using var enumerator = self.GetEnumerator();
+    extension<T>(IEnumerable<T> self)
+    {
+        /// <summary>
+        /// Creates an enumerable, which returns all elements of <paramref name="self"/>, but try-catches the MoveNext method and calls <paramref name="onError"/> if an exception occurs.
+        /// When an exception is caught, the enumeration ends.
+        /// </summary>
+        public IEnumerable<T> WithErrorCatch(Action<Exception> onError) {
+            using var enumerator = self.GetEnumerator();
 
-        bool ret = true;
-        while (ret) {
-            try {
-                ret = enumerator.MoveNext();
-            } catch (Exception e) {
-                onError(e);
-                ret = false;
-            }
+            bool ret = true;
+            while (ret) {
+                try {
+                    ret = enumerator.MoveNext();
+                } catch (Exception e) {
+                    onError(e);
+                    ret = false;
+                }
 
-            if (ret)
-                yield return enumerator.Current;
-        }
-    }
-
-    /// <summary>
-    /// Creates an enumerable, which returns all elements of <paramref name="self"/>, but try-catches the MoveNext method and calls <paramref name="onError"/> if an exception occurs.
-    /// When an exception is caught, the enumeration of <paramref name="self"/> ends, and the enumeration of the return value of <paramref name="onError"/> begins, without the try-catch
-    /// </summary>
-    public static IEnumerable<T> WithErrorCatch<T>(this IEnumerable<T> self, Func<Exception, IEnumerable<T>> onError) {
-        using var enumerator = self.GetEnumerator();
-        IEnumerable<T>? onErrorEnumerable = null;
-
-        bool ret = true;
-        while (ret) {
-            try {
-                ret = enumerator.MoveNext();
-            } catch (Exception e) {
-                onErrorEnumerable = onError(e);
-                goto postError;
-            }
-
-            if (ret)
-                yield return enumerator.Current;
-        }
-
-    postError:
-        if (onErrorEnumerable is { }) {
-            using var errorEnumerator = onErrorEnumerable.GetEnumerator();
-
-            while (errorEnumerator.MoveNext()) {
-                yield return errorEnumerator.Current;
+                if (ret)
+                    yield return enumerator.Current;
             }
         }
-    }
 
-    /// <summary>
-    /// Calls ToList on <paramref name="self"/>, unless its already of type <see cref="List{T}"/>, in which case that instance is returned without changes.
-    /// </summary>
-    public static List<T> ToListIfNotList<T>(this IEnumerable<T> self) {
-        if (self is List<T> list)
-            return list;
-        return self.ToList();
-    }
-    
-    public static IReadOnlySet<T> ToIReadOnlySetIfNotAlready<T>(this IEnumerable<T> self, IEqualityComparer<T> comparer) {
-        if (self is HashSet<T> list && list.Comparer == comparer)
-            return list;
-        return self.ToHashSet(comparer);
-    }
+        /// <summary>
+        /// Creates an enumerable, which returns all elements of <paramref name="self"/>, but try-catches the MoveNext method and calls <paramref name="onError"/> if an exception occurs.
+        /// When an exception is caught, the enumeration of <paramref name="self"/> ends, and the enumeration of the return value of <paramref name="onError"/> begins, without the try-catch
+        /// </summary>
+        public IEnumerable<T> WithErrorCatch(Func<Exception, IEnumerable<T>> onError) {
+            using var enumerator = self.GetEnumerator();
+            IEnumerable<T>? onErrorEnumerable = null;
 
-    public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb)
-        where TTo : struct {
-        foreach (var item in self) {
-            var selected = cb(item);
-            if (selected != null)
-                yield return selected.Value;
-        }
-    }
+            bool ret = true;
+            while (ret) {
+                try {
+                    ret = enumerator.MoveNext();
+                } catch (Exception e) {
+                    onErrorEnumerable = onError(e);
+                    goto postError;
+                }
 
-    public static IEnumerable<TTo> SelectWhereNotNull<TFrom, TTo>(this IEnumerable<TFrom> self, Func<TFrom, TTo?> cb)
-    where TTo : class {
-        foreach (var item in self) {
-            var selected = cb(item);
-            if (selected != null)
-                yield return selected;
-        }
-    }
+                if (ret)
+                    yield return enumerator.Current;
+            }
 
-    public static IEnumerable<Task> SelectToTaskRun<T>(this IEnumerable<T> self, Action<T> action) {
-        foreach (var item in self)
-            yield return Task.Run(() => action(item));
-    }
+            postError:
+            if (onErrorEnumerable is { }) {
+                using var errorEnumerator = onErrorEnumerable.GetEnumerator();
 
-    public static IEnumerable<T> Apply<T>(this IEnumerable<T> self, Action<T> action) {
-        foreach (var item in self) {
-            action(item);
-            yield return item;
-        }
-    }
-
-    public static Dictionary<TKey, TValue> SafeToDictionary<TIn, TKey, TValue>(this IEnumerable<TIn> values, Func<TIn, TKey> keyGetter, Func<TIn, TValue> valueGetter)
-        where TKey : notnull {
-        var dict = new Dictionary<TKey, TValue>();
-
-        foreach (var value in values) {
-            var key = keyGetter(value);
-            //if (dict.ContainsKey(key)) {
-            //    ("duplicate:", value, key, valueGetter(value)).LogAsJson();
-            //}
-
-            dict[key] = valueGetter(value);
+                while (errorEnumerator.MoveNext()) {
+                    yield return errorEnumerator.Current;
+                }
+            }
         }
 
-        return dict;
-    }
-
-    public static Dictionary<TKey, TValue> SafeToDictionary<TIn, TKey, TValue>(this IEnumerable<TIn> values, Func<TIn, (TKey, TValue)> converter)
-    where TKey : notnull {
-        var dict = new Dictionary<TKey, TValue>();
-
-        foreach (var entry in values) {
-            var (key, val) = converter(entry);
-            //if (dict.ContainsKey(key)) {
-            //    ("duplicate:", entry, key, val).LogAsJson();
-            //}
-
-            dict[key] = val;
+        /// <summary>
+        /// Calls ToList on <paramref name="self"/>, unless its already of type <see cref="List{T}"/>, in which case that instance is returned without changes.
+        /// </summary>
+        public List<T> ToListIfNotList() {
+            if (self is List<T> list)
+                return list;
+            return self.ToList();
         }
 
-        return dict;
-    }
+        public IReadOnlySet<T> ToIReadOnlySetIfNotAlready(IEqualityComparer<T> comparer) {
+            if (self is HashSet<T> list && list.Comparer == comparer)
+                return list;
+            return self.ToHashSet(comparer);
+        }
 
-    public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self) {
-        return new(self);
-    }
+        public IEnumerable<TTo> SelectWhereNotNull<TTo>(Func<T, TTo?> cb)
+            where TTo : struct {
+            foreach (var item in self) {
+                var selected = cb(item);
+                if (selected != null)
+                    yield return selected.Value;
+            }
+        }
 
-    public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self, Action onChange) {
-        return new(self) {
-            OnChanged = _ => onChange(),
-        };
-    }
-    
-    public static ListenableList<T> ToListenableList<T>(this IEnumerable<T> self, Action<ListenableListChanged<T>> onChange) {
-        return new(self) {
-            OnChanged = onChange,
-        };
+        public IEnumerable<TTo> SelectWhereNotNull<TTo>(Func<T, TTo?> cb)
+            where TTo : class {
+            foreach (var item in self) {
+                var selected = cb(item);
+                if (selected != null)
+                    yield return selected;
+            }
+        }
+
+        public IEnumerable<Task> SelectToTaskRun(Action<T> action) {
+            foreach (var item in self)
+                yield return Task.Run(() => action(item));
+        }
+
+        public IEnumerable<T> Apply(Action<T> action) {
+            foreach (var item in self) {
+                action(item);
+                yield return item;
+            }
+        }
+
+        public Dictionary<TKey, TValue> SafeToDictionary<TKey, TValue>(Func<T, TKey> keyGetter, Func<T, TValue> valueGetter)
+            where TKey : notnull {
+            var dict = new Dictionary<TKey, TValue>();
+
+            foreach (var value in self) {
+                var key = keyGetter(value);
+                //if (dict.ContainsKey(key)) {
+                //    ("duplicate:", value, key, valueGetter(value)).LogAsJson();
+                //}
+
+                dict[key] = valueGetter(value);
+            }
+
+            return dict;
+        }
+
+        public Dictionary<TKey, TValue> SafeToDictionary<TKey, TValue>(Func<T, (TKey, TValue)> converter)
+            where TKey : notnull {
+            var dict = new Dictionary<TKey, TValue>();
+
+            foreach (var entry in self) {
+                var (key, val) = converter(entry);
+                //if (dict.ContainsKey(key)) {
+                //    ("duplicate:", entry, key, val).LogAsJson();
+                //}
+
+                dict[key] = val;
+            }
+
+            return dict;
+        }
+
+        public ListenableList<T> ToListenableList() {
+            return new(self);
+        }
+
+        public ListenableList<T> ToListenableList(Action onChange) {
+            return new(self) {
+                OnChanged = _ => onChange(),
+            };
+        }
+
+        public ListenableList<T> ToListenableList(Action<ListenableListChanged<T>> onChange) {
+            return new(self) {
+                OnChanged = onChange,
+            };
+        }
     }
 
     public static PlacementList ToPlacementList(this IEnumerable<Placement> self) {
@@ -219,24 +222,27 @@ public static class LinqExt {
         return from[..(i+1)];
     }
 
-    public static IEnumerable<(T Value, bool IsLast)> CheckedIfLast<T>(this IEnumerable<T> self) {
-        using var enumerator = self.GetEnumerator();
+    extension<T>(IEnumerable<T> self)
+    {
+        public IEnumerable<(T Value, bool IsLast)> CheckedIfLast() {
+            using var enumerator = self.GetEnumerator();
         
-        if (!enumerator.MoveNext())
-            yield break;
+            if (!enumerator.MoveNext())
+                yield break;
         
-        var next = enumerator.Current;
-        while (enumerator.MoveNext()) {
-            yield return (next, false);
-            next = enumerator.Current;
+            var next = enumerator.Current;
+            while (enumerator.MoveNext()) {
+                yield return (next, false);
+                next = enumerator.Current;
+            }
+        
+            yield return (next, true);
         }
-        
-        yield return (next, true);
-    }
 
-    public static void ForEach<T>(this IEnumerable<T> self, Action<T> onElement) {
-        foreach (var x in self) {
-            onElement(x);
+        public void ForEach(Action<T> onElement) {
+            foreach (var x in self) {
+                onElement(x);
+            }
         }
     }
 
@@ -261,16 +267,19 @@ public static class LinqExt {
     /// </summary>
     public static SingleEnumerator<T> ToSelfEnumerator<T>(this T self) => new(self);
 
-    public static IEnumerator<T> GetResettableEnumerator<T>(this IEnumerable<T> self) => self switch {
-        _ => new ResettableEnumerator<T>(self)
-    };
+    extension<T>(IEnumerable<T> self)
+    {
+        public IEnumerator<T> GetResettableEnumerator() => self switch {
+            _ => new ResettableEnumerator<T>(self)
+        };
 
-    /// <summary>
-    /// Enumerates through the enumerable, discarding all values returned from it. Mostly for benchmarking purposes.
-    /// </summary>
-    public static void Enumerate<T>(this IEnumerable<T> self) {
-        foreach (var v in self) {
+        /// <summary>
+        /// Enumerates through the enumerable, discarding all values returned from it. Mostly for benchmarking purposes.
+        /// </summary>
+        public void Enumerate() {
+            foreach (var v in self) {
             
+            }
         }
     }
 }

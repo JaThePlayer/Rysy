@@ -64,26 +64,29 @@ public interface IWriteableModFilesystem : IModFilesystem {
 }
 
 public static class WriteableModFilesystemExt {
-    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, Stream toWrite) {
-        return fs.TryWriteToFile(path, toWrite.CopyTo);
-    }
-    
-    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, string fileContents) {
-        return fs.TryWriteToFile(path, s => {
-            using var writer = new StreamWriter(s);
+    extension(IWriteableModFilesystem fs)
+    {
+        public bool TryWriteToFile(string path, Stream toWrite) {
+            return fs.TryWriteToFile(path, toWrite.CopyTo);
+        }
+
+        public bool TryWriteToFile(string path, string fileContents) {
+            return fs.TryWriteToFile(path, s => {
+                using var writer = new StreamWriter(s);
             
-            writer.Write(fileContents);
-        });
-    }
-    
-    public static bool TryWriteToFile(this IWriteableModFilesystem fs, string path, byte[] fileContents) {
-        return fs.TryWriteToFile(path, s => {
-            s.Write(fileContents);
-        });
-    }
-    
-    public static bool CopyFileTo(this IWriteableModFilesystem fs, string from, string to) {
-        return fs.OpenFile(from, fromStr => fs.TryWriteToFile(to, fromStr.CopyTo));
+                writer.Write(fileContents);
+            });
+        }
+
+        public bool TryWriteToFile(string path, byte[] fileContents) {
+            return fs.TryWriteToFile(path, s => {
+                s.Write(fileContents);
+            });
+        }
+
+        public bool CopyFileTo(string from, string to) {
+            return fs.OpenFile(from, fromStr => fs.TryWriteToFile(to, fromStr.CopyTo));
+        }
     }
 }
 
@@ -97,75 +100,77 @@ public sealed class WatchedAsset {
 
 
 public static class ModFilesystemExtensions {
-    /// <summary>
-    /// Reads the given file as a string.
-    /// </summary>
-    public static string? TryReadAllText(this IModFilesystem filesystem, string path) {
-        return filesystem.OpenFile(path, stream => {
-            using var reader = new StreamReader(stream);
+    extension(IModFilesystem filesystem)
+    {
+        /// <summary>
+        /// Reads the given file as a string.
+        /// </summary>
+        public string? TryReadAllText(string path) {
+            return filesystem.OpenFile(path, stream => {
+                using var reader = new StreamReader(stream);
 
-            return reader.ReadToEnd();
-        });
-    }
-
-    /// <summary>
-    /// Reads the given file.
-    /// </summary>
-    public static byte[]? TryReadAllBytes(this IModFilesystem filesystem, string path) {
-        return filesystem.OpenFile(path, stream => {
-            using MemoryStream ms = new MemoryStream();
-
-            stream.CopyTo(ms);
-            return ms.ToArray();
-        });
-    }
-
-    /// <summary>
-    /// Tries to open a file at a given virtual path, which includes the file extension.
-    /// If the file was found, calls <paramref name="callback"/> with the stream for that file, and returns the value returned by the callback.
-    /// If not, the default value for the given type is returned, and the callback doesn't get called.
-    /// DO NOT capture the <see cref="Stream"/> received in the callback, as it might get disposed as soon as this method finishes.
-    /// </summary>
-    public static T? OpenFile<T>(this IModFilesystem filesystem, string path, Func<Stream, T> callback) {
-        if (filesystem.TryOpenFile(path, callback, out var value)) {
-            return value;
-        }
-
-        return default;
-    }
-
-    /// <summary>
-    /// Tries to open a file at a given virtual path, which includes the file extension.
-    /// If the file was found, calls <paramref name="callback"/> with the stream for that file.
-    /// If not, the callback doesn't get called.
-    /// DO NOT capture the <see cref="Stream"/> received in the callback, as it might get disposed as soon as this method finishes.
-    /// </summary>
-    public static bool TryOpenFile(this IModFilesystem filesystem, string path, Action<Stream> callback) {
-        return filesystem.TryOpenFile(path, (stream) => {
-            callback(stream);
-            return true;
-        }, out _);
-    }
-
-
-    /// <summary>
-    /// Tries to open the file at <paramref name="path"/>, calling the <paramref name="callback"/>.
-    /// If the file exists, also sets up a file watcher which will call the <paramref name="callback"/> whenever the file changes.
-    /// If the file doesn't exist, the <paramref name="callback"/> never gets called and this returns false.
-    /// </summary>
-    public static bool TryWatchAndOpen(this IModFilesystem filesystem, string path, Action<Stream> callback, 
-        [NotNullWhen(true)] out IDisposable? undoWatcher) {
-        undoWatcher = null;
-        if (filesystem.TryOpenFile(path, callback)) {
-            undoWatcher = filesystem.RegisterFilewatch(path, new() {
-                OnChanged = (path) => {
-                    filesystem.TryOpenFile(path, callback);
-                },
+                return reader.ReadToEnd();
             });
-
-            return true;
         }
 
-        return false;
+        /// <summary>
+        /// Reads the given file.
+        /// </summary>
+        public byte[]? TryReadAllBytes(string path) {
+            return filesystem.OpenFile(path, stream => {
+                using MemoryStream ms = new MemoryStream();
+
+                stream.CopyTo(ms);
+                return ms.ToArray();
+            });
+        }
+
+        /// <summary>
+        /// Tries to open a file at a given virtual path, which includes the file extension.
+        /// If the file was found, calls <paramref name="callback"/> with the stream for that file, and returns the value returned by the callback.
+        /// If not, the default value for the given type is returned, and the callback doesn't get called.
+        /// DO NOT capture the <see cref="Stream"/> received in the callback, as it might get disposed as soon as this method finishes.
+        /// </summary>
+        public T? OpenFile<T>(string path, Func<Stream, T> callback) {
+            if (filesystem.TryOpenFile(path, callback, out var value)) {
+                return value;
+            }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Tries to open a file at a given virtual path, which includes the file extension.
+        /// If the file was found, calls <paramref name="callback"/> with the stream for that file.
+        /// If not, the callback doesn't get called.
+        /// DO NOT capture the <see cref="Stream"/> received in the callback, as it might get disposed as soon as this method finishes.
+        /// </summary>
+        public bool TryOpenFile(string path, Action<Stream> callback) {
+            return filesystem.TryOpenFile(path, (stream) => {
+                callback(stream);
+                return true;
+            }, out _);
+        }
+
+        /// <summary>
+        /// Tries to open the file at <paramref name="path"/>, calling the <paramref name="callback"/>.
+        /// If the file exists, also sets up a file watcher which will call the <paramref name="callback"/> whenever the file changes.
+        /// If the file doesn't exist, the <paramref name="callback"/> never gets called and this returns false.
+        /// </summary>
+        public bool TryWatchAndOpen(string path, Action<Stream> callback, 
+            [NotNullWhen(true)] out IDisposable? undoWatcher) {
+            undoWatcher = null;
+            if (filesystem.TryOpenFile(path, callback)) {
+                undoWatcher = filesystem.RegisterFilewatch(path, new() {
+                    OnChanged = (path) => {
+                        filesystem.TryOpenFile(path, callback);
+                    },
+                });
+
+                return true;
+            }
+
+            return false;
+        }
     }
 }

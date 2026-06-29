@@ -9,84 +9,87 @@ using System.Text.Unicode;
 namespace Rysy.LuaSupport;
 
 public static partial class LuaExt {
-    /// <summary>
-    /// Converts the Lua value at the given index to a C# string.
-    /// </summary>
-    public static string FastToString(this Lua state, int index, bool callMetamethod = true) {
-        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
+    /// <param name="state"></param>
+    extension(Lua state)
+    {
+        /// <summary>
+        /// Converts the Lua value at the given index to a C# string.
+        /// </summary>
+        public string FastToString(int index, bool callMetamethod = true) {
+            var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
 
-        if (utf8.Length == 1) {
-            var b = utf8[0];
-            switch (b) {
-                case (byte) 'x':
-                    return "x";
-                case (byte) 'y':
-                    return "y";
+            if (utf8.Length == 1) {
+                var b = utf8[0];
+                switch (b) {
+                    case (byte) 'x':
+                        return "x";
+                    case (byte) 'y':
+                        return "y";
+                }
             }
+
+            var str = state.Encoding.GetString(utf8);
+
+            return str;
         }
 
-        var str = state.Encoding.GetString(utf8);
+        public Span<char> ToStringInto(int index, Interpolator buffer, bool callMetamethod = true) {
+            var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
+            var decoded = buffer.Utf16Mutable($"{utf8}");
 
-        return str;
-    }
-    
-    public static Span<char> ToStringInto(this Lua state, int index, Interpolator buffer, bool callMetamethod = true) {
-        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
-        var decoded = buffer.Utf16Mutable($"{utf8}");
-
-        return decoded;
-    }
-    
-    public static Span<byte> ToStringIntoUtf8(this Lua state, int index, Interpolator buffer, bool callMetamethod = true) {
-        var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
-        var decoded = buffer.Clone(utf8);
-
-        return decoded;
-    }
-
-    /// <summary>
-    /// Gets a span over a lua string at the given stack index, in lua's memory.
-    /// The returned span is valid as long as that string remains on the lua execution stack.
-    /// </summary>
-    public static unsafe Span<byte> DangerousToStringIntoUtf8InLuaMemory(this Lua state, int index, bool callMetamethod = true) {
-        long num = 0;
-        var source = LuaImports.lua_tolstring(state, index, ref num);
-
-        if (source == (void*)0)
-            return Span<byte>.Empty;
-
-        // todo: check if all these casts are needed?
-        int length = checked((int) (uint) num);
-        if (length == 0) {
-            return Span<byte>.Empty;
+            return decoded;
         }
 
-        // This is safe as long as there's something pinning the string on lua's side
-        // (like the string being on the lua execution stack)
-        return new Span<byte>(source, length);
-    }
+        public Span<byte> ToStringIntoUtf8(int index, Interpolator buffer, bool callMetamethod = true) {
+            var utf8 = state.DangerousToStringIntoUtf8InLuaMemory(index, callMetamethod);
+            var decoded = buffer.Clone(utf8);
 
-    /// <summary>
-    /// Pushes an utf8 string onto the stack
-    /// </summary>
-    public static void PushUtf8String(this Lua lua, byte[] value) {
-        lua.PushBuffer(value);
-    }
+            return decoded;
+        }
 
-    /// <summary>
-    /// Pushes an utf8 string stored in RVA onto the stack
-    /// </summary>
-    /// <param name="lua"></param>
-    /// <param name="value"></param>
-    public static void PushString(this Lua lua, ReadOnlySpan<byte> value) {
-        lua.PushBuffer(value);
-    }
+        /// <summary>
+        /// Gets a span over a lua string at the given stack index, in lua's memory.
+        /// The returned span is valid as long as that string remains on the lua execution stack.
+        /// </summary>
+        public unsafe Span<byte> DangerousToStringIntoUtf8InLuaMemory(int index, bool callMetamethod = true) {
+            long num = 0;
+            var source = LuaImports.lua_tolstring(state, index, ref num);
 
-    public static void PushCharAsString(this Lua lua, char c) {
-        Span<byte> buffer = [0, 0];
-        Utf8.FromUtf16([c], buffer, out _, out var written);
+            if (source == (void*)0)
+                return Span<byte>.Empty;
+
+            // todo: check if all these casts are needed?
+            int length = checked((int) (uint) num);
+            if (length == 0) {
+                return Span<byte>.Empty;
+            }
+
+            // This is safe as long as there's something pinning the string on lua's side
+            // (like the string being on the lua execution stack)
+            return new Span<byte>(source, length);
+        }
+
+        /// <summary>
+        /// Pushes an utf8 string onto the stack
+        /// </summary>
+        public void PushUtf8String(byte[] value) {
+            state.PushBuffer(value);
+        }
+
+        /// <summary>
+        /// Pushes an utf8 string stored in RVA onto the stack
+        /// </summary>
+        /// <param name="value"></param>
+        public void PushString(ReadOnlySpan<byte> value) {
+            state.PushBuffer(value);
+        }
+
+        public void PushCharAsString(char c) {
+            Span<byte> buffer = [0, 0];
+            Utf8.FromUtf16([c], buffer, out _, out var written);
             
-        lua.PushString(buffer.Slice(2 - written));
+            state.PushString(buffer.Slice(2 - written));
+        }
     }
 
     public static string GetChunkName(string? chunkName) {
@@ -95,73 +98,76 @@ public static partial class LuaExt {
         return $"@{chunkName}";
     }
 
-    public static void LoadStringWithSelene(this Lua lua, string str, string? chunkName = null) {
-        string code;
-        if (LuaCtx.SeleneLoaded) {
-            lua.GetGlobal("selene"u8);
-            var seleneLoc = lua.GetTop();
-            lua.PushString("parse"u8);
-            lua.GetTable(seleneLoc);
+    extension(Lua lua)
+    {
+        public void LoadStringWithSelene(string str, string? chunkName = null) {
+            string code;
+            if (LuaCtx.SeleneLoaded) {
+                lua.GetGlobal("selene"u8);
+                var seleneLoc = lua.GetTop();
+                lua.PushString("parse"u8);
+                lua.GetTable(seleneLoc);
 
-            lua.PushString(str);
-            lua.Call(1, 1); // call selene.parse(arg)
+                lua.PushString(str);
+                lua.Call(1, 1); // call selene.parse(arg)
 
-            code = lua.FastToString(-1);
-            lua.Pop(2);
-        } else {
-            code = str;
-        }
+                code = lua.FastToString(-1);
+                lua.Pop(2);
+            } else {
+                code = str;
+            }
 
-        var st = lua.LoadString(code, GetChunkName(chunkName ?? str.TrimBeyondLength(64)));
-        if (st != LuaStatus.OK) {
-            throw new LuaException(lua);
-        }
-    }
-    
-    public static unsafe void LoadStringWithSelene(this Lua lua, ReadOnlySpan<byte> strUtf8, string? chunkName = null) {
-        ReadOnlySpan<byte> code;
-        if (LuaCtx.SeleneLoaded) {
-            lua.GetGlobal("selene"u8);
-            var seleneLoc = lua.GetTop();
-            lua.PushString("parse"u8);
-            lua.GetTable(seleneLoc);
-
-            lua.PushString(strUtf8);
-            lua.Call(1, 1); // call selene.parse(arg)
-
-            // Since we're about to pop the result of selene.parse,
-            // we need to store the string somewhere safe from the lua GC.
-            code = lua.ToStringIntoUtf8(-1, Interpolator.Shared);
-            
-            code = code.ToArray();
-            lua.Pop(2);
-        } else {
-            code = strUtf8;
-        }
-
-        fixed (byte* strFirstChar = &code[0]) {
-            var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)code.Length, GetChunkName(chunkName), null);
+            var st = lua.LoadString(code, GetChunkName(chunkName ?? str.TrimBeyondLength(64)));
             if (st != LuaStatus.OK) {
                 throw new LuaException(lua);
             }
         }
 
-    }
+        public unsafe void LoadStringWithSelene(ReadOnlySpan<byte> strUtf8, string? chunkName = null) {
+            ReadOnlySpan<byte> code;
+            if (LuaCtx.SeleneLoaded) {
+                lua.GetGlobal("selene"u8);
+                var seleneLoc = lua.GetTop();
+                lua.PushString("parse"u8);
+                lua.GetTable(seleneLoc);
 
-    /// <summary>
-    /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int)"/>
-    /// </summary>
-    public static void PCallStringThrowIfError(this Lua lua, string code, string? chunkName = null, int arguments = 0, int results = 0) {
-        lua.LoadStringWithSelene(code, chunkName);
-        lua.PCallThrowIfError(arguments, results);
-    }
-    
-    /// <summary>
-    /// <inheritdoc cref="PCallStringThrowIfError(Lua,string,string?,int,int)"/>
-    /// </summary>
-    public static void PCallStringThrowIfError(this Lua lua, ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0) {
-        lua.LoadStringWithSelene(code, chunkName);
-        lua.PCallThrowIfError(arguments, results);
+                lua.PushString(strUtf8);
+                lua.Call(1, 1); // call selene.parse(arg)
+
+                // Since we're about to pop the result of selene.parse,
+                // we need to store the string somewhere safe from the lua GC.
+                code = lua.ToStringIntoUtf8(-1, Interpolator.Shared);
+            
+                code = code.ToArray();
+                lua.Pop(2);
+            } else {
+                code = strUtf8;
+            }
+
+            fixed (byte* strFirstChar = &code[0]) {
+                var st = LuaImports.luaL_loadbufferx(lua, strFirstChar, (nuint)code.Length, GetChunkName(chunkName), null);
+                if (st != LuaStatus.OK) {
+                    throw new LuaException(lua);
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Calls <see cref="LoadStringWithSelene(Lua, string, string?)"/> with <paramref name="code"/> and <paramref name="chunkName"/>, then calls <see cref="PCallThrowIfError(Lua, int, int)"/>
+        /// </summary>
+        public void PCallStringThrowIfError(string code, string? chunkName = null, int arguments = 0, int results = 0) {
+            lua.LoadStringWithSelene(code, chunkName);
+            lua.PCallThrowIfError(arguments, results);
+        }
+
+        /// <summary>
+        /// <inheritdoc cref="PCallStringThrowIfError(Lua,string,string?,int,int)"/>
+        /// </summary>
+        public void PCallStringThrowIfError(ReadOnlySpan<byte> code, string? chunkName = null, int arguments = 0, int results = 0) {
+            lua.LoadStringWithSelene(code, chunkName);
+            lua.PCallThrowIfError(arguments, results);
+        }
     }
 
     private static int ErrorFunc(Lua state) {
@@ -169,387 +175,390 @@ public static partial class LuaExt {
         return 1;
     }
     
-    /// <summary>
-    /// Performs a pcall, throwing a <see cref="LuaException"/> if the call failed.
-    /// </summary>
-    /// <exception cref="LuaException"></exception>
-    public static void PCallThrowIfError(this Lua lua, int arguments = 0, int results = 0) {
-        var targetIdx = lua.GetTop() - arguments;
+    extension(Lua lua)
+    {
+        /// <summary>
+        /// Performs a pcall, throwing a <see cref="LuaException"/> if the call failed.
+        /// </summary>
+        /// <exception cref="LuaException"></exception>
+        public void PCallThrowIfError(int arguments = 0, int results = 0) {
+            var targetIdx = lua.GetTop() - arguments;
 
-        lua.PushCFunction(ErrorFunc);
-        lua.Insert(targetIdx);
+            lua.PushCFunction(ErrorFunc);
+            lua.Insert(targetIdx);
 
-        var result = lua.PCall(arguments, results, targetIdx);
-        if (result != LuaStatus.OK) {
-            var ex = new LuaException(lua);
-            lua.Pop(2); // error msg + error function
-            throw ex;
+            var result = lua.PCall(arguments, results, targetIdx);
+            if (result != LuaStatus.OK) {
+                var ex = new LuaException(lua);
+                lua.Pop(2); // error msg + error function
+                throw ex;
+            }
+            lua.Remove(targetIdx);
         }
-        lua.Remove(targetIdx);
-    }
 
-    public static void PrintStack(this Lua state, int startI = 1,
-        [CallerMemberName] string callerMethod = "",
-        [CallerFilePath] string callerFile = "",
-        [CallerLineNumber] int lineNumber = 0
-    ) {
-        Logger.Write("Lua", LogLevel.Info, "Stack:", callerMethod, callerFile, lineNumber);
-        for (int i = startI; i <= state.GetTop(); i++) {
-            Logger.Write("Lua", LogLevel.Info, $"[{i}]: {state.ToString(i)} [{state.Type(i)}]");
+        public void PrintStack(int startI = 1,
+            [CallerMemberName] string callerMethod = "",
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int lineNumber = 0
+        ) {
+            Logger.Write("Lua", LogLevel.Info, "Stack:", callerMethod, callerFile, lineNumber);
+            for (int i = startI; i <= lua.GetTop(); i++) {
+                Logger.Write("Lua", LogLevel.Info, $"[{i}]: {lua.ToString(i)} [{lua.Type(i)}]");
+            }
         }
-    }
 
-    /// <summary>
-    /// Peeks the type of the value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static LuaType PeekTableType(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        lua.Pop(1);
-
-        return type;
-    }
-    
-    /// <summary>
-    /// Peeks whether there's a value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static bool PeekTableHasKey(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        lua.Pop(1);
-
-        return type is not LuaType.Nil and not LuaType.None;
-    }
-
-    /// <summary>
-    /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static string? PeekTableStringValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        string? ret = null;
-        if (type == LuaType.String) {
-            ret = lua.FastToString(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-    
-    /// <summary>
-    /// Peeks the enum value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static TEnum PeekTableEnumValue<TEnum>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, TEnum def)
-    where TEnum : struct, Enum {
-        var str = lua.PeekTableStringValue(tableStackIndex, key);
-        if (str is null)
-            return def;
-
-        return Enum.TryParse<TEnum>(str, ignoreCase: true, out var result) ? result : def;
-    }
-    
-    /// <summary>
-    /// Peeks the function value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static LuaFunctionRef? PeekTableFunctionValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        LuaFunctionRef? ret = null;
-        if (type == LuaType.Function) {
-            ret = LuaFunctionRef.MakeFrom(lua, lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static bool TryPeekTableStringValueToSpanInSharedBuffer(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyUtf8, out Span<char> chars) {
-        var type = lua.GetFieldRva(tableStackIndex, keyUtf8);
-        if (type == LuaType.String) {
-            chars = lua.ToStringInto(lua.GetTop(), Interpolator.Shared);
+        /// <summary>
+        /// Peeks the type of the value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public LuaType PeekTableType(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
             lua.Pop(1);
-            return true;
-        }
-        lua.Pop(1);
 
-        chars = default;
-        return false;
-    }
-
-    /// <summary>
-    /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
-        double? ret = null;
-        if (type == LuaType.Number) {
-            ret = lua.ToNumberX(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    /// <summary>
-    /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        double? ret = null;
-        if (type == LuaType.Number) {
-            ret = lua.ToNumber(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static float? PeekTableFloatValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        float? ret = null;
-        if (type == LuaType.Number) {
-            ret = (float)lua.ToNumber(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    /// <summary>
-    /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
-    /// </summary>
-    public static double? PeekTableNumberValue(this Lua lua, int tableStackIndex, int key) {
-        lua.PushInteger(key);
-        var type = lua.GetTable(tableStackIndex);
-        double? ret = null;
-        if (type == LuaType.Number) {
-            ret = lua.ToNumberX(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-    
-    /// <summary>
-    /// Peeks the value at t[key], where t is the table at <paramref name="tableStackIndex"/>, then converts it into a C# value.
-    /// </summary>
-    public static object? PeekTableCSharpValue(this Lua lua, int tableStackIndex, string key) {
-        lua.PushString(key);
-        var type = lua.GetTable(tableStackIndex);
-        var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
-        lua.Pop(1);
-
-        return ret;
-    }
-    
-    /// <summary>
-    /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
-    /// </summary>
-    public static int? PeekTableIntValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> keyRva) {
-        var type = lua.GetFieldRva(tableStackIndex, keyRva);
-        long? ret = null;
-        if (type is LuaType.Number) {
-            ret = (int)lua.ToNumber(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret is { } r ? (int)r : null;
-    }
-    
-    /// <summary>
-    /// Peeks the bool value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
-    /// </summary>
-    public static bool? PeekTableBoolValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        bool? ret = null;
-        if (type is LuaType.Boolean) {
-            ret = lua.ToBoolean(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static Vector2 PeekTableVector2Value(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        Vector2 ret = default;
-        if (type is LuaType.Table) {
-            ret = lua.ToVector2(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    /// <summary>
-    /// Peeks a value at <paramref name="tableStackIndex"/>[<paramref name="key"/>], converting it to a range using <see cref="ToRangeNegativeIsFromEnd(Lua, int)"/>
-    /// </summary>
-    public static Range PeekTableRangeValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        Range ret = default;
-        if (type is LuaType.Table) {
-            ret = lua.ToRangeNegativeIsFromEnd(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static Color PeekTableColorValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Color def) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        Color ret = def;
-        if (type is LuaType.Table or LuaType.String) {
-            ret = lua.ToColor(lua.GetTop(), def);
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static Rectangle PeekTableRectangleValue(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Rectangle def) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-        var ret = def;
-        if (type is LuaType.Table or LuaType.String) {
-            ret = lua.ToRectangle(lua.GetTop());
-        }
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static List<float>? PeekTableNumberList(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-
-        if (type != LuaType.Table) {
-            return null;
+            return type;
         }
 
-        var list = new List<float>();
+        /// <summary>
+        /// Peeks whether there's a value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public bool PeekTableHasKey(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            lua.Pop(1);
 
-        lua.IPairs((lua, index, loc) => {
-            list.Add((float)lua.ToNumber(loc));
-        });
-
-        lua.Pop(1);
-
-        return list;
-    }
-    
-    public static List<T>? PeekTableList<T>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key, Func<Lua, int, T> valueGetter) {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-
-        if (type != LuaType.Table) {
-            return null;
+            return type is not LuaType.Nil and not LuaType.None;
         }
 
-        var list = new List<T>();
+        /// <summary>
+        /// Peeks the string value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public string? PeekTableStringValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            string? ret = null;
+            if (type == LuaType.String) {
+                ret = lua.FastToString(lua.GetTop());
+            }
+            lua.Pop(1);
 
-        lua.IPairs((lua, index, loc) => {
-            list.Add(valueGetter(lua, loc));
-        });
-
-        lua.Pop(1);
-
-        return list;
-    }
-    
-    public static T? PeekTableWrapper<T>(this Lua lua, int tableStackIndex, ReadOnlySpan<byte> key) where T : class, ILuaWrapper {
-        var type = lua.GetFieldRva(tableStackIndex, key);
-
-        if (type != LuaType.UserData) {
-            return null;
+            return ret;
         }
 
-        var ret = lua.UnboxWrapper<T>(lua.GetTop());
+        /// <summary>
+        /// Peeks the enum value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public TEnum PeekTableEnumValue<TEnum>(int tableStackIndex, ReadOnlySpan<byte> key, TEnum def)
+            where TEnum : struct, Enum {
+            var str = lua.PeekTableStringValue(tableStackIndex, key);
+            if (str is null)
+                return def;
 
-        lua.Pop(1);
-
-        return ret;
-    }
-
-    public static float? ToFloatX(this Lua lua, int index) {
-        return lua.ToNumberX(index) is { } d ? (float) d : null;
-    }
-
-    public static float ToFloat(this Lua lua, int index) {
-        return (float) lua.ToNumber(index);
-    }
-
-    /// <summary>
-    /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
-    /// </summary>
-    public static LuaType GetTable(this Lua lua, int index, string key) {
-        return lua.GetField(index, key);
-    }
-
-    /// <summary>
-    /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
-    /// </summary>
-    public static LuaType GetTable(this Lua lua, int index, ReadOnlySpan<byte> key) {
-        return lua.GetFieldRva(index, key);
-    }
-
-    public static void Push(this Lua lua, object? obj) {
-        switch (obj) {
-            case null:
-                lua.PushNil();
-                break;
-            case bool b:
-                lua.PushBoolean(b);
-                break;
-            case int i:
-                lua.PushInteger(i);
-                break;
-            case float f:
-                lua.PushNumber(f);
-                break;
-            case string str:
-                lua.PushString(str);
-                break;
-            case ILuaWrapper wrapper:
-                lua.PushWrapper(wrapper);
-                break;
-            case byte[] utf8Str:
-                lua.PushUtf8String(utf8Str);
-                break;
-            case long l:
-                lua.PushInteger(l);
-                break;
-            case double d:
-                lua.PushNumber(d);
-                break;
-            case LuaRef r:
-                r.PushToStack(lua);
-                break;
-            case LuaFunction del:
-                lua.PushCFunction(del);
-                break;
-            case List<object> objList:
-                lua.PushWrapper(new ListWrapper<object>(objList));
-                break;
-            case Dictionary<string, object> dict:
-                lua.PushWrapper(new DictionaryWrapper(dict));
-                break;
-            default:
-                throw new Exception($"Can't push {obj} [{obj.GetType()}] to Lua");
+            return Enum.TryParse<TEnum>(str, ignoreCase: true, out var result) ? result : def;
         }
-    }
 
-    /// <summary>
-    /// Calls the function on top of the stack with the given arguments, returning the value returned by that function. The return value is popped from the stack.
-    /// </summary>
-    public static TOut? CallFunction<TArg1, TArg2, TOut>(this Lua lua, TArg1 arg1, TArg2 arg2, Func<Lua, int, TOut?> retGetter, int results = 1)
-    where TArg1 : class, ILuaWrapper
-    where TArg2 : class, ILuaWrapper {
-        TOut? ret;
+        /// <summary>
+        /// Peeks the function value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public LuaFunctionRef? PeekTableFunctionValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            LuaFunctionRef? ret = null;
+            if (type == LuaType.Function) {
+                ret = LuaFunctionRef.MakeFrom(lua, lua.GetTop());
+            }
+            lua.Pop(1);
 
-        lua.PushWrapper(arg1);
-        lua.PushWrapper(arg2);
+            return ret;
+        }
 
-        lua.Call(2, results);
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
+        public bool TryPeekTableStringValueToSpanInSharedBuffer(int tableStackIndex, ReadOnlySpan<byte> keyUtf8, out Span<char> chars) {
+            var type = lua.GetFieldRva(tableStackIndex, keyUtf8);
+            if (type == LuaType.String) {
+                chars = lua.ToStringInto(lua.GetTop(), Interpolator.Shared);
+                lua.Pop(1);
+                return true;
+            }
+            lua.Pop(1);
 
-        ClearLuaResources();
+            chars = default;
+            return false;
+        }
 
-        return ret;
+        /// <summary>
+        /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public double? PeekTableNumberValue(int tableStackIndex, string key) {
+            lua.PushString(key);
+            var type = lua.GetTable(tableStackIndex);
+            double? ret = null;
+            if (type == LuaType.Number) {
+                ret = lua.ToNumberX(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public double? PeekTableNumberValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            double? ret = null;
+            if (type == LuaType.Number) {
+                ret = lua.ToNumber(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public float? PeekTableFloatValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            float? ret = null;
+            if (type == LuaType.Number) {
+                ret = (float)lua.ToNumber(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Peeks the number value at t[key], where t is the table at <paramref name="tableStackIndex"/>
+        /// </summary>
+        public double? PeekTableNumberValue(int tableStackIndex, int key) {
+            lua.PushInteger(key);
+            var type = lua.GetTable(tableStackIndex);
+            double? ret = null;
+            if (type == LuaType.Number) {
+                ret = lua.ToNumberX(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Peeks the value at t[key], where t is the table at <paramref name="tableStackIndex"/>, then converts it into a C# value.
+        /// </summary>
+        public object? PeekTableCSharpValue(int tableStackIndex, string key) {
+            lua.PushString(key);
+            var type = lua.GetTable(tableStackIndex);
+            var ret = lua.ToCSharp(lua.GetTop(), makeLuaFuncRefs: true);
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Peeks the int value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
+        /// </summary>
+        public int? PeekTableIntValue(int tableStackIndex, ReadOnlySpan<byte> keyRva) {
+            var type = lua.GetFieldRva(tableStackIndex, keyRva);
+            long? ret = null;
+            if (type is LuaType.Number) {
+                ret = (int)lua.ToNumber(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret is { } r ? (int)r : null;
+        }
+
+        /// <summary>
+        /// Peeks the bool value at t[key], where t is the table at <paramref name="tableStackIndex"/>.
+        /// </summary>
+        public bool? PeekTableBoolValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            bool? ret = null;
+            if (type is LuaType.Boolean) {
+                ret = lua.ToBoolean(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public Vector2 PeekTableVector2Value(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            Vector2 ret = default;
+            if (type is LuaType.Table) {
+                ret = lua.ToVector2(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Peeks a value at <paramref name="tableStackIndex"/>[<paramref name="key"/>], converting it to a range using <see cref="ToRangeNegativeIsFromEnd(Lua, int)"/>
+        /// </summary>
+        public Range PeekTableRangeValue(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            Range ret = default;
+            if (type is LuaType.Table) {
+                ret = lua.ToRangeNegativeIsFromEnd(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public Color PeekTableColorValue(int tableStackIndex, ReadOnlySpan<byte> key, Color def) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            Color ret = def;
+            if (type is LuaType.Table or LuaType.String) {
+                ret = lua.ToColor(lua.GetTop(), def);
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public Rectangle PeekTableRectangleValue(int tableStackIndex, ReadOnlySpan<byte> key, Rectangle def) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+            var ret = def;
+            if (type is LuaType.Table or LuaType.String) {
+                ret = lua.ToRectangle(lua.GetTop());
+            }
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public List<float>? PeekTableNumberList(int tableStackIndex, ReadOnlySpan<byte> key) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+
+            if (type != LuaType.Table) {
+                return null;
+            }
+
+            var list = new List<float>();
+
+            lua.IPairs((lua, index, loc) => {
+                list.Add((float)lua.ToNumber(loc));
+            });
+
+            lua.Pop(1);
+
+            return list;
+        }
+
+        public List<T>? PeekTableList<T>(int tableStackIndex, ReadOnlySpan<byte> key, Func<Lua, int, T> valueGetter) {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+
+            if (type != LuaType.Table) {
+                return null;
+            }
+
+            var list = new List<T>();
+
+            lua.IPairs((lua, index, loc) => {
+                list.Add(valueGetter(lua, loc));
+            });
+
+            lua.Pop(1);
+
+            return list;
+        }
+
+        public T? PeekTableWrapper<T>(int tableStackIndex, ReadOnlySpan<byte> key) where T : class, ILuaWrapper {
+            var type = lua.GetFieldRva(tableStackIndex, key);
+
+            if (type != LuaType.UserData) {
+                return null;
+            }
+
+            var ret = lua.UnboxWrapper<T>(lua.GetTop());
+
+            lua.Pop(1);
+
+            return ret;
+        }
+
+        public float? ToFloatX(int index) {
+            return lua.ToNumberX(index) is { } d ? (float) d : null;
+        }
+
+        public float ToFloat(int index) {
+            return (float) lua.ToNumber(index);
+        }
+
+        /// <summary>
+        /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
+        /// </summary>
+        public LuaType GetTable(int index, string key) {
+            return lua.GetField(index, key);
+        }
+
+        /// <summary>
+        /// Pushes t[<paramref name="key"/>], where t is on the stack at <paramref name="index"/>
+        /// </summary>
+        public LuaType GetTable(int index, ReadOnlySpan<byte> key) {
+            return lua.GetFieldRva(index, key);
+        }
+
+        public void Push(object? obj) {
+            switch (obj) {
+                case null:
+                    lua.PushNil();
+                    break;
+                case bool b:
+                    lua.PushBoolean(b);
+                    break;
+                case int i:
+                    lua.PushInteger(i);
+                    break;
+                case float f:
+                    lua.PushNumber(f);
+                    break;
+                case string str:
+                    lua.PushString(str);
+                    break;
+                case ILuaWrapper wrapper:
+                    lua.PushWrapper(wrapper);
+                    break;
+                case byte[] utf8Str:
+                    lua.PushUtf8String(utf8Str);
+                    break;
+                case long l:
+                    lua.PushInteger(l);
+                    break;
+                case double d:
+                    lua.PushNumber(d);
+                    break;
+                case LuaRef r:
+                    r.PushToStack(lua);
+                    break;
+                case LuaFunction del:
+                    lua.PushCFunction(del);
+                    break;
+                case List<object> objList:
+                    lua.PushWrapper(new ListWrapper<object>(objList));
+                    break;
+                case Dictionary<string, object> dict:
+                    lua.PushWrapper(new DictionaryWrapper(dict));
+                    break;
+                default:
+                    throw new Exception($"Can't push {obj} [{obj.GetType()}] to Lua");
+            }
+        }
+
+        /// <summary>
+        /// Calls the function on top of the stack with the given arguments, returning the value returned by that function. The return value is popped from the stack.
+        /// </summary>
+        public TOut? CallFunction<TArg1, TArg2, TOut>(TArg1 arg1, TArg2 arg2, Func<Lua, int, TOut?> retGetter, int results = 1)
+            where TArg1 : class, ILuaWrapper
+            where TArg2 : class, ILuaWrapper {
+            TOut? ret;
+
+            lua.PushWrapper(arg1);
+            lua.PushWrapper(arg2);
+
+            lua.Call(2, results);
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+
+            ClearLuaResources();
+
+            return ret;
+        }
     }
 
     private static int errF(Lua lua) {
@@ -557,199 +566,199 @@ public static partial class LuaExt {
         Console.WriteLine(ex.Message);
         return 0;
     }
-    
-    public static TOut? PCallFunction<TArg1, TArg2, TOut>(this Lua lua, TArg1 arg1, TArg2 arg2, Func<Lua, int, TOut?> retGetter, int results = 1)
-where TArg1 : class, ILuaWrapper
-where TArg2 : class, ILuaWrapper {
-        TOut? ret;
 
-        lua.PushWrapper(arg1);
-        lua.PushWrapper(arg2);
-        
-        lua.PCallThrowIfError(2, results);
-
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
-        //lua.Pop(1);
-
-        ClearLuaResources();
-
-        return ret;
-    }
-
-    public static TOut? PCallFunction<TOut>(this Lua lua, Func<Lua, int, TOut?> retGetter, int results, params object[] args) {
-        TOut? ret;
-
-        foreach (var arg in args) {
-            lua.Push(arg);
-        }
-
-        lua.PCallThrowIfError(args.Length, results);
-
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
-
-        ClearLuaResources();
-
-        return ret;
-    }
-
-    public static TOut? PCallFunction<TOut>(this Lua lua, Func<Lua, int, TOut?> retGetter, int results = 1) {
-        TOut? ret;
-
-        lua.PCallThrowIfError(0, results);
-
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
-
-        ClearLuaResources();
-
-        return ret;
-    }
-
-    public static TOut? PCallFunction<TArg1, TArg2, TArg3, TArg4, TOut>(this Lua lua, TArg1 arg1, TArg2 arg2, TArg3 arg3, TArg4 arg4, Func<Lua, int, TOut?> retGetter, int results = 1)
-    {
-        TOut? ret;
-
-        lua.Push(arg1);
-        lua.Push(arg2);
-        lua.Push(arg3);
-        lua.Push(arg4);
-
-        lua.PCallThrowIfError(4, results);
-
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
-
-        ClearLuaResources();
-
-        return ret;
-    }
-
-    public static TOut? PCallFunction<TArg1, TOut>(this Lua lua, TArg1 arg1, Func<Lua, int, TOut?> retGetter, int results = 1)
-where TArg1 : class, ILuaWrapper {
-        TOut? ret;
-
-        lua.PushWrapper(arg1);
-        lua.PCallThrowIfError(1, results);
-
-        ret = retGetter(lua, lua.GetTop());
-        lua.Pop(results);
-
-        ClearLuaResources();
-
-        return ret;
-    }
-
-    /// <summary>
-    /// Converts a lua table at index <paramref name="index"/> on the stack into a C# dictionary
-    /// </summary>
-    public static Dictionary<string, object> TableToDictionary(this Lua lua, int index, HashSet<string>? keyBlacklist = null, 
-        int depth = 0, bool makeLuaFuncRefs = false) {
-        var dict = new Dictionary<string, object>();
-        var dataStart = index;
-
-        if (lua.IsWrapper(dataStart) && lua.UnboxWrapper(dataStart) is ILuaDictionaryWrapper dictWrapper)
-            return dictWrapper.Dictionary;
-
-        lua.PushNil();
-        while (lua.Next(dataStart)) {
-            var key = lua.FastToString(-2);
-            if (keyBlacklist?.Contains(key) ?? false) {
-                goto next;
-            }
-
-            var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs);
-            dict[key] = value;
-
-            next:
-            // pop the value, keeping the key
-            lua.Pop(1);
-        }
-
-        return dict;
-    }
-
-
-    /// <summary>
-    /// Enumerates through an int-indexed table, calling <paramref name="onElement"/> for each element with (lua, index, valueLocation)
-    /// </summary>
     /// <param name="lua"></param>
-    /// <param name="onElement">(lua, index, valueLocation)</param>
-    /// <param name="tableStackLoc"></param>
-    public static void IPairs(this Lua lua, Action<Lua, int, int> onElement, int tableStackLoc = -1) {
-        for (int i = 1; ; i++) {
-            var t = lua.RawGetInteger(tableStackLoc, i);
-            if (t == LuaType.Nil) {
-                lua.Pop(1);
-                break;
+    extension(Lua lua)
+    {
+        public TOut? PCallFunction<TArg1, TArg2, TOut>(TArg1 arg1, TArg2 arg2, Func<Lua, int, TOut?> retGetter, int results = 1)
+            where TArg1 : class, ILuaWrapper
+            where TArg2 : class, ILuaWrapper {
+            TOut? ret;
+
+            lua.PushWrapper(arg1);
+            lua.PushWrapper(arg2);
+        
+            lua.PCallThrowIfError(2, results);
+
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+            //lua.Pop(1);
+
+            ClearLuaResources();
+
+            return ret;
+        }
+
+        public TOut? PCallFunction<TOut>(Func<Lua, int, TOut?> retGetter, int results, params object[] args) {
+            TOut? ret;
+
+            foreach (var arg in args) {
+                lua.Push(arg);
             }
 
-            onElement(lua, i, lua.GetTop());
+            lua.PCallThrowIfError(args.Length, results);
 
-            lua.Pop(1);
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+
+            ClearLuaResources();
+
+            return ret;
+        }
+
+        public TOut? PCallFunction<TOut>(Func<Lua, int, TOut?> retGetter, int results = 1) {
+            TOut? ret;
+
+            lua.PCallThrowIfError(0, results);
+
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+
+            ClearLuaResources();
+
+            return ret;
+        }
+
+        public TOut? PCallFunction<TArg1, TArg2, TArg3, TArg4, TOut>(TArg1 arg1, TArg2 arg2, TArg3 arg3, TArg4 arg4, Func<Lua, int, TOut?> retGetter, int results = 1)
+        {
+            TOut? ret;
+
+            lua.Push(arg1);
+            lua.Push(arg2);
+            lua.Push(arg3);
+            lua.Push(arg4);
+
+            lua.PCallThrowIfError(4, results);
+
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+
+            ClearLuaResources();
+
+            return ret;
+        }
+
+        public TOut? PCallFunction<TArg1, TOut>(TArg1 arg1, Func<Lua, int, TOut?> retGetter, int results = 1)
+            where TArg1 : class, ILuaWrapper {
+            TOut? ret;
+
+            lua.PushWrapper(arg1);
+            lua.PCallThrowIfError(1, results);
+
+            ret = retGetter(lua, lua.GetTop());
+            lua.Pop(results);
+
+            ClearLuaResources();
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Converts a lua table at index <paramref name="index"/> on the stack into a C# dictionary
+        /// </summary>
+        public Dictionary<string, object> TableToDictionary(int index, HashSet<string>? keyBlacklist = null, 
+            int depth = 0, bool makeLuaFuncRefs = false) {
+            var dict = new Dictionary<string, object>();
+            var dataStart = index;
+
+            if (lua.IsWrapper(dataStart) && lua.UnboxWrapper(dataStart) is ILuaDictionaryWrapper dictWrapper)
+                return dictWrapper.Dictionary;
+
+            lua.PushNil();
+            while (lua.Next(dataStart)) {
+                var key = lua.FastToString(-2);
+                if (keyBlacklist?.Contains(key) ?? false) {
+                    goto next;
+                }
+
+                var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs);
+                dict[key] = value;
+
+                next:
+                // pop the value, keeping the key
+                lua.Pop(1);
+            }
+
+            return dict;
+        }
+
+        /// <summary>
+        /// Enumerates through an int-indexed table, calling <paramref name="onElement"/> for each element with (lua, index, valueLocation)
+        /// </summary>
+        /// <param name="onElement">(lua, index, valueLocation)</param>
+        /// <param name="tableStackLoc"></param>
+        public void IPairs(Action<Lua, int, int> onElement, int tableStackLoc = -1) {
+            for (int i = 1; ; i++) {
+                var t = lua.RawGetInteger(tableStackLoc, i);
+                if (t == LuaType.Nil) {
+                    lua.Pop(1);
+                    break;
+                }
+
+                onElement(lua, i, lua.GetTop());
+
+                lua.Pop(1);
+            }
+        }
+
+        /// <summary>
+        /// Converts the value at the given stack index to a Vector2.
+        /// Possible formats:<br/>
+        /// - A table: { x, y }<br/>
+        /// - Two numbers, where the number at <paramref name="index"/> points at y, and <paramref name="index"/>-1 is x.
+        /// </summary>
+        /// <param name="index">Stack index</param>
+        /// <param name="skipNilAtIndex">If true, and the value at <paramref name="index"/> is nil, try to parse the vector at index-1 instead. Used when handling an api allowing to return either two numbers, or a table.</param>
+        /// <returns></returns>
+        public Vector2 ToVector2(int index, bool skipNilAtIndex = false) {
+            switch (lua.Type(index)) {
+                case LuaType.Table:
+                    return new((float) lua.PeekTableNumberValue(index, 1)!, (float) lua.PeekTableNumberValue(index, 2)!);
+                case LuaType.Number:
+                    if (lua.IsNumber(index - 1)) {
+                        return new((float) lua.ToNumber(index - 1), (float) lua.ToNumber(index));
+                    } else {
+                        return new((float) lua.ToNumber(index));
+                    }
+                case LuaType.Nil when skipNilAtIndex:
+                    return lua.ToVector2(index - 1, skipNilAtIndex: false);
+                default:
+                    return default;
+            };
+        }
+
+        public Point ToPoint(int index) {
+            var vec = lua.ToVector2(index);
+
+            return vec.ToPoint();
+        }
+
+        /// <summary>
+        /// Turns the lua value on the stack at <paramref name="index"/> to a range.
+        /// A negative value for the 2nd number gets converted to <see cref="Index.End"/>
+        /// </summary>
+        public Range ToRangeNegativeIsFromEnd(int index) {
+            var point = lua.ToPoint(index);
+
+            return new(point.X.AtLeast(0), point.Y < 0 ? Index.End : point.Y);
+        }
+
+        public Color ToColor(int index, Color def) {
+            switch (lua.Type(index)) {
+                case LuaType.Table:
+                    var a = (float) (lua.PeekTableNumberValue(index, 4) ?? 1f);
+                    return new Color(
+                        (float) (lua.PeekTableNumberValue(index, 1) ?? 1f),
+                        (float) (lua.PeekTableNumberValue(index, 2) ?? 1f),
+                        (float) (lua.PeekTableNumberValue(index, 3) ?? 1f)
+                    ) * a;
+                case LuaType.String:
+                    return ColorHelper.Rgba(lua.FastToString(index));
+                default:
+                    return def;
+            };
         }
     }
-
-    /// <summary>
-    /// Converts the value at the given stack index to a Vector2.
-    /// Possible formats:<br/>
-    /// - A table: { x, y }<br/>
-    /// - Two numbers, where the number at <paramref name="index"/> points at y, and <paramref name="index"/>-1 is x.
-    /// </summary>
-    /// <param name="lua">Lua instance to use.</param>
-    /// <param name="index">Stack index</param>
-    /// <param name="skipNilAtIndex">If true, and the value at <paramref name="index"/> is nil, try to parse the vector at index-1 instead. Used when handling an api allowing to return either two numbers, or a table.</param>
-    /// <returns></returns>
-    public static Vector2 ToVector2(this Lua lua, int index, bool skipNilAtIndex = false) {
-        switch (lua.Type(index)) {
-            case LuaType.Table:
-                return new((float) lua.PeekTableNumberValue(index, 1)!, (float) lua.PeekTableNumberValue(index, 2)!);
-            case LuaType.Number:
-                if (lua.IsNumber(index - 1)) {
-                    return new((float) lua.ToNumber(index - 1), (float) lua.ToNumber(index));
-                } else {
-                    return new((float) lua.ToNumber(index));
-                }
-            case LuaType.Nil when skipNilAtIndex:
-                return lua.ToVector2(index - 1, skipNilAtIndex: false);
-            default:
-                return default;
-        };
-    }
-
-    public static Point ToPoint(this Lua lua, int index) {
-        var vec = lua.ToVector2(index);
-
-        return vec.ToPoint();
-    }
-
-    /// <summary>
-    /// Turns the lua value on the stack at <paramref name="index"/> to a range.
-    /// A negative value for the 2nd number gets converted to <see cref="Index.End"/>
-    /// </summary>
-    public static Range ToRangeNegativeIsFromEnd(this Lua lua, int index) {
-        var point = lua.ToPoint(index);
-
-        return new(point.X.AtLeast(0), point.Y < 0 ? Index.End : point.Y);
-    }
-
-    public static Color ToColor(this Lua lua, int index, Color def) {
-        switch (lua.Type(index)) {
-            case LuaType.Table:
-                var a = (float) (lua.PeekTableNumberValue(index, 4) ?? 1f);
-                return new Color(
-                    (float) (lua.PeekTableNumberValue(index, 1) ?? 1f),
-                    (float) (lua.PeekTableNumberValue(index, 2) ?? 1f),
-                    (float) (lua.PeekTableNumberValue(index, 3) ?? 1f)
-                 ) * a;
-            case LuaType.String:
-                return ColorHelper.Rgba(lua.FastToString(index));
-            default:
-                return def;
-        };
-    }
-
 
 
     internal static object ToListOrDict(Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false) {
@@ -766,76 +775,82 @@ where TArg1 : class, ILuaWrapper {
         return lua.TableToDictionary(index, depth: depth + 1, makeLuaFuncRefs: makeLuaFuncRefs);
     }
 
-    public static List<object>? ToList(this Lua lua, int index, int depth = 0) {
-        List<object> list = new();
+    extension(Lua lua)
+    {
+        public List<object>? ToList(int index, int depth = 0) {
+            List<object> list = new();
 
-        lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharp(lua, loc, depth + 1));
-        });
+            lua.IPairs((lua, index, loc) => {
+                list.Add(ToCSharp(lua, loc, depth + 1));
+            });
 
-        return list;
-    }
+            return list;
+        }
 
-    public static List<T>? ToList<T>(this Lua lua, int index, int depth = 0) {
-        List<T> list = new();
+        public List<T>? ToList<T>(int index, int depth = 0) {
+            List<T> list = new();
 
-        lua.IPairs((lua, index, loc) => {
-            var obj = ToCSharp(lua, loc, depth + 1);
-            if (obj is T t)
-                list.Add(t);
-        });
+            lua.IPairs((lua, index, loc) => {
+                var obj = ToCSharp(lua, loc, depth + 1);
+                if (obj is T t)
+                    list.Add(t);
+            });
 
-        return list;
-    }
+            return list;
+        }
 
-    public static object ToCSharp(this Lua s, int index, int depth = 0, bool makeLuaFuncRefs = false) {
-        object val = s.Type(index) switch {
-            LuaType.Nil or LuaType.None => null!,
-            LuaType.Boolean => s.ToBoolean(index),
-            LuaType.Number => (float)s.ToNumber(index),
-            LuaType.String => s.FastToString(index, false),
-            LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(s, index) : s.ToString(index),
-            LuaType.Table => depth > 10 ? "table" : ToListOrDict(s, index, depth: depth + 1, makeLuaFuncRefs),//"table",
-            LuaType.UserData when s.IsWrapper(index) => s.UnboxWrapper(index), 
-            _ => throw new LuaException(s, new NotImplementedException($"Can't convert {s.Type(index)} to C# type")),
-        };
-        return val;
+        public object ToCSharp(int index, int depth = 0, bool makeLuaFuncRefs = false) {
+            object val = lua.Type(index) switch {
+                LuaType.Nil or LuaType.None => null!,
+                LuaType.Boolean => lua.ToBoolean(index),
+                LuaType.Number => (float)lua.ToNumber(index),
+                LuaType.String => lua.FastToString(index, false),
+                LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(lua, index) : lua.ToString(index),
+                LuaType.Table => depth > 10 ? "table" : ToListOrDict(lua, index, depth: depth + 1, makeLuaFuncRefs),//"table",
+                LuaType.UserData when lua.IsWrapper(index) => lua.UnboxWrapper(index), 
+                _ => throw new LuaException(lua, new NotImplementedException($"Can't convert {lua.Type(index)} to C# type")),
+            };
+            return val;
+        }
     }
 
     private static LuaFunctionRef? _utilsSerialize;
     
-    public static string Serialize(this Lua s, int index) {
-        if (_utilsSerialize is null) {
-            s.PCallStringThrowIfError("""
-            local utils = require("utils")
-            
-            return function (x)
-                if x == nil then
-                    return false, "[nil]"
-                end
-                return utils.serialize(x)
-            end
-            """, "get_utils_serialize", results: 1);
-            _utilsSerialize = LuaFunctionRef.MakeFrom(s, s.GetTop());
-            s.Pop(1);
+    extension(Lua s)
+    {
+        public string Serialize(int index) {
+            if (_utilsSerialize is null) {
+                s.PCallStringThrowIfError("""
+                                          local utils = require("utils")
+
+                                          return function (x)
+                                              if x == nil then
+                                                  return false, "[nil]"
+                                              end
+                                              return utils.serialize(x)
+                                          end
+                                          """, "get_utils_serialize", results: 1);
+                _utilsSerialize = LuaFunctionRef.MakeFrom(s, s.GetTop());
+                s.Pop(1);
+            }
+        
+            _utilsSerialize.PushToStack(s);
+            s.PushCopy(index);
+            s.PCallThrowIfError(1, 2);
+            var res = s.FastToString(s.GetTop());
+            s.Pop(2);
+        
+            return res;
         }
-        
-        _utilsSerialize.PushToStack(s);
-        s.PushCopy(index);
-        s.PCallThrowIfError(1, 2);
-        var res = s.FastToString(s.GetTop());
-        s.Pop(2);
-        
-        return res;
-    }
 
-    public static Rectangle ToRectangle(this Lua lua, int index) {
-        var x = lua.PeekTableIntValue(index, "x"u8) ?? 0;
-        var y = lua.PeekTableIntValue(index, "y"u8) ?? 0;
-        var w = lua.PeekTableIntValue(index, "width"u8) ?? 8;
-        var h = lua.PeekTableIntValue(index, "height"u8) ?? 8;
+        public Rectangle ToRectangle(int index) {
+            var x = s.PeekTableIntValue(index, "x"u8) ?? 0;
+            var y = s.PeekTableIntValue(index, "y"u8) ?? 0;
+            var w = s.PeekTableIntValue(index, "width"u8) ?? 8;
+            var h = s.PeekTableIntValue(index, "height"u8) ?? 8;
 
-        return new Rectangle(x, y, w, h);
+            return new Rectangle(x, y, w, h);
+        }
     }
 
     //private static nint _nextNeoWrapperId = nint.MinValue;
@@ -1106,54 +1121,57 @@ where TArg1 : class, ILuaWrapper {
     }
 
 
-    public static unsafe bool IsWrapper(this Lua lua, int loc) {
-        var data = (NeoWrapper*)lua.ToUserData(loc);
-        lock (NeoWrapperLock) {
-            return data != null && (uint)data->Id < NeoWrappers.Count && NeoWrappers[data->Id] != null;
-        }
-    }
-    
-    public static unsafe bool TryUnboxWrapper(this Lua lua, int loc, [NotNullWhen(true)] out ILuaWrapper? wrapper) {
-        wrapper = null;
-        
-        var data = (NeoWrapper*)lua.ToUserData(loc);
-        if (data is null)
-            return false;
-        
-        lock (NeoWrapperLock) {
-            var wrappers = CollectionsMarshal.AsSpan(NeoWrappers);
-            
-            if ((uint) data->Id < wrappers.Length) {
-                wrapper = wrappers[data->Id];
-                return wrapper != null;
+    extension(Lua lua)
+    {
+        public unsafe bool IsWrapper(int loc) {
+            var data = (NeoWrapper*)lua.ToUserData(loc);
+            lock (NeoWrapperLock) {
+                return data != null && (uint)data->Id < NeoWrappers.Count && NeoWrappers[data->Id] != null;
             }
-
-            return false;
         }
-    }
 
-    public static unsafe ILuaWrapper UnboxWrapper(this Lua lua, int loc){
-        var data = (NeoWrapper*)lua.ToUserData(loc);
-        if (data is null)
-            throw new Exception("Can't unbox wrapper, as it isn't one!");
-        lock (NeoWrapperLock) {
-            return NeoWrappers[data->Id] ?? throw new Exception("Can't unbox wrapper, as it isn't one!");
+        public unsafe bool TryUnboxWrapper(int loc, [NotNullWhen(true)] out ILuaWrapper? wrapper) {
+            wrapper = null;
+        
+            var data = (NeoWrapper*)lua.ToUserData(loc);
+            if (data is null)
+                return false;
+        
+            lock (NeoWrapperLock) {
+                var wrappers = CollectionsMarshal.AsSpan(NeoWrappers);
+            
+                if ((uint) data->Id < wrappers.Length) {
+                    wrapper = wrappers[data->Id];
+                    return wrapper != null;
+                }
+
+                return false;
+            }
         }
-    }
 
-    public static T UnboxWrapper<T>(this Lua lua, int loc) where T : ILuaWrapper {
-        return (T)UnboxWrapper(lua, loc);
-    }
+        public unsafe ILuaWrapper UnboxWrapper(int loc){
+            var data = (NeoWrapper*)lua.ToUserData(loc);
+            if (data is null)
+                throw new Exception("Can't unbox wrapper, as it isn't one!");
+            lock (NeoWrapperLock) {
+                return NeoWrappers[data->Id] ?? throw new Exception("Can't unbox wrapper, as it isn't one!");
+            }
+        }
 
-    public static Room UnboxRoomWrapper(this Lua lua, int loc) {
-        var roomWrapper = lua.UnboxWrapper(loc);
-        var room = roomWrapper switch {
-            Room r => r,
-            RoomTrackingLuaWrapper wr => wr.GetRoom(),
-            _ => throw new Exception($"Can't convert {roomWrapper} to a Room!")
-        };
+        public T UnboxWrapper<T>(int loc) where T : ILuaWrapper {
+            return (T)UnboxWrapper(lua, loc);
+        }
 
-        return room;
+        public Room UnboxRoomWrapper(int loc) {
+            var roomWrapper = lua.UnboxWrapper(loc);
+            var room = roomWrapper switch {
+                Room r => r,
+                RoomTrackingLuaWrapper wr => wr.GetRoom(),
+                _ => throw new Exception($"Can't convert {roomWrapper} to a Room!")
+            };
+
+            return room;
+        }
     }
 
     private static readonly List<GCHandle> LuaUsedHandles = new();
@@ -1180,17 +1198,20 @@ where TArg1 : class, ILuaWrapper {
             LuaCleanupActions.Add(cb);
     }
 
-    public static void PushAndPinFunction(this Lua lua, LuaFunction func) {
-        var pin = GCHandle.Alloc(func);
-        LuaUsedHandles.Add(pin);
+    extension(Lua lua)
+    {
+        public void PushAndPinFunction(LuaFunction func) {
+            var pin = GCHandle.Alloc(func);
+            LuaUsedHandles.Add(pin);
 
-        lua.PushCFunction(func);
-    }
+            lua.PushCFunction(func);
+        }
 
-    public static void SetCurrentModName(this Lua lua, ModMeta? mod) {
-        var modName = mod?.Name ?? string.Empty;
-        lua.PushString(modName);
-        lua.SetGlobal("_RYSY_CURRENT_MOD");
+        public void SetCurrentModName(ModMeta? mod) {
+            var modName = mod?.Name ?? string.Empty;
+            lua.PushString(modName);
+            lua.SetGlobal("_RYSY_CURRENT_MOD");
+        }
     }
 
     public static long ToIntegerSafe(Lua lua, int index) {
