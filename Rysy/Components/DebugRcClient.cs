@@ -1,4 +1,6 @@
-﻿namespace Rysy.Components;
+﻿using System.Net;
+
+namespace Rysy.Components;
 
 /// <summary>
 /// Allows invoking Everest's DebugRC, if the game is currently open.
@@ -24,7 +26,7 @@ public static class DebugRcClientExt {
         /// <param name="y">Y position to load into.</param>
         /// <returns></returns>
         public async Task<HttpResponseMessage> Tp(string sid, CelesteLevelSide side, string roomName, int? x, int? y, bool forceNewSession) {
-            var url = $"tp?area={sid}&side={side}&level={roomName}";
+            var url = $"tp?area={WebUtility.UrlEncode(sid)}&side={side}&level={WebUtility.UrlEncode(roomName)}";
             if (forceNewSession)
                 url += "&forcenew=true";
             if (x is not null)
