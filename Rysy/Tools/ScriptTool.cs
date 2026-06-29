@@ -162,8 +162,9 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
             var roomPos = room.WorldToRoomPos(camera, Input.Mouse.Pos.ToVector2()).Snap(8);
 
             if (fields is { }) {
-                var form = new FormWindow(fields, $"Script Parameters: {script.Name}");
-                form.SaveChangesButtonName = "Run Script";
+                var form = new FormWindow(fields, "rysy.scripts.scriptParameters".TranslateFormatted(script.Name));
+                form.SaveChangesButtonName = "rysy.scripts.runScript";
+                form.SaveChangesButtonIcon = ImGuiIcons.Play;
 
                 form.OnChanged = (edited) => {
                     RunScript(script, form.GetAllValues(), roomPos);

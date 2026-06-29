@@ -9,6 +9,7 @@ rysy.delete=Delete
 rysy.rename=Rename
 rysy.edit=Edit
 rysy.save=Save
+rysy.saveChanges=Save Changes
 rysy.new=New...
 rysy.create=Create
 rysy.search=Search
@@ -624,3 +625,7 @@ rysy.playtest.failedCelesteSideUnsuccessfulCode=Failed to playtest
 rysy.playtest.failedCelesteSideUnsuccessfulCode.message=Received an error from Celeste:\n{0} {1}\n{2}
 
 rysy.hotkey=Hotkey: {0}
+
+rysy.scripts.scriptParameters=Script Parameters: {0}
+rysy.scripts.runScript=Run Script
+rysy.scripts.configureReplaceScript=Configuring Replace Script: {0} -> {1}

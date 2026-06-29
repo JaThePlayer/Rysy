@@ -357,7 +357,7 @@ public static class ImGuiManager {
         search ??= "";
         var pos = ImGui.GetCursorPos();
         
-        ImGui.PushStyleColor(ImGuiCol.Text, default(int));
+        ImGui.PushStyleColor(ImGuiCol.Text, 0);
         if (focusKeyboard)
             ImGui.SetKeyboardFocusHere();
         var ret = ImGui.InputText(persistenceKey.IsNullOrWhitespace() 
@@ -366,8 +366,8 @@ public static class ImGuiManager {
         ImGui.PopStyleColor(1);
         ImGui.SameLine();
         ImGui.Text(searchText);
+        
         ImGui.SameLine();
-        //ImGui.Button("?");
         ImGui.TextDisabled("(?)"u8);
         SearchInputTooltip.RenderIfHovered();
         
@@ -1151,6 +1151,11 @@ public static class ImGuiManager {
         var iconChar = (char) icon;
         ImGui.TextColored(color.ToNumVec4(), Interpolator.TempU8($"{iconChar}"));
         ImGui.SameLine();
+    }
+
+    public static bool IconButton(ImGuiIcons icon, string text) {
+        var iconChar = (char) icon;
+        return ImGui.Button(Interpolator.TempU8($"{iconChar} {text}"));
     }
 
     public static bool SelectableIcon(ImGuiIcons icon) {

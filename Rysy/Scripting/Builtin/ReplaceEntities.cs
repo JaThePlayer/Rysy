@@ -1,6 +1,6 @@
-﻿using Rysy.Gui.Windows;
+﻿using Rysy.Gui;
+using Rysy.Gui.Windows;
 using Rysy.History;
-using Rysy.Selections;
 
 namespace Rysy.Scripting.Builtin;
 
@@ -32,8 +32,9 @@ public sealed class ReplaceEntities : Script {
         fields.Remove("x");
         fields.Remove("y");
 
-        var formWindow = new FormWindow(fields, $"Configuring Replace Script: {origSid} -> {newSid}");
-        formWindow.SaveChangesButtonName = "Run Script";
+        var formWindow = new FormWindow(fields, "rysy.scripts.configureReplaceScript".TranslateFormatted(origSid, newSid));
+        formWindow.SaveChangesButtonName = "rysy.scripts.runScript";
+        formWindow.SaveChangesButtonIcon = ImGuiIcons.Play;
 
         formWindow.OnChanged = (edited) => {
             var placement = mainPlacement with {

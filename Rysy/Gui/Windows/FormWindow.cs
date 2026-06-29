@@ -51,7 +51,9 @@ public class FormWindow : Window {
         return true;
     }
 
-    public string SaveChangesButtonName = "Save Changes";
+    public string SaveChangesButtonName { get; set; } = "rysy.saveChanges";
+    
+    public ImGuiIcons SaveChangesButtonIcon { get; set; } = ImGuiIcons.Save;
 
     public Func<string, bool> Exists;
 
@@ -191,7 +193,7 @@ public class FormWindow : Window {
     public override void RenderBottomBar() {
         using var _ = ScopedImGui.Disabled(!_allFieldsValid);
 
-        if (ImGui.Button(SaveChangesButtonName)) {
+        if (ImGuiManager.IconButton(SaveChangesButtonIcon, SaveChangesButtonName.Translate())) {
             Save();
         }
     }
