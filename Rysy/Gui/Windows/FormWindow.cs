@@ -193,8 +193,16 @@ public class FormWindow : Window {
     public override void RenderBottomBar() {
         using var _ = ScopedImGui.Disabled(!_allFieldsValid);
 
+        // Only add the hotkey tooltip if the hotkey actually saves changes in this form.
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        var isMainWindow = Scene is not null;
+
         if (ImGuiManager.IconButton(SaveChangesButtonIcon, SaveChangesButtonName.Translate())) {
             Save();
+        }
+
+        if (isMainWindow) {
+            isMainWindow.WithHotkeyTooltip<Signals.Hotkeys.HotkeyCloseWindowAndSave>();
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Helpers;
+using Rysy.Signals.Hotkeys;
 
 namespace Rysy.Gui;
 
@@ -82,5 +83,8 @@ public static class ImGuiExt {
 
             return val;
         }
+
+        public bool WithHotkeyTooltip<T>() where T : ISignalHotkey
+            => val.WithHotkeyTooltip(T.Name, T.DefaultKeybind);
     }
 }
