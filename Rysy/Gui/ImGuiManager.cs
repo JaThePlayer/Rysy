@@ -381,12 +381,12 @@ public static class ImGuiManager {
         return ret;
     }
 
-    public static bool RenderSearchBarInDropdown(ref string search, string persistenceKey = "") {
+    public static bool RenderSearchBarInDropdown(ref string search, string persistenceKey = "", bool focusKeyboard = false) {
         var xPadding = ImGui.GetStyle().FramePadding.X;
         var searchText = "rysy.search.withQuestionMark".Translate();
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(searchText).X - xPadding * 2);
         search ??= "";
-        var ret = SearchInput(ref search, persistenceKey);
+        var ret = SearchInput(ref search, persistenceKey, focusKeyboard);
         ImGui.Separator();
         return ret;
     }
@@ -399,7 +399,7 @@ public static class ImGuiManager {
         var oldStyles = PopAllStyles();
         
         search ??= "";
-        RenderSearchBarInDropdown(ref search);
+        RenderSearchBarInDropdown(ref search, focusKeyboard: ImGui.IsWindowAppearing());
 
         ImGui.BeginChild($"comboInner{name}");
 
