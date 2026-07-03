@@ -12,6 +12,14 @@ public enum ImGuiIcons : ushort {
     Bell = 0xf0f3,
     BellSlash = 0xf1f6,
     Play = 0xf04b,
+    RotateLeft = 0xf2ea,
+    RotateRight = 0xf2f9,
+    Gear = 0xf013,
+    Terminal = 0xf120,
+    CircleXMark = 0xf057,
+    FileCirclePlus = 0xe494,
+    FolderPlus = 0xf65e,
+    FolderOpen = 0xf07c,
 }
 
 #pragma warning restore CA1028

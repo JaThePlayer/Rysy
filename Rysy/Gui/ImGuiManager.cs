@@ -253,8 +253,8 @@ public static class ImGuiManager {
     /// <summary>
     /// Creates a menu with <see cref="ImGui.BeginMenu(string)"/> using elements from the <paramref name="source"/>.
     /// </summary>
-    public static void DropdownMenu<T>(string name, IEnumerable<T> source, Func<T, string> itemNameGetter, Action<T> onClick) {
-        if (ImGui.BeginMenu(name)) {
+    public static void DropdownMenu<T>(string name, IEnumerable<T> source, Func<T, string> itemNameGetter, Action<T> onClick, ImGuiIcons? icon = null) {
+        if (icon is { } ? ImGui.BeginMenu(Interpolator.Utf8($"{(char)icon.Value} {name}")) : ImGui.BeginMenu(name)) {
             foreach (var item in source) {
                 if (ImGui.MenuItem(itemNameGetter(item).ToImguiEscaped())) {
                     onClick(item);
@@ -1048,7 +1048,12 @@ public static class ImGuiManager {
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
 
-    public static bool TranslatedMenuItem(ReadOnlySpan<char> key) {
+    public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ImGuiIcons? icon = null) {
+        if (icon is { }) {
+            return ImGui.MenuItem(Interpolator.Utf8($"{(char)icon.Value} {key.TranslateOrNull() ?? key.ToString()}"))
+                  .WithTranslatedTooltip($"{key}.tooltip");
+        }
+        
         return ImGui.MenuItem(key.TranslateOrNull() ?? key.ToString()).WithTranslatedTooltip($"{key}.tooltip");
     }
     
@@ -1056,7 +1061,12 @@ public static class ImGuiManager {
         return ImGui.MenuItem(key.TranslateOrNull(prefix) ?? key.ToString()).WithTranslatedTooltip($"{prefix}.{key}.tooltip");
     }
     
-    public static bool TranslatedMenuItemHotkey(ReadOnlySpan<char> key, ReadOnlySpan<char> hotkey) {
+    public static bool TranslatedMenuItemHotkey(ReadOnlySpan<char> key, ReadOnlySpan<char> hotkey, ImGuiIcons? icon = null) {
+        if (icon is { }) {
+            return ImGui.MenuItem(Interpolator.Utf8($"{(char)icon.Value} {key.TranslateOrNull() ?? key.ToString()}"), PerFrameInterpolator.Utf8(hotkey))
+                .WithTranslatedTooltip($"{key}.tooltip");
+        }
+        
         return ImGui.MenuItem(key.TranslateOrNull() ?? key.ToString(), Interpolator.Utf8(hotkey)).WithTranslatedTooltip($"{key}.tooltip");
     }
 

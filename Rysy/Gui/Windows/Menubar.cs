@@ -27,7 +27,8 @@ public interface IMenubarIndicator {
     public void RenderMenubarIndicator(Menubar menubar);
 }
 
-public class MenubarButtonEntry(string tab, string langKey, Action run, Func<bool>? disabled = null, string? hotkeyId = null, bool addToCommandPalette = true) : IMenubarEntry, ICommandPaletteCommand {
+public class MenubarButtonEntry(string tab, string langKey, Action run, Func<bool>? disabled = null, string? hotkeyId = null, 
+    bool addToCommandPalette = true, ImGuiIcons? icon = null) : IMenubarEntry, ICommandPaletteCommand {
     public string Tab => tab;
     
     public Searchable Searchable { get; } = new Searchable(langKey.Translate());
@@ -44,10 +45,10 @@ public class MenubarButtonEntry(string tab, string langKey, Action run, Func<boo
         using var _ = ScopedImGui.Disabled(disabled?.Invoke() ?? false);
         
         if (hotkeyId is not null) {
-            if (ImGuiManager.TranslatedMenuItemHotkey(langKey, Settings.Instance.GetOrCreateHotkey(hotkeyId)))
+            if (ImGuiManager.TranslatedMenuItemHotkey(langKey, Settings.Instance.GetOrCreateHotkey(hotkeyId), icon))
                 Run();
         } else {
-            if (ImGuiManager.TranslatedMenuItem(langKey))
+            if (ImGuiManager.TranslatedMenuItem(langKey, icon))
                 Run();
         }
     }
@@ -61,7 +62,7 @@ public class MenubarButtonEntry(string tab, string langKey, Action run, Func<boo
 }
 
 public class MenubarDropdownEntry<T>(string tab, string langKey, Func<IEnumerable<T>> entries, Func<T, Searchable> tToString, Action<T> run,
-    Func<bool>? disabled = null, bool addToCommandPalette = true) : IMenubarEntry, ICommandPaletteCommand {
+    Func<bool>? disabled = null, bool addToCommandPalette = true, ImGuiIcons? icon = null) : IMenubarEntry, ICommandPaletteCommand {
     private readonly Func<T, Searchable> _tToString = tToString;
     private readonly Action<T> _run = run;
 
@@ -73,7 +74,7 @@ public class MenubarDropdownEntry<T>(string tab, string langKey, Func<IEnumerabl
     
     public void RenderGui(Menubar menubar) {
         using var _ = ScopedImGui.Disabled(disabled?.Invoke() ?? false);
-        ImGuiManager.DropdownMenu(langKey.Translate(), entries(), t => _tToString(t).TextWithMods, _run);
+        ImGuiManager.DropdownMenu(langKey.Translate(), entries(), t => _tToString(t).TextWithMods, _run, icon);
     }
     
     public XnaWidgetDef? CreatePreview() {
@@ -173,20 +174,23 @@ public class Menubar : SceneComponent {
             () => (Scene as EditorScene)?.LoadNewMap(),
             disabled: () => Scene is not EditorScene,
             hotkeyId: "newMap",
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.FileCirclePlus
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.newMod", 
             () => Scene.AddWindowIfNeeded<NewModWindow>(),
             hotkeyId: null,
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.FolderPlus
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.openMap", 
             () => (Scene as EditorScene)?.Open(),
             disabled: () => Scene is not EditorScene,
             hotkeyId: "openMap",
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.FolderOpen
         ));
         
         Scene?.Add(new MenubarDropdownEntry<Persistence.RecentMap>(TabFile, "rysy.menubar.file.openRecent", 
@@ -196,34 +200,39 @@ public class Menubar : SceneComponent {
                     : p.Name),
             run: p => (Scene as EditorScene)?.LoadMapFromBin(p.Filename),
             disabled: () => Scene is not EditorScene,
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.FolderOpen
         ));
         
         Scene?.Add(new MenubarDropdownEntry<BackupInfo>(TabFile, "rysy.menubar.file.loadBackup", 
             BackupHandler.GetBackups,
             tToString: b => new Searchable($"{b.MapName} ({b.Time}) [{b.Filesize.Value.ToFilesize()}]"),
             run: b => RysyEngine.Scene = new EditorScene(b.BackupFilepath, fromBackup: true, overrideFilepath: b.OrigFilepath),
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.FolderOpen
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.save", 
             () => (Scene as EditorScene)?.Save(),
             disabled: () => Scene is not EditorScene,
             hotkeyId: "saveMap",
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.Save
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.saveAs", 
             () => (Scene as EditorScene)?.Save(saveAs: true),
             disabled: () => Scene is not EditorScene,
             hotkeyId: null,
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.Save
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabFile, "rysy.menubar.file.exit", 
             () => RysyPlatform.Current.ExitProcess(),
             hotkeyId: null,
-            addToCommandPalette: false
+            addToCommandPalette: false,
+            icon: ImGuiIcons.CircleXMark
         ));
         #endregion
         
@@ -231,34 +240,39 @@ public class Menubar : SceneComponent {
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.settings", 
             () => SettingsWindow.Add(Scene),
             hotkeyId: null,
-            addToCommandPalette: true
+            addToCommandPalette: true,
+            icon: ImGuiIcons.Gear
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.commandPalette", 
             () => Scene.AddWindowIfNeeded<CommandPaletteWindow>(),
             hotkeyId: "commandPalette",
-            addToCommandPalette: false
+            addToCommandPalette: false,
+            icon: ImGuiIcons.Terminal
         ));
 
         if (RysyPlatform.Current.CanOpenCeleste) {
             Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.openCeleste",
                 () => RysyPlatform.Current.OpenCeleste(),
                 disabled: () => !RysyPlatform.Current.CanOpenCeleste,
-                addToCommandPalette: true
+                addToCommandPalette: true,
+                icon: ImGuiIcons.Play
             ));
         }
         
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.undo", 
             () => Scene.Get<IHistoryHandler>()?.Undo(),
             hotkeyId: "undo",
-            addToCommandPalette: false
+            addToCommandPalette: false,
+            icon: ImGuiIcons.RotateLeft
         ));
         
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.redo", 
             () => Scene.Get<IHistoryHandler>()?.Redo(),
             disabled: () => Scene.Get<IHistoryHandler>() is null,
             hotkeyId: "redo",
-            addToCommandPalette: false
+            addToCommandPalette: false,
+            icon: ImGuiIcons.RotateRight
         ));
         #endregion
         
