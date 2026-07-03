@@ -26,7 +26,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
 
     public Func<string?, T> StringToT;
 
-    public Func<T, Searchable, bool>? MenuItemRenderer;
+    public ImGuiManager.RenderMenuItem<T>? MenuItemRenderer;
 
     public bool Editable { get; set; }
 
@@ -132,15 +132,18 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
     }
     
     /// <summary>
-    /// Adds a sprite-based tooltip to menu entries.
+    /// Adds a sprite previews to menu entries.
     /// <param name="render">Getter for the sprite to render. (T key, string displayName) -> ISprite</param>
     /// </summary>
-    public DropdownField<T> AddSpriteTooltips(Func<T, Searchable, ISprite?> render) {
-        MenuItemRenderer = (key, searchable) => {
-            var clicked = searchable.RenderImGuiMenuItem();
+    public DropdownField<T> AddSpritePreview(Func<T, Searchable, ISprite?> render) {
+        MenuItemRenderer = (key, searchable, selected) => {
+            var sprite = render(key, searchable);
+            
+            var clicked = sprite is not null 
+                ? ImGuiManager.SpriteSelectable(sprite, searchable, selected)
+                : searchable.RenderImGuiSelectable(selected);
 
-            if (ImGui.IsItemHovered()) {
-                var sprite = render(key, searchable);
+            if (ImGui.IsItemHovered() && sprite is not null) {
                 ImGuiManager.SpriteTooltip("path_field_preview", sprite);
             }
         
@@ -226,7 +229,7 @@ public record class DropdownField : Field {
     
     public IReadOnlyList<object> Values { get; set; }
     
-    public Func<object, Searchable, bool>? MenuItemRenderer;
+    public ImGuiManager.RenderMenuItem<object>? MenuItemRenderer;
     
     public bool Editable { get; set; }
     

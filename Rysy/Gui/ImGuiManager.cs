@@ -301,9 +301,9 @@ public static class ImGuiManager {
     
     public static bool Combo<T>(string name, ref T? value, IDictionary<T, Searchable> values, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, Searchable, bool>? menuItemRenderer = null) where T : notnull {
+        RenderMenuItem<T>? menuItemRenderer = null) where T : notnull {
 
-        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
+        menuItemRenderer ??= static (_, valueName, selected) => valueName.RenderImGuiSelectable(selected);
         
         if (value is null || !values.TryGetValue(value, out var valueName)) {
             valueName = new Searchable(value?.ToString() ?? "");
@@ -331,11 +331,11 @@ public static class ImGuiManager {
 
     public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, 
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null, ImGuiComboFlags comboFlags = ImGuiComboFlags.None) 
+        ComboCache<T>? cache = null, RenderMenuItem<T>? renderMenuItem = null, ImGuiComboFlags comboFlags = ImGuiComboFlags.None) 
         where T : notnull {
         var valueName = toString(value);
         bool changed = false;
-        renderMenuItem ??= static (t, valueName) => valueName.RenderImGuiMenuItem();
+        renderMenuItem ??= static (_, valueName, selected) => valueName.RenderImGuiSelectable(selected);
 
         cache ??= new();
         search ??= "";
@@ -390,10 +390,12 @@ public static class ImGuiManager {
         ImGui.Separator();
         return ret;
     }
+
+    public delegate bool RenderMenuItem<T>(T item, Searchable searchable, bool isSelected);
     
     private static bool RenderListContents<T>(string name, ref T? value, ref string search, ref bool changed,
         ComboCache<T> cache, IEnumerable<T> values, 
-        Func<T, Searchable> toString, Func<T, Searchable, bool> renderMenuItem) {
+        Func<T, Searchable> toString, RenderMenuItem<T> renderMenuItem) {
         var oldStyles = PopAllStyles();
         
         search ??= "";
@@ -410,7 +412,8 @@ public static class ImGuiManager {
         int id = 0;
         foreach (var (item, searchable) in filtered) {
             using var _ = ScopedImGui.Id(id++);
-            if (renderMenuItem(item, searchable)) {
+            var isSelected = EqualityComparer<T>.Default.Equals(item, value);
+            if (renderMenuItem(item, searchable, isSelected)) {
                 value = item;
                 changed = true;
             }
@@ -426,12 +429,12 @@ public static class ImGuiManager {
 
     public static bool EditableCombo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, Func<string, T> stringToValue,
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, Func<T, Searchable, bool>? renderMenuItem = null,
+        ComboCache<T>? cache = null, RenderMenuItem<T>? renderMenuItem = null,
         Func<T, string>? textInputStringGetter = null) {
         bool changed = false;
         var widgetHelper = new InputWidgetHelper(1, tooltip);
 
-        renderMenuItem ??= static (_, name) => name.RenderImGuiMenuItem();
+        renderMenuItem ??= static (_, valueName, selected) => valueName.RenderImGuiSelectable(selected);
         
         var valueToString = textInputStringGetter is {} ? new Searchable(textInputStringGetter(value)) : toString(value);
         
@@ -461,13 +464,13 @@ public static class ImGuiManager {
 
     public static bool EditableCombo<T>(string name, ref T? value, IDictionary<T, Searchable> values, Func<string, T> stringToValue, 
         ref string search, Tooltip tooltip = default, ComboCache<T>? cache = null,
-        Func<T, Searchable, bool>? menuItemRenderer = null, Func<T?, string>? tToString = null)
+        RenderMenuItem<T>? menuItemRenderer = null, Func<T?, string>? tToString = null)
         where T : notnull {
 
         bool changed = false;
         var widgetHelper = new InputWidgetHelper(1, tooltip);
 
-        menuItemRenderer ??= static (_, name) => name.RenderImGuiMenuItem();
+        menuItemRenderer ??= static (_, valueName, selected) => valueName.RenderImGuiSelectable(selected);
 
         var valueToString = tToString?.Invoke(value) ?? value?.ToString() ?? "";
 
@@ -500,7 +503,7 @@ public static class ImGuiManager {
             var filtered = cache.GetValue(values, search);
 
             foreach (var item in filtered) {
-                if (menuItemRenderer(item.Key, item.Value)) {
+                if (menuItemRenderer(item.Key, item.Value, item.Key.Equals(value))) {
                     value = item.Key;
                     changed = true;
                 }
@@ -519,14 +522,14 @@ public static class ImGuiManager {
     
     #endregion
 
-    public static bool ColorSelectable(Color color, Searchable label) {
+    public static bool ColorSelectable(Color color, Searchable label, bool isSelected) {
         bool pressed = false;
         
         pressed |= ImGui.ColorButton(label.TextWithMods, color.ToNumVec4());
         ImGui.SameLine();
         
         ImGui.PushID(1);
-        pressed |= ImGui.Selectable(label.TextWithMods, ImGuiSelectableFlags.AllowOverlap);
+        pressed |= ImGui.Selectable(label.TextWithMods, isSelected, ImGuiSelectableFlags.AllowOverlap);
         ImGui.PopID();
         
         return pressed;

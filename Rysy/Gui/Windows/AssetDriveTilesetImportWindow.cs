@@ -78,7 +78,7 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         
         ImGuiManager.Combo("Tileset", ref _selected, tilesets, 
             x => new Searchable(x.Name ?? "", mods: [], tags: x.Tags), ref _searchText, tooltip: default, _comboCache,
-            renderMenuItem: (tileset, s) => {
+            renderMenuItem: (tileset, s, _) => {
                 var ret = s.RenderImGuiMenuItem();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip) && ImGui.BeginTooltip()) {
                     RenderPreview("tileset-import-preview-tooltip", tileset);

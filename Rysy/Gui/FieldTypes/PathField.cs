@@ -189,12 +189,12 @@ public partial record class PathField : Field, IFieldConvertible<string> {
     public override void SetDefault(object newDefault) => Default = newDefault.ToString()!;
 
 
-    private bool RenderMenuItem(TextureCacheKey key, Searchable displayPath) {
+    private bool RenderMenuItem(TextureCacheKey key, Searchable displayPath, bool isSelected) {
         var sprite = PreviewSpriteGetter?.Invoke(key.path);
 
         bool clicked;
         if (sprite is not null) {
-            clicked = ImGuiManager.SpriteSelectable(sprite, displayPath, false);
+            clicked = ImGuiManager.SpriteSelectable(sprite, displayPath, isSelected);
         } else {
             clicked = displayPath.RenderImGuiMenuItem();
         }
@@ -208,7 +208,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         _knownPaths ??= CreateKnownPathsCache();
 
         var paths = _knownPaths.Value;
-        Func<TextureCacheKey, Searchable, bool>? menuItemRenderer = PreviewSpriteGetter is { } 
+        ImGuiManager.RenderMenuItem<TextureCacheKey>? menuItemRenderer = PreviewSpriteGetter is { } 
             ? RenderMenuItem
             : null;
 
@@ -222,6 +222,8 @@ public partial record class PathField : Field, IFieldConvertible<string> {
             chosen = CreateKnownPathsEntry(FoundPath.Create(strValue, _regex) ?? new FoundPath(strValue, strValue, null));
 
         _lastChosen = chosen;
+
+        using var _ = ScopedImGui.Id(_comboCache.GetHashCode());
         
         if (Editable) {
             if (ImGuiManager.EditableCombo(fieldName, ref chosen, paths, x => x.searchable, 

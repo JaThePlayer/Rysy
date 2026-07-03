@@ -40,7 +40,7 @@ public sealed class FilesystemExplorerWindow : Window {
                 tags: f.Path.FileExtensionNoDot() is {} ext ? [ext] : []));
 
             if (ImGuiManager.Combo("Files", ref _openedFile, _foundFilesDict, ref _search, default, _cache,
-                    menuItemRenderer: (_, s) => s.RenderImGuiMenuItemWithTooltip())) {
+                    menuItemRenderer: (_, s, _) => s.RenderImGuiMenuItemWithTooltip())) {
                 if (_openedFile!.Mod.Filesystem.TryReadAllText(_openedFile.Path) is { } text) {
                     _fileText = text;
                 }

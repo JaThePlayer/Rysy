@@ -93,7 +93,7 @@ public static partial class Fields {
         }
         
         return dict;
-    }).AddSpriteTooltips((key, display) => {
+    }).AddSpritePreview((key, display) => {
         if (key is not [var id] || EditorState.Current?.Map is not { } map) {
             return null;
         }

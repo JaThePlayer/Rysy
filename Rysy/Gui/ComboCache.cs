@@ -18,6 +18,14 @@ public class ComboCache<T> {
     private NumVector2? _size;
     private int _cachedSizeTextSize;
 
+    public bool HasCachedValue(string nextSearch) {
+        if (nextSearch != _cachedSearch) {
+            return false;
+        }
+
+        return _cachedSearch is not null;
+    }
+
     internal NumVector2 GetSize(IEnumerable<string> values) {
         if (Settings.Instance.FontSize != _cachedSizeTextSize) {
             _size = null;

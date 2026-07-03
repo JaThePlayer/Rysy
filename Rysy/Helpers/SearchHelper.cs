@@ -108,6 +108,19 @@ public class Searchable {
         
         return ret;
     }
+    
+    public bool RenderImGuiSelectable(bool selected, ModMeta? currentMod = null) {
+        var depsMet = AreAssociatedModsADependencyOfMod(currentMod);
+        BeforeName(depsMet);
+        
+        bool ret = IsFavourite
+            ? ImGui.Selectable(ImGuiManager.PerFrameInterpolator.Utf8($"{TextWithMods.ToImguiEscaped()}"), selected)
+            : ImGui.Selectable(TextWithMods.ToImguiEscaped(), selected);
+
+        AfterName(depsMet);
+        
+        return ret;
+    }
 
     public bool RenderImGuiMenuItemWithTooltip(ModMeta? currentMod = null) {
         var ret = RenderImGuiMenuItem(currentMod);
