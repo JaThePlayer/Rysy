@@ -566,6 +566,7 @@ x.y.z.w
 """
 
 rysy.validate.roomNameDoesNotExist=Room with this name does not exist.
+rysy.validate.checkpointIdNotUnique=Checkpoint ID must be unique among all checkpoints in the map, unless it is -1 (Automatic).
 
 rysy.windows.rooms=Rooms
 rysy.windows.recentList=Recent
@@ -629,3 +630,8 @@ rysy.hotkey=Hotkey: {0}
 rysy.scripts.scriptParameters=Script Parameters: {0}
 rysy.scripts.runScript=Run Script
 rysy.scripts.configureReplaceScript=Configuring Replace Script: {0} -> {1}
+
+rysy.nullableBool.enabled=Enabled
+rysy.nullableBool.disabled=Disabled
+rysy.nullableBool.default=Default
+rysy.nullableBool.mapDefault=Map Default

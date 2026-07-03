@@ -21,6 +21,7 @@ public static partial class Fields {
     private static Dictionary<string, FieldGenerator>? LonnFieldGenerators;
 
     public static BoolField Bool(bool def) => new() { Default = def };
+    public static NullableBoolField BoolNullable(bool? def) => new() { Default = def };
     public static FloatField Float(float def) => new() { Default = def.ToStringInvariant() };
     public static IntField Int(int def) => new() { Default = def.ToStringInvariant() };
     public static IntField IntNullable(int? def = null) => new IntField { Default = def.ToStringInvariant() }.AllowNull();
@@ -47,6 +48,11 @@ public static partial class Fields {
     => new DropdownField<string>() {
         Default = def,
     }.SetValues(Enum.GetNames<T>().ToDictionary(k => k, v => new Searchable(v), StringComparer.OrdinalIgnoreCase));
+    
+    public static DropdownField<string> EnumNamesWithAddedOptionsDropdown<T>(string def, params IEnumerable<string> addedOptions) where T : struct, Enum
+        => new DropdownField<string>() {
+            Default = def,
+        }.SetValues(Enum.GetNames<T>().Concat(addedOptions).ToDictionary(k => k, v => new Searchable(v), StringComparer.OrdinalIgnoreCase));
 
     public static DropdownField<T> Dropdown<T>(T def, IDictionary<T, string> values, bool editable = false) where T : notnull
     => new DropdownField<T>() {

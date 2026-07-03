@@ -85,6 +85,9 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult InvalidVersion { get; } 
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.invalidVersion")));
     
+    public static ValidationResult CheckpointIdNotUnique { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.checkpointIdNotUnique")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;
