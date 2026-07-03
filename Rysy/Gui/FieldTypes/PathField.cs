@@ -129,6 +129,7 @@ public partial record class PathField : Field, IFieldConvertible<string> {
             .Concat(AdditionalEntries)
             .Select(CreateKnownPathsEntry)
             .DistinctBy(p => p.saved)
+            .OrderBy(p => p.searchable.Text)
             .ToList());
     }
     
