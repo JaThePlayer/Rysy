@@ -87,5 +87,8 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     /// <summary>
     /// Not a real attribute, as it's actually determined by the existence of a checkpoint entity.
     /// </summary>
-    public bool Checkpoint;
+    public bool Checkpoint {
+        get => Data.Bool("checkpoint");
+        set => Data["checkpoint"] = value;
+    }
 }

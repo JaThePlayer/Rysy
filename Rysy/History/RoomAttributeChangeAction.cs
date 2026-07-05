@@ -32,8 +32,9 @@ public class RoomAttributeChangeAction : IHistoryAction {
             switch ((_orig.Checkpoint, _changed.Checkpoint)) {
                 case (true, false):
                     // Remove checkpoint
-                    _removedCheckpoint = _room.Entities.OfType<Checkpoint>().First();
-                    _room.Entities.Remove(_removedCheckpoint);
+                    _removedCheckpoint = _room.Entities.OfType<Checkpoint>().FirstOrDefault();
+                    if (_removedCheckpoint is not null)
+                        _room.Entities.Remove(_removedCheckpoint);
                     break;
                 case (false, true):
                     // Add checkpoint
