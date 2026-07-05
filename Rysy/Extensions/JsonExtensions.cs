@@ -43,6 +43,10 @@ public static class JsonExtensions {
         return obj is { } ? JsonSerializer.SerializeToUtf8Bytes(obj, serializeAs, Options(minified)) : Array.Empty<byte>();
     }
 
+    public static T? Deserialize<T>(string str, JsonSerializerOptions? options = null) {
+        return JsonSerializer.Deserialize<T>(str, options ?? Options(true));
+    }
+    
     public static bool TryDeserialize<T>(string str, [NotNullWhen(true)] out T? result, JsonSerializerOptions? options = null) {
         try {
             result = JsonSerializer.Deserialize<T>(str, options ?? Options(true));

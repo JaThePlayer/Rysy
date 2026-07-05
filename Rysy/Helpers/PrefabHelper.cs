@@ -25,7 +25,15 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
         var fs = SettingsHelper.GetFilesystem(perProfile: true);
 
         foreach (var file in fs.FindFilesInDirectoryRecursive("prefabs", "json")) {
-            LoadFromFile(file);
+            try {
+                var prefab = LoadFromFile(file);
+                if (prefab is { Name: not null })
+                    _currentPrefabsMutable[prefab.Name] = prefab;
+                else
+                    Logger.Write("PrefabHelper", LogLevel.Error, $"Error loading prefab from '{file}': File did not exist or the prefab's name was null somehow!");
+            } catch (Exception ex) {
+                Logger.Error("PrefabHelper", ex, $"Error loading prefab from '{file}'");
+            }
         }
         
         _currentPrefabsMutable.OnChanged += OnChanged;
@@ -42,14 +50,13 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
 
         if (fs.OpenFile(path, stream => { 
             // ReSharper disable once VariableHidesOuterVariable
-            if (!JsonExtensions.TryDeserialize<Prefab>(stream.ReadAllText(), out var prefab))
+            if (JsonExtensions.Deserialize<Prefab>(stream.ReadAllText()) is not { } prefab)
                 return null;
 
             prefab.Filename = path;
 
             return prefab;
         }) is {} prefab) {
-            _currentPrefabsMutable![prefab.Name] = prefab;
             return prefab;
         }
 
