@@ -18,6 +18,8 @@ public sealed record RemoveEntityAction(EntityRef Entity) : IHistoryAction {
         if (_originalIndex == -1)
             return false;
         list.RemoveAt(_originalIndex);
+
+        entity.OnRemoved();
         
         return true;
     }
@@ -26,5 +28,7 @@ public sealed record RemoveEntityAction(EntityRef Entity) : IHistoryAction {
         var entity = _removedEntity!;
         
         entity.GetRoomList().Insert(_originalIndex, entity);
+
+        entity.OnAdded();
     }
 }

@@ -9,12 +9,14 @@ public sealed record class AddEntityAction(Entity Entity, RoomRef Room) : IHisto
             Entity.Id = room.NextEntityId();
         }
         Entity.GetRoomList().Add(Entity);
+        Entity.OnAdded();
 
         return true;
     }
 
     public void Undo(Map map) {
         Entity.GetRoomList().Remove(Entity);
+        Entity.OnRemoved();
     }
 
     public static IHistoryAction AddAll(IEnumerable<Entity> entities, Room room) {

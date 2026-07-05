@@ -99,7 +99,7 @@ public interface ISelectionHandler {
     /// Calling this method should not have side effects
     /// </summary>
     public IHistoryAction? MoveBy(Vector2 offset);
-    public IHistoryAction DeleteSelf();
+    public IHistoryAction? DeleteSelf();
     public IHistoryAction? TryResize(Point delta);
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos = null);
 

@@ -40,8 +40,8 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
 
     public Rectangle Rect => Collider.Rect;
 
-    public IHistoryAction DeleteSelf() {
-        return new RemoveEntityAction(Entity);
+    public IHistoryAction? DeleteSelf() {
+        return Entity.DeleteSelf();
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) => Collider.IsWithinRectangle(roomPos);

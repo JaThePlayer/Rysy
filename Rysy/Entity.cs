@@ -601,6 +601,29 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         shouldDoNormalMove = true;
         return null;
     }
+    
+    /// <summary>
+    /// Returns the history action used to delete this entity.
+    /// In most cases, overriding <see cref="OnAdded"/> or <see cref="OnRemoved"/> is better.
+    /// </summary>
+    public virtual IHistoryAction? DeleteSelf() {
+        return new RemoveEntityAction(this);
+    }
+
+    /// <summary>
+    /// Called when the entity is added/readded (from undoing a removal action) to a Room.
+    /// </summary>
+    public virtual void OnAdded() {
+        
+    }
+
+    /// <summary>
+    /// Called when the entity is removed from a Room.
+    /// When this method is called, the Entity is no longer in <see cref="Room.Entities"/>
+    /// </summary>
+    public virtual void OnRemoved() {
+        
+    }
 
     /// <summary>
     /// Gets fired whenever the EntityData for this entity gets changed in any way.
