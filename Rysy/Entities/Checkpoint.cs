@@ -39,4 +39,14 @@ internal sealed class Checkpoint : Entity, IPlaceable {
     });
 
     public static PlacementList GetPlacements() => [];
+
+    public override void OnAdded() {
+        base.OnAdded();
+        Room.Attributes.Checkpoint = true;
+    }
+
+    public override void OnRemoved() {
+        base.OnRemoved();
+        Room.Attributes.Checkpoint = false;
+    }
 }
