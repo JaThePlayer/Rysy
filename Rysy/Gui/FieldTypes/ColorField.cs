@@ -73,7 +73,7 @@ public sealed record ColorField : Field, ILonnField, IListFieldExtender, IFieldC
         return ValueToColor(value, out _) ? base.IsValid(value) : ValidationResult.MustBeColor(Format);
     }
 
-    public override object? RenderGui(string fieldName, object? value) {
+    protected override object? DoRenderGui(string fieldName, object? value) {
         string? hexCodeOverride = value?.ToString() ?? "";
         
         if (ImGuiManager.ColorEditAllowEmpty(fieldName, ref hexCodeOverride, Format, Tooltip, Options, OptionToString)) {

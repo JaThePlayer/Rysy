@@ -148,7 +148,7 @@ public sealed class MetadataWindow : Window {
 }
 
 internal sealed record TitleCardPreviewField : Field {
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         ImGui.Columns();
         
         ImGui.SeparatorText("rysy.metadata.titleCardPreview".Translate());

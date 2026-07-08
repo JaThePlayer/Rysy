@@ -59,7 +59,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         );
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var v = ParseInput(value);
         var bStr = v is {} ? (v.Value / DisplayScale).ToStringInvariant() : value.ToStringInvariant();
         

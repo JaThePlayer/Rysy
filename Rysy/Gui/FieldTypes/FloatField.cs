@@ -46,7 +46,7 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
         );
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var str = value.ToStringInvariant();
         if (ImGuiManager.InputFloat(fieldName, ref str, Tooltip)) {
             if (float.TryParse(str, CultureInfo.InvariantCulture, out var f))

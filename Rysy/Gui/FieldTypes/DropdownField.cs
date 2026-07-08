@@ -93,7 +93,7 @@ public record class DropdownField<T> : Field, IFieldConvertible<T>, IFieldConver
         return value is T or string or null;
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var val = ConvertMapDataValue(value);
 
         var prevVal = val;
@@ -242,7 +242,7 @@ public record class DropdownField : Field {
 
     public override void SetDefault(object newDefault) => Default = newDefault;
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         if (Editable) {
             return ImGuiManager.EditableCombo(fieldName, ref value!, Values, DisplayTransformer, ValueTransformer, ref _search, Tooltip,
                 renderMenuItem: MenuItemRenderer, textInputStringGetter: x => DisplayTransformer(x).Text) ? value : null;

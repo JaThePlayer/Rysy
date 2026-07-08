@@ -32,7 +32,7 @@ public record class TilegridField : Field {
     public override object GetDefault() => Default;
     public override void SetDefault(object newDefault) => Default = newDefault.ToString() ?? "";
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         string val = value.ToString() ?? "g";
         if (string.IsNullOrWhiteSpace(val)) {
             val = Default;

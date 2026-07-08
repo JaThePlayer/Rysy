@@ -31,7 +31,7 @@ public record CharField : Field, IFieldConvertible<char> {
         => Default = ConvertMapDataValue(newDefault);
 
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var b = Convert.ToChar(value, CultureInfo.InvariantCulture).ToString();
         if (ImGui.InputText(fieldName, ref b, 2).WithTooltip(Tooltip))
             return b.Length > 0 ? b[0] : '\0';

@@ -7,7 +7,7 @@ public sealed record ConditionalField(Func<FormContext, Field> FieldGetter) : Fi
 
     public override void SetDefault(object newDefault) => FieldGetter(Context).SetDefault(newDefault);
 
-    public override object? RenderGui(string fieldName, object value) => FieldGetter(Context).RenderGui(fieldName, value);
+    protected override object? DoRenderGui(string fieldName, object value) => FieldGetter(Context).RenderGui(fieldName, value);
 
     public override Field CreateClone() 
         => new ConditionalField(FieldGetter);

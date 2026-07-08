@@ -29,8 +29,8 @@ public record StringField : Field, IFieldConvertible<string>, ILonnField {
         
         return value is string ? base.IsValid(value) : ValidationResult.GenericError;
     }
-    
-    public override object? RenderGui(string fieldName, object value) {
+
+    protected override object? DoRenderGui(string fieldName, object value) {
         var b = (value ?? "").ToString() ?? "";
         //if (ImGui.InputText(fieldName, ref b, 256).WithTooltip(Tooltip)) {
         if (ImGuiManager.ExpandingTextInput(fieldName, ref b, 256, Tooltip)) {

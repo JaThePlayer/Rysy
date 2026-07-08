@@ -22,6 +22,11 @@ public abstract record class Field {
     public Func<FormContext, bool> IsHidden { get; set; } = _ => false;
 
     /// <summary>
+    /// Whether this field is disabled and should not be editable.
+    /// </summary>
+    public Func<FormContext, bool> IsDisabled { get; set; } = _ => false;
+
+    /// <summary>
     /// Gets the default value for this field
     /// </summary>
     public abstract object GetDefault();
@@ -43,8 +48,13 @@ public abstract record class Field {
     /// <param name="fieldName">The name of this field, to be used for the field's label</param>
     /// <param name="value">The current value of this field</param>
     /// <returns>If the value got changed by the user, returns that new value. Otherwise, returns null</returns>
-    public abstract object? RenderGui(string fieldName, object value);
+    protected abstract object? DoRenderGui(string fieldName, object value);
 
+    public object? RenderGui(string fieldName, object value) {
+        using var _ = ScopedImGui.Disabled(IsDisabled(Context));
+        return DoRenderGui(fieldName, value);
+    }
+    
     public object? RenderGui(object value) {
         return RenderGui(NameOverride ?? "##", value);
     }
@@ -191,7 +201,7 @@ public static class FieldExtensions {
         }
 
         /// <summary>
-        /// Makes this field hidden from entity edit windows.
+        /// Makes this field hidden from form windows.
         /// </summary>
         public T MakeHidden() {
             field.IsHidden = _ => true;
@@ -199,10 +209,18 @@ public static class FieldExtensions {
         }
 
         /// <summary>
-        /// Makes this field hidden from entity edit windows based on a condition
+        /// Makes this field hidden from form windows based on a condition.
         /// </summary>
         public T MakeHidden(Func<FormContext, bool> isHidden) {
             field.IsHidden = isHidden;
+            return field;
+        }
+
+        /// <summary>
+        /// Makes this field disabled in form windows based on a condition.
+        /// </summary>
+        public T MakeDisabled(Func<FormContext, bool> isDisabled) {
+            field.IsDisabled = isDisabled;
             return field;
         }
     }

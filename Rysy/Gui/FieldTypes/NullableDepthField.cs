@@ -14,8 +14,8 @@ public sealed record NullableDepthField : Field {
 
     private string _search = "";
     private ComboCache<DepthValue> _comboCache = new();
-    
-    public override object? RenderGui(string fieldName, object value) {
+
+    protected override object? DoRenderGui(string fieldName, object value) {
         int? returnValue = null;
 
         bool changed = false;

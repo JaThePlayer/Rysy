@@ -39,7 +39,7 @@ public record NullableBoolField : Field, IFieldConvertible<bool?> {
             _ => ValidationResult.MustBeBool,
         };
 
-    public override object? RenderGui(string fieldName, object? value) {
+    protected override object? DoRenderGui(string fieldName, object? value) {
         var b = ConvertMapDataValue(value);
         if (ImGuiManager.Combo(fieldName, ref b, Values, ToSearchable, ref _search).WithTooltip(Tooltip))
             return b;

@@ -75,7 +75,7 @@ public sealed class CommandPaletteWindow : Window {
         }
     }
 
-    protected NumVector2 GetMaterialListBoxSize(NumVector2 windowSize) 
+    private NumVector2 GetMaterialListBoxSize(NumVector2 windowSize) 
         => new(windowSize.X, windowSize.Y -  ImGui.GetFrameHeightWithSpacing());
     
     protected override void Render() {

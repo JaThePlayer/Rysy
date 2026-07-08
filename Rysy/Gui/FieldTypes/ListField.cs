@@ -112,7 +112,7 @@ public record class ListField : Field, IFieldConvertibleToCollection, ILonnField
         return ret;
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         if (value is not string str) {
             str = "";
         }

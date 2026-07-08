@@ -5,7 +5,7 @@ public record class PaddingField(string? Text = null, bool DrawSeparator = true)
 
     public override object GetDefault() => null!;
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         return null;
     }
 

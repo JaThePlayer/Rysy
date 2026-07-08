@@ -13,7 +13,7 @@ public record class BoolField : Field, IFieldConvertible<bool>, ILonnField {
     public override ValidationResult IsValid(object? value) 
         => value is bool ? base.IsValid(value) : ValidationResult.MustBeBool;
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         bool b = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
         if (ImGui.Checkbox(fieldName, ref b).WithTooltip(Tooltip))
             return b;

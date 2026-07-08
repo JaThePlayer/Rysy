@@ -201,8 +201,8 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         
         return clicked;
     }
-    
-    public override object? RenderGui(string fieldName, object value) {
+
+    protected override object? DoRenderGui(string fieldName, object value) {
         var strValue = value?.ToString() ?? "";
 
         _knownPaths ??= CreateKnownPathsCache();

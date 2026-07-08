@@ -24,7 +24,7 @@ public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
     public override void SetDefault(object newDefault)
         => Default = ConvertMapDataValue(newDefault);
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var str = value.ToString() ?? "";
 
         var data = Parse(str);
