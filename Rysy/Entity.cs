@@ -1,5 +1,4 @@
-﻿using KeraLua;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 using Rysy.Layers;
@@ -63,7 +62,11 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         }
     }
 
-    internal void SilentSetPos(Vector2 newPos) {
+    /// <summary>
+    /// Silently moves the entity without calling any related OnChanged events nor changing EntityData.
+    /// Make sure to revert changes done by this function as soon as possible, even if exceptions are thrown.
+    /// </summary>
+    public void SilentSetPos(Vector2 newPos) {
         _pos = newPos;
     }
 
@@ -87,14 +90,6 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
             ClearRoomRenderCache();
         }
     }
-
-    /*
-    [JsonIgnore]
-    [Obsolete("Use EditorGroup instead")]
-    public int EditorLayer {
-        get => EntityData.Int("_editorLayer");
-        set => EntityData["_editorLayer"] = value;
-    }*/
 
     public const string EditorGroupEntityDataKey = "_editorGroup";
 
@@ -146,6 +141,10 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
 
     #endregion
 
+    /// <summary>
+    /// The default depth at which this entity's sprites should be rendered.
+    /// Depth can be set separately on individual sprites as well.
+    /// </summary>
     [JsonIgnore]
     public abstract int Depth { get; }
 
@@ -204,8 +203,11 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         return ISelectionCollider.FromRect(Rectangle);
     }
 
+    /// <summary>
+    /// Returns the selection collided for a particular node.
+    /// </summary>
     public virtual ISelectionCollider GetNodeSelection(int nodeIndex) {
-        var node = Nodes![nodeIndex];
+        var node = Nodes[nodeIndex];
 
         if (Width > 0 || Height > 0) {
             return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
@@ -222,6 +224,11 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
     }
 
+    /// <summary>
+    /// Gets the sprites needed to render the entity, without its nodes.
+    /// Node rendering should instead be handled by <see cref="GetNodeSprites"/>.
+    /// Use static methods on <see cref="ISprite"/> to create sprites.
+    /// </summary>
     public virtual IEnumerable<ISprite> GetSprites() {
         var w = Width;
         var h = Height;
@@ -277,6 +284,10 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         }
     }
 
+    /// <summary>
+    /// Gets all sprites, including nodes, for this entity, at the correct depth.
+    /// In most cases of externally drawing entities, this is the best choice for getting sprites.
+    /// </summary>
     public IEnumerable<ISprite> GetSpritesWithNodes() {
         try {
             if (Nodes is { }) {
@@ -287,6 +298,30 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         } catch (Exception ex) {
             return LogError(ex);
         }
+    }
+
+    /// <summary>
+    /// Same as <see cref="GetSpritesWithNodes"/>, but simulates moving the entity by the given offset.
+    /// Optionally also moves nodes by the same offset.
+    /// </summary>
+    public IEnumerable<ISprite> GetSpritesWithNodesMovedBy(Vector2 offset, bool offsetNodes) {
+        SilentSetPos(Pos + offset);
+        if (offsetNodes) {
+            foreach (var n in Nodes) {
+                n.Pos += offset;
+            }
+        }
+
+        var ret = GetSpritesWithNodes().ToListIfNotList();
+
+        SilentSetPos(Pos - offset);
+        if (offsetNodes) {
+            foreach (var n in Nodes) {
+                n.Pos -= offset;
+            }
+        }
+
+        return ret;
     }
 
     /// <summary>
@@ -302,7 +337,7 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
 
     private IEnumerable<ISprite> LogError(Exception ex) {
         if (!LogErrors)
-            return Array.Empty<ISprite>();
+            return [];
 
         Logger.Error(ex, $"Erroring entity definition for {Name}: {ToJson()}");
 
@@ -323,9 +358,17 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         }
     }
 
+    /// <summary>
+    /// Whether this entity can be resized on the X axis.
+    /// Defaults to true if the entity has a positive <see cref="Width"/>.
+    /// </summary>
     [JsonIgnore]
     public virtual bool ResizableX => Width > 0;
 
+    /// <summary>
+    /// Whether this entity can be resized on the Y axis.
+    /// Defaults to true if the entity has a positive <see cref="Height"/>.
+    /// </summary>
     [JsonIgnore]
     public virtual bool ResizableY => Height > 0;
 
@@ -338,7 +381,7 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     
     /// <summary>
     /// Recommended minimum size for this entity, where lower values would cause visual issues, but still work.
-    /// Placement/Selection tool wont resize below this size, but manual editing still allows lower values.
+    /// Placement/Selection tool won't resize below this size, but manual editing still allows lower values.
     /// </summary>
     [JsonIgnore]
     public virtual Point RecommendedMinimumSize => MinimumSize;
@@ -357,12 +400,23 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     [JsonIgnore]
     public virtual Point RecommendedMaximumSize => MaximumSize;
 
+    /// <summary>
+    /// The minimum and maximum amount of nodes allowed for this entity.
+    /// </summary>
     [JsonIgnore]
     public virtual Range NodeLimits => 0..0;
 
+    /// <summary>
+    /// List of additional mod names associated with this entity.
+    /// Maps using this entity will require these mods as dependencies.
+    /// If the entity allows for respriting, the source mod of custom sprites should be included.
+    /// </summary>
     [JsonIgnore]
     public virtual List<string>? AssociatedMods => null;
     
+    /// <summary>
+    /// List of tags associated with this entity, automatically added to all placements.
+    /// </summary>
     [JsonIgnore]
     public virtual IReadOnlyList<string>? Tags => null;
     
@@ -453,6 +507,10 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         _cachedPackedElement = null;
     }
 
+    /// <summary>
+    /// Gets the list in which the entity is stored within its parent <see cref="Room"/>.
+    /// Used internally when deleting or adding entities or finding similar ones.
+    /// </summary>
     public IList<Entity> GetRoomList() => this switch {
         Decal d => d.Fg ? Room.FgDecals : Room.BgDecals,
         Trigger => Room.Triggers,
@@ -711,6 +769,11 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         return el;
     }
     
+    /// <summary>
+    /// Packs the entity into a <see cref="BinaryPacker.Element"/>,
+    /// used when saving the entity to a .bin file or prefab/selection/etc.
+    /// Default implementation should be sufficient for the vast majority of cases.
+    /// </summary>
     protected virtual BinaryPacker.Element DoPack(bool trim) {
         var el = new BinaryPacker.Element(EntityData.Sid);
 
