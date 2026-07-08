@@ -41,7 +41,17 @@ public sealed partial class RoomEditWindow : Window {
             x = Fields.Int(attrs.X).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),
             y = Fields.Int(attrs.Y).WithDisplayScale(8).WithValidator(IntersectingRoomPosValidator),
             width = Fields.Int(attrs.Width).WithMin(8).WithDisplayScale(8).WithRecommendedMin(8*40),
-            height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8).WithRecommendedMin(8*23),
+            height = Fields.Int(attrs.Height).WithMin(8).WithDisplayScale(8).WithRecommendedMin(8*23).WithValidator(static (
+                ctx, _) => {
+                if (ctx.FormTarget is not Room { Attributes: { } attrs})
+                    return ValidationResult.Ok;
+
+                if (attrs is { Space: true, NoSpaceWrap: false, Height: < 8 * 26 }) {
+                    return ValidationResult.RoomHeightWithScreenWrapTooSmall;
+                }
+                
+                return ValidationResult.Ok;
+            }),
             
             cameraOffsetX = attrs.CameraOffsetX,
             cameraOffsetY = attrs.CameraOffsetY,
@@ -52,6 +62,8 @@ public sealed partial class RoomEditWindow : Window {
             underwater = attrs.Underwater,
             checkpoint = attrs.Checkpoint,
             space = attrs.Space,
+            spaceSkipWrap = Fields.Bool(attrs.NoSpaceWrap).MakeDisabled(ctx => !ctx.Bool("space")),
+            spaceSkipGravity = Fields.Bool(attrs.NoSpaceGravity).MakeDisabled(ctx => !ctx.Bool("space")),
             
             __musicSep = new PaddingField("Music"),
 
@@ -99,6 +111,7 @@ public sealed partial class RoomEditWindow : Window {
         _newRoom = newRoom;
 
         _generalTab = new FormWindow(GeneralTabFields(attrs), "");
+        _generalTab.Target = _room;
         Size = _generalTab.Size;
         
         _generalTab.OnChanged += edited => {
@@ -183,7 +196,7 @@ internal sealed record RoomDebugColorField : Field {
         _default = Convert.ToInt32(newDefault, CultureInfo.InvariantCulture);
     }
 
-    public override object? RenderGui(string fieldName, object value) {
+    protected override object? DoRenderGui(string fieldName, object value) {
         var c = Convert.ToInt32(value, CultureInfo.InvariantCulture);
         object? ret = null;
         

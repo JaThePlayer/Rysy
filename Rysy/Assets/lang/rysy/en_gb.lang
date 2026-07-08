@@ -568,6 +568,8 @@ x.y.z.w
 rysy.validate.roomNameDoesNotExist=Room with this name does not exist.
 rysy.validate.checkpointIdNotUnique=Checkpoint ID must be unique among all checkpoints in the map, unless it is -1 (Automatic).
 
+rysy.validate.roomHeightWithScreenWrapTooLow=Rooms with screen wrap need a height of at least 26 to function correctly,\notherwise the player can die if they fall off-screen too fast.
+
 rysy.windows.rooms=Rooms
 rysy.windows.recentList=Recent
 rysy.windows.csharprepl=C# Repl

@@ -7,3 +7,10 @@ entities.darkChaserEnd.placements.description.barrier=When the player enters thi
 entities.crushBlock.placements.name.both_crushBlock=Crush Block (Both)
 entities.crushBlock.placements.name.vertical_crushBlock=Crush Block (Vertical)
 entities.crushBlock.placements.name.horizontal_crushBlock=Crush Block (Horizontal)
+
+room.attribute.space=Space
+room.description.space=Whether the room is in space (end of Core), which:\n- Lowers the gravity (Can be disabled via the No Space Gravity option).\n- Enables screen wrap (Can be disabled via the No Space Screen Wrap option).
+room.attribute.spaceSkipWrap=No Space Screen Wrap
+room.description.spaceSkipWrap=Whether to skip making the screen wrap around on the Y axis in a Space room.
+room.attribute.spaceSkipGravity=No Space Gravity
+room.description.spaceSkipGravity=Whether to skip making the gravity weaker in a Space room.

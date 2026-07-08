@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+﻿using Rysy.Gui.Windows;
 using Rysy.Helpers;
 
 namespace Rysy.Gui.FieldTypes;
@@ -11,8 +11,8 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     public int Min { get; set; } = int.MinValue;
     public int Max { get; set; } = int.MaxValue;
     
-    public int RecommendedMin { get; set; } = int.MinValue;
-    public int RecommendedMax { get; set; } = int.MaxValue;
+    public Func<FormContext, int> RecommendedMin { get; set; } = _ => int.MinValue;
+    public Func<FormContext, int> RecommendedMax { get; set; } = _ => int.MaxValue;
 
     public int RecommendedStep { get; set; } = 1;
 
@@ -53,8 +53,8 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         
         return ValidationResult.Combine(
             baseValid,
-            ValidationMessage.TooSmallRecommended(v / DisplayScale, RecommendedMin / DisplayScale),
-            ValidationMessage.TooLargeRecommended(v / DisplayScale, RecommendedMax / DisplayScale),
+            ValidationMessage.TooSmallRecommended(v / DisplayScale, RecommendedMin(Context) / DisplayScale),
+            ValidationMessage.TooLargeRecommended(v / DisplayScale, RecommendedMax(Context) / DisplayScale),
             ValidationMessage.NotRecommendedMultiple(v / DisplayScale, RecommendedStep)
         );
     }
@@ -85,6 +85,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     }
     
     public IntField WithRecommendedMin(int min) {
+        RecommendedMin = _ => min;
+        return this;
+    }
+    
+    public IntField WithRecommendedMin(Func<FormContext, int> min) {
         RecommendedMin = min;
         return this;
     }
@@ -95,6 +100,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     }
     
     public IntField WithRecommendedMax(int max) {
+        RecommendedMax = _ => max;
+        return this;
+    }
+    
+    public IntField WithRecommendedMax(Func<FormContext, int> max) {
         RecommendedMax = max;
         return this;
     }

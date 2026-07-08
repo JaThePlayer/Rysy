@@ -189,6 +189,11 @@ public class FormWindow : Window {
     }
 
     public override bool HasBottomBar => true;
+    
+    /// <summary>
+    /// The object being edited by this form.
+    /// </summary>
+    public object? Target { get; set; }
 
     public override void RenderBottomBar() {
         using var _ = ScopedImGui.Disabled(!_allFieldsValid);
@@ -281,6 +286,11 @@ public class FormContext : ILuaWrapper, IUntypedData {
     private FormWindow.Prop? GetPropByNameOrNull(string fieldName) => _window?.FieldList.FirstOrDefault(f => f.Name == fieldName);
 
     public EditorState? EditorState => EditorState.Current;
+
+    /// <summary>
+    /// The object that's edited by this form. Can be null.
+    /// </summary>
+    public object? FormTarget => _window.Target;
     
     /// <summary>
     /// Tries to get the value of the field of name <paramref name="key"/>

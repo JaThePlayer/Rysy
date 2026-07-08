@@ -88,6 +88,9 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult CheckpointIdNotUnique { get; }
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.checkpointIdNotUnique")));
     
+    public static ValidationResult RoomHeightWithScreenWrapTooSmall { get; }
+        = new(ValidationMessage.Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.roomHeightWithScreenWrapTooLow")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;

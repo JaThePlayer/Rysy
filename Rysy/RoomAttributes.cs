@@ -7,6 +7,18 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
 
     public RoomAttributes Copy() => new(new BinaryPacker.Element { Attributes = Data.Inner });
 
+    public bool HasTag(params ReadOnlySpan<string> tagNames) {
+        foreach (var tag in Name.EnumerateSplits(':')) {
+            foreach (var targetTag in tagNames) {
+                if (tag.SequenceEqual(targetTag)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    
     public string Name {
         get => Data.Attr("name");
         set => Data["name"] = value;
@@ -55,8 +67,14 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
                                 ?? CelesteEnums.RoomColors.AtOrDefault(C, Microsoft.Xna.Framework.Color.White);
 
     public CelesteEnums.WindPatterns WindPattern => Data.Enum("windPattern", CelesteEnums.WindPatterns.None);
-    
+
     public bool Space => Data.Bool("space", false);
+
+    public bool NoSpaceWrap => Data.Bool("spaceSkipWrap") || HasTag("nsw", "nospacewrap");
+    
+    public bool NoSpaceGravity => Data.Bool("spaceSkipGravity") || HasTag("nsg", "nospacegravity");
+    
+    public bool NoSpaceFix => HasTag("nsf", "nospacefix");
     
     public bool DisableDownTransition => Data.Bool("disableDownTransition", false);
     
