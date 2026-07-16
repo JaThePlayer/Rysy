@@ -6,6 +6,10 @@ namespace Rysy.Gui.FieldTypes;
 /// Used by Decal Registry `animation` and `scared` properties
 /// </summary>
 public sealed record AnimationFrameField : ComplexTypeField<AnimationFrameEntry> {
+    public override bool TryParse(string data, out AnimationFrameEntry value) {
+        return AnimationFrameEntry.TryParse(data, out value);
+    }
+
     public override AnimationFrameEntry Parse(string data) {
         if (AnimationFrameEntry.TryParse(data, out var parsed))
             return parsed;

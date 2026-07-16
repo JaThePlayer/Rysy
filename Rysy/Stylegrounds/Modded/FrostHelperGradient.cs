@@ -119,7 +119,11 @@ sealed record GradientEntryField : ComplexTypeField<LinearGradient.Entry> {
     public GradientEntryField(string def) {
         Default = Parse(def);
     }
-    
+
+    public override bool TryParse(string data, out LinearGradient.Entry value) {
+        return LinearGradient.Entry.TryParse(data, null, out value);
+    }
+
     public override LinearGradient.Entry Parse(string data) {
         if (!LinearGradient.Entry.TryParse(data, null, out var entry)) {
             entry = new() {

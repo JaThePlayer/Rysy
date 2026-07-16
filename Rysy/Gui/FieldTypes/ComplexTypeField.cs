@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Gui.FieldTypes;
 
@@ -8,7 +9,24 @@ namespace Rysy.Gui.FieldTypes;
 /// <typeparam name="T"></typeparam>
 public abstract record ComplexTypeField<T> : Field, IFieldConvertible<T> {
     public T Default;
+    
+    public override ValidationResult IsValid(object? value) {
+        var baseResult = base.IsValid(value);
+        if (!baseResult.IsOk)
+            return baseResult;
 
+        if (!TryParse(value.ToStringInvariant(), out var parsed))
+            return ValidationResult.GenericError;
+
+        return IsValid(parsed);
+    }
+
+    public virtual ValidationResult IsValid(T value) {
+        return ValidationResult.Ok;
+    }
+
+    public abstract bool TryParse(string data, [NotNullWhen(true)] out T? value);
+    
     public abstract T Parse(string data);
 
     public abstract string ConvertToString(T data);
@@ -72,6 +90,11 @@ internal sealed record ComplexField : ComplexTypeField<string[]> {
         public static InnerField Create(string langKey, Field field) {
             return new InnerField(langKey, $"{langKey}.tooltip", field.GetDefault(), field);
         }
+    }
+
+    public override bool TryParse(string data, out string[] value) {
+        value = Parse(data);
+        return true;
     }
 
     public override string[] Parse(string data) {

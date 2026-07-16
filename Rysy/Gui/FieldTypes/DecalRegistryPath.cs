@@ -24,7 +24,12 @@ public record DecalRegistryPathField(bool SupportDirectoryType, string TooltipPr
 
         return texture is ModTexture modTexture && modTexture.Mod == Mod;
     }
-    
+
+    public override bool TryParse(string data, out DecalRegistryPath value) {
+        value = Parse(data);
+        return true;
+    }
+
     public override DecalRegistryPath Parse(string data) {
         return new(data);
     }

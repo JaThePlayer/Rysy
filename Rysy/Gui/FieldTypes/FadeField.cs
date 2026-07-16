@@ -3,8 +3,12 @@
 namespace Rysy.Gui.FieldTypes;
 
 internal sealed record FadeRegionField : ComplexTypeField<Fade.Region> {
+    public override bool TryParse(string data, out Fade.Region value) {
+        return Fade.Region.TryParse(data, null, out value);
+    }
+
     public override Fade.Region Parse(string data)
-        => Fade.Region.Parse(data);
+        => Fade.Region.TryParse(data, null, out var parsed) ? parsed : default;
 
     public override string ConvertToString(Fade.Region data)
         => data.ToString();

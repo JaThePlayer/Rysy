@@ -5,6 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rysy.Gui.FieldTypes;
 
 public record BirdTutorialInputField : ComplexTypeField<BirdTutorialInput> {
+    public override bool TryParse(string data, [NotNullWhen(true)] out BirdTutorialInput? value) {
+        return BirdTutorialInput.TryParse(data, out value);
+    }
+
     public override BirdTutorialInput Parse(string data) {
         return BirdTutorialInput.TryParse(data, out var input) ? input : BirdTutorialInput.Default;
     }
