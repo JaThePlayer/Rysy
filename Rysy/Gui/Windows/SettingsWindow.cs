@@ -129,17 +129,26 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.Save();
         }
 
-        var positionInProperties = Settings.Instance.PositionInProperties;
-        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.positionInProperties", ref positionInProperties)) {
-            Settings.Instance.PositionInProperties = positionInProperties;
-            Settings.Instance.Save();
-        }
+
 
         var panSpeed = Settings.Instance.TouchpadPanSpeed;
         if (ImGuiManager.TranslatedInputFloat("rysy.settings.general.touchpadPanSpeed", ref panSpeed, step: 25f, "%g%%")) {
             Settings.Instance.TouchpadPanSpeed = panSpeed.SnapBetween(25f, 300f);
             Settings.Instance.Save();
         }
+        
+        ImGui.SeparatorText("rysy.settings.general.forms".Translate());
+        var positionInProperties = Settings.Instance.PositionInProperties;
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.positionInProperties", ref positionInProperties)) {
+            Settings.Instance.PositionInProperties = positionInProperties;
+            Settings.Instance.Save();
+        }
+        var allowOverridingInvalidForms = Settings.Instance.AllowOverridingInvalidForms;
+        if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.allowOverridingInvalidForms", ref allowOverridingInvalidForms)) {
+            Settings.Instance.AllowOverridingInvalidForms = allowOverridingInvalidForms;
+            Settings.Instance.Save();
+        }
+        
         
         ImGui.EndTabItem();
     }

@@ -1170,6 +1170,11 @@ public static class ImGuiManager {
         var iconChar = (char) icon;
         return ImGui.Button(Interpolator.TempU8($"{iconChar} {text}"));
     }
+    
+    public static bool IconButtonTranslated(ImGuiIcons icon, string langId) {
+        var iconChar = (char) icon;
+        return ImGui.Button(Interpolator.TempU8($"{iconChar} {langId.Translate()}")).WithTranslatedTooltip($"{langId}.tooltip");
+    }
 
     public static bool SelectableIcon(ImGuiIcons icon) {
         var txt = Interpolator.TempU8($"{(char) icon}");

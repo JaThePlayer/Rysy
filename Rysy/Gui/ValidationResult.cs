@@ -91,6 +91,9 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult RoomHeightWithScreenWrapTooSmall { get; }
         = new(ValidationMessage.Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.roomHeightWithScreenWrapTooLow")));
     
+    public static ValidationResult InvalidFormOverriden { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.saveChanges.override.tooltip")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;

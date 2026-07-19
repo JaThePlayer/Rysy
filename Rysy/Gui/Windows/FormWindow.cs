@@ -44,11 +44,15 @@ public class FormWindow : Window {
         if (!_allFieldsValid)
             return false;
 
+        ForceSave();
+
+        return true;
+    }
+
+    private void ForceSave() {
         OnChanged?.Invoke(EditedValues);
 
         EditedValues = new();
-
-        return true;
     }
 
     public string SaveChangesButtonName { get; set; } = "rysy.saveChanges";
@@ -196,14 +200,20 @@ public class FormWindow : Window {
     public object? Target { get; set; }
 
     public override void RenderBottomBar() {
-        using var _ = ScopedImGui.Disabled(!_allFieldsValid);
+        var overrideInvalid = Settings.Instance.AllowOverridingInvalidForms && Input.Global.Keyboard.Ctrl();
+        using var _ = ScopedImGui.Disabled(!overrideInvalid && !_allFieldsValid);
 
         // Only add the hotkey tooltip if the hotkey actually saves changes in this form.
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         var isMainWindow = Scene is not null;
 
-        if (ImGuiManager.IconButton(SaveChangesButtonIcon, SaveChangesButtonName.Translate())) {
-            Save();
+        if (ImGuiManager.IconButtonTranslated(SaveChangesButtonIcon, SaveChangesButtonName)) {
+            ForceSave();
+        }
+
+        if (!_allFieldsValid && overrideInvalid && ImGui.IsItemHovered() && ImGui.BeginTooltip()) {
+            ValidationResult.InvalidFormOverriden.RenderImGui();
+            ImGui.EndTooltip();
         }
 
         if (isMainWindow) {

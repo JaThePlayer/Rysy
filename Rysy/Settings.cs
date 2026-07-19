@@ -262,9 +262,14 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
 
     public Dictionary<string, bool> OpenedWindows { get; set; } = [];
 
-    public bool AllocateConsole  {
+    public bool AllocateConsole {
         get;
         set => Change(nameof(AllocateConsole), ref field, value);
+    } = false;
+
+    public bool AllowOverridingInvalidForms {
+        get;
+        set => Change(nameof(AllowOverridingInvalidForms), ref field, value);
     } = false;
 
     public bool IsWindowPersisted<T>(bool defaultEnabled) {
