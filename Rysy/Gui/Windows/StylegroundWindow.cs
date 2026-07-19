@@ -292,6 +292,8 @@ public class StylegroundWindow : Window {
         if (Input.Global.Keyboard.Shift()) {
             if (!_selections.Contains(style))
                 _selections.Add(style);
+        } else if (Input.Global.Keyboard.Ctrl()) {
+            _selections.Remove(style);
         } else {
             _selections.Clear();
             _selections.Add(style);
