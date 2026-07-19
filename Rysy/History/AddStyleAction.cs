@@ -2,11 +2,13 @@
 
 namespace Rysy.History;
 
-public record class AddStyleAction(IList<Style> Styles, Style NewStyle, int? Index, StyleFolder? Parent) : IHistoryAction {
+public record AddStyleAction(IList<Style> Styles, Style NewStyle, int? Index, StyleFolder? Parent) : IHistoryAction {
     public bool Apply(Map map) {
         NewStyle.Parent = Parent;
 
         if (Index is { } index) {
+            if (index > Styles.Count || index < 0)
+                return false;
             Styles.Insert(index, NewStyle); 
             return true;
         }
