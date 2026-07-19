@@ -48,10 +48,10 @@ public static class CopypasteHelper {
 
     public static List<CopiedSelection>? GetSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers) => GetSelectionsFromString(layers, Input.Clipboard.Get());
 
-    public static List<Selection>? PasteSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms)
-        => PasteSelections(layers, editorState, GetSelectionsFromClipboard(layers), history, map, room, pos, out pastedRooms);
+    public static List<Selection>? PasteSelectionsFromClipboard(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms, int gridSize)
+        => PasteSelections(layers, editorState, GetSelectionsFromClipboard(layers), history, map, room, pos, out pastedRooms, gridSize);
 
-    public static List<Selection>? PasteSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, List<CopiedSelection>? selections, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms) {
+    public static List<Selection>? PasteSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, List<CopiedSelection>? selections, IHistoryHandler? history, Map? map, Room room, Vector2 pos, out bool pastedRooms, int gridSize) {
         pastedRooms = false;
 
         var pasted = selections;
@@ -62,14 +62,14 @@ public static class CopypasteHelper {
         if (pasted.Any(p => p.ResolveLayer(layers) == EditorLayers.Room)) {
             pastedRooms = true;
             if (map is { })
-                return PasteRoomSelections(layers, editorState, history, map, pasted, pos);
+                return PasteRoomSelections(layers, editorState, history, map, pasted, pos, gridSize);
             else
                 return null;
         }
 
         var entitySelections = CreateSelectionsFromCopied(layers, room, pasted, out var entities);
 
-        var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(layers, pasted)).ToList());
+        var offset = GetCenteringOffset(pos, entities.Select(e => e.Rectangle).Concat(GetTileRectangles(layers, pasted)).ToList(), gridSize);
 
         var actions = new List<IHistoryAction?>();
         
@@ -137,7 +137,7 @@ static string Compress(byte[] input) {
         return copied;
     }
 
-    private static List<Selection> PasteRoomSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos) {
+    private static List<Selection> PasteRoomSelections(IReadOnlyList<IEditorLayer> layers, EditorState editorState, IHistoryHandler? history, Map map, List<CopiedSelection> pasted, Vector2? pos, int gridSize) {
         var rooms = pasted.Where(s => s.ResolveLayer(layers) == EditorLayers.Room).Select(s => {
             var room = new Room();
             room.Map = map;
@@ -146,12 +146,12 @@ static string Compress(byte[] input) {
             return room;
         }).ToList();
 
-        var topLeft = new Vector2(rooms.Min(e => e.X), rooms.Min(e => e.Y)).Snap(8);
-        var bottomRight = new Vector2(rooms.Max(e => e.X + e.Width), rooms.Max(e => e.Y + e.Height)).Snap(8);
+        var topLeft = new Vector2(rooms.Min(e => e.X), rooms.Min(e => e.Y)).Snap(gridSize);
+        var bottomRight = new Vector2(rooms.Max(e => e.X + e.Width), rooms.Max(e => e.Y + e.Height)).Snap(gridSize);
 
-        var mousePos = pos ?? editorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(8);
+        var mousePos = pos ?? editorState.Camera.ScreenToReal(Input.Global.Mouse.Pos).ToVector2().Snap(gridSize);
 
-        var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f)).Snap(8);
+        var offset = (-topLeft + mousePos - ((bottomRight - topLeft) / 2f)).Snap(gridSize);
 
         foreach (var room in rooms) {
             room.Pos += offset;
@@ -170,17 +170,18 @@ static string Compress(byte[] input) {
         return selections;
     }
 
-    private static Vector2 GetCenteringOffset(Vector2 pos, List<Rectangle> rectangles) {
+    private static Vector2 GetCenteringOffset(Vector2 pos, List<Rectangle> rectangles, int gridSize) {
         if (rectangles.Count == 0) {
             return pos;
         }
 
-        var topLeft = new Vector2(rectangles.Min(e => e.X), rectangles.Min(e => e.Y)).Snap(8);
-        var bottomRight = new Vector2(rectangles.Max(e => e.Right), rectangles.Max(e => e.Bottom)).Snap(8);
+        var topLeft = new Vector2(rectangles.Min(e => e.X), rectangles.Min(e => e.Y));
+        var bottomRight = new Vector2(rectangles.Max(e => e.Right), rectangles.Max(e => e.Bottom));
+        var size = bottomRight - topLeft;
 
-        var offset = (-topLeft + pos - ((bottomRight - topLeft) / 2f)).Snap(8);
+        var offset = pos - topLeft - (size / 2f).Floored();
 
-        return offset;
+        return offset.SnapRound(gridSize);
     }
 
     private static IHistoryAction? PasteEntitylikeSelections(IHistoryHandler? history, Room room, List<Selection> selections, List<Entity> entities, Vector2 centeringOffset) {
@@ -203,17 +204,19 @@ static string Compress(byte[] input) {
     }
 
     private static List<Rectangle> GetTileRectangles(IReadOnlyList<IEditorLayer> layers, List<CopiedSelection> pasted) {
+        // Tile grid size is always 8.
         return pasted.Where(pasted => pasted.ResolveLayer(layers) is TileEditorLayer).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));
 
-            var rPos = new Vector2(x, y).GridPosFloor(8);
+            var rPos = new Vector2(x, y).GridPosRound(8);
 
-            return new Rectangle(rPos.X * 8 - 8, rPos.Y * 8 - 8, w * 8, h * 8);
+            return new Rectangle(rPos.X * 8, rPos.Y * 8, w * 8, h * 8);
         }).ToList();
     }
 
     private static List<Selection> PasteTileSelections(IReadOnlyList<IEditorLayer> layers, Room room, List<CopiedSelection> pasted, Vector2 offset) {
+        // Tile grid size is always 8.
         var newSelections = pasted.Where(pasted => pasted.ResolveLayer(layers) is TileEditorLayer).Select(s => {
             var (w, h) = (s.Data.Int("w"), s.Data.Int("h"));
             var (x, y) = (s.Data.Int("x"), s.Data.Int("y"));

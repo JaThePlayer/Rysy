@@ -54,6 +54,7 @@ public static class VectorExt {
     {
         public Vector2 Normalized() => v == default ? default : Vector2.Normalize(v);
         public Vector2 Snap(int gridSize) => (v / gridSize).Floored() * gridSize;
+        public Vector2 SnapRound(int gridSize) => (v / gridSize).Rounded() * gridSize;
         public Point GridPosFloor(int gridSize) => (v / gridSize).Floored().ToPoint();
         public Point GridPosRound(int gridSize) => (v / gridSize).Rounded().ToPoint();
 

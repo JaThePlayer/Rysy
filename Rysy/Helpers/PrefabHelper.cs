@@ -147,7 +147,7 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
         public ISelectionHandler CreateSelection(EditorState editorState, Placement placement, Vector2 pos, Room room) {
             var selections = CopypasteHelper.PasteSelections(Helper.ValidLayers,
                 EditorState.Current ?? throw new UnreachableException("EditorState.Current is null"), 
-                Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms);
+                Prefab.Objects, history: null, map: null, room, pos, out var pastedRooms, gridSize: 8);
             if (pastedRooms) {
                 throw new NotImplementedException("Pasting rooms in prefabs is not supported yet!");
             }

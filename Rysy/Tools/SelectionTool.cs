@@ -164,7 +164,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (EditorState.CurrentRoom is null)
             return;
 
-        var selections = CopypasteHelper.PasteSelectionsFromClipboard(ValidLayers, EditorState, History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms);
+        var selections = CopypasteHelper.PasteSelectionsFromClipboard(ValidLayers, EditorState, History, EditorState.Map, EditorState.CurrentRoom, GetMouseRoomPos(EditorState.Camera, EditorState.CurrentRoom).ToVector2(), out bool pastedRooms, GridSize);
         if (pastedRooms) {
             Layer = EditorLayers.Room;
         }
