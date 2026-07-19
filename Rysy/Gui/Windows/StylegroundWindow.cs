@@ -1,5 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
@@ -8,6 +7,8 @@ using Rysy.Stylegrounds;
 namespace Rysy.Gui.Windows;
 
 public class StylegroundWindow : Window {
+    private readonly DragDropCtx<Style> _dragDropCtx = new("styles");
+    
     private IHistoryHandler _history;
     private Map _map;
 
@@ -405,6 +406,32 @@ public class StylegroundWindow : Window {
         _firstRender = false;
     }
 
+    private bool AreSelectionsSequentialAndInSameFolder() {
+        switch (_selections) {
+            case [] or [_]:
+                return true;
+            case [var first, ..]:
+                var currId = -1;
+                foreach (var (other, id) in _selections.Select(s => (s, GetStyleListContaining(s).IndexOf(s))).OrderBy(s => s.Item2)) {
+                    if (first.Parent != other.Parent)
+                        return false;
+
+                    if (currId == -1) {
+                        currId = id;
+                        continue;
+                    }
+
+                    if (id != currId + 1)
+                        return false;
+                    currId = id;
+                }
+                
+                return true;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(_selections));
+        }
+    }
+
     private void RenderList(bool fg) {
         ImGui.BeginChild("list");
 
@@ -422,10 +449,11 @@ public class StylegroundWindow : Window {
         ImGui.TableHeadersRow();
 
         foreach (var fakeStyle in GetFakeStyles(fg)) {
-            RenderStyleImgui(fakeStyle);
+            RenderStyleImgui(fakeStyle, false);
         }
+        
         foreach (var style in styles) {
-            RenderStyleImgui(style);
+            RenderStyleImgui(style, canDragDrop: AreSelectionsSequentialAndInSameFolder());
         }
 
         ImGui.TableNextRow();
@@ -440,7 +468,7 @@ public class StylegroundWindow : Window {
         ImGui.EndChild();
     }
 
-    private void RenderStyleImgui(Style style) {
+    private void RenderStyleImgui(Style style, bool canDragDrop) {
         var id = style.GetHashCode();
 
         ImGui.TableNextRow();
@@ -455,6 +483,26 @@ public class StylegroundWindow : Window {
             var open = ImGui.TreeNodeEx($"##{id}", flags);
             var clicked = ImGui.IsItemClicked();
             AddStyleContextWindow(style, id);
+            if (canDragDrop && _dragDropCtx.DragDrop(apply) is { } droppedStyle && !_selections.Contains(apply)) {
+                // Dropped a style onto an apply.
+                var shouldUseDefaultBehavior = true;
+                if (open) {
+                    var parentList = GetStyleListContaining(apply);
+                    var previousStyle = parentList.ElementAtOrDefault(parentList.IndexOf(apply) - 1);
+                    if (_selections.Contains(previousStyle)) {
+                        // We're moving a style directly above this apply onto the non-empty apply, move styles into it.
+                        EditAll(s => new MoveStyleIntoFolderAction(s, apply, GetStyleListContaining(s), true));
+                        shouldUseDefaultBehavior = false;
+                    } else if (apply.Styles.Count > 0 && _selections.Contains(apply.Styles[0])) {
+                        // We're trying to move the top style upwards, move out of folder
+                        EditAll(s => new MoveStyleOutOfFolderAction(s, GetStyleListContaining(apply), apply.Parent, apply, true));
+                        shouldUseDefaultBehavior = false;
+                    }
+                }
+                
+                if (shouldUseDefaultBehavior)
+                    MoveStyleNextTo(droppedStyle, apply);
+            }
 
             ImGui.SameLine();
             ImGui.TextUnformatted(style.DisplayName);
@@ -463,12 +511,28 @@ public class StylegroundWindow : Window {
 
             if (open) {
                 foreach (var innerStyle in apply.Styles) {
-                    RenderStyleImgui(innerStyle);
+                    // Only allow dragging and dropping inside the folder if the folder isn't currently selected.
+                    RenderStyleImgui(innerStyle, canDragDrop && !_selections.Contains(apply));
                 }
 
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 RenderAddNewEntry(apply);
+                if (canDragDrop && _dragDropCtx.DragDrop() is { } && !_selections.Contains(apply)) {
+                    // Dropped a style onto the "new" button.
+                    if (apply.Styles is [.., var lastStyleInApply]) {
+                        if (!_selections.Contains(lastStyleInApply)) {
+                            EditAll(s => new MoveStyleIntoFolderAction(s, apply, GetStyleListContaining(s), false));
+                        } else {
+                            // We're trying to move the last style downwards, move out of folder
+                            EditAll(s => new MoveStyleOutOfFolderAction(s, GetStyleListContaining(apply), apply.Parent, apply, false));
+                        }
+                    }
+                    else {
+                        // Folder is empty, just add the styles
+                        EditAll(s => new MoveStyleIntoFolderAction(s, apply, GetStyleListContaining(s), false));
+                    }
+                }
 
                 ImGui.TreePop();
             }
@@ -488,11 +552,59 @@ public class StylegroundWindow : Window {
                 SetOrAddSelection(style);
             }
             AddStyleContextWindow(style, id);
+            
+            if (canDragDrop && _dragDropCtx.DragDrop(style) is { } droppedStyle && !_selections.Contains(style)) {
+                MoveStyleNextTo(droppedStyle, style);
+            }
 
             ImGui.SameLine();
             ImGui.TextUnformatted(style.DisplayName);
 
             RenderOtherTabs(style);
+        }
+    }
+
+    private void MoveStyleNextTo(Style toMove, Style to) {
+        if (toMove == to)
+            return;
+        
+        if (toMove.Parent == to.Parent) {
+            var styles = GetStyleListContaining(toMove);
+            var idxOfTarget = styles.IndexOf(to);
+            var idxOfToMove = styles.IndexOf(toMove);
+            var move = (idxOfTarget - idxOfToMove);
+            var moveDir = int.Sign(move);
+            var nextStyleToCheck = idxOfToMove + moveDir;
+            
+            while (styles.ElementAtOrDefault(nextStyleToCheck) is {} next && _selections.Contains(next)) {
+                nextStyleToCheck += moveDir;
+                move -= moveDir;
+            }
+            for (int i = 0; i < int.Abs(move); i++) {
+                EditAll(s => Move(s, moveDir), descending: move > 0);
+            }
+            
+            return;
+        }
+
+        if (to.Parent is not null) {
+            // Moving into the parent folder
+            var toParent = to.Parent;
+            var targetStyles = GetStyleListContaining(to);
+            var idxOfTargetInItsList = targetStyles.IndexOf(to);
+        
+            EditAll(s => {
+                return new MoveStyleIntoFolderAction(s, toParent, GetStyleListContaining(s), FromTop: idxOfTargetInItsList == 0);
+            }, descending: idxOfTargetInItsList == 0);
+        } else if (toMove.Parent is not null) {
+            // Moving out to no folder
+            var fromStyles = toMove.Parent;
+            var targetStyles = GetStyleListContaining(to);
+            var idxOfTargetInItsList = GetStyleListContaining(toMove).IndexOf(toMove);
+        
+            EditAll(
+                s => new MoveStyleOutOfFolderAction(s, targetStyles, null, fromStyles, FromTop: idxOfTargetInItsList == 0),
+                descending: idxOfTargetInItsList != 0);
         }
     }
 
@@ -536,7 +648,7 @@ public class StylegroundWindow : Window {
         {
             case "":
                 // Empty string makes the styleground never visible, most likely map maker error.
-                // While its not possible to make such a styleground in Rysy (as it will be turned into null),
+                // While it's not possible to make such a styleground in Rysy (as it will be turned into null),
                 // other map editors may allow for it.
                 ImGuiManager.PushInvalidStyle();
                 ImGui.Text("<NONE>");
