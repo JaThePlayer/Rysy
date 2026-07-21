@@ -120,9 +120,16 @@ public interface ISelectionHandler {
     public IEditorLayer Layer { get; }
 
     /// <summary>
-    /// Places the entity 
+    /// Places the entity's clone.
     /// </summary>
     public IHistoryAction PlaceClone(Room room);
+
+    /// <summary>
+    /// Places the entity offset by a given amount.
+    /// This function should be implemented as placing a clone at the current position,
+    /// then offseting the original object, so that the selection stays on the original object.
+    /// </summary>
+    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset);
 
     public Rectangle Rect { get; }
 

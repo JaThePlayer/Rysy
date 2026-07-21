@@ -945,8 +945,29 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
         };
     }
 
-    public IHistoryAction PlaceClone(Room room) {
-        return new AddRoomAction(Room.Clone());
+    public IHistoryAction PlaceClone(Room _) {
+        var newRoom = Room.Clone();
+        if (Room.Map is { } map) {
+            newRoom.Name = map.GuessNewRoomNameFromParent(Room) ?? map.DeduplicateRoomName(Room.Name);
+        }
+        
+        return new AddRoomAction(newRoom);
+    }
+    
+    public IHistoryAction PlaceCloneOffset(Room _, Vector2 offset) {
+        // Move the current room, and place a clone at the old position instead, to make selection tool work correctly.
+        var newRoom = Room.Clone();
+        var newRoomName = Room.Name;
+        if (Room.Map is { } map) {
+            newRoomName = map.GuessNewRoomNameFromParent(Room) ?? map.DeduplicateRoomName(Room.Name);
+        }
+
+        var newAttrs = Room.Attributes.Copy();
+        newAttrs.Name = newRoomName;
+        newAttrs.X += (int)offset.X;
+        newAttrs.Y += (int)offset.Y;
+        
+        return new MergedAction(new RoomAttributeChangeAction(Room, newAttrs), new AddRoomAction(newRoom));
     }
     
     public IHistoryAction PlaceClone(Action<Room> onFirstApply) {

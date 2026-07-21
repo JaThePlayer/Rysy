@@ -517,11 +517,8 @@ public record class RoomPlacementHandler : IPlacementHandler {
         var roomHandler = (RoomSelectionHandler) handler;
         
         var act = roomHandler.PlaceClone(newRoom => {
-            if (editorState.Map is { } map) {
-                newRoom.Name = map.GuessNewRoomNameFromParent(editorState.CurrentRoom) ?? map.DeduplicateRoomName("new_room");
-                editorState.CurrentRoom = newRoom;
-                RysyState.Scene.AddWindow(new RoomEditWindow(editorState, newRoom, false));
-            }
+            editorState.CurrentRoom = newRoom;
+            RysyState.Scene.AddWindow(new RoomEditWindow(editorState, newRoom, false));
         });
         handler.TryResize(new(int.MinValue, int.MinValue))?.Apply(editorState.Map!);
         if (roomHandler.Room.Entities["player"].Count > 0) {

@@ -162,6 +162,11 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public IHistoryAction PlaceClone(Room room) {
         return new AddEntityAction(Entity.CloneWith(pl => pl.ValueOverrides.Remove(Entity.EditorGroupEntityDataKey)), room);
     }
+    
+    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset) {
+        // To make sure the selection tool selects the offset entity, we'll put the clone at our current pos and move the original entity.
+        return new MergedAction(PlaceClone(room), new MoveEntityAction(Entity, offset));
+    }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
         if (!Entity.CreateSelection().Check(origin)) {

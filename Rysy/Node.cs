@@ -165,6 +165,10 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     public IHistoryAction PlaceClone(Room room) {
         return IHistoryAction.Empty;
     }
+    
+    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset) {
+        return IHistoryAction.Empty;
+    }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
         if (!Entity.CreateNodeSelection(_prevNodeId).Check(origin)) {

@@ -38,9 +38,10 @@ public class ActionData {
 public static class HistoryActionExtensions {
     public static MergedAction MergeActions(this IEnumerable<IHistoryAction?> actions) => new(actions);
 
-    public static HookedAction WithHook(this IHistoryAction action, Action? onApply = null, Action? onUndo = null) => new(action) {
+    public static HookedAction WithHook(this IHistoryAction action, Action? onApply = null, Action? onUndo = null, bool alwaysSuccessful = false) => new(action) {
         OnApply = onApply,
         OnUndo = onUndo,
+        AlwaysSuccessful = alwaysSuccessful,
     };
 }
 

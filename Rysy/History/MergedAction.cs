@@ -6,7 +6,7 @@ public record class MergedAction : IHistoryAction, ISerializableAction {
     public List<IHistoryAction> Actions { get; set; }
 
     [JsonConstructor]
-    public MergedAction() {
+    public MergedAction() : this([]) {
         
     }
     

@@ -30,6 +30,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private Point? _moveGestureStart, _moveGestureLastMousePos;
     private Vector2 _moveGestureFinalDelta;
     private NineSliceLocation _moveGestureGrabbedLocation;
+    private bool _moveGestureHasMovedAtAll;
+    private bool _cloneSelectionsBeforeMoving;
 
     private List<Selection>? _currentSelections;
     private List<Selection> _selectionsToHighlight = new();
@@ -190,7 +192,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private Action CreateMoveHandler(Vector2 offset, bool precise) => () => {
         if (_currentSelections is { } selections) {
-            MoveSelectionsBy(precise ? offset : offset * GridSize, selections, NineSliceLocation.Middle);
+            MoveSelectionsBy(null, precise ? offset : offset * GridSize, selections, NineSliceLocation.Middle, simulate: false);
         }
     };
 
@@ -269,13 +271,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         History.ApplyNewAction(action);
     }
 
-    private void MoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
+    private void MoveSelectionsBy(Room? room, Vector2 offset, List<Selection> selections, NineSliceLocation grabbed, bool simulate) {
         History.UndoSimulations();
-        var action = GetMoveSelectionsByAction(offset, selections, grabbed);
+        var action = GetMoveSelectionsByAction(room, offset, selections, grabbed);
 
-        History.ApplyNewAction(action);
+        if (simulate) {
+            History.ApplyNewSimulation(action);
+        } else {
+            History.ApplyNewAction(action);
+        }
+        
         ClearColliderCachesInSelections();
-
     }
 
     private void ResizeSelectionsBy(Point resize, Vector2 move, List<Selection> selections) {
@@ -293,17 +299,15 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         History.ApplyNewAction(merged);
     }
 
-    private IHistoryAction SimulateMoveSelectionsBy(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed) {
-        History.UndoSimulations();
-        var action = GetMoveSelectionsByAction(offset, selections, grabbed);
-        //action.Apply();
-        History.ApplyNewSimulation(action);
-        ClearColliderCachesInSelections();
-        return action;
-    }
+    private IHistoryAction GetMoveSelectionsByAction(Room? room, Vector2 offset, List<Selection> selections,
+        NineSliceLocation grabbed) {
 
-    private IHistoryAction GetMoveSelectionsByAction(Vector2 offset, List<Selection> selections, NineSliceLocation grabbed)
-        => selections.Select(s => GetMoveAction(s.Handler, offset, grabbed)).MergeActions();
+        if (_cloneSelectionsBeforeMoving) {
+            return selections.Select(s => s.Handler.PlaceCloneOffset(room ?? EditorState.CurrentRoom!, offset)).MergeActions();
+        }
+        
+        return selections.Select(s => GetMoveAction(s.Handler, offset, grabbed)).MergeActions();
+    }
 
     private IHistoryAction? GetMoveAction(ISelectionHandler handler, Vector2 offset, NineSliceLocation grabbed) {
         return handler.GetMoveOrResizeAction(offset, grabbed);
@@ -643,6 +647,8 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         _state = States.MoveOrResizeGesture;
                         _moveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
                         _moveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(_moveGestureGrabbedLocation, selection.Handler);
+                        _moveGestureHasMovedAtAll = false;
+                        _cloneSelectionsBeforeMoving = false;
                         break;
                     }
                 }
@@ -776,11 +782,13 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 // If you just clicked in place, then act as if you wanted to simply change your selection, instead of moving
                 SelectWithin(room, new Rectangle(mousePos.X, mousePos.Y, 1, 1));
             } else {
-                MoveSelectionsBy(delta, selections, _moveGestureGrabbedLocation);
+                MoveSelectionsBy(room, delta, selections, _moveGestureGrabbedLocation, simulate: false);
             }
 
             _moveGestureStart = mousePos;
             _moveGestureFinalDelta = default;
+            _cloneSelectionsBeforeMoving = false;
+            _moveGestureHasMovedAtAll = false;
         }
     }
     
@@ -823,14 +831,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                     Vector2 delta = CalculateMovementDelta(_moveGestureLastMousePos!.Value, mousePos);
 
                     if (delta.LengthSquared() != 0) {
+                        // Alt-drag: Copy selections before moving.
+                        // We check for this only when the selection gets moved for the first time in a gesture.
+                        if (!_moveGestureHasMovedAtAll && Input.Keyboard.Alt()) {
+                            _cloneSelectionsBeforeMoving = true;
+                        }
+                        
+                        _moveGestureHasMovedAtAll = true;
                         _moveGestureLastMousePos += delta.ToPoint();
                         _moveGestureFinalDelta += delta;
-                        //Console.WriteLine(MoveGestureFinalDelta);
-                        SimulateMoveSelectionsBy(_moveGestureFinalDelta, selections, _moveGestureGrabbedLocation);
+                        MoveSelectionsBy(room, _moveGestureFinalDelta, selections, _moveGestureGrabbedLocation, simulate: true);
                     }
-
-                    var cursorType = _moveGestureGrabbedLocation.ToMouseCursor();
-                   // ImGui.SetMouseCursor(cursorType);
                 }
                 break;
             }

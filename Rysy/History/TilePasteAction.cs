@@ -2,18 +2,12 @@
 
 namespace Rysy.History;
 
-public class TilePasteAction : IHistoryAction {
-    public readonly Tilegrid Source;
-    public readonly Tilegrid Destination;
-    public readonly Point Pos;
+public class TilePasteAction(Tilegrid source, Tilegrid destination, Point pos) : IHistoryAction {
+    public readonly Tilegrid Source = source;
+    public readonly Tilegrid Destination = destination;
+    public readonly Point Pos = pos;
 
     private char[,] _old;
-
-    public TilePasteAction(Tilegrid source, Tilegrid destination, Point pos) {
-        Source = source;
-        Destination = destination;
-        Pos = pos;
-    }
 
     public bool Apply(Map map) {
         var (w, h) = (Source.Width, Source.Height);
