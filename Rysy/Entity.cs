@@ -189,7 +189,7 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     /// </summary>
     /// <returns></returns>
     public virtual ISelectionCollider GetMainSelection() {
-        if (Width > 0 || Height > 0) {
+        if (Width != 0 || Height != 0) {
             var rect = Rectangle;
 
             return ISelectionCollider.FromRect(rect);
@@ -209,7 +209,7 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     public virtual ISelectionCollider GetNodeSelection(int nodeIndex) {
         var node = Nodes[nodeIndex];
 
-        if (Width > 0 || Height > 0) {
+        if (Width != 0 || Height != 0) {
             return ISelectionCollider.FromRect(Rectangle.MovedTo(node));
         }
 
@@ -363,14 +363,14 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     /// Defaults to true if the entity has a positive <see cref="Width"/>.
     /// </summary>
     [JsonIgnore]
-    public virtual bool ResizableX => Width > 0;
+    public virtual bool ResizableX => Width != 0;
 
     /// <summary>
     /// Whether this entity can be resized on the Y axis.
     /// Defaults to true if the entity has a positive <see cref="Height"/>.
     /// </summary>
     [JsonIgnore]
-    public virtual bool ResizableY => Height > 0;
+    public virtual bool ResizableY => Height != 0;
 
     /// <summary>
     /// Minimum size for this entity, where lower values would cause crashes in-game.

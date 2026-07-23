@@ -112,11 +112,29 @@ public static class RectangleExt {
         public Rectangle AddSize(int w, int h) => new(r.X, r.Y, r.Width + w, r.Height + h);
         public Rectangle AddSize(Point offset) => new(r.X, r.Y, r.Width + offset.X, r.Height + +offset.Y);
         public Rectangle MovedBy(Vector2 offset) => new(r.X + (int) offset.X, r.Y + (int) offset.Y, r.Width, r.Height);
+        public Rectangle MovedBy(Point offset) => new(r.X + offset.X, r.Y + offset.Y, r.Width, r.Height);
         public Rectangle MovedBy(int x, int y) => new(r.X + x, r.Y + y, r.Width, r.Height);
         public Rectangle MovedTo(Vector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
         public Rectangle MovedTo(NumVector2 pos) => new((int) pos.X, (int) pos.Y, r.Width, r.Height);
         public Point Size() => new(r.Width, r.Height);
         public int Area() => r.Width * r.Height;
+
+        /// <summary>
+        /// Fixes a negative-sized rectangle to have positive-sizes and the correct offset applied.
+        /// </summary>
+        public Rectangle FixupNegativeSize() {
+            if (r.Width < 0) {
+                r.X += r.Width;
+                r.Width = -r.Width;
+            }
+
+            if (r.Height < 0) {
+                r.Y += r.Height;
+                r.Height = -r.Height;
+            }
+
+            return r;
+        }
 
         public NineSliceLocation? GetLocationInRect(Point pos, int leniency = 1) {
             if (!r.Contains(pos))

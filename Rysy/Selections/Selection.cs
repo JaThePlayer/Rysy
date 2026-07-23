@@ -199,20 +199,13 @@ public static class SelectionLayerExt {
     }
 }
 
-public sealed record class RectangleSelection : ISelectionCollider {
-    public Rectangle Rect;
+public sealed record RectangleSelection : ISelectionCollider {
+    public Rectangle Rect {
+        get;
+        init => field = value.FixupNegativeSize();
+    }
 
     Rectangle ISelectionCollider.Rect => Rect;
-
-    public void MoveBy(Vector2 offset) {
-        Rect.X += (int) offset.X;
-        Rect.Y += (int) offset.Y;
-    }
-
-    public void ResizeBy(Point offset) {
-        Rect.Width += offset.X;
-        Rect.Height += offset.Y;
-    }
 
     public bool IsWithinRectangle(Rectangle roomPos) {
         return Rect.Intersects(roomPos);

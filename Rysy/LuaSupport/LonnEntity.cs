@@ -232,7 +232,7 @@ public class LonnEntity : Entity, IHasLonnPlugin {
             }
 
             // 2. Use nodeRectangle if entity.rectangle exists or it has both width and height.
-            if (Plugin.GetRectangle is { } || (Width > 0 && Height > 0)) {
+            if (Plugin.GetRectangle is { } || (Width != 0 && Height != 0)) {
                 if (Plugin.NodeRectangle?.Invoke(Room, this, Nodes[nodeIndex], nodeIndex + 1) is { } nodeRect) {
                     return ISelectionCollider.FromRect(nodeRect);
                 }
