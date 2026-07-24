@@ -86,10 +86,14 @@ public static class CopypasteHelper {
         return entitySelections.Concat(tileSelections).ToList();
     }
 
-    public static void CopySelectionsToClipboard(IReadOnlyList<IEditorLayer> layers, List<Selection>? selections) {
-        if (CopySelectionsToString(layers, selections) is { } copied) {
-            Input.Clipboard.Set(copied);
+    public static void CopyStringToClipboard(string? str) {
+        if (str is not null) {
+            Input.Clipboard.Set(str);
         }
+    }
+
+    public static void CopySelectionsToClipboard(IReadOnlyList<IEditorLayer> layers, List<Selection>? selections) {
+        CopyStringToClipboard(CopySelectionsToString(layers, selections));
     }
 
     public static string? CopySelectionsToString(IReadOnlyList<IEditorLayer> layers, List<Selection>? selections) {
@@ -118,6 +122,36 @@ static string Compress(byte[] input) {
         return Convert.ToBase64String(gzipBytes);
     }
 }*/
+    }
+
+    public static void CopySelectionIDsToClipboard(List<Selection>? selections) {
+        CopyStringToClipboard(CopySelectionIDsToString(selections));
+    }
+
+    public static string? CopySelectionIDsToString(List<Selection>? selections) {
+        if (selections is not { }) 
+            return null;
+
+        return string.Join(", ", selections
+            .DistinctBy(s => s.Handler is NodeSelectionHandler n ? n.Entity : s.Handler.Parent)
+            .Select(x => x.Handler.Parent)
+            .Where(x => x is Entity)
+            .Select(x => ((Entity)x).Id.ToStringInvariant()));
+    }
+
+    public static void CopySelectionSIDsToClipboard(List<Selection>? selections) {
+        CopyStringToClipboard(CopySelectionSIDsToString(selections));
+    }
+
+    public static string? CopySelectionSIDsToString(List<Selection>? selections) {
+        if (selections is not { }) 
+            return null;
+
+        return string.Join(", ", selections
+            .Select(x => x.Handler.Parent)
+            .Where(x => x is Entity)
+            .Select(x => ((Entity)x).Name)
+            .Distinct());
     }
 
     public static List<CopiedSelection>? CopySelections(List<Selection>? selections) {
