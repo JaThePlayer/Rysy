@@ -82,6 +82,9 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         handler.AddHotkeyFromSettings("selection.selectAll", "ctrl+a", SelectAll);
         handler.AddHotkeyFromSettings("selection.selectAllSimilar", "ctrl+shift+a", SelectAllSimilar);
         
+        handler.AddHotkeyFromSettings("selection.copySids", "ctrl+alt+c", CopySelectionSids);
+        handler.AddHotkeyFromSettings("selection.copyIds", "ctrl+shift+c", CopySelectionIds);
+
         this.AddSelectionHotkeys(handler);
 
         handler.AddHotkeyFromSettings("delete", "delete", DeleteSelections);
@@ -182,6 +185,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private void CopySelections() {
         CopypasteHelper.CopySelectionsToClipboard(ValidLayers, _currentSelections);
+    }
+
+    private void CopySelectionIds() {
+        CopypasteHelper.CopySelectionIDsToClipboard(_currentSelections);
+    }
+
+    private void CopySelectionSids() {
+        CopypasteHelper.CopySelectionSIDsToClipboard(_currentSelections);
     }
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
