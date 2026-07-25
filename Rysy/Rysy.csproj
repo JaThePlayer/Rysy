@@ -42,7 +42,7 @@
 
   <PropertyGroup Condition="'$(FNA)' != ''">
     <_IsWindows Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</_IsWindows>
-    <_IsMacOS Condition="'$(RuntimeIdentifier)' == 'osx'">true</_IsMacOS>
+    <_IsMacOS Condition="'$(RuntimeIdentifier)' == 'osx-x64'">true</_IsMacOS>
     <_IsLinux Condition="'$(RuntimeIdentifier)' == 'linux-x64'">true</_IsLinux>
     <_AnyOSTargetFound Condition=" '$(_IsWindows)' != '' Or '$(_IsMacOS)' != '' Or '$(_IsLinux)' != '' ">true</_AnyOSTargetFound>
     
