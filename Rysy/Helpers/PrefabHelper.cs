@@ -254,8 +254,8 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
                 //.Select(s => s.Handler is Tilegrid.RectSelectionHandler tile ? tile.PlaceCloneAt(room, pos) : s.Handler.PlaceClone(room)).MergeActions();
             }
             
-            public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset) {
-                return Selections.Select(s => s.Handler.PlaceCloneOffset(room, offset)).MergeActions();
+            public IHistoryAction AltDrag(Room room, Vector2 offset) {
+                return Selections.Select(s => s.Handler.AltDrag(room, offset)).MergeActions();
             }
 
             public void RenderSelection(Color c) {

@@ -342,7 +342,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         NineSliceLocation grabbed) {
 
         if (_cloneSelectionsBeforeMoving) {
-            return selections.Select(s => s.Handler.PlaceCloneOffset(room ?? EditorState.CurrentRoom!, offset)).MergeActions();
+            return selections.Select(s => s.Handler.AltDrag(room ?? EditorState.CurrentRoom!, offset)).MergeActions();
         }
         
         return selections.Select(s => GetMoveAction(s.Handler, offset, grabbed)).MergeActions();

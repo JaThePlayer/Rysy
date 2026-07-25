@@ -170,7 +170,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
         return IHistoryAction.Empty;
     }
     
-    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset) {
+    public IHistoryAction AltDrag(Room room, Vector2 offset) {
         return IHistoryAction.Empty;
     }
 

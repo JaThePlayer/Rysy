@@ -958,7 +958,7 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
         return new AddRoomAction(newRoom);
     }
     
-    public IHistoryAction PlaceCloneOffset(Room _, Vector2 offset) {
+    public IHistoryAction AltDrag(Room _, Vector2 offset) {
         // Move the current room, and place a clone at the old position instead, to make selection tool work correctly.
         var newRoom = Room.Clone();
         var newRoomName = Room.Name;

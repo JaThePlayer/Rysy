@@ -125,11 +125,11 @@ public interface ISelectionHandler {
     public IHistoryAction PlaceClone(Room room);
 
     /// <summary>
-    /// Places the entity offset by a given amount.
-    /// This function should be implemented as placing a clone at the current position,
-    /// then offseting the original object, so that the selection stays on the original object.
+    /// Implements alt-dragging for this selection.
+    /// The object being selected should remain unchanged, while a clone is placed with the given offset.
+    /// The history action returned here should transfer the handler to the clone, and the other way around when undone.
     /// </summary>
-    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset);
+    public IHistoryAction AltDrag(Room room, Vector2 offset);
 
     public Rectangle Rect { get; }
 

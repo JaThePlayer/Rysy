@@ -221,7 +221,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         return new TilePasteAction(new(_toMove), Grid, Rect.Div(8).Location);
     }
     
-    public IHistoryAction PlaceCloneOffset(Room room, Vector2 offset) {
+    public IHistoryAction AltDrag(Room room, Vector2 offset) {
         // The tile paste action always has to be successful, even if no changes were done,
         // so that OnUndo gets called always.
         var act = new TilePasteAction(new(_toMove), Grid, Rect.Div(8).Location + (offset / 8f).ToPoint())

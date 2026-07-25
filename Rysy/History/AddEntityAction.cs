@@ -1,6 +1,6 @@
 ﻿namespace Rysy.History;
 
-public sealed record class AddEntityAction(Entity Entity, RoomRef Room) : IHistoryAction {
+public sealed record AddEntityAction(Entity Entity, RoomRef Room) : IHistoryAction {
     public bool Apply(Map map) {
         var room = Room.Resolve(map);
         Entity.Room = room;
