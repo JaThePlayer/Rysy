@@ -41,7 +41,6 @@ jobs:
       working-directory: ./Rysy/bin/Release/net10.0
       run: |
         echo "Preparing build dirs"
-        ls
         for DIR in win-x64 linux-x64 osx-x64 osx-arm64
         do
           cd $DIR/publish
