@@ -59,6 +59,9 @@
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsLinux)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">linux-x64</_NativeRuntime>
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsWindows)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">win-x64</_NativeRuntime>
 
+    <_NativeRuntimeCrossArch Condition="'$(_NativeRuntimeCrossArch)' == '' And '$(_IsMacOS)' == ''">$(_NativeRuntime)</_NativeRuntimeCrossArch>
+    <_NativeRuntimeCrossArch Condition="'$(_NativeRuntimeCrossArch)' == '' And '$(_IsMacOS)' == 'true'">osx-universal</_NativeRuntimeCrossArch>
+      
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'win-x64'">dll</_NativeLibExt>
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx-x64'">dylib</_NativeLibExt>
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx-arm64'">dylib</_NativeLibExt>
@@ -72,16 +75,12 @@
   </PropertyGroup>
   
   <Target Name="ValidateOS" BeforeTargets="CoreCompile">
-        <Error
-                Text="The osx-arm64 target is not yet supported, please use osx-x64 for now. (dotnet publish Rysy -c 'Release' -f net10.0 -r osx-x64 --no-self-contained)"
-                Condition="'$(_IsMacOS_arm64)' == 'true'" />
        <Error
-              Text="This target is not supported. Available: win-x64, linux-x64, osx-x64."
+              Text="This target is not supported. Available: win-x64, linux-x64, osx-x64, osx-arm64."
               Condition="'$(_NativeRuntime)' == ''" />
   </Target>
 
   <ItemGroup Condition="'$(FNA)' != ''">
-      <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
       <Reference Include="FNA.dll">
           <HintPath>lib\FNA.dll</HintPath>
       </Reference>
@@ -91,47 +90,31 @@
           <PackagePath>lib\$(TargetFramework)</PackagePath>
       </Content>
     
-    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\SDL2.$(_NativeLibExt)">
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntimeCrossArch)\native\SDL3.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
-    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FAudio.$(_NativeLibExt)">
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntimeCrossArch)\native\FAudio.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
-    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\FNA3D.$(_NativeLibExt)">
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntimeCrossArch)\native\FNA3D.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
-    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\libtheorafile.$(_NativeLibExt)">
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntimeCrossArch)\native\libtheorafile.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
-    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntime)\native\lua51.$(_NativeLibExt)">
-      <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-      <Pack>false</Pack>
-    </Content>
-    
-    <!-- 
-    Macos, untested
-    -->
-    <Content Condition="'$(_IsMacOS)' == 'true'" Include="runtimes\$(_NativeRuntime)\native\libMoltenVK.$(_NativeLibExt)">
-      <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-      <Pack>false</Pack>
-    </Content>
-    <Content Condition="'$(_IsMacOS)' == 'true'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="runtimes\$(_NativeRuntimeCrossArch)\native\lua51.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
@@ -183,7 +166,7 @@
     <PackageReference Include="Hjg.Pngcs" Version="1.1.5" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
     <PackageReference Include="Markdig" Version="0.43.0" />
-    <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
+    <PackageReference Include="NativeFileDialogSharp" Version="0.6.0-alpha" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 

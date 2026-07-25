@@ -26,6 +26,7 @@ jobs:
         dotnet publish Rysy -c "Release" -f net10.0 -r win-x64 --no-self-contained
         dotnet publish Rysy -c "Release" -f net10.0 -r linux-x64 --no-self-contained
         dotnet publish Rysy -c "Release" -f net10.0 -r osx-x64 --no-self-contained
+        dotnet publish Rysy -c "Release" -f net10.0 -r osx-arm64 --no-self-contained
         dotnet publish Rysy.InteropMod -c Release
         dotnet pack
       
@@ -34,7 +35,7 @@ jobs:
       run: |
         echo "Preparing build dirs"
         ls
-        for DIR in win-x64 linux-x64 osx-x64
+        for DIR in win-x64 linux-x64 osx-x64 osx-arm64
         do
           cd $DIR/publish
           ls
@@ -54,10 +55,6 @@ jobs:
           cd ../..
         done
         
-        echo "Preparing Linux build"
-
-        echo "Preparing Portable build"
-        
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -71,12 +68,18 @@ jobs:
         name: Rysy-linux
         path: Rysy/bin/Release/net10.0/linux-x64/publish
 
-    - name: Upload OSX artifact
+    - name: Upload OSX-x64 artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Rysy-osx
+        name: Rysy-osx-x64
         path: Rysy/bin/Release/net10.0/osx-x64/publish
     
+    - name: Upload OSX-arm64 artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Rysy-osx-arm64
+        path: Rysy/bin/Release/net10.0/osx-arm64/publish
+
     - name: Upload InteropMod artifact
       uses: actions/upload-artifact@v4
       with:

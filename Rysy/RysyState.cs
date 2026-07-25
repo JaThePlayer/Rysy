@@ -7,7 +7,7 @@ using Rysy.Scenes;
 using Rysy.Signals;
 #if FNA
 using Rysy.Helpers;
-using SDL2;
+using SDL3;
 using System.Runtime.InteropServices;
 using System.Text;
 #endif
@@ -259,21 +259,21 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
         unsafe {
             SDL.SDL_AddEventWatch(MyEventFunction, IntPtr.Zero);
         
-            static int MyEventFunction(IntPtr userdata, IntPtr sdlEventPtr) {
+            static bool MyEventFunction(IntPtr userdata, SDL.SDL_Event* sdlEventPtr) {
                 var sdlEvent = (SDL.SDL_Event*) sdlEventPtr;
-                switch (sdlEvent->type)
+                switch ((SDL.SDL_EventType)sdlEvent->type)
                 {
-                    case SDL.SDL_EventType.SDL_DROPFILE:
+                    case SDL.SDL_EventType.SDL_EVENT_DROP_FILE:
                     {
-                        var droppedFileDir = sdlEvent->drop.file;
+                        var droppedFileDir = sdlEvent->drop.source;
                         var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
-                        Sdl2Ext.SDL_free(droppedFileDir);
+                        SDL.SDL_free((nint)droppedFileDir);
 
                         Instance.Scene?.OnFileDrop(pathString);
                         break;
                     }
-                    case SDL.SDL_EventType.SDL_MOUSEWHEEL: {
+                    case SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL: {
                         var wheel = sdlEvent->wheel;
                         
                         // TODO: test on linux
@@ -281,15 +281,15 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         // XNA does not expose horizontal mouse wheel.
                         // We'll use this event instead to store precise wheel state for later use
                         // in detecting touchpad panning, which Windows exposes as mouse wheel movement.
-                        if (!float.IsInteger(wheel.preciseX)) {
-                            TouchpadPan.X = wheel.preciseX;
+                        if (!float.IsInteger(wheel.x)) {
+                            TouchpadPan.X = wheel.x;
                         }
-                        if (!float.IsInteger(wheel.preciseY)) {
-                            TouchpadPan.Y = wheel.preciseY;
+                        if (!float.IsInteger(wheel.y)) {
+                            TouchpadPan.Y = wheel.y;
                         }
                         break;
                     }
-                    case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN: {
+                    case SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
                         var button = sdlEvent->button;
                         
                         var rysyButtonId = button.button switch {
@@ -326,7 +326,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         */
                 }
                 
-                return 0; // Value will be ignored
+                return false; // Value will be ignored
             }
         }
 #endif

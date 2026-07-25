@@ -482,8 +482,12 @@ public class StylegroundWindow : Window {
 
             var open = ImGui.TreeNodeEx($"##{id}", flags);
             var clicked = ImGui.IsItemClicked();
+            if (canDragDrop && ImGui.IsItemHovered()) {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
             AddStyleContextWindow(style, id);
             if (canDragDrop && _dragDropCtx.DragDrop(apply) is { } droppedStyle && !_selections.Contains(apply)) {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 // Dropped a style onto an apply.
                 var shouldUseDefaultBehavior = true;
                 if (open) {
@@ -519,6 +523,7 @@ public class StylegroundWindow : Window {
                 ImGui.TableNextColumn();
                 RenderAddNewEntry(apply);
                 if (canDragDrop && _dragDropCtx.DragDrop() is { } && !_selections.Contains(apply)) {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                     // Dropped a style onto the "new" button.
                     if (apply.Styles is [.., var lastStyleInApply]) {
                         if (!_selections.Contains(lastStyleInApply)) {
@@ -548,14 +553,19 @@ public class StylegroundWindow : Window {
 
             var open = ImGui.TreeNodeEx($"##{id}", flags);
             var clicked = ImGui.IsItemClicked();
-            if (clicked) {
-                SetOrAddSelection(style);
+
+            if (canDragDrop && ImGui.IsItemHovered()) {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-            AddStyleContextWindow(style, id);
             
             if (canDragDrop && _dragDropCtx.DragDrop(style) is { } droppedStyle && !_selections.Contains(style)) {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 MoveStyleNextTo(droppedStyle, style);
+            } else if (clicked) {
+                SetOrAddSelection(style);
             }
+
+            AddStyleContextWindow(style, id);
 
             ImGui.SameLine();
             ImGui.TextUnformatted(style.DisplayName);

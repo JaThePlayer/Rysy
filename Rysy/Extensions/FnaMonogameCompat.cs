@@ -1,26 +1,25 @@
-﻿using Microsoft.Xna.Framework.Input;
-using SDL2;
+﻿using SDL3;
 
 namespace Rysy.Extensions {
     public static class FnaMonogameCompat {
         #if FNA
         private static Dictionary<MouseCursor, IntPtr> SdlMouseCursors = new() {
-            [MouseCursor.Arrow] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW),
-            [MouseCursor.IBeam] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM),
-            [MouseCursor.SizeAll] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL),
-            [MouseCursor.SizeNs] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS),
-            [MouseCursor.SizeWe] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE),
-            [MouseCursor.SizeNesw] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW),
-            [MouseCursor.SizeNwse] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE),
-            [MouseCursor.Hand] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND),
-            [MouseCursor.No] = SDL2.SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO),
+            [MouseCursor.Arrow] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT),
+            [MouseCursor.IBeam] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_TEXT),
+            [MouseCursor.SizeAll] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_MOVE),
+            [MouseCursor.SizeNs] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NS_RESIZE),
+            [MouseCursor.SizeWe] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_EW_RESIZE),
+            [MouseCursor.SizeNesw] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NESW_RESIZE),
+            [MouseCursor.SizeNwse] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NWSE_RESIZE),
+            [MouseCursor.Hand] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_POINTER),
+            [MouseCursor.No] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NOT_ALLOWED),
         };
         #endif
         
         public static void SetMouseCursor(MouseCursor cursor) {
             #if FNA
             if (SdlMouseCursors.TryGetValue(cursor, out var sdlCursor))
-                SDL2.SDL.SDL_SetCursor(sdlCursor);
+                SDL.SDL_SetCursor(sdlCursor);
             #else
             Mouse.SetCursor(cursor);
             #endif
@@ -36,7 +35,7 @@ namespace Rysy.Extensions {
 
         public static Point GetPosition(this GameWindow window) {
 #if FNA
-            SDL2.SDL.SDL_GetWindowPosition(window.Handle, out var x, out var y);
+            SDL.SDL_GetWindowPosition(window.Handle, out var x, out var y);
             return new(x, y);
 #else
             return window.Position;
@@ -45,7 +44,7 @@ namespace Rysy.Extensions {
 
         public static void SetPosition(this GameWindow window, Point p) {
 #if FNA
-            SDL2.SDL.SDL_SetWindowPosition(window.Handle, p.X, p.Y);
+            SDL.SDL_SetWindowPosition(window.Handle, p.X, p.Y);
 #else
             window.Position = p;
 #endif

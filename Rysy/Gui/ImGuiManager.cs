@@ -1471,10 +1471,10 @@ public static class ImGuiManager {
             // Not needed for windows, but is needed for other OSes
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void SetClipboard(nint userdata, byte* txt) {
-                _ = Sdl2Ext.SDL_SetClipboardText(txt);
+                _ = Sdl3Ext.SDL_SetClipboardText(txt);
             }
             
-            delegate* <byte*> get = &Sdl2Ext.SDL_GetClipboardText;
+            delegate* <byte*> get = &Sdl3Ext.SDL_GetClipboardText;
             delegate* unmanaged[Cdecl]<nint, byte*, void> set = &SetClipboard;
             var platformIo = ImGui.GetPlatformIO();
             platformIo.PlatformGetClipboardTextFn = get;
@@ -1649,8 +1649,7 @@ public static class ImGuiManager {
                     throw new Exception($"Texture {tex.GetTexID()} not found");
                 }
 
-                var rect = tex.UpdateRect;
-                texture.SetDataPointerEXT(0, null, (nint)tex.GetPixels(), tex.BytesPerPixel * rect.W * rect.H);
+                texture.SetDataPointerEXT(0, null, (nint)tex.GetPixels(), tex.BytesPerPixel * tex.Width * tex.Height);
                 // Acknowledge update
                 tex.SetStatus(ImTextureStatus.Ok);
             }
