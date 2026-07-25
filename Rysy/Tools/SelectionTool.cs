@@ -500,10 +500,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             }
         }
 
-        if (_selectionGestureHandler.CurrentRectangle is { } rect) {
-            DrawSelectionRect(camera, rect);
-        }
-
         var mousePos = GetMouseRoomPos(camera, room);
         var imguiWantsMouse = ImGuiManager.WantCaptureMouse || ImGui.IsAnyItemHovered();
 
@@ -515,7 +511,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         _hadSelectionsUnderCursorLastFrame = selectionsUnderCursor.Count > 0;
 
-        Selection? selectionToBeSelectedOnClick = !_selectionGestureHandler.Started && _state == States.Idle
+        // If you alt-click and start dragging an unselected entity, you immediately select that entity and start alt-dragging it.
+        var canStartQuickAltDrag = Input.Mouse.Left.Clicked() && Input.Keyboard.Alt();
+        
+        Selection? selectionToBeSelectedOnClick = (!_selectionGestureHandler.Started || canStartQuickAltDrag) && _state == States.Idle
                 ? GetSelectionToBeSelectedOnClick(selectionsUnderCursor)
                 : null;
         
@@ -555,6 +554,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             HandleHoveredSelections(this, room, selectionsUnderCursor, _currentSelections, Input, middleClick: true);
 
             if (selectionToBeSelectedOnClick is {} s) {
+                if (canStartQuickAltDrag) {
+                    // Shortcut: Start alt-dragging the selection below the cursor immediately.
+                    SetSelections([ s ]);
+                    SwitchToMoveOrResizeGestureState(camera, room, s);
+                    _cloneSelectionsBeforeMoving = true;
+                    _selectionGestureHandler.CancelGesture();
+                }
+                            
                 var isToBeSelectedAlreadySelected = _currentSelections?.Contains(s) ?? false;
                 var color = isToBeSelectedAlreadySelected ? Color.Gold : Color.Pink;
                 s.Render(color);
@@ -583,6 +590,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             (ISprite.Line(rotStart.ToVector2(), mousePos.ToVector2(), Color.Gold) with {
                 Thickness = 0.25f,
             }).Render(ctx);
+        }
+        
+        if (_selectionGestureHandler.CurrentRectangle is { } rect) {
+            DrawSelectionRect(camera, rect);
         }
     }
 
@@ -621,17 +632,6 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         if (input.Mouse.Middle.Clicked() && tool.ToolHandler.GetTool<PlacementTool>() is {} placementTool) {
-            /*
-            if (placementTool.ValidLayers.Select(x => EditorLayers.ToolLayerToEnum(x)).Any(x => x == firstSelection.Handler.Layer)) {
-                // TODO: Create a proper helper for this!
-                if (EditorLayers.LayerFromSelectionLayer(firstSelection.Handler.Layer, placementTool.ValidLayers) is { } editorLayer) {
-                    input.Mouse.ConsumeMiddle();
-                    tool.ToolHandler.SetTool<PlacementTool>();
-                    placementTool.Layer = editorLayer;
-                    placementTool.OnMiddleClick();
-                }
-
-            }*/
             var targetLayer = firstSelection.Handler.Layer;
             if (placementTool.ValidLayers.Contains(targetLayer)) {
                 input.Mouse.ConsumeMiddle();
@@ -655,6 +655,17 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
     }
 
+    private void SwitchToMoveOrResizeGestureState(Camera camera, Room? room, Selection primarySelection) {
+        var mouseRoomPos = GetMouseRoomPos(camera, room);
+        
+        _moveGestureStart = mouseRoomPos;
+        _state = States.MoveOrResizeGesture;
+        _moveGestureGrabbedLocation = primarySelection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
+        _moveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(_moveGestureGrabbedLocation, primarySelection.Handler);
+        _moveGestureHasMovedAtAll = false;
+        _cloneSelectionsBeforeMoving = false;
+    }
+
     public override void Update(Camera camera, Room? room) {
         if (Layer is RoomLayer)
             room ??= EditorState.Map?.Rooms.FirstOrDefault();
@@ -665,12 +676,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             if (Input.Mouse.Left.Clicked()) {
                 foreach (var selection in selections) {
                     if (selection.Check(mouseRect)) {
-                        _moveGestureStart = mouseRoomPos;
-                        _state = States.MoveOrResizeGesture;
-                        _moveGestureGrabbedLocation = selection.Handler.Rect.GetLocationInRect(mouseRoomPos, GetSideGrabLeniency(camera)) ?? NineSliceLocation.Middle;
-                        _moveGestureGrabbedLocation = AdjustGrabLocBasedOnResizable(_moveGestureGrabbedLocation, selection.Handler);
-                        _moveGestureHasMovedAtAll = false;
-                        _cloneSelectionsBeforeMoving = false;
+                        SwitchToMoveOrResizeGestureState(camera, room, selection);
                         break;
                     }
                 }
