@@ -265,10 +265,9 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                 {
                     case SDL.SDL_EventType.SDL_EVENT_DROP_FILE:
                     {
-                        var droppedFileDir = sdlEvent->drop.source;
+                        var droppedFileDir = sdlEvent->drop.data;
                         var pathSpanUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)droppedFileDir);
                         var pathString = Encoding.UTF8.GetString(pathSpanUtf8);
-                        SDL.SDL_free((nint)droppedFileDir);
 
                         Instance.Scene?.OnFileDrop(pathString);
                         break;
