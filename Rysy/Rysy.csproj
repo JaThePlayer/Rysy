@@ -42,21 +42,26 @@
 
   <PropertyGroup Condition="'$(FNA)' != ''">
     <_IsWindows Condition="'$(RuntimeIdentifier)' == 'win-x64'">true</_IsWindows>
-    <_IsMacOS Condition="'$(RuntimeIdentifier)' == 'osx-x64'">true</_IsMacOS>
     <_IsLinux Condition="'$(RuntimeIdentifier)' == 'linux-x64'">true</_IsLinux>
-    <_AnyOSTargetFound Condition=" '$(_IsWindows)' != '' Or '$(_IsMacOS)' != '' Or '$(_IsLinux)' != '' ">true</_AnyOSTargetFound>
+    <_IsMacOS_x64 Condition="'$(RuntimeIdentifier)' == 'osx-x64'">true</_IsMacOS_x64>
+    <_IsMacOS_arm64 Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">true</_IsMacOS_arm64>
+    <_IsMacOS Condition="'$(_IsMacOS_x64)' != '' Or '$(_IsMacOS_arm64)' != ''">true</_IsMacOS>
+    <_AnyOSTargetFound Condition=" '$(_IsWindows)' != '' Or '$(_IsMacOS)' != '' Or '$(_IsLinux)' != ''">true</_AnyOSTargetFound>
     
     <_IsWindows Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</_IsWindows>
-    <_IsMacOS Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
     <_IsLinux Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</_IsLinux>
-
-    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'x64'">osx</_NativeRuntime>
-    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'ARM64'">osx</_NativeRuntime>
+    <_IsMacOS Condition=" '$(_AnyOSTargetFound)' == '' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
+    <_IsMacOS_x64 Condition=" '$(_AnyOSTargetFound)' == '' And '$(_IsMacOS)' == 'true' And '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == '$([System.Runtime.InteropServices.Architecture]::X64)'">true</_IsMacOS_x64>
+    <_IsMacOS_arm64 Condition=" '$(_AnyOSTargetFound)' == '' And '$(_IsMacOS)' == 'true' And '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == '$([System.Runtime.InteropServices.Architecture]::Arm64)'">true</_IsMacOS_arm64>
+      
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS_x64)' == 'true'">osx-x64</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS_arm64)' == 'true'">osx-arm64</_NativeRuntime>
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsLinux)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">linux-x64</_NativeRuntime>
     <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsWindows)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">win-x64</_NativeRuntime>
 
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'win-x64'">dll</_NativeLibExt>
-    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx'">dylib</_NativeLibExt>
+    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx-x64'">dylib</_NativeLibExt>
+    <_NativeLibExt Condition="'$(_NativeRuntime)' == 'osx-arm64'">dylib</_NativeLibExt>
     <_NativeLibExt Condition="'$(_NativeRuntime)' == 'linux-x64'">so</_NativeLibExt>
 
     <_NativeExeExt Condition="'$(_NativeRuntime)' == 'win-x64'">.exe</_NativeExeExt>
@@ -65,6 +70,15 @@
     <_NativeExeExt Condition="'$(_NativeRuntime)' == 'linux-x64'"></_NativeExeExt>
     -->
   </PropertyGroup>
+  
+  <Target Name="ValidateOS" BeforeTargets="CoreCompile">
+        <Error
+                Text="The osx-arm64 target is not yet supported, please use osx-x64 for now. (dotnet publish Rysy -c 'Release' -f net10.0 -r osx-x64 --no-self-contained)"
+                Condition="'$(_IsMacOS_arm64)' == 'true'" />
+       <Error
+              Text="This target is not supported. Available: win-x64, linux-x64, osx-x64."
+              Condition="'$(_NativeRuntime)' == ''" />
+  </Target>
 
   <ItemGroup Condition="'$(FNA)' != ''">
       <!-- Version of FNA.dll taken from the Everest repo to match in-game FNA -->
@@ -117,25 +131,19 @@
     <!-- 
     Macos, untested
     -->
-    <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libMoltenVK.$(_NativeLibExt)">
+    <Content Condition="'$(_IsMacOS)' == 'true'" Include="runtimes\$(_NativeRuntime)\native\libMoltenVK.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
-    <Content Condition="'$(_NativeRuntime)' == 'osx'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
+    <Content Condition="'$(_IsMacOS)' == 'true'" Include="runtimes\$(_NativeRuntime)\native\libvulkan.1.$(_NativeLibExt)">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
       <Pack>false</Pack>
     </Content>
   </ItemGroup>
-  <ItemGroup Condition="'$(FNA)' == ''">
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
-  </ItemGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
-    <DefineConstants>$(DefineConstants);DirectX</DefineConstants>
-  </PropertyGroup>
 
   <!-- Set up a Piton Apphost if wanted -->
   <PropertyGroup>
