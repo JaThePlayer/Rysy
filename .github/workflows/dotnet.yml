@@ -31,7 +31,7 @@ jobs:
         dotnet pack
     
     - name: Download zsign
-      working-directory: ~
+      working-directory: '~'
       run: |
         sudo apt-get install -y git g++ pkg-config libssl-dev
         git clone https://github.com/zhlynn/zsign.git
@@ -46,7 +46,6 @@ jobs:
         for DIR in win-x64 linux-x64 osx-x64 osx-arm64
         do
           cd $DIR/publish
-          ls
           rm -r -f cs
           rm -r -f de
           rm -r -f es
