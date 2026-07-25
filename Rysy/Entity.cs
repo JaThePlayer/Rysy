@@ -682,6 +682,11 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     public virtual void OnRemoved() {
         
     }
+    
+    public bool CanAddAnotherNode() {
+        var maxNodes = NodeLimits.End;
+        return maxNodes.IsFromEnd || (Nodes?.Count ?? 0) != maxNodes.Value;
+    }
 
     /// <summary>
     /// Gets fired whenever the EntityData for this entity gets changed in any way.

@@ -443,9 +443,10 @@ public record class EntityPlacementHandler(SelectionLayer Layer) : IPlacementHan
             }
 
             // todo: hacky!!!
+            var oldSelected = entity.Selected;
             entity.Selected = true;
             var sprites = entity.GetSpritesWithNodes().OrderByDescending(x => x.Depth).ToList();
-            entity.Selected = false;
+            entity.Selected = oldSelected;
 
             return sprites;
         }

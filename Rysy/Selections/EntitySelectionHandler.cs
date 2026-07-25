@@ -12,7 +12,12 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
         Entity = entity;
     }
 
+    public void OnSelected() {
+        Entity.Selected = true;
+    }
+
     public void OnDeselected() {
+        Entity.Selected = false;
     }
 
     public Entity Entity {

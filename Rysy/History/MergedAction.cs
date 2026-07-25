@@ -11,7 +11,35 @@ public record class MergedAction : IHistoryAction, ISerializableAction {
     }
     
     public MergedAction(params IEnumerable<IHistoryAction?> actions) {
-        Actions = new(actions.Where(act => act is not null)!);
+        List<IMergeableHistoryAction> mergeable = [];
+        Actions = [];
+        foreach (var action in actions) {
+            if (action is null)
+                continue;
+
+            if (action is IMergeableHistoryAction mergeableAction) {
+                var didMerge = false;
+                foreach (var other in mergeable) {
+                    if (other.TryMergeWith(mergeableAction) is { } merged) {
+                        Actions[Actions.IndexOf(other)] = merged;
+                        if (merged is IMergeableHistoryAction mergedMergeableAction) {
+                            mergeable[mergeable.IndexOf(other)] = mergedMergeableAction;
+                        } else {
+                            mergeable.Remove(other);
+                        }
+                        didMerge = true;
+                        break;
+                    }
+                }
+                
+                if (didMerge)
+                    continue;
+                
+                mergeable.Add(mergeableAction);
+            }
+            
+            Actions.Add(action);
+        }
     }
 
     private bool[] _applied;

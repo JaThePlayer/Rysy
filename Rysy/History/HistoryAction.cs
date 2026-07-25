@@ -9,6 +9,10 @@ public interface IHistoryAction {
     public static IHistoryAction Empty => new MergedAction(Array.Empty<IHistoryAction>());
 }
 
+public interface IMergeableHistoryAction : IHistoryAction {
+    public IHistoryAction? TryMergeWith(IMergeableHistoryAction other);
+}
+
 public interface ISerializableAction : IHistoryAction {
     public Dictionary<string, object> GetSerializableData();
     public static abstract ISerializableAction FromSerializable(Map map, Dictionary<string, object> data);

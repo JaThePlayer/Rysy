@@ -120,8 +120,7 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     }
 
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
-        var maxNodes = Entity.NodeLimits.End;
-        if (!maxNodes.IsFromEnd && (Entity.Nodes?.Count ?? 0) == maxNodes.Value)
+        if (!Entity.CanAddAnotherNode())
             return null;
 
         var node = new Node(pos ?? (Node.Pos + new Vector2(16f, 0)));
@@ -171,7 +170,13 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     }
     
     public IHistoryAction AltDrag(Room room, Vector2 offset) {
-        return IHistoryAction.Empty;
+        if (Entity.Selected)
+            return IHistoryAction.Empty;
+        
+        if (!Entity.CanAddAnotherNode())
+            return IHistoryAction.Empty;
+        
+        return new AltDragNodeAction(Entity, [NodeIdx], offset);
     }
 
     public IHistoryAction? TryPreciseRotate(float angle, Vector2 origin) {
