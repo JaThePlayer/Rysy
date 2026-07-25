@@ -31,7 +31,6 @@ jobs:
         dotnet pack
     
     - name: Download zsign
-      working-directory: '~'
       run: |
         sudo apt-get install -y git g++ pkg-config libssl-dev
         git clone https://github.com/zhlynn/zsign.git
@@ -63,7 +62,7 @@ jobs:
         done
 
         cd osx-arm64/publish
-        ~/zsign/bin/zsign -a Rysy
+        $GITHUB_WORKSPACE/zsign/bin/zsign -a Rysy
         chmod +x Rysy
         
     - name: Upload Windows artifact
