@@ -155,6 +155,8 @@ public interface ISelectionHandler {
 
     public bool ResizableX { get; }
     public bool ResizableY { get; }
+
+    public IEnumerable<object> GetParentStorageCollection();
 }
 
 public interface ISelectionFlipHandler {

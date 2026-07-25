@@ -36,6 +36,48 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private List<Selection>? _currentSelections;
     private List<Selection> _selectionsToHighlight = new();
 
+    private void SetSelections(IEnumerable<Selection>? newSelections) {
+        if (_currentSelections is { }) {
+            foreach (var selection in _currentSelections) {
+                selection.Handler.OnDeselected();
+            }
+        }
+
+        /*
+        var finalSelections = newSelections?
+            .DistinctBy(x => x.Handler.Parent)
+            .OrderBy(x => x.Handler.Layer.Name)
+            .ThenBy(x => x.Handler.GetIndexOfParentInItsList())
+            .ToList() ?? [];
+        */
+        List<Selection> finalSelections = [];
+        foreach (var selectionGroup in (newSelections ?? [])
+                 .DistinctBy(x => x.Handler.Parent)
+                 .GroupBy(x => (x.Handler.GetParentStorageCollection(), x.Handler.Layer))
+                 .OrderBy(x => x.Key.Layer.Name)
+                 ) {
+            var collection = selectionGroup.Key.Item1;
+            Dictionary<object, int> indexes = [];
+            var i = 0;
+            foreach (var o in collection) {
+                indexes[o] = i++;
+            }
+            
+            finalSelections.AddRange(selectionGroup.OrderBy(x => indexes.GetValueOrDefault(x.Handler.Parent, -1)));
+        }
+        
+        // clear the old list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd.
+        // Make sure to do this only after materializing the newSelections enumerable, as it might refer to `_currentSelections`!
+        _currentSelections?.Clear();
+        _currentSelections = finalSelections;
+
+        foreach (var selection in _currentSelections) {
+            selection.Handler.OnSelected();
+        }
+        
+        OnSelectionsChanged();
+    }
+
     private static int ClickInPlaceIdx;
     
     private Point? _rotationGestureStart;
@@ -97,8 +139,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private void SelectAll() {
         if (EditorState.CurrentRoom is { } room && EditorState.Map is { } map) {
-            Deselect();
-            _currentSelections = Layer?.GetSelectionsInRect(map, room, null);
+            SetSelections(Layer?.GetSelectionsInRect(map, room, null));
         }
     }
     
@@ -108,8 +149,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         
         if (EditorState.CurrentRoom is { } room) {
             var newSelections = room.GetSelectionsForSimilar(_currentSelections[0].Handler);
-            Deselect();
-            _currentSelections = newSelections;
+            SetSelections(newSelections);
         }
     }
 
@@ -172,8 +212,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         }
 
         if (selections != null) {
-            Deselect();
-            _currentSelections = selections;
+            SetSelections(selections);
         }
 
         Input.Keyboard.ConsumeKeyClick(Microsoft.Xna.Framework.Input.Keys.LeftControl);
@@ -220,7 +259,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClearColliderCachesInSelections();
             History.ApplyNewAction(actions.MergeActions());
 
-            _currentSelections = [..selections.Except(unselected).Concat(newSelections)];
+            SetSelections([..selections.Except(unselected).Concat(newSelections)]);
         }
     }
 
@@ -326,31 +365,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private void ClearColliderCachesInSelections() => _currentSelections?.ForEach(s => s.Handler.ClearCollideCache());
 
     public void Deselect() {
-        if (_currentSelections is not { Count: > 0 })
-            return;
-
-        foreach (var selection in _currentSelections) {
-            selection.Handler.OnDeselected();
-        }
-
-        // clear the list so that the list captured into the history action lambda no longer contains references to the selections, allowing them to get GC'd
-        _currentSelections?.Clear();
-        _currentSelections = null;
-
-        OnSelectionsChanged();
+        SetSelections(null);
     }
 
     public void Deselect(ISelectionHandler handler) {
         if (_currentSelections is null)
             return;
 
-        var selection = _currentSelections.Find(s => s.Handler == handler);
-        if (selection is { }) {
-            _currentSelections.Remove(selection);
-            handler.OnDeselected();
-
-            OnSelectionsChanged();
-        }
+        SetSelections(_currentSelections.Where(s => s.Handler != handler));
     }
 
     public override IReadOnlyList<IEditorLayer> ValidLayers /*{ get; } = [
@@ -913,22 +935,12 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClickInPlaceIdx = 0;
         }
 
-        // Deselect all current selections, we will call OnSelected on all remaining ones at the end anyway
-        if (_currentSelections is { })
-            foreach (var selection in _currentSelections) {
-                selection.Handler.OnDeselected();
-            }
-
         if (Input.Keyboard.Shift() && _currentSelections is { }) {
             // Add new selections
-
             foreach (var h in _currentSelections.SelectWhereNotNull(s => s.Handler as TileSelectionHandler))
                 h.MergeWith(rect, exclude: false);
 
-            _currentSelections = _currentSelections
-                .Concat(finalSelections)
-                .DistinctBy(x => x.Handler.Parent)
-                .ToList();
+            SetSelections(_currentSelections.Concat(finalSelections));
         } else if (Input.Keyboard.Ctrl() && _currentSelections is { }) {
             // Remove existing selections
             var newSelections = _currentSelections.Except(finalSelections, new HandlerParentEqualityComparer());
@@ -942,19 +954,10 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                 }
             }
 
-            _currentSelections = newSelections.DistinctBy(x => x.Handler.Parent).ToList();
+            SetSelections(newSelections);
         } else {
-            // Set selections
-            Deselect();
-            _currentSelections = finalSelections;
+            SetSelections(finalSelections);
         }
-
-        // Tell the handlers that they're selected
-        foreach (var selection in _currentSelections) {
-            selection.Handler.OnSelected();
-        }
-
-        OnSelectionsChanged();
     }
 
     private void OnSelectionsChanged() {
@@ -965,13 +968,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     }
 
     public void AddSelection(Selection selection) {
-        _currentSelections = _currentSelections?
-        .Append(selection)
-        .DistinctBy(x => x.Handler.Parent)
-        .ToList() ?? [ selection ];
-
-        selection.Handler.OnSelected();
-        OnSelectionsChanged();
+        SetSelections(_currentSelections?.Append(selection) ?? [ selection ]);
     }
 
     private struct HandlerParentEqualityComparer : IEqualityComparer<Selection> {

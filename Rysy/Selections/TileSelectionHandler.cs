@@ -15,6 +15,10 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public bool ResizableX => false;
 
     public bool ResizableY => false;
+    
+    public IEnumerable<object> GetParentStorageCollection() {
+        return [ Grid ];
+    }
 
     public TileSelectionHandler(Tilegrid grid, Rectangle rectPixels, IEditorLayer layer) {
         (Grid, Rect) = (grid, rectPixels);

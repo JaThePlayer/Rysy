@@ -287,6 +287,10 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
             public bool ResizableX => false;
 
             public bool ResizableY => false;
+            
+            public IEnumerable<object> GetParentStorageCollection() {
+                return [Parent];
+            }
         }
     }
 

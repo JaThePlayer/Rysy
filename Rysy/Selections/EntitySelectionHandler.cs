@@ -93,6 +93,10 @@ public sealed class EntitySelectionHandler : ISelectionHandler, ISelectionFlipHa
     public bool ResizableX => Entity.ResizableX;
 
     public bool ResizableY => Entity.ResizableY;
+    
+    public IEnumerable<object> GetParentStorageCollection() {
+        return Entity.GetRoomList();
+    }
 
     public void ClearCollideCache() {
         _collider = null;

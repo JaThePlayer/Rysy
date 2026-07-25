@@ -876,6 +876,10 @@ public sealed class RoomSelectionHandler : ISelectionHandler {
     public bool ResizableX => true;
 
     public bool ResizableY => true;
+    
+    public IEnumerable<object> GetParentStorageCollection() {
+        return Room.Map.Rooms;
+    }
 
     public void ClearCollideCache() {
     }

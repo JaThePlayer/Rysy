@@ -114,6 +114,10 @@ sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseR
     public bool ResizableX => false;
 
     public bool ResizableY => false;
+    
+    public IEnumerable<object> GetParentStorageCollection() {
+        return Entity.Nodes;
+    }
 
     public (IHistoryAction, ISelectionHandler)? TryAddNode(Vector2? pos) {
         var maxNodes = Entity.NodeLimits.End;
