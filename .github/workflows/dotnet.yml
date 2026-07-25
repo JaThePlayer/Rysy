@@ -29,6 +29,14 @@ jobs:
         dotnet publish Rysy -c "Release" -f net10.0 -r osx-arm64 --no-self-contained
         dotnet publish Rysy.InteropMod -c Release
         dotnet pack
+    
+    - name: Download zsign
+      working-directory: ~
+      run: |
+        sudo apt-get install -y git g++ pkg-config libssl-dev
+        git clone https://github.com/zhlynn/zsign.git
+        cd zsign/build/linux
+        make clean && make
       
     - name: Create release folders
       working-directory: ./Rysy/bin/Release/net10.0
@@ -54,7 +62,10 @@ jobs:
           rm -r -f zh-Hant
           cd ../..
         done
-        
+
+        cd osx-arm64/publish
+        ~/zsign/bin/zsign -a Rysy
+        chmod +x Rysy
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
