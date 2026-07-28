@@ -875,11 +875,12 @@ public static class ImGuiManager {
             } catch (Exception ex) {
                 if (!widgetData.CrashLogged) {
                     widgetData.CrashLogged = true;
+                    widgetDataTimestamped.Value = widgetData;
                     Logger.Error("ImGuiManager.XnaWidget", ex, $"Failed to render XnaWidget '{id}'");
                 }
             }
 
-            Gfx.EndBatch();
+            Gfx.TryEndBatch();
             g.SetRenderTarget(null);
         }
     }

@@ -14,6 +14,10 @@ public sealed class Timestamped<T>(T value) {
             LastAccess = Stopwatch.GetTimestamp();
             return field;
         }
+        set {
+            LastAccess = Stopwatch.GetTimestamp();
+            field = value;
+        }
     } = value;
     
     /// <summary>

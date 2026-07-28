@@ -232,6 +232,18 @@ public static class Gfx {
         }
         return null;
     }
+    
+    /// <summary>
+    /// Ends the sprite batch, returning the old state.
+    /// If the batch wasn't already started, returns null.
+    /// </summary>
+    public static SpriteBatchState? TryEndBatch() {
+        try {
+            return EndBatch();
+        } catch {
+            return null;
+        }
+    }
 
     public static void DrawVertices<T>(Matrix matrix, T[] vertices, int vertexCount, BasicEffect? effect = null, BlendState? blendState = null, RasterizerState? rasterizerState = null) where T : struct, IVertexType {
         effect ??= BasicEffect;
