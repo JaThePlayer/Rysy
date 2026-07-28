@@ -239,7 +239,8 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
             cloud.Update(Scape.Lightning, ctx.Animate ? Time.Delta : 0f, Random.Shared);
             _colors[i] = cloud.CalculateColor();
         }
-        colorBuffer.Target.SetData(_colors);
+        if (_colors.Length > 0)
+            colorBuffer.Target.SetData(_colors);
         
         parameters["color_buffer_size"].SetValue(colorBuffer.Target.Width);
         parameters["color_texture"].SetValue(colorBuffer.Target);
