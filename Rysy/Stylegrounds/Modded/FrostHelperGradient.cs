@@ -31,7 +31,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
     public static FieldList GetFields() => new(new {
         gradient = new LinearGradientField(DefaultGradient).WithSeparator(';'),
         direction = LinearGradient.Directions.Vertical,
-        blendMode = Fields.Dropdown("alphablend", ["alphablend", "additive", "subtract", "reversesubtract", "multiply"]),
+        blendMode = Fields.Dropdown("alphablend", Parallax.BlendModes.Select(kv => kv.Key).ToArray()),
         loopX = false,
         loopY = false,
     });
@@ -64,41 +64,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
         _cachedPreviewSprite = null;
     }
 
-    private static BlendState ParseBlendMode(string mode) => mode switch {
-        "alphablend" => BlendState.AlphaBlend,
-        "additive" => BlendState.Additive,
-        "subtract" => GfxSubtract,
-        "reversesubtract" => EeveeHelperReverseSubtract,
-        "multiply" => EeveeHelperMultiply,
-        _ => BlendState.AlphaBlend
-    };
-    
-    private static readonly BlendState EeveeHelperReverseSubtract = new()
-    {
-        ColorSourceBlend = Blend.One,
-        ColorDestinationBlend = Blend.One,
-        ColorBlendFunction = BlendFunction.Subtract,
-        AlphaSourceBlend = Blend.One,
-        AlphaDestinationBlend = Blend.One,
-        AlphaBlendFunction = BlendFunction.Add
-    };
-
-    private static readonly BlendState EeveeHelperMultiply = new()
-    {
-        ColorBlendFunction = BlendFunction.Add,
-        ColorSourceBlend = Blend.DestinationColor,
-        ColorDestinationBlend = Blend.Zero
-    };
-
-    private static readonly BlendState GfxSubtract = new()
-    {
-        ColorSourceBlend = Blend.One,
-        ColorDestinationBlend = Blend.One,
-        ColorBlendFunction = BlendFunction.ReverseSubtract,
-        AlphaSourceBlend = Blend.One,
-        AlphaDestinationBlend = Blend.One,
-        AlphaBlendFunction = BlendFunction.Add
-    };
+    private static BlendState ParseBlendMode(string mode) => Parallax.BlendModes.GetValueOrDefault(mode, BlendState.AlphaBlend);
 }
 
 sealed record LinearGradientField : ListField, IFieldConvertible<LinearGradient> {

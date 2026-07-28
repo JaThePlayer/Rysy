@@ -191,9 +191,40 @@ public sealed partial class Parallax : Style, IPlaceable {
         BlendState = Blend,
     };
 
+    private static readonly BlendState EeveeHelperMultiplyBlend = new()
+    {
+        ColorBlendFunction = BlendFunction.Add,
+        ColorSourceBlend = Microsoft.Xna.Framework.Graphics.Blend.DestinationColor,
+        ColorDestinationBlend = Microsoft.Xna.Framework.Graphics.Blend.Zero
+    };
+
+    private static readonly BlendState EeveeHelperReverseSubtractBlend = new()
+    {
+        ColorSourceBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        ColorDestinationBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        ColorBlendFunction = BlendFunction.Subtract,
+        AlphaSourceBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        AlphaDestinationBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        AlphaBlendFunction = BlendFunction.Add
+    };
+    
+    private static readonly BlendState EeveeHelperSubtractBlend = new()
+    {
+        ColorSourceBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        ColorDestinationBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        ColorBlendFunction = BlendFunction.ReverseSubtract,
+        AlphaSourceBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        AlphaDestinationBlend = Microsoft.Xna.Framework.Graphics.Blend.One,
+        AlphaBlendFunction = BlendFunction.Add
+    };
+    
     private static readonly ListenableDictionary<string, BlendState> BlendModesMutable = new(StringComparer.OrdinalIgnoreCase) {
         ["alphablend"] = BlendState.AlphaBlend,
         ["additive"] = BlendState.Additive,
+        // Eevee Helper
+        ["multiply"] = EeveeHelperMultiplyBlend,
+        ["subtract"] = EeveeHelperSubtractBlend,
+        ["reversesubtract"] = EeveeHelperReverseSubtractBlend,
     };
 
     public static ReadOnlyListenableDictionary<string, BlendState> BlendModes => BlendModesMutable;
