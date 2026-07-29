@@ -34,7 +34,8 @@ public sealed partial class Parallax : Style, IPlaceable {
 
     public Vector2 Speed => new(_speedx, _speedy);
 
-    public BlendState Blend => BlendModes.TryGetValue(_blendmodeStr ??= "alphablend", out var state) ? state : BlendState.AlphaBlend;
+    public BlendState Blend => BlendModes.TryGetValue(_blendmodeStr ??= "alphablend", out var state)
+        ? state.state : BlendState.AlphaBlend;
 
     [Bind("fadex")]
     private ReadOnlyArray<Fade.Region> _fadeXRegions;
@@ -72,7 +73,7 @@ public sealed partial class Parallax : Style, IPlaceable {
 
                 return true;
             }),
-        blendmode = Fields.Dropdown("alphablend", BlendModes.Select(kv => kv.Key).ToList(), editable: true),
+        blendmode = Fields.BlendModeDropdown("alphablend").AllowEdits(),
         alpha = 1f,
         color = Fields.Rgb(Color.White).AllowNull(),
         scrollx = 0f,
@@ -184,6 +185,9 @@ public sealed partial class Parallax : Style, IPlaceable {
         
         return baseSprite.CreateRepeating(bounds, Color * fade);
     }
+    
+    public override IReadOnlyList<string>? AssociatedMods
+        => BlendModes.TryGetValue(_blendmodeStr ?? "alphablend", out var known) ? known.searchable.Mods : base.AssociatedMods;
 
     public override SpriteBatchState? GetSpriteBatchState() => Gfx.GetCurrentBatchState() with 
     { 
@@ -218,18 +222,18 @@ public sealed partial class Parallax : Style, IPlaceable {
         AlphaBlendFunction = BlendFunction.Add
     };
     
-    private static readonly ListenableDictionary<string, BlendState> BlendModesMutable = new(StringComparer.OrdinalIgnoreCase) {
-        ["alphablend"] = BlendState.AlphaBlend,
-        ["additive"] = BlendState.Additive,
+    private static readonly ListenableDictionary<string, (BlendState state, Searchable searchable)> BlendModesMutable = new(StringComparer.OrdinalIgnoreCase) {
+        ["alphablend"] = (BlendState.AlphaBlend, new Searchable("alphablend".TranslateOrHumanize("rysy.blendmodes"))),
+        ["additive"] = (BlendState.Additive, new Searchable("additive".TranslateOrHumanize("rysy.blendmodes"))),
         // Eevee Helper
-        ["multiply"] = EeveeHelperMultiplyBlend,
-        ["subtract"] = EeveeHelperSubtractBlend,
-        ["reversesubtract"] = EeveeHelperReverseSubtractBlend,
+        ["multiply"] = (EeveeHelperMultiplyBlend, new Searchable("multiply".TranslateOrHumanize("rysy.blendmodes"), [ "EeveeHelper" ], null)),
+        ["subtract"] = (EeveeHelperSubtractBlend, new Searchable("subtract".TranslateOrHumanize("rysy.blendmodes"), [ "EeveeHelper" ], null)),
+        ["reversesubtract"] = (EeveeHelperReverseSubtractBlend, new Searchable("reversesubtract".TranslateOrHumanize("rysy.blendmodes"), [ "EeveeHelper" ], null)),
     };
 
-    public static ReadOnlyListenableDictionary<string, BlendState> BlendModes => BlendModesMutable;
+    public static ReadOnlyListenableDictionary<string, (BlendState state, Searchable searchable)> BlendModes => BlendModesMutable;
 
-    public static void RegisterBlendMode(string name, BlendState state) {
-        BlendModesMutable[name] = state;
+    public static void RegisterBlendMode(string name, Searchable searchable, BlendState state) {
+        BlendModesMutable[name] = (state, searchable);
     }
 }

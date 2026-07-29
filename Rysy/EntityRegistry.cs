@@ -201,8 +201,8 @@ public static class EntityRegistry {
                    ?? [DependencyChecker.UnknownModName];
     }
 
-    public static List<string> GetAssociatedMods(Style style) {
-        List<string>? ret;
+    public static IReadOnlyList<string> GetAssociatedMods(Style style) {
+        IReadOnlyList<string>? ret;
         try {
             ret = style.AssociatedMods;
         } catch (Exception e) {

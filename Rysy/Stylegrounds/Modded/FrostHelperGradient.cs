@@ -27,11 +27,13 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
     // LinearGradientSprites are expensive to create, and GetSprites gets called each frame the styleground is visible.
     private LinearGradientSprite? _cachedSprite;
     private LinearGradientSprite? _cachedPreviewSprite;
+
+    private string BlendMode => this.Attr("blendMode", "alphablend");
     
     public static FieldList GetFields() => new(new {
         gradient = new LinearGradientField(DefaultGradient).WithSeparator(';'),
         direction = LinearGradient.Directions.Vertical,
-        blendMode = Fields.Dropdown("alphablend", Parallax.BlendModes.Select(kv => kv.Key).ToArray()),
+        blendMode = Fields.BlendModeDropdown("alphablend"),
         loopX = false,
         loopY = false,
     });
@@ -55,7 +57,7 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
 
     public override SpriteBatchState? GetSpriteBatchState() 
         => Gfx.GetCurrentBatchState() with {
-            BlendState = ParseBlendMode(this.Attr("blendMode", "alphablend")),
+            BlendState = ParseBlendMode(BlendMode),
         };
 
     public override void OnChanged(EntityDataChangeCtx ctx) {
@@ -64,7 +66,11 @@ internal sealed class FrostHelperGradient : Style, IPlaceable {
         _cachedPreviewSprite = null;
     }
 
-    private static BlendState ParseBlendMode(string mode) => Parallax.BlendModes.GetValueOrDefault(mode, BlendState.AlphaBlend);
+    public override IReadOnlyList<string>? AssociatedMods
+        => Parallax.BlendModes.TryGetValue(BlendMode, out var known) ? known.searchable.Mods : base.AssociatedMods;
+
+    private static BlendState ParseBlendMode(string mode)
+        => Parallax.BlendModes.TryGetValue(mode, out var known) ? known.state : BlendState.AlphaBlend;
 }
 
 sealed record LinearGradientField : ListField, IFieldConvertible<LinearGradient> {

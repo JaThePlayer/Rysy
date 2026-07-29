@@ -81,7 +81,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
     public virtual bool CanBeInForeground => true;
 
     [JsonIgnore]
-    public virtual List<string>? AssociatedMods => null;
+    public virtual IReadOnlyList<string>? AssociatedMods => null;
 
     /// <summary>
     /// Gets the sprites needed to render this style in the styleground window.

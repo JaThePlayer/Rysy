@@ -6,6 +6,7 @@ using Rysy.Helpers;
 using Rysy.Layers;
 using Rysy.LuaSupport;
 using Rysy.Mods;
+using Rysy.Stylegrounds;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -67,6 +68,17 @@ public static partial class Fields {
         Editable = editable,
     }.SetValues(values.ToDictionary(k => k, k => new Searchable(toString is { } ? toString(k) : k.ToString() ?? "")));
 
+    public static DropdownField<T> Dropdown<T>(T def, IReadOnlyList<T> values, Func<T, Searchable>? toString, bool editable = false)
+        where T : notnull 
+        => new DropdownField<T> {
+            Default = def,
+            Editable = editable,
+        }.SetValues(values.ToDictionary(k => k, k => toString is not null ? toString(k) : new Searchable(k.ToStringInvariant())));
+
+    public static DropdownField<string> BlendModeDropdown(string def) => Dropdown(def,
+        Parallax.BlendModes.Select(kv => kv.Key).ToArray(),
+        toString: x => Parallax.BlendModes.TryGetValue(x, out var known) ? known.searchable : new Searchable(x));
+    
     public static DropdownField<string> TileDropdown(char def, TileEditorLayer layer, bool addDontCopyOption = false,
         bool addWildcardOption = false)
         => TileDropdown(def, layer.TileLayer is TileLayer.Bg, addDontCopyOption, addWildcardOption);

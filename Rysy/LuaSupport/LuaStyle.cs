@@ -5,7 +5,7 @@ namespace Rysy.LuaSupport;
 internal class LuaStyle : Style {
     internal LonnStylePlugin Plugin { get; set; }
     
-    public override List<string>? AssociatedMods
+    public override IReadOnlyList<string>? AssociatedMods
         => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
     public override bool CanBeInBackground => Plugin?.GetCanBackground?.Invoke(this) ?? base.CanBeInBackground;
