@@ -33,7 +33,7 @@ public record CharField : Field, IFieldConvertible<char> {
 
     protected override object? DoRenderGui(string fieldName, object value) {
         var b = Convert.ToChar(value, CultureInfo.InvariantCulture).ToString();
-        if (ImGui.InputText(fieldName, ref b, 2).WithTooltip(Tooltip))
+        if (ImGui.InputText(fieldName, ref b, 3).WithTooltip(Tooltip))
             return b.Length > 0 ? b[0] : '\0';
 
         return null;
