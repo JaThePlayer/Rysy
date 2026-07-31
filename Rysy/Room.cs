@@ -438,6 +438,7 @@ public sealed class Room : IPackable, ILuaWrapper {
         gd.SetRenderTargets(oldTargets);
 
         ClearRenderCache();
+        _fullRenderCanvas?.Dispose();
         _fullRenderCanvas = canvas;
     }
 

@@ -143,6 +143,10 @@ public class VirtTexture : IDisposable {
         OutlineTexture = null;
     }
 
+    ~VirtTexture() {
+        Dispose();
+    }
+
     protected virtual bool TryPreloadClipRect() { return false; }
 
 

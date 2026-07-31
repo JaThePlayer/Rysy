@@ -43,7 +43,11 @@ public static class BackgroundTaskHelper {
                     onElapsed = Timers[interval].OnElapsed;
                 }
 
-                onElapsed();
+                try {
+                    onElapsed();
+                } catch (Exception ex) {
+                    Logger.Error("BackgroundTaskHelper", ex, "Crash inside a background task");
+                }
             }
         }, tokenSource.Token);
 
