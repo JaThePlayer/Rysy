@@ -47,11 +47,7 @@ public class TypeTrackedList<T> : IListenableList<T> {
     /// <typeparam name="TTarget">The target type, can also be an interface.</typeparam>
     /// <returns>List of all elements castable to the target type.</returns>
     public IReadOnlyList<TTarget> OfType<TTarget>() {
-        if (_byType.TryGetValue(typeof(TTarget), out var list)) {
-            return (IReadOnlyList<TTarget>) list;
-        }
-
-        return [];
+        return OfType<TTarget>(typeof(TTarget));
     }
     
     /// <summary>
@@ -64,7 +60,16 @@ public class TypeTrackedList<T> : IListenableList<T> {
             return (IReadOnlyList<TTarget>) list;
         }
 
-        return [];
+        // We need to start tracking this type.
+        list = TrackerHelper.CreateListOfType(targetType);
+        _byType[targetType] = list;
+        foreach (var el in Inner) {
+            if (el is not null && el.GetType().IsAssignableTo(targetType)) {
+                list.Add(el);
+            }
+        }
+
+        return (IReadOnlyList<TTarget>) list;
     }
     
     /// <summary>
@@ -83,10 +88,11 @@ public class TypeTrackedList<T> : IListenableList<T> {
     public bool IsReadOnly => false;
 
     private void TrackAsType([DisallowNull] T item, Type t) {
+        // If we're already tracking this type, add it to the list.
+        // Otherwise, we'll only start tracking this type if someone requests it.
+        // This will incur a one-time penalty, but saves a lot of memory.
         if (_byType.TryGetValue(t, out var l))
             l.Add(item);
-        else
-            _byType.Add(t, TrackerHelper.CreateListOfType(t, item));
     }
 
     private void TrackNewItem(T item) {
