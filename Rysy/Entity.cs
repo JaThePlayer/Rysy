@@ -1191,12 +1191,15 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
     public object this[string key] {
         get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
         set {
-            bool edited;
+            bool edited = false;
             if (value is null) {
                 edited = Inner.Remove(key);
             } else {
-                Inner[key] = value;
-                edited = true;
+                ref var existing = ref CollectionsMarshal.GetValueRefOrAddDefault(Inner, key, out var exists);
+                if (!exists || !value.Equals(existing)) {
+                    existing = value;
+                    edited = true;
+                }
             }
 
             if (edited) {
