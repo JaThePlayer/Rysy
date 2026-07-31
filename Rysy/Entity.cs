@@ -1054,7 +1054,13 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
         var i = 1;
         foreach (var n in Nodes) {
             lua.PushInteger(i);
-            lua.Push(n);
+            
+            lua.CreateTable(0, 2);
+            var nodePos = lua.GetTop();
+            lua.Push(n.X);
+            lua.SetField(nodePos, "x");
+            lua.Push(n.Y);
+            lua.SetField(nodePos, "y");
             lua.SetTable(nodesPos);
             i++;
         }
@@ -1197,7 +1203,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
             } else {
                 ref var existing = ref CollectionsMarshal.GetValueRefOrAddDefault(Inner, key, out var exists);
                 if (!exists || !value.Equals(existing)) {
-                    existing = value;
+                    existing = value;// = InternHelper.TryIntern(value);
                     edited = true;
                 }
             }
