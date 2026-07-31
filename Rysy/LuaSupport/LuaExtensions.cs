@@ -676,7 +676,7 @@ public static partial class LuaExt {
                 }
 
                 var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs, internKeys);
-                dict[key] = internKeys && value is string valueStr ? string.Intern(valueStr) : value;
+                dict[key] = internKeys ? InternHelper.TryIntern(value) : value;
 
                 next:
                 // pop the value, keeping the key
