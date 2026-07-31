@@ -808,7 +808,7 @@ public static partial class LuaExt {
                 LuaType.Nil or LuaType.None => null!,
                 LuaType.Boolean => lua.ToBoolean(index),
                 LuaType.Number => (float)lua.ToNumber(index),
-                LuaType.String => lua.FastToString(index, false),
+                LuaType.String => internKeys ? string.Intern(lua.FastToString(index, false)) : lua.FastToString(index, false),
                 LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(lua, index) : lua.ToString(index),
                 LuaType.Table => depth > 10 ? "table" : ToListOrDict(lua, index, depth: depth + 1, makeLuaFuncRefs, internKeys),//"table",
                 LuaType.UserData when lua.IsWrapper(index) => lua.UnboxWrapper(index), 
