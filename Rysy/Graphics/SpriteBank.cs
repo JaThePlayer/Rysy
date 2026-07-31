@@ -82,7 +82,7 @@ public class SpriteBank {
                         if (inner.Attributes["id"] is { } idXml) {
                             var pathXml = inner.Attributes["path"];
 
-                            spr.Animations[idXml.Value] = new() {
+                            spr.Animations[string.Intern(idXml.Value)] = new() {
                                 Path = spr.Path + pathXml?.Value ?? "",
                                 FirstFrame = inner.Attributes["frames"] is { } framesXml ? int.Parse(framesXml.Value.Split('-', '*', ',')[0], CultureInfo.InvariantCulture) : 0,
                             };

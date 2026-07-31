@@ -657,7 +657,7 @@ public static partial class LuaExt {
         /// Converts a lua table at index <paramref name="index"/> on the stack into a C# dictionary
         /// </summary>
         public Dictionary<string, object> TableToDictionary(int index, HashSet<string>? keyBlacklist = null, 
-            int depth = 0, bool makeLuaFuncRefs = false) {
+            int depth = 0, bool makeLuaFuncRefs = false, bool internKeys = false) {
             var dict = new Dictionary<string, object>();
             var dataStart = index;
 
@@ -671,8 +671,12 @@ public static partial class LuaExt {
                     goto next;
                 }
 
-                var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs);
-                dict[key] = value;
+                if (internKeys) {
+                    key = string.Intern(key);
+                }
+
+                var value = ToCSharp(lua, lua.GetTop(), depth, makeLuaFuncRefs, internKeys);
+                dict[key] = internKeys && value is string valueStr ? string.Intern(valueStr) : value;
 
                 next:
                 // pop the value, keeping the key
@@ -761,18 +765,18 @@ public static partial class LuaExt {
     }
 
 
-    internal static object ToListOrDict(Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false) {
+    internal static object ToListOrDict(Lua lua, int index, int depth = 0, bool makeLuaFuncRefs = false, bool internKeys = false) {
         List<object> list = new();
 
         lua.IPairs((lua, index, loc) => {
-            list.Add(ToCSharp(lua, loc, depth + 1, makeLuaFuncRefs));
+            list.Add(ToCSharp(lua, loc, depth + 1, makeLuaFuncRefs, internKeys));
         });
 
         if (list.Count > 0) {
             return list;
         }
 
-        return lua.TableToDictionary(index, depth: depth + 1, makeLuaFuncRefs: makeLuaFuncRefs);
+        return lua.TableToDictionary(index, keyBlacklist: null, depth + 1, makeLuaFuncRefs, internKeys);
     }
 
     extension(Lua lua)
@@ -799,14 +803,14 @@ public static partial class LuaExt {
             return list;
         }
 
-        public object ToCSharp(int index, int depth = 0, bool makeLuaFuncRefs = false) {
+        public object ToCSharp(int index, int depth = 0, bool makeLuaFuncRefs = false, bool internKeys = false) {
             object val = lua.Type(index) switch {
                 LuaType.Nil or LuaType.None => null!,
                 LuaType.Boolean => lua.ToBoolean(index),
                 LuaType.Number => (float)lua.ToNumber(index),
                 LuaType.String => lua.FastToString(index, false),
                 LuaType.Function => makeLuaFuncRefs ? LuaFunctionRef.MakeFrom(lua, index) : lua.ToString(index),
-                LuaType.Table => depth > 10 ? "table" : ToListOrDict(lua, index, depth: depth + 1, makeLuaFuncRefs),//"table",
+                LuaType.Table => depth > 10 ? "table" : ToListOrDict(lua, index, depth: depth + 1, makeLuaFuncRefs, internKeys),//"table",
                 LuaType.UserData when lua.IsWrapper(index) => lua.UnboxWrapper(index), 
                 _ => throw new LuaException(lua, new NotImplementedException($"Can't convert {lua.Type(index)} to C# type")),
             };

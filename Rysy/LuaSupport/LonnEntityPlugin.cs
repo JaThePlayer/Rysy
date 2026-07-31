@@ -460,7 +460,7 @@ public sealed class LonnEntityPlugin {
         switch (lua.GetTable(top, "fieldInformation"u8)) {
             case LuaType.Table:
                 var fieldInfoLoc = lua.GetTop();
-                var dict = lua.TableToDictionary(fieldInfoLoc, makeLuaFuncRefs: true);
+                var dict = lua.TableToDictionary(fieldInfoLoc, makeLuaFuncRefs: true, internKeys: true);
                 var mainPlacement = defaultPlacement ?? plugin.Placements.FirstOrDefault() ?? new();
 
                 plugin.FieldList = (e) => LonnFieldIntoToFieldList(dict, mainPlacement);
@@ -811,7 +811,7 @@ public class LonnPlacement {
         Group = lua.PeekTableStringValue(start, "ext_group"u8);
 
         if (lua.GetTable(start, "data"u8) is LuaType.Table)
-            Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist, makeLuaFuncRefs: true);
+            Data = lua.TableToDictionary(lua.GetTop(), DataKeyBlacklist, makeLuaFuncRefs: true, internKeys: true);
         // pop the "data" table
         lua.Pop(1);
         
