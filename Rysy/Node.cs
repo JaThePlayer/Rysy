@@ -41,6 +41,10 @@ public sealed class Node : IDepth, ILuaWrapper {
     }
 
     public Vector2 ToVector2() => this;
+
+    public override string ToString() {
+        return $"Rysy.Node({X}, {Y})";
+    }
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseRotationHandler {

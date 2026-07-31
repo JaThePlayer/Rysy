@@ -25,11 +25,14 @@ public class DebugInfoWindow : Window {
         ImGui.Text($"FPS: {RysyState.CurrentFps}");
 
         if (ImGui.CollapsingHeader("Memory"u8)) {
-            ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
+            ImGui.Text($"RAM: {new NumberExt.Filesize(Process.GetCurrentProcess().WorkingSet64)}");
             
             ImGui.SeparatorText("InternHelper"u8);
             RenderInternHelperInfo<int>();
             RenderInternHelperInfo<float>();
+            
+            ImGui.SeparatorText("Lua"u8);
+            ImGui.Text($"Lua Heap Size: {new NumberExt.Filesize((long)LuaCtx.LuaHeapSize)}");
         }
 
 #if !FNA

@@ -22,6 +22,16 @@ public static class LuaStateExt {
             return st;
         }
         
+        public static Lua CreateNew(bool openLibs, LuaAlloc alloc) {
+            unsafe {
+                var st = LuaImports.lua_newstate(alloc, null);
+                if (openLibs)
+                    LuaImports.luaL_openlibs(st);
+
+                return st;
+            }
+        }
+        
         public static Lua FromIntPtr(nint s) {
             return new Lua(s);
         }

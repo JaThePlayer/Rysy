@@ -13,7 +13,7 @@ using System.Text;
 namespace Rysy.LuaSupport;
 
 public class LuaCtx {
-    public Lua Lua { get; private set; } = Lua.CreateNew(openLibs: true);
+    public Lua Lua { get; private set; } = Lua.CreateNew(openLibs: true, LuaMalloc);
     
     public static bool SeleneLoaded { get; private set; }
 
@@ -726,6 +726,34 @@ public class LuaCtx {
         var orig = lua.AtPanic(AtLuaPanic);
 
         return luaCtx;
+    }
+    
+    public static ulong LuaHeapSize { get; private set; }
+
+    private static nint LuaMalloc(nint ud, nint ptr, ulong osize, ulong nsize) {
+        /*
+         * ptr, a pointer to the block being allocated/reallocated/freed;
+         * osize, the original size of the block;
+         * nsize, the new size of the block.
+         * ptr is NULL if and only if osize is zero.
+         * When nsize is zero, the allocator must return NULL;
+         * if osize is not zero, it should free the block pointed to by ptr.
+         * --- When nsize is not zero, the allocator returns NULL if and only if it cannot fill the request.
+         * When nsize is not zero and osize is zero, the allocator should behave like malloc.
+         * When nsize and osize are not zero, the allocator behaves like realloc.
+         * Lua assumes that the allocator never fails when osize >= nsize. 
+         */
+        unsafe {
+            LuaHeapSize += nsize - osize;
+            
+            if (nsize == 0) {
+                if (ptr != 0)
+                    NativeMemory.Free((void*)ptr);
+                return 0;
+            }
+        
+            return (nint)NativeMemory.Realloc((void*)ptr, (nuint)nsize);
+        }
     }
 
     private static void RegisterApiFuncs(Lua lua) {
