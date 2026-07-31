@@ -299,11 +299,11 @@ public sealed class BinaryPacker {
             string attrName = ReadLookup();
 
             attrs[attrName] = _reader.ReadByte() switch {
-                0 => reader.ReadBoolean(),
-                1 => Convert.ToInt32(reader.ReadByte()),
-                2 => Convert.ToInt32(reader.ReadInt16()),
-                3 => Convert.ToInt32(reader.ReadInt32()),
-                4 => reader.ReadSingle(),
+                0 => InternHelper.Intern(reader.ReadBoolean()),
+                1 => InternHelper.Intern(Convert.ToInt32(reader.ReadByte())),
+                2 => InternHelper.Intern(Convert.ToInt32(reader.ReadInt16())),
+                3 => InternHelper.Intern(Convert.ToInt32(reader.ReadInt32())),
+                4 => InternHelper.Intern(reader.ReadSingle()),
                 5 => ReadLookup(),
                 6 => reader.ReadString(),
                 7 => DecodeRle(),

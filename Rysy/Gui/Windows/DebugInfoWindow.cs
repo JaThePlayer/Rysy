@@ -17,11 +17,19 @@ public class DebugInfoWindow : Window {
 
     private static string HistoryFromText = "";
 
+    private void RenderInternHelperInfo<T>() where T : struct, IEquatable<T> {
+        ImGui.Text($"- {typeof(T)}: {InternHelper<T>.CachedCount}, accessed: {InternHelper<T>.AccessCount}.");
+    }
+    
     protected override void Render() {
         ImGui.Text($"FPS: {RysyState.CurrentFps}");
 
-        if (ImGui.CollapsingHeader("Memory")) {
+        if (ImGui.CollapsingHeader("Memory"u8)) {
             ImGui.Text($"RAM: {Process.GetCurrentProcess().WorkingSet64 / 1024m}KB");
+            
+            ImGui.SeparatorText("InternHelper"u8);
+            RenderInternHelperInfo<int>();
+            RenderInternHelperInfo<float>();
         }
 
 #if !FNA
