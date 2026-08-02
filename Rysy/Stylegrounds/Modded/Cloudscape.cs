@@ -246,7 +246,8 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
         parameters["color_buffer_size"].SetValue(colorBuffer.Target.Width);
         parameters["color_texture"].SetValue(colorBuffer.Target);
         
-        var translate = Scape.Offset - (camera?.ScreenToReal(Vector2.Zero).Floored() ?? new()) * Scape.Parallax;
+        var cameraZoomOutOffset = new Vector2(160f / zoom - 160f, 90f / zoom - 90f);
+        var translate = Scape.Offset - (camera?.ScreenToReal(Vector2.Zero).Floored() + cameraZoomOutOffset ?? new()) * Scape.Parallax * zoom;
         
         //Console.WriteLine((zoom, 1f/6f, zoom.AtLeast(1f / 6f)));
         parameters["offset"].SetValue(Scape.ZoomBehavior switch
