@@ -21,7 +21,7 @@ public sealed class ReplWindow : Window {
 
         ImGui.InputTextMultiline("Code", ref _newText, nuint.Max((nuint)_newText.Length + 2, 8192));
         foreach (var entry in _history.AsEnumerable().Reverse()) {
-            ImGui.Text(entry.Prompt);
+            ImGui.TextUnformatted(entry.Prompt);
             if (entry.Response is not null)
                 ImGuiManager.TextColored(entry.ResponseColor, entry.Response);
             else

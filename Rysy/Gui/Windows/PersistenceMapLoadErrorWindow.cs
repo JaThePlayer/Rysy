@@ -18,7 +18,7 @@ public class PersistenceMapLoadErrorWindow : Window {
     }
 
     protected override void Render() {
-        ImGui.Text(Text);
+        ImGui.TextUnformatted(Text);
         ImGui.TextColored(Color.Red.ToNumVec4(), Exception.ToString());
 
         var loadBackupText = "rysy.mapLoadError.loadBackup".Translate();
@@ -29,7 +29,7 @@ public class PersistenceMapLoadErrorWindow : Window {
 
             if (backup is { }) {
                 RysyEngine.Scene.AddWindow(new ScriptedWindow(loadBackupText, (w) => {
-                    ImGui.Text("rysy.mapLoadError.selectBackup".Translate());
+                    ImGui.TextUnformatted("rysy.mapLoadError.selectBackup".Translate());
 
                     ImGuiManager.Combo("", ref backup, backups,
                         toString: b => new Searchable($"{b.MapName} ({b.Time}) [{b.Filesize.Value / 1024.0:n2}kb]"));
@@ -42,7 +42,7 @@ public class PersistenceMapLoadErrorWindow : Window {
                 }, new(500, 100)));
             } else {
                 RysyEngine.Scene.AddWindow(new ScriptedWindow(loadBackupText, (w) => {
-                    ImGui.Text("rysy.mapLoadError.noBackups".Translate());
+                    ImGui.TextUnformatted("rysy.mapLoadError.noBackups".Translate());
                 }));
             }
         }

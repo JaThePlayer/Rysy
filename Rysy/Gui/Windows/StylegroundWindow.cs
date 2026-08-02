@@ -661,17 +661,17 @@ public class StylegroundWindow : Window {
                 // While it's not possible to make such a styleground in Rysy (as it will be turned into null),
                 // other map editors may allow for it.
                 ImGuiManager.PushInvalidStyle();
-                ImGui.Text("<NONE>");
+                ImGui.TextUnformatted("<NONE>");
                 ImGuiManager.PopInvalidStyle();
                 break;
             case null:
                 // The styleground doesn't define its own 'only' field, but it may be inherited from a folder
                 ImGui.BeginDisabled();
-                ImGui.Text(style.Only ?? "<NULL, how?>");
+                ImGui.TextUnformatted(style.Only ?? "<NULL, how?>");
                 ImGui.EndDisabled();
                 break;
             default:
-                ImGui.Text(only);
+                ImGui.TextUnformatted(only);
                 break;
         }
     }

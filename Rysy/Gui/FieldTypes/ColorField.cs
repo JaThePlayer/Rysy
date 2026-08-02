@@ -153,7 +153,7 @@ public sealed record ColorField : Field, ILonnField, IListFieldExtender, IFieldC
 
         var values = ctx.Values;
 
-        ImGui.Text("From:");
+        ImGui.TextUnformatted("From:");
         ImGui.PushID("_from");
         foreach (var item in values) {
             ImGui.SameLine();
@@ -164,7 +164,7 @@ public sealed record ColorField : Field, ILonnField, IListFieldExtender, IFieldC
         }
         ImGui.PopID();
 
-        ImGui.Text("To:");
+        ImGui.TextUnformatted("To:");
         ImGui.PushID("_to");
         foreach (var item in values) {
             ImGui.SameLine();

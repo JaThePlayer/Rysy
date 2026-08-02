@@ -60,7 +60,7 @@ public record struct TextEmphasis {
         if (Link is { } link) {
             if (ImGui.IsItemHovered()) {
                 ImGui.BeginTooltip();
-                ImGui.Text(link);
+                ImGui.TextUnformatted(link);
                 ImGui.EndTooltip();
             }
             if (ImGui.IsItemClicked())

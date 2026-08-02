@@ -44,7 +44,7 @@ public readonly struct Tooltip : ITooltip {
 
     public void RenderImGui() {
         if (_text is {} text)
-            ImGui.Text(text);
+            ImGui.TextUnformatted(text);
         if (_tooltip is {} tooltip)
             tooltip.RenderImGui();
     }
@@ -115,7 +115,7 @@ public sealed class TranslatedOrNullTooltip(string id, string? fallbackId) : ITo
         var text = GetRawText();
 
         if (text is { }) {
-            ImGui.Text(text);
+            ImGui.TextUnformatted(text);
         }
     }
 
@@ -137,7 +137,7 @@ public sealed class TranslatedFormattedTooltip(string id, object[] args) : ITool
         var text = GetRawText();
 
         if (text is { }) {
-            ImGui.Text(text);
+            ImGui.TextUnformatted(text);
         }
     }
 

@@ -102,7 +102,7 @@ internal static partial class ImGuiMarkdown {
                         if (codeBlock.Inline is null) {
                             if (codeBlock.Lines is { Lines: {} })
                                 foreach (var line in codeBlock.Lines.Lines) {
-                                    ImGui.Text(line.Slice.AsSpan().ToString());
+                                    ImGui.TextUnformatted(line.Slice.AsSpan().ToString());
                                     first = false;
                                 }
                             
@@ -133,7 +133,7 @@ internal static partial class ImGuiMarkdown {
         if (block.Lines is {})
             foreach (var line in block.Lines.Lines.AsSpan()
                          .SkipWhileFromEnd(l => l.ToString().IsNullOrWhitespace())) {
-                ImGui.Text(line.Slice.AsSpan().ToString());
+                ImGui.TextUnformatted(line.Slice.AsSpan().ToString());
             }
         ImGui.EndDisabled();
     }
@@ -205,7 +205,7 @@ internal static partial class ImGuiMarkdown {
                     });
                     if (ImGui.IsItemHovered()) {
                         ImGui.BeginTooltip();
-                        ImGui.Text(linkTooltip.ToString());
+                        ImGui.TextUnformatted(linkTooltip.ToString());
                         ImGui.EndTooltip();
                     }
                     renderText = false;

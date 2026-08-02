@@ -49,7 +49,7 @@ public record class TilegridField : Field {
         }
 
         ImGui.SameLine(0f, xPadding);
-        ImGui.Text(fieldName);
+        ImGui.TextUnformatted(fieldName);
         true.WithTooltip(Tooltip);
 
         if (_window is { Edited: true }) {

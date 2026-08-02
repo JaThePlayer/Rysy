@@ -47,7 +47,7 @@ public sealed class MapSizeoscopeWindow : Window {
 
         ImGui.Checkbox("Group same entities", ref _group);
         
-        ImGui.Text(Interpolator.TempU8($"{_package.Name} - {_fullSize.ToFilesize().ToString()}"));
+        ImGui.TextUnformatted(Interpolator.TempU8($"{_package.Name} - {_fullSize.ToFilesize().ToString()}"));
 
         ImGui.BeginChild("scrollbar"); // Allow for a scrollbar
         
@@ -65,9 +65,9 @@ public sealed class MapSizeoscopeWindow : Window {
 
             var open = ImGui.TreeNodeEx("String Lookup");
             ImGui.TableNextColumn();
-            ImGui.Text(_lookupSize);
+            ImGui.TextUnformatted(_lookupSize);
             ImGui.TableNextColumn();
-            ImGui.Text(_lookupSize);
+            ImGui.TextUnformatted(_lookupSize);
             
             if (open) {
                 var lookup = _packer.GetWritingLookupTable();
@@ -93,9 +93,9 @@ public sealed class MapSizeoscopeWindow : Window {
                     
                     var size = Info(str).Size.ToFilesize().ToSpanSharedU8();
                     ImGui.TableNextColumn();
-                    ImGui.Text(size);
+                    ImGui.TextUnformatted(size);
                     ImGui.TableNextColumn();
-                    ImGui.Text(size);
+                    ImGui.TextUnformatted(size);
                     ImGui.PopID();
                 }
                 
@@ -153,9 +153,9 @@ public sealed class MapSizeoscopeWindow : Window {
             children is { Length: > 0 } ? ImGuiTreeNodeFlags.None : ImGuiTreeNodeFlags.Bullet);
         
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.TotalSize.ToFilesize().ToSpanSharedU8());
+        ImGui.TextUnformatted(detailed.TotalSize.ToFilesize().ToSpanSharedU8());
         ImGui.TableNextColumn();
-        ImGui.Text(detailed.SelfSize.ToFilesize().ToSpanSharedU8());
+        ImGui.TextUnformatted(detailed.SelfSize.ToFilesize().ToSpanSharedU8());
         
         if (opened) {
             if (attributes is { }) {
@@ -163,7 +163,7 @@ public sealed class MapSizeoscopeWindow : Window {
                 foreach (var (k, v) in attributes) {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.Text(Interpolator.TempU8($"{k} = {v?.ToString() ?? "null"}"));
+                    ImGui.TextUnformatted(Interpolator.TempU8($"{k} = {v?.ToString() ?? "null"}"));
                 }
                 
                 

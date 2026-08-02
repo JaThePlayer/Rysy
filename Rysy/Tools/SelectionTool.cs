@@ -992,7 +992,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         Layer?.RenderCustomMaterialListStart();
 
-        ImGui.Text("Selections");
+        ImGui.TextUnformatted("Selections");
         if (_currentSelections is [_, ..] && ImGuiManager.TranslatedButton("rysy.createPrefab")) {
             CreatePrefab();
         }
@@ -1015,16 +1015,16 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
                 switch (selection.Handler) {
                     case EntitySelectionHandler entity:
-                        ImGui.Text(entity.Entity.Name);
+                        ImGui.TextUnformatted(entity.Entity.Name);
                         break;
                     case NodeSelectionHandler node:
-                        ImGui.Text(Interpolator.TempU8($"{node.Entity.Name}[{node.NodeIdx}]"));
+                        ImGui.TextUnformatted(Interpolator.TempU8($"{node.Entity.Name}[{node.NodeIdx}]"));
                         break;
                     case RoomSelectionHandler room:
-                        ImGui.Text(room.Room.Name);
+                        ImGui.TextUnformatted(room.Room.Name);
                         break;
                     case TileSelectionHandler tiles:
-                        ImGui.Text(tiles.Layer.LocalizedName);
+                        ImGui.TextUnformatted(tiles.Layer.LocalizedName);
                         break;
                 }
                 HighlightIfHovered(_selectionsToHighlight, selection);

@@ -61,7 +61,7 @@ internal sealed class LinkOpenConfirmationWindow : Window {
         ImGui.TextColored(textColor * 0.75f, "://");
         ImGui.SameLine(0f, 0f);
         
-        ImGui.Text(_uri.Authority);
+        ImGui.TextUnformatted(_uri.Authority);
         ImGui.SameLine(0f, 0f);
         
         ImGui.TextColored(textColor * 0.75f, _uri.PathAndQuery);

@@ -180,7 +180,7 @@ internal class DependencyCheckerDrawable(
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
-            ImGui.Text(obj.Room.Name);
+            ImGui.TextUnformatted(obj.Room.Name);
             ImGui.TableNextColumn();
 
             ImGuiManager.PushNullStyle();
@@ -219,7 +219,7 @@ internal class DependencyCheckerDrawable(
                     RenderEntityList(group);
                 }
                 if (group.Key.Type == typeof(DependencyChecker.MetadataDependency)) {
-                    ImGui.Text((group.First() as DependencyChecker.MetadataDependency)?.Value.ToString());
+                    ImGui.TextUnformatted((group.First() as DependencyChecker.MetadataDependency)?.Value.ToString());
                 }
 
                 ImGui.TreePop();

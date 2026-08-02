@@ -365,7 +365,7 @@ public static class ImGuiManager {
             : Interpolator.TempU8($"##{searchText}_{persistenceKey}"), ref search, 512);
         ImGui.PopStyleColor(1);
         ImGui.SameLine();
-        ImGui.Text(searchText);
+        ImGui.TextUnformatted(searchText);
         
         ImGui.SameLine();
         ImGui.TextDisabled("(?)"u8);
@@ -1038,7 +1038,7 @@ public static class ImGuiManager {
     }
 
     public static void TranslatedText(string id) {
-        ImGui.Text(id.Translate());
+        ImGui.TextUnformatted(id.Translate());
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
     
@@ -1130,7 +1130,7 @@ public static class ImGuiManager {
     public static void Link(string text) {
         var em = new TextEmphasis { Link = text, Underline = true };
         var ctx = em.PushToImgui();
-        ImGui.Text(text);
+        ImGui.TextUnformatted(text);
         em.PopFromImgui(ctx);
         ImGui.NewLine();
     }
@@ -1157,7 +1157,7 @@ public static class ImGuiManager {
 
     public static void Icon(ImGuiIcons icon) {
         var iconChar = (char) icon;
-        ImGui.Text(Interpolator.TempU8($"{iconChar}"));
+        ImGui.TextUnformatted(Interpolator.TempU8($"{iconChar}"));
         ImGui.SameLine();
     }
     
@@ -1247,7 +1247,7 @@ public static class ImGuiManager {
             var endPrevLine = pFont.CalcWordWrapPosition(scale, utf8Ptr, textEnd, widthLeft);
 
             if (endPrevLine == textEnd) {
-                ImGui.Text(utf8);
+                ImGui.TextUnformatted(utf8);
                 return;
             }
             ImGui.TextUnformatted(utf8Ptr, endPrevLine);

@@ -178,7 +178,7 @@ public sealed class DecalRegistryWindow : Window {
         }
 
         if (_map.Mod is not { } mod) {
-            ImGui.Text("Decal Registry can only be edited for packaged mods.");
+            ImGui.TextUnformatted("Decal Registry can only be edited for packaged mods.");
             return;
         }
 
@@ -245,7 +245,7 @@ public sealed class DecalRegistryWindow : Window {
         });
 
         ImGui.SameLine();
-        ImGui.Text(prop.Name);
+        ImGui.TextUnformatted(prop.Name);
 
         //RenderOtherTabs(style);
     }
@@ -306,7 +306,7 @@ public sealed class DecalRegistryWindow : Window {
         });
 
         ImGui.SameLine();
-        ImGui.Text(entry.Path);
+        ImGui.TextUnformatted(entry.Path);
 
         //RenderOtherTabs(style);
 

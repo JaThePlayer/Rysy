@@ -88,9 +88,9 @@ public class Searchable {
             ImGuiManager.FavoriteIcon();
             ImGui.SameLine();
             ImGui.SetCursorPosY(y);
-            ImGui.Text(TextWithMods);
+            ImGui.TextUnformatted(TextWithMods);
         } else {
-            ImGui.Text(TextWithMods);
+            ImGui.TextUnformatted(TextWithMods);
         }
 
         AfterName(depsMet);
@@ -161,7 +161,7 @@ public class Searchable {
 
                 if (!isLast) {
                     ImGui.SameLine(0f, 0f);
-                    ImGui.Text(",");
+                    ImGui.TextUnformatted(",");
                     ImGui.SameLine();
                 }
             }
@@ -326,7 +326,7 @@ public static class SearchHelper {
 
         public void RenderImGui() {
             if (LeftTrivia is not "") {
-                ImGui.Text(LeftTrivia);
+                ImGui.TextUnformatted(LeftTrivia);
                 ImGui.SameLine(0f, 0f);
             }
 
@@ -334,7 +334,7 @@ public static class SearchHelper {
             
             if (RightTrivia is not "") {
                 ImGui.SameLine(0f, 0f);
-                ImGui.Text(RightTrivia);
+                ImGui.TextUnformatted(RightTrivia);
             }
         }
         
@@ -349,7 +349,7 @@ public static class SearchHelper {
         protected override void RenderImGuiInner() {
             left.RenderImGui();
             ImGui.SameLine(0f, 0f);
-            ImGui.Text(" ");
+            ImGui.TextUnformatted(" ");
             ImGui.SameLine(0f, 0f);
             right.RenderImGui();
         }
@@ -370,7 +370,7 @@ public static class SearchHelper {
         protected override void RenderImGuiInner() {
             left.RenderImGui();
             ImGui.SameLine(0f, 0f);
-            ImGui.Text("|");
+            ImGui.TextUnformatted("|");
             ImGui.SameLine(0f, 0f);
             right.RenderImGui();
         }
@@ -391,7 +391,7 @@ public static class SearchHelper {
         private readonly bool _hasUnderscores = termWithUnderscores.Contains('_');
 
         protected override void RenderImGuiInner() {
-            ImGui.Text(_termU8);
+            ImGui.TextUnformatted(_termU8);
         }
 
         public override bool Matches(Searchable search) {

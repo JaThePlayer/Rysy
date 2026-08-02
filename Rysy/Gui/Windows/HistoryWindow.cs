@@ -52,7 +52,7 @@ public class HistoryWindow : Window {
             ImGuiManager.ReadOnlyInputTextMultiline("##", json, new NumVector2());
         
         if (_selectedActionByteCount is {})
-            ImGui.Text($"Encoded bytes: {_selectedActionByteCount}");
+            ImGui.TextUnformatted($"Encoded bytes: {_selectedActionByteCount}");
     }
 
     public override void RemoveSelf() {

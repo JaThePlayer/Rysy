@@ -57,22 +57,22 @@ public sealed class AssetDriveTilesetImportWindow : Window {
             ImGuiManager.XnaWidgetSprite(id,
                 ISprite.FromTexture(default, previewTask.Result) with { Scale = new(2f, 2f) });
         } else if (previewTask.IsCompleted) {
-            ImGui.Text("Failed to load preview!");
+            ImGui.TextUnformatted("Failed to load preview!");
         } else {
-            ImGui.Text("Loading preview...");
+            ImGui.TextUnformatted("Loading preview...");
         }
     }
 
     private void RenderTab() {
         var tilesetsTask = _layer.TileLayer is TileLayer.Bg ? _bg : _fg;
         if (!tilesetsTask.IsCompleted) {
-            ImGui.Text("Loading...");
+            ImGui.TextUnformatted("Loading...");
             return;
         }
         var tilesets = tilesetsTask.Result;
         _selected ??= tilesets.FirstOrDefault();
         if (_selected is null) {
-            ImGui.Text("Failed to load tileset list!");
+            ImGui.TextUnformatted("Failed to load tileset list!");
             return;
         }
         
@@ -94,8 +94,8 @@ public sealed class AssetDriveTilesetImportWindow : Window {
         ImGui.NextColumn();
         
         ImGui.SeparatorText(_selected.Name);
-        ImGui.Text($"Author: {_selected.Author}");
-        ImGui.Text($"Template: {_selected.TemplateName}");
+        ImGui.TextUnformatted($"Author: {_selected.Author}");
+        ImGui.TextUnformatted($"Template: {_selected.TemplateName}");
         Searchable.RenderTagList(_selected.Tags);
 
         var readme = _selected.Readme;
@@ -105,9 +105,9 @@ public sealed class AssetDriveTilesetImportWindow : Window {
             ImGui.TextWrapped(readme.Result);
             ImGui.EndChild();
         } else if (readme.IsCompleted) {
-            ImGui.Text("Failed to load readme!");
+            ImGui.TextUnformatted("Failed to load readme!");
         } else {
-            ImGui.Text("Loading readme...");
+            ImGui.TextUnformatted("Loading readme...");
         }
         
         
@@ -240,7 +240,7 @@ internal sealed partial class CreateTilesetWindow : Window {
     protected override void Render() {
         if (_editorState?.Map?.Mod is not { } mod) {
             _wasInvalid = true;
-            ImGui.Text("Need to be in a packaged mod to import tilesets!");
+            ImGui.TextUnformatted("Need to be in a packaged mod to import tilesets!");
             return;
         }
         var map = _editorState.Map;
@@ -254,9 +254,9 @@ internal sealed partial class CreateTilesetWindow : Window {
 
         _wasInvalid = false;
         
-        ImGui.Text($"Name: {_tileset.Name}");
-        ImGui.Text($"Template Name: {_tileset.TemplateName}");
-        ImGui.Text($"Editing xml at: {GetXmlPath(map)}");
+        ImGui.TextUnformatted($"Name: {_tileset.Name}");
+        ImGui.TextUnformatted($"Template Name: {_tileset.TemplateName}");
+        ImGui.TextUnformatted($"Editing xml at: {GetXmlPath(map)}");
 
         var isValid = _idField.IsValid(_id);
         _id = _idField.RenderGuiWithValidation("rysy.tilesetImport.id".Translate(), _id, isValid) is char c ? c : _id;

@@ -461,7 +461,7 @@ public sealed class TilesetWindow : Window, ISignalListener<HistoryActionApplied
 
         ImGui.SameLine();
         ImGui.BeginDisabled(entry.IsTemplate);
-        ImGui.Text(id);
+        ImGui.TextUnformatted(id);
         ImGui.EndDisabled();
 
         if (clicked) {
@@ -495,7 +495,7 @@ public sealed class TilesetWindow : Window, ISignalListener<HistoryActionApplied
         }
 
         ImGui.SameLine();
-        ImGui.Text(id);
+        ImGui.TextUnformatted(id);
 
         if (clicked) {
             SetSelection(entry);

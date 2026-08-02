@@ -18,34 +18,34 @@ public class DebugInfoWindow : Window {
     private static string HistoryFromText = "";
 
     private void RenderInternHelperInfo<T>() where T : struct, IEquatable<T> {
-        ImGui.Text($"- {typeof(T)}: {InternHelper<T>.CachedCount}, accessed: {InternHelper<T>.AccessCount}.");
+        ImGui.TextUnformatted($"- {typeof(T)}: {InternHelper<T>.CachedCount}, accessed: {InternHelper<T>.AccessCount}.");
     }
     
     protected override void Render() {
-        ImGui.Text($"FPS: {RysyState.CurrentFps}");
+        ImGui.TextUnformatted($"FPS: {RysyState.CurrentFps}");
 
         if (ImGui.CollapsingHeader("Memory"u8)) {
-            ImGui.Text($"RAM: {new NumberExt.Filesize(Process.GetCurrentProcess().WorkingSet64)}");
+            ImGui.TextUnformatted($"RAM: {new NumberExt.Filesize(Process.GetCurrentProcess().WorkingSet64)}");
             
             ImGui.SeparatorText("InternHelper"u8);
             RenderInternHelperInfo<int>();
             RenderInternHelperInfo<float>();
             
             ImGui.SeparatorText("Lua"u8);
-            ImGui.Text($"Lua Heap Size: {new NumberExt.Filesize((long)LuaCtx.LuaHeapSize)}");
+            ImGui.TextUnformatted($"Lua Heap Size: {new NumberExt.Filesize((long)LuaCtx.LuaHeapSize)}");
         }
 
 #if !FNA
         if (ImGui.CollapsingHeader("Metrics")) {
             var metrics = RysyEngine.GDM.GraphicsDevice.Metrics;
-            ImGui.Text(metrics.ToJson());
+            ImGui.TextUnformatted(metrics.ToJson());
         }
 #endif
 
         HistoryTab();
 
         if (ImGui.CollapsingHeader("GC")) {
-            ImGui.Text($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
+            ImGui.TextUnformatted($"Pinned: {GC.GetGCMemoryInfo().PinnedObjectsCount}");
         }
 
         if (ImGui.CollapsingHeader("Markdown Test")) {
@@ -123,7 +123,7 @@ public class DebugInfoWindow : Window {
 
         if (RysyEngine.Scene is EditorScene editor) {
             if (ImGui.CollapsingHeader("Lua Stats:")) {
-                ImGui.Text(Interpolator.TempU8($"Wrappers alive: {LuaExt.NeoWrapperCount}, slots available: {LuaExt.NeoWrappers.Count}"));
+                ImGui.TextUnformatted(Interpolator.TempU8($"Wrappers alive: {LuaExt.NeoWrapperCount}, slots available: {LuaExt.NeoWrappers.Count}"));
                 if (ImGui.Button("Print wrappers to console")) {
                     lock (LuaExt.NeoWrappers) {
                         Console.WriteLine("Lua wrappers alive:");
@@ -141,11 +141,11 @@ public class DebugInfoWindow : Window {
             if (ImGui.CollapsingHeader("Camera Info:")) {
                 var cam = editor.Camera;
 
-                ImGui.Text($"Pos: {cam.Pos}");
-                ImGui.Text($"Scale: {cam.Scale}");
-                ImGui.Text($"Room: {EditorState.Current?.CurrentRoom?.Pos ?? default}");
-                ImGui.Text($"Viewport: {cam.Viewport.Bounds.Size()}");
-                ImGui.Text($"{Parallax.CalcCamPos(cam)}");
+                ImGui.TextUnformatted($"Pos: {cam.Pos}");
+                ImGui.TextUnformatted($"Scale: {cam.Scale}");
+                ImGui.TextUnformatted($"Room: {EditorState.Current?.CurrentRoom?.Pos ?? default}");
+                ImGui.TextUnformatted($"Viewport: {cam.Viewport.Bounds.Size()}");
+                ImGui.TextUnformatted($"{Parallax.CalcCamPos(cam)}");
 
                 var s = cam.Scale;
                 if (ImGui.InputFloat("Scale", ref s)) {
@@ -255,7 +255,7 @@ public class DebugInfoWindow : Window {
 
     private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && editor.HistoryHandler is HistoryHandler handler && ImGui.CollapsingHeader("History")) {
-            ImGui.Text($"Count: {handler.Actions.Count}");
+            ImGui.TextUnformatted($"Count: {handler.Actions.Count}");
             if (ImGui.BeginListBox("##")) {
                 ImGui.TextWrapped(string.Join('\n', handler.Actions.Select(act => act.ToString())));
                 //ImGui.TextWrapped(handler.Serialize());
