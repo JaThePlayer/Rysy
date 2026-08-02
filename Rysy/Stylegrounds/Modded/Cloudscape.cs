@@ -187,8 +187,9 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
         CloudscapeResources.LoadIfNeeded();
         if (!CloudscapeResources.CanRender)
             return;
-        
-        var zoom = (StylegroundCtx?.Camera?.Scale ?? 1f);
+
+        var camera = StylegroundCtx?.Camera ?? ctx.Camera;
+        var zoom = (camera?.Scale ?? 1f);
         if (StylegroundCtx is { }) {
             zoom /= 6f;
         }
@@ -245,8 +246,7 @@ internal sealed record CloudscapeSprite(Cloudscape Scape) : ISprite {
         parameters["color_buffer_size"].SetValue(colorBuffer.Target.Width);
         parameters["color_texture"].SetValue(colorBuffer.Target);
         
-        var translate = Scape.Offset - (ctx.Camera?.ScreenToReal(Vector2.Zero).Floored() ?? new()) * Scape.Parallax;
-        
+        var translate = Scape.Offset - (camera?.ScreenToReal(Vector2.Zero).Floored() ?? new()) * Scape.Parallax;
         
         //Console.WriteLine((zoom, 1f/6f, zoom.AtLeast(1f / 6f)));
         parameters["offset"].SetValue(Scape.ZoomBehavior switch
