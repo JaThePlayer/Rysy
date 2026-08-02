@@ -36,12 +36,12 @@ public static class StylegroundRenderer {
 
         Gfx.BeginBatch(st);
 
-        var allStyles = layers switch {
+        var allStyles = (layers switch {
             Layers.Bg => styles.AllBackgroundStylesRecursive(),
             Layers.Fg => styles.AllForegroundStylesRecursive(),
             Layers.BgAndFg => styles.AllStylesRecursive(),
             _ => Array.Empty<Style>(),
-        };
+        }).ToListIfNotList();
 
         foreach (var s in allStyles) {
             if (!s.Visible(ctx))
@@ -73,11 +73,18 @@ public static class StylegroundRenderer {
             RenderUnmasked(s, ctx);
         }
 
+        foreach (var manager in styleMaskManagers) {
+            manager.AfterRender(allStyles, ctx);
+        }
+        
         Gfx.EndBatch();
     }
 
     public static void RenderUnmasked(Style s, StylegroundRenderCtx ctx) {
         try {
+            if (!s.Visible(ctx))
+                return;
+            
             var state = s.GetSpriteBatchState();
             var sprites = s.GetSprites(ctx);
             var renderCtx = SpriteRenderCtx.Default(ctx.Animate);
@@ -123,6 +130,11 @@ public interface IStyleMaskManager {
     /// <param name="ctx">The context in which the styleground is about to be rendered.</param>
     /// <returns>Whether this style got masked away and should not get rendered.</returns>
     public bool IsMasked(Style style, StylegroundRenderCtx ctx);
+
+    /// <summary>
+    /// Called once after rendering of all styles finished, can be used for post-processing.
+    /// </summary>
+    public void AfterRender(IReadOnlyList<Style> allStyles, StylegroundRenderCtx ctx);
 }
 
 /// <summary>

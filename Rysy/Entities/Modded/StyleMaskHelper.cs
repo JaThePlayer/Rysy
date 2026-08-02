@@ -122,53 +122,71 @@ internal sealed class StyleMaskHelperMaskManager : IStyleMaskManager {
     private bool _maskEffectNotFound;
     
     public bool IsMasked(Style style, StylegroundRenderCtx ctx) {
-        var masks = ctx.Room.Entities.OfType<StyleMask>();
-        if (!style.Tags.Any(t => t.StartsWith("mask_", StringComparison.Ordinal)))
-            return false;
+        return style.Tags.Any(t => t.StartsWith("mask_", StringComparison.Ordinal));
+    }
 
+    public void AfterRender(IReadOnlyList<Style> allStyles, StylegroundRenderCtx ctx) {
+        var masks = ctx.Room.Entities.OfType<StyleMask>();
         var old = Gfx.EndBatch();
         if (old is null) {
             Gfx.BeginBatch(old);
-            return false;
+            return;
         }
 
-        using var buffer = RenderTargetPool.Get(1920, 1080);
-        using var maskBuffer = RenderTargetPool.Get(1920, 1080);
-        var gd = Gfx.Batch.GraphicsDevice;
-
-        var oldTargets = gd.GetRenderTargets();
-        gd.SetRenderTarget(buffer.Target);
-        gd.Clear(Color.Transparent);
-        
-        Gfx.BeginBatch(old);
-        StylegroundRenderer.RenderUnmasked(style, ctx);
-        Gfx.EndBatch();
-
-        gd.SetRenderTargets(oldTargets);
-        Gfx.BeginBatch();
-        
+        var presentTags = masks.Select(m => m.FullTag).ToHashSet();
+        var batch = Gfx.Batch;
+        var gd = batch.GraphicsDevice;
+        var oldTargets = gd.GetRenderTargets();        
         var camera = ctx.Camera;
         float scale = camera.Scale;
-        foreach (var mask in masks) {
-            if (!style.HasTag(mask.FullTag))
-                continue;
+        
+        using var stylegroundBuffer = RenderTargetPool.Get(1920, 1080);
+        using var maskBuffer = RenderTargetPool.Get(1920, 1080);
+        
+        foreach (var tag in presentTags) {
+            bool startedDrawingCustomFades = false;
             
-            var worldPosScissor = new Rectangle(mask.X + ctx.Room.X, mask.Y + ctx.Room.Y, mask.Width, mask.Height);
-            var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();
-
-            if (mask.Fade is StyleMask.FadeType.Custom && Gfx.Atlas.TryGet(mask.FadeMask, out var fadeMask)) {
-                Gfx.EndBatch();
-                gd.SetRenderTarget(maskBuffer.Target);
-                gd.Clear(Color.Transparent);
-                Gfx.BeginBatch();
+            // 1. Render custom fade masks
+            foreach (var mask in masks) {
+                if (mask.FullTag != tag || mask.Fade is not StyleMask.FadeType.Custom || !Gfx.Atlas.TryGet(mask.FadeMask, out var fadeMask))
+                    continue;
+                var worldPosScissor = new Rectangle(mask.X + ctx.Room.X, mask.Y + ctx.Room.Y, mask.Width, mask.Height);
+                var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();
+                
+                if (!startedDrawingCustomFades) {
+                    gd.SetRenderTarget(maskBuffer.Target);
+                    gd.Clear(Color.Transparent);
+                    Gfx.BeginBatch();
+                    
+                    startedDrawingCustomFades = true;
+                }
                 
                 (ISprite.FromTexture(screenPos.ToVector2(), fadeMask) with {
                         Scale = new Vector2(worldPosScissor.Width / (float)fadeMask.Width * (scale), (float)worldPosScissor.Height / fadeMask.Height * (scale))
-                    })
-                    .RenderWithColor(SpriteRenderCtx.Default(), Color.White);
+                }).RenderWithColor(SpriteRenderCtx.Default(), Color.White);
+            }
+            
+            if (startedDrawingCustomFades)
                 Gfx.EndBatch();
-                gd.SetRenderTargets(oldTargets);
-                gd.Textures[1] = buffer.Target;
+            
+            // 2. Render styles into `stylegroundBuffer`
+            gd.SetRenderTarget(stylegroundBuffer.Target);
+            gd.Clear(Color.Transparent);
+        
+            Gfx.BeginBatch(old);
+            foreach (var style in allStyles) {
+                if (!style.HasTag(tag))
+                    continue;
+                StylegroundRenderer.RenderUnmasked(style, ctx);
+            }
+            Gfx.EndBatch();
+            
+            // 3. Render final product.
+            gd.SetRenderTargets(oldTargets);
+
+            // 3.1 custom fades
+            if (startedDrawingCustomFades) {
+                gd.Textures[1] = stylegroundBuffer.Target;
                 if (MaskEffect is null && !_maskEffectNotFound) {
                     if (ModRegistry.Filesystem.TryReadAllBytes("Effects/StyleMaskHelper/Mask.cso") is not { } bytes) {
                         Logger.Write("StyleMaskHelper", LogLevel.Error, $"Failed to find fade mask shader");
@@ -183,20 +201,27 @@ internal sealed class StyleMaskHelperMaskManager : IStyleMaskManager {
                     Gfx.Batch.Draw(maskBuffer.Target, new Rectangle(0, 0, 1920, 1080), null, Color.White);
                     Gfx.Batch.End();
                 }
-                gd.SetRenderTargets(oldTargets);
-                Gfx.BeginBatch();
-                continue;
             }
-            
-            using var slices = mask.GetMaskSlices(screenPos.ToVector2(), scale);
-            foreach (var slice in slices) {
-                Gfx.Batch.Draw(buffer.Target, slice.Position, slice.Source, Color.White * slice.GetValue(mask.AlphaFrom, mask.AlphaTo));
+
+            // 3.2 builtin fades
+            Gfx.BeginBatch();
+            foreach (var mask in masks) {
+                if (mask.FullTag != tag || mask.Fade is StyleMask.FadeType.Custom)
+                    continue;
+                
+                var worldPosScissor = new Rectangle(mask.X + ctx.Room.X, mask.Y + ctx.Room.Y, mask.Width, mask.Height);
+                var screenPos = camera.RealToScreen(worldPosScissor.Location.ToVector2()).ToPoint();
+                
+                using var slices = mask.GetMaskSlices(screenPos.ToVector2(), scale);
+                foreach (var slice in slices) {
+                    Gfx.Batch.Draw(stylegroundBuffer.Target, slice.Position, slice.Source, Color.White * slice.GetValue(mask.AlphaFrom, mask.AlphaTo));
+                }
             }
+
+            Gfx.EndBatch();
         }
-        Gfx.EndBatch();
-        Gfx.BeginBatch(old);
         
-        return true;
+        Gfx.BeginBatch(old);
     }
 }
 
