@@ -9,18 +9,14 @@ public static class StylegroundRenderer {
         BgAndFg = Bg | Fg,
     }
 
-    private static readonly RasterizerState CullNoneWithScissor = new() {
+    public static readonly RasterizerState CullNoneWithScissor = new() {
         CullMode = CullMode.None,
         ScissorTestEnable = true,
         FillMode = FillMode.Solid
     };
 
-    public static bool NotMasked(Style style) {
-        return !style.IsMasked();
-    }
-
     public static void Render(Room? room, MapStylegrounds styles, Camera camera, Layers layers, 
-        Func<Style, bool> filter, Rectangle? scissorRectWorldPos = null, Colorgrade? colorgrade = null) {
+        IReadOnlyList<IStyleMaskManager> styleMaskManagers, Rectangle? scissorRectWorldPos = null, Colorgrade? colorgrade = null) {
         ArgumentNullException.ThrowIfNull(styles);
         float scale = camera.Scale;
 
@@ -48,20 +44,40 @@ public static class StylegroundRenderer {
         };
 
         foreach (var s in allStyles) {
-            if (filter(s))
-                Render(s, ctx);
-        }
+            if (!s.Visible(ctx))
+                continue;
+            
+            var masks = ctx.Room.Entities.OfType<IStyleMask>();
+            bool renderedMasked = false;
+            foreach (var m in masks) {
+                if (m.RenderMasked(s, ctx)) {
+                    renderedMasked = true;
+                    break;
+                }
+            }
 
-        //ISprite.OutlinedRect(new(0,0, 320, 180), Color.Transparent, Color.Red).Render();
+            if (renderedMasked)
+                continue;
+
+            // See if the style should get masked, but there wasn't any style mask entity in this room.
+            foreach (var manager in styleMaskManagers) {
+                if (manager.IsMasked(s, ctx)) {
+                    renderedMasked = true;
+                    break;
+                }
+            }
+            
+            if (renderedMasked)
+                continue;
+            
+            RenderUnmasked(s, ctx);
+        }
 
         Gfx.EndBatch();
     }
 
-    private static void Render(Style s, StylegroundRenderCtx ctx) {
+    public static void RenderUnmasked(Style s, StylegroundRenderCtx ctx) {
         try {
-            if (!s.Visible(ctx))
-                return;
-
             var state = s.GetSpriteBatchState();
             var sprites = s.GetSprites(ctx);
             var renderCtx = SpriteRenderCtx.Default(ctx.Animate);
@@ -93,4 +109,33 @@ public record StylegroundRenderCtx(Room Room, Camera Camera, bool Animate) {
     public Rectangle FullScreenBounds => new(0, 0, ScreenWidth, ScreenHeight);
     public int ScreenWidth => (int) (320 * 6f / Camera.Scale);
     public int ScreenHeight => (int) (180 * 6f / Camera.Scale);
+}
+
+/// <summary>
+/// Allows managing globally which styles should get masked away and not rendered.
+/// </summary>
+public interface IStyleMaskManager {
+    /// <summary>
+    /// If no <see cref="IStyleMask"/> took over rendering of the given style, this method gets called to check whether
+    /// the style should be rendered at all.
+    /// </summary>
+    /// <param name="style">The styleground to check.</param>
+    /// <param name="ctx">The context in which the styleground is about to be rendered.</param>
+    /// <returns>Whether this style got masked away and should not get rendered.</returns>
+    public bool IsMasked(Style style, StylegroundRenderCtx ctx);
+}
+
+/// <summary>
+/// When implemented on an entity, allows it change how stylegrounds get rendered.
+/// </summary>
+public interface IStyleMask {
+    /// <summary>
+    /// Handles rendering the styleground inside the mask.
+    /// Return false if you do not wish to change this styleground's rendering.
+    /// Use <see cref="StylegroundRenderer.RenderUnmasked"/> to help render the style correctly.
+    /// </summary>
+    /// <param name="style">The styleground to render.</param>
+    /// <param name="ctx">The context in which the styleground is rendered.</param>
+    /// <returns>Whether the style got rendered by this function. If false, default rendering will occur.</returns>
+    public bool RenderMasked(Style style, StylegroundRenderCtx ctx);
 }

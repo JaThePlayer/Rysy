@@ -106,12 +106,12 @@ public sealed class RoomList : LongStandingWindow {
                     var fgInFront = Settings.Instance?.RenderFgStylegroundsInFront ?? false;
                     
                     if (renderStylegrounds)
-                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Bg, filter: StylegroundRenderer.NotMasked);
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Bg, Scene.GetAll<IStyleMaskManager>());
                     
                     room.Render(cam, Room.RenderConfig.Preview, Colorgrade.None, editor.GetAll<IRoomSpriteProvider>());
                     
                     if (renderStylegrounds && fgInFront)
-                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Fg, filter: StylegroundRenderer.NotMasked);
+                        StylegroundRenderer.Render(room, room.Map.Style, cam, StylegroundRenderer.Layers.Fg, Scene.GetAll<IStyleMaskManager>());
                     
                     Gfx.BeginBatch(prev);
                 });

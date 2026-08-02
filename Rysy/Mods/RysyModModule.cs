@@ -1,4 +1,5 @@
 ﻿using Rysy.Components;
+using Rysy.Entities.Modded;
 using Rysy.Graphics;
 using Rysy.Gui.WindowManagers;
 using Rysy.Helpers;
@@ -22,6 +23,9 @@ internal sealed class RysyModModule : ModModule {
         ComponentRegistry.Add(new EntityListSpriteProvider(EditorLayers.FgDecals, p => p.FgDecalsVisible));
         ComponentRegistry.Add(new TileGridSpriteProvider(EditorLayers.Bg, p => p.BgTilesVisible));
         ComponentRegistry.Add(new TileGridSpriteProvider(EditorLayers.Fg, p => p.FgTilesVisible));
+        
+        // TODO: this should be in stylemaskhelper
+        ComponentRegistry.Add(new StyleMaskHelperMaskManager());
         
         TilesetTemplates.RegisterDefaultTemplates(ModRegistry.Filesystem, ComponentRegistry);
     }

@@ -377,7 +377,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
 
         if (renderStylegrounds && CurrentRoom is { }) {
             var layers = fgInFront ? StylegroundRenderer.Layers.Bg : StylegroundRenderer.Layers.BgAndFg;
-            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, layers, filter: StylegroundRenderer.NotMasked);
+            StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, layers, GetAll<IStyleMaskManager>());
         }
 
         var spriteProviders = GetAll<IRoomSpriteProvider>();
@@ -391,7 +391,7 @@ public sealed class EditorScene : Scene, ISignalListener<MapSwapped>, ISignalLis
             CurrentRoom.Render(Camera, Room.RenderConfig.Selected, Colorgrade.None, spriteProviders);
 
             if (renderStylegrounds && fgInFront)
-                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.Fg, filter: StylegroundRenderer.NotMasked);
+                StylegroundRenderer.Render(CurrentRoom, Map.Style, Camera, StylegroundRenderer.Layers.Fg, GetAll<IStyleMaskManager>());
         }
         
         gd.SetRenderTarget(null);
