@@ -74,7 +74,10 @@ public class PooledList<T> : IList<T>, IDisposable {
     }
 
     public void CopyTo(T[] array, int arrayIndex) {
-        _array?.CopyTo(array, arrayIndex);
+        if (_array is null)
+            return;
+
+        Array.Copy(_array, 0, array, arrayIndex, _count);
     }
 
     public bool Remove(T item) {

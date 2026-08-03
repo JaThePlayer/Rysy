@@ -90,6 +90,18 @@ public static class LinqExt {
                 return list;
             return self.ToList();
         }
+        
+        /// <summary>
+        /// Calls ToList on <paramref name="self"/>, unless its already of type <see cref="List{T}"/>, in which case that instance is returned without changes.
+        /// The source enumerable gets disposed if it implements <see cref="IDisposable"/>
+        /// </summary>
+        public List<T> ToListIfNotListDisposeSource() {
+            if (self is List<T> list)
+                return list;
+            var ret = self.ToList();
+            ret.DisposeIfDisposable();
+            return ret;
+        }
 
         public IReadOnlySet<T> ToIReadOnlySetIfNotAlready(IEqualityComparer<T> comparer) {
             if (self is HashSet<T> list && list.Comparer == comparer)

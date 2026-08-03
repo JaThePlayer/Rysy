@@ -40,8 +40,8 @@ public static class StylegroundRenderer {
             Layers.Bg => styles.AllBackgroundStylesRecursive(),
             Layers.Fg => styles.AllForegroundStylesRecursive(),
             Layers.BgAndFg => styles.AllStylesRecursive(),
-            _ => Array.Empty<Style>(),
-        }).ToListIfNotList();
+            _ => []
+        }).ToListIfNotListDisposeSource();
 
         foreach (var s in allStyles) {
             if (!s.Visible(ctx))
