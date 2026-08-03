@@ -21,12 +21,15 @@ internal sealed class StyleMask : LonnEntity {
         Custom
     }
 
+    public bool IsAllInOne => Name is "StyleMaskHelper/AllInOneMask";
+
     public FadeType Fade => Enum("fade", FadeType.None);
 
-    public float AlphaFrom => Float("alphaFrom");
-    public float AlphaTo => Float("alphaTo");
+    public float AlphaFrom => Float(IsAllInOne ? "styleAlphaFrom" : "alphaFrom");
+
+    public float AlphaTo => Float(IsAllInOne ? "styleAlphaTo" : "alphaTo");
     
-    public string Tag => Attr("tag", Attr("styleTag"));
+    public string Tag => Attr(IsAllInOne ? "styleTag" : "tag");
 
     public string FullTag { get; private set; }
 
@@ -39,7 +42,9 @@ internal sealed class StyleMask : LonnEntity {
     }
 
     public override IEnumerable<ISprite> GetSprites() {
-        if (!Settings.Instance.StylegroundPreview) {
+        if (!Settings.Instance.StylegroundPreview
+            || Tag.IsNullOrWhitespace()
+            || Room.Map.Style.AllStylesRecursive().All(s => !s.HasTag(FullTag))) {
             return base.GetSprites();
         }
 
