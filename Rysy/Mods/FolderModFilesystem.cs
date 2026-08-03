@@ -7,17 +7,15 @@ using System.IO;
 
 namespace Rysy.Mods;
 
-public sealed class FolderModFilesystem : IWriteableModFilesystem {
+public sealed class FolderModFilesystem : IWriteableModFilesystem, IDisposable {
     public string Root { get; init; }
 
     private ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
-    private FileSystemWatcher _watcher;
+    private IDisposable? _watcher;
     // keeps track of whether a file is known to exist or known not to exist in the directory.
     private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
 
     public string VirtToRealPath(string virtPath) => $"{Root}/{virtPath}";
-
-    private readonly DelayedTaskHelper<(string Path, WatcherChangeTypes ChangeType)>? _watcherDelayedTaskHelper;
 
     private readonly bool _valid;
 
@@ -32,35 +30,15 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
         }
 
         _valid = true;
-        
-        if (!RysyPlatform.Current.SupportFileWatchers) {
-            return;
-        }
-        
-        _watcherDelayedTaskHelper = new() {
-            OnDelayElapsed = HandleFileWatcherEvent,
-        };
-        
-        _watcher = new FileSystemWatcher(dirName.CorrectSlashes());
-
-        FileSystemEventHandler watcherCallback = (_, e) => {
-            if (e.Name is null)
-                return;
-
-            _knownExistingFiles.Clear();
-            _watcherDelayedTaskHelper.Register((e.Name.Unbackslash(), e.ChangeType));
-        };
-        
-        _watcher.Changed += watcherCallback;
-        _watcher.Deleted += watcherCallback;
-        _watcher.Created += watcherCallback;
-        
-        _watcher.IncludeSubdirectories = true;
-        _watcher.EnableRaisingEvents = true;
     }
 
-    private void HandleFileWatcherEvent((string path, WatcherChangeTypes changeType) args) {
-        var (path, changeType) = args;
+    private void HandleFileWatcherEvent(FileSystemEventArgs e) {
+        if (e.Name is null)
+            return;
+
+        _knownExistingFiles.Clear();
+        var path = e.Name.Unbackslash();
+        var changeType = e.ChangeType;
         
         if (_watchedAssets.TryGetValue(path, out var watched)) {
             Logger.Write(nameof(FolderModFilesystem), LogLevel.Info,
@@ -234,6 +212,8 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
     }
 
     public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
+        _watcher ??= SharedFileWatcher.RegisterWatch(Root.CorrectSlashes(), HandleFileWatcherEvent);
+        
         var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
 
         assets.Add(asset);
@@ -262,5 +242,9 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem {
             Directory.CreateDirectory(dir);
         
         File.AppendAllText(realPath, contents);
+    }
+
+    public void Dispose() {
+        _watcher?.Dispose();
     }
 }

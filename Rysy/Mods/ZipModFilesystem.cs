@@ -8,7 +8,7 @@ using System.IO.Compression;
 
 namespace Rysy.Mods;
 
-public sealed class ZipModFilesystem : IModFilesystem {
+public sealed class ZipModFilesystem : IModFilesystem, IDisposable {
     private sealed class ZipArchiveWrapper {
         public ZipArchive Archive { get; set; }
         public bool Used { get; set; }
@@ -23,8 +23,7 @@ public sealed class ZipModFilesystem : IModFilesystem {
     private BackgroundTaskInfo _cleanupTask;
 
     private readonly ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
-    private readonly FileSystemWatcher _watcher;
-    private readonly DelayedTaskHelper<(string Path, WatcherChangeTypes ChangeType)>? _watcherDelayedTaskHelper;
+    private IDisposable? _watcher;
     
     // These keep track of known filenames, so that checking if a file exists in a mod incurs no IO cost.
     private volatile string[] _allEntryFullNames;
@@ -38,41 +37,28 @@ public sealed class ZipModFilesystem : IModFilesystem {
         // setup a timer to close the zip archive if no more files from it are needed
         _cleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);
         ScanForAllEntryNames();
-        
-        if (!RysyPlatform.Current.SupportFileWatchers) {
-            return;
-        }
-        
-        _watcherDelayedTaskHelper = new() {
-            OnDelayElapsed = HandleFileWatcherEvent,
-        };
-        
-        _watcher = new FileSystemWatcher(zipFilePath.Directory()!.CorrectSlashes());
-        _watcher.Changed += (s, e) => {
-            if (e.FullPath != Root.CorrectSlashes())
-                return;
-            if (e.Name is null)
-                return;
-            if (e.ChangeType != WatcherChangeTypes.Changed)
-                return;
-
-            _watcherDelayedTaskHelper.Register((e.Name.Unbackslash(), e.ChangeType));
-        };
-
-        _watcher.EnableRaisingEvents = true;
     }
 
-    private void HandleFileWatcherEvent((string path, WatcherChangeTypes changeType) args) {
+    private void HandleFileWatcherEvent(FileSystemEventArgs e) {
+        if (e.FullPath != Root.CorrectSlashes())
+            return;
+        if (e.Name is null)
+            return;
+        if (e.ChangeType != WatcherChangeTypes.Changed)
+            return;
+        
         ScanForAllEntryNames();
 
-        foreach (var file in _watchedAssets) {
-            foreach (var asset in file.Value) {
-                try {
-                    asset.OnChanged?.Invoke(file.Key);
-                } catch (Exception ex) {
-                    Logger.Error(ex, $"Error when hot reloading {file.Key}");
+        lock (_watchedAssets) {
+            foreach (var file in _watchedAssets) {
+                foreach (var asset in file.Value) {
+                    try {
+                        asset.OnChanged?.Invoke(file.Key);
+                    } catch (Exception ex) {
+                        Logger.Error(ex, $"Error when hot reloading {file.Key}");
+                    }
                 }
-            }
+            }     
         }
     }
 
@@ -234,6 +220,8 @@ public sealed class ZipModFilesystem : IModFilesystem {
     }
 
     public IDisposable RegisterFilewatch(string path, WatchedAsset asset) {
+        _watcher ??= SharedFileWatcher.RegisterWatch(Root.Directory()!.CorrectSlashes(), HandleFileWatcherEvent);
+        
         lock (_watchedAssets) {
             var assets = _watchedAssets.GetOrAdd(path, static _ => new(1));
             assets.Add(asset);
@@ -260,5 +248,10 @@ public sealed class ZipModFilesystem : IModFilesystem {
     
     public void NotifyFileCreated(string virtPath) {
         _allEntryFullNamesHashSet.Add(virtPath);
+    }
+
+    public void Dispose() {
+        _watcher?.Dispose();
+        _cleanupTask.Deregister();
     }
 }

@@ -96,6 +96,8 @@ public static class ModRegistry {
         }
     }
 
+    private static IDisposable? _modsDirWatcher;
+
     public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         LastUsedComponentRegistry?.DisposeIfDisposable();
         componentRegistry = new ComponentRegistryScope(componentRegistry);
@@ -104,6 +106,12 @@ public static class ModRegistry {
 
         UnloadAllMods();
         ModsMutable.Clear();
+
+        // Register an empty watcher on the mods directory, so that subsequent wachers created by mod filesystems will
+        // re-use the watcher instead of creating new OS-level filewatchers,
+        // which is necessary to avoid the inotify limit on linux.
+        _modsDirWatcher?.Dispose();
+        _modsDirWatcher = SharedFileWatcher.RegisterWatch(modDir, _ => { });
 
         componentRegistry.AddIfMissing(() => new CelesteSettingsProvider(
             new ReadonlyModFilesystem(new FolderModFilesystem(Profile.Instance.CelesteDirectory)), 
@@ -223,6 +231,7 @@ public static class ModRegistry {
             mod.Module?.ComponentRegistryScope.Dispose();
             mod.Module = null;
             mod.PluginAssembly = null;
+            mod.Filesystem.DisposeIfDisposable();
         }
     }
 
