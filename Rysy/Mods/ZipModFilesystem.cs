@@ -32,7 +32,7 @@ public sealed class ZipModFilesystem : IModFilesystem, IDisposable {
     private bool _failedToOpenZip;
 
     public ZipModFilesystem(string zipFilePath) {
-        Root = zipFilePath;
+        Root = Path.GetFullPath(zipFilePath);
 
         // setup a timer to close the zip archive if no more files from it are needed
         _cleanupTask = BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), CleanupResources);

@@ -20,7 +20,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem, IDisposable {
     private readonly bool _valid;
 
     public FolderModFilesystem(string dirName) {
-        Root = dirName;
+        Root = Path.GetFullPath(dirName);
 
         try {
             Directory.CreateDirectory(dirName);

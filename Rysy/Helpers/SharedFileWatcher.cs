@@ -24,7 +24,7 @@ public sealed class SharedFileWatcher : IDisposable {
             string parentDirectory = directory;
             string subdirectory = "";
             while (watcher is null) {
-                if (Path.GetDirectoryName(parentDirectory) is {} nextParent) {
+                if (Path.GetDirectoryName(parentDirectory) is {} nextParent && !nextParent.IsNullOrWhitespace()) {
                     subdirectory = Path.Combine(Path.GetRelativePath(nextParent, parentDirectory), subdirectory);
                     parentDirectory = nextParent;
                     
