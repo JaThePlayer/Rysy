@@ -26,9 +26,15 @@ public static class FileDialogHelper {
         return HandleResult(res, filterList, out chosenFile, "FileDialogHelper.TryOpen");
     }
 
-    private static bool HandleResult(DialogResult res, string filterList, [NotNullWhen(true)] out string? chosenFile, string logTag) {
+    public static bool TryOpenDir([NotNullWhen(true)] out string? chosenDir, string? defaultPath = null) {
+        var res = Dialog.FolderPicker((defaultPath ?? GetDefaultPath()).CorrectSlashes());
+
+        return HandleResult(res, extension: null, out chosenDir, "FileDialogHelper.TryOpenDir");
+    }
+
+    private static bool HandleResult(DialogResult res, string? extension, [NotNullWhen(true)] out string? chosen, string logTag) {
         if (res.IsOk) {
-            chosenFile = AddExtIfNeeded(filterList, res.Path);
+            chosen = AddExtIfNeeded(extension, res.Path);
             return true;
         }
 
@@ -36,15 +42,18 @@ public static class FileDialogHelper {
             Logger.Write(logTag, LogLevel.Error, $"Failed to pick path: {res.ErrorMessage}");
         }
 
-        chosenFile = null;
+        chosen = null;
         return false;
     }
 
-    private static string AddExtIfNeeded(string filterList, string chosenFile) {
-        var extString = $".{filterList}";
-        if (!chosenFile.EndsWith(extString, StringComparison.Ordinal))
-            chosenFile += extString;
+    private static string AddExtIfNeeded(string? extension, string chosen) {
+        if (extension is null)
+            return chosen;
 
-        return chosenFile;
+        var extString = $".{extension}";
+        if (!chosen.EndsWith(extString, StringComparison.Ordinal))
+            chosen += extString;
+
+        return chosen;
     }
 }
