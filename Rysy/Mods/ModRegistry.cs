@@ -107,6 +107,9 @@ public static class ModRegistry {
         UnloadAllMods();
         ModsMutable.Clear();
 
+        // Create the Mods/ directory if it doesn't exist (user didn't install Everest yet)
+        Directory.CreateDirectory(modDir);
+        
         // Register an empty watcher on the mods directory, so that subsequent wachers created by mod filesystems will
         // re-use the watcher instead of creating new OS-level filewatchers,
         // which is necessary to avoid the inotify limit on linux.
