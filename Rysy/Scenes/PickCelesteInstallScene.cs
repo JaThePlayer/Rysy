@@ -1,5 +1,5 @@
-﻿using Rysy.Extensions;
 using Rysy.Graphics;
+using Rysy.Helpers;
 
 namespace Rysy.Scenes;
 
@@ -11,17 +11,18 @@ public class PickCelesteInstallScene : Scene {
 
     protected internal override void OnFileDrop(string filePath) {
         base.OnFileDrop(filePath);
+        StoreCelestePath(filePath); // if the dropped file is not a directory, this is a no-op
+    }
 
-        if (Path.GetFileName(filePath) is "Celeste.exe" or "Celeste.dll") {
-            var dir = Path.GetDirectoryName(filePath) ?? "";
-            // If the user provided the Celeste.exe in the '/orig' directory, silently fix the path to use the main dir instead.
-            if (dir.EndsWith("/orig", StringComparison.Ordinal) || dir.EndsWith("\\orig", StringComparison.Ordinal)) {
-                var mainDir = dir[..^"/orig".Length];
-                if (File.Exists(Path.Combine(mainDir, "Celeste.exe"))) {
-                    dir = mainDir;
-                }
+    private void StoreCelestePath(string dirPath) {
+        if (Directory.Exists(dirPath)) {
+            string fullPath;
+            try {
+                fullPath = Path.GetFullPath(dirPath);
+            } catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) {
+                return;
             }
-            Profile.Instance.CelesteDirectory = dir;
+            Profile.Instance.CelesteDirectory = fullPath;
             Profile.Instance.Save();
 
             RysyEngine.Scene = _nextScene;
@@ -41,9 +42,19 @@ public class PickCelesteInstallScene : Scene {
         var windowSize = RysyState.Window.ClientBounds.Size();
         var height = 4 * 6;
         var center = windowSize.Y / 2;
-        PicoFont.Print("Please drop the", new Rectangle(0, center - 32, windowSize.X, height), Color.White, scale: 4f);
-        PicoFont.Print("Celeste.exe/Celeste.dll", new Rectangle(0, center, windowSize.X, height), Color.LightSkyBlue, scale: 4f);
-        PicoFont.Print("file onto this window", new Rectangle(0, center + 32, windowSize.X, height), Color.White, scale: 4f);
+        PicoFont.Print("Please drop the", new Rectangle(0, center - 48, windowSize.X, height), Color.White, scale: 4f);
+        PicoFont.Print("Celeste game directory", new Rectangle(0, center - 16, windowSize.X, height), Color.LightSkyBlue, scale: 4f);
+        PicoFont.Print("game directory", new Rectangle(PicoFont.W * 2 * "Celeste ".Length, center - 16, windowSize.X, height), Color.White, scale: 4f);
+        PicoFont.Print("onto this window", new Rectangle(0, center + 16, windowSize.X, height), Color.White, scale: 4f);
+        PicoFont.Print("(or click to browse)", new Rectangle(0, center + 48, windowSize.X, height), Color.White, scale: 4f);
         Gfx.EndBatch();
+    }
+
+    public override void Update() {
+        if (Input.Global?.Mouse.Clicked(0) ?? false) {
+            if (FileDialogHelper.TryOpenDir(out string? dirPath)) {
+                StoreCelestePath(dirPath);
+            }
+        }
     }
 }
