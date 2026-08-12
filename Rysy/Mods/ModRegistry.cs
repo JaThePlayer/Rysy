@@ -70,7 +70,7 @@ public static class ModRegistry {
         unbackslashed.Replace('\\', '/');
 
         foreach (var (_, mod) in Mods) {
-            if (unbackslashed.StartsWith(mod.Filesystem.Root)) {
+            if (unbackslashed.StartsWith(mod.Filesystem.Root.Unbackslash(), StringComparison.Ordinal)) {
                 // the root is correct, check if the file actually exists there though
                 var vpath = unbackslashed[mod.Filesystem.Root.Length..].TrimStart('/').ToString();
                 if (mod.Filesystem.FileExists(vpath))
