@@ -340,7 +340,13 @@ public static class ModRegistry {
             Logger.Write(LogTag, LogLevel.Info, $"Loading mod assembly for {mod.Name}: {dll}");
             fs.TryWatchAndOpen(dll, stream => {
                 // TODO: use asmresolver to find modmodule class ahead of time, and only load those dlls (and error on multiple).
-                var modAsm = ctx.LoadFromStream(stream);
+                
+                // Zip streams don't support checking their Length property which is used by LoadFromStream,
+                // so we need to copy to a memory stream first.
+                using var memStream = new MemoryStream();
+                stream.CopyTo(memStream);
+                memStream.Seek(0, SeekOrigin.Begin);
+                var modAsm = ctx.LoadFromStream(memStream);
 
                 LoadModule(mod, modAsm, componentRegistry);
             }, out var watcher);
