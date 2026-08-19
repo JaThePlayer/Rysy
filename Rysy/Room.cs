@@ -694,12 +694,13 @@ public sealed class Room : IPackable, ILuaWrapper {
         => [e.CreateSelection(), .. e.Nodes.Select((_, i) => e.CreateNodeSelection(i)) ];
 
     private void GetSelectionsInRectForGrid(Rectangle? rectNullable, Tilegrid grid, List<Selection> into, IEditorLayer layer) {
-        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
+        var gridSize = grid.TileSizeInPixels;
+        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * gridSize, grid.Height * gridSize);
         
-        var pos = rect.Location.ToVector2().GridPosFloor(8);
-        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
+        var pos = rect.Location.ToVector2().GridPosFloor(gridSize);
+        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(gridSize);
 
-        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), layer) is { } s)
+        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(gridSize), layer) is { } s)
             into.Add(s);
     }
 

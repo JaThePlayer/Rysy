@@ -7,6 +7,8 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     public Tilegrid Grid;
     public Rectangle Rect;
 
+    public int TileSizeInPixels => Grid.TileSizeInPixels;
+    
     private List<(bool Exclude, Rectangle)> _toMoveRects = new();
 
     private char[,] _toMove;
@@ -36,7 +38,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public bool AnyTileWithin() {
-        var rect = Rect.Div(8);
+        var rect = Rect.Div(TileSizeInPixels);
         for (int x = rect.X; x < rect.Right; x++)
             for (int y = rect.Y; y < rect.Bottom; y++)
                 if (Grid.SafeTileAt(x, y) != '0')
@@ -51,7 +53,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public IHistoryAction DeleteSelf() {
         // todo: use this when possible for less memory usage
-        //return new TileRectChangeAction('0', Rect.Div(8), Grid);
+        //return new TileRectChangeAction('0', Rect.Div(TileSizeInPixels), Grid);
         var toMove = _toMove ?? CreateToMove();
         var (w, h) = (toMove.GetLength(0), toMove.GetLength(1));
         var mask = new bool[w, h];
@@ -61,7 +63,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             }
         }
 
-        return new RemoveTilesAction(Grid, Rect.Div(8).Location, mask);
+        return new RemoveTilesAction(Grid, Rect.Div(TileSizeInPixels).Location, mask);
     }
 
     private void HandleToMove(char[,] toMove, Rectangle rect, bool exclude, int offX, int offY) {
@@ -71,14 +73,14 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction MoveBy(Vector2 offset) {
-        var tileOffset = (offset / 8).ToPoint();
+        var tileOffset = (offset / TileSizeInPixels).ToPoint();
 
         if (tileOffset is { X: 0, Y: 0 })
             return new MergedAction();
 
         ConsumeTilesIfNeeded();
 
-        var action = new TileRectMoveAction(Grid, Rect.Div(8), _orig!, _toMove, tileOffset)
+        var action = new TileRectMoveAction(Grid, Rect.Div(TileSizeInPixels), _orig!, _toMove, tileOffset)
             .WithHook(
             onApply: () => MoveRects(tileOffset),
             onUndo: () => MoveRects(new(-tileOffset.X, -tileOffset.Y)));
@@ -87,7 +89,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     private void MoveRects(Point tileOffset) {
-        var moveOffset = tileOffset.ToVector2() * 8;
+        var moveOffset = tileOffset.ToVector2() * TileSizeInPixels;
         Rect = Rect.MovedBy(moveOffset);
         for (int i = 0; i < _toMoveRects.Count; i++)
             _toMoveRects[i] = (_toMoveRects[i].Exclude, _toMoveRects[i].Item2.MovedBy(moveOffset));
@@ -96,7 +98,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     private void ConsumeTilesIfNeeded() {
         if (_orig is null) {
             _orig ??= (char[,]) Grid.Tiles.Clone();
-            var rect = Rect.Div(8);
+            var rect = Rect.Div(TileSizeInPixels);
 
             var toMove = _toMove ??= CreateToMove();
 
@@ -110,13 +112,13 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     private char[,] CreateToMove() {
-        var rect = Rect.Div(8);
+        var rect = Rect.Div(TileSizeInPixels);
         var (w, h) = (rect.Width, rect.Height);
 
         var toMove = new char[w, h];
         toMove.Fill('0');
         foreach (var (exclude, r) in _toMoveRects)
-            HandleToMove(toMove, r.Div(8), exclude, rect.X, rect.Y);
+            HandleToMove(toMove, r.Div(TileSizeInPixels), exclude, rect.X, rect.Y);
 
         return toMove;
     }
@@ -126,14 +128,14 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
         if (!Rect.Intersects(roomPos))
             return false;
 
-        var rect = roomPos.Div(8);
+        var rect = roomPos.Div(TileSizeInPixels);
         rect.Width = rect.Width.AtLeast(1);
         rect.Height = rect.Height.AtLeast(1);
 
         if (_toMove is not { } toMove)
             toMove = CreateToMove();
-        var offX = Rect.Div(8).X;
-        var offY = Rect.Div(8).Y;
+        var offX = Rect.Div(TileSizeInPixels).X;
+        var offY = Rect.Div(TileSizeInPixels).Y;
         for (int x = rect.X; x < rect.Right; x++)
             for (int y = rect.Y; y < rect.Bottom; y++)
                 if (toMove.GetOrDefault(x - offX, y - offY, '0') != '0')
@@ -153,9 +155,10 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     internal IEnumerable<RectangleSprite> GetSprites(Color c, Vector2? pos = null, bool hollow = false) {
-        var rect = Rect.Div(8);
+        var gridSize = TileSizeInPixels;
+        var rect = Rect.Div(gridSize);
 
-        Vector2 rPos = pos ?? new(rect.X * 8, rect.Y * 8);
+        Vector2 rPos = pos ?? new(rect.X * gridSize, rect.Y * gridSize);
 
         _toMove ??= CreateToMove();
 
@@ -167,12 +170,13 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             for (int x = 0; x < toMove.GetLength(0); x++)
                 for (int y = 0; y < toMove.GetLength(1); y++)
                     if (toMove[x, y] != '0')
-                        yield return ISprite.OutlinedRect(new(x * 8 + rPos.X, y * 8 + rPos.Y), 8, 8, fillColor, c * 0.7f);
+                        yield return ISprite.OutlinedRect(new(x * gridSize + rPos.X, y * gridSize + rPos.Y), gridSize, gridSize, fillColor, c * 0.7f);
         //yield return ISprite.OutlinedRect(Rect, Color.Pink * 0.1f, Color.Pink);
     }
 
     public void MergeWith(Rectangle rectPixels, bool exclude) {
-        rectPixels = rectPixels.Div(8).AddSize(1, 1).Mult(8);
+        var gridSize = TileSizeInPixels;
+        rectPixels = rectPixels.Div(gridSize).AddSize(1, 1).Mult(gridSize);
 
         var merged = RectangleExt.Merge(Rect, rectPixels);
         Rect = merged;
@@ -218,15 +222,16 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
     }
 
     public IHistoryAction PlaceClone(Room room) {
-        return new TilePasteAction(new(_toMove), Grid, Rect.Div(8).Location);
+        return new TilePasteAction(new(_toMove), Grid, Rect.Div(TileSizeInPixels).Location);
     }
     
     public IHistoryAction AltDrag(Room room, Vector2 offset) {
+        var gridSize = TileSizeInPixels;
         // The tile paste action always has to be successful, even if no changes were done,
         // so that OnUndo gets called always.
-        var act = new TilePasteAction(new(_toMove), Grid, Rect.Div(8).Location + (offset / 8f).ToPoint())
-            .WithHook(onApply: () => MoveRects((offset / 8f).ToPoint()),
-                onUndo: () => MoveRects((-offset / 8f).ToPoint()),
+        var act = new TilePasteAction(new(_toMove), Grid, Rect.Div(gridSize).Location + (offset / gridSize).ToPoint())
+            .WithHook(onApply: () => MoveRects((offset / gridSize).ToPoint()),
+                onUndo: () => MoveRects((-offset / gridSize).ToPoint()),
                 alwaysSuccessful: true);
         
         return act;
@@ -241,7 +246,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var newToMove = _toMove.CreateFlippedHorizontally();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove, NewTileOffset: default);
+        var action = new TileSwapAction(Grid, Rect.Div(TileSizeInPixels), _orig!, newToMove, NewTileOffset: default);
         _toMove = newToMove;
 
         return action;
@@ -252,7 +257,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
         var newToMove = _toMove.CreateFlippedVertically();
 
-        var action = new TileSwapAction(Grid, Rect.Div(8), _orig!, newToMove, NewTileOffset: default);
+        var action = new TileSwapAction(Grid, Rect.Div(TileSizeInPixels), _orig!, newToMove, NewTileOffset: default);
         _toMove = newToMove;
 
         return action;
@@ -260,9 +265,9 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public IHistoryAction? TryRotate(RotationDirection dir) {
         ConsumeTilesIfNeeded();
-
+        var gridSize = TileSizeInPixels;
         var newToMove = dir == RotationDirection.Left ? _toMove.CreateRotatedLeft() : _toMove.CreateRotatedRight();
-        var r = Rect.Div(8);
+        var r = Rect.Div(gridSize);
         var pivot = r.Center;
         var postRotateRect = new Rectangle(pivot.X - r.Height / 2, pivot.Y - r.Width / 2, r.Height, r.Width);
         var bounds = RectangleExt.Merge(r, postRotateRect);
@@ -271,7 +276,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
             NewTileOffset: new Point(bounds.X - postRotateRect.X, bounds.Y - postRotateRect.Y)
         );
 
-        Rect = postRotateRect.Mult(8);
+        Rect = postRotateRect.Mult(gridSize);
         _toMove = newToMove;
 
         return action;

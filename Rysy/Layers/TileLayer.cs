@@ -10,7 +10,7 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
     
     public int Depth { get; init; }
 
-    public virtual int TileSizeInPixels { get; set; } = 8;
+    public virtual int TileSizeInPixels => 8;
     
     public TileEditorLayer(TileLayer layer, int depth) {
         TileLayer = layer;
