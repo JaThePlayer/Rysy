@@ -578,7 +578,14 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
         Dispose();
     }
 
-    SignalTarget ISignalEmitter.SignalTarget { get; set; }
+    SignalTarget ISignalEmitter.SignalTarget {
+        get;
+        set {
+            field = value;
+            BgAutotiler.SignalTarget = value;
+            FgAutotiler.SignalTarget = value;
+        }
+    }
 }
 
 public sealed record MapMetadata {

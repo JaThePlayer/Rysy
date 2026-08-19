@@ -9,6 +9,8 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
     public TileLayer TileLayer { get; init; }
     
     public int Depth { get; init; }
+
+    public virtual int TileSizeInPixels { get; set; } = 8;
     
     public TileEditorLayer(TileLayer layer, int depth) {
         TileLayer = layer;
@@ -28,7 +30,7 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
     }
 
     public override IEnumerable<Placement> GetMaterials()
-        => Array.Empty<Placement>();
+        => [];
 
     public override Searchable GetMaterialSearchable(object material) {
         if (material is not char c)
@@ -59,12 +61,13 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
             return [];
 
         var grid = GetGrid(room);
-        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * 8, grid.Height * 8);
+        var gridSize = grid.TileSizeInPixels;
+        var rect = rectNullable ?? new Rectangle(0, 0, grid.Width * gridSize, grid.Height * gridSize);
         
-        var pos = rect.Location.ToVector2().GridPosFloor(8);
-        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(8);
+        var pos = rect.Location.ToVector2().GridPosFloor(gridSize);
+        var pos2 = (rect.Location.ToVector2() + rect.Size().ToVector2()).GridPosFloor(gridSize);
 
-        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(8), this) is { } s)
+        if (grid.GetSelectionForArea(RectangleExt.FromPoints(pos, pos2).AddSize(1, 1).Mult(gridSize), this) is { } s)
             return [s];
 
         return [];
@@ -89,7 +92,7 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
 
     public override bool SupportsPreciseMoveMode => false;
 
-    public override int? ForcedGridSize => 8;
+    public override int? ForcedGridSize => TileSizeInPixels;
 
     public string? LonnLayerName => SelectionLayer switch {
         SelectionLayer.FgTiles => "tilesFg",
@@ -108,8 +111,8 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
                 ["tiles"] = item.Data.Attr("text", ""),
                 ["height"] = item.Data.Int("h"),
                 ["width"] = item.Data.Int("w"),
-                ["x"] = item.Data.Int("x") / 8 + 1,
-                ["y"] = item.Data.Int("y") / 8 + 1,
+                ["x"] = item.Data.Int("x") / TileSizeInPixels + 1,
+                ["y"] = item.Data.Int("y") / TileSizeInPixels + 1,
             }
         };
     }

@@ -16,7 +16,8 @@ public class TileBucketMode : TileMode {
     
     public override void Render(Camera camera, Room room) {
         var tile = Tool.GetMouseTilePos(camera, room);
-        var mouse = tile.Mult(8);
+        var gridSize = GridSize;
+        var mouse = tile.Mult(gridSize);
 
         var width = Tool.GetGrid(room).Width;
         if (!_prevChangedTiles?.Get2d(tile.X, tile.Y, width) ?? true) {
@@ -30,21 +31,21 @@ public class TileBucketMode : TileMode {
             if (!tiles.Get(i))
                 continue;
 
-            var w = 8;
+            var w = gridSize;
             var (x, y) = tiles.Get2dLoc(i, width);
             var maxI = i + width - x;
             // Merge rectangles horizontally:
             while (++i < maxI && tiles.Get(i)) {
-                w += 8;
+                w += gridSize;
             }
             // we overshoot inside the while loop, let's cancel that out
             i--;
             
-            Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(x * 8, y * 8, w, 8), null, color);
+            Gfx.Batch.Draw(Gfx.Pixel, new Rectangle(x * gridSize, y * gridSize, w, gridSize), null, color);
         }
 
         if (tiles.Length == 0) {
-            ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, Tool.DefaultColor).Render();
+            ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, gridSize, gridSize), Color.Transparent, Tool.DefaultColor).Render();
         }
     }
 

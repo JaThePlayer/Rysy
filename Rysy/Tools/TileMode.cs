@@ -8,6 +8,8 @@ namespace Rysy.Tools;
 public abstract class TileMode : ToolMode {
     public readonly TileTool Tool;
 
+    public int GridSize => Tool.GridSize;
+    
     protected TileMode(TileTool tool) {
         Tool = tool;
     }

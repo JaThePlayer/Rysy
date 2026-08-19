@@ -17,16 +17,17 @@ public abstract class TileShapeMode : TileMode {
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
+        var gridSize = GridSize;
 
         if (!_dragGesture.Begun) {
-            Tool.RenderTileRectangle(mousePos.Mult(8).ToVector2(), 1, 1, hollow: false);
+            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2(), 1, 1, hollow: false);
         } else {
-            var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(8));
+            var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
-            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * 8, startPos.ToVector2().Add(0.5f, 0.5f) * 8, outline).Render(SpriteRenderCtx.Default());
+            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * gridSize, startPos.ToVector2().Add(0.5f, 0.5f) * gridSize, outline).Render(SpriteRenderCtx.Default());
             
-            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * 8, startPos.Y * 8, 8, 8));
-            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * 8, mousePos.Y * 8, 8, 8));
+            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize, startPos.Y * gridSize, gridSize, gridSize));
+            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize, mousePos.Y * gridSize, gridSize, gridSize));
         }
     }
 

@@ -9,22 +9,31 @@ using System.Text;
 namespace Rysy.Graphics;
 
 public class Tilegrid : ILuaWrapper {
+    public int TileSizeInPixels { get; } = 8;
+    
     public Tilegrid() { }
 
-    public Tilegrid(char[,] tiles) {
+    public Tilegrid(char[,] tiles, int tileSizeInPixels = 8) {
         Tiles = tiles;
+        TileSizeInPixels = tileSizeInPixels;
     }
 
-    public Tilegrid(int widthPixels, int heightPixels) {
-        Tiles = new char[widthPixels / 8, heightPixels / 8];
+    public Tilegrid(int widthPixels, int heightPixels, int tileSizeInPixels = 8) {
+        TileSizeInPixels = tileSizeInPixels;
+        Tiles = new char[widthPixels / tileSizeInPixels, heightPixels / tileSizeInPixels];
         Tiles.Fill('0');
     }
 
     /// <summary>
     /// (In tiles)
     /// </summary>
-    public int Width, Height;
+    public int Width { get; private set; }
 
+    /// <summary>
+    /// (In tiles)
+    /// </summary>
+    public int Height { get; private set; }
+    
     public char[,] Tiles {
         get;
         set {
@@ -199,10 +208,10 @@ public class Tilegrid : ILuaWrapper {
     }
 
     public void Resize(int widthPixels, int heightPixels) {
-        if (Width == widthPixels / 8 && Height == heightPixels / 8)
+        if (Width == widthPixels / TileSizeInPixels && Height == heightPixels / TileSizeInPixels)
             return;
             
-        Tiles = Tiles.CreateResized(widthPixels / 8, heightPixels / 8, '0');
+        Tiles = Tiles.CreateResized(widthPixels / TileSizeInPixels, heightPixels / TileSizeInPixels, '0');
         MarkEdited();
         CachedSprites = null;
     }
@@ -210,13 +219,7 @@ public class Tilegrid : ILuaWrapper {
 
     internal AutotiledSpriteList? CachedSprites {
         get;
-        set {
-            var renderTargetEnabled = field?.IsRenderTargetEnabled();
-            field?.UseRenderTarget(false);
-            field = value;
-            if (renderTargetEnabled is true)
-                field?.UseRenderTarget(true);
-        }
+        set;
     }
 
     public AutotiledSpriteList GetSprites() {
@@ -226,6 +229,7 @@ public class Tilegrid : ILuaWrapper {
         var sprites = Autotiler?.GetSprites(Vector2.Zero, Tiles, Color.White) 
                       ?? throw new NullReferenceException("Tried to call GetSprites on a Tilegrid when Autotiler is null!");
 
+        sprites.TileSizeInPixels = TileSizeInPixels;
         sprites.Depth = Depth;
         CachedSprites = sprites;
 
@@ -251,20 +255,17 @@ public class Tilegrid : ILuaWrapper {
     }
 
     #region Saving
-    public static unsafe Tilegrid FromString(int widthPixels, int heightPixels, string tilesString) {
-        var w = widthPixels / 8;
-        var h = heightPixels / 8;
-
+    public static unsafe Tilegrid FromString(int widthPixels, int heightPixels, string tilesString, int tileSizeInPixels = 8) {
         var g = new Tilegrid(widthPixels, heightPixels);
         g.Tiles = TileArrayFromString(widthPixels, heightPixels, tilesString);
 
         return g;
     }
 
-    public static unsafe char[,] TileArrayFromString(int widthPixels, int heightPixels, string tilesString) {
+    public static unsafe char[,] TileArrayFromString(int widthPixels, int heightPixels, string tilesString, int tileSizeInPixels = 8) {
         tilesString = tilesString.Replace("\r", "", StringComparison.Ordinal);
-        var w = widthPixels / 8;
-        var h = heightPixels / 8;
+        var w = widthPixels / tileSizeInPixels;
+        var h = heightPixels / tileSizeInPixels;
 
         var tiles = new char[w,h];
         tiles.Fill('0');

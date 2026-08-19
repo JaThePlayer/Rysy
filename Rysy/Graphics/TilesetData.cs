@@ -148,6 +148,13 @@ public sealed class TilesetData : IXmlBackedEntityData {
         
     public Autotiler Autotiler { get; set; }
 
+    public int TileSizeInPixels {
+        get;
+        set {
+            field = value;
+        }
+    } = 8;
+
     [JsonIgnore]
     public VirtTexture Texture { get; set; } = null!;
     public List<TilesetSet> Tiles { get; set; } = new();

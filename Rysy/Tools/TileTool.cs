@@ -144,10 +144,10 @@ public class TileTool : Tool, ISignalListener<MapSwapped> {
     public Point GetMouseTilePos(Camera camera, Room room, bool round = false, Point? fakeMousePos = null) {
         var pos = room.WorldToRoomPos(camera, (fakeMousePos ?? Input.Mouse.Pos).ToVector2());
         if (round) {
-            return pos.GridPosRound(8);
+            return pos.GridPosRound(GridSize);
         }
 
-        return pos.GridPosFloor(8);
+        return pos.GridPosFloor(GridSize);
     }
 
     protected void HandleMiddleClick(Room currentRoom, int tx, int ty) {

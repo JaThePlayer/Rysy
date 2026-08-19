@@ -1,5 +1,4 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
 
@@ -13,10 +12,11 @@ public class TileBrushMode : TileMode {
     private char StrokeTile => Tool.TileOrAlt(_dragGesture.Shift);
     
     public override void Render(Camera camera, Room room) {
-        var mouse = room.WorldToRoomPos(camera, Tool.Input.Mouse.Pos.ToVector2()).Snap(8).ToPoint();
+        var gridSize = GridSize;
+        var mouse = room.WorldToRoomPos(camera, Tool.Input.Mouse.Pos.ToVector2()).Snap(gridSize).ToPoint();
 
         Tool.RenderTileRectangle(mouse.ToVector2(), 1, 1, hollow: false);
-        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, 8, 8), Color.Transparent, Tool.DefaultColor).Render();
+        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, gridSize, gridSize), Color.Transparent, Tool.DefaultColor).Render();
     }
 
     public override void Update(Camera camera, Room room) {

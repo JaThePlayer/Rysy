@@ -1,6 +1,7 @@
 ﻿using Rysy.Extensions;
 using Rysy.Helpers;
 using Rysy.Selections;
+using Rysy.Signals;
 using System.Collections;
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
@@ -8,25 +9,31 @@ using System.Xml;
 
 namespace Rysy.Graphics;
 
-public sealed class Autotiler {
+public sealed class Autotiler : ISignalEmitter {
     public Autotiler() {
-        MissingTileset = new() {
+        MissingTileset = new TilesetData {
             Id = '0',
             Autotiler = this,
             DisplayName = "MISSING",
             Filename = "MISSING",
             IgnoreAll = true,
-            Texture = AutotiledSprite.Missing.Texture,
-            Center = [ AutotiledSprite.Missing ],
-            Padding = [ AutotiledSprite.Missing ],
+            Texture = Gfx.Atlas["Rysy:tilesets/missingTile"],
             Tiles = [],
             IgnoresExceptExceptions = [],
             Ignores = [],
             IgnoreExceptions = [],
         };
+
+        var missingSprite = AutotiledSprite.Create(MissingTileset, new(0, 0));
+        MissingTileset.Center = [ missingSprite ];
+        MissingTileset.Padding = [ missingSprite ];
+        
+        InvalidTileSprite = AutotiledSprite.Create(MissingTileset, new(0, 0));
     }
     
-    public TilesetData MissingTileset { get; private set; }
+    public TilesetData MissingTileset { get; }
+    
+    public AutotiledSprite InvalidTileSprite { get; }
 
     public Dictionary<char, TilesetData> Tilesets = new();
 
@@ -113,6 +120,8 @@ public sealed class Autotiler {
             .Where(n => n.Name == "define")
             .Select(n => new TilesetDefine(n, id))
             .ToDictionary(d => d.Id, d => d);
+        
+        this.Emit(new ParsingTilesetXml(this, tilesetData));
 
         var tiles = tileset.ChildNodes.OfType<XmlNode>().Where(n => n.Name == "set").SelectWhereNotNull(n => {
             var mask = n.Attributes?["mask"]?.InnerText ?? throw new Exception($"<set> missing mask for tileset {id}");
@@ -218,7 +227,9 @@ public sealed class Autotiler {
     private static AutotiledSprite[] ParseTiles(string tiles, TilesetData tileset) {
         return tiles.Split(';').Select(x => {
             var split = x.Split(',');
-            return new Point(int.Parse(split[0], CultureInfo.InvariantCulture) * 8, int.Parse(split[1], CultureInfo.InvariantCulture) * 8);
+            return new Point(
+                int.Parse(split[0], CultureInfo.InvariantCulture) * tileset.TileSizeInPixels,
+                int.Parse(split[1], CultureInfo.InvariantCulture) * tileset.TileSizeInPixels);
         }).Select(p => AutotiledSprite.Create(tileset, p)).ToArray();
     }
 
@@ -298,7 +309,7 @@ public sealed class Autotiler {
         }
         
         if (!tileset.GetFirstMatch(tileChecker, x, y, out var tiles) || tiles.Length == 0) {
-            return AutotiledSprite.Invalid;
+            return InvalidTileSprite;
         }
 
         return tiles.Length == 1 ? tiles[0] : tiles[RandomExt.SeededRandom(x, y) % (uint) tiles.Length];
@@ -425,6 +436,8 @@ public sealed class Autotiler {
         TilesetDataCacheToken.Invalidate();
         TilesetDataCacheToken.Reset();
     }
+
+    public SignalTarget SignalTarget { get; set; }
 }
 
 /// <summary>
@@ -443,26 +456,23 @@ public sealed class AutotiledSprite {
 
     internal readonly AnimatedTileData? AnimatedTile;
 
-    internal readonly TilesetData? Tileset;
+    internal readonly TilesetData Tileset;
 
     public AutotiledSprite WithTileset(TilesetData newTileset) 
         => new(newTileset, RelativeLocation);
 
     public AutotiledSprite WithAnimatedTile(AnimatedTileData tile)
-        => Tileset is {} ? new(Tileset, RelativeLocation, tile) : new(Texture, RelativeLocation, tile);
+        => new(Tileset, RelativeLocation, tile);
 
-    public static AutotiledSprite Create(TilesetData texture, Point location) => new(texture, location);
+    public static AutotiledSprite Create(TilesetData tilesetData, Point location)
+        => new(tilesetData, location);
 
-    private AutotiledSprite(VirtTexture texture, Point location, AnimatedTileData? animatedTile = null) {
-        Texture = texture;
-        RelativeLocation = location;
-        Subtexture = texture.GetSubtextureRect(RelativeLocation.X, RelativeLocation.Y, 8, 8, out _);
-
-        AnimatedTile = animatedTile;
-    }
-    
-    private AutotiledSprite(TilesetData tileset, Point location, AnimatedTileData? animatedTile = null) : this(tileset.Texture, location, animatedTile) {
+    private AutotiledSprite(TilesetData tileset, Point location, AnimatedTileData? animatedTile = null) {
         Tileset = tileset;
+        Texture = tileset.Texture;
+        RelativeLocation = location;
+        AnimatedTile = animatedTile;
+        Subtexture = Texture.GetSubtextureRect(RelativeLocation.X, RelativeLocation.Y, Tileset.TileSizeInPixels, Tileset.TileSizeInPixels, out _);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -471,23 +481,14 @@ public sealed class AutotiledSprite {
             b.Draw(t, pos, Subtexture, color);
         }
     }
-
-    /// <summary>
-    /// Represents a missing tile
-    /// </summary>
-    public static AutotiledSprite Missing => field 
-        ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
-
-    /// <summary>
-    /// Represents an invalid tile
-    /// </summary>
-    public static AutotiledSprite Invalid => field 
-        ??= new(Gfx.Atlas["Rysy:tilesets/missingTile"], new(0, 0));
 }
 
 public sealed record AutotiledSpriteList : ISprite {
     public int? Depth { get; set; }
     public Color Color { get; set; } = Color.White;
+
+    public int TileSizeInPixels { get; set; } = 8;
+    
     internal List<char>? UnknownTilesetsUsed;
 
     public ISprite WithMultipliedAlpha(float alpha) {
@@ -510,60 +511,12 @@ public sealed record AutotiledSpriteList : ISprite {
     public Vector2 Pos;
     
     internal Autotiler Autotiler { get; set; }
-
-    private RenderTarget2D? _renderTarget;
-    private bool _renderTargetCached;
-
-    public bool IsRenderTargetEnabled() => _renderTarget is { };
-    
-    public void UseRenderTarget(bool enable) {
-        if (enable) {
-            _renderTarget ??= new RenderTarget2D(Gfx.Batch.GraphicsDevice, 
-                Sprites.GetLength(0) * 8, Sprites.GetLength(1) * 8, 
-                false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-            _renderTargetCached = false;
-        } else {
-            _renderTarget?.Dispose();
-            _renderTarget = null;
-            _renderTargetCached = false;
-        }
-    }
     
     public AutotiledSpriteList(Autotiler autotiler) {
         Autotiler = autotiler;
     }
 
-    private void ScheduleCache(Room? room) {
-        RysyState.OnEndOfThisFrame += () => {
-            var b = Gfx.Batch;
-            var gd = b.GraphicsDevice;
-            
-            RenderTargetBinding[]? renderTargetBindings = gd.GetRenderTargets();
-            gd.SetRenderTarget(_renderTarget);
-            gd.Clear(Color.Transparent);
-
-            Gfx.BeginBatch(new SpriteBatchState(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone));
-
-            DoRender(SpriteRenderCtx.Default(false), default, room);
-            
-            Gfx.EndBatch();
-            gd.SetRenderTargets(renderTargetBindings);
-        };
-    }
-    
     public void Render(SpriteRenderCtx ctx) {
-        var shouldCache = _renderTarget is { } && !_renderTargetCached && IsLoaded;
-
-        if (shouldCache) {
-            _renderTargetCached = true;
-            ScheduleCache(ctx.Room);
-        }
-        
-        if (_renderTarget is { } cache && !shouldCache) {
-            Gfx.Batch.Draw(cache, Pos, Color.White);
-            return;
-        }
-        
         DoRender(ctx, Pos, ctx.Room);
     }
 
@@ -572,12 +525,13 @@ public sealed record AutotiledSpriteList : ISprite {
         var sprites = Sprites;
         
         int left, right, top, bot;
+        var tileSize = TileSizeInPixels;
         if (ctx.Camera is { } cam) {
             var scrPos = cam.Pos - ctx.CameraOffset - selfPos;
-            left = Math.Max(0, (int) (scrPos.X / 8));
-            right = (int) Math.Min(sprites.GetLength(0), float.Round((scrPos.X + cam.Viewport.Width / cam.Scale) / 8) + 2);
-            top = Math.Max(0, (int) (scrPos.Y / 8));
-            bot = (int) Math.Min(sprites.GetLength(1), float.Round((scrPos.Y + cam.Viewport.Height / cam.Scale) / 8) + 2);
+            left = Math.Max(0, (int) (scrPos.X / tileSize));
+            right = (int) Math.Min(sprites.GetLength(0), float.Round((scrPos.X + cam.Viewport.Width / cam.Scale) / tileSize) + 2);
+            top = Math.Max(0, (int) (scrPos.Y / tileSize));
+            bot = (int) Math.Min(sprites.GetLength(1), float.Round((scrPos.Y + cam.Viewport.Height / cam.Scale) / tileSize) + 2);
         } else {
             left = 0;
             top = 0;
@@ -594,7 +548,7 @@ public sealed record AutotiledSpriteList : ISprite {
                 if (sprite is null)
                     continue;
 
-                var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
+                var pos = new Vector2(selfPos.X + x * tileSize, selfPos.Y + y * tileSize);
                 var tileColor = color;
                 if (room is {} && sprite.Tileset is { Rainbow: true }) {
                     tileColor = ctx.Animate
@@ -619,7 +573,7 @@ public sealed record AutotiledSpriteList : ISprite {
                     if (sprite is not { AnimatedTile: { } animated })
                         continue;
 
-                    var pos = new Vector2(selfPos.X + x * 8, selfPos.Y + y * 8);
+                    var pos = new Vector2(selfPos.X + x * tileSize, selfPos.Y + y * tileSize);
                     animated.RenderAt(ctx, b, pos, color);
                 }
             }
@@ -627,5 +581,5 @@ public sealed record AutotiledSpriteList : ISprite {
     }
 
     public ISelectionCollider GetCollider()
-        => ISelectionCollider.FromRect(Pos, Sprites.GetLength(0) * 8, Sprites.GetLength(1) * 8);
+        => ISelectionCollider.FromRect(Pos, Sprites.GetLength(0) * TileSizeInPixels, Sprites.GetLength(1) * TileSizeInPixels);
 }
