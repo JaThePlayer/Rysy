@@ -338,21 +338,24 @@ public static class ModRegistry {
 
         foreach (var dll in dlls) {
             Logger.Write(LogTag, LogLevel.Info, $"Loading mod assembly for {mod.Name}: {dll}");
-            fs.TryWatchAndOpen(dll, stream => {
-                // TODO: use asmresolver to find modmodule class ahead of time, and only load those dlls (and error on multiple).
-                
-                // Zip streams don't support checking their Length property which is used by LoadFromStream,
-                // so we need to copy to a memory stream first.
-                using var memStream = new MemoryStream();
-                stream.CopyTo(memStream);
-                memStream.Seek(0, SeekOrigin.Begin);
-                var modAsm = ctx.LoadFromStream(memStream);
+            var watchedAsset = new WatchedAsset {
+                OnChanged = dllPath => {
+                    var relinkResults = Relinker.Relink(mod, dllPath);
 
-                LoadModule(mod, modAsm, componentRegistry);
-            }, out var watcher);
+                    if (relinkResults.Success) {
+                        using var modAsmStream = relinkResults.GetRelinkedStream();
+                        var modAsm = ctx.LoadFromStream(modAsmStream);
+                        LoadModule(mod, modAsm, componentRegistry);
+                    } else {
+                        Logger.Write(LogTag, LogLevel.Error, $"Failed relinking mod assembly for {mod.Name}: {dll}");
+                    }
+                }
+            };
             
-            if (watcher is {})
-                componentRegistry.Add(watcher);
+            var watcher = fs.RegisterFilewatch(dll, watchedAsset);
+            watchedAsset.OnChanged(dll);
+
+            componentRegistry.Add(watcher);
         }
     }
 

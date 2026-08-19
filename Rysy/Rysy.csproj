@@ -162,6 +162,7 @@
     
     
   <ItemGroup>
+    <PackageReference Include="AsmResolver.DotNet" Version="6.0.1" />
     <PackageReference Include="Hexa.NET.ImGui" Version="2.2.10-prerelease" />
     <PackageReference Include="Hjg.Pngcs" Version="1.1.5" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
