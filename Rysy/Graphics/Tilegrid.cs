@@ -9,7 +9,7 @@ using System.Text;
 namespace Rysy.Graphics;
 
 public class Tilegrid : ILuaWrapper {
-    public int TileSizeInPixels { get; } = 8;
+    public int TileSizeInPixels { get; set; } = 8;
     
     public Tilegrid() { }
 
