@@ -98,6 +98,26 @@ public static class ModRegistry {
 
     private static IDisposable? _modsDirWatcher;
 
+    private static IEnumerable<(string Path, IModFilesystem RootFilesystem)> DiscoverModRootsIn(IModFilesystem fs, string modDir) {
+        if (fs is IWriteableModFilesystem writeableModFilesystem) {
+            writeableModFilesystem.TryCreateDirectory(modDir);
+        }
+        
+        var blacklisted = (Settings.Instance?.ReadBlacklist ?? true) ? TryHelper.Try(() =>
+            (fs.TryReadAllLines(Path.Combine(modDir, "blacklist.txt").Unbackslash()) ?? [])
+            .Select(l => l.Trim())
+            .Where(l => !l.StartsWith('#'))
+            .Select(l => Path.Combine(modDir, l).Unbackslash())
+            .ToHashSet()
+        ) ?? [] : [];
+
+        return fs.FindDirectories(modDir)
+            .Where(dir => !dir.EndsWith("Cache", StringComparison.Ordinal))
+            .Concat(fs.FindFilesInDirectory(modDir, "zip"))
+            .Select(f => (f.Unbackslash(), fs))
+            .Where(f => !blacklisted.Contains(f.Item1));
+    }
+    
     public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         LastUsedComponentRegistry?.DisposeIfDisposable();
         componentRegistry = new ComponentRegistryScope(componentRegistry);
@@ -110,7 +130,7 @@ public static class ModRegistry {
         // Create the Mods/ directory if it doesn't exist (user didn't install Everest yet)
         Directory.CreateDirectory(modDir);
         
-        // Register an empty watcher on the mods directory, so that subsequent wachers created by mod filesystems will
+        // Register an empty watcher on the mods directory, so that subsequent watchers created by mod filesystems will
         // re-use the watcher instead of creating new OS-level filewatchers,
         // which is necessary to avoid the inotify limit on linux.
         _modsDirWatcher?.Dispose();
@@ -131,25 +151,12 @@ public static class ModRegistry {
 
         using var watch = new ScopedStopwatch("ModRegistry.LoadAll");
 
-        var blacklisted = (Settings.Instance?.ReadBlacklist ?? true) ?
-            TryHelper.Try(() =>
-                File.ReadAllLines($"{modDir}/blacklist.txt")
-                .Select(l => l.Trim())
-                .Where(l => !l.StartsWith('#'))
-                .Select(l => $"{modDir}/{l}".Unbackslash())
-                .ToHashSet()
-            ) ?? new(StringComparer.Ordinal) : new(StringComparer.Ordinal);
-
-        IEnumerable<Task<ModMeta?>> allMods =
-            Directory.GetDirectories(modDir).Where(dir => !dir.EndsWith("Cache", StringComparison.Ordinal))
-            .Concat(Directory.GetFiles(modDir, "*.zip"))
-            .Select(f => f.Unbackslash())
-            .Where(f => !blacklisted.Contains(f))
+        IEnumerable<Task<ModMeta?>> allMods = DiscoverModRootsIn(new FolderModFilesystem(modDir), "")
+            .Concat(DiscoverModRootsIn(RysyPlatform.Current.GetRysyAppDataFilesystem(null), "Plugins"))
+            .Concat(DiscoverModRootsIn(RysyPlatform.Current.GetRysyAppDataFilesystem(Settings.Instance.CurrentProfile), "Plugins"))
             .Select(f => {
-                if (f.EndsWith(".zip", StringComparison.Ordinal))
-                    return CreateModAsync(f, componentRegistry, zip: true, loadCSharpPlugins);
-
-                return CreateModAsync(f, componentRegistry, zip: false, loadCSharpPlugins);
+                var isZipped = f.Path.EndsWith(".zip", StringComparison.Ordinal);
+                return CreateModAsync(f.Path, f.RootFilesystem, componentRegistry, isZipped, loadCSharpPlugins);
             })!
             .Append(Task.FromResult(CreateRysyMod(componentRegistry)))!;
 
@@ -238,10 +245,14 @@ public static class ModRegistry {
         }
     }
 
-    private static async Task<ModMeta?> CreateModAsync(string dir, IComponentRegistry componentRegistry, bool zip, bool loadCSharp) {
+    private static async Task<ModMeta?> CreateModAsync(string dir, IModFilesystem rootFilesystem, IComponentRegistry componentRegistry, bool zip, bool loadCSharp) {
         IModFilesystem? filesystem;
         try {
-            filesystem = zip ? new ZipModFilesystem(dir.Unbackslash()) : new FolderModFilesystem(dir.Unbackslash());
+            if (rootFilesystem is not FolderModFilesystem)
+                throw new Exception($"Cannot create a mod filesystem from non-folder filesystem: {rootFilesystem}");
+            
+            filesystem = zip ? new ZipModFilesystem(Path.Combine(rootFilesystem.Root, dir).Unbackslash())
+                : new FolderModFilesystem(Path.Combine(rootFilesystem.Root, dir).Unbackslash());
             await filesystem.InitialScan();
         } catch (Exception e) {
             Logger.Error(LogTag, e, $"Failed to create filesystem for mod at {dir.Unbackslash().Censor()}. Skipping loading the mod!");

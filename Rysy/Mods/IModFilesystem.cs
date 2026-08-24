@@ -112,6 +112,14 @@ public static class ModFilesystemExtensions {
                 return reader.ReadToEnd();
             });
         }
+        
+        public string[]? TryReadAllLines(string path) {
+            return filesystem.OpenFile(path, stream => {
+                using var reader = new StreamReader(stream);
+
+                return reader.ReadToEnd().ReplaceLineEndings("\n").Split('\n');
+            });
+        }
 
         /// <summary>
         /// Reads the given file.
