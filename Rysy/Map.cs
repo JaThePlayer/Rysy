@@ -256,6 +256,9 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
         Load(x => x?.Sprites, forceRead: false,
             readFromXml: (stream, mod) => {
                 Sprites.Clear();
+                // If we're loading from a modded sprite bank, we need to first load the vanilla one.
+                if (mod != ModRegistry.VanillaMod)
+                    LoadVanillaSpritesXml();
                 Sprites.Load(stream, mod);
             },
             errorPopupTitle: "rysy.popups.map.spritesXmlError",
