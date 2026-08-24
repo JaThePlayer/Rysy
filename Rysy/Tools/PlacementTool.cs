@@ -309,7 +309,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         ScopedComponentRegistry.Add(RectangleGesture = new SelectRectangleGesture(Input));
     }
     
-    void ISelectionHotkeyTool.Flip(bool vertical) {
+    void ISelectionHotkeyTool.Flip(bool vertical, bool isArea) {
         if (CurrentPlacement is not ISelectionFlipHandler pl || EditorState.Map is null)
             return;
 

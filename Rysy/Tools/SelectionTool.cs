@@ -280,21 +280,47 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         History.ApplyNewAction(action);
     }
 
-    void ISelectionHotkeyTool.Flip(bool vertical) {
-        if (_currentSelections is not { } selections) {
+    void ISelectionHotkeyTool.Flip(bool vertical, bool isArea) {
+        if (_currentSelections is not { } selections || EditorState.Map is not { } map) {
             return;
         }
 
         FinalizeStates();
+
+        MergedAction finalAction;
+
+        var flipActions = selections.SelectWhereNotNull(s =>
+            s.Handler is ISelectionFlipHandler flip
+                ? vertical ? flip.TryFlipVertical() : flip.TryFlipHorizontal()
+                : null).ToList();
         
-        var action = selections
-            .Select(s => s.Handler is ISelectionFlipHandler flip ? vertical ? flip.TryFlipVertical() : flip.TryFlipHorizontal()  : null)
-            .MergeActions();
-        
-        if (action.Actions.Count != 0)
+        if (!isArea) {
+            finalAction = flipActions.MergeActions();
+        } else {
+            // Make sure to get the selection area before flipping any entities...
+            var area = RectangleExt.Merge(selections.Select(s =>
+                s.Handler.Parent is Entity e ? new Rectangle(e.X, e.Y, e.Width, e.Height) : s.Handler.Rect));
+
+            // But perform final position calculations using the flipped sizes.
+            flipActions.ForEach(x => x.Apply(map));
+            var moveActions = selections.SelectWhereNotNull(s => {
+                var rect = s.Handler.Parent is Entity e ? new Rectangle(e.X, e.Y, e.Width, e.Height) : s.Handler.Rect;
+                return s.Handler.MoveBy(
+                    vertical
+                        ? new Vector2(0f, 2 * area.Y + area.Height - rect.Height - rect.Y * 2)
+                        : new Vector2(2 * area.X + area.Width - rect.Width - rect.X * 2, 0f)
+                );
+            }).ToList();
+
+            flipActions.ForEach(x => x.Undo(map));
+
+            finalAction = flipActions.Concat(moveActions).MergeActions();
+        }
+
+        if (finalAction.Actions.Count != 0)
             ClearColliderCachesInSelections();
 
-        History.ApplyNewAction(action);
+        History.ApplyNewAction(finalAction);
     }
 
     void ISelectionHotkeyTool.Rotate(RotationDirection dir) {
@@ -304,7 +330,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         FinalizeStates();
         var action = selections.Select(s => s.Handler is ISelectionFlipHandler flip ? flip.TryRotate(dir) : null).MergeActions();
-        if (action.Actions.Any())
+        if (action.Actions.Count != 0)
             ClearColliderCachesInSelections();
 
         History.ApplyNewAction(action);
