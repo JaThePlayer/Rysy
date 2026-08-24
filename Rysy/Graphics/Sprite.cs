@@ -140,6 +140,7 @@ public record struct Sprite : ITextureSprite {
     public ISelectionCollider GetCollider() => ISelectionCollider.FromSprite(this);
 
     public Rectangle? GetRenderRect() {
+        // Logic duplicated in SpriteTemplate
         if (Texture.Texture is not { } texture) {
             return null;
         }
@@ -148,18 +149,17 @@ public record struct Sprite : ITextureSprite {
 
         var scale = Scale;
         var size = new Vector2(ClipRect!.Value.Width * scale.X, ClipRect.Value.Height * scale.Y);
-        Vector2 pos;
         if (Rotation == 0f) {
-            pos = Pos - _multOrigin * scale + _subtextureOffset;
+            var pos = Pos - _multOrigin * scale + _subtextureOffset;
             if (OutlineColor != default) {
                 return new Rectangle((int) pos.X - 1, (int) pos.Y - 1, (int) size.X + 2, (int) size.Y + 2);
-            } else {
-                return new Rectangle((int) pos.X, (int) pos.Y, (int) size.X, (int) size.Y);
             }
+
+            return new Rectangle((int) pos.X, (int) pos.Y, (int) size.X, (int) size.Y);
         }
 
         // rotate our points, by rotating the offset
-        var off = -_multOrigin;
+        var off = -_multOrigin * scale;
 
         var p1 = off.Rotate(Rotation);
         var p2 = (off + new Vector2(size.X, 0)).Rotate(Rotation);

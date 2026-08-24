@@ -159,6 +159,7 @@ public sealed record SpriteTemplate {
     }
     
     public Rectangle? GetRenderRect(Vector2 atPos) {
+        // Logic duplicated in Sprite
         if (Texture.Texture is not { } texture) {
             return null;
         }
@@ -175,7 +176,7 @@ public sealed record SpriteTemplate {
         }
 
         // rotate our points, by rotating the offset
-        var off = -_multOrigin;
+        var off = -_multOrigin * scale;
 
         var p1 = off.Rotate(Rotation);
         var p2 = (off + new Vector2(size.X, 0)).Rotate(Rotation);
