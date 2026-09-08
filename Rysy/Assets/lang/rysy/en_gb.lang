@@ -607,6 +607,7 @@ rysy.commands.changeTool=Tool: '{0}'
 rysy.commands.changeTool.tooltip=Changes the current tool.
 rysy.commands.changeMaterial=Material: {0}: '{1}' - '{2}'.
 rysy.commands.changeMaterial.tooltip=Changes the current material.
+rysy.commands.toggleVisibility=Visibility: '{0}'
 
 rysy.editorLayers.BgTiles=Bg Tiles
 rysy.editorLayers.FgTiles=Fg Tiles
