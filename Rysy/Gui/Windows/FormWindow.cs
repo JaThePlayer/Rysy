@@ -164,7 +164,7 @@ public class FormWindow : Window {
                     if (hasColumns) {
                         ImGui.Columns();
                     }
-                    ImGui.SeparatorText(text);
+                    ImGui.SeparatorText(text.Translate());
                     if (hasColumns) {
                         ImGui.Columns(2);
                     }

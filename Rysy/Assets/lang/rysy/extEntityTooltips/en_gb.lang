@@ -14,3 +14,15 @@ room.attribute.spaceSkipWrap=No Space Screen Wrap
 room.description.spaceSkipWrap=Whether to skip making the screen wrap around on the Y axis in a Space room.
 room.attribute.spaceSkipGravity=No Space Gravity
 room.description.spaceSkipGravity=Whether to skip making the gravity weaker in a Space room.
+
+triggers.everest/teleportTrigger.placements.name.default=Teleport
+triggers.everest/teleportTrigger.placements.description.default=Teleports the player to a different room when entered.
+triggers.everest/teleportTrigger.attributes.name.nextLevel=Next Room
+triggers.everest/teleportTrigger.attributes.description.nextLevel=The name of the room to teleport to.\nCannot be empty.
+triggers.everest/teleportTrigger.attributes.description.introType=The intro type to use after teleporting to the room.
+triggers.everest/teleportTrigger.attributes.description.nearestSpawnX=If `Use Default Spawn` is disabled, specifies the X position of the spawn point to teleport to.\nThe nearest spawn to this coordinate is picked.\nDoes nothing if `Use Default Spawn` is enabled.
+triggers.everest/teleportTrigger.attributes.description.nearestSpawnY=If `Use Default Spawn` is disabled, specifies the Y position of the spawn point to teleport to.\nThe nearest spawn to this coordinate is picked.\nDoes nothing if `Use Default Spawn` is enabled.
+triggers.everest/teleportTrigger.attributes.description.useDefaultSpawn=If enabled, the player teleports to the default spawn point of the room.\nOtherwise, `Nearest Spawn X/Y` fields determine where the player will get teleported to.
+triggers.everest/teleportTrigger.attributes.description.onlyOnce=Whether the trigger should only activate once.\nWhen activated, the trigger will also set the flag named `{thisRoomName}:{triggerId}_teleport_doNotTrigger`.
+triggers.everest/teleportTrigger.attributes.description.flag=The flag that needs to be set in order for this trigger to function.
+triggers.everest/teleportTrigger.attributes.description.useDefaultSpawn.separator=Spawn Point
