@@ -27,6 +27,16 @@ public interface IMenubarIndicator {
     public void RenderMenubarIndicator(Menubar menubar);
 }
 
+public sealed class MenubarVisibilityToggle(string key, Action action) : ICommandPaletteCommand {
+    private static readonly IReadOnlyList<string> Tags = [ "visibility" ];
+    public Searchable Searchable { get; } =  new("rysy.commands.toggleVisibility".TranslateFormatted($"rysy.editorLayers.{key}".Translate()), [], Tags);
+    public XnaWidgetDef? CreatePreview() => null;
+    public bool HasPreview => false;
+    public ITooltip? Tooltip => null;
+    public void Run() => action();
+}
+    
+
 public class MenubarButtonEntry(string tab, string langKey, Action run, Func<bool>? disabled = null, string? hotkeyId = null, 
     bool addToCommandPalette = true, ImGuiIcons? icon = null) : IMenubarEntry, ICommandPaletteCommand {
     public string Tab => tab;
@@ -237,6 +247,22 @@ public class Menubar : SceneComponent {
         #endregion
         
         #region EditTab
+        
+        var p = Persistence.Instance;
+        Scene?.Add(new MenubarVisibilityToggle("FgTiles",
+            () => p.FgTilesVisible = !p.FgTilesVisible));
+        Scene?.Add(new MenubarVisibilityToggle("BgTiles",
+            () => p.BgTilesVisible = !p.BgTilesVisible));
+        Scene?.Add(new MenubarVisibilityToggle("Entities",
+            () => p.EntitiesVisible = !p.EntitiesVisible));
+        Scene?.Add(new MenubarVisibilityToggle("Triggers",
+            () => p.TriggersVisible = !p.TriggersVisible));
+        Scene?.Add(new MenubarVisibilityToggle("FgDecals",
+            () => p.FgDecalsVisible = !p.FgDecalsVisible));
+        Scene?.Add(new MenubarVisibilityToggle("BgDecals",
+            () => p.BgDecalsVisible = !p.BgDecalsVisible));
+        
+        
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.settings", 
             () => SettingsWindow.Add(Scene),
             hotkeyId: null,
@@ -352,7 +378,9 @@ public class Menubar : SceneComponent {
             addToCommandPalette: true
         ));
         #endregion
-
+        
+        
+        
         return;
 
         bool HasHistoryAndMap(Scene scene, [NotNullWhen(true)] out IHistoryHandler? history, [NotNullWhen(true)] out Map? map) {
