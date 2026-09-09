@@ -27,13 +27,49 @@ public interface IMenubarIndicator {
     public void RenderMenubarIndicator(Menubar menubar);
 }
 
-public sealed class MenubarVisibilityToggle(string key, Action action) : ICommandPaletteCommand {
+/// <summary>
+/// Allows rendering inside the View->Visibility menu.
+/// </summary>
+public interface IMenubarVisibilityToggle {
+    /// <summary>
+    /// Renders the toggle inside the visibility menu.
+    /// </summary>
+    public void RenderVisibilityToggle();
+}
+
+public sealed class MenubarVisibilityToggle : IMenubarVisibilityToggle, ICommandPaletteCommand {
+    private readonly Func<Persistence, bool> _getter;
+    private readonly Action<Persistence, bool> _setter;
+
+    public MenubarVisibilityToggle(string key, Func<Persistence, bool> getter, Action<Persistence, bool> setter) {
+        LayerDisplayName = key;
+        _getter = getter;
+        _setter = setter;
+        
+        Searchable = new("rysy.commands.toggleVisibility".TranslateFormatted(LayerDisplayName), [], Tags);
+    }
+
     private static readonly IReadOnlyList<string> Tags = [ "visibility" ];
-    public Searchable Searchable { get; } =  new("rysy.commands.toggleVisibility".TranslateFormatted($"rysy.editorLayers.{key}".Translate()), [], Tags);
+
+    public string LayerDisplayName => $"rysy.editorLayers.{field}".Translate();
+    
+    public Searchable Searchable { get; }
+    
     public XnaWidgetDef? CreatePreview() => null;
+    
     public bool HasPreview => false;
+    
     public ITooltip? Tooltip => null;
-    public void Run() => action();
+
+    public void Run() => _setter(Persistence.Instance, !_getter(Persistence.Instance));
+
+    public void RenderVisibilityToggle() {
+        var p = Persistence.Instance;
+        var value = _getter(p);
+        if (ImGui.Checkbox(LayerDisplayName, ref value)) {
+            _setter(p, value);
+        }
+    }
 }
     
 
@@ -248,20 +284,24 @@ public class Menubar : SceneComponent {
         
         #region EditTab
         
-        var p = Persistence.Instance;
         Scene?.Add(new MenubarVisibilityToggle("FgTiles",
-            () => p.FgTilesVisible = !p.FgTilesVisible));
+            static p => p.FgTilesVisible,
+            static (p, x) => p.FgTilesVisible = x));
         Scene?.Add(new MenubarVisibilityToggle("BgTiles",
-            () => p.BgTilesVisible = !p.BgTilesVisible));
+            static p => p.BgTilesVisible,
+            static (p, x) => p.BgTilesVisible = x));
         Scene?.Add(new MenubarVisibilityToggle("Entities",
-            () => p.EntitiesVisible = !p.EntitiesVisible));
+            static p => p.EntitiesVisible,
+            static (p, x) => p.EntitiesVisible = x));
         Scene?.Add(new MenubarVisibilityToggle("Triggers",
-            () => p.TriggersVisible = !p.TriggersVisible));
+            static p => p.TriggersVisible,
+            static (p, x) => p.TriggersVisible = x));
         Scene?.Add(new MenubarVisibilityToggle("FgDecals",
-            () => p.FgDecalsVisible = !p.FgDecalsVisible));
+            static p => p.FgDecalsVisible,
+            static (p, x) => p.FgDecalsVisible = x));
         Scene?.Add(new MenubarVisibilityToggle("BgDecals",
-            () => p.BgDecalsVisible = !p.BgDecalsVisible));
-        
+            static p => p.BgDecalsVisible,
+            static (p, x) => p.BgDecalsVisible = x));
         
         Scene?.Add(new MenubarButtonEntry(TabEdit, "rysy.menubar.edit.settings", 
             () => SettingsWindow.Add(Scene),
@@ -434,7 +474,7 @@ public class Menubar : SceneComponent {
             return;
 
         ViewWindowsMenu(scene);
-        ViewVisibilityMenu();
+        ViewVisibilityMenu(scene);
 
         var settings = Settings.Instance;
 
@@ -515,39 +555,11 @@ public class Menubar : SceneComponent {
         }
     }
 
-    private static void ViewVisibilityMenu() {
+    private static void ViewVisibilityMenu(Scene scene) {
         if (ImGui.BeginMenu("rysy.menubar.view.visibility".Translate())) {
-            var p = Persistence.Instance;
-            bool b;
-
-            b = p.FgTilesVisible;
-            if (ImGui.Checkbox("FG Tiles", ref b)) {
-                p.FgTilesVisible = b;
-            }
-
-            b = p.BgTilesVisible;
-            if (ImGui.Checkbox("BG Tiles", ref b)) {
-                p.BgTilesVisible = b;
-            }
-
-            b = p.EntitiesVisible;
-            if (ImGui.Checkbox("Entities", ref b)) {
-                p.EntitiesVisible = b;
-            }
-
-            b = p.TriggersVisible;
-            if (ImGui.Checkbox("Triggers", ref b)) {
-                p.TriggersVisible = b;
-            }
-
-            b = p.FgDecalsVisible;
-            if (ImGui.Checkbox("FG Decals", ref b)) {
-                p.FgDecalsVisible = b;
-            }
-
-            b = p.BgDecalsVisible;
-            if (ImGui.Checkbox("BG Decals", ref b)) {
-                p.BgDecalsVisible = b;
+            var toggles = scene.GetAll<IMenubarVisibilityToggle>();
+            foreach (var toggle in toggles) {
+                toggle.RenderVisibilityToggle();
             }
 
             ImGui.EndMenu();
