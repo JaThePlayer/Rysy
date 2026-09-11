@@ -42,7 +42,7 @@ public sealed partial class Map : IPackable, ILuaWrapper, IDisposable, ISignalEm
             return false;
         }
 
-        filepath = filepath.Unbackslash().TrimPrefix(mod.Filesystem.Root).TrimPrefix("/Maps/").TrimPostfix(".bin");
+        filepath = filepath.Unbackslash().TrimPrefix(mod.Filesystem.Root.Unbackslash()).TrimPrefix("/Maps/").TrimPostfix(".bin");
         (sid, side) = filepath switch {
             [.. var s, '-', 'B'] => (s, CelesteLevelSide.B),
             [.. var s, '-', 'C'] => (s, CelesteLevelSide.C),

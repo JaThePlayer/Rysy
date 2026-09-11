@@ -29,7 +29,7 @@ public class PopupNotificationWindow : Window {
     protected override void Render() {
         base.Render();
 
-        ImGui.TextColored(MessageColor.ToNumVec4(Theme), MessageId.ToString());
+        ImGui.TextColored(MessageColor.ToNumVec4(Theme), MessageId.ToString().Censor());
 
         if (_exceptionString != null) {
             ImGuiManager.ReadOnlyInputTextMultiline("Exception", _exceptionString, ImGui.GetContentRegionAvail());
