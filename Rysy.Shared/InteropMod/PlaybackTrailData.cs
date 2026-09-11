@@ -9,6 +9,8 @@ namespace Rysy.Shared.InteropMod;
 public sealed record PlaybackTrailData : IDisposable {
     public string MapSid { get; init; }
     
+    public int MapSide { get; init; }
+    
     public string Room { get; init; }
 
     public AutoRegistry<SpriteData> SpriteData { get; init; } = new();

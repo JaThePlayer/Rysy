@@ -1,24 +1,20 @@
-﻿using Rysy.Components;
-using Rysy.Mods;
-using Rysy.Scenes;
-using Rysy.Shared;
-using Rysy.Signals;
+﻿using Rysy.Mods;
 
 namespace Rysy.InteropMod.InRysy;
 
-public sealed class InteropModModule : ModModule, ISignalListener<SceneChanged>
+public sealed class InteropModModule : ModModule
 {
+    public static InteropModModule Instance { get; private set; }
+    
     public override void Load() {
+        Instance = this;
+        
         base.Load();
+        
+        ComponentRegistry.Add(new PlayerTrailRenderer());
     }
 
     public override void Unload() {
         base.Unload();
-    }
-
-    public void OnSignal(SceneChanged signal) {
-        if (signal.NewScene is EditorScene editorScene) {
-            editorScene.Add(new PlayerTrailRenderer());
-        }
     }
 }

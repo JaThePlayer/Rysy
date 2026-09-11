@@ -1,0 +1,11 @@
+rysy.playerTrail.tooltip=Player Trail recording settings.
+rysy.playerTrail.connected=Connected to Celeste.
+rysy.playerTrail.disconnected=Not connected to Celeste, cannot record trails.\nIf Celeste is open, try retrying in-game to attempt reconnecting.
+rysy.playerTrail.playbackNotInThisMap=Current Player Trail does not belong to the map opened in Rysy.
+
+rysy.playerTrail.opacity=Trail Opacity
+rysy.playerTrail.opacity.tooltip=The opacity of Player Trails.\nSet to 0 to disable rendering.
+rysy.playerTrail.clearPlayback=Clear Playback
+rysy.playerTrail.clearPlayback.tooltip=Clear the current playback data.
+rysy.playerTrail.samplingInterval=Sampling Interval
+rysy.playerTrail.samplingInterval.tooltip=The interval (in seconds) between player state samples.\nLower values increase trail accuracy, but increase resource usage in both Celeste and Rysy.\nChanges are only visible after creating a new playback trail in-game.

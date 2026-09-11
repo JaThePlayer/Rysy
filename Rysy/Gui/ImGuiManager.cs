@@ -1182,6 +1182,14 @@ public static class ImGuiManager {
         return ImGui.Selectable(txt, false, new NumVector2(ImGui.CalcTextSize(txt).X, 0f));
     }
     
+    public static bool BeginMenuIcon(ImGuiIcons icon, IThemeColor color) {
+        ImGui.PushStyleColor(ImGuiCol.Text, color.ToNumVec4(Themes.Current));
+        var txt = Interpolator.TempU8($"{(char) icon}");
+        var ret = ImGui.BeginMenu(txt);
+        ImGui.PopStyleColor();
+        return ret;
+    }
+    
     public static bool SelectableIcon(ImGuiIcons icon, ReadOnlySpan<byte> text) {
         var txt = Interpolator.TempU8($"{(char) icon}{text}");
         return ImGui.Selectable(txt, false, new NumVector2(ImGui.CalcTextSize(txt).X, 0f));

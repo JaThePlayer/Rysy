@@ -3,7 +3,7 @@ using Rysy.Signals;
 
 namespace Rysy.Scenes;
 
-public abstract class SceneComponent : ISignalEmitter, ISignalListener<ComponentAdded<Scene>>, ISignalListener<SelfAdded>, ISignalListener<SelfRemoved> {
+public abstract class SceneComponent : ISignalEmitter, ISignalListener<SceneChanged>, ISignalListener<ComponentAdded<Scene>>, ISignalListener<SelfAdded>, ISignalListener<SelfRemoved> {
     public Scene? Scene { get; internal set; }
 
     public virtual void Update() {
@@ -33,22 +33,29 @@ public abstract class SceneComponent : ISignalEmitter, ISignalListener<Component
     SignalTarget ISignalEmitter.SignalTarget { get; set; }
     
     public void OnSignal(SelfAdded signal) {
-        Scene = signal.Registry.Get<Scene>();
-        if (Scene is {})
-            OnAdded();
+        SceneChanged(signal.Registry.Get<Scene>());
     }
 
     public void OnSignal(SelfRemoved signal) {
-        if (Scene is {})
-            OnRemoved();
-        Scene = null!;
+        SceneChanged(null);
     }
 
     public void OnSignal(ComponentAdded<Scene> signal) {
-        if (Scene is {})
+        SceneChanged(signal.Component);
+    }
+
+    public void OnSignal(SceneChanged signal) {
+        SceneChanged(signal.NewScene);
+    }
+
+    private void SceneChanged(Scene? newScene) {
+        if (newScene == Scene)
+            return;
+        
+        if (Scene is not null)
             OnRemoved();
-        Scene = signal.Component;
-        if (Scene is {})
+        Scene = newScene;
+        if (Scene is not null)
             OnAdded();
     }
 }

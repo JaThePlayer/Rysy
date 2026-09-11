@@ -20,6 +20,7 @@ public enum ImGuiIcons : ushort {
     FileCirclePlus = 0xe494,
     FolderPlus = 0xf65e,
     FolderOpen = 0xf07c,
+    Video = 0xf03d,
 }
 
 #pragma warning restore CA1028

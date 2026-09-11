@@ -46,11 +46,13 @@ internal sealed class PlayerTrailDataCollector(OutPipeServer<PlaybackTrailData> 
             return;
         var roomName = level.Session.Level;
         var mapName = level.Session.Area.SID;
+        var mapSide = level.Session.Area.Mode;
 
-        if (_currentData is null || roomName != _currentData.Room || mapName != _currentData.MapSid) {
+        if (_currentData is null || roomName != _currentData.Room || mapName != _currentData.MapSid || (int)mapSide != _currentData.MapSide) {
             PushCurrentData();
             _currentData = new PlaybackTrailData {
                 MapSid = mapName, 
+                MapSide = (int)mapSide,
                 Room = roomName,
             };
         }
@@ -58,7 +60,7 @@ internal sealed class PlayerTrailDataCollector(OutPipeServer<PlaybackTrailData> 
         _frameTimer -= Engine.DeltaTime;
         _timestamp += Engine.DeltaTime;
         if (_frameTimer <= 0f) {
-            _frameTimer = 8f / 60f;
+            _frameTimer = InteropModModule.Settings.RemoteSettings.SamplingInterval;
             
             if (player.GetChasePosition(level.TimeActive, 0f, out Player.ChaserState chaserState)) {
                 var frame = new PlayerTrailFrame {

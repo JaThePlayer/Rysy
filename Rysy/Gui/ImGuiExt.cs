@@ -43,9 +43,12 @@ public static class ImGuiExt {
         /// <summary>
         /// Adds a tooltip to the last added element, then fluently returns the bool that was passed to this function, for further handling.
         /// </summary>
-        public bool WithTranslatedTooltip(string tooltipKey) {
-            if (ImGui.IsItemHovered() && tooltipKey.TranslateOrNull() is { } translatedTooltip) {
-                ImGui.SetTooltip(translatedTooltip);
+        public bool WithTranslatedTooltip(string tooltipKey, IThemeColor? color = null) {
+            if (ImGui.IsItemHovered() && tooltipKey.TranslateOrNull() is { } translatedTooltip && ImGui.BeginTooltip()) {
+                using (_ = ScopedImGui.Color(ImGuiCol.Text, ImGuiManager.Themes.Current, color)) {
+                    ImGui.Text(translatedTooltip);
+                }
+                ImGui.EndTooltip();
             }
 
             return val;

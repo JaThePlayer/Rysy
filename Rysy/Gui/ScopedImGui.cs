@@ -50,6 +50,16 @@ public static class ScopedImGui {
     public static TabItemScope TabItem(ReadOnlySpan<byte> id)
         => new TabItemScope(ImGui.BeginTabItem(id));
 
+
+    [MustDisposeResource]
+    public static StyleColorScope Color(ImGuiCol id, Theme theme, IThemeColor? color = null) {
+        if (color is null)
+            return new StyleColorScope(0);
+        
+        ImGui.PushStyleColor(id, color.ToNumVec4(theme));
+        return new StyleColorScope(1);
+    }
+
     [MustDisposeResource]
     public ref struct IdScope : IDisposable {
         public void Dispose() {
@@ -77,6 +87,14 @@ public static class ScopedImGui {
     public record struct DisabledScope : IDisposable {
         public void Dispose() {
             ImGui.EndDisabled();
+        }
+    }
+    
+    [MustDisposeResource]
+    public record struct StyleColorScope(int Count) : IDisposable {
+        public void Dispose() {
+            if (Count > 0)
+                ImGui.PopStyleColor(Count);
         }
     }
 }

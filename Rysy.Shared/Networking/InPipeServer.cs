@@ -11,7 +11,12 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private NamedPipeClientStream? _pipe;
     
-    private StreamReader? _writer;
+    private StreamReader? _reader;
+    
+    /// <summary>
+    /// Whether the server is likely connected to the other side.
+    /// </summary>
+    public bool LikelyConnected { get; private set; }
     
     public required Action<T> OnMessageReceived { get; init; }
     
@@ -21,7 +26,7 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
         while (!ct.IsCancellationRequested) {
             string? line;
             try {
-                line = await _writer.ReadLineAsync(ct);
+                line = await _reader.ReadLineAsync(ct);
             } catch (IOException e) {
                 await Restart();
                 continue;
@@ -33,9 +38,11 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
                 await Restart();
                 continue;
             }
+
+            LikelyConnected = true;
             
             try {
-                logger.Info($"Received: {line}");
+                //logger.Info($"Received: {line}");
                 var d = JsonSerializer.Deserialize<T>(line, JsonSerializerOptions);
                 if (d is {})
                     OnMessageReceived(d);
@@ -49,14 +56,17 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
         return;
         
         async Task Restart() {
+            LikelyConnected = false;
+            _reader = null;
             _pipe?.Close();
             _pipe = CreatePipe();
             logger.Info($"Awaiting for a '{Name}' pipe.");
         
             await _pipe.ConnectAsync(ct);
-        
+
+            LikelyConnected = true;
+            _reader = new StreamReader(_pipe);
             logger.Info($"Connected to '{Name}' pipe.");
-            _writer = new StreamReader(_pipe);
         }
     }
 
@@ -73,10 +83,13 @@ public sealed class InPipeServer<T>(IRysyLogger logger) : IDisposable {
     }
 
     public void Dispose() {
+        LikelyConnected = false;
         if (_pipe is { IsConnected: true })
             logger.Info($"Disposing a '{Name}' pipe.");
         _cancellationTokenSource.Dispose();
         _pipe?.Dispose();
-        _writer?.Dispose();
+        _pipe = null;
+        _reader?.Dispose();
+        _reader = null;
     }
 }
