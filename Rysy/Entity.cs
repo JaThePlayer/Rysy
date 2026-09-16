@@ -6,6 +6,7 @@ using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +17,12 @@ namespace Rysy;
 
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacement, IDepth, IName, IBindTarget, IUntypedData, ISimilar<Entity> {
+    internal static OverrideChecker OverrideCheckerTags { get; }
+        = OverrideChecker.GetFor([typeof(Entity), typeof(Trigger), typeof(LonnEntity), typeof(LonnTrigger)], nameof(Tags), MemberTypes.Property);
+    
+    internal static OverrideChecker OverrideCheckerAssociatedMods { get; }
+        = OverrideChecker.GetFor([typeof(Entity), typeof(Trigger), typeof(LonnEntity), typeof(LonnTrigger)], nameof(AssociatedMods), MemberTypes.Property);
+    
     [JsonPropertyName("Room")]
     public string RoomName => Room.Name;
 
@@ -411,12 +418,14 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
     /// Maps using this entity will require these mods as dependencies.
     /// If the entity allows for respriting, the source mod of custom sprites should be included.
     /// </summary>
+    // NOTE: If changing implementation, make sure logic in Placement.FillCachesNeedingFakeEntity is correct!
     [JsonIgnore]
     public virtual List<string>? AssociatedMods => null;
     
     /// <summary>
     /// List of tags associated with this entity, automatically added to all placements.
     /// </summary>
+    // NOTE: If changing implementation, make sure logic in Placement.FillCachesNeedingFakeEntity is correct!
     [JsonIgnore]
     public virtual IReadOnlyList<string>? Tags => null;
     

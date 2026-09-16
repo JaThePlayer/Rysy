@@ -17,6 +17,7 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
         ? plugin.LonnPlugin
         : null;
     
+    // NOTE: If changing implementation, make sure logic in Placement.FillCachesNeedingFakeEntity is correct!
     public override List<string>? AssociatedMods
         => Plugin?.GetAssociatedMods?.Invoke(this) ?? base.AssociatedMods;
 
@@ -26,6 +27,7 @@ public sealed class LonnTrigger : Trigger, IHasLonnPlugin {
 
     public override string Text => Plugin?.TriggerText?.Invoke(Room, this) ?? base.Text;
 
+    // NOTE: If changing implementation, make sure logic in Placement.FillCachesNeedingFakeEntity is correct!
     public override string Category => Plugin?.TriggerCategory?.Invoke(Room, this) ?? TriggerCategories.Default;
     
     public override IEnumerable<ISprite> GetNodePathSprites() {

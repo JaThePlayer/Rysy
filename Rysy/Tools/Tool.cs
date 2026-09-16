@@ -486,8 +486,12 @@ public abstract class Tool {
             _cachedSearch = null;
             _cachedLayer = currentLayer;
         }
+
+        if (_cachedSearch is not null)
+            return _cachedSearch;
         
-        return _cachedSearch ??=
+        //using var _ = new ScopedStopwatch($"Getting search for {currentLayer.Name}");
+        return _cachedSearch =
             (GetMaterials(currentLayer) ?? [])
             .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
             .SearchFilter(kv => kv.Item2, Search)

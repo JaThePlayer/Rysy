@@ -58,6 +58,8 @@ public sealed class LonnEntityPlugin {
     public Func<ILuaWrapper, Entity, Rectangle>? GetRectangle;
 
     public Func<Entity, List<string>?> GetAssociatedMods { get; private set; }
+    internal LonnRetrievalStrategy GetAssociatedModsStrategy { get; private set; }
+    public List<string>? AssociatedModsConst { get; private set; }
 
     //flip(room, entity, horizontal, vertical) -> success?
     public Func<ILuaWrapper, ILuaWrapper, bool, bool, bool>? Flip;
@@ -78,6 +80,8 @@ public sealed class LonnEntityPlugin {
     
     //category() -> string
     public Func<ILuaWrapper, Entity, string?>? TriggerCategory { get; private set; }
+    internal LonnRetrievalStrategy TriggerCategoryStrategy { get; private set; }
+    internal string? TriggerCategoryConst { get; private set; }
 
     public bool HasSelectionFunction;
 
@@ -233,8 +237,12 @@ public sealed class LonnEntityPlugin {
         
         plugin.TriggerCategory = NullConstOrGetter(plugin, "category"u8,
             def: (string?) null,
-            funcGetter: static (lua, top) => lua.FastToString(top)
+            funcGetter: static (lua, top) => lua.FastToString(top),
+            out LonnRetrievalStrategy categoryStrategy,
+            out string? constantCategoryValue
         );
+        plugin.TriggerCategoryStrategy = categoryStrategy;
+        plugin.TriggerCategoryConst = constantCategoryValue;
         
         
         plugin.GetNodeTexture = NullConstOrGetter_Noded(plugin, "nodeTexture"u8,
@@ -350,8 +358,12 @@ public sealed class LonnEntityPlugin {
 
         plugin.GetAssociatedMods = NullConstOrGetter_Entity(plugin, "associatedMods"u8,
             def: (List<string>)null!,
-            funcGetter: static (lua, top) => lua.ToList<string>(top));
-
+            funcGetter: static (lua, top) => lua.ToList<string>(top),
+            out LonnRetrievalStrategy associatedModsStrategy,
+            out var associatedModsConst);
+        plugin.GetAssociatedModsStrategy = associatedModsStrategy;
+        plugin.AssociatedModsConst = associatedModsConst;
+        
         plugin.NodeLineRenderType = NullConstOrGetter_Entity(plugin, "nodeLineRenderType"u8,
             def: "line",
             funcGetter: static (lua, top) => lua.FastToString(top))!;
@@ -650,14 +662,25 @@ public sealed class LonnEntityPlugin {
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
+    ) => NullConstOrGetter(pl, fieldName, def, funcGetter, out _, out _, funcResults);
+    
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<ILuaWrapper, Entity, T?>? NullConstOrGetter<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
+        T? def,
+        Func<Lua, int, T> funcGetter,
+        out LonnRetrievalStrategy strategy,
+        out T? constValue,
+        int funcResults = 1
     ) {
         var lua = pl.LuaCtx.Lua;
-        var strat = NullConstOrGetterImpl(pl, fieldName);
+        strategy = NullConstOrGetterImpl(pl, fieldName);
+        constValue = default;
 
-        switch (strat) {
+        switch (strategy) {
             case LonnRetrievalStrategy.Const:
                 var con = funcGetter(lua, lua.GetTop());
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                constValue = con;
                 return (r, e) => con;
             case LonnRetrievalStrategy.Function:
                 byte[] fieldNameBytes = fieldName.ToArray();
@@ -737,14 +760,25 @@ public sealed class LonnEntityPlugin {
         T? def,
         Func<Lua, int, T> funcGetter,
         int funcResults = 1
+    ) => NullConstOrGetter_Entity(pl, fieldName, def, funcGetter, out _, out _, funcResults);
+    
+    [return: NotNullIfNotNull(nameof(def))]
+    private static Func<Entity, T?>? NullConstOrGetter_Entity<T>(LonnEntityPlugin pl, ReadOnlySpan<byte> fieldName,
+        T? def,
+        Func<Lua, int, T> funcGetter,
+        out LonnRetrievalStrategy strategy,
+        out T? constantValue,
+        int funcResults = 1
     ) {
         var lua = pl.LuaCtx.Lua;
-        var strat = NullConstOrGetterImpl(pl, fieldName);
+        strategy = NullConstOrGetterImpl(pl, fieldName);
+        constantValue = default;
 
-        switch (strat) {
+        switch (strategy) {
             case LonnRetrievalStrategy.Const:
                 var con = funcGetter(lua, lua.GetTop());
                 lua.Pop(1); // pop the field we got from NullConstOrGetterImpl
+                constantValue = con;
                 return (r) => con;
             case LonnRetrievalStrategy.Function:
                 var fieldNameBytes = fieldName.ToArray();
@@ -756,6 +790,7 @@ public sealed class LonnEntityPlugin {
                     return lua.PCallFunction(r, funcGetter, results: funcResults)!;
                 };
             default:
+                constantValue = def;
                 return def is { } ? (e) => def : null;
         }
     }

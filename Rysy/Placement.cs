@@ -4,10 +4,9 @@ using Rysy.Graphics.TextureTypes;
 using Rysy.Gui.Windows;
 using Rysy.Helpers;
 using Rysy.History;
-using Rysy.Layers;
+using Rysy.LuaSupport;
 using Rysy.Mods;
 using Rysy.Selections;
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
@@ -235,6 +234,92 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
     }
 
     /// <summary>
+    /// Fills all caches that need a fake entity to be created for them to be populated.
+    /// </summary>
+    private void FillCachesNeedingFakeEntity() {
+        if (Sid is null)
+            return;
+        
+        var info = EntityRegistry.GetInfo(Sid, RegisteredEntityType);
+        if (info is null)
+            return;
+
+        // Creating a fake entity can be costly for lua entities,
+        // leading to a lag spike upon first opening the placement list for entities/triggers.
+        // To fix this, we'll try to retrieve the associated mods and tags without creating a fake entity.
+        bool needed = false;
+        var cSharpType = info.CSharpType;
+        var isTrigger = cSharpType?.IsAssignableTo(typeof(Trigger)) ?? false;
+        var isEntity = !isTrigger && (cSharpType?.IsAssignableTo(typeof(Entity)) ?? false);
+
+        bool neededForTags = false;
+        if (_associatedTags is null) {
+            neededForTags = true;
+
+            if (isEntity) {
+                // Lua entities cannot define tags, they can only be defined by a C# plugin overriding Tags.
+                if (!Entity.OverrideCheckerTags.IsMemberOverridenIn(cSharpType)) {
+                    _associatedTags = [];
+                    neededForTags = false;
+                }
+            } 
+            else if (isTrigger) {
+                // Lonn triggers can alter tags via category as well as overriding Tags.
+                if (!Entity.OverrideCheckerTags.IsMemberOverridenIn(cSharpType)
+                    && !Trigger.OverrideCheckerCategory.IsMemberOverridenIn(cSharpType)
+                    && info.LonnPlugin?.TriggerCategoryStrategy is not LonnEntityPlugin.LonnRetrievalStrategy.Function) {
+
+                    if (info.LonnPlugin?.TriggerCategoryConst is { } knownCategoryFromLonn) {
+                        _associatedTags = Trigger.GetTagsForCategory(knownCategoryFromLonn);
+                    } else {
+                        _associatedTags = Trigger.GetTagsForCategory(TriggerCategories.Default);
+                    }
+                    
+                    neededForTags = false;
+                }
+            }
+            
+            needed |= neededForTags;
+        }
+
+        bool neededForMods = false;
+        if (_associatedMods is null) {
+            neededForMods = true;
+            
+            if (isEntity || isTrigger) {
+                if (!Entity.OverrideCheckerAssociatedMods.IsMemberOverridenIn(cSharpType)
+                    && info.LonnPlugin?.GetAssociatedModsStrategy is not LonnEntityPlugin.LonnRetrievalStrategy.Function) {
+                    _associatedMods = info.LonnPlugin?.AssociatedModsConst ?? info.AssociatedModNames;
+                    neededForMods = false;
+                }
+            }
+
+            needed |= neededForMods;
+        }
+        
+        if (!needed) {
+            return;
+        }
+        
+        if (Settings.Instance.LogCreatingFakeEntitiesForPlacementData)
+            Logger.Write("Placement", LogLevel.Debug, $"Creating fake entity for {Name} [{Sid}], needed for: Tags: {neededForTags}, Mods: {neededForMods}");
+        
+        Entity? fakeEntity;
+        try {
+            fakeEntity = CreateFakeEntity();
+        } catch (Exception ex) {
+            Logger.Error("Placement", ex, $"Failed to create fake entity for placement: {Name}");
+            return;
+        }
+
+        if (fakeEntity is null)
+            return;
+        
+        _associatedMods ??= EntityRegistry.GetAssociatedMods(fakeEntity);
+        _associatedTags ??= fakeEntity.Tags ?? [];
+    }
+
+    /// <summary>
     /// Gets all mods that are associated with this placement. This list might not contain the mod returned by <see cref="GetDefiningMod"/>
     /// </summary>
     public ReadOnlyList<string> GetAssociatedMods() {
@@ -246,14 +331,8 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
                 return _associatedMods = [name];
             return _associatedMods = [];
         }
-        
-        try {
-            if (CreateFakeEntity() is {} fakeEntity)
-                _associatedMods = EntityRegistry.GetAssociatedMods(fakeEntity);
-        } catch
-        {
 
-        }
+        FillCachesNeedingFakeEntity();
 
         return _associatedMods ??= [];
     }
@@ -265,12 +344,7 @@ public record class Placement : IUntypedData, ISimilar<Placement> {
         if (_associatedTags is { } cached)
             return cached;
 
-        try {
-            _associatedTags = CreateFakeEntity()?.Tags;
-        } catch
-        {
-
-        }
+        FillCachesNeedingFakeEntity();
 
         return _associatedTags ??= [];
     }

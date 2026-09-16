@@ -1,12 +1,16 @@
 ﻿using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Helpers;
+using Rysy.LuaSupport;
 using Rysy.Selections;
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace Rysy;
 
 public class Trigger : Entity {
+    internal static OverrideChecker OverrideCheckerCategory { get; } = OverrideChecker.GetFor([typeof(Trigger), typeof(LonnTrigger)], nameof(Category), MemberTypes.Property);
+    
     public Color Color {
         get {
             var stored = EntityData.Attr("_editorColor");
@@ -34,8 +38,12 @@ public class Trigger : Entity {
     public virtual string Category => TriggerCategories.Default;
 
     private static readonly ConcurrentDictionary<string, IReadOnlyList<string>> DefaultTagCache = [];
+    
+    internal static IReadOnlyList<string> GetTagsForCategory(string category)
+        => DefaultTagCache.GetOrAdd(category, x => [ x ]);
 
-    public override IReadOnlyList<string> Tags => DefaultTagCache.GetOrAdd(Category, x => [ x ]);
+    // NOTE: If changing implementation, make sure logic in Placement.FillCachesNeedingFakeEntity is correct!
+    public override IReadOnlyList<string> Tags => GetTagsForCategory(Category);
 
     public static string GetDefaultTextForSid(string sid) => TriggerHelpers.Humanize(sid);
     

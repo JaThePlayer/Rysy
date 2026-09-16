@@ -148,6 +148,8 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
     public bool LogPreloadingTextures { get; set; } = false;
     
     public bool LogMissingFieldTypes { get; set; }
+    
+    public bool LogCreatingFakeEntitiesForPlacementData { get; set; } = false;
 
 
     public string Theme {
