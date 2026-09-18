@@ -17,8 +17,6 @@ public class Strawberry : SpriteEntity, IPlaceable {
 
     public bool Moon => Bool("moon");
 
-    public override IEnumerable<ISprite> GetNodePathSprites() => NodePathTypes.Fan(this);
-
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         yield return GetSprite("collectables/strawberry/seed00") with {
             Pos = Nodes![nodeIndex]
