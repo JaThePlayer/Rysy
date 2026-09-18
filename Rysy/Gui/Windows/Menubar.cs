@@ -157,6 +157,9 @@ public class MenubarDropdownEntry<T>(string tab, string langKey, Func<IEnumerabl
 public class Menubar : SceneComponent {
     private const string TabNameLangPrefix = "rysy.menubar.tab";
 
+    private readonly ComponentSafeInvoker<IMenubarIndicator> _indicatorSafeInvoker
+        = new("rysy.menubar.error.indicator");
+
     private sealed class Tab {
         public string Name;
         public string DisplayName => Name.TranslateOrHumanize(TabNameLangPrefix);
@@ -456,9 +459,13 @@ public class Menubar : SceneComponent {
         }
 
         foreach (var indicator in Scene.EnumerateAllLocked<IMenubarIndicator>()) {
+            if (_indicatorSafeInvoker.HasComponentCrashed(indicator))
+                continue;
+            
             ImGui.SameLine();
             ImGui.Separator();
-            indicator.RenderMenubarIndicator(this);
+            _indicatorSafeInvoker.Invoke(indicator, this,
+                static (indicator, @this) => indicator.RenderMenubarIndicator(@this));
         }
 
         ImGui.EndMainMenuBar();

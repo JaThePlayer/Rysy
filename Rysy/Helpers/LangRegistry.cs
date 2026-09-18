@@ -127,10 +127,12 @@ public sealed class Lang {
         => _translationsSpanLookup.TryGetValue(key, out var translated) ? translated : null;
 }
 
-public readonly struct LangKey {
+public struct LangKey {
     public string Key { get; }
 
-    public object[] Args { get; } = [];
+    private object[] _args = [];
+
+    public object[] Args => _args;
     
     public LangKey(string key) {
         Key = key;
@@ -138,7 +140,7 @@ public readonly struct LangKey {
 
     public LangKey(string key, params object[] args) {
         Key = key;
-        Args = args;
+        _args = args;
     }
     
     public static LangKey Formatted(string key, params object[] args) => new LangKey(key, args);
@@ -151,6 +153,19 @@ public readonly struct LangKey {
         if (Args.Length == 0)
             return Key.Translate();
         return Key.TranslateFormatted(Args);
+    }
+
+    public void SetArg(int argIndex, object value) {
+        if (argIndex < 0)
+            return;
+
+        if (argIndex < Args.Length) {
+            Args[argIndex] = value;
+            return;
+        }
+        
+        Array.Resize(ref _args, argIndex + 1);
+        _args[argIndex] = value;
     }
     
     public static implicit operator LangKey(string str) => new LangKey(str);

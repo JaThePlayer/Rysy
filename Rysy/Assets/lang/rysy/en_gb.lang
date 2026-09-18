@@ -139,6 +139,9 @@ rysy.menubar.tab.debug=Debug
 rysy.menubar.debug.openLog=Open Log Directory
 rysy.menubar.debug.openLog.tooltip=Opens the directory containing Rysy's log files in your OS's file explorer.
 
+rysy.menubar.error.indicator=Menubar indicator crashed.
+rysy.menubar.error.indicator.message=Menubar indicator '{0}' crashed when rendering!
+
 # Fields
 rysy.fields.fade.pos=Position
 rysy.fields.fade.pos.tooltip=The start and end coordinate of this fade region, in world coordinates.
