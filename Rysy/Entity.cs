@@ -897,6 +897,8 @@ public abstract class Entity : ILuaWrapper, ILuaTableBound, IConvertibleToPlacem
             for (int i = 0; i < nodes.Count; i++) {
                 nodes[i].Pos = new(x + (xOffset * (i + 1)), y);
             }
+            
+            OnChanged(new EntityDataChangeCtx { NodesChanged = true });
         }
     }
 
