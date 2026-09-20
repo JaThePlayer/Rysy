@@ -10,7 +10,9 @@ public class SeekerBarrier : RectangleEntity, IPlaceable {
 
     public override int Depth => 0;
 
-    public static FieldList GetFields() => new();
+    public static FieldList GetFields() => new(new {
+        allowStaticMovers = true,
+    });
 
     public static PlacementList GetPlacements() => new("seeker_barrier");
 }

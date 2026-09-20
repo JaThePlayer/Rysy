@@ -26,3 +26,9 @@ triggers.everest/teleportTrigger.attributes.description.useDefaultSpawn=If enabl
 triggers.everest/teleportTrigger.attributes.description.onlyOnce=Whether the trigger should only activate once.\nWhen activated, the trigger will also set the flag named `{thisRoomName}:{triggerId}_teleport_doNotTrigger`.
 triggers.everest/teleportTrigger.attributes.description.flag=The flag that needs to be set in order for this trigger to function.
 triggers.everest/teleportTrigger.attributes.description.useDefaultSpawn.separator=Spawn Point
+
+entities.invisibleBarrier.attributes.description.surfaceIndex=Footstep sound when walking on the barrier.\nAdded in Everest 6580.
+entities.invisibleBarrier.attributes.description.allowClimbing=Whether the player can climb on this barrier.\nAdded in Everest 6580.
+entities.invisibleBarrier.attributes.description.allowStaticMovers=Whether entities can connect to this barrier.\nAdded in Everest 6580.
+
+entities.seekerBarrier.attributes.description.allowStaticMovers=Whether entities can connect to this barrier.\nAdded in Everest 6580.
