@@ -15,7 +15,19 @@ public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>,
     
     private Action<Window> _removeSelfImpl;
 
-    public readonly string Name;
+    private Guid? _windowGuid;
+
+    public string Name { 
+        get;
+        set {
+            if (field != value) {
+                field = value;
+
+                GenerateId();
+            }
+        }
+    }
+
     public NumVector2? Size;
     public bool Resizable;
 
@@ -75,7 +87,7 @@ public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>,
 
     private void GenerateId() {
         if (NoSaveData)
-            WindowId = $"{Name}##{Guid.NewGuid()}";
+            WindowId = $"{Name}###{_windowGuid ??= Guid.NewGuid()}";
         else
             WindowId = Name;
     }
@@ -83,8 +95,6 @@ public class Window : ISignalEmitter, ISignalListener<HotkeyCloseWindowAndSave>,
     public Window(string name, NumVector2? size = null) {
         Name = name.Translate();
         Size = size;
-
-        GenerateId();
     }
 
     public void SetRemoveAction(Action<Window> removeSelf) => _removeSelfImpl = removeSelf;

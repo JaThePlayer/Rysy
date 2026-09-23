@@ -1,5 +1,4 @@
 ﻿using Hexa.NET.ImGui;
-using KeraLua;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.LuaSupport;
@@ -113,23 +112,17 @@ public class FormWindow : Window {
         UpdateDynamicallyHiddenFields();
     }
 
-    public void ReevaluateChanged(Dictionary<string, object> newDefaults) {
-        EditedValues.Clear();
-
+    public void ReevaluateChanged(IDictionary<string, object> newDefaults) {
         foreach (var prop in FieldList) {
             var name = prop.Name;
             var exists = newDefaults.TryGetValue(name, out var current);
-            var propValue = exists ? prop.ValueOrDefault() : prop.Value;
+            var propValue = prop.Field.GetDefault();
 
-            if (!(current?.Equals(propValue) ?? current == propValue)
-                && (current, propValue) switch {
-                    (float f, int i) => f != i,
-                    (int i, float f) => f != i,
-                    _ => true,
-                }) {
-
-                EditedValues[name] = propValue!;
-                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
+            if (current is not null && !ISimilar.Check(current, propValue)) {
+                prop.ValueWasSet = false;
+                prop.Value = null;
+                prop.Field.SetDefault(current);
+                EditedValues.Remove(name);
             }
         }
 

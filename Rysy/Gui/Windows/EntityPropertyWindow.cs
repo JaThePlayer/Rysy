@@ -1,20 +1,17 @@
 ﻿using Hexa.NET.ImGui;
-using Markdig;
-using Rysy.Extensions;
+using Rysy.Components;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Signals;
 
 namespace Rysy.Gui.Windows;
 
-public class EntityPropertyWindow : FormWindow {
+public class EntityPropertyWindow : FormWindow, ISignalListener<HistoryChanged> {
     private static readonly HashSet<string> BlacklistedKeys = new() { "x", "y", "id", "originX", "originY", "width", "height", "_editorColor" };
 
     public Entity Main { get; }
     public List<Entity> All { get; }
-
-    private IHistoryHandler _history;
-    private Action _historyHook;
 
     public static (FieldList, Func<string, bool> exists) GetFields(Entity main) {
         ArgumentNullException.ThrowIfNull(main);
@@ -112,34 +109,30 @@ public class EntityPropertyWindow : FormWindow {
     }
 
     public EntityPropertyWindow(IHistoryHandler history, Entity main, List<Entity> all) 
-        : base($"Edit: {main.EntityData.Sid}:{string.Join(',', all.Select(e => e.Id))}") {
+        : base(CreateWindowTitle(main, all)) {
         ArgumentNullException.ThrowIfNull(history);
         ArgumentNullException.ThrowIfNull(main);
         ArgumentNullException.ThrowIfNull(all);
 
         Main = main;
         All = all;
-        _history = history;
 
         var (fields, exists) = GetFields(main);
         Init(fields, exists);
 
         OnChanged = (edited) => {
-            _history.ApplyNewAction(new EntityEditAction(All, edited));
+            history.ApplyNewAction(new EntityEditAction(All, edited));
         };
         OnLiveUpdate = (edited) => {
             foreach (var e in All) {
                 e.EntityData.SetOverlay(edited);
             }
         };
-        
-        _historyHook = ReevaluateEditedValues;
-        history.OnApply += _historyHook;
-        history.OnUndo += _historyHook;
-        SetRemoveAction((w) => {
-            _history.OnApply -= _historyHook;
-            _history.OnUndo -= _historyHook;
-        });
+    }
+
+    private static string CreateWindowTitle(Entity main, List<Entity> all)
+    {
+        return $"Edit: {main.EntityData.Sid}:{string.Join(',', all.Select(e => e.Id))}";
     }
 
     public override void RenderBottomBar() {
@@ -171,30 +164,29 @@ public class EntityPropertyWindow : FormWindow {
         base.RemoveSelf();
 
         foreach (var e in All) {
-            e.EntityData.SetOverlay(null);
+            OnEntityRemovedFromPropertyWindow(e);
         }
     }
 
-    private void ReevaluateEditedValues() {
-        EditedValues.Clear();
+    public void OnSignal(HistoryChanged signal) {
+        ReevaluateChanged(Main.EntityData);
 
-        foreach (var prop in FieldList) {
-            var name = prop.Name;
-            var exists = Main.EntityData.TryGetValue(name, out var current);
-            var propValue = exists ? prop.ValueOrDefault() : prop.Value;
-            
-            var equal = (current, propValue) switch {
-                (int c, float val) => val == c,
-                (float c, int val) => val == c,
-                _ => (current?.Equals(propValue) ?? current == propValue)
-            };
+        // If the entity we're editing is removed from the room, remove the window.
+        if (Main.Room.TryGetEntityById(Main.Id) != Main)
+            RemoveSelf();
 
-            if (!equal) {
-                EditedValues[name] = propValue!;
-                //Console.WriteLine((current ?? "NULL", propValue ?? "NULL"));
+        for (int i = All.Count - 1; i >= 0; i--) {
+            var e = All[i];
+            if (e.Room.TryGetEntityById(e.Id) != e) {
+                OnEntityRemovedFromPropertyWindow(e);
+                All.RemoveAt(i);
             }
         }
-        
-        UpdateDynamicallyHiddenFields();
+
+        Name = CreateWindowTitle(Main, All);
+    }
+
+    private void OnEntityRemovedFromPropertyWindow(Entity e) {
+        e.EntityData.SetOverlay(null);
     }
 }
