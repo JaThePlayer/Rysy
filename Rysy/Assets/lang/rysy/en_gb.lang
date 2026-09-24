@@ -659,3 +659,10 @@ rysy.windows.installPicker.manual.pickName.field=Profile Name
 rysy.windows.installPicker.manual.pickName.field.tooltip=The name of this Profile.
 rysy.validate.profileNameMustBeUnique=Profile name must be unique.
 rysy.validate.profileNameInvalid=Profile name is not valid, it must be a valid filename.
+
+rysy.windows.updatechecker=New version available!
+rysy.windows.updatechecker.desc=A new version of Rysy is available: '{0}'
+rysy.windows.updatechecker.update=Update Now
+rysy.windows.updatechecker.update.tooltip=Closes the program to install the new update immediately.\nWARNING: UNSAVED CHANGES WILL BE LOST!
+rysy.windows.updatechecker.remindMeLater=Remind Me Later
+rysy.windows.updatechecker.remindMeLater.tooltip=Will show this popup again next time the program is launched.

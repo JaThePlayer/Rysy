@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rysy.Shared", "Rysy.Shared\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rysy.InteropMod.InRysy", "Rysy.InteropMod\Rysy\Rysy.InteropMod.InRysy.csproj", "{B3B52A35-6AA0-4A2E-865B-DAC8A66374F7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rysy.Updater", "Rysy.Updater\Rysy.Updater.csproj", "{01D6F4C9-7563-4084-B48C-A52A6C449FC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{B3B52A35-6AA0-4A2E-865B-DAC8A66374F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3B52A35-6AA0-4A2E-865B-DAC8A66374F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3B52A35-6AA0-4A2E-865B-DAC8A66374F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01D6F4C9-7563-4084-B48C-A52A6C449FC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01D6F4C9-7563-4084-B48C-A52A6C449FC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01D6F4C9-7563-4084-B48C-A52A6C449FC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01D6F4C9-7563-4084-B48C-A52A6C449FC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

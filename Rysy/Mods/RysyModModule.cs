@@ -28,5 +28,7 @@ internal sealed class RysyModModule : ModModule {
         ComponentRegistry.Add(new StyleMaskHelperMaskManager());
         
         TilesetTemplates.RegisterDefaultTemplates(ModRegistry.Filesystem, ComponentRegistry);
+        
+        ComponentRegistry.Add(new UpdateChecker(new Logger("UpdateChecker"), "https://github.com/JaThePlayer/Rysy"));
     }
 }

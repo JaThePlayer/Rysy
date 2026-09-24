@@ -1048,6 +1048,11 @@ public static class ImGuiManager {
         ImGui.TextWrapped(id.Translate());
         true.WithTranslatedTooltip($"{id}.tooltip");
     }
+    
+    public static void TranslatedTextWrapped(string id, params ReadOnlySpan<object> args) {
+        ImGui.TextWrapped(id.TranslateFormatted(args));
+        true.WithTranslatedTooltip($"{id}.tooltip".TranslateFormatted(args));
+    }
 
     public static bool TranslatedMenuItem(ReadOnlySpan<char> key, ImGuiIcons? icon = null) {
         if (icon is { }) {

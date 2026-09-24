@@ -283,7 +283,7 @@ public static partial class StringExt {
         /// Translates the string using <see cref="LangRegistry.Translate(string)"/>, then formats it using <see cref="string.Format(string, object?[])"/>
         /// If no translation is found, formats the string itself.
         /// </summary>
-        public string TranslateFormatted(params object[] args) => string.Format(CultureInfo.CurrentCulture, LangRegistry.Translate(str), args);
+        public string TranslateFormatted(params ReadOnlySpan<object> args) => string.Format(CultureInfo.CurrentCulture, LangRegistry.Translate(str), args);
 
         /// <summary>
         /// Translates the string using <see cref="LangRegistry.TranslateOrNull(string)"/>.

@@ -141,7 +141,9 @@
           </Content>
       </ItemGroup>
   </Target>
-  <Target Name="BindAppHosts" AfterTargets="CoreCompile" DependsOnTargets="IncludeAppHosts" Outputs="$(OutputPath)\Rysy$(_NativeExeExt)" Condition="'$(CustomAppHost)' != ''" >
+  <Target Name="BindAppHosts" AfterTargets="CoreCompile" DependsOnTargets="IncludeAppHosts" 
+          Outputs="$(OutputPath)\Rysy$(_NativeExeExt)" 
+          Condition="'$(CustomAppHost)' != ''" >
         <Message Importance="High" Text="Binding AppHost..." />
 
         <CreateAppHost AppHostSourcePath="runtimes\$(_NativeRuntime)\native\piton$(_NativeExeExt)"
@@ -151,9 +153,22 @@
                        WindowsGraphicalUserInterface="false"
         />
   </Target>
+    <Target Name="BindAppHostsUpdater" AfterTargets="CoreCompile" DependsOnTargets="BindAppHosts"
+            Outputs="$(OutputPath)\Rysy.Updater$(_NativeExeExt)"
+            Condition="'$(CustomAppHost)' != ''" >
+        <Message Importance="High" Text="Binding AppHost for updater..." />
+
+        <CreateAppHost AppHostSourcePath="runtimes\$(_NativeRuntime)\native\piton$(_NativeExeExt)"
+                       AppHostDestinationPath="$(OutputPath)\Rysy.Updater$(_NativeExeExt)"
+                       AppBinaryName="$(AssemblyName).Updater$(TargetExt)"
+                       IntermediateAssembly="@(IntermediateAssembly->'%(FullPath)')"
+                       WindowsGraphicalUserInterface="false"
+        />
+    </Target>
   <!-- The executable generated via CreateAppHost does not get auto-copied to the publish/ directory, we need to do this manually -->
-  <Target Name="CopyExecutableToPublish" AfterTargets="PrepareForPublish" DependsOnTargets="BindAppHosts" Condition="'$(CustomAppHost)' != ''">
+  <Target Name="CopyExecutableToPublish" AfterTargets="PrepareForPublish" DependsOnTargets="BindAppHostsUpdater" Condition="'$(CustomAppHost)' != ''">
         <Copy SourceFiles="$(OutputPath)\Rysy$(_NativeExeExt)" DestinationFolder="$(PublishDir)" />
+      <Copy SourceFiles="$(OutputPath)\Rysy.Updater$(_NativeExeExt)" DestinationFolder="$(PublishDir)"  />
   </Target>
 
   <PropertyGroup>
@@ -188,7 +203,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Rysy.Shared\Rysy.Shared.csproj" />
+        <ProjectReference Include="..\Rysy.Updater\Rysy.Updater.csproj" />
     </ItemGroup>
+
 <!--    
     <PropertyGroup>
         <ApplicationIcon>Assets/Icon/icon.ico</ApplicationIcon>
