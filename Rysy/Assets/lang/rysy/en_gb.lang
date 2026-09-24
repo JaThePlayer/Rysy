@@ -646,3 +646,16 @@ rysy.nullableBool.enabled=Enabled
 rysy.nullableBool.disabled=Disabled
 rysy.nullableBool.default=Default
 rysy.nullableBool.mapDefault=Map Default
+
+rysy.windows.installPicker=Pick a Celeste install...
+rysy.windows.installPicker.desc=Please pick a Celeste installation to use in Rysy, from those found in the below list.
+rysy.windows.installPicker.desc.noProfile=No Celeste installations could be found automatically, add one manually.
+rysy.windows.installPicker.manual=Pick Manually
+rysy.windows.installPicker.manual.tooltip=Pick the install by manually selecting the Celeste.exe/Celeste.dll file.
+
+rysy.windows.installPicker.manual.pickName=Pick Install Name
+rysy.windows.installPicker.manual.pickName.desc=Please provide a name for this Celeste install (Profile).
+rysy.windows.installPicker.manual.pickName.field=Profile Name
+rysy.windows.installPicker.manual.pickName.field.tooltip=The name of this Profile.
+rysy.validate.profileNameMustBeUnique=Profile name must be unique.
+rysy.validate.profileNameInvalid=Profile name is not valid, it must be a valid filename.

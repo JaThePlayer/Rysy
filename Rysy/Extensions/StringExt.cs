@@ -205,8 +205,9 @@ public static partial class StringExt {
     }
 
 
-    extension(string? str)
-    {
+    extension(string? str) {
+        public bool IsValidFilename() => !str.IsNullOrWhitespace() && str.ToValidFilename() == str;
+        
         /// <summary>
         /// Converts the given string to create a string that's a valid filename, by replacing all illegal characters with an underscore.
         /// </summary>

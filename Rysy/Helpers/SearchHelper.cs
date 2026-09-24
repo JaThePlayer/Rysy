@@ -46,7 +46,7 @@ public class Searchable {
         Tags = tags ?? [];
             
         if (HasNonVanillaMods) {
-            TextWithMods = $"{Text} [{string.Join(',', Mods.Where(x => !ModRegistry.IsVanillaModName(x)).Select(ModMeta.ModNameToDisplayName))}]";
+            TextWithMods = $"{Text} [{string.Join(", ", Mods.Where(x => !ModRegistry.IsVanillaModName(x)).Select(ModMeta.ModNameToDisplayName))}]";
         } else {
             TextWithMods = Text;
         }

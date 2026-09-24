@@ -229,15 +229,12 @@ public static class ImGuiManager {
 
         var sourceList = source.ToListIfNotList();
         var search = cache.Search;
-
-        var size = cache.GetSize(sourceList.Select(itemNameGetter));
-        var dropdownSize = GetDropdownWindowSize(size, sourceList.Count);
         
         if (RenderSearchBarInDropdown(ref search)) {
             cache.Search = search;
         }
 
-        ImGui.BeginChild("##list_ref", dropdownSize, ImGuiChildFlags.None);
+        ImGui.BeginChild("##list_ref", ImGui.GetContentRegionAvail(), ImGuiChildFlags.None);
         
         var filtered = cache.GetValue(sourceList, itemNameGetter, search);
 

@@ -13,7 +13,11 @@ public static class ImGuiExt {
         /// </summary>
         public bool WithTooltip(string? tooltip) {
             if (tooltip is { } && ImGui.IsItemHovered()) {
-                ImGui.SetTooltip(tooltip);
+                ImGui.BeginTooltip();
+                var prev = ImGuiManager.PopAllStyles();
+                ImGui.Text(tooltip);
+                ImGuiManager.PushAllStyles(prev);
+                ImGui.EndTooltip();
             }
 
             return val;

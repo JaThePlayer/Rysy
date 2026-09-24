@@ -94,6 +94,12 @@ public sealed class ValidationResult : ITooltip {
     public static ValidationResult InvalidFormOverriden { get; }
         = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.saveChanges.override.tooltip")));
     
+    public static ValidationResult ProfileNameMustBeUnique { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.profileNameMustBeUnique")));
+    
+    public static ValidationResult ProfileNameInvalid { get; }
+        = new(ValidationMessage.Error(Tooltip.CreateTranslatedOrNull("rysy.validate.profileNameInvalid")));
+    
     public bool IsOk => !HasErrors;
     
     public bool HasErrors => _errors.Count > 0;

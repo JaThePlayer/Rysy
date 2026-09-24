@@ -1,5 +1,6 @@
 ﻿using Rysy.Helpers;
 using Rysy.Platforms;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -25,7 +26,8 @@ public class Profile : IHasJsonCtx<Profile> {
         get => RysyState.CmdArguments.CelesteDir ?? StoredCelesteDirectory;
         set {
             StoredCelesteDirectory = value;
-            RysyState.CmdArguments.CelesteDir = null;
+            if (this == Instance)
+                RysyState.CmdArguments.CelesteDir = null;
         }
     }
 
@@ -48,6 +50,13 @@ public class Profile : IHasJsonCtx<Profile> {
         return this;
     }
 
+    public static Profile? Deserialize(string name) {
+        var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(name);
+        fs.TryOpenFile("profile.json", stream => JsonSerializer.Deserialize<Profile>(stream, JsonSerializerHelper.SettingsOptions), out var deserialized);
+
+        return deserialized;
+    }
+    
     public static Profile Load(bool setInstance = true) {
         if (Settings.Instance == null) {
             throw new Exception("Settings.Load() needs to be called before Profile.Load()");
@@ -67,4 +76,8 @@ public class Profile : IHasJsonCtx<Profile> {
     }
 
     public static JsonTypeInfo<Profile> JsonCtx => DefaultJsonContext.Default.Profile;
+
+    public static bool IsValidProfileName(string newProfileName) {
+        return newProfileName.IsValidFilename();
+    }
 }

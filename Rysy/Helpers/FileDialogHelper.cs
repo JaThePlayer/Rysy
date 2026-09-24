@@ -6,22 +6,22 @@ using System.Diagnostics.CodeAnalysis;
 namespace Rysy.Helpers;
 
 public static class FileDialogHelper {
-    public static string GetDefaultPath() {
+    public static string? GetDefaultPath() {
         if (EditorState.Current?.Map?.Filepath?.Directory() is { } dir) {
             return dir;
         }
 
-        return Profile.Instance.ModsDirectory;
+        return Profile.Instance?.ModsDirectory;
     }
 
     public static bool TrySave(string filterList, [NotNullWhen(true)] out string? chosenFile, string? defaultPath = null) {
-        var res = Dialog.FileSave(filterList, (defaultPath ?? GetDefaultPath()).CorrectSlashes());
+        var res = Dialog.FileSave(filterList, (defaultPath ?? GetDefaultPath())?.CorrectSlashes());
 
         return HandleResult(res, filterList, out chosenFile, "FileDialogHelper.TrySave");
     }
 
     public static bool TryOpen(string filterList, [NotNullWhen(true)] out string? chosenFile, string? defaultPath = null) {
-        var res = Dialog.FileOpen(filterList, (defaultPath ?? GetDefaultPath()).CorrectSlashes());
+        var res = Dialog.FileOpen(filterList, (defaultPath ?? GetDefaultPath())?.CorrectSlashes());
 
         return HandleResult(res, filterList, out chosenFile, "FileDialogHelper.TryOpen");
     }
@@ -41,6 +41,10 @@ public static class FileDialogHelper {
     }
 
     private static string AddExtIfNeeded(string filterList, string chosenFile) {
+        if (Path.HasExtension(chosenFile)) {
+            return chosenFile;
+        }
+        
         var extString = $".{filterList}";
         if (!chosenFile.EndsWith(extString, StringComparison.Ordinal))
             chosenFile += extString;

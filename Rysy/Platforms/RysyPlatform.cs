@@ -46,6 +46,13 @@ public abstract class RysyPlatform {
     
     public virtual bool IsSystemFontValid(string fontPath) => true;
 
+    public virtual IReadOnlyList<string> GetAllExistingProfileNames() {
+        var settingsFs = SettingsHelper.GetFilesystem(perProfile: false);
+        var knownProfiles = settingsFs.FindDirectories("Profiles").Select(p => p.TrimPrefix("Profiles/")).ToList();
+
+        return knownProfiles;
+    }
+    
     public virtual IWriteableModFilesystem GetRysyAppDataFilesystem(string? profile) {
         if (CachedRysyAppDataFilesystems.TryGetValue(profile ?? "$none$", out var cached))
             return cached;

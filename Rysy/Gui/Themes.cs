@@ -55,8 +55,8 @@ public sealed class Themes : ISignalEmitter, ISignalListener<SettingsChanged<str
     }
     
     public void LoadThemeFromFile(string filename) {
-        if (!ModRegistry.IsLoaded)
-            return;
+        //if (!ModRegistry.IsLoaded)
+        //    return;
         
         var fs = ModRegistry.Filesystem;
         filename = filename

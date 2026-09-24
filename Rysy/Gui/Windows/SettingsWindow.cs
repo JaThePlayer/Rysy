@@ -3,6 +3,7 @@ using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Platforms;
+using Rysy.Scenes;
 
 namespace Rysy.Gui.Windows;
 public sealed class SettingsWindow : Window {
@@ -14,7 +15,7 @@ public sealed class SettingsWindow : Window {
 
     private sealed class SettingWindowData {
         public bool ProfileSettingsChanged = false;
-        public string[]? ProfileListDirectories = null;
+        public IReadOnlyList<string>? ProfileListDirectories = null;
         public string? ProfileCelesteDir;
 
         public IReadOnlyList<Themes.FoundTheme>? ThemeList = null;
@@ -371,26 +372,16 @@ public sealed class SettingsWindow : Window {
                 if (ImGui.BeginCombo("Current Profile", Settings.Instance.CurrentProfile)) {
                     #region Profile Picker
 
-                    var fs = RysyPlatform.Current.GetRysyAppDataFilesystem(null);
-                    
-                    var profileDir = "Profiles";
-                    var dirs = windowData.ProfileListDirectories ??= fs.FindDirectories(profileDir).ToArray();
-                    foreach (var dir in dirs) {
-                        var name = Path.GetRelativePath(profileDir, dir);
+                    var names = windowData.ProfileListDirectories ??= RysyPlatform.Current.GetAllExistingProfileNames();
+                    foreach (var name in names) {
                         if (ImGui.Selectable(name).WithTooltip(RequiresReload)) {
                             SetProfile(name, isNew: false);
                         }
                     }
 
-                    if (ImGui.Button("New")) {
-                        string text = "";
-                        RysyEngine.Scene.AddWindow(new ScriptedWindow("New Profile Name", (w) => {
-                            ImGui.InputText("Name", ref text, 64);
-                            if (ImGui.Button("Create").WithTooltip(RequiresReload)) {
-                                SetProfile(text, isNew: true);
-                                w.RemoveSelf();
-                            }
-                        }, new(300, ImGui.GetFrameHeight() * 2 + ImGui.GetTextLineHeightWithSpacing() * 3)));
+                    if (ImGuiManager.TranslatedButton("rysy.new")) {
+                        var picker = new PickCelesteInstallScene(Scene, null, canCancel: true);
+                        RysyEngine.Scene = picker;
                     }
                     ImGui.EndCombo();
                     #endregion

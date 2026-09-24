@@ -136,7 +136,7 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
     /// </summary>
     public Version LastVersion { get; set; } = RysyEngine.Version;
     
-    public string Profile { get; set; } = "Default";
+    public string Profile { get; set; } = "";
 
     public bool LogMissingEntities { get; set; } = false;
     public bool LogTextureLoadTimes { get; set; } = false;

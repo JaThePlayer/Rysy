@@ -19,14 +19,14 @@ public readonly struct GuiSize(float widthInChars, float heightInLines) {
     
     public NumVector2 Calculate() {
         return new(
-            ImGui.CalcTextSize("m").X * widthInChars,
+            ImGui.GetStyle().FontSizeBase * widthInChars,
             ImGui.GetTextLineHeightWithSpacing() * heightInLines
         );
     }
     
     public NumVector2 CalculateWindowSize(bool hasBottomBar) {
         var res = new NumVector2(
-            ImGui.CalcTextSize("m").X * (widthInChars + 4),
+            ImGui.GetStyle().FontSizeBase * (widthInChars + 4),
             ImGui.GetTextLineHeightWithSpacing() * (heightInLines + 1)
         );
 

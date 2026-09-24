@@ -117,6 +117,11 @@ public static class ModRegistry {
             .Select(f => (f.Unbackslash(), fs))
             .Where(f => !blacklisted.Contains(f.Item1));
     }
+
+    internal static void SetUpBuiltinRysyFilesystem() {
+        Filesystem = new();
+        Filesystem.AddFilesystem(RysyPlatform.Current.GetRysyFilesystem(), "Rysy");
+    }
     
     public static async Task LoadAllAsync(string modDir, IComponentRegistry componentRegistry, SimpleLoadTask? task, bool loadCSharpPlugins = true) {
         LastUsedComponentRegistry?.DisposeIfDisposable();

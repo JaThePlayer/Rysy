@@ -1,7 +1,9 @@
 ﻿using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Gui;
+using Rysy.Helpers;
 using Rysy.Loading;
+using Rysy.Mods;
 using Rysy.Platforms;
 using Rysy.Scenes;
 using Rysy.Signals;
@@ -151,6 +153,8 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
     }
 
     private async Task<LoadTaskResult> LoadSettingsTask(IComponentRegistry globalComponents, SimpleLoadTask task) {
+        ModRegistry.SetUpBuiltinRysyFilesystem();
+        
         task.SetMessage("Loading settings");
         try {
             Settings.Instance = Settings.Load();
@@ -159,6 +163,25 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
         }
         globalComponents.Add(Settings.Instance);
 
+        // Load lang keys as fast as possible, we need them for celeste install picker.
+        await LangRegistry.LoadRysyBuiltinAsync();
+        
+        // Initialize Imgui now that we have settings
+        if (RysyPlatform.Current.SupportImGui && !RysyState.ImGuiAvailable)
+            ImGuiManager.Load(globalComponents);
+
+        var knownProfiles = RysyPlatform.Current.GetAllExistingProfileNames();
+        if (Settings.Instance.CurrentProfile.IsNullOrWhitespace() || !knownProfiles.Contains(Settings.Instance.CurrentProfile)) {
+            // No profile yet
+            if (knownProfiles is [var onlyKnownProfile]) {
+                Settings.Instance.Profile = onlyKnownProfile;
+            } else {
+                var picker = new PickCelesteInstallScene(Scene, knownProfiles, canCancel: false);
+                Scene = picker;
+                await picker.AwaitInstallPickedAsync();
+            }
+        }
+        
         try {
             Profile.Instance = Profile.Load();
         } catch {
@@ -173,10 +196,6 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
             Persistence.Instance = Persistence.Save(new());
         }
         globalComponents.Add(Persistence.Instance);
-        
-        // Initialize Imgui now that we have settings
-        if (RysyPlatform.Current.SupportImGui && !RysyState.ImGuiAvailable)
-            ImGuiManager.Load(globalComponents);
 
         var celesteDir = Profile.Instance.CelesteDirectory;
         if (!string.IsNullOrWhiteSpace(celesteDir) && !Path.Exists(celesteDir)) {
@@ -184,7 +203,7 @@ public sealed class RysyEngine : Game, ISignalListener<SettingsChanged<int>>, IS
         }
 
         if (Profile.Instance.CelesteDirectory is null or "") {
-            var picker = new PickCelesteInstallScene(Scene);
+            var picker = new PickCelesteInstallScene(Scene, knownProfiles, canCancel: false);
             Scene = picker;
             await picker.AwaitInstallPickedAsync();
         }

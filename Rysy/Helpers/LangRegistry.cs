@@ -1,5 +1,6 @@
 ﻿using Rysy.Loading;
 using Rysy.Mods;
+using Rysy.Platforms;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
@@ -36,25 +37,39 @@ public static class LangRegistry {
     public static string? TranslateOrNull(Interpolator.Handler interpolated)
         => TranslateOrNull(interpolated.Result);
 
+    private static void Initialize() {
+        LangFileWatchers.DisposeAllAndClear();
+        Languages.Clear();
+        var enGb = new Lang("en_gb");
+        Languages[enGb.Name] = enGb;
+
+        if (Persistence.Instance?.Get("Language", enGb.Name) is { } currentLang && currentLang != enGb.Name) {
+            Languages[currentLang] = CurrentLang = new Lang(currentLang);
+        } else {
+            CurrentLang = enGb;
+        }
+        
+        FallbackLang = enGb;
+    }
+    
     public static async Task LoadAllAsync(SimpleLoadTask? task) {
         task?.SetMessage("Reading lang files");
 
-        LangFileWatchers.DisposeAllAndClear();
-        Languages.Clear();
-        Languages["en_gb"] = new("en_gb");
+        Initialize();
         
         await Task.WhenAll(ModRegistry.Mods.Values.Select(LoadFromModAsync));
-
-        FallbackLang = Languages[Persistence.Instance.Get("Language", "en_gb")];
-        CurrentLang = Languages["en_gb"];
     }
 
-    private static readonly ConcurrentDictionary<(ModMeta, string), IDisposable> LangFileWatchers = [];
+    private static readonly ConcurrentDictionary<(IModFilesystem, string), IDisposable> LangFileWatchers = [];
 
-    public static Task LoadFromModAsync(ModMeta mod) {
-        var fs = mod.Filesystem;
+    internal static Task LoadRysyBuiltinAsync() {
+        Initialize();
+        
+        return LoadFromModAsync(RysyPlatform.Current.GetRysyFilesystem(), isRysy: true);
+    }
 
-        IEnumerable<string> files = fs.FindFilesInDirectoryRecursive(mod.IsRysy ? "lang" : "Loenn/lang", "lang");
+    internal static Task LoadFromModAsync(IModFilesystem fs, bool isRysy) {
+        IEnumerable<string> files = fs.FindFilesInDirectoryRecursive(isRysy ? "lang" : "Loenn/lang", "lang");
 
         foreach (var file in files.ToList()) {
             var langName = file.FilenameNoExt() ?? "en_gb";
@@ -65,11 +80,14 @@ public static class LangRegistry {
                     e.LogAsJson();
                 }
             }, out var watcher);
-            LangFileWatchers.SetAndDisposeOld((mod, file), watcher);
+            LangFileWatchers.SetAndDisposeOld((fs, file), watcher);
         }
 
         return Task.CompletedTask;
-        //await Task.WhenAll(files.SelectToTaskRun(f => LoadFromLangFile(f.FilenameNoExt()!, fs.TryReadAllText(f)!)));
+    }
+    
+    public static Task LoadFromModAsync(ModMeta mod) {
+        return LoadFromModAsync(mod.Filesystem, mod.IsRysy);
     }
 
     public static void LoadFromLangFile(string name, string langFileContents) {
