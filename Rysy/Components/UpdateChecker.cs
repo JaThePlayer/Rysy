@@ -130,6 +130,15 @@ internal sealed class UpdateChecker : SceneComponent {
             var dir = AppContext.BaseDirectory;
             var updaterExecutableFile = Path.Combine(dir, OperatingSystem.IsWindows() ? "Rysy.Updater.exe" : "Rysy.Updater");
             
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
+                try {
+                    File.SetUnixFileMode(updaterExecutableFile,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                } catch (Exception ex) {
+                    Logger.Error($"Failed add execute permission to updater executable file: {ex}");
+                }
+            }
+            
             Process.Start(new ProcessStartInfo
             {
                 FileName = updaterExecutableFile,
