@@ -90,6 +90,12 @@ internal static class Relinker {
         ctx.Logger.Info($"Target Rysy Version: {rysyVersion}");
         ctx.RysyVersion = rysyVersion;
 
+        if (RysyEngine.Version < rysyVersion) {
+            ctx.Logger.Warn("Plugin was made for a more recent version of Rysy, not loading.");
+            ctx.Success = false;
+            return;
+        }
+
         List<IRelinkStep> steps = [];
         if (rysyVersion < new Version(0, 0, 14, 0)) {
             steps.Add(new Version0_0_13_0());
