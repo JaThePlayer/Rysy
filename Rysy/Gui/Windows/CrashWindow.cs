@@ -17,6 +17,7 @@ public class CrashWindow : Window {
         Message = message;
 
         _exceptionString = Exception.ToString().Censor();
+        NoSaveData = true;
 
         try {
             // avoid future crashes

@@ -6,6 +6,7 @@ using Rysy.Helpers;
 using Rysy.Scenes;
 using Rysy.Signals;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 
 namespace Rysy.Components;
@@ -107,7 +108,7 @@ internal sealed class UpdateChecker : SceneComponent {
             base.RenderBottomBar();
 
             if (ImGuiManager.TranslatedButton("rysy.windows.updatechecker.update")) {
-                this.Emit(new RunAtEndOfThisFrame(StartInstallingUpdate));
+                this.Emit(new RunAtEndOfThisFrame(() => PopupNotificationWindow.RunInBackground("rysy.windows.updatechecker.fail", StartInstallingUpdate)));
                 RemoveSelf();
             }
             
@@ -126,24 +127,42 @@ internal sealed class UpdateChecker : SceneComponent {
                 ImGuiMarkdown.RenderMarkdown(_description);
         }
 
-        private void StartInstallingUpdate() {
+        private async Task StartInstallingUpdate() {
             var dir = AppContext.BaseDirectory;
-            var updaterExecutableFile = Path.Combine(dir, OperatingSystem.IsWindows() ? "Rysy.Updater.exe" : "Rysy.Updater");
+            var updaterExecutableFilename = OperatingSystem.IsWindows() ? "Rysy.Updater.exe" : "Rysy.Updater";
+            var updaterExecutableFile = Path.Combine(dir, updaterExecutableFilename);
+            var zipFilePath = Path.Combine(dir, "rysy-update.zip");
             
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
-                try {
-                    File.SetUnixFileMode(updaterExecutableFile,
-                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-                } catch (Exception ex) {
-                    Logger.Error($"Failed add execute permission to updater executable file: {ex}");
+            // Start a block here to ensure all streams get closed before we start the updater.
+            {
+                await GitHubApi.DownloadAssetAsync(_asset, zipFilePath);
+            
+                var zipStream = File.Open(zipFilePath, FileMode.Open);
+                await using var zip = await ZipArchive.CreateAsync(zipStream, ZipArchiveMode.Read, false, null);
+
+                if (zip.GetEntry(updaterExecutableFilename) is { } updaterEntry) {
+                    await using var updaterStream = await updaterEntry.OpenAsync();
+                    await using var updaterFileStream = File.Open(updaterExecutableFile, FileMode.Create);
+
+                    await updaterStream.CopyToAsync(updaterFileStream);
+                    await updaterFileStream.FlushAsync();
                 }
+            
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
+                    try {
+                        File.SetUnixFileMode(updaterExecutableFile,
+                            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                    } catch (Exception ex) {
+                        throw new Exception($"Failed add execute permission to updater executable file '{updaterExecutableFilename.Censor()}': {ex}");
+                    }
+                }  
             }
             
             Process.Start(new ProcessStartInfo
             {
                 FileName = updaterExecutableFile,
                 UseShellExecute = true,
-                ArgumentList = { _asset.BrowserDownloadUrl! }
+                ArgumentList = { zipFilePath }
             });
             RysyState.Game.Exit();
         }

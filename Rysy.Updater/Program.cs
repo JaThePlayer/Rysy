@@ -1,67 +1,81 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
-using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
-if (args is not [var url]) {
-    Console.WriteLine("Expected download URL as the first argument!");
+if (OperatingSystem.IsWindows())
+    WindowsImport.AttachConsole(-1);
+
+if (args is not [var zipPath]) {
+    Console.WriteLine("Expected zip path as the first argument!");
     return;
 }
 
-if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
-    !uri.AbsoluteUri.StartsWith("https://github.com/JaThePlayer/Rysy/releases/download",
-        StringComparison.OrdinalIgnoreCase)) {
-    Console.WriteLine("Expected a JaThePlayer/Rysy GitHub repository URL.");
-    return;
+try {
+    await ExtractZipAndRunRysy(zipPath);
+} catch (Exception ex) {
+    Console.WriteLine($"""
+                       Failed to update Rysy.
+                       Press any key to close the updater.
+                       Please report this issue, and, if Rysy cannot launch anymore, reinstall the program manually.
+                       Exception: {ex}
+                       """);
+    _ = Console.ReadLine();
 }
 
-var client = new HttpClient();
+return;
 
-// GitHub requires a User-Agent header.
-client.DefaultRequestHeaders.UserAgent.ParseAdd("Rysy/1.0");
+async Task ExtractZipAndRunRysy(string s)
+{
+    var dir = AppContext.BaseDirectory;
+    var rysyExecutableFile = Path.Combine(dir, OperatingSystem.IsWindows() ? "Rysy.exe" : "Rysy");
 
-client.DefaultRequestHeaders.Accept.Add(
-    new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-
-// Current GitHub API version.
-client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2026-03-10");
-
-var stream = await client.GetStreamAsync(uri);
-var zip = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Read, false, null);
-
-var dir = AppContext.BaseDirectory;
-var rysyExecutableFile = Path.Combine(dir, OperatingSystem.IsWindows() ? "Rysy.exe" : "Rysy");
-
-while (true) {
-    if (!File.Exists(rysyExecutableFile)) {
-        Console.WriteLine("Rysy executable file does not exist, continuing..");
-        break;
-    }
+    while (true) {
+        if (!File.Exists(rysyExecutableFile)) {
+            Console.WriteLine("Rysy executable file does not exist, continuing..");
+            break;
+        }
     
-    try {
-        await using var file = File.OpenWrite(rysyExecutableFile);
-        break;
-    } catch (IOException) {
-        Console.WriteLine("Rysy executable is not writeable, waiting...");
-        await Task.Delay(500);
+        try {
+            await using var file = File.OpenWrite(rysyExecutableFile);
+            break;
+        } catch (IOException) {
+            Console.WriteLine("Rysy executable is not writeable, waiting...");
+            await Task.Delay(500);
+        }
     }
+
+    Console.WriteLine("Rysy executable file writeable, extracting zip...");
+    {
+        await using var zip = await ZipArchive.CreateAsync(File.Open(s, FileMode.Open, FileAccess.ReadWrite), ZipArchiveMode.Update, false, null);
+        // We can't extract the updater since its executable is locked now, so it has already been extracted before Rysy closed.
+        var updaterFileName = OperatingSystem.IsWindows() ? "Rysy.Updater.exe" : "Rysy.Updater";
+        zip.GetEntry(updaterFileName)?.Delete();
+
+        await zip.ExtractToDirectoryAsync(dir, overwriteFiles: true);
+    }
+
+    File.Delete(zipPath);
+
+    Console.WriteLine("Extracted zip file, running Rysy...");
+
+    if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
+        try {
+            File.SetUnixFileMode(rysyExecutableFile,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        } catch (Exception ex) {
+            Console.WriteLine($"Failed add execute permission to rysy executable file: {ex}");
+        }
+    }
+
+    Process.Start(new ProcessStartInfo {
+        FileName = rysyExecutableFile,
+        UseShellExecute = true,
+    });
 }
 
-Console.WriteLine("Rysy executable file writeable, extracting zip...");
-
-await zip.ExtractToDirectoryAsync(dir, overwriteFiles: true);
-
-Console.WriteLine("Extracted zip file, running Rysy...");
-
-if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
-    try {
-        File.SetUnixFileMode(rysyExecutableFile,
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-    } catch (Exception ex) {
-        Console.WriteLine($"Failed add execute permission to rysy executable file: {ex}");
-    }
+[SupportedOSPlatform("windows")]
+partial class WindowsImport {
+    [LibraryImport("kernel32")]
+    public static partial int AttachConsole(long dwProcessId);
 }
-
-Process.Start(new ProcessStartInfo {
-    FileName = rysyExecutableFile,
-    UseShellExecute = true,
-});

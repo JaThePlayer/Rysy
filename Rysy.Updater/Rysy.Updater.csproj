@@ -10,6 +10,7 @@
         <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
         <StackTraceSupport>false</StackTraceSupport>
         <UseAppHost>false</UseAppHost>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
 </Project>

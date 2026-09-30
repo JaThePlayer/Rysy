@@ -1226,7 +1226,7 @@ public static class ImGuiManager {
     public static void FavoriteIcon() => Icon(ImGuiIcons.Star, Color.Gold);
 
     public static void ReadOnlyInputTextMultiline(string label, string text, NumVector2 size, ImGuiInputTextFlags flags = ImGuiInputTextFlags.None) {
-        ImGui.InputTextMultiline(label, ref text, (uint)text.Length + 1, size, flags | ImGuiInputTextFlags.ReadOnly);
+        ImGui.InputTextMultiline(label, ref text, (uint)(text.Length + 1) * 4, size, flags | ImGuiInputTextFlags.ReadOnly);
     }
     
     // ImGui::TextWrapped will wrap at the starting position

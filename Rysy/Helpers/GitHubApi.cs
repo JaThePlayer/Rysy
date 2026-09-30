@@ -35,10 +35,7 @@ public static class GitHubApi
 
     private static HttpClient CreateHttpClient()
     {
-        var client = new HttpClient
-        {
-            BaseAddress = new Uri("https://api.github.com/")
-        };
+        var client = new HttpClient();
 
         // GitHub requires a User-Agent header.
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Rysy/1.0");
@@ -52,6 +49,17 @@ public static class GitHubApi
         return client;
     }
 
+    public static Task<Stream> GetAssetStreamAsync(GitHubAsset asset) {
+        return HttpClient.GetStreamAsync(asset.BrowserDownloadUrl);
+    }
+    
+    public static async Task DownloadAssetAsync(GitHubAsset asset, string filepath) {
+        await using var stream = await GetAssetStreamAsync(asset);
+        await using var zipFileStream = File.Open(filepath, FileMode.Create);
+        await stream.CopyToAsync(zipFileStream);
+        await zipFileStream.FlushAsync();
+    }
+    
     public static async Task<GitHubRelease?> GetLatestReleaseAsync(
         string repositoryUrl,
         string? githubToken = null,
@@ -61,7 +69,7 @@ public static class GitHubApi
 
         using var request = new HttpRequestMessage(
             HttpMethod.Get,
-            $"repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repo)}/releases/latest");
+            $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repo)}/releases/latest");
 
         if (!string.IsNullOrWhiteSpace(githubToken))
         {

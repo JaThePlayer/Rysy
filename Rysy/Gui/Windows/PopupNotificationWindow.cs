@@ -94,4 +94,14 @@ public class PopupNotificationWindow : Window {
             return true;
         }
     }
+    
+    public static void RunInBackground(LangKey titleId, Func<Task> action) {
+        Task.Run(async () => {
+            try {
+                await action();
+            } catch (Exception ex) {
+                ShowException(titleId, ex);
+            }
+        });
+    }
 }

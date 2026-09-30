@@ -666,3 +666,5 @@ rysy.windows.updatechecker.update=Update Now
 rysy.windows.updatechecker.update.tooltip=Closes the program to install the new update immediately.\nWARNING: UNSAVED CHANGES WILL BE LOST!
 rysy.windows.updatechecker.remindMeLater=Remind Me Later
 rysy.windows.updatechecker.remindMeLater.tooltip=Will show this popup again next time the program is launched.
+rysy.windows.updatechecker.fail=Failed to update
+rysy.windows.updatechecker.fail.message=There was an exception while attempting to download the update.
