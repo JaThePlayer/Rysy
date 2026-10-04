@@ -117,8 +117,11 @@ public static class LuaStateExt {
         }
 
         public LuaType RawGetInteger(int idx, int n) {
-            LuaImports.lua_rawgeti(lua, idx, n);
-            return lua.TopType();
+            if (LuaImports.lua_istable(lua, idx)) {
+                LuaImports.lua_rawgeti(lua, idx, n);
+                return lua.TopType();
+            }
+            return LuaType.Nil;
         }
 
         public bool Next(int idx) {
