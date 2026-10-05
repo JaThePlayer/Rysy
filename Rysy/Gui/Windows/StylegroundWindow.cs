@@ -1,12 +1,14 @@
 ﻿using Hexa.NET.ImGui;
+using Rysy.Components;
 using Rysy.Graphics;
 using Rysy.Helpers;
 using Rysy.History;
+using Rysy.Signals;
 using Rysy.Stylegrounds;
 
 namespace Rysy.Gui.Windows;
 
-public class StylegroundWindow : Window {
+public class StylegroundWindow : Window, ISignalListener<MapSwapped> {
     private readonly DragDropCtx<Style> _dragDropCtx = new("styles");
     
     private IHistoryHandler _history;
@@ -34,12 +36,6 @@ public class StylegroundWindow : Window {
         _history = history;
 
         _map = editorState.Map!;
-        editorState.OnMapChanged += () => {
-            //Map = EditorState.Map!;
-            //if (Map is null) {
-                RemoveSelf();
-            //}
-        };
 
         var historyHook = () => {
             _form?.ReevaluateChanged(_formStyle!.Data.Inner);
@@ -312,15 +308,18 @@ public class StylegroundWindow : Window {
 
         if (ImGui.BeginPopupContextWindow(id, ImGuiPopupFlags.NoOpenOverExistingPopup | ImGuiPopupFlags.MouseButtonRight)) {
             var placements = _fg ? EntityRegistry.FgStylegroundPlacements : EntityRegistry.BgStylegroundPlacements;
-            ImGuiManager.List(placements, GetPlacementSearchable, _placementComboCache, pl => {
-                var newStyle = Style.FromPlacement(pl);
-                var styles = folder?.Styles ?? GetStyleListContaining();
 
-                Add(newStyle, styles, folder);
+            using (_ = ScopedImGui.Child("_popup"u8, ImGuiManager.GetDropdownWindowSize(placements.Count))) {
+                ImGuiManager.List(placements, GetPlacementSearchable, _placementComboCache, pl => {
+                    var newStyle = Style.FromPlacement(pl);
+                    var styles = folder?.Styles ?? GetStyleListContaining();
 
-                ImGui.CloseCurrentPopup();
-            });
+                    Add(newStyle, styles, folder);
 
+                    ImGui.CloseCurrentPopup();
+                });
+            }
+            
             ImGui.EndPopup();
         }
     }
@@ -674,6 +673,10 @@ public class StylegroundWindow : Window {
                 ImGui.TextUnformatted(only);
                 break;
         }
+    }
+
+    void ISignalListener<MapSwapped>.OnSignal(MapSwapped signal) {
+        RemoveSelf();
     }
 }
 

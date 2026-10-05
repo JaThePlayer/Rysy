@@ -92,8 +92,8 @@ public static class EntityRegistry {
         x.Where(pl => Style.FromPlacement(pl).CanBeInForeground).ToList()), LazyThreadSafetyMode.ExecutionAndPublication);
     
     public static IEnumerable<Placement> StylegroundPlacements => StylegroundPlacementsCache.Value.Value;
-    public static IEnumerable<Placement> BgStylegroundPlacements => BgStylegroundPlacementsCache.Value.Value;
-    public static IEnumerable<Placement> FgStylegroundPlacements => FgStylegroundPlacementsCache.Value.Value;
+    public static IReadOnlyList<Placement> BgStylegroundPlacements => BgStylegroundPlacementsCache.Value.Value;
+    public static IReadOnlyList<Placement> FgStylegroundPlacements => FgStylegroundPlacementsCache.Value.Value;
     
     public static IEnumerable<Placement> DecalRegistryPropertyPlacements
         => RegisteredDecalRegistryProperties
