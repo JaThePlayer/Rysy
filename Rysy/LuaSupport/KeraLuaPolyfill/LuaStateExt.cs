@@ -116,8 +116,14 @@ public static class LuaStateExt {
             LuaImports.lua_settable(lua, idx);
         }
 
-        public LuaType RawGetInteger(int idx, int n) {
-            LuaImports.lua_rawgeti(lua, idx, n);
+        /// <summary>
+        /// WARNING: Does not validate whether the stack actually holds a table at the given location,
+        /// and will crash if it doesn't.
+        /// </summary>
+        /// <param name="tableStackLoc">The location of the table on the stack.</param>
+        /// <param name="i">The index to look up.</param>
+        public LuaType RawGetInteger(int tableStackLoc, int i) {
+            LuaImports.lua_rawgeti(lua, tableStackLoc, i);
             return lua.TopType();
         }
 

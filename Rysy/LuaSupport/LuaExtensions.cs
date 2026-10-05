@@ -690,8 +690,12 @@ public static partial class LuaExt {
         /// Enumerates through an int-indexed table, calling <paramref name="onElement"/> for each element with (lua, index, valueLocation)
         /// </summary>
         /// <param name="onElement">(lua, index, valueLocation)</param>
-        /// <param name="tableStackLoc"></param>
-        public void IPairs(Action<Lua, int, int> onElement, int tableStackLoc = -1) {
+        /// <param name="tableStackLoc">The stack location of the table to iterate over. If the element at that stack index isn't a table, the method is a no-op.</param>
+        /// <returns>Whether the element at the given stack location was a table.</returns>
+        public bool IPairs(Action<Lua, int, int> onElement, int tableStackLoc = -1) {
+            if (lua.Type(tableStackLoc) != LuaType.Table)
+                return false;
+            
             for (int i = 1; ; i++) {
                 var t = lua.RawGetInteger(tableStackLoc, i);
                 if (t == LuaType.Nil) {
@@ -703,6 +707,8 @@ public static partial class LuaExt {
 
                 lua.Pop(1);
             }
+
+            return true;
         }
 
         /// <summary>
@@ -784,9 +790,9 @@ public static partial class LuaExt {
         public List<object>? ToList(int index, int depth = 0) {
             List<object> list = new();
 
-            lua.IPairs((lua, index, loc) => {
+            lua.IPairs((lua, i, loc) => {
                 list.Add(ToCSharp(lua, loc, depth + 1));
-            });
+            }, index);
 
             return list;
         }
@@ -794,11 +800,11 @@ public static partial class LuaExt {
         public List<T>? ToList<T>(int index, int depth = 0) {
             List<T> list = new();
 
-            lua.IPairs((lua, index, loc) => {
+            lua.IPairs((lua, i, loc) => {
                 var obj = ToCSharp(lua, loc, depth + 1);
                 if (obj is T t)
                     list.Add(t);
-            });
+            }, index);
 
             return list;
         }
