@@ -8,11 +8,13 @@ using System.Text.RegularExpressions;
 namespace Rysy.Gui.Windows;
 
 internal sealed partial class NewModWindow : Window {
-    [GeneratedRegex("^[a-zA-Z0-9_]+$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[a-zA-Z0-9_-]+$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex NameRegex();
     
     private string _modName = "";
-    private string BinFilename => _modName;
+    private string _modLevelsetName = "";
+    private string _modMapName = "";
+    private string BinFilename => _modMapName;
     private string _modAuthor = "";
 
     private string _mapEnglishName = "";
@@ -23,6 +25,8 @@ internal sealed partial class NewModWindow : Window {
     private Task<Dictionary<string, DatabaseModInfo>> _databaseMods;
     
     private readonly Field _modNameField;
+    private readonly Field _modLevelsetNameField;
+    private readonly Field _modMapNameField;
     private readonly Field _modAuthorField;
     private readonly Field _englishMapNameField;
     private readonly Field _englishLevelsetNameField;
@@ -65,6 +69,30 @@ internal sealed partial class NewModWindow : Window {
             
             return ValidationResult.Ok;
         }).Translated("rysy.newMod.author");
+        
+        _modLevelsetNameField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (!IsCodeNameValid(x))
+                return ValidationResult.InvalidCodeName;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.levelsetName");
+        
+        _modMapNameField = Fields.String("").WithValidator(x => {
+            x ??= "";
+            
+            if (x.IsNullOrWhitespace())
+                return ValidationResult.CantBeNull;
+            
+            if (!IsCodeNameValid(x))
+                return ValidationResult.InvalidCodeName;
+            
+            return ValidationResult.Ok;
+        }).Translated("rysy.newMod.name");
 
         _englishMapNameField = Fields.String("").WithValidator(x => {
             x ??= "";
@@ -131,6 +159,16 @@ internal sealed partial class NewModWindow : Window {
         }
         anyInvalid |= !isValid.IsOk;
         
+        if (_modLevelsetNameField.RenderGuiWithValidation(_modLevelsetName, out isValid) is string newLevelsetName) {
+            _modLevelsetName = newLevelsetName;
+        }
+        anyInvalid |= !isValid.IsOk;
+        
+        if (_modMapNameField.RenderGuiWithValidation(_modMapName, out isValid) is string newMapName) {
+            _modMapName = newMapName;
+        }
+        anyInvalid |= !isValid.IsOk;
+        
         ImGui.SeparatorText("rysy.newMod.dialog".Translate());
         
         if (_englishMapNameField.RenderGuiWithValidation(_mapEnglishName, out isValid) is string newEnglishMapName) {
@@ -176,7 +214,7 @@ internal sealed partial class NewModWindow : Window {
             }
 
             var map = Map.NewMap(BinFilename);
-            map.Filepath = Path.Combine(fs.Root, "Maps", _modAuthor, _modName, $"{BinFilename}.bin");
+            map.Filepath = Path.Combine(fs.Root, "Maps", _modAuthor, _modLevelsetName, $"{BinFilename}.bin");
            // map.Meta.Sprites = $"Graphics/{_modAuthor}/{_modName}XMLs/Sprites.xml";
            // map.Meta.ForegroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/ForegroundTiles.xml";
            // map.Meta.BackgroundTiles = $"Graphics/{_modAuthor}/{_modName}XMLs/BackgroundTiles.xml";
@@ -212,15 +250,15 @@ internal sealed partial class NewModWindow : Window {
                 new ("Gameplay", [
                     new ("decals", [
                         new(_modAuthor, [
-                            new(_modName, [
+                            new(_modLevelsetName, [
                             ])
                         ])
                     ])
                 ]),
                 new ("Checkpoints", [
                     new(_modAuthor, [
-                        new(_modName, [
-                            new(BinFilename, [
+                        new(_modLevelsetName, [
+                            new(_modMapName, [
                                 new ("A", [])
                             ]),
                         ])
@@ -241,7 +279,7 @@ internal sealed partial class NewModWindow : Window {
         ]),
         new("Maps", [
             new(_modAuthor, [
-                new(_modName, [
+                new(_modLevelsetName, [
                     new($"{BinFilename}.bin"),
                 ])
             ])
@@ -251,8 +289,8 @@ internal sealed partial class NewModWindow : Window {
     ]);
     
     private string GetEnglishDialogContents() => $"""
-    {_modAuthor}_{_modName}={_levelsetEnglishName}
-    {_modAuthor}_{_modName}_{BinFilename}={_mapEnglishName}
+    {_modAuthor}_{_modLevelsetName}={_levelsetEnglishName}
+    {_modAuthor}_{_modLevelsetName}_{BinFilename}={_mapEnglishName}
     """;
     
     private string GetEverestYamlContents() => $"""
