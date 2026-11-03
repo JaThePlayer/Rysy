@@ -61,6 +61,20 @@ public static class ScopedImGui {
     }
 
     [MustDisposeResource]
+    public static ChildScope Child(ReadOnlySpan<byte> id, GuiSize size) {
+        ImGui.BeginChild(id, size.Calculate());
+        
+        return new ChildScope();
+    }
+    
+    [MustDisposeResource]
+    public static ChildScope Child(ReadOnlySpan<byte> id, NumVector2 size) {
+        ImGui.BeginChild(id, size);
+        
+        return new ChildScope();
+    }
+
+    [MustDisposeResource]
     public ref struct IdScope : IDisposable {
         public void Dispose() {
             ImGui.PopID();
@@ -95,6 +109,13 @@ public static class ScopedImGui {
         public void Dispose() {
             if (Count > 0)
                 ImGui.PopStyleColor(Count);
+        }
+    }
+    
+    [MustDisposeResource]
+    public record struct ChildScope : IDisposable {
+        public void Dispose() {
+            ImGui.EndChild();
         }
     }
 }

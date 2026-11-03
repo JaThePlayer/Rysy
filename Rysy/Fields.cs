@@ -388,10 +388,24 @@ public static partial class Fields {
                 var lua = func.Lua;
                 func.PushToStack();
                 lua.Push(x);
-                lua.Call(1, 1);
+                lua.PushString(x.ToStringInvariant()); // raw
+                lua.Call(2, 1);
                 var isValid = lua.ToBoolean(lua.GetTop());
                 lua.Pop(1);
                 return isValid ? ValidationResult.Ok : ValidationResult.GenericError;
+            });
+        }
+        
+        if (field is {} && fieldInfoEntry.TryGetValue("warningValidator", out var warningValidatorObj) && warningValidatorObj is LuaFunctionRef warningValidator) {
+            field.WithValidator((x) => {
+                var lua = warningValidator.Lua;
+                warningValidator.PushToStack();
+                lua.Push(x);
+                lua.PushString(x.ToStringInvariant()); // raw
+                lua.Call(2, 1);
+                var isValid = lua.ToBoolean(lua.GetTop());
+                lua.Pop(1);
+                return isValid ? ValidationResult.Ok : ValidationResult.GenericWarning;
             });
         }
 

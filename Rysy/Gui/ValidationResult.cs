@@ -8,6 +8,7 @@ namespace Rysy.Gui;
 public sealed class ValidationResult : ITooltip {
     public static ValidationResult Ok { get; } = new();
     public static ValidationResult GenericError { get; } = new(ValidationMessage.GenericError);
+    public static ValidationResult GenericWarning { get; } = new(ValidationMessage.GenericWarning);
     public static ValidationResult MustBeBool { get; } = new(ValidationMessage.ValueMustBeBool);
     public static ValidationResult MustBeInt { get; } = new(ValidationMessage.ValueMustBeInt);
     public static ValidationResult MustBeNumber { get; } = new(ValidationMessage.ValueMustBeNumber);
@@ -217,6 +218,9 @@ public sealed record ValidationMessage {
 
     public static ValidationMessage GenericError { get; } =
         Error(Tooltip.CreateTranslatedOrNull("rysy.validate.genericError"));
+    
+    public static ValidationMessage GenericWarning { get; } =
+        Warn(Tooltip.CreateTranslatedOrNull("rysy.validate.genericWarning"));
     
     public static ValidationMessage ValueMustBeBool { get; } =
         Error(Tooltip.CreateTranslatedOrNull("rysy.validate.mustBeBool"));

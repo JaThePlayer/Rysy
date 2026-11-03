@@ -526,6 +526,7 @@ Path: '{0}'.
 
 # Validation Results
 rysy.validate.genericError=Input is not in a valid format.
+rysy.validate.genericWarning=Input is not in a valid format.\nIt may still work in-game, but cause unexpected results.
 rysy.validate.mustBeInt=Value must be an integer.
 rysy.validate.mustBeNumber=Value must be a number.
 rysy.validate.mustBeBool=Value must be a boolean.

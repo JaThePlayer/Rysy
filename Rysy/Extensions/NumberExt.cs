@@ -200,6 +200,10 @@ public static class NumberExt {
         /// Safely coerces this object to a float, returning the default if the conversion fails.
         /// </summary>
         public int CoerceToInt(int defaultValue = 0) {
+            return CoerceToIntNullable(v) ?? defaultValue;
+        }
+
+        public int? CoerceToIntNullable() {
             if (v is int f)
                 return f;
 
@@ -207,11 +211,11 @@ public static class NumberExt {
                 try {
                     return convertible.ToInt32(CultureInfo.InvariantCulture);
                 } catch {
-                    return defaultValue;
+                    return null;
                 }
             }
 
-            return defaultValue;
+            return null;
         }
 
         /// <summary>
@@ -225,6 +229,22 @@ public static class NumberExt {
                 return false;
 
             return true;
+        }
+        
+        
+        public float? CoerceToFloatNullable() {
+            if (v is float f)
+                return f;
+
+            if (v is IConvertible convertible) {
+                try {
+                    return convertible.ToSingle(CultureInfo.InvariantCulture);
+                } catch {
+                    return null;
+                }
+            }
+
+            return null;
         }
     }
 }

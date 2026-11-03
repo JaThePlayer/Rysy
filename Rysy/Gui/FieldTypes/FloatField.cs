@@ -12,21 +12,23 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
     public float RecommendedMin { get; set; } = float.MinValue;
     public float RecommendedMax { get; set; } = float.MaxValue;
 
-    public override object GetDefault() =>
-        float.TryParse(Default, CultureInfo.InvariantCulture, out var f) ? f : Default!;
+    public bool EmptyAllowed { get; set; }
+    
+    public override object GetDefault() => (object?)ParseInput(Default) ?? Default!;
 
-    public override void SetDefault(object newDefault)
-        => Default = newDefault.ToStringInvariant();
+    public override void SetDefault(object? newDefault)
+        => Default = ParseInput(newDefault)?.ToStringInvariant() ?? (EmptyAllowed ? "" : "0");
+
+    private float? ParseInput(object? value) {
+        return value.CoerceToFloatNullable();
+    }
 
     public override ValidationResult IsValid(object? value) {
-        float v = value switch {
-            int i => i,
-            float f => f,
-            string s when float.TryParse(s, CultureInfo.InvariantCulture, out var f) => f,
-            _ => float.NaN,
-        };
+        if ((EmptyAllowed && value is null or "")) {
+            return ValidationResult.Ok;
+        }
         
-        if (float.IsNaN(v)) {
+        if (ParseInput(value) is not {} v) {
             return ValidationResult.MustBeNumber;
         }
 
@@ -49,9 +51,11 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
     protected override object? DoRenderGui(string fieldName, object value) {
         var str = value.ToStringInvariant();
         if (ImGuiManager.InputFloat(fieldName, ref str, Tooltip)) {
+            if (EmptyAllowed && str.IsNullOrWhitespace())
+                return new FieldNullReturn();
+            
             if (float.TryParse(str, CultureInfo.InvariantCulture, out var f))
                 return f;
-            return null;
         }
 
         return null;
@@ -66,6 +70,11 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
 
     public FloatField WithMax(float max) {
         Max = max;
+        return this;
+    }
+
+    public FloatField AllowNull() {
+        EmptyAllowed = true;
         return this;
     }
     
@@ -100,9 +109,22 @@ public sealed record class FloatField : Field, IFieldConvertible<int>, IFieldCon
         var min = fieldInfoEntry.Float("minimumValue", float.MinValue);
         var max = fieldInfoEntry.Float("maximumValue", float.MaxValue);
 
-        var field = Fields.Float(Convert.ToSingle(def, CultureInfo.InvariantCulture))
+        var field = new FloatField()
             .WithMin(min)
             .WithMax(max);
+        
+        if (fieldInfoEntry.Bool("allowEmpty")) {
+            field = field.AllowNull();
+        }
+        
+        field.SetDefault(def);
+
+        if (fieldInfoEntry.Has("warningBelowValue"))
+            field.WithRecommendedMin(fieldInfoEntry.Float("warningBelowValue"));
+
+        if (fieldInfoEntry.Has("warningAboveValue"))
+            field.WithRecommendedMin(fieldInfoEntry.Float("warningAboveValue"));
+
 
         return field;
     }

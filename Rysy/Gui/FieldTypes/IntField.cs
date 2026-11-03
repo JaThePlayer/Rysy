@@ -16,7 +16,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
 
     public int RecommendedStep { get; set; } = 1;
 
-    public bool NullAllowed { get; set; }
+    public bool EmptyAllowed { get; set; }
     
     public string? Default { get; set; }
 
@@ -26,15 +26,16 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     public int DisplayScale { get; set; } = 1;
 
     public override object GetDefault() => (object?)ParseInput(Default) ?? Default!;
-    public override void SetDefault(object newDefault)
-        => Default = newDefault.ToStringInvariant();
+
+    public override void SetDefault(object? newDefault)
+        => Default = ParseInput(newDefault)?.ToStringInvariant() ?? (EmptyAllowed ? "" : "0");
 
     private int? ParseInput(object? value) {
-        return value is null or "" && NullAllowed ? null : value.CoerceToInt();
+        return value.CoerceToIntNullable();
     }
     
     public override ValidationResult IsValid(object? value) {
-        if ((NullAllowed && value is null or "")) {
+        if ((EmptyAllowed && value is null or "")) {
             return ValidationResult.Ok;
         }
         
@@ -64,10 +65,11 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         var bStr = v is {} ? (v.Value / DisplayScale).ToStringInvariant() : value.ToStringInvariant();
         
         if (ImGuiManager.InputInt(fieldName, ref bStr, Tooltip)) {
+            if (EmptyAllowed && bStr.IsNullOrWhitespace())
+                return new FieldNullReturn();
+
             if (int.TryParse(bStr, CultureInfo.InvariantCulture, out var bRet))
                 return bRet * DisplayScale;
-            
-            return null;
         }
 
         return null;
@@ -128,7 +130,7 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
     }
 
     public IntField AllowNull() {
-        NullAllowed = true;
+        EmptyAllowed = true;
         return this;
     }
 
@@ -149,10 +151,22 @@ public sealed record class IntField : Field, ILonnField, IFieldConvertible<int>,
         var min = fieldInfoEntry.Int("minimumValue", int.MinValue);
         var max = fieldInfoEntry.Int("maximumValue", int.MaxValue);
 
-        var field = Fields.Int(def.CoerceToInt())
+        var field = new IntField()
             .WithMin(min)
             .WithMax(max);
 
+        if (fieldInfoEntry.Bool("allowEmpty")) {
+            field = field.AllowNull();
+        }
+        
+        field.SetDefault(def);
+        
+        if (fieldInfoEntry.Has("warningBelowValue"))
+            field.WithRecommendedMin(fieldInfoEntry.Int("warningBelowValue"));
+
+        if (fieldInfoEntry.Has("warningAboveValue"))
+            field.WithRecommendedMin(fieldInfoEntry.Int("warningAboveValue"));
+        
         return field;
     }
 

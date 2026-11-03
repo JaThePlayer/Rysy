@@ -220,6 +220,10 @@ public static class ImGuiManager {
     #endregion
 
     #region Lists And Combos
+    public static NumVector2 GetDropdownWindowSize(int sourceCount) {
+        return GetDropdownWindowSize(new GuiSize(80, sourceCount).Calculate(), sourceCount);
+    }
+    
     public static NumVector2 GetDropdownWindowSize(NumVector2 size, int sourceCount) {
         return new(size.X.AtLeast(320f), ImGui.GetTextLineHeightWithSpacing() * 16.AtMost(sourceCount + 1) + ImGui.GetFrameHeight());
     }
