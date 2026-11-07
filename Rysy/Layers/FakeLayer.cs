@@ -14,7 +14,4 @@ public class FakeLayer : EditorLayer {
     public override SelectionLayer SelectionLayer { get; }
 
     public override IReadOnlyList<object> GetContents(Room room) => [];
-
-    public override IEnumerable<Placement> GetMaterials()
-        => Array.Empty<Placement>();
 }

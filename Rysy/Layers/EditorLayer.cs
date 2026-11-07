@@ -19,7 +19,7 @@ public interface IEditorLayer
     bool SupportsPreciseMoveMode { get; }
     int? ForcedGridSize { get; }
 
-    IEnumerable<Placement> GetMaterials();
+    Cache<IReadOnlyList<Placement>> Materials { get; }
 
     Searchable GetMaterialSearchable(object material);
 
@@ -27,6 +27,8 @@ public interface IEditorLayer
 }
 
 public abstract class EditorLayer : IHasComponentRegistry, IEditorLayer {
+    private static readonly Cache<IReadOnlyList<Placement>> EmptyMaterialsCache = new(new CacheToken(), () => []);
+    
     public abstract string Name { get; }
 
     public virtual string LocalizedName => Name.TranslateOrNull("rysy.editorLayers") ?? Name;
@@ -35,7 +37,7 @@ public abstract class EditorLayer : IHasComponentRegistry, IEditorLayer {
 
     public abstract IReadOnlyList<object> GetContents(Room room);
 
-    public abstract IEnumerable<Placement> GetMaterials();
+    public virtual Cache<IReadOnlyList<Placement>> Materials => EmptyMaterialsCache;
 
     public virtual Searchable GetMaterialSearchable(object material) {
         return material switch {

@@ -28,12 +28,22 @@ public interface IReadOnlyListenableList<T> : IReadOnlyList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
-    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
-    
+    public event Action<ListenableListChanged<T>>? OnChanged;
+
     /// <summary>
     /// Current version of the list, incremented each time OnChanged is called.
     /// </summary>
-    public long Version { get; }
+    public ulong Version => CacheToken.Version;
+    
+    public CacheToken CacheToken { get; }
+}
+
+public static class IReadOnlyListenableListExtensions {
+    extension<T>(IReadOnlyListenableList<T> list) {
+        public Cache<TNew> CreateCache<TNew>(Func<IReadOnlyListenableList<T>, TNew> generator) where TNew : class {
+            return new Cache<TNew>(list.CacheToken, () => generator(list));
+        }
+    }
 }
 
 /// <summary>
@@ -41,10 +51,10 @@ public interface IReadOnlyListenableList<T> : IReadOnlyList<T> {
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class ListenableList<T> : IListenableList<T> {
-    private List<T> _inner;
-    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
+    private readonly List<T> _inner;
+    public event Action<ListenableListChanged<T>>? OnChanged;
     
-    public long Version { get; private set; }
+    public CacheToken CacheToken { get; } = new();
 
     private bool _suppressed;
 
@@ -58,7 +68,7 @@ public class ListenableList<T> : IListenableList<T> {
     
     protected void CallOnChanged(ListenableListChanged<T> changed) {
         if (!_suppressed) {
-            Version++;
+            CacheToken.InvalidateThenReset();
             OnChanged?.Invoke(changed);
         }
     }

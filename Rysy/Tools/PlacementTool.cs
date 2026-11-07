@@ -55,7 +55,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
     public override object? DeserializeMaterial(IEditorLayer layer, string serializableMaterial) {
         if (JsonExtensions.TryDeserialize(serializableMaterial, out Placement? res)) {
             var mats = GetMaterials(layer);
-            return mats?.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
+            return mats.Value.OfType<Placement>().FirstOrDefault(x => x == res) ?? res;
         }
 
         return null;
@@ -534,7 +534,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
     }
 
     public override void RenderMaterialList(Vector2 size, out bool showSearchBar) {
-        if (Layer is PrefabLayer && !(GetMaterials(Layer)?.Any() ?? true)) {
+        if (Layer is PrefabLayer && !GetMaterials(Layer).Value.Any()) {
             ImGui.TextWrapped("rysy.tools.placement.noPrefabs".TranslateFormatted(Settings.Instance.GetHotkey(SelectionTool.CreatePrefabKeybindName)));
             showSearchBar = true;
         } else {

@@ -1,4 +1,5 @@
-﻿using Rysy.Selections;
+﻿using Rysy.Helpers;
+using Rysy.Selections;
 
 namespace Rysy.Layers;
 
@@ -10,8 +11,8 @@ public class RoomLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorLay
 
     public override IReadOnlyList<object> GetContents(Room room) => [];
 
-    public override IEnumerable<Placement> GetMaterials() {
-        return [ 
+    public override Cache<IReadOnlyList<Placement>> Materials { get; } = new(new(), 
+        () => [ 
             new Placement() {
                 ValueOverrides = new() {
                     ["width"] = 40 * 8,
@@ -32,8 +33,7 @@ public class RoomLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorLay
                 Sid = "fillerRoom",
                 Name = "filler",
             }
-        ];
-    }
+    ]);
 
     public List<Selection> GetSelectionsInRect(Map map, Room? unused, Rectangle? rect) {
         var list = new List<Selection>();

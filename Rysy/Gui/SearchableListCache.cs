@@ -35,7 +35,7 @@ public sealed class SearchableListCache<T> {
         _size = null;
     }
 
-    private long _currentValuesVersion;
+    private ulong _currentValuesVersion;
     
     /// <summary>
     /// Currently used values, unfiltered by search.

@@ -410,7 +410,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     ];*/ => ToolHandler.ComponentRegistry.GetAll<ISelectionEditorLayer>();
 
 
-    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) => [];
+    public override Cache<IReadOnlyList<object>> GetMaterials(IEditorLayer layer) => Cache<IReadOnlyList<object>>.CreateUnchanging([]);
 
     public override string? SerializeMaterial(IEditorLayer layer, object? material) {
         return null;

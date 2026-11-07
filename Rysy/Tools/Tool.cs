@@ -296,8 +296,8 @@ public abstract class Tool {
         }
     }
 
-    public virtual IEnumerable<object>? GetMaterials(IEditorLayer layer)
-        => layer.GetMaterials();
+    public virtual Cache<IReadOnlyList<object>> GetMaterials(IEditorLayer layer)
+        => layer.Materials.Chain(IReadOnlyList<object> (x) => x);
 
     public virtual Searchable GetMaterialSearchable(IEditorLayer layer, object material) {
         var searchable = layer.GetMaterialSearchable(material);
@@ -488,22 +488,24 @@ public abstract class Tool {
         }
 
         if (_cachedSearch is not null)
-            return _cachedSearch;
+            return _cachedSearch.Value;
         
         //using var _ = new ScopedStopwatch($"Getting search for {currentLayer.Name}");
-        return _cachedSearch =
-            (GetMaterials(currentLayer) ?? [])
-            .Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
-            .SearchFilter(kv => kv.Item2, Search)
-            .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
-            .Select(gr => gr.ToList())
-            .ToList();
+        _cachedSearch =
+            GetMaterials(currentLayer).Chain(mats => 
+                mats.Select(mat => (mat, GetMaterialSearchable(currentLayer, mat)))
+                    .SearchFilter(kv => kv.Item2, Search)
+                    .GroupBy(pair => GetGroupKeyForMaterial(pair.mat))
+                    .Select(gr => gr.ToList())
+                    .ToList());
+
+        return _cachedSearch.Value;
     }
 
     public virtual bool AllowSwappingRooms => true;
 
     private IEditorLayer? _cachedLayer;
-    private List<List<(object material, Searchable displayName)>>? _cachedSearch;
+    private Cache<List<List<(object material, Searchable displayName)>>>? _cachedSearch;
 
     public virtual void ClearMaterialListCache() {
         _cachedSearch = null;

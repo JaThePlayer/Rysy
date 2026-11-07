@@ -9,6 +9,8 @@ namespace Rysy.Mods;
 
 public static class ModRegistry {
     private const string LogTag = "ModRegistry";
+
+    public const string VanillaModName = "Celeste";
     
     public static ModMeta VanillaMod { get; private set; }
     
@@ -216,7 +218,7 @@ public static class ModRegistry {
     private static ModMeta? CreateVanillaMod() => Profile.Instance is null ? null : new() {
         EverestYaml = new() {
             new() {
-                Name = "Celeste",
+                Name = VanillaModName,
                 Version = new(1, 4, 0, 0),
             }
         },

@@ -18,7 +18,7 @@ public sealed class ReplaceEntities : Script {
         var origSid = args.Get<string>("from");
         var newSid = args.Get<string>("to");
 
-        var mainPlacement = EntityRegistry.EntityPlacements.FirstOrDefault(pl => pl.Sid == newSid);
+        var mainPlacement = EntityRegistry.EntityPlacements.Value.FirstOrDefault(pl => pl.Sid == newSid);
         if (mainPlacement is null)
         {
             throw new Exception($"Can't run the script, as there are no placements for {newSid}");

@@ -70,15 +70,17 @@ public static class EntityRegistry {
         RegisterHardcoded();
     }
 
-    public static IEnumerable<Placement> EntityPlacements
-        => Registered
-            .Where(kv => kv.Value.Type == RegisteredEntityType.Entity)
-            .SelectMany(kv => kv.Value.Placements);
+    public static Cache<IReadOnlyList<Placement>> EntityPlacements
+        => field ??= Registered.CreateCache(IReadOnlyList<Placement> (d) => 
+            d.Where(kv => kv.Value.Type == RegisteredEntityType.Entity)
+            .SelectMany(kv => kv.Value.Placements)
+            .ToList());
     
-    public static IEnumerable<Placement> TriggerPlacements
-        => Registered
-            .Where(kv => kv.Value.Type == RegisteredEntityType.Trigger)
-            .SelectMany(kv => kv.Value.Placements);
+    public static Cache<IReadOnlyList<Placement>> TriggerPlacements
+        => field ??= Registered.CreateCache(IReadOnlyList<Placement> (d) => 
+            d.Where(kv => kv.Value.Type == RegisteredEntityType.Trigger)
+                .SelectMany(kv => kv.Value.Placements)
+                .ToList());
 
     private static readonly Lazy<Cache<List<Placement>>> StylegroundPlacementsCache = new(() => RegisteredStyles!.CreateCache(d => d
         .Where(kv => kv.Value.Type == RegisteredEntityType.Style)
