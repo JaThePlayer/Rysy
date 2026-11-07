@@ -87,6 +87,11 @@ public sealed class SharedFileWatcher : IDisposable {
         _watcher.Changed += watcherCallback;
         _watcher.Deleted += watcherCallback;
         _watcher.Created += watcherCallback;
+        _watcher.Renamed += (sender, args) => {
+            watcherCallback(sender,
+                new FileSystemEventArgs(WatcherChangeTypes.Deleted, args.OldFullPath, args.OldName));
+            watcherCallback(sender, new FileSystemEventArgs(WatcherChangeTypes.Created, args.FullPath, args.Name));
+        };
 
         _watcher.EnableRaisingEvents = true;
         _watcher.IncludeSubdirectories = true;
