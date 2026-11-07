@@ -337,4 +337,38 @@ public static class TileUtils {
 
         return true;
     }
+    
+    /// <summary>
+    /// Performs a global flood fill, filling every point that satisfies <paramref name="inside"/>.
+    /// </summary>
+    /// <param name="width">Width of the area</param>
+    /// <param name="height">Height of the area</param>
+    /// <param name="inside">Returns true for unfilled points that should be filled.</param>
+    /// <param name="set">Fills a pixel/node.</param>
+    /// <param name="cap">The limit on how many tiles can be global flood filled at once</param>
+    /// <returns>Whether the entire area got flooded. Returns false if the <paramref name="cap"/> got reached.</returns>
+    public static bool GlobalFloodFill(
+        int width,
+        int height,
+        Func<int, int, bool> inside,
+        Action<int, int> set,
+        int? cap = null)
+    {
+        var count = 0;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (!inside(x, y)) continue;
+
+                set(x, y);
+                count++;
+
+                if (cap < count) return false;
+            }
+        }
+
+        return true;
+    }
 }

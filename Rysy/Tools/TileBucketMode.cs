@@ -6,11 +6,14 @@ using System.Collections;
 namespace Rysy.Tools; 
 
 public class TileBucketMode : TileMode {
-    public TileBucketMode(TileTool tool) : base(tool)
+    public TileBucketMode(TileTool tool, bool global) : base(tool)
     {
+        _global = global;
     }
 
-    public override string Name => "bucket";
+    private bool _global;
+
+    public override string Name => _global ? "bucket global" : "bucket";
 
     private WrappedBitArray? _prevChangedTiles;
     
@@ -74,6 +77,7 @@ public class TileBucketMode : TileMode {
         var tiles = Tool.GetGrid(room).Tiles;
         var changeMask = WrappedBitArray.Rent(tiles.Length);
         var w = tiles.GetLength(0);
+        var h = tiles.GetLength(1);
         
         finishedFilling = true;
 
@@ -84,8 +88,16 @@ public class TileBucketMode : TileMode {
         if (replacedTile == newTile) {
             return changeMask;
         }
-        
-        finishedFilling = TileUtils.FloodFill(startPos.X, startPos.Y,
+
+        finishedFilling = _global ?
+            TileUtils.GlobalFloodFill(w, h, 
+                (x, y) => tiles.TryGet(x, y, out var id) && id == replacedTile && !changeMask.Get2d(x, y, w),
+                (x, y) => { 
+                    changeMask.Set2d(x, y, w, true); 
+                    onSet?.Invoke(x, y);
+                }, cap)
+            :
+            TileUtils.FloodFill(startPos.X, startPos.Y,
             (x, y) => tiles.TryGet(x, y, out var id) && id == replacedTile && !changeMask.Get2d(x, y, w),
             (x, y) => {
                 changeMask.Set2d(x, y, w, true);
