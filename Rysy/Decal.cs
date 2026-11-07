@@ -1,8 +1,6 @@
-﻿using Rysy.Extensions;
-using Rysy.Graphics;
+﻿using Rysy.Graphics;
 using Rysy.Gui.FieldTypes;
 using Rysy.Helpers;
-using Rysy.History;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
@@ -10,8 +8,11 @@ namespace Rysy;
 
 public sealed partial class Decal : Entity, IPlaceable {
     [GeneratedRegex(@"\d+$", RegexOptions.RightToLeft)]
-    internal static partial Regex NumberAtEnd();
+    private static partial Regex NumberAtEndRegex { get; }
 
+    [GeneratedRegex(@"^decals/(.*\D)\d*$", RegexOptions.RightToLeft)]
+    private static partial Regex DecalPathRegex { get; }
+    
     [JsonIgnore]
     public bool Fg { get; set; }
 
@@ -134,7 +135,7 @@ public sealed partial class Decal : Entity, IPlaceable {
             textureFromMap = textureFromMap[..^".png".Length];
         }
 
-        var path = textureFromMap.RegexReplace(NumberAtEnd(), string.Empty).Unbackslash();
+        var path = textureFromMap.RegexReplace(NumberAtEndRegex, string.Empty).Unbackslash();
         if (!path.StartsWith("decals/", StringComparison.Ordinal))
             path = $"decals/{path}";
         
@@ -264,36 +265,11 @@ public sealed partial class Decal : Entity, IPlaceable {
     /// <summary>
     /// Stores all paths that can be used by decals.
     /// </summary>
-    public static Cache<List<string>> ValidDecalPaths {
-        get {
-            if (field is { } v)
-                return v;
+    public static Cache<List<string>> ValidDecalPaths => field ??= Gfx.Atlas.FindTextures(DecalPathRegex, (path, texture) => {
+        if (NumberAtEndRegex.Match(path.Path) is not { Success: true } match)
+            return true;
 
-            var cacheToken = new CacheToken();
-            var cache = new Cache<List<string>>(cacheToken, () => Gfx.Atlas.GetTextures()
-                .Where(p => p.virtPath.StartsWith("decals/", StringComparison.Ordinal))
-                .SelectWhereNotNull(p => {
-                    if (NumberAtEnd().Match(p.virtPath) is { Success: true } match) {
-                        var frameNumber = int.Parse(match.ValueSpan, CultureInfo.InvariantCulture);
-                        if (frameNumber > 0) {
-                            return null;
-                        }
-                        
-                        return p.virtPath["decals/".Length..^match.Length];
-                    }
-                    
-                    return p.virtPath["decals/".Length..];
-                }).ToList());
-            field = cache;
-
-            Gfx.Atlas.OnTextureLoad += path => {
-                if (path.StartsWith("decals/", StringComparison.Ordinal)) {
-                    cacheToken.Invalidate();
-                }
-            };
-            Gfx.Atlas.OnUnload += cacheToken.Invalidate;
-
-            return cache;
-        }
-    }
+        var frameNumber = int.Parse(match.ValueSpan, CultureInfo.InvariantCulture);
+        return frameNumber <= 0;
+    }).Chain(static x => x.Select(static x => x.Captured).ToList());
 }
