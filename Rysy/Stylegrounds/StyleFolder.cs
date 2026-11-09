@@ -3,11 +3,11 @@
 namespace Rysy.Stylegrounds;
 
 public abstract class StyleFolder : Style {
-    public const string EditorNameDataKey = "_editorName";
+    public const string EditorNameDataKey = "_name";
 
     public string? EditorName => Data.Attr(EditorNameDataKey, null!);
     
-    public override string DisplayName => EditorName ?? base.DisplayName;
+    public override string DisplayName => EditorName ?? "Folder";
     
     public List<Style> Styles { get; set; }
 
