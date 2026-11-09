@@ -3,7 +3,7 @@
 namespace Rysy.Stylegrounds;
 
 public abstract class StyleFolder : Style {
-    public const string EditorNameDataKey = "_editorName";
+    public const string EditorNameDataKey = "_name";
 
     public string? EditorName => Data.Attr(EditorNameDataKey, null!);
     
