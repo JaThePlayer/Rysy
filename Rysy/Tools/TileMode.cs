@@ -28,4 +28,7 @@ public abstract class TileMode : ToolMode {
         
         Tool.GetGrid(room)?.ClearSpriteCache();
     }
+    
+    // every TileMode will have a thickness, but modes like filled rectangles can override this to force it to be 1.
+    protected virtual int Thickness => Tool.LineThickness;
 }

@@ -8,12 +8,12 @@ public static class TileUtils {
     /// <summary>
     /// Gets all intersections between the provided line and a 1x1 grid.
     /// </summary>
-    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b) {
+    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b, int thickness) {
         var ret = new List<Point>(1);
         
         if (a == b) {
             ret.Add(a);
-            return ret;
+            return thickness > 1 ? ThickenGridLocations(ret, thickness) : ret;
         }
         
         var (x0, y0) = a;
@@ -55,7 +55,7 @@ public static class TileUtils {
             }
         }
 
-        return ret;
+        return thickness > 1 ? ThickenGridLocations(ret, thickness) : ret;
     }
     
     
@@ -370,5 +370,30 @@ public static class TileUtils {
         }
 
         return true;
+    }
+    
+    public static IEnumerable<Point> ThickenGridLocations(
+        IEnumerable<Point> path,
+        int thickness)
+    {
+        thickness = Math.Max(1, thickness);
+
+        int minOffset = -(thickness / 2);
+        int maxOffset = minOffset + thickness - 1;
+
+        var result = new HashSet<Point>();
+
+        foreach (var point in path)
+        {
+            for (int x = minOffset; x <= maxOffset; x++)
+            {
+                for (int y = minOffset; y <= maxOffset; y++)
+                {
+                    result.Add(new Point(point.X + x, point.Y + y));
+                }
+            }
+        }
+
+        return result;
     }
 }

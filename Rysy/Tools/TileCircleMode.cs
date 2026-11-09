@@ -12,4 +12,6 @@ public sealed class TileCircleMode(TileTool tool, bool hollow) : TileShapeMode(t
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid)
         => new TileCircleChangeAction(id, start, current, tilegrid, hollow);
+
+    protected override int Thickness => hollow ? tool.LineThickness : 1;
 }

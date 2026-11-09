@@ -13,4 +13,6 @@ public sealed class TileEllipseMode(TileTool tool, bool hollow) : TileShapeMode(
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid)
         => new TileEllipseChangeAction(id, start, current, tilegrid, hollow);
+    
+    protected override int Thickness => hollow ? tool.LineThickness : 1;
 }

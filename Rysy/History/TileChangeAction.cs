@@ -25,17 +25,17 @@ public record class TileChangeAction(char Id, int X, int Y, Tilegrid Grid, Tileg
 }
 
 public record TileLineChangeAction
-    (char Id, Point A, Point B, Tilegrid Grid) : IHistoryAction {
+    (char Id, Point A, Point B, Tilegrid Grid, int thickness) : IHistoryAction {
     private Tilegrid.BulkReplaceDelta _oldChars;
     
     public bool Apply(Map map) {
-        var anyChanged = Grid.BulkReplaceTiles(Id, TileUtils.GetLineGridIntersection(A, B).GetEnumerator(), out _oldChars);
+        var anyChanged = Grid.BulkReplaceTiles(Id, TileUtils.GetLineGridIntersection(A, B, thickness).GetEnumerator(), out _oldChars);
 
         return anyChanged;
     }
 
     public void Undo(Map map) {
-        Grid.BulkReplaceTiles(TileUtils.GetLineGridIntersection(A, B).GetEnumerator(), _oldChars);
+        Grid.BulkReplaceTiles(TileUtils.GetLineGridIntersection(A, B, thickness).GetEnumerator(), _oldChars);
         
         _oldChars.Clear();
     }

@@ -25,9 +25,10 @@ public abstract class TileShapeMode : TileMode {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
             ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * gridSize, startPos.ToVector2().Add(0.5f, 0.5f) * gridSize, outline).Render(SpriteRenderCtx.Default());
-            
-            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize, startPos.Y * gridSize, gridSize, gridSize));
-            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize, mousePos.Y * gridSize, gridSize, gridSize));
+
+            int thickness = Thickness, offset = ((thickness - 1) / 2) * gridSize, size = gridSize * thickness;
+            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize - offset, startPos.Y * gridSize - offset, size, size));
+            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize - offset, mousePos.Y * gridSize - offset, size, size));
         }
     }
 
