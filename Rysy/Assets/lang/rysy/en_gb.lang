@@ -283,6 +283,9 @@ rysy.stylegrounds.windowName=Stylegrounds
 style.effects.Rysy/FakeBackgroundStyle.name=Background Color
 style.effects.Rysy/FakeBackgroundStyle.description.color=Background color of the map, rendered before all other stylegrounds.
 
+# Styleground groups
+style.effects.apply.name=Folder
+
 # Entity Edit Window
 rysy.entityEdit.documentation=Documentation
 rysy.entityEdit.documentation.tooltip=Opens the documentation for this entity, provided by the mod author.
