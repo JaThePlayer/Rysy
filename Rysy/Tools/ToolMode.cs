@@ -1,11 +1,9 @@
-﻿using Rysy.Extensions;
-
-namespace Rysy.Tools; 
+﻿namespace Rysy.Tools; 
 
 public abstract class ToolMode {
     public abstract string Name { get; }
 
-    public virtual string LocalizedName => Name.Humanize();
+    public string LocalizedName => Name.TranslateOrHumanize("rysy.tools.modes");
 
     public static readonly ToolMode Default = new NamedMode("default");
     public static readonly List<ToolMode> DefaultList = new(1) { Default };
