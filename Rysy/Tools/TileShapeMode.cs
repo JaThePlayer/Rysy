@@ -5,7 +5,7 @@ using Rysy.History;
 
 namespace Rysy.Tools; 
 
-public abstract class TileShapeMode : TileMode, IHotkeyProvider {
+public abstract class TileShapeMode : TileMode {
     protected abstract IEnumerable<Point> GetChangedTileLocations(Point start, Point current);
     protected abstract IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid);
 
@@ -42,8 +42,10 @@ public abstract class TileShapeMode : TileMode, IHotkeyProvider {
 
     public override void Update(Camera camera, Room room) {
         _dragGesture.Update(out var continueStroke, out var endStroke, out var lastMousePos, out var data);
-
-        if (continueStroke || endStroke) {
+        
+        // using the scroll wheel as a keybind fails to change the thickness, but does seem to set _thicknessChanged for some reason.
+        // this somehow produces a crash fixable by making sure data isn't null when _thicknessChanged is true, even though _thicknessChanged seems to only be true while data isn't null.
+        if (continueStroke || endStroke || (_thicknessChanged && data is {})) {
             data!.StartPos ??= Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
 
             var grid = Tool.GetGrid(room);
@@ -68,6 +70,8 @@ public abstract class TileShapeMode : TileMode, IHotkeyProvider {
 
             data.LastChangedTiles = changedTilePositions;
         }
+
+        _thicknessChanged = false;
         
         if (endStroke) {
             var endPos = Tool.GetMouseTilePos(camera, room);
@@ -100,16 +104,15 @@ public abstract class TileShapeMode : TileMode, IHotkeyProvider {
 
         public Point? StartPos;
     }
-
-    public bool HotkeysIgnoreImGui => false;
-    public void AddHotkeysTo(HotkeyHandler handler) {
-        handler.AddHotkeyFromSettings("tools.incrementThickness", "u", ProcessHotkey(1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.NotWhenUsingKeyboard);
-        handler.AddHotkeyFromSettings("tools.decrementThickness", "j", ProcessHotkey(-1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.NotWhenUsingKeyboard);
-    }
-
-    public Action ProcessHotkey(int amt) => () => {
+    
+    
+    public static Action ChangeThicknessBy(int amt) => () => {
         int res = Math.Clamp(_cachedthickness + amt, 1, 500);
         Persistence.Instance.Set("tileToolThickness", res);
-        _cachedthickness = amt;
+        _cachedthickness = res;
+        // forces the update to happen, which re-renders the fake tiles with the new width.
+        _thicknessChanged = true;
     };
+    
+    private static bool _thicknessChanged;
 }

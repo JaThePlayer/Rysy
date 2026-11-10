@@ -204,6 +204,9 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         
         handler.AddHotkeyFromSettings("tools.nextLayer", "alt+scrolldown", () => SwapToNextLayer(1), HotkeyModes.OnHoldSmoothInterval);
         handler.AddHotkeyFromSettings("tools.prevLayer", "alt+scrollup", () => SwapToNextLayer(-1), HotkeyModes.OnHoldSmoothInterval);
+        
+        handler.AddHotkeyFromSettings("tools.incrementThickness", "u", TileShapeMode.ChangeThicknessBy(1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.Never);
+        handler.AddHotkeyFromSettings("tools.decrementThickness", "j", TileShapeMode.ChangeThicknessBy(-1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.Never);
     }
 
     public void AddWindows(Settings settings) {

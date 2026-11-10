@@ -376,9 +376,7 @@ public static class TileUtils {
     }
     
     // TODO: 1. optimize this method, 2. add a circular version
-    public static IEnumerable<Point> ThickenGridLocations(
-        IEnumerable<Point> path,
-        int thickness)
+    public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
         thickness = Math.Max(1, thickness);
 
