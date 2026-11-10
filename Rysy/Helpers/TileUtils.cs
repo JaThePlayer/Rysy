@@ -1,4 +1,6 @@
-﻿namespace Rysy.Helpers; 
+﻿using Rysy.Tools;
+
+namespace Rysy.Helpers; 
 
 /// <summary>
 /// Contains helper functions for tiles and shapes in grids
@@ -8,12 +10,12 @@ public static class TileUtils {
     /// <summary>
     /// Gets all intersections between the provided line and a 1x1 grid.
     /// </summary>
-    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b, int thickness) {
+    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b) {
         var ret = new List<Point>(1);
         
         if (a == b) {
             ret.Add(a);
-            return thickness > 1 ? ThickenGridLocations(ret, thickness) : ret;
+            return ThickenGridLocations(ret, TileShapeMode._cachedthickness);
         }
         
         var (x0, y0) = a;
@@ -55,7 +57,7 @@ public static class TileUtils {
             }
         }
 
-        return thickness > 1 ? ThickenGridLocations(ret, thickness) : ret;
+        return ThickenGridLocations(ret, TileShapeMode._cachedthickness);
     }
     
     
@@ -110,7 +112,7 @@ public static class TileUtils {
         var points = new List<Point>();
         if (radius < 1) {
             points.Add(center);
-            return points;
+            return ThickenGridLocations(points, TileShapeMode._cachedthickness);
         }
         
         // https://www.redblobgames.com/grids/circle-drawing/
@@ -134,7 +136,7 @@ public static class TileUtils {
             }
         }
 
-        return points;
+        return ThickenGridLocations(points, TileShapeMode._cachedthickness);
     }
     
     /// <summary>
@@ -153,7 +155,7 @@ public static class TileUtils {
     /// </summary>
     public static IEnumerable<Point> GetHollowCircleGridIntersection(Point start, Point end) {
         var radius = (int)Vector2.Distance(start.ToVector2(), end.ToVector2());
-
+        
         return GetHollowCircleGridIntersection(start, radius);
     }
     
@@ -240,7 +242,8 @@ public static class TileUtils {
             }
         }
     
-        return points;
+        return ThickenGridLocations(points, TileShapeMode._cachedthickness);
+        
         void Plot4EllipsePoints(List<Point> points, Point center, int x, int y) {
             // Switch to make sure not to create duplicate points
             switch (x, y) {
@@ -372,6 +375,7 @@ public static class TileUtils {
         return true;
     }
     
+    // TODO: 1. optimize this method, 2. add a circular version
     public static IEnumerable<Point> ThickenGridLocations(
         IEnumerable<Point> path,
         int thickness)

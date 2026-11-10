@@ -5,28 +5,36 @@ using Rysy.History;
 
 namespace Rysy.Tools; 
 
-public abstract class TileShapeMode : TileMode {
+public abstract class TileShapeMode : TileMode, IHotkeyProvider {
     protected abstract IEnumerable<Point> GetChangedTileLocations(Point start, Point current);
     protected abstract IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid);
 
     protected TileShapeMode(TileTool tool) : base(tool) {
+        _cachedthickness = Persistence.Instance.Get<int>("tileToolThickness", 1);
     }
     
     private MouseDragGesture<ShapeData> _dragGesture;
+
+    // For the purposes of displaying overlays while dragging, this uses a thickness value that tools can override if they are not subject to thickness (eg not hollow).
+    internal static int _cachedthickness;
+    internal virtual int _thickness => _cachedthickness;
     
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
         var gridSize = GridSize;
 
+        int offset = ((_thickness) / 2) * gridSize, size = gridSize * _thickness;
+        
         if (!_dragGesture.Begun) {
-            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2(), 1, 1, hollow: false);
+            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2() - Vector2.One * offset, _thickness, _thickness, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
-            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * gridSize, startPos.ToVector2().Add(0.5f, 0.5f) * gridSize, outline).Render(SpriteRenderCtx.Default());
+            float lineadd = (_thickness % 2 > 0) ? 0.5f : 0f;
+            Vector2 _mousePos = mousePos.ToVector2().Add(lineadd,lineadd), _startPos = startPos.ToVector2().Add(lineadd,lineadd);
+            ISprite.LineFloored(_mousePos * gridSize, _startPos * gridSize, outline).Render(SpriteRenderCtx.Default());
 
-            int thickness = Thickness, offset = ((thickness - 1) / 2) * gridSize, size = gridSize * thickness;
             Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize - offset, startPos.Y * gridSize - offset, size, size));
             Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize - offset, mousePos.Y * gridSize - offset, size, size));
         }
@@ -92,4 +100,16 @@ public abstract class TileShapeMode : TileMode {
 
         public Point? StartPos;
     }
+
+    public bool HotkeysIgnoreImGui => false;
+    public void AddHotkeysTo(HotkeyHandler handler) {
+        handler.AddHotkeyFromSettings("tools.incrementThickness", "u", ProcessHotkey(1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.NotWhenUsingKeyboard);
+        handler.AddHotkeyFromSettings("tools.decrementThickness", "j", ProcessHotkey(-1), HotkeyModes.OnHoldSmoothInterval, HotkeyHandler.ImGuiModes.NotWhenUsingKeyboard);
+    }
+
+    public Action ProcessHotkey(int amt) => () => {
+        int res = Math.Clamp(_cachedthickness + amt, 1, 500);
+        Persistence.Instance.Set("tileToolThickness", res);
+        _cachedthickness = amt;
+    };
 }
