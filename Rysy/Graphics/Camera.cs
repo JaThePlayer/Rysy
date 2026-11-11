@@ -219,7 +219,8 @@ public class Camera : ISignalListener<ViewportChanged> {
     }
 
     public void CreateCameraHotkeys(HotkeyHandler hotkeys) {
-        // sdl doesn't emit pinch events on windows, so we need to support windows' ctrl + scrollwheel anyway
+        // sdl doesn't emit pinch events (or any multi-gesture events) on windows, so we need to support its ctrl+scrollwheel mapping anyway
+        // see https://github.com/libsdl-org/SDL/issues/6417
         hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup|ctrl+scrollup|pinchout", () => ZoomIn(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown|ctrl+scrolldown|pinchin", () => ZoomOut(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomRealScale", "", () => Zoom(6f));
