@@ -138,6 +138,12 @@ public sealed class SettingsWindow : Window {
             Settings.Instance.Save();
         }
         
+        var pinchThreshold = Settings.Instance.TouchpadPinchSensitivity;
+        if (ImGuiManager.TranslatedInputFloat("rysy.settings.general.touchpadPinchSensitivity", ref pinchThreshold, step: 0.25f, "%.2fx")) {
+            Settings.Instance.TouchpadPinchSensitivity = pinchThreshold.SnapBetween(0.25f, 4f);
+            Settings.Instance.Save();
+        }
+        
         ImGui.SeparatorText("rysy.settings.general.forms".Translate());
         var positionInProperties = Settings.Instance.PositionInProperties;
         if (ImGuiManager.TranslatedCheckbox("rysy.settings.general.positionInProperties", ref positionInProperties)) {

@@ -219,9 +219,9 @@ public class Camera : ISignalListener<ViewportChanged> {
     }
 
     public void CreateCameraHotkeys(HotkeyHandler hotkeys) {
-        // Windows converts a pinch gesture to ctrl+scrollwheel, make sure this is supported.
-        hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup|ctrl+scrollup", () => ZoomIn(hotkeys.Input));
-        hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown|ctrl+scrolldown", () => ZoomOut(hotkeys.Input));
+        // todo: do we still need to support windows' ctrl + scrollwheel?
+        hotkeys.AddHotkeyFromSettings("zoomIn", "scrollup|pinchout", () => ZoomIn(hotkeys.Input));
+        hotkeys.AddHotkeyFromSettings("zoomOut", "scrolldown|pinchin", () => ZoomOut(hotkeys.Input));
         hotkeys.AddHotkeyFromSettings("zoomRealScale", "", () => Zoom(6f));
     }
 

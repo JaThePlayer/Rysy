@@ -21,6 +21,10 @@ public interface IMouseInput {
     /// Handles the two-finger touchpad panning gesture.
     /// </summary>
     Vector2 TouchpadPan { get; }
+    /// <summary>
+    /// Handles the two-finger touchpad pinching gesture.
+    /// </summary>
+    int TouchpadPinchDelta { get; }
 
     bool Clicked(int button);
     void Consume(int button);
