@@ -194,6 +194,4 @@ public class TileTool : Tool, ISignalListener<MapSwapped> {
     public void OnSignal(MapSwapped signal) {
         ClearMaterialListCache();
     }
-
-    public int LineThickness { get; set; } = 3;
 }
