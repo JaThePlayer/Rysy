@@ -378,7 +378,7 @@ public static class TileUtils {
     
     
     // TODO: 1. optimize this method, 2. add a circular version
-
+    /* old version of the method
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
         if (thickness <= 1) return path;
@@ -400,9 +400,9 @@ public static class TileUtils {
         }
 
         return result;
-    }
+    } */
     
-    /* old ver
+    // new, optimized version of the method
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
         if (thickness <= 1) return path;
@@ -470,5 +470,5 @@ public static class TileUtils {
             result.Add(new Point(x, y));
             if (x == end) break;
         }
-    } */
+    }
 }

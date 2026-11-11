@@ -7,7 +7,7 @@ public abstract class StyleFolder : Style {
 
     public string? EditorName => Data.Attr(EditorNameDataKey, null!);
     
-    public override string DisplayName => EditorName ?? "Folder";
+    public override string DisplayName => EditorName ?? base.DisplayName;
     
     public List<Style> Styles { get; set; }
 

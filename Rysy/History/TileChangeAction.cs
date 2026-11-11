@@ -84,17 +84,17 @@ public record TileEllipseChangeAction
     }
 }
 
-public record TileBulkChangeAction(char Id, HashSet<Point> Points, Tilegrid Grid) : IHistoryAction {
+public record TileBulkChangeAction(char Id, HashSet<Point> Points, Tilegrid Grid, int Thickness = 1) : IHistoryAction {
     private Tilegrid.BulkReplaceDelta _oldTiles;
     
     public bool Apply(Map map) {
-        var anyChanged = Grid.BulkReplaceTiles(Id, Points.GetEnumerator(), out _oldTiles, locationCountHint: Points.Count);
+        var anyChanged = Grid.BulkReplaceTiles(Id, TileUtils.ThickenGridLocations(Points, Thickness).GetEnumerator(), out _oldTiles, locationCountHint: Points.Count);
 
         return anyChanged;
     }
 
     public void Undo(Map map) {
-        Grid.BulkReplaceTiles(Points.GetEnumerator(), _oldTiles);
+        Grid.BulkReplaceTiles(TileUtils.ThickenGridLocations(Points, Thickness).GetEnumerator(), _oldTiles);
         _oldTiles.Clear();
     }
 }
