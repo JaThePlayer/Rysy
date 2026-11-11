@@ -243,6 +243,8 @@ public sealed partial class Settings : IHasJsonCtx<Settings>, ISignalEmitter, IS
 
     public float TouchpadPanSpeed { get; set; } = 100f;
 
+    public float TouchpadPinchSensitivity { get; set; } = 1f;
+
     public bool PositionInProperties { get; set; } = false;
 
     public LogLevel MinimumNotificationLevel { get; set; } = LogLevel.Warning;

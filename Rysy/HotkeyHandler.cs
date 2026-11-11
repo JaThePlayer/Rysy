@@ -157,8 +157,16 @@ public class HotkeyHandler : ISignalEmitter {
             hotkey.OnPress();
             return;
         }
-        
         if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
+            hotkey.OnPress();
+            return;
+        }
+        
+        if (hotkey.PinchIn && Input.Mouse.TouchpadPinchDelta < 0) {
+            hotkey.OnPress();
+            return;
+        }
+        if (hotkey.PinchOut && Input.Mouse.TouchpadPinchDelta > 0) {
             hotkey.OnPress();
             return;
         }
@@ -179,8 +187,16 @@ public class HotkeyHandler : ISignalEmitter {
             hotkey.OnPress();
             return;
         }
-        
         if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
+            hotkey.OnPress();
+            return;
+        }
+        
+        if (hotkey.PinchIn && Input.Mouse.TouchpadPinchDelta < 0) {
+            hotkey.OnPress();
+            return;
+        }
+        if (hotkey.PinchOut && Input.Mouse.TouchpadPinchDelta > 0) {
             hotkey.OnPress();
             return;
         }
@@ -202,6 +218,12 @@ public class HotkeyHandler : ISignalEmitter {
             held = true;
             clicked = true;
         } else if (hotkey.ScrollDown && Input.Mouse.ScrollDelta < 0) {
+            held = true;
+            clicked = true;
+        } else if (hotkey.PinchIn && Input.Mouse.TouchpadPinchDelta < 0) {
+            held = true;
+            clicked = true;
+        } else if (hotkey.PinchOut && Input.Mouse.TouchpadPinchDelta > 0) {
             held = true;
             clicked = true;
         }
@@ -229,7 +251,7 @@ public class HotkeyHandler : ISignalEmitter {
         foreach (var hotkey in hotkeyString.Split('|')) {
             foreach (var item in hotkey.Replace(" ", "", StringComparison.Ordinal).Split('+')) {
                 var lower = item.ToLowerInvariant();
-                if (lower is not ("shift" or "ctrl" or "alt" or "esc" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or ['m', 'o', 'u', 's', 'e', _])) {
+                if (lower is not ("shift" or "ctrl" or "alt" or "esc" or "mouseleft" or "mouseright" or "mousemiddle" or "scrollup" or "scrolldown" or "pinchin" or "pinchout" or ['m', 'o', 'u', 's', 'e', _])) {
                     if (!Enum.TryParse<Keys>(lower, true, out var key))
                         return ValidationResult.GenericError;
                 }
@@ -257,6 +279,8 @@ public class Hotkey {
     public int? MouseButton;
     public bool ScrollDown;
     public bool ScrollUp;
+    public bool PinchIn;
+    public bool PinchOut;
 
     public Action OnPress;
     public HotkeyModes Mode;
@@ -296,6 +320,12 @@ public class Hotkey {
                     break;
                 case "scrolldown":
                     ScrollDown = true;
+                    break;
+                case "pinchin":
+                    PinchIn = true;
+                    break;
+                case "pinchout":
+                    PinchOut = true;
                     break;
                 case ['m', 'o', 'u', 's', 'e', var button]:
                     MouseButton = int.Parse(button.ToString(), CultureInfo.InvariantCulture);

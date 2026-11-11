@@ -47,6 +47,7 @@ public class Input {
         public Point PositionDelta { get; private set; }
         
         public Vector2 TouchpadPan { get; private set; }
+        public int TouchpadPinchDelta { get; private set; }
 
         public float LeftHoldTime => _holdTimes[0];
         public float RightHoldTime => _holdTimes[1];
@@ -124,6 +125,8 @@ public class Input {
 
             TouchpadPan = RysyState.TouchpadPan;
             RysyState.TouchpadPan = default;
+            TouchpadPinchDelta = RysyState.TouchpadPinchDelta;
+            RysyState.TouchpadPinchDelta = default;
             
             // From FNA wiki
             _mousePrevState = _mouseState;
@@ -133,7 +136,7 @@ public class Input {
             _lastMouseScroll = _realMouseScroll;
             _realMouseScroll = _mouseState.ScrollWheelValue;
 
-            ScrollDelta = TouchpadPan == default ? (_realMouseScroll - _lastMouseScroll) : default;
+            ScrollDelta = (TouchpadPan == default && TouchpadPinchDelta == default) ? (_realMouseScroll - _lastMouseScroll) : default;
             
             var viewport = RysyState.GraphicsDevice.Viewport;
             var lastPos = RealPos;
