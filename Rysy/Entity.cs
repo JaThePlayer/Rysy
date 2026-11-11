@@ -1167,7 +1167,7 @@ public class EntityData : IDictionary<string, object>, IUntypedData {
         Sid = sid;
 
         Nodes = nodes?.Select(n => new Node(n)).ToListenableList() ?? new(capacity: 0);
-        Nodes.OnChanged = _ => OnChanged?.Invoke(new EntityDataChangeCtx {
+        Nodes.OnChanged += _ => OnChanged?.Invoke(new EntityDataChangeCtx {
             NodesChanged = true,
             NodeCountChanged = true,
         });

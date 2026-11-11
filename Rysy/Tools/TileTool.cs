@@ -50,17 +50,17 @@ public class TileTool : Tool, ISignalListener<MapSwapped> {
         }
     }
 
-    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) {
+    public override Cache<IReadOnlyList<object>> GetMaterials(IEditorLayer layer) {
         var autotiler = GetAutotiler(layer);
         if (autotiler is not { })
-            return null;
+            return Cache<IReadOnlyList<object>>.CreateUnchanging([]);
 
-        autotiler.TilesetDataCacheToken.OnInvalidate += ClearMaterialListCache;
-        return autotiler.Tilesets
+        return autotiler.Tilesets.CreateCache(IReadOnlyList<object> (d) => d
             .Where(x => !x.Value.IsTemplate)
             .Select(x => x.Key)
             .Append('0')
-            .Select(k => (object) k);
+            .Select(k => (object) k)
+            .ToList());
     }
 
     public override string SerializeMaterial(IEditorLayer layer, object? material) {

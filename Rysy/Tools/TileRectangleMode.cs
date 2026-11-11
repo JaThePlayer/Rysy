@@ -21,5 +21,5 @@ public class TileRectangleMode(TileTool tool, bool hollow) : TileShapeMode(tool)
         return new TileRectChangeAction(id, rect, tilegrid, hollow, _thickness);
     }
     
-    internal override int _thickness => hollow ? _cachedthickness : 1;
+    protected internal override int _thickness => hollow ? _cachedthickness : 1;
 }

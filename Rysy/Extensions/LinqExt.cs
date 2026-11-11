@@ -176,15 +176,17 @@ public static class LinqExt {
         }
 
         public ListenableList<T> ToListenableList(Action onChange) {
-            return new(self) {
-                OnChanged = _ => onChange(),
-            };
+            var ret = new ListenableList<T>(self);
+            ret.OnChanged += _ => onChange();
+
+            return ret;
         }
 
         public ListenableList<T> ToListenableList(Action<ListenableListChanged<T>> onChange) {
-            return new(self) {
-                OnChanged = onChange,
-            };
+            var ret = new ListenableList<T>(self);
+            ret.OnChanged += onChange;
+
+            return ret;
         }
     }
 

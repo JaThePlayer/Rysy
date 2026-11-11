@@ -16,8 +16,8 @@ public abstract class TileShapeMode : TileMode {
     private MouseDragGesture<ShapeData> _dragGesture;
 
     // For the purposes of displaying overlays while dragging, this uses a thickness value that tools can override if they are not subject to thickness (eg not hollow).
-    internal static int _cachedthickness;
-    internal virtual int _thickness => _cachedthickness;
+    protected internal static int _cachedthickness;
+    protected internal virtual int _thickness => _cachedthickness;
     
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);

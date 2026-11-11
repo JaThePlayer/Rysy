@@ -29,9 +29,6 @@ public class TileEditorLayer : EditorLayer, ISelectionEditorLayer, ILonnSerializ
         return [ GetGrid(room) ];
     }
 
-    public override IEnumerable<Placement> GetMaterials()
-        => [];
-
     public override Searchable GetMaterialSearchable(object material) {
         if (material is not char c)
             return new Searchable(material.ToString()!);

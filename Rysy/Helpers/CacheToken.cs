@@ -5,7 +5,9 @@ namespace Rysy.Helpers;
 /// <summary>
 /// A token wrapping over a function that gets called when the cache gets invalidated.
 /// </summary>
-public class CacheToken {
+public sealed class CacheToken {
+    public ulong Version { get; private set; }
+    
     public bool Valid { get; private set; } = true;
 
     /// <summary>
@@ -36,6 +38,7 @@ public class CacheToken {
     public void Invalidate() {
         if (Valid) {
             Valid = false;
+            Version++;
             OnInvalidate?.Invoke();
             if (OnNextInvalidate is { } onNext) {
                 OnNextInvalidate = null;

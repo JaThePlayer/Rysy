@@ -1,8 +1,6 @@
-﻿using Rysy.Extensions;
-using Rysy.Helpers;
+﻿using Rysy.Helpers;
 using Rysy.Selections;
 using Rysy.Signals;
-using System.Collections;
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -35,10 +33,9 @@ public sealed class Autotiler : ISignalEmitter {
     
     public AutotiledSprite InvalidTileSprite { get; }
 
-    public Dictionary<char, TilesetData> Tilesets = new();
+    public ListenableDictionary<char, TilesetData> Tilesets { get; } = new();
 
-    private bool _loaded = false;
-    public bool Loaded => _loaded;
+    public bool Loaded { get; private set; }
 
     public CacheToken TilesetDataCacheToken { get; set; } = new();
 
@@ -77,7 +74,7 @@ public sealed class Autotiler : ISignalEmitter {
 
         TilesetDataCacheToken.Invalidate();
         TilesetDataCacheToken.Reset();
-        _loaded = true;
+        Loaded = true;
     }
 
     public void ReadTilesetNode(XmlNode tileset, bool clearCache = true, bool addToXml = false, TilesetData? into = null) {
@@ -220,7 +217,7 @@ public sealed class Autotiler : ISignalEmitter {
         if (clearCache) {
             TilesetDataCacheToken.Invalidate();
             TilesetDataCacheToken.Reset();
-            _loaded = true;
+            Loaded = true;
         }
     }
 

@@ -12,6 +12,8 @@ public sealed class PrefabLayer(PrefabHelper prefabs) : EditorLayer, IPlacementE
 
     public override IReadOnlyList<object> GetContents(Room room) => [];
 
-    public override IEnumerable<Placement> GetMaterials() =>
-        prefabs.CurrentPrefabs.Select(s => prefabs.PlacementFromName(s.Key)!);
+    public override Cache<IReadOnlyList<Placement>> Materials => field ??= prefabs.CurrentPrefabs.CreateCache(
+        IReadOnlyList<Placement> (d) => d
+            .Select(s => prefabs.PlacementFromName(s.Key)!)
+            .ToList());
 }

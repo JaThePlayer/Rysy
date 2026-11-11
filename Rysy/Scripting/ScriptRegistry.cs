@@ -1,4 +1,5 @@
 ﻿using Rysy.Components;
+using Rysy.Helpers;
 using Rysy.Mods;
 using Rysy.Signals;
 using System.Reflection;
@@ -6,13 +7,13 @@ using System.Reflection;
 namespace Rysy.Scripting;
 
 public sealed class ScriptRegistry : ISignalEmitter, ISignalListener<ModAssemblyReloaded> {
-    private List<Script>? _scriptsMutable;
+    private ListenableList<Script>? _scriptsMutable;
 
     private readonly Dictionary<string, List<Script>> _modScripts = new();
 
-    public IReadOnlyList<Script> Scripts => _scriptsMutable ??= LoadAll();
+    public IReadOnlyListenableList<Script> Scripts => _scriptsMutable ??= LoadAll();
 
-    private List<Script> LoadAll() {
+    private ListenableList<Script> LoadAll() {
         _scriptsMutable = new();
 
         foreach (var mod in ModRegistry.Mods.Values) {

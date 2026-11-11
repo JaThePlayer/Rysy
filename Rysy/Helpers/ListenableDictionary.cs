@@ -10,7 +10,7 @@ namespace Rysy.Helpers;
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TValue"></typeparam>
 public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
-    private long Version { get; set; }
+    private ulong Version { get; set; }
     public TKey Key { get; private init; }
     
     private TValue? _value;
@@ -61,7 +61,7 @@ public class ListenableDictionaryRef<TKey, TValue> where TKey : notnull {
     private readonly ReadOnlyListenableDictionary<TKey, TValue> _dict;
 
     internal ListenableDictionaryRef(ReadOnlyListenableDictionary<TKey, TValue> dict, TKey key) {
-        Version = long.MinValue;
+        Version = ulong.MinValue;
         _dict = dict;
         Key = key;
     }
@@ -71,12 +71,17 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     where TKey : notnull {
     internal readonly Dictionary<TKey, TValue> Inner;
 
-    public Action? OnChanged { get; set; }
+    public event Action? OnChanged {
+        add => CacheToken.OnInvalidate += value;
+        remove => CacheToken.OnInvalidate -= value;
+    }
+
+    internal CacheToken CacheToken { get; } = new CacheToken();
 
     /// <summary>
     /// Keeps track of how many times the dictionary got mutated
     /// </summary>
-    public long Version { get; private set; }
+    public ulong Version => CacheToken.Version;
     
     public ListenableDictionary(IEqualityComparer<TKey> comparer) {
         Inner = new(comparer);
@@ -95,8 +100,7 @@ public class ListenableDictionary<TKey, TValue> : IDictionary<TKey, TValue>
     }
     
     private void HandleOnChanged() {
-        Version++;
-        OnChanged?.Invoke();
+        CacheToken.InvalidateThenReset();
     }
     
     public TValue this[TKey key] {
@@ -203,18 +207,16 @@ public readonly struct ReadOnlyListenableDictionary<TKey, TValue> : IReadOnlyDic
         _inner = d;
     }
 
-    public Action? OnChanged {
-        get => _inner.OnChanged;
-        set => _inner.OnChanged = value;
+    public event Action? OnChanged {
+        add => _inner.OnChanged += value;
+        remove => _inner.OnChanged -= value;
     }
 
-    public long Version => _inner.Version;
+    public ulong Version => _inner.Version;
 
     public Cache<T> CreateCache<T>(Func<ReadOnlyListenableDictionary<TKey, TValue>, T> generator) where T : class {
         var inner = _inner;
-        var token = new CacheToken();
-        var cache = new Cache<T>(token, () => generator(inner));
-        OnChanged += token.InvalidateThenReset;
+        var cache = new Cache<T>(_inner.CacheToken, () => generator(inner));
 
         return cache;
     }

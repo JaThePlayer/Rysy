@@ -399,7 +399,7 @@ public static class TileUtils {
         return result;
     } */
     
-    // new, optimized version of the method
+    // comparably optimized version of the method
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
         if (thickness <= 1) return path;
@@ -432,7 +432,7 @@ public static class TileUtils {
 
         foreach (var (y, intervals) in rows)
         {
-            intervals.Sort((a, b) => a.Start.CompareTo(b.Start));
+            intervals.Sort(static (a, b) => a.Start.CompareTo(b.Start));
 
             int start = intervals[0].Start;
             int end = intervals[0].End;

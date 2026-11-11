@@ -38,8 +38,8 @@ public class ScriptTool : Tool, ISignalListener<ScriptReloaded> {
         return null;
     }
 
-    public override IEnumerable<object>? GetMaterials(IEditorLayer layer) 
-        => Registry.Scripts;
+    public override Cache<IReadOnlyList<object>> GetMaterials(IEditorLayer layer) 
+        => Registry.Scripts.CreateCache(IReadOnlyList<object> (s) => s);
 
     public override string? SerializeMaterial(IEditorLayer layer, object? material) => material switch {
         Script scr => scr.Name,

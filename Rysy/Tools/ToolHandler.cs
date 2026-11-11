@@ -398,7 +398,7 @@ public class ToolHandler : ISignalListener<ThemeChanged>, ISignalListener<Histor
         commands.AddRange(Tools.Select(t => new ChangeToolCommand(t)));
         commands.AddRange(Tools
             .SelectMany(t => t.ValidLayers.Select(l => (t, l)))
-            .SelectMany(tl => tl.t.GetMaterials(tl.l)?.Select(m => (tl.t, tl.l, m)) ?? [])
+            .SelectMany(tl => tl.t.GetMaterials(tl.l).Value.Select(m => (tl.t, tl.l, m)))
             .Select(tlm => new ChangeToolMaterialCommand(tlm.t, tlm.l, tlm.m))
         );
         

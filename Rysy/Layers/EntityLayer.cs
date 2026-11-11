@@ -18,15 +18,14 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorL
     };
 
     public override SelectionLayer SelectionLayer { get; }
-    public override IEnumerable<Placement> GetMaterials() {
-        return SelectionLayer switch {
-            SelectionLayer.Entities => EntityRegistry.EntityPlacements,
-            SelectionLayer.Triggers => EntityRegistry.TriggerPlacements,
-            SelectionLayer.FgDecals => FgDecalPlacements.Value,
-            SelectionLayer.BgDecals => BgDecalPlacements.Value,
-            _ => throw new NotImplementedException(SelectionLayer.FastToString())
-        };
-    }
+    
+    public override Cache<IReadOnlyList<Placement>> Materials => field ??= SelectionLayer switch {
+        SelectionLayer.Entities => EntityRegistry.EntityPlacements,
+        SelectionLayer.Triggers => EntityRegistry.TriggerPlacements,
+        SelectionLayer.FgDecals => FgDecalPlacements,
+        SelectionLayer.BgDecals => BgDecalPlacements,
+        _ => throw new NotImplementedException(SelectionLayer.FastToString())
+    };
 
     public override IReadOnlyList<Entity> GetContents(Room room) {
         return SelectionLayer switch {
@@ -45,10 +44,10 @@ public class EntityLayer : EditorLayer, IPlacementEditorLayer, ISelectionEditorL
         return room.GetSelectionsInRect(rect, SelectionLayer);
     }
 
-    private static Cache<List<Placement>> FgDecalPlacements { get; }
-        = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, SelectionLayer.FgDecals)!).ToList());
-    private static Cache<List<Placement>> BgDecalPlacements { get; }
-        = Decal.ValidDecalPaths.Chain((paths) => paths.Select(p => PlacementFromString(p, SelectionLayer.BgDecals)!).ToList());
+    private static Cache<IReadOnlyList<Placement>> FgDecalPlacements { get; }
+        = Decal.ValidDecalPaths.Chain(IReadOnlyList<Placement> (paths) => paths.Select(p => PlacementFromString(p, SelectionLayer.FgDecals)!).ToList());
+    private static Cache<IReadOnlyList<Placement>> BgDecalPlacements { get; }
+        = Decal.ValidDecalPaths.Chain(IReadOnlyList<Placement> (paths) => paths.Select(p => PlacementFromString(p, SelectionLayer.BgDecals)!).ToList());
 
     private static Placement? PlacementFromString(string str, SelectionLayer layer) {
         return layer switch {

@@ -42,7 +42,7 @@ public class Searchable {
     public Searchable(string text, IReadOnlyList<string> mods, IReadOnlyList<string>? tags, string? definingMod = null) {
         Text = text;
         DefiningMod = definingMod;
-        Mods = mods is [] ? _onlyVanillaModList ??= [ ModRegistry.VanillaMod.Name ] : mods;
+        Mods = mods is [] ? _onlyVanillaModList ??= [ ModRegistry.VanillaModName ] : mods;
         Tags = tags ?? [];
             
         if (HasNonVanillaMods) {

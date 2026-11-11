@@ -17,12 +17,12 @@ public class TypeTrackedList<T> : IListenableList<T> {
     /// <summary>
     /// Will be called whenever the contents of the list get changed (Elements get added/removed)
     /// </summary>
-    public Action<ListenableListChanged<T>>? OnChanged { get; set; }
+    public event Action<ListenableListChanged<T>>? OnChanged;
 
-    public long Version { get; private set; }
+    public CacheToken CacheToken { get; } = new();
 
     private void CallOnChanged(ListenableListChanged<T> changed) {
-        Version++;
+        CacheToken.InvalidateThenReset();
         OnChanged?.Invoke(changed);
     }
 
