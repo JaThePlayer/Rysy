@@ -15,8 +15,10 @@ public class TileBrushMode : TileMode {
         var gridSize = GridSize;
         var mouse = room.WorldToRoomPos(camera, Tool.Input.Mouse.Pos.ToVector2()).Snap(gridSize).ToPoint();
 
-        Tool.RenderTileRectangle(mouse.ToVector2(), 1, 1, hollow: false);
-        ISprite.OutlinedRect(new Rectangle(mouse.X, mouse.Y, gridSize, gridSize), Color.Transparent, Tool.DefaultColor).Render();
+        int t = TileShapeMode._cachedthickness, offset = t / 2 * gridSize;
+
+        Tool.RenderTileRectangle(mouse.ToVector2() - Vector2.One * offset, t, t, hollow: false);
+        ISprite.OutlinedRect(new Rectangle(mouse.X - offset, mouse.Y - offset, gridSize * t, gridSize * t), Color.Transparent, Tool.DefaultColor).Render();
     }
 
     public override void Update(Camera camera, Room room) {
@@ -32,7 +34,7 @@ public class TileBrushMode : TileMode {
             var curr = Tool.GetMouseTilePos(camera, room);
             var prev = Tool.GetMouseTilePos(camera, room, fakeMousePos: prevPos);
         
-            foreach (var p in TileUtils.GetLineGridIntersection(prev, curr)) {
+            foreach (var p in TileUtils.GetLineGridIntersection(prev, curr, TileShapeMode._cachedthickness)) {
                 if (data.FakeTiles.TryReplace(p.X, p.Y, StrokeTile, out _)) {
                     anyChanged = true;
                     data.ChangedTilePositions.Add(p);
@@ -53,7 +55,7 @@ public class TileBrushMode : TileMode {
             var grid = Tool.GetGrid(room);
             var tile = StrokeTile;
 
-            Tool.History.ApplyNewAction(new TileBulkChangeAction(tile, stroke, grid));
+            Tool.History.ApplyNewAction(new TileBulkChangeAction(tile, stroke, grid, 1));
         
             ClearStrokeData(room, clearSpriteCache: false);
         }

@@ -10,31 +10,42 @@ public abstract class TileShapeMode : TileMode {
     protected abstract IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid);
 
     protected TileShapeMode(TileTool tool) : base(tool) {
+        _cachedthickness = Persistence.Instance.Get<int>("tileToolThickness", 1);
     }
     
     private MouseDragGesture<ShapeData> _dragGesture;
+
+    // For the purposes of displaying overlays while dragging, this uses a thickness value that tools can override if they are not subject to thickness (eg not hollow).
+    protected internal static int _cachedthickness;
+    protected internal virtual int _thickness => _cachedthickness;
     
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
         var gridSize = GridSize;
 
+        int offset = ((_thickness) / 2) * gridSize, size = gridSize * _thickness;
+        
         if (!_dragGesture.Begun) {
-            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2(), 1, 1, hollow: false);
+            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2() - Vector2.One * offset, _thickness, _thickness, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
-            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * gridSize, startPos.ToVector2().Add(0.5f, 0.5f) * gridSize, outline).Render(SpriteRenderCtx.Default());
-            
-            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize, startPos.Y * gridSize, gridSize, gridSize));
-            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize, mousePos.Y * gridSize, gridSize, gridSize));
+            float lineadd = (_thickness % 2 > 0) ? 0.5f : 0f;
+            Vector2 _mousePos = mousePos.ToVector2().Add(lineadd,lineadd), _startPos = startPos.ToVector2().Add(lineadd,lineadd);
+            ISprite.LineFloored(_mousePos * gridSize, _startPos * gridSize, outline).Render(SpriteRenderCtx.Default());
+
+            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize - offset, startPos.Y * gridSize - offset, size, size));
+            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize - offset, mousePos.Y * gridSize - offset, size, size));
         }
     }
 
     public override void Update(Camera camera, Room room) {
         _dragGesture.Update(out var continueStroke, out var endStroke, out var lastMousePos, out var data);
-
-        if (continueStroke || endStroke) {
+        
+        // using the scroll wheel as a keybind fails to change the thickness, but does seem to set _thicknessChanged for some reason.
+        // this somehow produces a crash fixable by making sure data isn't null when _thicknessChanged is true, even though _thicknessChanged seems to only be true while data isn't null.
+        if (continueStroke || endStroke || (_thicknessChanged && data is {})) {
             data!.StartPos ??= Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
 
             var grid = Tool.GetGrid(room);
@@ -59,6 +70,8 @@ public abstract class TileShapeMode : TileMode {
 
             data.LastChangedTiles = changedTilePositions;
         }
+
+        _thicknessChanged = false;
         
         if (endStroke) {
             var endPos = Tool.GetMouseTilePos(camera, room);
@@ -91,4 +104,15 @@ public abstract class TileShapeMode : TileMode {
 
         public Point? StartPos;
     }
+    
+    
+    public static Action ChangeThicknessBy(int amt) => () => {
+        int res = Math.Clamp(_cachedthickness + amt, 1, 500);
+        Persistence.Instance.Set("tileToolThickness", res);
+        _cachedthickness = res;
+        // forces the update to happen, which re-renders the fake tiles with the new width.
+        _thicknessChanged = true;
+    };
+    
+    private static bool _thicknessChanged;
 }
