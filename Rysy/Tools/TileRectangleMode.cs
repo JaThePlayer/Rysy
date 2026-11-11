@@ -18,7 +18,7 @@ public class TileRectangleMode(TileTool tool, bool hollow) : TileShapeMode(tool)
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid) {
         var rect = RectangleExt.FromPoints(start, current);
 
-        return new TileRectChangeAction(id, rect, tilegrid, hollow);
+        return new TileRectChangeAction(id, rect, tilegrid, hollow, _thickness);
     }
     
     internal override int _thickness => hollow ? _cachedthickness : 1;

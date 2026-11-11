@@ -10,12 +10,12 @@ public static class TileUtils {
     /// <summary>
     /// Gets all intersections between the provided line and a 1x1 grid.
     /// </summary>
-    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b) {
+    public static IEnumerable<Point> GetLineGridIntersection(Point a, Point b, int thickness = 1) {
         var ret = new List<Point>(1);
         
         if (a == b) {
             ret.Add(a);
-            return ThickenGridLocations(ret, TileShapeMode._cachedthickness);
+            return ThickenGridLocations(ret, thickness);
         }
         
         var (x0, y0) = a;
@@ -57,7 +57,7 @@ public static class TileUtils {
             }
         }
 
-        return ThickenGridLocations(ret, TileShapeMode._cachedthickness);
+        return ThickenGridLocations(ret, thickness);
     }
     
     
@@ -104,7 +104,7 @@ public static class TileUtils {
     /// <summary>
     /// Gets all intersections between the provided hollow circle and a 1x1 grid
     /// </summary>
-    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point center, int radius) {
+    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point center, int radius, int thickness) {
         // offsetting the radius yields a nicer circle
         var radiusF = radius + 0.5f;
         var radiusFSq = radiusF * radiusF;
@@ -112,7 +112,7 @@ public static class TileUtils {
         var points = new List<Point>();
         if (radius < 1) {
             points.Add(center);
-            return ThickenGridLocations(points, TileShapeMode._cachedthickness);
+            return ThickenGridLocations(points, thickness);
         }
         
         // https://www.redblobgames.com/grids/circle-drawing/
@@ -136,7 +136,7 @@ public static class TileUtils {
             }
         }
 
-        return ThickenGridLocations(points, TileShapeMode._cachedthickness);
+        return ThickenGridLocations(points, thickness);
     }
     
     /// <summary>
@@ -153,10 +153,10 @@ public static class TileUtils {
     /// Gets all intersections between the provided circle and a 1x1 grid.
     /// The 'end' point might not necessarily be included in the circle
     /// </summary>
-    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point start, Point end) {
+    public static IEnumerable<Point> GetHollowCircleGridIntersection(Point start, Point end, int thickness) {
         var radius = (int)Vector2.Distance(start.ToVector2(), end.ToVector2());
         
-        return GetHollowCircleGridIntersection(start, radius);
+        return GetHollowCircleGridIntersection(start, radius, thickness);
     }
     
     
@@ -191,7 +191,7 @@ public static class TileUtils {
     /// <summary>
     /// Gets all intersections between the provided filled ellipse and a 1x1 grid
     /// </summary>
-    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point center, int rx, int ry) {
+    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point center, int rx, int ry, int thickness) {
         // https://www.geeksforgeeks.org/midpoint-ellipse-drawing-algorithm/
         List<Point> points = new();
 
@@ -242,7 +242,7 @@ public static class TileUtils {
             }
         }
     
-        return ThickenGridLocations(points, TileShapeMode._cachedthickness);
+        return ThickenGridLocations(points, thickness);
         
         void Plot4EllipsePoints(List<Point> points, Point center, int x, int y) {
             // Switch to make sure not to create duplicate points
@@ -268,8 +268,8 @@ public static class TileUtils {
         }
     }
     
-    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point start, Point end) {
-        return GetHollowEllipseGridIntersection(start, int.Abs(start.X - end.X), int.Abs(start.Y - end.Y));
+    public static IEnumerable<Point> GetHollowEllipseGridIntersection(Point start, Point end, int thickness) {
+        return GetHollowEllipseGridIntersection(start, int.Abs(start.X - end.X), int.Abs(start.Y - end.Y), thickness);
     }
     
     // https://en.wikipedia.org/wiki/Flood_fill#Span_filling
@@ -375,21 +375,24 @@ public static class TileUtils {
         return true;
     }
     
+    
+    
     // TODO: 1. optimize this method, 2. add a circular version
+
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
-        thickness = Math.Max(1, thickness);
+        if (thickness <= 1) return path;
 
         int minOffset = -(thickness / 2);
-        int maxOffset = minOffset + thickness - 1;
+        int maxOffset = minOffset + thickness;
 
         var result = new HashSet<Point>();
 
         foreach (var point in path)
         {
-            for (int x = minOffset; x <= maxOffset; x++)
+            for (int x = minOffset; x < maxOffset; x++)
             {
-                for (int y = minOffset; y <= maxOffset; y++)
+                for (int y = minOffset; y < maxOffset; y++)
                 {
                     result.Add(new Point(point.X + x, point.Y + y));
                 }
@@ -398,4 +401,74 @@ public static class TileUtils {
 
         return result;
     }
+    
+    /* old ver
+    public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
+    {
+        if (thickness <= 1) return path;
+
+        int minOffset = -(thickness / 2);
+        int maxOffset = minOffset + thickness - 1;
+
+        var rows = new Dictionary<int, List<(int Start, int End)>>();
+
+        foreach (var point in path)
+        {
+            int startX = point.X + minOffset;
+            int endX = point.X + maxOffset;
+
+            for (int dy = minOffset; dy <= maxOffset; dy++)
+            {
+                int y = point.Y + dy;
+
+                if (!rows.TryGetValue(y, out var intervals))
+                {
+                    intervals = new List<(int Start, int End)>();
+                    rows.Add(y, intervals);
+                }
+
+                intervals.Add((startX, endX));
+            }
+        }
+
+        var result = new List<Point>();
+
+        foreach (var (y, intervals) in rows)
+        {
+            intervals.Sort((a, b) => a.Start.CompareTo(b.Start));
+
+            int start = intervals[0].Start;
+            int end = intervals[0].End;
+
+            for (int i = 1; i < intervals.Count; i++)
+            {
+                var next = intervals[i];
+
+                if ((long)next.Start <= (long)end + 1)
+                {
+                    end = Math.Max(end, next.End);
+                }
+                else
+                {
+                    AddInterval(result, y, start, end);
+
+                    start = next.Start;
+                    end = next.End;
+                }
+            }
+
+            AddInterval(result, y, start, end);
+        }
+
+        return result;
+    }
+
+    private static void AddInterval(List<Point> result, int y, int start, int end)
+    {
+        for (int x = start; ; x++)
+        {
+            result.Add(new Point(x, y));
+            if (x == end) break;
+        }
+    } */
 }
