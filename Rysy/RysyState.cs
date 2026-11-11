@@ -243,7 +243,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
 
     internal static Vector2 TouchpadPan;
 
-    private static float _lastEventPinchFactor;
+    private static float _lastDeltaPinchFactor;
     internal static int TouchpadPinchDelta;
 
     internal static readonly DateTime[] MouseDoubleClicks = new DateTime[8];
@@ -290,7 +290,7 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         break;
                     }
                     case SDL.SDL_EventType.SDL_EVENT_PINCH_BEGIN: {
-                        _lastEventPinchFactor = 0f;
+                        _lastDeltaPinchFactor = 0f;
                         break;
                     }
                     case SDL.SDL_EventType.SDL_EVENT_PINCH_UPDATE: {
@@ -301,13 +301,14 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                         // normalize the pinch scale so that pinching in by 2x = -1, pinching out by 2x = +1
                         var pinchFactor = pinchScale < 1f
                             ? (-1f / pinchScale + 1f)
-                            : pinchScale - 1f;
-                        var pinchFactorChangeSinceLastEvent = pinchFactor - _lastEventPinchFactor;
-                        if (MathF.Abs(pinchFactorChangeSinceLastEvent) < 1f / Settings.Instance.TouchpadPinchSensitivity)
+                            : (pinchScale - 1f);
+                        var pinchFactorChangeSinceLastDelta = pinchFactor - _lastDeltaPinchFactor;
+                        float pinchFactorDeltaThreshold = 1f / Settings.Instance.TouchpadPinchSensitivity;
+                        if (MathF.Abs(pinchFactorChangeSinceLastDelta) < pinchFactorDeltaThreshold)
                             break;
 
-                        _lastEventPinchFactor = pinchFactor;
-                        TouchpadPinchDelta = (int) MathF.Floor(pinchFactorChangeSinceLastEvent * Settings.Instance.TouchpadPinchSensitivity);
+                        _lastDeltaPinchFactor = pinchFactor;
+                        TouchpadPinchDelta = (int) MathF.Floor(pinchFactorChangeSinceLastDelta / pinchFactorDeltaThreshold);
                         break;
                     }
                     case SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
