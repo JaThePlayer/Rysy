@@ -382,7 +382,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         if (material is not Placement placement)
             return base.GetMaterialPreview(layer, material);
         
-       // MaterialPreviewCache.Clear();
+        // MaterialPreviewCache.Clear();
 
         var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}_{placement.ValueOverrides.ContentsHashCode()}");
         var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -435,7 +435,6 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         var cam = new Camera();
         Vector2 camOffset = default;
         var ctx = new SpriteRenderCtx(cam, default, Room.DummyRoom, false);
-        var didResize = false;
         var didFixups = false;
         ISelectionHandler? selection = null;
         
@@ -453,8 +452,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
                     if (selection.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
                         resizeAct.Apply(map);
                         resizeAct = null;
+                        
                         offset = default;
-                        didResize = true;
                     }
 
                     try {
@@ -474,44 +473,19 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
                 sprites ??= [];
             }
             
-            // fixup phase - offset sprites and/or camera to make them fix within the preview rectangle better.
+            // fixup phase - offset camera to center the selection within the preview rectangle
             if (!didFixups) {
-                // Wait with fixing up the preview offsets until all textures are ready
-                if (sprites.Any(x => !x.IsLoaded))
-                    return;
-                
-                if (!didResize) {
-                    if (sprites is [Sprite onlySprite]) {
-                        //onlySprite.Origin = new(0.5f, 0.5f);
-                        onlySprite.DrawOffset = onlySprite.Texture.DrawOffset;
-                        sprites[0] = onlySprite;
-                    }
-                }
-                else if (didResize && sprites.Count > 1 && selection?.Parent is Entity e && (e.ResizableX || e.ResizableY) && sprites.All(s => s is Sprite)) {
-                    var spriteBounds = RectangleExt.Merge(sprites.OfType<Sprite>().Select(s => s.GetRenderRect() ?? default));
-
-                    camOffset.X = spriteBounds.Left;
-                    camOffset.Y = spriteBounds.Top;
-
-                    if (e.ResizableX) {
-                        camOffset.Y = -PreviewSize / 2f + spriteBounds.Center.Y;
-                    } 
-                    if (e.ResizableY) {
-                        camOffset.X = -PreviewSize / 2f + spriteBounds.Center.X;
-                    }
-                }
+                camOffset.X = -PreviewSize / 2f + selection.Rect.Center.X;
+                camOffset.Y = -PreviewSize / 2f + selection.Rect.Center.Y;
 
                 didFixups = true;
-                
                 selection = null;
+                return;
             }
 
-            if (didFixups) {
-                cam.Goto(camOffset);
-            
-                foreach (var item in sprites) {
-                    item.Render(ctx);
-                }
+            cam.Goto(camOffset);
+            foreach (var item in sprites) {
+                item.Render(ctx);
             }
         }, cam, Rerender: true);
         return def;
