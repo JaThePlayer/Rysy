@@ -31,6 +31,32 @@ public static class NumberExt {
         return float.Floor(num / gridSize) * gridSize;
     }
 
+    public static int SnapToPowerOf2(this int num) {
+        if (num <= 0)
+            return 0;
+
+        int result = 1;
+        while (result < num / 2)
+            result *= 2;
+        return result;
+    }
+    
+    public static float SnapToPowerOf2(this float num) {
+        if (num <= 0f)
+            return 0f;
+
+        float result = 1f;
+        if (num > 1f) {
+            while (result < num / 2f)
+                result *= 2f;
+        } else if (num < 1f) {
+            while (result > num)
+                result /= 2f;
+        }
+
+        return result;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Div<T>(this T num, T by) where T : INumber<T>
         => num / by;

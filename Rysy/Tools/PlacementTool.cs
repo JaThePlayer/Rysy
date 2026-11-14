@@ -431,7 +431,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         Vector2 fitPos = previewSize.ToVector2() * upscale / 2f;
         float fitScaleX = previewSize.X / MathF.Max(previewSize.X, texture.Width),
             fitScaleY = previewSize.Y / MathF.Max(previewSize.Y, texture.Height);
-        float fitScale = MathF.Min(fitScaleX, fitScaleY) * upscale;
+        float fitScale = MathF.Min(fitScaleX, fitScaleY).SnapToPowerOf2() * upscale;
 
         return new XnaWidgetDef(key, (int) (previewSize.X * upscale), (int) (previewSize.Y * upscale), () => {
             (ISprite.FromTexture(fitPos, texturePath, origin: Vector2.One * 0.5f) with {
@@ -488,7 +488,7 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
                 
                 float fitScaleX = previewSize.X / MathF.Max(previewSize.X, spritesBounds.Width),
                     fitScaleY = previewSize.Y / MathF.Max(previewSize.Y, spritesBounds.Height);
-                float fitScale = MathF.Min(fitScaleX, fitScaleY);
+                float fitScale = MathF.Min(fitScaleX, fitScaleY).SnapToPowerOf2();
                 Vector2 spritesSize = previewSize.ToVector2() / fitScale;
                 
                 camScale = fitScale;
