@@ -374,6 +374,11 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         => Settings.Instance.ShowPlacementIcons ? PreviewSize + ImGui.GetStyle().FramePadding.Y : base.MaterialListElementHeight();
 
     private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
+    private static Dictionary<string, XnaWidgetDef> MaterialTooltipCache { get; } = new();
+    
+    private static readonly Point PreviewDimensions = new(PreviewSize, PreviewSize);
+    private static readonly Point TooltipDimensions = new(128, 64);
+    private const float TooltipUpscale = 2f;
 
     internal override XnaWidgetDef? GetMaterialPreview(IEditorLayer layer, object material) {
         if (material is string)
@@ -382,83 +387,86 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
         if (material is not Placement placement)
             return base.GetMaterialPreview(layer, material);
         
-       // MaterialPreviewCache.Clear();
+        // MaterialPreviewCache.Clear();
 
         var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}_{placement.ValueOverrides.ContentsHashCode()}");
         var cacheLookup = MaterialPreviewCache.GetAlternateLookup<ReadOnlySpan<char>>();
-        
         if (cacheLookup.TryGetValue(keySpan, out var value)) {
             return value;
         }
 
         var key = keySpan.ToString();
-        XnaWidgetDef def = placement.PlacementHandler is EntityPlacementHandler { Layer: SelectionLayer.BgDecals or SelectionLayer.FgDecals }
-            ? CreateWidgetForDecal(placement, key, PreviewSize)
-            : CreateWidget(Map.DummyMap, placement, key);
+        XnaWidgetDef def = placement.IsDecal()
+            ? CreateWidgetForDecal(placement, key, PreviewDimensions)
+            : CreateWidget(Map.DummyMap, placement, key, PreviewDimensions);
         MaterialPreviewCache[key] = def;
 
         return def;
     }
 
     protected override XnaWidgetDef CreateTooltipPreview(XnaWidgetDef materialPreview, object material) {
-        if (material is Placement placement && placement.IsDecal()) {
-            var texture = Gfx.Atlas[Decal.GetTexturePathFromPlacement(placement)];
-            var maxSize = Math.Max(texture.Width, texture.Height);
-
-            return CreateWidgetForDecal(placement, "", maxSize);
+        if (material is not Placement placement)
+            return base.CreateTooltipPreview(materialPreview, material);
+        
+        var keySpan = Interpolator.Temp($"pl_{placement.Name}_{placement.Sid ?? ""}_{placement.ValueOverrides.ContentsHashCode()}_tooltip");
+        var cacheLookup = MaterialTooltipCache.GetAlternateLookup<ReadOnlySpan<char>>();
+        if (cacheLookup.TryGetValue(keySpan, out var value)) {
+            return value;
         }
 
-        return base.CreateTooltipPreview(materialPreview, material);
+        var key = keySpan.ToString();
+        XnaWidgetDef def;
+        def = placement.IsDecal()
+            ? CreateWidgetForDecal(placement, "", TooltipDimensions, TooltipUpscale)
+            : CreateWidget(Map.DummyMap, placement, "", TooltipDimensions, TooltipUpscale);
+        MaterialTooltipCache[key] = def;
+        
+        return def;
     }
 
-    private XnaWidgetDef CreateWidgetForDecal(Placement placement, string key, int size) {
-        var texture = Decal.GetTexturePathFromPlacement(placement);
-        var scale = size < PreviewSize ? 2 : 1;
-        size *= scale;
+    private XnaWidgetDef CreateWidgetForDecal(Placement placement, string key, Point previewSize, float upscale = 1f) {
+        var texturePath = Decal.GetTexturePathFromPlacement(placement);
+        var texture = Gfx.Atlas[texturePath];
+        
+        Vector2 fitPos = previewSize.ToVector2() * upscale / 2f;
+        float fitScaleX = previewSize.X / MathF.Max(previewSize.X, texture.Width),
+            fitScaleY = previewSize.Y / MathF.Max(previewSize.Y, texture.Height);
+        float fitScale = MathF.Min(fitScaleX, fitScaleY).SnapToPowerOf2() * upscale;
 
-        if (size == PreviewSize) {
-            // optimised version with less locals getting captured into the lambda
-            return new(key, PreviewSize, PreviewSize, () => {
-                ISprite.FromTexture(new(PreviewSize / 2), texture, origin: new(.5f, .5f)).Render(SpriteRenderCtx.Default());
-            });
-        }
-
-        return new(key, size, size, () => {
-            (ISprite.FromTexture(new(size / 2), texture, origin: new(.5f, .5f)) with {
-                Scale = new(scale),
+        return new XnaWidgetDef(key, (int) (previewSize.X * upscale), (int) (previewSize.Y * upscale), () => {
+            (ISprite.FromTexture(fitPos, texturePath, origin: Vector2.One * 0.5f) with {
+                Scale = fitScale * Vector2.One
             }).Render(SpriteRenderCtx.Default());
         });
     }
 
-    private XnaWidgetDef CreateWidget(Map map, Placement placement, string key) {
-        List<ISprite>? sprites = null;
+    private XnaWidgetDef CreateWidget(Map map, Placement placement, string key, Point previewSize, float upscale = 1f) {
         var cam = new Camera();
         Vector2 camOffset = default;
-        var ctx = new SpriteRenderCtx(cam, default, Room.DummyRoom, false);
-        var didResize = false;
-        var didFixups = false;
-        ISelectionHandler? selection = null;
+        float camScale = 1f;
         
-        var def = new XnaWidgetDef(key, PreviewSize, PreviewSize, () => {
+        var ctx = new SpriteRenderCtx(cam, default, Room.DummyRoom, false);
+        
+        ISelectionHandler? selection = null;
+        List<ISprite>? sprites = null;
+        var didFixups = false;
+        
+        var def = new XnaWidgetDef(key, (int) (previewSize.X * upscale), (int) (previewSize.Y * upscale), () => {
             if (sprites is null) {
                 try {
                     var prevLogErrors = Entity.LogErrors;
 
                     selection = placement.PlacementHandler.CreateSelection(EditorState, placement, default, Room.DummyRoom);
-
-                    var offset = new Vector2(PreviewSize / 2, PreviewSize / 2);
                     var rect = selection.Rect;
 
                     Entity.LogErrors = false;
-                    if (selection.TryResize(new(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
+                    if (selection.TryResize(new Point(PreviewSize - rect.Width, PreviewSize - rect.Height)) is { } resizeAct) {
                         resizeAct.Apply(map);
                         resizeAct = null;
-                        offset = default;
-                        didResize = true;
                     }
 
                     try {
-                        sprites = placement.GetWidgetSprites(EditorState, selection, offset, Room.DummyRoom).ToList();
+                        sprites = placement.GetWidgetSprites(EditorState, selection, default, Room.DummyRoom).ToList();
                     } catch {
                         sprites = [];
                         return;
@@ -474,41 +482,26 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
                 sprites ??= [];
             }
             
-            // fixup phase - offset sprites and/or camera to make them fix within the preview rectangle better.
-            if (!didFixups) {
-                // Wait with fixing up the preview offsets until all textures are ready
-                if (sprites.Any(x => !x.IsLoaded))
-                    return;
+            // fixup phase - offset + scale camera to center the selection within the preview rectangle
+            if (!didFixups && selection is not null && sprites.All(s => s.IsLoaded)) {
+                Rectangle spritesBounds = ISelectionCollider.FromSprites(sprites).Rect;
                 
-                if (!didResize) {
-                    if (sprites is [Sprite onlySprite]) {
-                        //onlySprite.Origin = new(0.5f, 0.5f);
-                        onlySprite.DrawOffset = onlySprite.Texture.DrawOffset;
-                        sprites[0] = onlySprite;
-                    }
-                }
-                else if (didResize && sprites.Count > 1 && selection?.Parent is Entity e && (e.ResizableX || e.ResizableY) && sprites.All(s => s is Sprite)) {
-                    var spriteBounds = RectangleExt.Merge(sprites.OfType<Sprite>().Select(s => s.GetRenderRect() ?? default));
-
-                    camOffset.X = spriteBounds.Left;
-                    camOffset.Y = spriteBounds.Top;
-
-                    if (e.ResizableX) {
-                        camOffset.Y = -PreviewSize / 2f + spriteBounds.Center.Y;
-                    } 
-                    if (e.ResizableY) {
-                        camOffset.X = -PreviewSize / 2f + spriteBounds.Center.X;
-                    }
-                }
+                float fitScaleX = previewSize.X / MathF.Max(previewSize.X, spritesBounds.Width),
+                    fitScaleY = previewSize.Y / MathF.Max(previewSize.Y, spritesBounds.Height);
+                float fitScale = MathF.Min(fitScaleX, fitScaleY).SnapToPowerOf2();
+                Vector2 spritesSize = previewSize.ToVector2() / fitScale;
+                
+                camScale = fitScale;
+                camOffset = -spritesSize / 2f + spritesBounds.Center.ToVector2();
 
                 didFixups = true;
-                
                 selection = null;
             }
 
             if (didFixups) {
                 cam.Goto(camOffset);
-            
+                cam.Scale = camScale * upscale;
+                
                 foreach (var item in sprites) {
                     item.Render(ctx);
                 }
