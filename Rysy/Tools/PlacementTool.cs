@@ -375,6 +375,10 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
 
     private static Dictionary<string, XnaWidgetDef?> MaterialPreviewCache { get; } = new();
     private static Dictionary<string, XnaWidgetDef> MaterialTooltipCache { get; } = new();
+    
+    private static readonly Point PreviewDimensions = new(PreviewSize, PreviewSize);
+    private static readonly Point TooltipDimensions = new(128, 64);
+    private const float TooltipUpscale = 2f;
 
     internal override XnaWidgetDef? GetMaterialPreview(IEditorLayer layer, object material) {
         if (material is string)
@@ -393,8 +397,8 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
 
         var key = keySpan.ToString();
         XnaWidgetDef def = placement.IsDecal()
-            ? CreateWidgetForDecal(placement, key, PreviewSize)
-            : CreateWidget(Map.DummyMap, placement, key, new Point(PreviewSize, PreviewSize), 1f);
+            ? CreateWidgetForDecal(placement, key, PreviewDimensions)
+            : CreateWidget(Map.DummyMap, placement, key, PreviewDimensions);
         MaterialPreviewCache[key] = def;
 
         return def;
@@ -412,39 +416,31 @@ public class PlacementTool : Tool, ISelectionHotkeyTool, ISignalListener<Prefabs
 
         var key = keySpan.ToString();
         XnaWidgetDef def;
-        if (placement.IsDecal()) {
-            var texture = Gfx.Atlas[Decal.GetTexturePathFromPlacement(placement)];
-            var maxSize = Math.Max(texture.Width, texture.Height);
-
-            def = CreateWidgetForDecal(placement, "", maxSize);
-        } else {
-            def = CreateWidget(Map.DummyMap, placement, "", new Point(128, 64), 2f);
-        }
+        def = placement.IsDecal()
+            ? CreateWidgetForDecal(placement, "", TooltipDimensions, TooltipUpscale)
+            : CreateWidget(Map.DummyMap, placement, "", TooltipDimensions, TooltipUpscale);
         MaterialTooltipCache[key] = def;
         
         return def;
     }
 
-    private XnaWidgetDef CreateWidgetForDecal(Placement placement, string key, int size) {
-        var texture = Decal.GetTexturePathFromPlacement(placement);
-        var scale = size < PreviewSize ? 2 : 1;
-        size *= scale;
+    private XnaWidgetDef CreateWidgetForDecal(Placement placement, string key, Point previewSize, float upscale = 1f) {
+        var texturePath = Decal.GetTexturePathFromPlacement(placement);
+        var texture = Gfx.Atlas[texturePath];
+        
+        Vector2 fitPos = previewSize.ToVector2() * upscale / 2f;
+        float fitScaleX = previewSize.X / MathF.Max(previewSize.X, texture.Width),
+            fitScaleY = previewSize.Y / MathF.Max(previewSize.Y, texture.Height);
+        float fitScale = MathF.Min(fitScaleX, fitScaleY) * upscale;
 
-        if (size == PreviewSize) {
-            // optimised version with less locals getting captured into the lambda
-            return new(key, PreviewSize, PreviewSize, () => {
-                ISprite.FromTexture(new(PreviewSize / 2), texture, origin: new(.5f, .5f)).Render(SpriteRenderCtx.Default());
-            });
-        }
-
-        return new(key, size, size, () => {
-            (ISprite.FromTexture(new(size / 2), texture, origin: new(.5f, .5f)) with {
-                Scale = new(scale),
+        return new XnaWidgetDef(key, (int) (previewSize.X * upscale), (int) (previewSize.Y * upscale), () => {
+            (ISprite.FromTexture(fitPos, texturePath, origin: Vector2.One * 0.5f) with {
+                Scale = fitScale * Vector2.One
             }).Render(SpriteRenderCtx.Default());
         });
     }
 
-    private XnaWidgetDef CreateWidget(Map map, Placement placement, string key, Point previewSize, float upscale) {
+    private XnaWidgetDef CreateWidget(Map map, Placement placement, string key, Point previewSize, float upscale = 1f) {
         var cam = new Camera();
         Vector2 camOffset = default;
         float camScale = 1f;
