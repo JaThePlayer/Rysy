@@ -32,6 +32,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private NineSliceLocation _moveGestureGrabbedLocation;
     private bool _moveGestureHasMovedAtAll;
     private bool _cloneSelectionsBeforeMoving;
+	private bool _moveGestureInterrupted;
 
     private List<Selection>? _currentSelections;
     private List<Selection> _selectionsToHighlight = new();
@@ -343,6 +344,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
         if (simulate) {
             History.ApplyNewSimulation(action);
         } else {
+			_moveGestureInterrupted = true;
             History.ApplyNewAction(action);
         }
         
@@ -361,6 +363,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
             ClearColliderCachesInSelections();
         }
 
+		_moveGestureInterrupted = true;
         History.ApplyNewAction(merged);
     }
 
@@ -884,7 +887,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
                     Vector2 delta = CalculateMovementDelta(_moveGestureLastMousePos!.Value, mousePos);
 
-                    if (delta.LengthSquared() != 0) {
+                    if (delta.LengthSquared() != 0 || _moveGestureInterrupted) {
                         // Alt-drag: Copy selections before moving.
                         // We check for this only when the selection gets moved for the first time in a gesture.
                         if (!_moveGestureHasMovedAtAll && Input.Keyboard.Alt()) {
@@ -892,6 +895,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
                         }
                         
                         _moveGestureHasMovedAtAll = true;
+						_moveGestureInterrupted = false;
                         _moveGestureLastMousePos += delta.ToPoint();
                         _moveGestureFinalDelta += delta;
                         MoveSelectionsBy(room, _moveGestureFinalDelta, selections, _moveGestureGrabbedLocation, simulate: true);
