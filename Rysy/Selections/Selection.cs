@@ -245,10 +245,12 @@ public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T :
 
     public void MoveBy(Vector2 offset) {
         _drawOffset += offset;
+        _rect = null;
     }
 
     public void ResizeBy(Point offset) {
         _sizeOffset += offset;
+        _rect = null;
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) {
@@ -268,43 +270,46 @@ public sealed record SpriteSelection<T>(T Sprite) : ISelectionCollider where T :
     }
 }
 
-public sealed class MergedSpriteSelection : ISelectionCollider {
-    List<Sprite> _sprites;
-
-    public MergedSpriteSelection(IEnumerable<ISprite> sprites) {
-        _sprites = sprites.OfType<Sprite>().ToList();
-    }
-
+public sealed class MergedSpriteSelection(IEnumerable<ISprite> sprites) : ISelectionCollider {
     private Vector2 _drawOffset;
     private Point _sizeOffset;
 
-    public Rectangle Rect => GetRectangle();
+    private Rectangle? _rect;
+
+    public Rectangle Rect {
+        get {
+            if (_rect is { } r)
+                return r;
+
+            Rectangle spritesRect = GetSpritesRenderRect();
+            _rect = spritesRect;
+            return spritesRect;
+        }
+    }
 
     public void MoveBy(Vector2 offset) {
         _drawOffset += offset;
+        _rect = null;
     }
 
     public void ResizeBy(Point offset) {
         _sizeOffset += offset;
-    }
-
-    private Rectangle GetRectangle() {
-        var rects = _sprites.SelectWhereNotNull(s => s.GetRenderRect());
-
-        return RectangleExt.Merge(rects);
+        _rect = null;
     }
 
     public bool IsWithinRectangle(Rectangle roomPos) {
-        return GetRectangle().MovedBy(_drawOffset).AddSize(_sizeOffset).Intersects(roomPos);
+        return Rect.Intersects(roomPos);
     }
 
     public void Render(Color c) {
-        if (GetRectangle() is { } r)
-            ISprite.OutlinedRect(r.MovedBy(_drawOffset), c * 0.4f, c).Render();
+        ISprite.OutlinedRect(Rect, c * 0.4f, c).Render();
     }
     
     public void RenderHollow(Color c) {
-        if (GetRectangle() is { } r)
-            ISprite.OutlinedRect(r.MovedBy(_drawOffset), Color.Transparent, c).Render();
+        ISprite.OutlinedRect(Rect, Color.Transparent, c).Render();
+    }
+    
+    private Rectangle GetSpritesRenderRect() {
+        return RectangleExt.Merge(sprites.Select(s => s.GetCollider().Rect)).MovedBy(_drawOffset).AddSize(_sizeOffset);
     }
 }
