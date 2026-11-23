@@ -64,7 +64,7 @@ internal class ExistingProfileInstallLocator : ICelesteInstallLocator {
         var known = RysyPlatform.Current.GetAllExistingProfileNames();
 
         return Task.FromResult<IReadOnlyList<FoundProfile>>(
-            known.SelectWhereNotNull(p => Profile.Deserialize(p) is {} profile 
+            known.SelectWhereNotNull(p => Profile.Deserialize(p) is { } profile && !profile.StoredCelesteDirectory.IsNullOrWhitespace()
                     ? new FoundProfile(profile.StoredCelesteDirectory, p, this) 
                     : null)
             .ToList());
