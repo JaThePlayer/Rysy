@@ -13,23 +13,20 @@ public abstract class TileShapeMode : TileMode {
     }
     
     private MouseDragGesture<ShapeData> _dragGesture;
-
-    // For the purposes of displaying overlays while dragging, this uses a thickness value that tools can override if they are not subject to thickness (eg not hollow).
-    protected internal virtual int _thickness => Persistence.Instance.Get<int>("tileToolThickness", 1);
     
     public override void Render(Camera camera, Room room) {
         var mousePos = Tool.GetMouseTilePos(camera, room);
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
         var gridSize = GridSize;
 
-        int offset = ((_thickness) / 2) * gridSize, size = gridSize * _thickness;
+        int offset = ((Thickness) / 2) * gridSize, size = gridSize * Thickness;
         
         if (!_dragGesture.Begun) {
-            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2() - Vector2.One * offset, _thickness, _thickness, hollow: false);
+            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2() - Vector2.One * offset, Thickness, Thickness, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
-            float lineOffset = (_thickness % 2 > 0) ? 0.5f : 0f;
+            float lineOffset = (Thickness % 2 > 0) ? 0.5f : 0f;
             ISprite.LineFloored(
                 mousePos.ToVector2().Add(lineOffset,lineOffset) * gridSize, 
                 startPos.ToVector2().Add(lineOffset,lineOffset) * gridSize, 
@@ -103,7 +100,6 @@ public abstract class TileShapeMode : TileMode {
 
         public Point? StartPos;
     }
-    
     
     public static Action ChangeThicknessBy(int amt) => () => {
         int res = Math.Clamp(Persistence.Instance.Get<int>("tileToolThickness", 1) + amt, 1, 500);

@@ -10,6 +10,8 @@ public abstract class TileMode : ToolMode {
 
     public int GridSize => Tool.GridSize;
     
+    protected internal virtual int Thickness => Persistence.Instance.Get<int>("tileToolThickness", 1);
+    
     protected TileMode(TileTool tool) {
         Tool = tool;
     }
