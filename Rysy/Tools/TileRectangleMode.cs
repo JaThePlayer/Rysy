@@ -12,7 +12,7 @@ public class TileRectangleMode(TileTool tool, bool hollow) : TileShapeMode(tool)
     protected override IEnumerable<Point> GetChangedTileLocations(Point start, Point current) {
         var rect = RectangleExt.FromPoints(start, current);
 
-        return hollow ? TileUtils.ThickenGridLocations(rect.EnumerateGridEdgeLocations(), _cachedthickness) : rect.EnumerateGridLocations();
+        return hollow ? TileUtils.ThickenGridLocations(rect.EnumerateGridEdgeLocations(), Persistence.Instance.Get<int>("tileToolThickness", 1)) : rect.EnumerateGridLocations();
     }
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid) {
@@ -21,5 +21,5 @@ public class TileRectangleMode(TileTool tool, bool hollow) : TileShapeMode(tool)
         return new TileRectChangeAction(id, rect, tilegrid, hollow, _thickness);
     }
     
-    protected internal override int _thickness => hollow ? _cachedthickness : 1;
+    protected internal override int _thickness => hollow ? Persistence.Instance.Get<int>("tileToolThickness", 1) : 1;
 }

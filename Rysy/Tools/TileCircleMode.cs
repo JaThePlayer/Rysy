@@ -8,10 +8,12 @@ public sealed class TileCircleMode(TileTool tool, bool hollow) : TileShapeMode(t
     public override string Name => hollow ? "circleHollow" : "circle";
 
     protected override IEnumerable<Point> GetChangedTileLocations(Point start, Point current)
-        => hollow ? TileUtils.GetHollowCircleGridIntersection(start, current, _cachedthickness) : TileUtils.GetCircleGridIntersection(start, current);
+        => hollow ? 
+            TileUtils.GetHollowCircleGridIntersection(start, current, Persistence.Instance.Get<int>("tileToolThickness", 1)) 
+            : TileUtils.GetCircleGridIntersection(start, current);
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid)
         => new TileCircleChangeAction(id, start, current, tilegrid, hollow, _thickness);
 
-    protected internal override int _thickness => hollow ? _cachedthickness : 1;
+    protected internal override int _thickness => hollow ? Persistence.Instance.Get<int>("tileToolThickness", 1) : 1;
 }

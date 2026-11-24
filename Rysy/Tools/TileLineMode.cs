@@ -8,8 +8,8 @@ public sealed class TileLineMode(TileTool tool) : TileShapeMode(tool) {
     public override string Name => "line";
     
     protected override IEnumerable<Point> GetChangedTileLocations(Point start, Point current)
-        => TileUtils.GetLineGridIntersection(start, current, _cachedthickness);
+        => TileUtils.GetLineGridIntersection(start, current, Persistence.Instance.Get<int>("tileToolThickness", 1));
 
     protected override IHistoryAction CreateAction(char id, Point start, Point current, Tilegrid tilegrid)
-        => new TileLineChangeAction(id, start, current, tilegrid, _cachedthickness);
+        => new TileLineChangeAction(id, start, current, tilegrid, Persistence.Instance.Get<int>("tileToolThickness", 1));
 }

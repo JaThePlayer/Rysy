@@ -375,31 +375,12 @@ public static class TileUtils {
         return true;
     }
     
-    /* old version of the method
-    public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
-    {
-        if (thickness <= 1) return path;
-
-        int minOffset = -(thickness / 2);
-        int maxOffset = minOffset + thickness;
-
-        var result = new HashSet<Point>();
-
-        foreach (var point in path)
-        {
-            for (int x = minOffset; x < maxOffset; x++)
-            {
-                for (int y = minOffset; y < maxOffset; y++)
-                {
-                    result.Add(new Point(point.X + x, point.Y + y));
-                }
-            }
-        }
-
-        return result;
-    } */
-    
-    // comparably optimized version of the method
+    /// <summary>
+    /// Makes the tile <paramref name="path"/> thicker by expanding each tile into a square with the side length of <paramref name="thickness"/>.
+    /// </summary>
+    /// <param name="path">The set of tiles to be expanded</param>
+    /// <param name="height">How much to expand it by</param>
+    /// <returns>The resulting thickened path.</returns>
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {
         if (thickness <= 1) return path;
