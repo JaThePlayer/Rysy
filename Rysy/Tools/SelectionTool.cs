@@ -225,12 +225,14 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         if (_currentSelections is { } selections) {
+            FinalizeStates();
             ResizeSelectionsBy(resize.Mult(GridSize), move * GridSize, selections);
         }
     };
 
     private Action CreateMoveHandler(Vector2 offset, bool precise) => () => {
         if (_currentSelections is { } selections) {
+            FinalizeStates();
             MoveSelectionsBy(null, precise ? offset : offset * GridSize, selections, NineSliceLocation.Middle, simulate: false);
         }
     };
