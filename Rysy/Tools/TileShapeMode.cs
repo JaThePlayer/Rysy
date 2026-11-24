@@ -19,26 +19,33 @@ public abstract class TileShapeMode : TileMode {
         var startPos = _dragGesture.Data?.StartPos ?? mousePos;
         var gridSize = GridSize;
 
+        int offset = ((Thickness) / 2) * gridSize, size = gridSize * Thickness;
+        
         if (!_dragGesture.Begun) {
-            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2(), 1, 1, hollow: false);
+            Tool.RenderTileRectangle(mousePos.Mult(gridSize).ToVector2() - Vector2.One * offset, Thickness, Thickness, hollow: false);
         } else {
             var (outline, fill) = Tool.GetSelectionColor(RectangleExt.FromPoints(mousePos, startPos).MultSize(gridSize));
 
-            ISprite.LineFloored(mousePos.ToVector2().Add(0.5f, 0.5f) * gridSize, startPos.ToVector2().Add(0.5f, 0.5f) * gridSize, outline).Render(SpriteRenderCtx.Default());
-            
-            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize, startPos.Y * gridSize, gridSize, gridSize));
-            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize, mousePos.Y * gridSize, gridSize, gridSize));
+            float lineOffset = (Thickness % 2 > 0) ? 0.5f : 0f;
+            ISprite.LineFloored(
+                mousePos.ToVector2().Add(lineOffset,lineOffset) * gridSize, 
+                startPos.ToVector2().Add(lineOffset,lineOffset) * gridSize, 
+                outline
+                ).Render(SpriteRenderCtx.Default());
+
+            Tool.DrawSelectionRect(camera, new Rectangle(startPos.X * gridSize - offset, startPos.Y * gridSize - offset, size, size));
+            Tool.DrawSelectionRect(camera, new Rectangle(mousePos.X * gridSize - offset, mousePos.Y * gridSize - offset, size, size));
         }
     }
 
     public override void Update(Camera camera, Room room) {
         _dragGesture.Update(out var continueStroke, out var endStroke, out var lastMousePos, out var data);
-
-        if (continueStroke || endStroke) {
-            data!.StartPos ??= Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
+        
+        if (data is not null && (continueStroke || endStroke || _thicknessChanged)) {
+            data.StartPos ??= Tool.GetMouseTilePos(camera, room, fakeMousePos: _dragGesture.StartingPos);
 
             var grid = Tool.GetGrid(room);
-            data!.FakeTiles = grid.Tiles.CreateClone();
+            data.FakeTiles = grid.Tiles.CreateClone();
             
             var curr = Tool.GetMouseTilePos(camera, room);
             var prev = data.StartPos!.Value;
@@ -59,6 +66,8 @@ public abstract class TileShapeMode : TileMode {
 
             data.LastChangedTiles = changedTilePositions;
         }
+
+        _thicknessChanged = false;
         
         if (endStroke) {
             var endPos = Tool.GetMouseTilePos(camera, room);
@@ -91,4 +100,13 @@ public abstract class TileShapeMode : TileMode {
 
         public Point? StartPos;
     }
+    
+    public static Action ChangeThicknessBy(int amt) => () => {
+        int res = Math.Clamp(Persistence.Instance.Get<int>("tileToolThickness", 1) + amt, 1, 500);
+        Persistence.Instance.Set("tileToolThickness", res);
+        // forces the update to happen, which re-renders the fake tiles with the new width.
+        _thicknessChanged = true;
+    };
+    
+    private static bool _thicknessChanged;
 }
