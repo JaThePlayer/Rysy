@@ -13,95 +13,99 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: 10.0.x
-        include-prerelease: true
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build with .NET Core
-      run: |
-        dotnet publish Rysy -c "Release" -f net10.0 -r win-x64 --no-self-contained
-        dotnet publish Rysy -c "Release" -f net10.0 -r linux-x64 --no-self-contained
-        dotnet publish Rysy -c "Release" -f net10.0 -r osx-x64 --no-self-contained
-        dotnet publish Rysy -c "Release" -f net10.0 -r osx-arm64 --no-self-contained
-        dotnet publish Rysy.InteropMod -c Release
-        dotnet pack
-    
-    - name: Download zsign
-      run: |
-        sudo apt-get install -y git g++ pkg-config libssl-dev
-        git clone https://github.com/zhlynn/zsign.git
-        cd zsign/build/linux
-        make clean && make
-      
-    - name: Create release folders
-      working-directory: ./Rysy/bin/Release/net10.0
-      run: |
-        echo "Preparing build dirs"
-        for DIR in win-x64 linux-x64 osx-x64 osx-arm64
-        do
-          cd $DIR/publish
-          rm -r -f cs
-          rm -r -f de
-          rm -r -f es
-          rm -r -f fr
-          rm -r -f it
-          rm -r -f ja
-          rm -r -f ko
-          rm -r -f pl
-          rm -r -f pt-BR
-          rm -r -f ru
-          rm -r -f tr
-          rm -r -f zh-Hans
-          rm -r -f zh-Hant
-          cd ../..
-        done
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 10.0.x
+          include-prerelease: true
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build with .NET Core
+        run: |
+          dotnet publish Rysy -c "Release" -f net10.0 -r win-x64 --no-self-contained
+          dotnet publish Rysy -c "Release" -f net10.0 -r linux-x64 --no-self-contained
+          dotnet publish Rysy -c "Release" -f net10.0 -r osx-x64 --no-self-contained
+          dotnet publish Rysy -c "Release" -f net10.0 -r osx-arm64 --no-self-contained
+          dotnet publish Rysy.InteropMod -c Release
+          dotnet publish Rysy.InteropMod/Rysy -c Release
+          dotnet pack
 
-        cd osx-arm64/publish
-        $GITHUB_WORKSPACE/zsign/bin/zsign -a Rysy
-        $GITHUB_WORKSPACE/zsign/bin/zsign -a Rysy.Updater
-        chmod +x Rysy
-        chmod +x Rysy.Updater
-        
-    - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy-windows
-        path: Rysy/bin/Release/net10.0/win-x64/publish
+      - name: Download zsign
+        run: |
+          sudo apt-get install -y git g++ pkg-config libssl-dev
+          git clone https://github.com/zhlynn/zsign.git
+          cd zsign/build/linux
+          make clean && make
 
-    - name: Upload Linux artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy-linux
-        path: Rysy/bin/Release/net10.0/linux-x64/publish
+      - name: Create release folders
+        working-directory: ./Rysy/bin/Release/net10.0
+        run: |
+          echo "Preparing build dirs"
+          for DIR in win-x64 linux-x64 osx-x64 osx-arm64
+          do
+            cd $DIR/publish
+            rm -r -f cs
+            rm -r -f de
+            rm -r -f es
+            rm -r -f fr
+            rm -r -f it
+            rm -r -f ja
+            rm -r -f ko
+            rm -r -f pl
+            rm -r -f pt-BR
+            rm -r -f ru
+            rm -r -f tr
+            rm -r -f zh-Hans
+            rm -r -f zh-Hant
+            cd ../..
+          done
+          
+          cd osx-arm64/publish
+          $GITHUB_WORKSPACE/zsign/bin/zsign -a Rysy
+          $GITHUB_WORKSPACE/zsign/bin/zsign -a Rysy.Updater
+          chmod +x Rysy
+          chmod +x Rysy.Updater
 
-    - name: Upload OSX-x64 artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy-osx-x64
-        path: Rysy/bin/Release/net10.0/osx-x64/publish
-    
-    - name: Upload OSX-arm64 artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy-osx-arm64
-        path: Rysy/bin/Release/net10.0/osx-arm64/publish
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy-windows
+          path: Rysy/bin/Release/net10.0/win-x64/publish
 
-    - name: Upload InteropMod artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy.InteropMod
-        path: |
-          Rysy.InteropMod/everest.yaml
-          Rysy.InteropMod/bin
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy-linux
+          path: Rysy/bin/Release/net10.0/linux-x64/publish
 
-    - name: Upload nupkg artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Rysy.nupkg
-        path: |
-          Rysy/bin/Release/Rysy.*.nupkg
-          Rysy.Shared/bin/Release/Rysy.Shared.*.nupkg
+      - name: Upload OSX-x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy-osx-x64
+          path: Rysy/bin/Release/net10.0/osx-x64/publish
+
+      - name: Upload OSX-arm64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy-osx-arm64
+          path: Rysy/bin/Release/net10.0/osx-arm64/publish
+
+      - name: Upload InteropMod artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy.InteropMod
+          path: |
+            Rysy.InteropMod/everest.yaml
+            Rysy.InteropMod/bin
+            Rysy.InteropMod/Loenn/*
+            Rysy.InteropMod/Rysy/bin/Rysy.InteropMod.InRysy.dll
+            Rysy.InteropMod/Rysy/bin/Rysy.InteropMod.InRysy.pdb
+
+      - name: Upload nupkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rysy.nupkg
+          path: |
+            Rysy/bin/Release/Rysy.*.nupkg
+            Rysy.Shared/bin/Release/Rysy.Shared.*.nupkg
