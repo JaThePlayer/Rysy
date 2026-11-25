@@ -20,8 +20,8 @@ public static class PicoFont {
         if (Texture is { })
             return Texture;
 
-        // The font is slightly edited in Rysy to include ,/\<>
-        var fontMap = @"abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+-=?:.,/\<> ";
+        // The font is slightly edited in Rysy to include ,/\<>"';[]`{}|
+        var fontMap = @"abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+-=?:.,/\< > ""';[]`{}|";
         for (int i = 0; i < fontMap.Length; i++) {
             CharacterLocations[fontMap[i]] = new Point((i % 30) * W, (i / 30) * H);
         }
