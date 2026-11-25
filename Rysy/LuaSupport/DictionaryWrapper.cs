@@ -1,10 +1,11 @@
-﻿using KeraLua;
-using Rysy.Helpers;
+﻿using Rysy.Helpers;
 
 namespace Rysy.LuaSupport;
 
 public interface ILuaDictionaryWrapper {
     public Dictionary<string, object> Dictionary { get; }
+    
+    public bool MutatedByLua { get; }
 }
 
 public class DictionaryWrapper(Dictionary<string, object> dict) : ILuaWrapper, ILuaDictionaryWrapper {
@@ -95,7 +96,7 @@ public class DictionaryWrapper(Dictionary<string, object> dict) : ILuaWrapper, I
 /// Special wrapper used by fakeTilesHelper.getTilesOptions, receives special handling, allowing for creating of the proper tileset dropdown.
 /// </summary>
 /// <param name="layer"></param>
-public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(GenerateDict(layer)) {
+public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(GenerateDict(layer)), ILuaCustomFieldOptionsProvider {
     public TileLayer TileLayer => layer;
 
     private static Dictionary<string, object> GenerateDict(TileLayer layer) {
@@ -109,7 +110,7 @@ public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(G
         return tiles.SafeToDictionary(x => x.Item2, x => (object) x.Key.ToString());
     }
 
-    public Field CreateField(char def) {
-        return Fields.TileDropdown(def, TileLayer == TileLayer.Bg);
+    public Field CreateField(object def) {
+        return Fields.TileDropdown(def.ToStringInvariant().FirstOrDefault('3'), TileLayer == TileLayer.Bg);
     }
 }

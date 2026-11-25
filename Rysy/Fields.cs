@@ -423,8 +423,15 @@ public static partial class Fields {
         if (info.TryGetValue("options", out var options)) {
             IEnumerable<(object, string)>? values = null;
 
+            if (options is LuaFunctionRef func)
+                options = func.Invoke();
+
+            if (options is ILuaCustomFieldOptionsProvider { MutatedByLua: false } tilesetsDictionaryWrapper)
+                field = tilesetsDictionaryWrapper.CreateField(def);
+            
             if (options is ILuaDictionaryWrapper dictWrapper)
                 options = dictWrapper.Dictionary;
+            
             
             switch (options) {
                 case List<object> dropdownOptions:
@@ -445,7 +452,7 @@ public static partial class Fields {
                 }
             }
 
-            if (values is { }) {
+            if (field is null && values is { }) {
                 var parsedValues = values.Select(x => (converter(x.Item1), x.Item2, x.Item1)).ToList();
                 if (parsedValues.All(p => p.Item1.Item1)) {
                     //field = Dropdown(parsedDef, parsedValues.SafeToDictionary(p => (p.Item1.Item2, p.Item2)), editable);

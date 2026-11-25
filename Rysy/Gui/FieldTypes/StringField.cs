@@ -94,15 +94,10 @@ public record StringField : Field, IFieldConvertible<string>, ILonnField {
     public static string Name => "string";
 
     public static Field Create(object? def, IUntypedData fieldInfoEntry) {
-        if (fieldInfoEntry.TryGetValue("options", out var options))
+        if (fieldInfoEntry.TryGetValue("options", out var options)
+            && Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => (true, x.ToStringInvariant())) is {} dropdown)
         {
-            // Special-handling for options table created via fakeTilesHelper.getTilesOptions to create a tileset dropdown.
-            // TODO: maybe an interface for this if the need arises?
-            if (options is LuaTilesetsDictionaryWrapper { MutatedByLua: false } tilesetsDictionaryWrapper)
-                return tilesetsDictionaryWrapper.CreateField(def.ToStringInvariant().FirstOrDefault('3'));
-            
-            if (Fields.CreateLonnDropdown(fieldInfoEntry, def ?? "", x => (true, x.ToStringInvariant())) is {} dropdown)
-                return dropdown;
+            return dropdown;
         }
         
         return new StringField {
