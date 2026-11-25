@@ -5,18 +5,19 @@ using Rysy.Extensions;
 using Rysy.Graphics;
 using Rysy.Gui;
 using Rysy.Gui.Windows;
+using Rysy.Helpers;
 using Rysy.Scenes;
+using Rysy.Shared;
 using Rysy.Shared.InteropMod;
 using Rysy.Shared.Networking;
 using System.Globalization;
+using System.Net.Sockets;
 using System.Text.Json;
 
 namespace Rysy.InteropMod.InRysy;
 
-internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
-    private InPipeServer<PlaybackTrailData>? _server;
-
-    private PlaybackTrailData? _playbackTrailData;
+internal sealed class RecordingDataRetriever : SceneComponent, IMenubarIndicator {
+    private RecordingData? _recording;
 
     private float Opacity {
         get => Scene?.GetRequired<InteropModSettings>().PlaybackTrailOpacity ?? 0f;
@@ -31,21 +32,40 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
 
     private InGameSettings? _inGameSettings;
     private Task? _inGameSettingsGetTask;
+
+    private BackgroundTaskInfo? _pollingTask;
+    private Task? _inFlightPollRequest;
     
+    private readonly EventRendererManager _eventRendererManager;
+
+    private float? TargetTimestamp {
+        get;
+        set {
+            field = value;
+            _cachedRendererResults = null;
+        }
+    } = null;
+    
+    private RecordingDataRendererResults? _cachedRendererResults;
+
+    public RecordingDataRetriever(EventRendererManager eventRendererManager) {
+        _eventRendererManager = eventRendererManager;
+    }
+
     public override void Update() {
         
     }
 
     private bool IsCurrentPlaybackDataValidForCurrentMap() {
         var editorState = Scene?.Get<EditorState>();
-        if (_playbackTrailData is null || editorState?.Map is null) {
+        if (_recording is null || editorState?.Map is null) {
             return false;
         }
         
         if (!editorState.Map.TryGetSid(out var sid, out var side)
-            || sid != _playbackTrailData.MapSid
-            || (int)side != _playbackTrailData.MapSide
-            || editorState.Map.TryGetRoomByName(_playbackTrailData.Room) is null)
+            || sid != _recording.MapSid
+            || (int)side != _recording.MapSide
+            || editorState.Map.TryGetRoomByName(_recording.Room) is null)
             return false;
 
         return true;
@@ -56,59 +76,73 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
             return;
 
         var editorState = Scene.Get<EditorState>();
-        if (_playbackTrailData is null || editorState?.Map is null) {
+        if (_recording is null || editorState?.Map is null) {
             return;
         }
 
         if (!IsCurrentPlaybackDataValidForCurrentMap())
             return;
 
+        _cachedRendererResults ??= _eventRendererManager.HandleRecording(_recording, TargetTimestamp);
+
         var ctx = SpriteRenderCtx.Default();
         Gfx.BeginBatch(editorState.Camera);
         
-        lock (_spriteLock)
-            foreach (var (_, sprite) in _sprites) {
-                sprite.RenderWithColor(ctx, sprite.Color * Opacity);
-            }
+        foreach (var sprite in _cachedRendererResults.SortedSprites) {
+            sprite.Render(ctx);
+        }
         
         Gfx.EndBatch();
     }
 
     public override void OnAdded() {
-        _server?.Dispose();
-        _server = null;
-
-        if (Scene is not EditorScene)
-            return;
-        
-        _server = new InPipeServer<PlaybackTrailData>(new Logger("Rysy.Pipes.PlayerTrailData")) {
-            OnMessageReceived = OnMessageReceived
-        };
-        _server.Load();
+        _pollingTask ??= BackgroundTaskHelper.RegisterOnInterval(TimeSpan.FromSeconds(2), RequestNewRecordingData);
     }
 
-    private void OnMessageReceived(PlaybackTrailData obj) {
-        GetSettingsFromCelesteInBackground();
+    private void RequestNewRecordingData() {
+        if (_inFlightPollRequest is not null && !_inFlightPollRequest.IsCompleted) {
+            return;
+        }
         
-        _playbackTrailData?.Dispose();
-        _playbackTrailData = obj;
-        var opacity = Opacity;
+        if (Scene?.Get<IDebugRcClient>() is not { } client)
+            return;
 
-        lock (_spriteLock) {
-            _sprites.Clear();
-        
-            foreach (var f in _playbackTrailData.Player) {
-                var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
-            
-                _sprites.Add((f.TimeStamp, sprite));
-                _sprites.Add((f.TimeStamp, ISprite.FromTexture(f.Hair.ToXna(), "characters/player/bangs00").Centered() with {
-                    Color =  new Color{PackedValue = f.HairColor}
-                }));
+        _inFlightPollRequest = Task.Run(async () => {
+            RecordingData? newRecording;
+            try {
+                var response = await client.CallAsync(DebugRcEndpoints.CurrentRecording, silent: true);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                newRecording = JsonSerializer.Deserialize<RecordingData>(responseString, NetworkingJsonOptions.IncludeFields);
+            }
+            catch (Exception e) {
+                // Celeste isn't running to pick up the request:
+                if (e is HttpRequestException {InnerException: SocketException { ErrorCode: 10061 } } )
+                    return;
+
+                Logger.Write(nameof(RecordingDataRetriever), LogLevel.Error, $"Failed to get recording from Celeste: {e}");
+                return;
             }
 
-            foreach (var h in _playbackTrailData.Holdables) {
+            OnMessageReceived(newRecording);
+        });
+    }
+
+    private void OnMessageReceived(RecordingData? newRecording) {
+        GetSettingsFromCelesteInBackground();
+        
+        _recording?.Dispose();
+        _recording = newRecording;
+        _cachedRendererResults = null;
+        var opacity = Opacity;
+
+            /*
+        lock (_spriteLock) {
+            _sprites.Clear();
+
+            foreach (var h in _recording.Holdables) {
                 foreach (var f in h.Frames) {
-                    var sprite = SpriteFromData(f.Position.ToXna(), _playbackTrailData.SpriteData.Resolve(f.Sprite));
+                    var sprite = SpriteFromData(f.Position.ToXna(), _recording.SpriteData.Resolve(f.Sprite));
             
                     _sprites.Add((f.TimeStamp, sprite));
                 }
@@ -116,20 +150,10 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
 
             _sprites.Sort((a, b) => a.Item1.CompareTo(b.Item1));
         }
-    }
-
-    private Sprite SpriteFromData(Vector2 pos, SpriteData data) {
-        return ISprite.FromTexture(pos, data.Texture) with {
-            Scale = data.Scale.ToXna(),
-            Origin = data.Origin.ToXna(),
-            Rotation = data.Rotation,
-            Color = new Color{PackedValue = data.Color},
-        };
+            */
     }
 
     public override void OnRemoved() {
-        _server?.Dispose();
-        _server = null;
     }
 
     public void RenderMenubarIndicator(Menubar menubar) {
@@ -138,11 +162,11 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
         
         var color = ThemeColors.TextColor;
         var statusTooltip = "rysy.playerTrail.connected";
-        if (_playbackTrailData is null && _server is null or { LikelyConnected: false }) {
+        if (_recording is null) {
             color = ThemeColors.FormNullColor;
             statusTooltip = "rysy.playerTrail.disconnected";
         }
-        else if (_playbackTrailData is not null && !IsCurrentPlaybackDataValidForCurrentMap()) {
+        else if (_recording is not null && !IsCurrentPlaybackDataValidForCurrentMap()) {
             color = ThemeColors.FormNullColor;
             statusTooltip = "rysy.playerTrail.playbackNotInThisMap";
         }
@@ -165,9 +189,9 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
                 SendSettingsToCeleste(_inGameSettings);
             }
 
-            using (_ = ScopedImGui.Disabled(_playbackTrailData is null)) {
+            using (_ = ScopedImGui.Disabled(_recording is null)) {
                 if (ImGuiManager.TranslatedButton("rysy.playerTrail.clearPlayback")) {
-                    _playbackTrailData = null;
+                    _recording = null;
                 }
             }
             
@@ -180,13 +204,9 @@ internal sealed class PlayerTrailRenderer : SceneComponent, IMenubarIndicator {
             return;
         if (_inGameSettingsGetTask is { IsCompleted: false })
             return;
-
-        if (_server is null || !_server.LikelyConnected) {
-            return;
-        }
         
         _inGameSettingsGetTask = Task.Run(async () => {
-            var response = await client.CallAsync(InGameSettings.DebugRcGetPath);
+            var response = await client.CallAsync(InGameSettings.DebugRcGetPath, silent: true);
             var responseString = await response.Content.ReadAsStringAsync();
             
             _inGameSettings = JsonSerializer.Deserialize<InGameSettings>(responseString, NetworkingJsonOptions.IncludeFields);

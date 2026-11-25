@@ -1,4 +1,5 @@
-﻿using Rysy.Mods;
+﻿using Rysy.InteropMod.InRysy.EventRenderers;
+using Rysy.Mods;
 
 namespace Rysy.InteropMod.InRysy;
 
@@ -10,8 +11,11 @@ public sealed class InteropModModule : ModModule
         Instance = this;
         
         base.Load();
-        
-        ComponentRegistry.Add(new PlayerTrailRenderer());
+
+        var eventRendererManager = new EventRendererManager()
+            .RegisterRenderer(new PlayerTrailEventRenderer());
+        ComponentRegistry.Add(eventRendererManager);
+        ComponentRegistry.Add(new RecordingDataRetriever(eventRendererManager));
     }
 
     public override void Unload() {

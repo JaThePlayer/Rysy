@@ -2,6 +2,7 @@
 using Rysy.Shared.Networking;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 
 namespace Celeste.Mod.Rysy.InteropMod;
@@ -26,10 +27,22 @@ internal sealed class DebugRcExtension : IModLifetimeScoped {
             Path = InGameSettings.DebugRcGetPath,
             InfoHTML = "Get Rysy Interop Mod's settings remotely",
             Handle = c => {
-                Everest.DebugRC.Write(c, JsonSerializer.Serialize(InteropModModule.Settings.RemoteSettings, NetworkingJsonOptions.IncludeFields));
+                WriteJson(c, InteropModModule.Settings.RemoteSettings);
+            }
+        },
+        new() {
+            Name = "Get Rysy Interop Mod Current Recording",
+            Path = DebugRcEndpoints.CurrentRecording,
+            InfoHTML = "Gets the current recording as JSON.",
+            Handle = c => {
+                WriteJson(c, InteropModModule.Instance.RecordingManager.GetRecordingDataForRysy());
             }
         }
     ];
+
+    private static void WriteJson<T>(HttpListenerContext context, T value) {
+        Everest.DebugRC.Write(context, JsonSerializer.Serialize(value, NetworkingJsonOptions.IncludeFields));
+    }
     
     public void Load() {
         Everest.DebugRC.EndPoints.AddRange(_endPoints);

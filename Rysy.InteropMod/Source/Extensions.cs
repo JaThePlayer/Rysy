@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Celeste.Mod.Rysy.InteropMod;
 
-internal static class Extensions {
+internal static class OtherExtensions {
     public static System.Numerics.Vector2 ToNumVec(this Microsoft.Xna.Framework.Vector2 x)
         => Unsafe.BitCast<Vector2, System.Numerics.Vector2>(x);
 }

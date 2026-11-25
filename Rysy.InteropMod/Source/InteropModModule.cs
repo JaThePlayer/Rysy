@@ -1,4 +1,5 @@
-﻿using Rysy.Shared;
+﻿using Celeste.Mod.Rysy.InteropMod.Collectors;
+using Rysy.Shared;
 using Rysy.Shared.InteropMod;
 using Rysy.Shared.Networking;
 using System;
@@ -12,6 +13,8 @@ public sealed class InteropModModule : EverestModule {
     public override Type SettingsType => typeof(InteropModModuleSettings);
     
     public static InteropModModuleSettings Settings => (InteropModModuleSettings) Instance._Settings;
+    
+    internal RecordingManager RecordingManager { get; private set; }
 
     public InteropModModule() {
         Instance = this;
@@ -44,10 +47,12 @@ public sealed class InteropModModule : EverestModule {
 
     public override void Load() {
         //Register<DebugRcExtension>();
-        var pipeServer = new OutPipeServer<PlaybackTrailData>(MakeLogger("Rysy.Pipes.PlayerTrail"));
-        Register(new ModLifetimeOutPipeServer<PlaybackTrailData>(pipeServer));
-        Register(new PlayerTrailDataCollector(pipeServer));
+        //var pipeServer = new OutPipeServer<PlaybackTrailData>(MakeLogger("Rysy.Pipes.PlayerTrail"));
+        //Register(new ModLifetimeOutPipeServer<PlaybackTrailData>(pipeServer));
+        //Register(new PlayerTrailDataCollector(pipeServer));
         Register<DebugRcExtension>();
+        RecordingManager = Register<RecordingManager>()
+            .RegisterCollector(new PlayerTrailCollector());
     }
 
     public override void Unload() {

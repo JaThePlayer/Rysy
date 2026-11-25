@@ -10,7 +10,7 @@ public interface IDebugRcClient {
     /// Calls the given DebugRC endpoint, and returns the result as a string.
     /// Throws an exception if Celeste is not open or any network error occured.
     /// </summary>
-    public Task<HttpResponseMessage> CallAsync(string endpoint);
+    public Task<HttpResponseMessage> CallAsync(string endpoint, bool silent = false);
 }
 
 public static class DebugRcClientExt {
@@ -48,14 +48,16 @@ public enum CelesteLevelSide {
 public sealed class DebugRcClient(IRysyLogger<DebugRcClient> logger, HttpClient httpClient, ushort port) : IDebugRcClient {
     private readonly string _baseUrl = $"http://localhost:{port}/";
     
-    public async Task<HttpResponseMessage> CallAsync(string endpoint) {
-        logger.Info($"Requesting {endpoint}");
+    public async Task<HttpResponseMessage> CallAsync(string endpoint, bool silent = false) {
+        if (!silent)
+            logger.Info($"Requesting {endpoint}");
         try {
             var response = await httpClient.GetAsync($"{_baseUrl}{endpoint.AsSpan().TrimStart('/')}");
-            logger.Info($"Response: {response.ReasonPhrase}");
+           // if (!silent)
+           //     logger.Info($"Response for {endpoint}: {response.ReasonPhrase}");
             return response;
-        } catch (Exception ex) {
-            logger.Info($"Failed to get response: {ex}");
+        } catch (Exception ex) when (!silent) {
+            logger.Info($"Failed to get response for {endpoint}: {ex}");
             throw;
         }
     }
