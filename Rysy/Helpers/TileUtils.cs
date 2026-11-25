@@ -379,7 +379,7 @@ public static class TileUtils {
     /// Makes the tile <paramref name="path"/> thicker by expanding each tile into a square with the side length of <paramref name="thickness"/>.
     /// </summary>
     /// <param name="path">The set of tiles to be expanded</param>
-    /// <param name="height">How much to expand it by</param>
+    /// <param name="thickness">How much to expand it by</param>
     /// <returns>The resulting thickened path.</returns>
     public static IEnumerable<Point> ThickenGridLocations(IEnumerable<Point> path, int thickness)
     {

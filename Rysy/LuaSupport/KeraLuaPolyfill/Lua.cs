@@ -59,6 +59,6 @@ public unsafe delegate void LuaJitProfileCallback(void* data, Lua L, int samples
 
 public delegate T LuaLFunction<T>(Lua l, int n);
 
-public unsafe delegate nint LuaReader(Lua l, void* ud, ref long sz);
+public unsafe delegate nint LuaReader(Lua l, void* ud, long* sz);
 
 public unsafe delegate int LuaWriter(Lua l, void* p, long sz, void* ud);

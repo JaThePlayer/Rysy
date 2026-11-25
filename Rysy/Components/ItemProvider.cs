@@ -14,7 +14,7 @@ public interface IItemProvider<T> {
 public static class IItemProviderExtensions {
     extension(IComponentRegistry registry) {
         /// <summary>
-        /// Creates a <see cref="Cache{IReadOnlyList}"/>, which will return all components of type <see cref="T"/> or components provided by <see cref="IItemProvider{T}"/>s in the registry.
+        /// Creates a <see cref="Cache{IReadOnlyList}"/>, which will return all components of type <typeparamref name="T"/> or components provided by <see cref="IItemProvider{T}"/>s in the registry.
         /// The cache will be invalidated when new providers are added or existing ones invalidate their cache.
         /// </summary>
         public Cache<IReadOnlyList<T>> GetAllIncludingProvidersCache<T>() where T : class {

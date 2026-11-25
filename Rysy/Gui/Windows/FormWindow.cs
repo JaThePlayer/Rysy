@@ -293,7 +293,7 @@ public class FormContext : ILuaWrapper, IUntypedData {
     /// <summary>
     /// The object that's edited by this form. Can be null.
     /// </summary>
-    public object? FormTarget => _window.Target;
+    public object? FormTarget => _window?.Target;
     
     /// <summary>
     /// Tries to get the value of the field of name <paramref name="key"/>

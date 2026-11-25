@@ -14,7 +14,7 @@ public sealed class Colorgrade {
         IsNone = true,
     };
 
-    private static readonly Dictionary<string, Colorgrade> Colorgrades = new() { ["none"] = None, };
+    private static readonly Dictionary<string, Colorgrade> Colorgrades = new() { ["none"] = None! };
     
     public Colorgrade(VirtTexture? texture) {
         Texture = texture;

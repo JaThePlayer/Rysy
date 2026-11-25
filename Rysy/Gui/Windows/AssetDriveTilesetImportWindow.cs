@@ -216,13 +216,16 @@ internal sealed partial class CreateTilesetWindow : Window {
         _copyFromField = Fields.TileDropdown(_copyFromId, _layer, addDontCopyOption: true);
         _copyFromField.WithTooltipTranslated("rysy.tilesetImport.copyFromId.tooltip");
 
-        _idField = Fields.Char(_id).WithValidator((x) => {
+        _idField = Fields.Char(_id).WithValidator(x => {
             if (x is not char c)
                 return ValidationResult.MustBeChar;
             var map = editorState?.Map;
             if (map is null)
                 return ValidationResult.Ok;
+
             var autotiler = GetAutotiler(map);
+            if (autotiler is null)
+                return ValidationResult.Ok;
 
             if (autotiler.IsInvalidTilesetId(c))
                 return ValidationResult.InvalidTilesetId;

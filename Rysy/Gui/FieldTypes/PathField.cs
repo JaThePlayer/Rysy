@@ -96,6 +96,8 @@ public partial record class PathField : Field, IFieldConvertible<string> {
         return this;
     }
 
+    [MemberNotNull(nameof(ModResolver))]
+    [MemberNotNull(nameof(_rawPaths))]
     private void Init(object cacheObject, string regexStr, Func<FoundPath, string>? captureConverter, Func<RawTextureCache> textureFinder, Func<string, ModMeta?> modResolver) {
         ModResolver = (p) => modResolver(p.Path);
         

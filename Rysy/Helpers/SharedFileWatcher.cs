@@ -57,7 +57,7 @@ public sealed class SharedFileWatcher : IDisposable {
             }
             
             watcher.OnChange += callback;
-            return new Scope(watcher, subdirectory, callback);
+            return new Scope(watcher, callback);
         }
     }
     
@@ -129,7 +129,7 @@ public sealed class SharedFileWatcher : IDisposable {
         _watcherDelayedTaskHelper?.Dispose();
     }
 
-    private sealed class Scope(SharedFileWatcher watcher, string subdirectory, Action<FileSystemEventArgs> callback) : IDisposable {
+    private sealed class Scope(SharedFileWatcher watcher, Action<FileSystemEventArgs> callback) : IDisposable {
         private bool _disposed;
         
         public void Dispose() {

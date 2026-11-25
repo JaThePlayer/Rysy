@@ -332,8 +332,7 @@ public static class ImGuiManager {
 
     public static bool Combo<T>(string name, ref T value, IReadOnlyList<T> values, Func<T, Searchable> toString, 
         [NotNullIfNotNull(nameof(search))] ref string? search, Tooltip tooltip = default,
-        ComboCache<T>? cache = null, RenderMenuItem<T>? renderMenuItem = null, ImGuiComboFlags comboFlags = ImGuiComboFlags.None) 
-        where T : notnull {
+        ComboCache<T>? cache = null, RenderMenuItem<T>? renderMenuItem = null, ImGuiComboFlags comboFlags = ImGuiComboFlags.None) {
         var valueName = toString(value);
         bool changed = false;
         renderMenuItem ??= static (_, valueName, selected) => valueName.RenderImGuiSelectable(selected);

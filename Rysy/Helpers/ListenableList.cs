@@ -14,7 +14,7 @@ public record struct ListenableListChanged<T>(CollectionChangeAction Action, T? 
 public interface IListenableList<T> : IList<T>, IReadOnlyListenableList<T> {
     // These are to resolve conflicts between IList<T> and IReadOnlyList<T>
 
-    /// <inheritdoc cref="IList{T}.Count" />
+    /// <inheritdoc cref="ICollection{T}.Count" />
     public new int Count { get; }
     
     /// <inheritdoc cref="IList{T}.this" />

@@ -23,7 +23,7 @@ public abstract class Style : IPackable, IName, IBindTarget, ILuaWrapper, IUntyp
     public string Name { get; set; }
 
     public EntityData Data {
-        get;
+        get => field ??= new EntityData("?", []);
         set {
             if (field is not null) {
                 field.OnChanged -= OnChanged;
