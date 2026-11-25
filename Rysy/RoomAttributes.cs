@@ -63,7 +63,7 @@ public sealed class RoomAttributes(BinaryPacker.Element data) {
     /// Actual color to use for rendering, taking into consideration either the new `color` field, or the legacy `c` field.
     /// Not stored in map metadata.
     /// </summary>
-    public Color DebugColor => Color?.ToColor(ColorFormat.Rgb) 
+    public Color DebugColor => Color?.ToColorNullable(ColorFormat.Rgb) 
                                 ?? CelesteEnums.RoomColors.AtOrDefault(C, Microsoft.Xna.Framework.Color.White);
 
     public CelesteEnums.WindPatterns WindPattern => Data.Enum("windPattern", CelesteEnums.WindPatterns.None);

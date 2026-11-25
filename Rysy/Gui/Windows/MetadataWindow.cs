@@ -70,9 +70,9 @@ public sealed class MetadataWindow : Window {
         return AddTooltips(new(new {
             Icon = Fields.Path(meta.Icon, "Graphics/Atlases/Gui", "png", fs).AllowNull(), //Fields.String(meta.Icon).AllowNull(),
             Interlude = Fields.Bool(meta.Interlude ?? false),
-            TitleAccentColor = Fields.Rgb(meta.TitleAccentColor.FromRgb()),
-            TitleBaseColor = Fields.Rgb(meta.TitleBaseColor.FromRgb()),
-            TitleTextColor = Fields.Rgb(meta.TitleTextColor.FromRgb()),
+            TitleAccentColor = Fields.Rgb(meta.TitleAccentColor),
+            TitleBaseColor = Fields.Rgb(meta.TitleBaseColor),
+            TitleTextColor = Fields.Rgb(meta.TitleTextColor),
             preview = new TitleCardPreviewField(),
         }));
     }

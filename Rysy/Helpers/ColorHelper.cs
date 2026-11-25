@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Rysy.Extensions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Helpers;
 
@@ -274,6 +275,11 @@ public static class ColorHelperExtensions {
         public Color FromRgb() => ColorHelper.Rgb(hexCode);
 
         /// <summary>
+        /// Same as <see cref="ColorHelperExtensions.FromRgb(string)"/>, but returns a default color in case <paramref name="hexCode"/> is invalid.
+        /// </summary>
+        public Color FromRgbOr(Color def) => hexCode.ToColorOr(def, ColorFormat.Rgb);
+
+        /// <summary>
         /// <inheritdoc cref="ColorHelper.Rgba"/>
         /// </summary>
         public Color FromRgba() => ColorHelper.Rgba(hexCode);
@@ -310,11 +316,18 @@ public static class ColorHelperExtensions {
     extension(string? maybeColor)
     {
         public Color ToColorOr(Color def, ColorFormat format = ColorFormat.Rgba) {
-            return maybeColor is {} ? ColorHelper.TryGet(maybeColor, format, out var color) ? color : def : def;
+            return maybeColor is not null ? ColorHelper.TryGet(maybeColor, format, out var color) ? color : def : def;
         }
 
         public Color ToColorOr(string def, ColorFormat format = ColorFormat.Rgba) {
-            return maybeColor is {} && ColorHelper.TryGet(maybeColor, format, out var color) ? color : def.ToColorOr(Color.White);
+            return maybeColor is not null && ColorHelper.TryGet(maybeColor, format, out var color) ? color : def.ToColorOr(Color.White);
+        }
+        
+        /// <summary>
+        /// If <paramref name="maybeColor"/> is a valid color, returns the parsed value, otherwise returns null.
+        /// </summary>
+        public Color? ToColorNullable(ColorFormat format = ColorFormat.Rgba) {
+            return maybeColor is not null && ColorHelper.TryGet(maybeColor, format, out var color) ? color : null;
         }
     }
 

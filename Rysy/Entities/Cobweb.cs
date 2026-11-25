@@ -11,8 +11,8 @@ public class Cobweb : Entity, IPlaceable {
     public override Range NodeLimits => 1..;
 
     public override IEnumerable<ISprite> GetSprites() {
-        var nodes = Nodes!;
-        var colors = Attr("color", "696a6a").Split(',').Select(x => x.FromRgb()).ToArray();
+        var nodes = Nodes;
+        var colors = Attr("color", "696a6a").Split(',').Select(x => x.FromRgbOr(Color.White)).ToArray();
 
         return GetCobwebSprites(Pos, nodes[0], 12, true);
 
