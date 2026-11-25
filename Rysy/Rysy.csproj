@@ -203,7 +203,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Rysy.Shared\Rysy.Shared.csproj" />
-        <ProjectReference Include="..\Rysy.Updater\Rysy.Updater.csproj" />
+        <ProjectReference Include="..\Rysy.Updater\Rysy.Updater.csproj" PrivateAssets="all" />
     </ItemGroup>
 
 <!--    
