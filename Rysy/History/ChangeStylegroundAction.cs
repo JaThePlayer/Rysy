@@ -2,9 +2,9 @@
 
 namespace Rysy.History;
 
-public record class ChangeStylegroundAction(Style Style, Dictionary<string, object> Edited) : IHistoryAction {
-    Dictionary<string, object> _old;
-    Dictionary<string, object> _editedClone;
+public record ChangeStylegroundAction(Style Style, Dictionary<string, object> Edited) : IHistoryAction {
+    private Dictionary<string, object> _old;
+    private Dictionary<string, object> _editedClone;
 
     public bool Apply(Map map) {
         _old ??= new(Style.Data.Inner, Style.Data.Inner.Comparer);

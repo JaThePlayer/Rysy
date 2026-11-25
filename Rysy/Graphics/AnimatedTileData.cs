@@ -8,7 +8,7 @@ using System.Xml;
 namespace Rysy.Graphics;
 
 public sealed class AnimatedTileBank {
-    private Dictionary<string, AnimatedTileData> _tiles;
+    private readonly Dictionary<string, AnimatedTileData> _tiles;
     
     public XmlDocument Xml { get; private set; }
     

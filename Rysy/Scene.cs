@@ -275,7 +275,7 @@ public abstract class Scene {
             return new EmptyDisposable();
         }
 
-        private class EmptyDisposable : IDisposable {
+        private sealed class EmptyDisposable : IDisposable {
             public void Dispose() {
             }
         }

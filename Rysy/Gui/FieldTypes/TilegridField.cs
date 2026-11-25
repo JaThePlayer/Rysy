@@ -11,7 +11,7 @@ using Rysy.Tools;
 namespace Rysy.Gui.FieldTypes;
 
 public record class TilegridField : Field {
-    private TileLayer _layer;
+    private readonly TileLayer _layer;
 
     public TilegridField(TileLayer layer = TileLayer.Fg) {
         Default = "";
@@ -104,7 +104,7 @@ internal sealed class EditTileDataWindow : Window {
 
     private readonly Room _fakeRoom;
 
-    private TileLayer _layer;
+    private readonly TileLayer _layer;
 
     internal bool ShouldClose;
 
@@ -196,7 +196,7 @@ internal sealed class EditTileDataWindow : Window {
         base.RemoveSelf();
     }
 
-    private ManagedLock? _globalHotkeyLock;
+    private readonly ManagedLock? _globalHotkeyLock;
 
     private Action CreateUpsizeHandler(Point resize, Vector2 move) => () => {
         Width = (Width + resize.X).AtLeast(8);

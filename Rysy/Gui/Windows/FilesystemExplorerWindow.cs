@@ -6,11 +6,11 @@ using Rysy.Mods;
 namespace Rysy.Gui.Windows;
 
 public sealed class FilesystemExplorerWindow : Window {
-    sealed record FileRef(string Path, ModMeta Mod) {
+    private sealed record FileRef(string Path, ModMeta Mod) {
         public override string ToString() => Path ?? "";
     }
 
-    private ComboCache<FileRef> _cache = new();
+    private readonly ComboCache<FileRef> _cache = new();
     private FileRef? _openedFile;
     private string _fileText = "";
     private string _search = "";

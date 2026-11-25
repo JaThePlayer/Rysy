@@ -143,7 +143,7 @@ public sealed record ColorField : Field, ILonnField, IListFieldExtender, IFieldC
         return colorField;
     }
 
-    NumVector3 _hsvFilterStorage = default;
+    private NumVector3 _hsvFilterStorage = default;
 
     public void RenderPostListElementsGui(ListFieldContext ctx) {
         if (!ImGui.BeginMenu("HSV Filter")) {

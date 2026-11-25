@@ -48,7 +48,7 @@ public sealed class Node : IDepth, ILuaWrapper {
 }
 
 sealed record class NodeSelectionHandler : ISelectionHandler, ISelectionPreciseRotationHandler {
-    private EntitySelectionHandler _handler;
+    private readonly EntitySelectionHandler _handler;
     private int _prevNodeId;
     private Entity _lastEntity;
 

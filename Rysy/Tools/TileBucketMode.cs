@@ -11,7 +11,7 @@ public class TileBucketMode : TileMode {
         _global = global;
     }
 
-    private bool _global;
+    private readonly bool _global;
 
     public override string Name => _global ? "bucket global" : "bucket";
 

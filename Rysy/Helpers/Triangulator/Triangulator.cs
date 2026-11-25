@@ -18,10 +18,10 @@ namespace Triangulator {
     public static class Triangulator {
         #region Fields
 
-        static readonly IndexableCyclicalLinkedList<Vertex> PolygonVertices = new IndexableCyclicalLinkedList<Vertex>();
-        static readonly IndexableCyclicalLinkedList<Vertex> EarVertices = new IndexableCyclicalLinkedList<Vertex>();
-        static readonly CyclicalList<Vertex> ConvexVertices = new CyclicalList<Vertex>();
-        static readonly CyclicalList<Vertex> ReflexVertices = new CyclicalList<Vertex>();
+        private static readonly IndexableCyclicalLinkedList<Vertex> PolygonVertices = new IndexableCyclicalLinkedList<Vertex>();
+        private static readonly IndexableCyclicalLinkedList<Vertex> EarVertices = new IndexableCyclicalLinkedList<Vertex>();
+        private static readonly CyclicalList<Vertex> ConvexVertices = new CyclicalList<Vertex>();
+        private static readonly CyclicalList<Vertex> ReflexVertices = new CyclicalList<Vertex>();
 
         #endregion
 

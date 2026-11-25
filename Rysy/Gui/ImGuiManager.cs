@@ -826,7 +826,7 @@ public static class ImGuiManager {
         );
     }
 
-    struct WidgetData {
+    private struct WidgetData {
         public RenderTarget2D Target;
         public nint Id; 
         public bool CrashLogged;
@@ -1301,7 +1301,7 @@ public static class ImGuiManager {
     
     // Mostly taken from https://github.com/woofdoggo/Starforge/blob/main/Starforge/Core/Interop/ImGuiRenderer.cs
     public unsafe class ImGuiRenderer : IImGuiResourceManager {
-        private RasterizerState _rasterizerState;
+        private readonly RasterizerState _rasterizerState;
         private GraphicsDevice GraphicsDevice => RysyState.GraphicsDevice;
         private BasicEffect _effect;
 
@@ -1313,14 +1313,14 @@ public static class ImGuiManager {
         private IndexBuffer _indexBuffer;
         private int _indexBufferSize;
 
-        private Dictionary<IntPtr, Texture2D> _textures;
+        private readonly Dictionary<IntPtr, Texture2D> _textures;
         private int _textureId = 1;
 
         private int _scrollWheelValue;
 
         private long _frameStartTimestamp;
-        
-        sealed record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
+
+        private sealed record ImGuiXnaKeyBind(ImGuiKey Key, Keys Xna, Keys? AltKey = null);
         
         private static readonly List<ImGuiXnaKeyBind> ImGuiKeys = new()
         {

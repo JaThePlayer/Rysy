@@ -50,7 +50,7 @@ internal sealed class CustomSpinner : LonnEntity {
             _cache = null;
     }
 
-    sealed record SpinnerPathCache(
+    private sealed record SpinnerPathCache(
         (ColoredSpriteTemplate Main, ColoredSpriteTemplate Back, ColoredSpriteTemplate Outline)[] Fgs, 
         (ColoredSpriteTemplate Main, ColoredSpriteTemplate Back, ColoredSpriteTemplate Outline)[] Bgs,
         float ConnectionDistance,

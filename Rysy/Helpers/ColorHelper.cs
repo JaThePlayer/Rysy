@@ -1,12 +1,13 @@
 ﻿using Hexa.NET.ImGui;
-using Rysy.Extensions;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Rysy.Helpers;
 
 public static class ColorHelper {
-    static Dictionary<string, Color> Cache = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
-    static Dictionary<string, Color[]> ColorArrayCache = new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Color> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Color>.AlternateLookup<ReadOnlySpan<char>> CacheSpan 
+        = Cache.GetAlternateLookup<ReadOnlySpan<char>>();
+    
+    private static readonly Dictionary<string, Color[]> ColorArrayCache = new(StringComparer.OrdinalIgnoreCase);
     static ColorHelper() {
         foreach (var prop in typeof(Color).GetProperties())
             if (prop.GetValue(default(Color), null) is Color color)
@@ -19,8 +20,8 @@ public static class ColorHelper {
     /// <summary>
     /// Gets a <see cref="Color"/> from the <paramref name="color"/> string, by either using an XNA color name, or converting a hex code from a given format
     /// </summary>
-    public static Color Get(string color, ColorFormat format = ColorFormat.Rgba, bool allowXna = true) {
-        if (allowXna && Cache.TryGetValue(color, out var xnaColor))
+    public static Color Get(ReadOnlySpan<char> color, ColorFormat format = ColorFormat.Rgba, bool allowXna = true) {
+        if (allowXna && CacheSpan.TryGetValue(color, out var xnaColor))
             return xnaColor;
 
         return format switch {
@@ -34,7 +35,7 @@ public static class ColorHelper {
     /// <summary>
     /// Tries to convert a string to a color using the given format.
     /// </summary>
-    public static bool TryGet(string colorString, ColorFormat format, out Color color, bool allowXna = true) {
+    public static bool TryGet(ReadOnlySpan<char> colorString, ColorFormat format, out Color color, bool allowXna = true) {
         try {
             color = Get(colorString, format, allowXna);
             return true;
@@ -46,7 +47,7 @@ public static class ColorHelper {
 
     /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as RRGGBB
-    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.Rgb"/> as the second parameter if this is needed
+    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(ReadOnlySpan{char}, ColorFormat)"/> with <see cref="ColorFormat.Rgb"/> as the second parameter if this is needed
     /// </summary>
     public static Color Rgb(ReadOnlySpan<char> hexCode) {
         if (hexCode.IsEmpty)
@@ -63,7 +64,7 @@ public static class ColorHelper {
 
     /// <summary>
     /// Parses a <see cref="Color"/> from the <paramref name="hexCode"/>, encoded as AARRGGBB.
-    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(string, ColorFormat)"/> with <see cref="ColorFormat.Argb"/> as the second parameter if this is needed
+    /// Doesn't handle XNA Color names, use <see cref="ColorHelperExtensions.ToColor(ReadOnlySpan{char}, ColorFormat)"/> with <see cref="ColorFormat.Argb"/> as the second parameter if this is needed
     /// </summary>
     public static Color Argb(ReadOnlySpan<char> hexCode) {
         hexCode = PrepareSpan(hexCode);
@@ -267,27 +268,23 @@ public enum ColorFormat {
 }
 
 public static class ColorHelperExtensions {
-    extension(string hexCode)
+    // Legacy extensions on string instead of ReadOnlySpan<char> for plugins compiled against < 0.0.16
+    extension(string hexCodeStr)
     {
         /// <summary>
         /// <inheritdoc cref="ColorHelper.Rgb"/>
         /// </summary>
-        public Color FromRgb() => ColorHelper.Rgb(hexCode);
+        public Color FromRgb() => ColorHelper.Rgb(hexCodeStr);
 
         /// <summary>
-        /// Same as <see cref="ColorHelperExtensions.FromRgb(string)"/>, but returns a default color in case <paramref name="hexCode"/> is invalid.
+        /// Same as <see cref="ColorHelperExtensions.FromRgb(string)"/>, but returns a default color in case <paramref name="hexCodeStr"/> is invalid.
         /// </summary>
-        public Color FromRgbOr(Color def) => hexCode.ToColorOr(def, ColorFormat.Rgb);
-
+        public Color FromRgbOr(Color def) => hexCodeStr.ToColorOr(def, ColorFormat.Rgb);
+        
         /// <summary>
-        /// <inheritdoc cref="ColorHelper.Rgba"/>
+        /// <inheritdoc cref="ColorHelper.Get"/>
         /// </summary>
-        public Color FromRgba() => ColorHelper.Rgba(hexCode);
-
-        /// <summary>
-        /// <inheritdoc cref="ColorHelper.Argb"/>
-        /// </summary>
-        public Color FromArgb() => ColorHelper.Argb(hexCode);
+        public Color ToColor(ColorFormat format = ColorFormat.Rgba) => ColorHelper.Get(hexCodeStr, format);
     }
 
     extension(ReadOnlySpan<char> hexCode)
@@ -306,12 +303,12 @@ public static class ColorHelperExtensions {
         /// <inheritdoc cref="ColorHelper.Argb"/>
         /// </summary>
         public Color FromArgb() => ColorHelper.Argb(hexCode);
+        
+        /// <summary>
+        /// <inheritdoc cref="ColorHelper.Get"/>
+        /// </summary>
+        public Color ToColor(ColorFormat format = ColorFormat.Rgba) => ColorHelper.Get(hexCode, format);
     }
-
-    /// <summary>
-    /// <inheritdoc cref="ColorHelper.Get"/>
-    /// </summary>
-    public static Color ToColor(this string str, ColorFormat format = ColorFormat.Rgba) => ColorHelper.Get(str, format);
     
     extension(string? maybeColor)
     {

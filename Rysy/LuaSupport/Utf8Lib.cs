@@ -27,8 +27,8 @@ static struct luaL_Reg funcs[] = {
         lua.PushInteger(Encoding.UTF8.GetCharCount(str));
         return 1;
     }
-    
-    static int u_posrelat (int pos, int len) {
+
+    private static int u_posrelat (int pos, int len) {
         if (pos >= 0) return pos;
         if (0u - pos > len) return 0;
         return len + pos + 1;
@@ -78,8 +78,8 @@ static struct luaL_Reg funcs[] = {
             lua.PushNil();
         return 1;
     }
-    
-    static unsafe char* utf8_decode (char* o, int *val) {
+
+    private static unsafe char* utf8_decode (char* o, int *val) {
         ReadOnlySpan<int> limits = [0xFF, 0x7F, 0x7FF, 0xFFFF];
         char* s = o;
         int c = s[0];
@@ -139,7 +139,7 @@ static struct luaL_Reg funcs[] = {
     private const int MAXUNICODE = 0x10FFFF;
     
     /* taken from lobject.c */
-    static unsafe int utf8esc (char* buff, ulong x) {
+    private static unsafe int utf8esc (char* buff, ulong x) {
         int n = 1;  /* number of bytes put in buffer (backwards) */
         //lua_assert(x <= 0x10FFFF);
         if (x < 0x80)  /* ascii? */
@@ -155,8 +155,8 @@ static struct luaL_Reg funcs[] = {
         }
         return n;
     }
-    
-    static unsafe void pushutfchar(Lua L, int arg) {
+
+    private static unsafe void pushutfchar(Lua L, int arg) {
         var code = L.CheckInteger(arg);
         L.ArgCheck(0 <= code && code <= MAXUNICODE, arg, "value out of range");
 
@@ -166,8 +166,8 @@ static struct luaL_Reg funcs[] = {
         int l = utf8esc(buff, (ulong)code);
         L.PushBuffer(new ReadOnlySpan<byte>(buff + UTF8BUFFSZ - l, l));
     }
-    
-    static int utfchar (Lua L) {
+
+    private static int utfchar (Lua L) {
         int n = L.GetTop();  /* number of arguments */
         if (n == 1)  /* optimize common case of single char */
             pushutfchar(L, 1);

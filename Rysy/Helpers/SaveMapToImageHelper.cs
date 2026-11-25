@@ -84,7 +84,7 @@ public static class SaveMapToImageHelper {
         png.End();
     }
 
-    static bool RenderChunk(IComponentRegistry componentRegistry, IReadOnlyList<Room> rooms, RenderTarget2D target, int x, int y, int width, int height) {
+    private static bool RenderChunk(IComponentRegistry componentRegistry, IReadOnlyList<Room> rooms, RenderTarget2D target, int x, int y, int width, int height) {
         var gd = target.GraphicsDevice;
         gd.SetRenderTarget(target);
         gd.Clear(Color.Transparent);

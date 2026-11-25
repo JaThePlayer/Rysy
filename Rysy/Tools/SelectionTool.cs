@@ -34,7 +34,7 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
     private bool _cloneSelectionsBeforeMoving;
 
     private List<Selection>? _currentSelections;
-    private List<Selection> _selectionsToHighlight = new();
+    private readonly List<Selection> _selectionsToHighlight = new();
 
     private void SetSelections(IEnumerable<Selection>? newSelections) {
         if (_currentSelections is { }) {
@@ -1081,12 +1081,12 @@ public class SelectionTool : Tool, ISelectionHotkeyTool {
 
         ImGui.EndTable();
     }
-    
-    void DeselectOnEndOfFrame(Selection selection) {
+
+    private void DeselectOnEndOfFrame(Selection selection) {
         RysyState.OnEndOfThisFrame += () => Deselect(selection.Handler);
     }
-    
-    void RightClickOnEndOfFrame(Selection selection) {
+
+    private void RightClickOnEndOfFrame(Selection selection) {
         RysyState.OnEndOfThisFrame += () => selection.Handler.OnRightClicked(EditorState, [selection]);
     }
 }

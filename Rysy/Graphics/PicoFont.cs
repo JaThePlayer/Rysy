@@ -12,7 +12,7 @@ public static class PicoFont {
     public const int W = 4;
     public const int H = 6;
 
-    private static Dictionary<char, Point> CharacterLocations = new();
+    private static readonly Dictionary<char, Point> CharacterLocations = new();
 
     public static VirtTexture? Texture { get; private set; }
 

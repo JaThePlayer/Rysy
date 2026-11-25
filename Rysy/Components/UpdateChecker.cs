@@ -88,7 +88,7 @@ internal sealed class UpdateChecker : SceneComponent {
         return osPostfix;
     }
 
-    private class UpdateNotificationWindow : Window {
+    private sealed class UpdateNotificationWindow : Window {
         private readonly GitHubRelease _latestRelease;
         private readonly GitHubAsset _asset;
         private readonly MarkdownObject? _description;

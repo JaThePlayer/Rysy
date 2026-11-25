@@ -29,7 +29,7 @@ public class TranslatedDictionary<TKey> : IDictionary<TKey, string>
     /// </summary>
     public Func<TKey, string> Converter { get; set; }
 
-    private Dictionary<TKey, string?> _items = new();
+    private readonly Dictionary<TKey, string?> _items = new();
 
     private string Translate(TKey key) {
         if (!_items.TryGetValue(key, out var translationKey) || translationKey is null)

@@ -8,7 +8,7 @@ using Rysy.Platforms;
 namespace Rysy.Scenes;
 
 internal sealed class PickCelesteInstallScene : Scene {
-    private Scene _nextScene;
+    private readonly Scene _nextScene;
     private readonly IReadOnlyList<string> _knownProfiles;
     private readonly bool _canCancel;
 
@@ -29,7 +29,7 @@ internal sealed class PickCelesteInstallScene : Scene {
         }
     }
 
-    class PickerWindow : Window {
+    private sealed class PickerWindow : Window {
         private readonly PickCelesteInstallScene _scene;
         private readonly IReadOnlyList<string> _knownProfiles;
 

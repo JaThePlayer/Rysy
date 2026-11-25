@@ -118,8 +118,8 @@ public readonly struct WrappedBitArray {
     
     public struct TwoDimMatchEnumerator : IEnumerator<Point>, IEnumerable<Point> {
         private int _i;
-        private int _w;
-        private WrappedBitArray _arr;
+        private readonly int _w;
+        private readonly WrappedBitArray _arr;
 
         public TwoDimMatchEnumerator(WrappedBitArray s, int gridWidth, Point offset) {
             _i = -1;

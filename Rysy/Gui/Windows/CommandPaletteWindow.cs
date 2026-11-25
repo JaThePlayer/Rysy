@@ -82,7 +82,7 @@ public sealed class CommandPaletteWindow : Window {
         base.Render();
         var showPlacementIcons = Settings.Instance.ShowPlacementIcons;
 
-        if (ImGuiManager.SearchInput(ref _search, persistenceKey: _version.ToString(), focusKeyboard: _firstRender)) {
+        if (ImGuiManager.SearchInput(ref _search, persistenceKey: _version.ToStringInvariant(), focusKeyboard: _firstRender)) {
             ClearCaches();
         }
         _firstRender = false;

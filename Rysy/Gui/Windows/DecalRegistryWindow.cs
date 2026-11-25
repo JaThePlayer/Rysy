@@ -11,13 +11,13 @@ using System.Xml.Linq;
 namespace Rysy.Gui.Windows;
 
 public sealed class DecalRegistryWindow : Window {
-    const string CreateNewEntryPopupId = "create_new_entry";
+    private const string CreateNewEntryPopupId = "create_new_entry";
     
     private readonly Map _map;
 
     internal ModMeta Mod => _map.Mod!;
-    
-    bool _firstRender = true;
+
+    private bool _firstRender = true;
 
     private DecalRegistryEntry? _selection;
     private DecalRegistryProperty? _selectionProp;

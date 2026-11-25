@@ -21,15 +21,19 @@ public class MapStylegrounds : IPackable {
     /// </summary>
     /// <returns></returns>
     public IEnumerable<Style> AllStylesRecursive() {
-        var enumerator = AllStylesIn(Backgrounds).GetEnumerator();
+        var list = AllStylesIn(Backgrounds);
+        var enumerator = list.GetEnumerator();
         while (enumerator.MoveNext())
             yield return enumerator.Current;
         enumerator.Dispose();
+        list.Dispose();
 
-        enumerator = AllStylesIn(Foregrounds).GetEnumerator();
+        list = AllStylesIn(Foregrounds);
+        enumerator = list.GetEnumerator();
         while (enumerator.MoveNext())
             yield return enumerator.Current;
         enumerator.Dispose();
+        list.Dispose();
     }
 
     public IEnumerable<Style> AllBackgroundStylesRecursive()
@@ -49,17 +53,14 @@ public class MapStylegrounds : IPackable {
             style.Data.SetOverlay(null);
     }
 
-    private static PooledList<Style> AllStylesIn(List<Style> styles) {
-        PooledList<Style> ret = new();
+    private static PooledList<Style> AllStylesIn(List<Style> styles, PooledList<Style>? into = null) {
+        PooledList<Style> ret = into ?? new();
         foreach (var style in styles)
         {
             ret.Add(style);
             
             if (style is StyleFolder folder) {
-                using var innerStyles = AllStylesIn(folder.Styles).GetEnumerator();
-                while (innerStyles.MoveNext()) {
-                    ret.Add(innerStyles.Current);
-                }
+                ret = AllStylesIn(folder.Styles, ret);
             }
         }
 

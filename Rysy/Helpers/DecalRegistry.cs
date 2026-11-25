@@ -67,12 +67,12 @@ public sealed class DecalRegistry : IDisposable {
         return doc;
     }
 
-    private static Dictionary<string, List<DecalRegistryEntry>> EntriesByRoot = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, List<DecalRegistryEntry>> EntriesByRoot = new(StringComparer.Ordinal);
     private static List<DecalRegistryEntry> EntriesMutable = [];
 
     private static bool Disposed;
 
-    private static ConcurrentDictionary<ModMeta, IDisposable> _watchers = [];
+    private static readonly ConcurrentDictionary<ModMeta, IDisposable> _watchers = [];
 
     public void ReadFileFromMod(ModMeta mod) {
         var fs = mod.Filesystem;

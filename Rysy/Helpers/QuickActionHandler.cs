@@ -53,7 +53,7 @@ public class QuickActionHandler {
 
     private static string Filename => "quickActions.json";
 
-    private static Lazy<List<QuickActionInfo>> Actions = new(() => LoadActions(Filename));
+    private static readonly Lazy<List<QuickActionInfo>> Actions = new(() => LoadActions(Filename));
 
     private static List<QuickActionInfo> LoadActions(string file) {
         try {

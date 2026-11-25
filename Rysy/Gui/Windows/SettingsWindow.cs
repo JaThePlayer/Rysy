@@ -20,7 +20,7 @@ public sealed class SettingsWindow : Window {
 
         public IReadOnlyList<Themes.FoundTheme>? ThemeList = null;
         public string ThemeListSearch = "";
-        public ComboCache<Themes.FoundTheme> ThemeListCache = new();
+        public readonly ComboCache<Themes.FoundTheme> ThemeListCache = new();
 
         public Dictionary<string, string>? EditedHotkeys = null;
     }

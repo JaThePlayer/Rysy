@@ -4,7 +4,7 @@ using Rysy.Helpers;
 namespace Rysy.History;
 
 internal sealed record TileRectMoveAction(Tilegrid Grid, Rectangle Rect, char[,] Orig, char[,] ToMove, Point Offset) : IHistoryAction {
-    char[,] _old;
+    private char[,] _old;
 
     public bool Apply(Map map) {
         var ox = Offset.X;

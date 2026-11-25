@@ -26,8 +26,8 @@ public sealed class TilesetWindow : Window, ISignalListener<HistoryActionApplied
     private Map? Map => _editorState.Map;
 
     internal ModMeta? Mod => Map?.Mod;
-    
-    bool _firstRender = true;
+
+    private bool _firstRender = true;
 
     private FormWindow? _form;
 
@@ -705,12 +705,12 @@ internal sealed class XmlSnippetAnimatedTileImportWindow : Window {
 }
 
 internal sealed class ExistingSpriteTilesetImportWindow : Window {
-    private Field _pathField;
-    private Field _templateField;
+    private readonly Field _pathField;
+    private readonly Field _templateField;
     
     private bool _wasValid;
     private string _path = "";
-    private TileEditorLayer _layer;
+    private readonly TileEditorLayer _layer;
     
     private ITilesetTemplate _template;
     private string _xml = "rysy.tilesetImport.templatePlaceholder".Translate();

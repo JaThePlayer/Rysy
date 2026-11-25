@@ -7,7 +7,7 @@ public static class BackgroundTaskHelper {
         public CancellationTokenSource CancellationToken;
     }
 
-    private static Dictionary<TimeSpan, TimerInfo> Timers = new();
+    private static readonly Dictionary<TimeSpan, TimerInfo> Timers = new();
 
     /// <summary>
     /// Registers a background task which will call <paramref name="action"/> every <paramref name="interval"/>.

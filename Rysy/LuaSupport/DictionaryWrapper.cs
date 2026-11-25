@@ -97,8 +97,8 @@ public class DictionaryWrapper(Dictionary<string, object> dict) : ILuaWrapper, I
 /// <param name="layer"></param>
 public class LuaTilesetsDictionaryWrapper(TileLayer layer) : DictionaryWrapper(GenerateDict(layer)) {
     public TileLayer TileLayer => layer;
-    
-    static Dictionary<string, object> GenerateDict(TileLayer layer) {
+
+    private static Dictionary<string, object> GenerateDict(TileLayer layer) {
         if (EditorState.Current?.Map is not {} map) {
             return [];
         }

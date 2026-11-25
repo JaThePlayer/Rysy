@@ -4,7 +4,7 @@ using Triangulator;
 namespace Rysy.Graphics;
 
 public record struct PolygonSprite : ISprite {
-    private Vector2[] _nodes;
+    private readonly Vector2[] _nodes;
 
     private VertexPositionColor[]? _vertexPositionColors;
 

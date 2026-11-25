@@ -3,7 +3,7 @@
 namespace Rysy.History;
 
 internal sealed class AddAnimatedTileAction(string xmlContents) : IHistoryAction {
-    List<string> _createdTiles = [];
+    private readonly List<string> _createdTiles = [];
     
     public bool Apply(Map map) {
         _createdTiles.Clear();

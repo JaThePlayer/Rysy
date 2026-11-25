@@ -9,7 +9,7 @@ public class CrashWindow : Window {
     public Action<CrashWindow> ButtonGenerator;
     public string Message;
 
-    private string _exceptionString;
+    private readonly string _exceptionString;
 
     public CrashWindow(string message, Exception e, Action<CrashWindow> buttonGenerator) : base("Crash Handler", new(800, 500)) {
         Exception = e;

@@ -3,7 +3,7 @@
 namespace Rysy.History;
 
 public record TileSwapAction(Tilegrid Grid, Rectangle Rect, char[,] OrigTiles, char[,] NewTiles, Point NewTileOffset) : IHistoryAction {
-    char[,] _oldTiles;
+    private char[,] _oldTiles;
 
     public bool Apply(Map map) {
         if (Rect.Width < 1 || Rect.Height < 1)

@@ -64,7 +64,7 @@ public class FormWindow : Window {
 
 
     // used for deciding whether the form should be displayed in columns or not.
-    float _longestFieldSize;
+    private float _longestFieldSize;
 
     /// <summary>
     /// Creates a dictionary containing all values in all fields, regardless of whether they've been edited or not.

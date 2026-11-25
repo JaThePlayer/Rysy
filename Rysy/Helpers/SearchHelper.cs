@@ -388,7 +388,7 @@ public static class SearchHelper {
     private sealed class TextSearchTerm(string termWithUnderscores) : SearchTerm {
         private readonly string _term = ToStringUnderscoresAreSpaces(termWithUnderscores);
         private readonly byte[] _termU8 = Interpolator.TempU8(termWithUnderscores).ToArray();
-        private readonly bool _hasUnderscores = termWithUnderscores.Contains('_');
+        private readonly bool _hasUnderscores = termWithUnderscores.Contains('_', StringComparison.Ordinal);
 
         protected override void RenderImGuiInner() {
             ImGui.TextUnformatted(_termU8);

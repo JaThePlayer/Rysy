@@ -872,7 +872,7 @@ public static partial class LuaExt {
     internal static int NeoWrapperCount { get; private set; } = 0;
     internal static readonly List<ILuaWrapper?> NeoWrappers = new();
 
-    sealed record IntBox(int Value);
+    private sealed record IntBox(int Value);
     
     private static readonly ConditionalWeakTable<ILuaWrapper, IntBox> WrapperObjToId = new();
 
@@ -882,7 +882,7 @@ public static partial class LuaExt {
     /// Type used as a userdata on the lua side to represent C# wrappers.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    struct NeoWrapper {
+    private struct NeoWrapper {
         /// <summary>
         /// Id used to index into NeoWrappers.
         /// </summary>

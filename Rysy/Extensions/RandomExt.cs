@@ -100,7 +100,7 @@ public static class RandomExt {
     It is a very fast generator passing BigCrush, and it can be useful if
     for some reason you absolutely want 64 bits of state.
     */
-    static ulong Splitmix64(ulong seed) {
+    private static ulong Splitmix64(ulong seed) {
         ulong z = seed += 0x9e3779b97f4a7c15;
         z = (z ^ z >> 30) * 0xbf58476d1ce4e5b9;
         z = (z ^ z >> 27) * 0x94d049bb133111eb;

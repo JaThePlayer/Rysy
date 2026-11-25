@@ -19,7 +19,7 @@ public interface IHotkeyProvider {
 }
 
 public class HotkeyHandler : ISignalEmitter {
-    private List<Hotkey> _hotkeys = new();
+    private readonly List<Hotkey> _hotkeys = new();
 
     /// <summary>
     /// Specifies how this hotkey manager responds to ImGui usage

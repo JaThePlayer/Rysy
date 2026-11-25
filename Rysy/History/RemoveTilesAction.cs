@@ -2,8 +2,8 @@
 
 namespace Rysy.History;
 
-public record class RemoveTilesAction(Tilegrid Grid, Point StartPos, bool[,] ToRemove) : IHistoryAction {
-    char[,] _orig;
+public record RemoveTilesAction(Tilegrid Grid, Point StartPos, bool[,] ToRemove) : IHistoryAction {
+    private char[,] _orig;
 
     public bool Apply(Map map) {
         var (w, h) = (ToRemove.GetLength(0), ToRemove.GetLength(1));

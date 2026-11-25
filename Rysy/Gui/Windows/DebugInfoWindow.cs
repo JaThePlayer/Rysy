@@ -250,8 +250,8 @@ public class DebugInfoWindow : Window {
 
     private bool _imguiDemo;
 
-    string _docStr;
-    Markdig.Syntax.MarkdownDocument _doc;
+    private string _docStr;
+    private Markdig.Syntax.MarkdownDocument _doc;
 
     private static void HistoryTab() {
         if (RysyEngine.Scene is EditorScene editor && editor.HistoryHandler is HistoryHandler handler && ImGui.CollapsingHeader("History")) {

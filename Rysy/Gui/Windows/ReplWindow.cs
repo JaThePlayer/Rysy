@@ -56,7 +56,7 @@ public sealed class ReplWindow : Window {
         }
     }
 
-    class HistoryEntry {
+    private sealed class HistoryEntry {
         public required string Prompt { get; init; }
         
         public string? Response { get; set; }

@@ -34,7 +34,7 @@
             return new Triangle(a, b, c).ContainsPoint(point);
         }
 
-        static bool CheckPointToSegment(Vertex sA, Vertex sB, Vertex point) {
+        private static bool CheckPointToSegment(Vertex sA, Vertex sB, Vertex point) {
             if ((sA.Position.Y < point.Position.Y && sB.Position.Y >= point.Position.Y) ||
                 (sB.Position.Y < point.Position.Y && sA.Position.Y >= point.Position.Y)) {
                 float x =

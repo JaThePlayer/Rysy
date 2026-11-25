@@ -20,7 +20,7 @@ public sealed class ZipModFilesystem : IModFilesystem, IDisposable {
 
     private readonly ConcurrentBag<Stream> _openedFiles = [];
 
-    private BackgroundTaskInfo _cleanupTask;
+    private readonly BackgroundTaskInfo _cleanupTask;
 
     private readonly ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
     private IDisposable? _watcher;
@@ -230,7 +230,7 @@ public sealed class ZipModFilesystem : IModFilesystem, IDisposable {
         return new FilewatchDisposable(this, path, asset);
     }
     
-    private class FilewatchDisposable(ZipModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
+    private sealed class FilewatchDisposable(ZipModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
         public void Dispose() {
             lock (fs._watchedAssets) {
                 if (fs._watchedAssets.TryGetValue(path, out var assets)) {

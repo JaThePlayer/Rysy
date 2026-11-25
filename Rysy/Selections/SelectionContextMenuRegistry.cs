@@ -26,11 +26,11 @@ public static class SelectionContextWindowRegistry {
     private static string LayerToPopupId(IEditorLayer layer)
         => $"context_window_{layer.Name}";
 
-    private static Dictionary<IEditorLayer, ContextWindowDraw> DrawFunctions = new();
+    private static readonly Dictionary<IEditorLayer, ContextWindowDraw> DrawFunctions = new();
 
-    private static List<PopupInfo> CurrentPopups = new();
+    private static readonly List<PopupInfo> CurrentPopups = new();
 
-    private static Queue<PopupInfo> NewPopupQueue = new();
+    private static readonly Queue<PopupInfo> NewPopupQueue = new();
 
     public static void AddHandler(IEditorLayer layer, ContextWindowDraw handler) {
         if (DrawFunctions.TryGetValue(layer, out var existing)) {

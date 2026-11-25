@@ -39,7 +39,7 @@ public sealed class Kevin : Entity, IPlaceable {
         AlternativeNames = [ $"{axis.ToLowerInvariant()}_crushBlock"]
     });
 
-    enum Axes {
+    private enum Axes {
         Both,
         Vertical,
         Horizontal

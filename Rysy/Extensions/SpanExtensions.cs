@@ -25,7 +25,7 @@ public static class SpanExtensions {
         private ReadOnlySpan<char> _remaining;
         private ReadOnlySpan<char> _current;
         private bool _isEnumeratorActive;
-        private char _sep;
+        private readonly char _sep;
 
         internal SpanSplitEnumerator(ReadOnlySpan<char> buffer, char sep)
         {

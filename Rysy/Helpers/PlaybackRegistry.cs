@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 namespace Rysy.Helpers;
 
 public static class PlaybackRegistry {
-    private static Dictionary<string, List<ChaserState>> Tutorials = new();
+    private static readonly Dictionary<string, List<ChaserState>> Tutorials = new();
 
     private static readonly ConcurrentDictionary<string, IDisposable> _watchers = [];
 

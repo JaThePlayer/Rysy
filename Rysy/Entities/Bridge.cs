@@ -50,7 +50,7 @@ public class Bridge : Entity, IPlaceable {
         return ISelectionCollider.FromRect(new(Nodes[nodeIndex].X - 2, Y - 8), 5, 16);
     }
 
-    private static List<Rectangle> TileSizes = new() {
+    private static readonly List<Rectangle> TileSizes = [
         new(0, 0, 16, 55),
         new(16, 0, 8, 55),
         new(24, 0, 8, 55),
@@ -62,5 +62,5 @@ public class Bridge : Entity, IPlaceable {
         new(72, 0, 8, 55),
         new(80, 0, 16, 55),
         new(96, 0, 8, 55)
-    };
+    ];
 }

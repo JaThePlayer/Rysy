@@ -11,8 +11,9 @@ public sealed class ScopedStopwatch : IDisposable {
     public Stopwatch Watch;
     public string Message;
 
-    private string _callerMethod, _callerFile;
-    private int _callerLineNumber;
+    private readonly string _callerMethod;
+    private readonly string _callerFile;
+    private readonly int _callerLineNumber;
 
     public ScopedStopwatch(string msg, 
         [CallerMemberName] string callerMethod = "",

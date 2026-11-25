@@ -13,7 +13,7 @@ public sealed record NullableDepthField : Field {
     public override void SetDefault(object newDefault) => _default = newDefault;
 
     private string _search = "";
-    private ComboCache<DepthValue> _comboCache = new();
+    private readonly ComboCache<DepthValue> _comboCache = new();
 
     protected override object? DoRenderGui(string fieldName, object value) {
         int? returnValue = null;

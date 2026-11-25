@@ -188,21 +188,32 @@ public static class LinqExt {
 
             return ret;
         }
+        
+        public IEnumerable<(T Value, bool IsLast)> CheckedIfLast() {
+            using var enumerator = self.GetEnumerator();
+        
+            if (!enumerator.MoveNext())
+                yield break;
+        
+            var next = enumerator.Current;
+            while (enumerator.MoveNext()) {
+                yield return (next, false);
+                next = enumerator.Current;
+            }
+        
+            yield return (next, true);
+        }
+
+        public void ForEach(Action<T> onElement) {
+            foreach (var x in self) {
+                onElement(x);
+            }
+        }
     }
 
     public static PlacementList ToPlacementList(this IEnumerable<Placement> self) {
         return new(self);
     }
-
-    #if NET7_0
-    public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs)
-        where TKey : notnull
-        => new(keyValuePairs);
-
-    public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> keyValuePairs, IEqualityComparer<TKey>? comparer = null)
-        where TKey : notnull
-        => new(keyValuePairs, comparer);
-    #endif
 
     public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> self) => self.SelectMany(e => e);
 
@@ -234,30 +245,6 @@ public static class LinqExt {
         }
 
         return from[..(i+1)];
-    }
-
-    extension<T>(IEnumerable<T> self)
-    {
-        public IEnumerable<(T Value, bool IsLast)> CheckedIfLast() {
-            using var enumerator = self.GetEnumerator();
-        
-            if (!enumerator.MoveNext())
-                yield break;
-        
-            var next = enumerator.Current;
-            while (enumerator.MoveNext()) {
-                yield return (next, false);
-                next = enumerator.Current;
-            }
-        
-            yield return (next, true);
-        }
-
-        public void ForEach(Action<T> onElement) {
-            foreach (var x in self) {
-                onElement(x);
-            }
-        }
     }
 
     public static ListTakeEnumerable<T, T> FastTake<T>(this List<T> list, int amt)
@@ -344,7 +331,7 @@ public struct CastEnumerator<TFrom, TFromEnumerator, TTo>(TFromEnumerator enumer
 
 public struct SingleEnumerator<T> : IEnumerator<T> {
     private bool _moved = false;
-    private T _item;
+    private readonly T _item;
 
     internal SingleEnumerator(T item) {
         _item = item;

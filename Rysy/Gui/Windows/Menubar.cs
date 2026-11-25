@@ -161,7 +161,7 @@ public class Menubar : SceneComponent {
         = new("rysy.menubar.error.indicator");
 
     private sealed class Tab {
-        public string Name;
+        public readonly string Name;
         public string DisplayName => Name.TranslateOrHumanize(TabNameLangPrefix);
         
         public Action<Scene> Render;

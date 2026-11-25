@@ -11,7 +11,7 @@ public interface IRoomSpriteProvider {
 
 internal sealed class EntityListSpriteProvider(EntityLayer layer, Func<Persistence, bool> isVisible)
     : IRoomSpriteProvider, ISignalListener<RoomLayerChanged> {
-    class Cache : IAttachable {
+    private sealed class Cache : IAttachable {
         public List<ISprite>? Sprites { get; set; }
     }
 

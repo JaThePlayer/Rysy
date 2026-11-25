@@ -18,7 +18,7 @@ public static class MathExpression {
         return Evaluate(expr, out result);
     }
 
-    static ValidationResult Evaluate(AbstractExpression expr, out double result) {
+    private static ValidationResult Evaluate(AbstractExpression expr, out double result) {
         switch (expr) {
             case LiteralExpression<int> il:
                 result = il.Value;

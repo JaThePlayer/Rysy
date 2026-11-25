@@ -118,7 +118,7 @@ public static class ConnectedEntityHelper {
         };
     }
 
-    static Sprite GetTexture(Vector2 pos, NineSliceLocation loc, ConnectedEntityHelperSpriteGetter getTexture, float offX, float offY) {
+    private static Sprite GetTexture(Vector2 pos, NineSliceLocation loc, ConnectedEntityHelperSpriteGetter getTexture, float offX, float offY) {
         return getTexture(pos + new Vector2(offX, offY), loc);
     }
 

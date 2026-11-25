@@ -15,14 +15,14 @@ using Rysy.Layers;
 namespace Rysy.Gui.Windows;
 
 public sealed class AssetDriveTilesetImportWindow : Window {
-    private Task<List<AssetDriveTileset>> _bg;
-    private Task<List<AssetDriveTileset>> _fg;
+    private readonly Task<List<AssetDriveTileset>> _bg;
+    private readonly Task<List<AssetDriveTileset>> _fg;
 
     private readonly EditorState _editorState;
     private readonly TileEditorLayer _layer;
     
     private string _searchText = "";
-    private ComboCache<AssetDriveTileset> _comboCache = new();
+    private readonly ComboCache<AssetDriveTileset> _comboCache = new();
 
     private AssetDriveTileset? _selected;
     private readonly MarkdownDocument _tip;

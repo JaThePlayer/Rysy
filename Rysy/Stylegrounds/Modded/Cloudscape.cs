@@ -485,8 +485,8 @@ sealed class WarpedCloud {
 /// <typeparam name="T">The <see cref="IVertexType"/> used in this mesh.</typeparam>
 internal sealed class Mesh<T> where T : struct, IVertexType
 {
-    private List<T> _vertices = new();
-    private List<int> _indices = new();
+    private readonly List<T> _vertices = new();
+    private readonly List<int> _indices = new();
 
     /// <summary>
     /// The array of vertices.<br/>

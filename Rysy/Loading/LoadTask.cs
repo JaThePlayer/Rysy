@@ -78,7 +78,7 @@ public sealed class ParallelLoadTask(string name, SimpleLoadTask[] tasks) : Load
 }
 
 public sealed class LoadTaskManager(List<LoadTask> tasks) {
-    private object _lock = new();
+    private readonly Lock _lock = new();
     
     private LoadTask? _current;
     

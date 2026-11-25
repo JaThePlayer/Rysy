@@ -22,7 +22,7 @@ internal sealed partial class NewModWindow : Window {
 
     private bool _anyInvalidFields = true;
     
-    private Task<Dictionary<string, DatabaseModInfo>> _databaseMods;
+    private readonly Task<Dictionary<string, DatabaseModInfo>> _databaseMods;
     
     private readonly Field _modNameField;
     private readonly Field _modLevelsetNameField;
@@ -241,7 +241,7 @@ internal sealed partial class NewModWindow : Window {
         }
     }
 
-    FileStructureInfo CreateFileStructure() => new(_modName, [
+    private FileStructureInfo CreateFileStructure() => new(_modName, [
         new ("Dialog", [
             new("English.txt", Contents: GetEnglishDialogContents()),
         ]),

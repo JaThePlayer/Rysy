@@ -86,7 +86,7 @@ internal sealed record ComplexField : ComplexTypeField<string[]> {
 
     private object _default;
 
-    public record InnerField(string Name, string Tooltip, object? Default, Field Field) {
+    public sealed record InnerField(string Name, string Tooltip, object? Default, Field Field) {
         public static InnerField Create(string langKey, Field field) {
             return new InnerField(langKey, $"{langKey}.tooltip", field.GetDefault(), field);
         }

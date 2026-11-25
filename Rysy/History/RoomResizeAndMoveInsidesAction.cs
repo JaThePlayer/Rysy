@@ -97,13 +97,13 @@ public record RoomResizeAndMoveInsidesAction(RoomRef Room, int ResizeX, int Resi
 
         return true;
     }
-    
-        
-    static bool IntersectsInclusive(Rectangle self, Rectangle other) {
+
+
+    private static bool IntersectsInclusive(Rectangle self, Rectangle other) {
         return other.Left <= self.Right && self.Left <= other.Right && other.Top <= self.Bottom && self.Top <= other.Bottom;
     }
 
-    void Push(Map map, Room room, Point delta, HashSet<Room> movedRooms) {
+    private void Push(Map map, Room room, Point delta, HashSet<Room> movedRooms) {
         _roomMoves.Add((room, delta));
         movedRooms.Add(room);
         

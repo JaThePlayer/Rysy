@@ -30,7 +30,7 @@ public sealed class BindAttribute : Attribute {
         FieldName = fieldName;
     }
 
-    static Dictionary<string, object> ContextCache = new();
+    private static readonly Dictionary<string, object> ContextCache = new();
 
     internal static List<Field> BoundFields = new();
 

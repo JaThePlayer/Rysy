@@ -11,14 +11,14 @@ namespace Rysy.Gui.Windows;
 public class StylegroundWindow : Window, ISignalListener<MapSwapped> {
     private readonly DragDropCtx<Style> _dragDropCtx = new("styles");
     
-    private IHistoryHandler _history;
-    private Map _map;
+    private readonly IHistoryHandler _history;
+    private readonly Map _map;
 
     private bool _firstRender = true;
 
     private bool _fg = false;
 
-    private ComboCache<Placement> _placementComboCache = new();
+    private readonly ComboCache<Placement> _placementComboCache = new();
 
     private readonly ListenableList<Style> _selections;
 
@@ -26,7 +26,7 @@ public class StylegroundWindow : Window, ISignalListener<MapSwapped> {
     // the style used for the form window
     private Style? _formStyle;
 
-    private HotkeyHandler _hotkeyHandler;
+    private readonly HotkeyHandler _hotkeyHandler;
     
     private IEnumerable<ISprite>? _previewSprites;
 
@@ -73,7 +73,7 @@ public class StylegroundWindow : Window, ISignalListener<MapSwapped> {
         _fakeBackgroundStyle = new FakeBackgroundStyle(_map);
     }
 
-    IEnumerable<FakeStyle> GetFakeStyles(bool fg) => fg ? [] : [ _fakeBackgroundStyle ];
+    private IEnumerable<FakeStyle> GetFakeStyles(bool fg) => fg ? [] : [ _fakeBackgroundStyle ];
 
     private void RemoveForm() {
         if (_form is { }) {
@@ -689,7 +689,7 @@ internal abstract class FakeStyle : Style;
 /// A fake styleground mapped to the `Map.Style.color` property.
 /// </summary>
 [CustomEntity("Rysy/FakeBackgroundStyle")]
-internal class FakeBackgroundStyle : FakeStyle, IPlaceable {
+internal sealed class FakeBackgroundStyle : FakeStyle, IPlaceable {
     private readonly Map _map;
 
     public FakeBackgroundStyle(Map map) {

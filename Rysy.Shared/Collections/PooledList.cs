@@ -62,6 +62,12 @@ public class PooledList<T> : IList<T>, IDisposable {
         _count++;
     }
 
+    public void AddRange(IEnumerable<T> items) {
+        foreach (var item in items) {
+            Add(item);
+        }
+    }
+
     public void Clear() {
         _count = 0;
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) {

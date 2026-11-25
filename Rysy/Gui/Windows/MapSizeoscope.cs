@@ -107,14 +107,14 @@ public sealed class MapSizeoscopeWindow : Window {
         
         ImGui.EndChild();
     }
-    
-    BinaryPacker.DetailedWriteInfo Info(BinaryPacker.Element el)
+
+    private BinaryPacker.DetailedWriteInfo Info(BinaryPacker.Element el)
         => _packer.GetDetailedWriteInfo()![el];
-    
-    BinaryPacker.DetailedLookupWriteInfo Info(string lookupString)
+
+    private BinaryPacker.DetailedLookupWriteInfo Info(string lookupString)
         => _packer.GetDetailedWriteLookupInfo()![lookupString];
 
-    static string ElName(BinaryPacker.Element el) {
+    private static string ElName(BinaryPacker.Element el) {
         string? name = null;
         if (el.Attributes is { } attrs) {
             if (el.Name is EntityRegistry.BgDecalSid or EntityRegistry.FgDecalSid) {
@@ -132,19 +132,19 @@ public sealed class MapSizeoscopeWindow : Window {
         return name;
     }
 
-    bool ShouldShowAttrs(BinaryPacker.Element el) => el.Name is not (
+    private bool ShouldShowAttrs(BinaryPacker.Element el) => el.Name is not (
         "entities" or "triggers" or "bgdecals" or "fgdecals" or "level" or "levels"
         );
-    
-    void Render(BinaryPacker.Element el) {
+
+    private void Render(BinaryPacker.Element el) {
         if (el is null)
             return;
 
         RenderElement(ElName(el), el.GetHashCode(), Info(el), ShouldShowAttrs(el) ? el.Attributes : null, el.Children, shouldGroup: _group && el.Name is "entities" or "triggers" or "bgdecals" or "fgdecals");
     }
-    
-    
-    void RenderElement(string name, int hashCode, BinaryPacker.DetailedWriteInfo detailed, Dictionary<string, object>? attributes, BinaryPacker.Element[]? children, bool shouldGroup) {
+
+
+    private void RenderElement(string name, int hashCode, BinaryPacker.DetailedWriteInfo detailed, Dictionary<string, object>? attributes, BinaryPacker.Element[]? children, bool shouldGroup) {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
 

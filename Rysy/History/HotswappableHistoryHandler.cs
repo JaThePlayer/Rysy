@@ -8,7 +8,7 @@ internal sealed class HotswappableHistoryHandler : IHistoryHandler, ISignalEmitt
 
     private readonly SignalWrapper _signalWrapper;
 
-    private class SignalWrapper(IHistoryHandler treatAs) : ISignalListener, ISignalEmitter {
+    private sealed class SignalWrapper(IHistoryHandler treatAs) : ISignalListener, ISignalEmitter {
         public void OnSignal<T>(T signal) where T : ISignal {
             switch (signal)
             {

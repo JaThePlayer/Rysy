@@ -5,7 +5,7 @@ using Rysy.Mods;
 namespace Rysy.History;
 
 public class RemoveTilesetAction(char tileId, bool bg, bool removeSourceTexture) : IHistoryAction {
-    byte[]? _sourceTextureBackup;
+    private byte[]? _sourceTextureBackup;
     private TilesetData? _tilesetData;
 
     public bool Apply(Map map) {

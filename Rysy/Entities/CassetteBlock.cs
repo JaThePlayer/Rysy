@@ -67,7 +67,7 @@ public class CassetteBlock : Entity, ISolid, IPlaceable {
         }))
         .ToPlacementList();
 
-    private static TranslatedDictionary<int> Indexes = new("rysy.cassetteBlockIndex") {
+    private static readonly TranslatedDictionary<int> Indexes = new("rysy.cassetteBlockIndex") {
         0, 1, 2, 3
     };
 }

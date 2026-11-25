@@ -9,7 +9,7 @@ public sealed class TileSelectionHandler : ISelectionHandler, ISelectionCollider
 
     public int TileSizeInPixels => Grid.TileSizeInPixels;
     
-    private List<(bool Exclude, Rectangle)> _toMoveRects = new();
+    private readonly List<(bool Exclude, Rectangle)> _toMoveRects = new();
 
     private char[,] _toMove;
     private char[,]? _orig;

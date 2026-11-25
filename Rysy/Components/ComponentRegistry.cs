@@ -131,7 +131,7 @@ public static class ComponentRegistryExt {
 }
 
 public sealed class ComponentRegistryScope(IComponentRegistry parent) : IComponentRegistry, IDisposable {
-    private List<object> _newComponents = [];
+    private readonly List<object> _newComponents = [];
     
     public void Dispose() {
         foreach (var toRemove in _newComponents) {
@@ -263,7 +263,7 @@ public sealed class ComponentRegistry : IComponentRegistry {
         }
     }
 
-    class Locker : IDisposable {
+    private sealed class Locker : IDisposable {
         private List<Action>? _actions;
 
         public void Queue(Action onDispose) {

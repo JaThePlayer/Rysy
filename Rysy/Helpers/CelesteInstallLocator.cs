@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Rysy.Helpers;
 
-internal class FoundProfile(string celesteDirectory, string name, ICelesteInstallLocator source) {
+internal sealed class FoundProfile(string celesteDirectory, string name, ICelesteInstallLocator source) {
     public string CelesteDirectory { get; init; } = celesteDirectory;
     public string Name { get; set; } = name;
     public ICelesteInstallLocator Source { get; set; } = source;
@@ -55,7 +55,7 @@ internal static class CelesteInstallLocator {
     }
 }
 
-internal class ExistingProfileInstallLocator : ICelesteInstallLocator {
+internal sealed class ExistingProfileInstallLocator : ICelesteInstallLocator {
     public string Name => "Existing Profile";
     
     public int Priority => int.MaxValue;
@@ -71,7 +71,7 @@ internal class ExistingProfileInstallLocator : ICelesteInstallLocator {
     }
 }
 
-internal class OlympusInstallLocator(IRysyLogger logger) : ICelesteInstallLocator {
+internal sealed class OlympusInstallLocator(IRysyLogger logger) : ICelesteInstallLocator {
     
     public string Name => "Olympus";
     
@@ -147,7 +147,7 @@ internal class OlympusInstallLocator(IRysyLogger logger) : ICelesteInstallLocato
         return config is null ? [] : config.Installs.Select(i => new FoundProfile(i.Path, i.Name, this)).ToList();
     }
 
-    private class OlympusConfig {
+    private sealed class OlympusConfig {
         /// <summary>
         /// 1-indexed index pointing at the currently selected installation.
         /// </summary>
@@ -159,7 +159,7 @@ internal class OlympusInstallLocator(IRysyLogger logger) : ICelesteInstallLocato
 
         public Installation? GetCurrentInstall() => Installs.ElementAtOrDefault(Install - 1);
         
-        public class Installation {
+        public sealed class Installation {
             [JsonPropertyName("path")]
             public string Path { get; set; }
 

@@ -6,10 +6,10 @@ using Rysy.Platforms;
 namespace Rysy.Scenes;
 
 public class CrashScene : Scene {
-    private Scene _prevScene;
-    private Exception _exception;
+    private readonly Scene _prevScene;
+    private readonly Exception _exception;
 
-    private DateTime? _lastBackupDate;
+    private readonly DateTime? _lastBackupDate;
 
     public CrashScene(Scene prev, Exception e) {
         _prevScene = prev;

@@ -61,7 +61,7 @@ public sealed class CSharpRepl : IRepl {
         Reset();
     }
 
-    void Reset() {
+    private void Reset() {
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
         try {
             ScriptState = Script.RunAsync(null, cts.Token).Result;

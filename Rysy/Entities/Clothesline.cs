@@ -27,7 +27,7 @@ internal sealed class Clothesline : Entity, IPlaceable {
 
     public static PlacementList GetPlacements() => new("clothesline");
 
-    private static FlaglineHelper.Options FlaglineOptions = new FlaglineHelper.Options() {
+    private static readonly FlaglineHelper.Options FlaglineOptions = new FlaglineHelper.Options() {
         LineColor = Color.Lerp(Color.Gray, Color.DarkBlue, 0.25f),
         PinColor = Color.Gray,
         Colors = [

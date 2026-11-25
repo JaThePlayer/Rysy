@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace Rysy.Gui.Windows;
 
 public sealed partial class RoomEditWindow : Window {
-    private Action _historyHook;
+    private readonly Action _historyHook;
     private readonly FormWindow _generalTab;
     private readonly Room _room;
     private readonly RoomAttributes _attrs;

@@ -8,7 +8,7 @@ namespace Rysy.Entities;
 public class DashSwitch : Entity, IMultiSidPlaceable {
     public override int Depth => 0;
 
-    Directions Direction => Name switch {
+    private Directions Direction => Name switch {
         "dashSwitchV" => Bool("ceiling") ? Directions.Ceiling : Directions.Floor,
         "dashSwitchH" => Bool("leftSide") ? Directions.Left : Directions.Right,
         _ => throw new NotImplementedException(Name)

@@ -80,7 +80,7 @@ public sealed class MetadataWindow : Window {
     public IHistoryHandler History { get; private set; }
     public Map Map { get; private set; }
 
-    private List<(string Name, FormWindow Window)> _tabs = new();
+    private readonly List<(string Name, FormWindow Window)> _tabs = new();
 
     public MetadataWindow(IHistoryHandler history, Map map) : base("Map Metadata", new(800, 400)) {
         Map = map;

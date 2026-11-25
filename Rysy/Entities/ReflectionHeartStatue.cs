@@ -15,14 +15,14 @@ public sealed class ReflectionHeartStatue : Entity, IPlaceable {
         };
     }
 
-    private static Color[] Colors = new Color[] {
+    private static readonly Color[] Colors = [
         new(240f / 255, 240f / 255, 240f / 255),
         new(145f / 255, 113f / 255, 242f / 255),
         new(10f / 255, 68f / 255, 224f / 255),
         new(179f / 255, 45f / 255, 0f / 255),
         new(145f / 255, 113f / 255, 242f / 255),
         new(255f / 255, 205f / 255, 55f / 255)
-    };
+    ];
 
     public override IEnumerable<ISprite> GetNodeSprites(int nodeIndex) {
         var pos = Nodes[nodeIndex].Pos;

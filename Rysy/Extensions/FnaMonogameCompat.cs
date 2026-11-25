@@ -3,7 +3,7 @@
 namespace Rysy.Extensions {
     public static class FnaMonogameCompat {
         #if FNA
-        private static Dictionary<MouseCursor, IntPtr> SdlMouseCursors = new() {
+        private static readonly Dictionary<MouseCursor, IntPtr> SdlMouseCursors = new() {
             [MouseCursor.Arrow] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_DEFAULT),
             [MouseCursor.IBeam] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_TEXT),
             [MouseCursor.SizeAll] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_MOVE),

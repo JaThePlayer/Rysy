@@ -10,7 +10,7 @@ namespace Rysy.Mods;
 public sealed class FolderModFilesystem : IWriteableModFilesystem, IDisposable {
     public string Root { get; init; }
 
-    private ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, List<WatchedAsset>> _watchedAssets = new(StringComparer.Ordinal);
     private IDisposable? _watcher;
     // keeps track of whether a file is known to exist or known not to exist in the directory.
     private readonly ConcurrentDictionary<string, bool> _knownExistingFiles = new();
@@ -220,7 +220,7 @@ public sealed class FolderModFilesystem : IWriteableModFilesystem, IDisposable {
         return new FilewatchDisposable(this, path, asset);
     }
 
-    private class FilewatchDisposable(FolderModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
+    private sealed class FilewatchDisposable(FolderModFilesystem fs, string path, WatchedAsset asset) : IDisposable {
         public void Dispose() {
             if (fs._watchedAssets.TryGetValue(path, out var assets)) {
                 assets.Remove(asset);

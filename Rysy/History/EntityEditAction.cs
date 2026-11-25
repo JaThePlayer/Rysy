@@ -1,10 +1,10 @@
 ﻿namespace Rysy.History;
 
 internal sealed class EntityEditAction : IHistoryAction {
-    List<Entity> _entities;
-    Dictionary<string, object> _changed;
-    
-    List<List<(string, object?)>> _oldValues;
+    private readonly List<Entity> _entities;
+    private readonly Dictionary<string, object> _changed;
+
+    private List<List<(string, object?)>> _oldValues;
 
     public EntityEditAction(List<Entity> entities, Dictionary<string, object> changed) {
         _changed = new(changed);

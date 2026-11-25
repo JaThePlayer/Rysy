@@ -37,7 +37,7 @@ public sealed class LonnBindingAttribute : Attribute {
 }
 
 internal static class LonnBindingHelper {
-    private static Dictionary<Type, Dictionary<string, PropertyInfo>> AllBindings = new();
+    private static readonly Dictionary<Type, Dictionary<string, PropertyInfo>> AllBindings = new();
 
     public static Dictionary<string, PropertyInfo> GetAllBindings([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type settingsType) {
         if (AllBindings.TryGetValue(settingsType, out var bindings)) {

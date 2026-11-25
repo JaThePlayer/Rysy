@@ -1,7 +1,7 @@
 ﻿namespace Rysy.History;
 
 public record AltDragNodeAction(EntityRef Entity, List<int> NodeIndexes, Vector2 Offset) : IMergeableHistoryAction {
-    private List<IHistoryAction> _addNodeActions = [];
+    private readonly List<IHistoryAction> _addNodeActions = [];
     
     public bool Apply(Map map) {
         var anyAdded = false;

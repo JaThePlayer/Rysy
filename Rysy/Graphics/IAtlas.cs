@@ -2,14 +2,13 @@
 using Rysy.Helpers;
 using Rysy.Mods;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Rysy.Graphics;
 
 file static class LogMissingTexturesData {
-    public static HashSet<string> LoggedMissingTextures = new();
+    public static readonly HashSet<string> LoggedMissingTextures = new();
 }
 
 public interface IAtlas {

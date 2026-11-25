@@ -158,7 +158,7 @@ public static class DependencyChecker {
     }
 }
 
-internal class DependencyCheckerDrawable(
+internal sealed class DependencyCheckerDrawable(
     List<IGrouping<(Type Type, string Name), object>> missingDeps,
     string depModName)
     : IImGuiDrawable {

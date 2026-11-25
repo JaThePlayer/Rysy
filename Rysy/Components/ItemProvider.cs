@@ -24,7 +24,7 @@ public static class IItemProviderExtensions {
         }
     }
 
-    private class CreateAllFromItemProvidersCacheListener<T>
+    private sealed class CreateAllFromItemProvidersCacheListener<T>
         : ISignalListener<ComponentAdded>, ISignalListener<ComponentRemoved>, IHasComponentRegistry
         where T : class {
         public Cache<IReadOnlyList<T>> Cache { get; }

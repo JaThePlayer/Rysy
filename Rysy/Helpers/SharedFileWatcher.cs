@@ -43,7 +43,7 @@ public sealed class SharedFileWatcher : IDisposable {
             //Logger.Write("SharedFileWatcher", LogLevel.Debug, $"Registering watcher for {directory} via {parentDirectory}[{subdirectory}]");
 
             watcher.RefCount++;
-            if (subdirectory != "") {
+            if (!subdirectory.IsNullOrWhitespace()) {
                 var oldCallback = callback;
                 callback = args => {
                     if (args.Name is null)
@@ -103,7 +103,7 @@ public sealed class SharedFileWatcher : IDisposable {
 
     private event Action<FileSystemEventArgs>? OnChange;
 
-    struct FileSystemEventArgsEqualityByName(FileSystemEventArgs args) : IEquatable<FileSystemEventArgsEqualityByName> {
+    private struct FileSystemEventArgsEqualityByName(FileSystemEventArgs args) : IEquatable<FileSystemEventArgsEqualityByName> {
         public FileSystemEventArgs Args => args;
 
         public bool Equals(FileSystemEventArgsEqualityByName other) {

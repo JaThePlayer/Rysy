@@ -4,7 +4,7 @@
 /// Allows multiple sources to create independently managed locks
 /// </summary>
 public sealed class LockManager {
-    private List<ManagedLock> _locks = new(0);
+    private readonly List<ManagedLock> _locks = new(0);
 
     /// <summary>
     /// Creates a new lock tied to this manager. By default, the lock is *not* active!

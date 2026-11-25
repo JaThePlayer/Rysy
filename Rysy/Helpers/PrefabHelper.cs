@@ -211,7 +211,7 @@ public sealed class PrefabHelper : IHasComponentRegistry, ISignalEmitter {
         }
 
         private sealed class MergedSelectionHandler : ISelectionHandler {
-            public List<Selection> Selections;
+            public readonly List<Selection> Selections;
 
             public MergedSelectionHandler(List<Selection> selections) {
                 Selections = selections;

@@ -55,7 +55,7 @@ public sealed class CustomTilesetTemplate(string contents) : ITilesetTemplate
 
     public string CreateXmlStringForId(char tilesetId)
     {
-        return Contents.Replace("{id}", tilesetId.ToString());
+        return Contents.Replace("{id}", tilesetId.ToString(), false, CultureInfo.InvariantCulture);
     }
 
     public TilesetData? FindTilesetDefiningThisTemplate(IEnumerable<TilesetData> tilesets)
@@ -117,7 +117,7 @@ public sealed class XmlFileTilesetTemplate : ITilesetTemplate, IDisposable {
     }
 
     public string? CreateXmlStringForId(char tilesetId) {
-        return TilesetDefinition?.Replace("{id}", tilesetId.ToString());
+        return TilesetDefinition?.Replace("{id}", tilesetId.ToString(), false, CultureInfo.InvariantCulture);
     }
 
     public TilesetData? FindTilesetDefiningThisTemplate(IEnumerable<TilesetData> tilesets) {

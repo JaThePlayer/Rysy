@@ -332,10 +332,10 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
     }
     
     //https://stackoverflow.com/a/44689035
-    sealed class SmartFramerate {
-        double _currentFrametimes;
-        double _weight;
-        int _numerator;
+    private sealed class SmartFramerate {
+        private double _currentFrametimes;
+        private readonly double _weight;
+        private readonly int _numerator;
 
         public double Framerate => (_numerator / _currentFrametimes);
 

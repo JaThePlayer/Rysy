@@ -3,7 +3,7 @@
 namespace Rysy.Helpers;
 
 public sealed class EntityList : TypeTrackedList<Entity>, ILuaWrapper, ILuaTableBound {
-    private Dictionary<string, List<Entity>> _sidToEntities = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<Entity>> _sidToEntities = new(StringComparer.Ordinal);
 
     public EntityList() {
         OnChanged += _ => {

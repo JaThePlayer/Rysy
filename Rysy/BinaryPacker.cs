@@ -6,15 +6,15 @@ using System.Text.Json.Serialization;
 namespace Rysy;
 
 public sealed class BinaryPacker {
-    string[] _stringLookup = null!;
-    string _packageName = null!;
+    private string[] _stringLookup = null!;
+    private string _packageName = null!;
 
-    BinaryReader _reader = null!;
-    BinaryWriter _writer = null!;
-    BinaryWriter _headerWriter = null!;
+    private BinaryReader _reader = null!;
+    private BinaryWriter _writer = null!;
+    private BinaryWriter _headerWriter = null!;
 
-    short _nextLookupId = 0;
-    Dictionary<string, short> _writingLookup = new();
+    private short _nextLookupId = 0;
+    private readonly Dictionary<string, short> _writingLookup = new();
     private Dictionary<Element, DetailedWriteInfo>? _detailedWriteInfos;
     private Dictionary<string, DetailedLookupWriteInfo>? _detailedWriteLookupInfos;
 
