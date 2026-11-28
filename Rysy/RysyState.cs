@@ -243,6 +243,9 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
 
     internal static Vector2 TouchpadPan;
 
+    private static float _lastDeltaPinchFactor;
+    internal static int TouchpadPinchDelta;
+
     internal static readonly DateTime[] MouseDoubleClicks = new DateTime[8];
     internal static readonly Vector2[] LastMouseClickPoints = new Vector2[8];
 
@@ -274,18 +277,38 @@ public class RysyState : ISignalEmitter, ISignalListener<RunAtEndOfThisFrame> {
                     }
                     case SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL: {
                         var wheel = sdlEvent->wheel;
-                        
-                        // TODO: test on linux
 
                         // XNA does not expose horizontal mouse wheel.
                         // We'll use this event instead to store precise wheel state for later use
-                        // in detecting touchpad panning, which Windows exposes as mouse wheel movement.
+                        // in detecting touchpad panning, which Windows and Linux expose as mouse wheel movement.
                         if (!float.IsInteger(wheel.x)) {
                             TouchpadPan.X = wheel.x;
                         }
                         if (!float.IsInteger(wheel.y)) {
                             TouchpadPan.Y = wheel.y;
                         }
+                        break;
+                    }
+                    case SDL.SDL_EventType.SDL_EVENT_PINCH_BEGIN: {
+                        _lastDeltaPinchFactor = 0f;
+                        break;
+                    }
+                    case SDL.SDL_EventType.SDL_EVENT_PINCH_UPDATE: {
+                        var pinchScale = sdlEvent->pinch.scale;
+                        
+                        // a "pinch in" gesture is fingers moving closer together, i.e. zooming out
+                        // a "pinch out" gesture is fingers moving further apart, i.e. zooming in
+                        // normalize the pinch scale so that pinching in by 2x = -1, pinching out by 2x = +1
+                        var pinchFactor = pinchScale < 1f
+                            ? (-1f / pinchScale + 1f)
+                            : (pinchScale - 1f);
+                        var pinchFactorChangeSinceLastDelta = pinchFactor - _lastDeltaPinchFactor;
+                        float pinchFactorDeltaThreshold = 1f / Settings.Instance.TouchpadPinchSensitivity;
+                        if (MathF.Abs(pinchFactorChangeSinceLastDelta) < pinchFactorDeltaThreshold)
+                            break;
+
+                        _lastDeltaPinchFactor = pinchFactor;
+                        TouchpadPinchDelta = (int) MathF.Floor(pinchFactorChangeSinceLastDelta / pinchFactorDeltaThreshold);
                         break;
                     }
                     case SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN: {
